@@ -1,0 +1,42 @@
+{
+  "ticket": "SCRUM-637",
+  "run": "20261026r1",
+  "name": "post-rebase-checks-1",
+  "command": "pnpm --filter @oto/api typecheck && pnpm --filter @oto/console typecheck && pnpm --filter @oto/api-types typecheck && pnpm --filter @oto/api test test/s637-registration-review.test.ts test/s637-digest-review.test.ts test/s637-overview-review.test.ts test/s637-decisions-review.test.ts test/ops-jobs.test.ts test/boot-guard.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts && pnpm api-types:check && pnpm --filter @oto/api-types test && pnpm exec eslint apps/api/src/routes/console.ts apps/api/src/services/console.ts apps/api/src/services/console-decisions.ts apps/api/src/services/console-digest.ts apps/api/src/services/console-summary.ts apps/api/src/env.ts apps/api/src/services/jobs.ts apps/api/test/s637-registration-review.test.ts apps/api/test/s637-decisions-review.test.ts apps/api/test/s637-digest-review.test.ts apps/api/test/s637-overview-review.test.ts apps/console/e2e/overview.spec.ts apps/console/src/api/overview.ts apps/console/src/pages/Overview.tsx apps/console/test/overview-markup.test.ts packages/api-types/test/seam-walker.test.ts",
+  "startedAt": "2026-10-25T20:03:54.121Z",
+  "completedAt": "2026-10-25T20:06:26.804Z",
+  "exitCode": 0,
+  "signal": null,
+  "childError": false,
+  "outputLimitExceeded": false,
+  "progressWriteError": false,
+  "gateTerminalKnown": true,
+  "passed": true,
+  "verificationError": null,
+  "logSha256": "020a7fbe6ec5741b06be2e47cb783fae15cfcbcde0bc4691b7533f31e7dd4d23",
+  "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+  "before": {
+    "sourceFiles": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "docsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+    "dependencyMetadataSha256": "5ce9d0280b617db3b17c9e0e9c111c2033ff46f1d9fc475ffa5faff9b2590c50",
+    "hostUnchanged": true,
+    "runtimeUnchanged": true,
+    "supplementalDocsUnchanged": true,
+    "installedDependenciesUnchanged": true
+  },
+  "after": {
+    "sourceFiles": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "docsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+    "dependencyMetadataSha256": "5ce9d0280b617db3b17c9e0e9c111c2033ff46f1d9fc475ffa5faff9b2590c50",
+    "hostUnchanged": true,
+    "runtimeUnchanged": true,
+    "supplementalDocsUnchanged": true,
+    "installedDependenciesUnchanged": true
+  },
+  "appId": "7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae",
+  "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+  "digestDefaultOff": true,
+  "staging": false
+}

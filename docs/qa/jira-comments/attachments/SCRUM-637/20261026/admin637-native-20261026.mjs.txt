@@ -1,0 +1,28 @@
+import fs from 'node:fs';
+import { createHash } from 'node:crypto';
+import { spawn } from 'node:child_process';
+const root='C:/w/admin-overview-v2',out='C:/w/admin637-release-20261026',name=process.argv[2];
+const commands={
+ 'url-fragment-red-1':'pnpm --filter @oto/api test test/s637-registration-review.test.ts test/s637-digest-review.test.ts',
+ 'url-fragment-green-1':'pnpm --filter @oto/api test test/s637-registration-review.test.ts test/s637-digest-review.test.ts',
+ 'registration-red-1':'pnpm --filter @oto/api test test/s637-registration-review.test.ts',
+ 'registration-red-2':'pnpm --filter @oto/api test test/s637-registration-review.test.ts',
+ 'registration-green-1':'pnpm --filter @oto/api test test/s637-registration-review.test.ts test/s637-digest-review.test.ts test/s637-overview-review.test.ts test/s637-decisions-review.test.ts test/ops-jobs.test.ts test/boot-guard.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts',
+ 'registration-green-2':'pnpm --filter @oto/api test test/s637-registration-review.test.ts test/s637-digest-review.test.ts test/s637-overview-review.test.ts test/s637-decisions-review.test.ts test/ops-jobs.test.ts test/boot-guard.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts',
+ 'types-contracts-lint-1':'pnpm --filter @oto/api typecheck\npnpm --filter @oto/console typecheck\npnpm --filter @oto/api-types typecheck\npnpm api-types:check\npnpm --filter @oto/api-types test\npnpm exec eslint apps/api/src/routes/console.ts apps/api/src/services/console.ts apps/api/src/services/console-decisions.ts apps/api/src/services/console-digest.ts apps/api/src/services/console-summary.ts apps/api/src/env.ts apps/api/src/services/jobs.ts apps/api/test/s637-registration-review.test.ts apps/api/test/s637-decisions-review.test.ts apps/api/test/s637-digest-review.test.ts apps/api/test/s637-overview-review.test.ts apps/console/e2e/overview.spec.ts apps/console/src/api/overview.ts apps/console/src/pages/Overview.tsx apps/console/test/overview-markup.test.ts packages/api-types/test/seam-walker.test.ts',
+};
+if(!(name in commands))throw Error('UNKNOWN_GATE');
+if(fs.existsSync(out+'/'+name+'.json')||fs.existsSync(out+'/'+name+'.log'))throw Error('PRESERVE_PREVIOUS_GATE');
+const runtime=JSON.parse(fs.readFileSync(out+'/api-runtime.json','utf8'));if(!runtime.ready||runtime.labels.ticket!=='SCRUM-637'||runtime.host!=='127.0.0.1')throw Error('OWN_RUNTIME_REQUIRED');
+const redact=s=>String(s).replace(/postgres(?:ql)?:\/\/[^\s'"`<>]+/gi,'[DATABASE_URL_REDACTED]').replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g,'[JWT_REDACTED]').replace(/https?:\/\/[^\s'"`<>]*digest[^\s'"`<>]*/gi,'[PRIVATE_TEST_DESTINATION_REDACTED]');
+const files=['apps/api/test/s637-registration-review.test.ts','apps/api/src/env.ts','apps/api/src/services/jobs.ts','.env.example','apps/api/src/services/console-digest.ts'];
+const hash=v=>createHash('sha256').update(v).digest('hex'),inputs=()=>Object.fromEntries(files.map(p=>[p,hash(fs.readFileSync(root+'/'+p))]));
+const before=inputs(),env={...process.env,NODE_ENV:'test',CONSOLE_DIGEST_ENABLED:'false',ALERT_WEBHOOK_URL:'',FORCE_COLOR:'0',NO_COLOR:'1'};
+const url=new URL('postgres:'+ '/'.repeat(2)+runtime.host+':'+runtime.port+'/postgres');url.username=runtime.user;
+env.TEST_DATABASE_URL=url.href;env.DATABASE_URL=url.href;
+const startedAt=new Date().toISOString();console.log(JSON.stringify({name,startedAt,command:commands[name]}));
+const child=spawn('C:/Program Files/Git/bin/bash.exe',['-lc','set -eo pipefail\n'+commands[name]],{cwd:root,env,windowsHide:true,stdio:['ignore','pipe','pipe']}),chunks=[];
+child.stdout.on('data',c=>chunks.push(c));child.stderr.on('data',c=>chunks.push(c));
+const result=await new Promise(resolve=>{child.on('error',()=>resolve({status:null,signal:'CHILD_START_FAILED'}));child.on('close',(status,signal)=>resolve({status,signal}));});
+const log=redact(Buffer.concat(chunks).toString('utf8')),after=inputs();fs.writeFileSync(out+'/'+name+'.log',log,{flag:'wx'});
+const receipt={ticket:'SCRUM-637',name,command:commands[name],startedAt,completedAt:new Date().toISOString(),exitCode:result.status,signal:result.signal,inputsBefore:before,inputsAfter:after,sourceUnchanged:JSON.stringify(before)===JSON.stringify(after),runtimeContainerId:runtime.id,logSha256:hash(log),actualStaging:false};fs.writeFileSync(out+'/'+name+'.json',JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});console.log(log);console.log(JSON.stringify(receipt));process.exitCode=result.status??2;

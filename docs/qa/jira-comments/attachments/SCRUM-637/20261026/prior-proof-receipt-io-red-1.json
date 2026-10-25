@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "proof-receipt-io-red-1",
+  "startedAt": "2026-10-25T19:26:10.996Z",
+  "completedAt": "2026-10-25T19:26:11.371Z",
+  "exitCode": 1,
+  "source": [
+    {
+      "path": "C:/w/admin637-staging-proof.mjs",
+      "sha256": "77b9a322efa9d7b08484d1a261f1fe4c8955dac7ba07e46ea960756a4c6fd84e"
+    },
+    {
+      "path": "C:/w/admin637-staging-proof.test.mjs",
+      "sha256": "57167c416a3490e042a78d93a5422819cfe6fb4ff54cb39d4d25ca7350da2f6f"
+    }
+  ],
+  "sourceUnchanged": true,
+  "tests": 23,
+  "passed": 21,
+  "failed": 2,
+  "logSha256": "c95e339dcf8838c1a0f63bd2bdeab9626829e392aecc7affc2aeaf9df590bc72",
+  "actualStaging": false,
+  "authAttempts": 0
+}

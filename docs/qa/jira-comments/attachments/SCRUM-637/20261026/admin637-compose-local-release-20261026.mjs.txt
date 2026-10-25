@@ -1,0 +1,224 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { guardedPackageCommand } from './admin637-add-pricing-doc-20261026.mjs';
+
+const ROOT = 'C:/w/admin-overview-v2', OUT = 'C:/w/admin637-release-20261026', OLD = 'C:/w/admin637-integrated';
+const TARGET = ROOT + '/docs/qa/jira-comments/attachments/SCRUM-637', SUB = '20261026';
+const MANIFEST = '261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c', FILES = 3781;
+const SPEC = 'combined-source-1792957272935.json';
+const APP = '7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae';
+const IMAGE = 'sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26';
+const GATES = ['api-all-shard-1', 'api-all-shard-2', 'api-all-shard-3', 'workspace-compilers-builds-1',
+  'workspace-package-tests-2', 'pos-tests-1', 'box-serial-1', 'contracts-lint-1', 'console-browser-all-1', 'post-rebase-checks-1'];
+const HISTORY = ['api-all-2', 'api-green-1', 'api-red-1', 'browser-green-1', 'browser-red-1', 'console-green-1',
+  'decisions-red-2', 'digest-review-red-2', 'markup-red-1', 'proof-cleanup-red-2', 'proof-native-review-red-1',
+  'workspace-package-tests-1', 'proof-receipt-io-red-1', 'proof-combined-source-red-1'];
+const PROOF_GREENS = ['proof-cleanup-green-3', 'proof-loader-green-4', 'proof-native-review-green-1',
+  'proof-receipt-io-green-1', 'proof-combined-source-green-1'];
+const DOCS = ['docs/architecture/ARCHITECTURE.md', 'docs/ops/COUNTER_VOUCHERS.md',
+  'docs/progress/plans/events-kiosk/PLAN.md', 'docs/progress/plans/otoapp-lift/PLAN.md'];
+const need = (ok, code) => { if (!ok) throw new Error(code); };
+const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
+const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const sha = file => hash(fs.readFileSync(file));
+const posix = value => value.replaceAll('\\', '/');
+function archiveBytes(bytes, filename) {
+  if (!filename.endsWith('.log')) return bytes;
+  need(Buffer.from(bytes.toString('utf8'), 'utf8').equals(bytes), 'DISPLAY_LOG_UTF8_REQUIRED');
+  return Buffer.from(bytes.toString('utf8').replace(/[ \t]+(?=\r?$)/gm, ''), 'utf8');
+}
+function sourcePath(p) {
+  if (!p || !/^[A-Za-z0-9_./-]+$/.test(p) || p.split('/').includes('..')) return false;
+  if (/^(?:docs|imports|services)\//.test(p) || /(?:^|\/)(?:node_modules|dist|\.git)(?:\/|$)/.test(p)) return false;
+  if (p === '.env.example') return true;
+  if (/(?:^|\/)\.env(?:\.|\/|$)/.test(p)) return false;
+  return path.posix.basename(p) === '.gitignore' || /^(?:apps|packages|scripts)\//.test(p) || /^\.github\/workflows\//.test(p)
+    || /^(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|eslint\.config\.mjs|tsconfig[^/]*\.json|render\.yaml|\.npmrc|\.pnpmfile\.cjs)$/.test(p);
+}
+function hostSource() {
+  const result = spawnSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+  need(result.status === 0 && result.signal === null, 'HOST_SOURCE_CENSUS_FAILED');
+  return [...new Set(result.stdout.split('\0').filter(sourcePath))].sort().map(p => {
+    const file = path.join(ROOT, p);
+    need(fs.lstatSync(file).isFile() && fs.realpathSync(file).startsWith(fs.realpathSync(ROOT) + path.sep), 'HOST_SOURCE_BOUNDARY');
+    return { path: p, sha256: sha(file) };
+  });
+}
+function noSecrets(text) {
+  need(!/postgres(?:ql)?:\/\/[^\s"'<>]+/i.test(text)
+    && !/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/.test(text)
+    && !/\bBearer\s+[A-Za-z0-9._~-]{12,}/i.test(text), 'UNSAFE_ARTIFACT_REFUSED');
+}
+function counts(text) {
+  const value = { passed: 0, failed: 0, skipped: 0, todo: 0 };
+  for (const match of text.matchAll(/([\d,]+)\s+(passed|failed|skipped|todo)/g)) value[match[2]] += Number(match[1].replaceAll(',', ''));
+  const declared = /\(([\d,]+)\)\s*$/.exec(text);
+  return { ...value, total: declared ? Number(declared[1].replaceAll(',', '')) : Object.values(value).reduce((a, b) => a + b, 0) };
+}
+function statsOf(log) {
+  const clean = log.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, ''), vitest = [], tap = [], browser = [];
+  let files = null, block = null;
+  for (const line of clean.split(/\r?\n/)) {
+    const f = /\bTest Files\s+(.+)$/.exec(line); if (f) files = counts(f[1]);
+    const t = /\bTests\s+(.+)$/.exec(line); if (t && /\d+\s+(?:passed|failed|skipped|todo)/.test(t[1])) { vitest.push({ files, tests: counts(t[1]) }); files = null; }
+    const n = /(?:^|:\s*)# (tests|pass|fail|cancelled|skipped|todo) (\d+)\s*$/.exec(line);
+    if (n) { if (n[1] === 'tests') { if (block) tap.push(block); block = {}; } if (block) block[n[1]] = Number(n[2]); }
+    const b = /^\s*(\d+)\s+(passed|failed|skipped|flaky)(?:\s+\([^)]*\))?\s*$/.exec(line);
+    if (b) browser.push({ [b[2]]: Number(b[1]) });
+  }
+  if (block) tap.push(block);
+  const tasks = [...clean.matchAll(/Tasks:\s+(\d+) successful,\s+(\d+) total/g)].at(-1);
+  const typed = [...new Set([...clean.matchAll(/^([^\s:]+):typecheck:/gm)].map(m => m[1]))];
+  const built = [...new Set([...clean.matchAll(/^([^\s:]+):build:/gm)].map(m => m[1]))];
+  return { vitest, tap, browser, turbo: tasks ? { successful: Number(tasks[1]), total: Number(tasks[2]), typecheckPackages: typed, buildPackages: built } : null,
+    typeScriptDiagnosticHeaders: [...clean.matchAll(/\berror TS\d+:/g)].length };
+}
+export function prepareComposition() {
+  const current = read(OUT + '/combined-current.json'), spec = read(OUT + '/' + SPEC);
+  need(current.specFile === SPEC && spec.rows.length === FILES && hash(JSON.stringify(spec.rows)) === MANIFEST
+    && current.sourceManifestSha256 === MANIFEST && equal(hostSource(), spec.rows)
+    && equal(spec.docs.map(r => r.path), DOCS) && spec.docs.every(r => sha(ROOT + '/' + r.path) === r.sha256), 'FROZEN_HOST_SOURCE_REQUIRED');
+  const docsHash = hash(JSON.stringify(spec.docs)), depsHash = hash(JSON.stringify(current.frozenDependencies));
+  need(current.docsSha256 === docsHash && current.dependencyMetadataSha256 === depsHash
+    && current.frozenDependencies.inputs.length === 28 && equal(current.frozenDependencies.inputs, spec.dependencies)
+    && /^v22\./.test(current.frozenDependencies.node), 'FROZEN_RUNTIME_METADATA_REQUIRED');
+  const files = [], names = new Set(), add = (from, to) => {
+    need(/^[A-Za-z0-9_.-]+$/.test(to) && !names.has(to) && fs.lstatSync(from).isFile(), 'EXPLICIT_ARTIFACT_REQUIRED');
+    const original = fs.readFileSync(from); noSecrets(original.toString('utf8'));
+    const bytes = archiveBytes(original, to), copiedArchiveSha256 = hash(bytes);
+    names.add(to); files.push({ from, to, sha256: copiedArchiveSha256, bytes: bytes.length,
+      originalSourceSha256: hash(original), copiedArchiveSha256,
+      formattingNormalization: to.endsWith('.log') ? 'display-archive-strip-trailing-space-tab-only' : 'none' });
+  };
+  const logReceipt = (directory, name, destination, copyLog) => {
+    const file = directory + '/' + name + '.json', receipt = read(file), logFile = directory + '/' + name + '.log';
+    need(sha(logFile) === receipt.logSha256, 'ACTUAL_LOG_HASH_REQUIRED');
+    const log = fs.readFileSync(logFile, 'utf8'); noSecrets(log);
+    add(file, destination + '.json'); if (copyLog) add(logFile, destination + '.log');
+    return { receipt, log, receiptSha256: sha(file), logSha256: receipt.logSha256, logCopied: copyLog, stats: statsOf(log) };
+  };
+  const expectedBinding = { sourceFiles: FILES, sourceManifestSha256: MANIFEST, docsSha256: docsHash, dependencyMetadataSha256: depsHash,
+    hostUnchanged: true, runtimeUnchanged: true, supplementalDocsUnchanged: true, installedDependenciesUnchanged: true };
+  const gates = GATES.map(name => {
+    const actual = logReceipt(OUT, name, name, false), r = actual.receipt;
+    need(r.ticket === 'SCRUM-637' && r.name === name && r.passed === true && r.exitCode === 0 && r.signal === null
+      && r.gateTerminalKnown === true && r.childError === false && r.outputLimitExceeded === false && r.progressWriteError === false
+      && r.verificationError === null && r.sourceManifestSha256 === MANIFEST && r.appId === APP && r.image === IMAGE
+      && r.staging === false && r.digestDefaultOff === true && equal(r.before, expectedBinding) && equal(r.after, expectedBinding)
+      && Date.parse(r.startedAt) >= current.stamp && Date.parse(r.completedAt) >= Date.parse(r.startedAt), 'ALL_TEN_TERMINAL_GREEN_REQUIRED');
+    return { name, receiptSha256: actual.receiptSha256, logSha256: actual.logSha256, logCopied: false,
+      startedAt: r.startedAt, completedAt: r.completedAt, stats: actual.stats };
+  });
+  const api = gates.slice(0, 3).map((g, i) => {
+    const r = read(OUT + '/' + g.name + '.json'), summary = g.stats.vitest.at(-1);
+    need(r.command.includes(`--shard=${i + 1}/3`) && summary?.files && summary.files.failed === 0 && summary.tests.failed === 0, 'WHOLE_API_SHARD_SUMMARY_REQUIRED');
+    return summary;
+  });
+  const sum = key => api.reduce((n, r) => n + r.tests[key], 0);
+  const apiFiles = api.reduce((n, r) => n + r.files.total, 0), expectedApiFiles = spec.rows.filter(r => /^apps\/api\/test\/.*\.test\.ts$/.test(r.path)).length;
+  need(apiFiles === expectedApiFiles && apiFiles > 300, 'ALL_API_FILES_REQUIRED');
+  need(gates[3].stats.turbo?.successful === gates[3].stats.turbo?.total && gates[3].stats.turbo?.total > 0
+    && gates[3].stats.typeScriptDiagnosticHeaders === 0 && gates[8].stats.browser.some(r => r.passed > 0), 'COMPILER_AND_BROWSER_SUMMARIES_REQUIRED');
+  const post = gates[9], affected = post.stats.vitest.find(s => s.files?.total === 10 && s.files.failed === 0
+    && s.tests.passed === 189 && s.tests.total === 189 && s.tests.failed === 0);
+  need(post.stats.typeScriptDiagnosticHeaders === 0 && affected
+    && post.stats.vitest.some(s => s !== affected && s.tests.passed === 10 && s.tests.total === 10 && s.tests.failed === 0)
+    && Date.parse(post.startedAt) >= Math.max(...gates.slice(0, 9).map(g => Date.parse(g.completedAt))), 'FINAL_POST_REBASE_CHECKS_REQUIRED');
+  const pricing = read(OUT + '/pricing-provenance-doc-input.json');
+  need(pricing.passed === true && pricing.appId === APP && pricing.image === IMAGE && pricing.staging === false
+    && pricing.document === 'docs/architecture/POS_RULES_RECONCILIATION.md' && pricing.documentSha256 === sha(ROOT + '/' + pricing.document)
+    && pricing.coreSourceUnchanged === true && pricing.fourApiInputsUnchanged === true && pricing.exactSingleDocumentCopy === true
+    && pricing.packageGateName === 'workspace-package-tests-2' && pricing.packageCommand === guardedPackageCommand(pricing.documentSha256)
+    && read(OUT + '/workspace-package-tests-2.json').command === pricing.packageCommand, 'PRICING_DOCUMENT_COMPANION_REQUIRED');
+  for (const binder of [pricing.hostBefore, pricing.hostAfter, pricing.runtimeAfter]) need(binder.sourceFiles === FILES
+    && binder.sourceManifestSha256 === MANIFEST && binder.apiDocsSha256 === docsHash && binder.documentSha256 === pricing.documentSha256, 'FIFTH_DOCUMENT_BINDING_REQUIRED');
+  const pricingIntent = read(OUT + '/pricing-provenance-doc-intent.json');
+  need(pricing.runtimeBefore.sourceFiles === FILES && pricing.runtimeBefore.sourceManifestSha256 === MANIFEST
+    && pricing.runtimeBefore.apiDocsSha256 === docsHash
+    && (pricing.runtimeBefore.documentSha256 === null || pricing.runtimeBefore.documentSha256 === pricing.documentSha256)
+    && pricingIntent.appId === APP && pricingIntent.document === pricing.document && pricingIntent.documentSha256 === pricing.documentSha256
+    && pricingIntent.staging === false && equal(pricingIntent.runtimeBefore, pricing.runtimeBefore), 'FIFTH_DOCUMENT_INTENT_REQUIRED');
+  const history = HISTORY.map(name => {
+    const a = logReceipt(OLD, name, 'prior-' + name, true);
+    need(a.receipt.exitCode !== 0, 'PRESERVE_ACTUAL_FAILED_HISTORY');
+    return { name, receiptSha256: a.receiptSha256, logSha256: a.logSha256, exitCode: a.receipt.exitCode, stats: a.stats, historicalOnly: true };
+  });
+  for (const name of ['registration-red-1', 'registration-red-2', 'url-fragment-red-1', 'workspace-package-tests-1']) {
+    const a = logReceipt(OUT, name, name, true); need(a.receipt.exitCode !== 0, 'CURRENT_FAILED_HISTORY_REQUIRED');
+    history.push({ name, receiptSha256: a.receiptSha256, logSha256: a.logSha256, exitCode: a.receipt.exitCode, stats: a.stats, historicalOnly: true });
+  }
+  const proof = PROOF_GREENS.map(name => {
+    const a = logReceipt(OLD, name, name, false);
+    need(a.receipt.exitCode === 0 && a.receipt.failed === 0 && a.receipt.passed === a.receipt.tests
+      && a.receipt.sourceUnchanged === true && a.receipt.actualStaging === false && a.receipt.authAttempts === 0, 'OFFLINE_PROOF_RECEIPT_REQUIRED');
+    return { name, receiptSha256: a.receiptSha256, logSha256: a.logSha256, tests: a.receipt.tests, passed: a.receipt.passed,
+      historicalOnly: name !== 'proof-combined-source-green-1', currentBytesBound: name === 'proof-combined-source-green-1', actualStaging: false };
+  });
+  const finalProof = read(OLD + '/proof-combined-source-green-1.json');
+  need(finalProof.source?.length === 2 && finalProof.source.every(r => sha(r.path) === r.sha256), 'CURRENT_OFFLINE_HELPER_BYTES_REQUIRED');
+  for (const name of ['registration-green-1', 'url-fragment-green-1', 'types-contracts-lint-1']) {
+    const a = logReceipt(OUT, name, name, false); need(a.receipt.exitCode === 0 && a.receipt.sourceUnchanged === true, 'FOCUSED_GREEN_REQUIRED');
+  }
+  for (const name of ['combined-current.json', SPEC, 'combined-source-1792957272935-verified.json', 'integration-setup-intent.json',
+    'integration-setup.json', 'api-runtime.json', 'pricing-provenance-doc-intent.json', 'pricing-provenance-doc-input.json']) add(OUT + '/' + name, name);
+  for (const name of ['admin637-combined-integration-20261026.mjs', 'admin637-combined-recover-setup-20261026.mjs',
+    'admin637-add-pricing-doc-20261026.mjs', 'admin637-rerun-packages-20261026.mjs', 'admin637-native-20261026.mjs',
+    'admin637-staging-proof.mjs', 'admin637-staging-proof.test.mjs', 'admin637-create-proof-plan-20261026.mjs',
+    'admin637-compose-local-release-20261026.mjs']) add('C:/w/' + name, name + '.txt');
+  const summary = { ticket: 'SCRUM-637', composedAt: new Date().toISOString(), localReleaseGreen: true,
+    sourceManifestSha256: MANIFEST, sourceFiles: FILES, supplementalApiDocsSha256: docsHash,
+    pricingProvenanceDocumentSha256: pricing.documentSha256, dependencyMetadataSha256: depsHash,
+    testRuntime: { image: IMAGE, appId: APP, node: current.frozenDependencies.node, pnpm: current.frozenDependencies.pnpm,
+      dependencyInputs: current.frozenDependencies.inputs.length, cachedDependenciesValidated: true, newInstallClaimed: false },
+    gateCount: gates.length, gates, api: { files: apiFiles, tests: sum('total'), passed: sum('passed'), skipped: sum('skipped'), todo: sum('todo'), failed: sum('failed') },
+    offlineProof: proof, retainedFailedHistory: history, allGreenLogsVerified: true, greenLogsCopied: false,
+    localOnly: true, featureCIClaimed: false, stagingProofClaimed: false, deploymentClaimed: false,
+    limits: ['These ten current pnpm/native gates do not claim a new lifted OTO App/Radar compiler run.',
+      'Offline proof tests use local synthetic transports; no staging screenshots or real webhook acceptance is claimed.',
+      'Historical failed/scoped receipts retain their original inputs and flags; none is relabelled as this combined release.'],
+    evidenceDirectory: SUB, artifacts: files.map(({ to, sha256, bytes, originalSourceSha256, copiedArchiveSha256, formattingNormalization }) =>
+      ({ path: SUB + '/' + to, sha256, bytes, originalSourceSha256, copiedArchiveSha256, formattingNormalization })) };
+  need(equal(hostSource(), spec.rows), 'HOST_CHANGED_DURING_COMPOSITION_INTAKE');
+  return { summary, files, expectedRows: spec.rows };
+}
+export function compose({ explicitCompose = false } = {}) {
+  need(explicitCompose === true, 'EXPLICIT_COMPOSE_REQUIRED');
+  const prepared = prepareComposition(), directory = TARGET + '/' + SUB, top = TARGET + '/local-release.json';
+  need(!fs.existsSync(directory) && !fs.existsSync(top), 'PRESERVE_EXISTING_EVIDENCE');
+  need(fs.realpathSync(TARGET).startsWith(fs.realpathSync(ROOT) + path.sep), 'REPOSITORY_EVIDENCE_BOUNDARY');
+  need(equal(hostSource(), prepared.expectedRows), 'HOST_CHANGED_BEFORE_COPY');
+  fs.mkdirSync(directory);
+  for (const item of prepared.files) {
+    const original = fs.readFileSync(item.from);
+    need(hash(original) === item.originalSourceSha256, 'ARTIFACT_CHANGED_BEFORE_COPY');
+    const expected = archiveBytes(original, item.to), target = directory + '/' + item.to;
+    need(hash(expected) === item.copiedArchiveSha256, 'DISPLAY_ARCHIVE_DERIVATION_CHANGED');
+    if (item.formattingNormalization === 'none') fs.copyFileSync(item.from, target, fs.constants.COPYFILE_EXCL);
+    else fs.writeFileSync(target, expected, { flag: 'wx' });
+    need(sha(target) === item.copiedArchiveSha256 && sha(item.from) === item.originalSourceSha256, 'ARTIFACT_COPY_HASH_MISMATCH');
+  }
+  need(equal(hostSource(), prepared.expectedRows), 'HOST_CHANGED_AFTER_COPY');
+  fs.writeFileSync(directory + '/file-list.json', JSON.stringify(prepared.summary.artifacts, null, 2) + '\n', { flag: 'wx' });
+  fs.writeFileSync(top, JSON.stringify(prepared.summary, null, 2) + '\n', { flag: 'wx' });
+  return { ticket: 'SCRUM-637', localReleaseGreen: true, sourceManifestSha256: MANIFEST, copiedFiles: prepared.files.length,
+    summaryPath: posix(top), summarySha256: sha(top) };
+}
+export function main(argv = process.argv.slice(2)) {
+  need(argv.length === 1 && ['--compose', '--check'].includes(argv[0]), 'EXPLICIT_COMPOSE_OR_CHECK_REQUIRED');
+  let result;
+  if (argv[0] === '--check') {
+    const prepared = prepareComposition();
+    result = { ticket: 'SCRUM-637', validationPassed: true, sourceManifestSha256: MANIFEST,
+      gateCount: prepared.summary.gateCount, plannedArtifacts: prepared.files.length, repositoryWrites: false };
+  } else result = compose({ explicitCompose: true });
+  process.stdout.write(JSON.stringify(result) + '\n'); return result;
+}
+if (process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === path.resolve(fileURLToPath(import.meta.url)).toLowerCase()) {
+  try { main(); } catch (error) {
+    process.stderr.write((/^[A-Z][A-Z0-9_]+$/.test(error?.message ?? '') ? error.message : 'LOCAL_COMPOSITION_FAILED') + '\n'); process.exitCode = 2;
+  }
+}

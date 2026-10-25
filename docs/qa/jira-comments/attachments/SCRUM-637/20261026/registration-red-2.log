@@ -1,0 +1,122 @@
+
+> @oto/api@0.1.0 test C:\w\admin-overview-v2\apps\api
+> vitest run --pool=forks "test/s637-registration-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-overview-v2/apps/api
+
+stdout | test/s637-registration-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-registration-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:86204) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ test/s637-registration-review.test.ts (23 tests | 1 failed) 10324ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R1 high: the typed switch defaults off outside the test override and an absent destination remains absent 18ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R2 high: parses the explicit strict true switch without truthy-string coercion 13ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R2 high: parses the explicit strict false switch without truthy-string coercion 11ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R3 high: refuses invalid switch spelling case 0 11ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R3 high: refuses invalid switch spelling case 1 13ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R3 high: refuses invalid switch spelling case 2 10ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R3 high: refuses invalid switch spelling case 3 9ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R4 high: accepts a private HTTPS destination and normalizes a blank destination to absence 12ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses plain HTTP without echoing its private destination 11ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses userinfo without echoing its private destination 11ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses fragment without echoing its private destination 9ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses malformed without echoing its private destination 10ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R6 critical: inherited developer configuration cannot enable or supply a destination to NODE_ENV=test 13ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R7 high: off does not register a digest even when a capturing sender is supplied 10ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R7 high: unset does not register a digest even when a capturing sender is supplied 9ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R7 high: no-destination does not register a digest even when a capturing sender is supplied 8ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R8 high: explicit test opt-in with a capturing sender registers one exclusive job at the native rollup interval 11ms
+   × SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R9 critical: test opt-in without an injected sender produces no send, intent or fallback global fetch 153ms
+     → expected "spy" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st spy call:
+
+    Array [
+      "[PRIVATE_TEST_DESTINATION_REDACTED]",
+      Object {
+        "body": "{"text":"Admin status summary\nChecked: 2026-10-26T02:30:00.000Z\nParks: ZZ TEST 637 registration park\nPark business dates and legacy figures:\nZZ TEST 637 registration park: business date 2026-10-26; UTC; start 00:00.\nRevenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.\nRevenue source oto_pos; Provisional; last rollup unavailable; occupancy stale as of unavailable.\nSelected park totals: revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.\nCalendar period: 2026-10-26 to 2026-10-26 (Bangkok calendar today, separate from park business dates).\nMembers & visits: 0 visit records; 0 distinct visiting members; draft 0, active 0, closed 0. Basis: visit-date.\nBooking activity: 0 bookings; THB 0.00 priced booking value; 0 redeemed booking-date cohort. This value is not payment revenue.\nInternal assistant asks: 0; 0 tokens (input 0, output 0, cache-read 0).\nPrice unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.\nCoverage: retained records; 90-day retention; attribution: seat-at-ask.\nInbox AI turns: 0; 0 tokens (input 0, output 0, cache-read 0).\nPrice unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.\nCoverage: retained records; attribution: current-conversation-branch.\nAI dates: created-at-bangkok 2026-10-26 to 2026-10-26.\nFleet: 0 boxes; online 0, offline 0, unclaimed 0, disabled 0. Current snapshot: 2026-10-26T02:30:00.000Z; persisted status.\nNeeds a decision (checked 2026-10-26T02:30:00.000Z):\nPayments awaiting an answer: 0. Basis: station-attempts-older-than-native-pending-threshold.\nOpen sync quarantines: 0. Basis: open-quarantine-events-in-selected-parks.\nRecorded reconciliation lines off: Unavailable. Basis: current-business-date-not-reconciled.\nUnresolved late-payment alerts: 0. Basis: unresolved-native-late-payment-alert-rows.\nEnd-of-day review rows still inside: 0. Basis: current-business-date-native-end-of-day-rows.\nErasure requests awaiting action: Not built. Basis: suite-erasure-request-queue-not-built.\nApproval requests awaiting action: Not built. Basis: dual-control-request-queue-not-built."}",
+        "headers": Object {
+          "content-type": "application/json",
+        },
+        "method": "POST",
+        "redirect": "error",
+        "signal": AbortSignal {
+          Symbol(kEvents): Map {},
+          Symbol(events.maxEventTargetListeners): 0,
+          Symbol(events.maxEventTargetListenersWarned): false,
+          Symbol(kHandlers): Map {},
+          Symbol(kAborted): false,
+          Symbol(kReason): undefined,
+          Symbol(kComposite): false,
+        },
+      },
+    ]
+
+
+Number of calls: 1
+
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R10 high: the registered closure uses real decision counts and exact Copy text with runtime PAYMENT_PENDING_MIN 234ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R11 high: the normal API-only role remains idle with no delivery, intent, run or expectation registration 16ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R12 critical: two actual registered exclusive runners cannot overlap and a forced Retry does not resend an accepted day 197ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R13 high: off resolves only the old digest missing/failing expectations and still reports unrelated silence 145ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R13 high: no-destination resolves only the old digest missing/failing expectations and still reports unrelated silence 127ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s637-registration-review.test.ts > SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R9 critical: test opt-in without an injected sender produces no send, intent or fallback global fetch
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st spy call:
+
+    Array [
+      "[PRIVATE_TEST_DESTINATION_REDACTED]",
+      Object {
+        "body": "{"text":"Admin status summary\nChecked: 2026-10-26T02:30:00.000Z\nParks: ZZ TEST 637 registration park\nPark business dates and legacy figures:\nZZ TEST 637 registration park: business date 2026-10-26; UTC; start 00:00.\nRevenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.\nRevenue source oto_pos; Provisional; last rollup unavailable; occupancy stale as of unavailable.\nSelected park totals: revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.\nCalendar period: 2026-10-26 to 2026-10-26 (Bangkok calendar today, separate from park business dates).\nMembers & visits: 0 visit records; 0 distinct visiting members; draft 0, active 0, closed 0. Basis: visit-date.\nBooking activity: 0 bookings; THB 0.00 priced booking value; 0 redeemed booking-date cohort. This value is not payment revenue.\nInternal assistant asks: 0; 0 tokens (input 0, output 0, cache-read 0).\nPrice unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.\nCoverage: retained records; 90-day retention; attribution: seat-at-ask.\nInbox AI turns: 0; 0 tokens (input 0, output 0, cache-read 0).\nPrice unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.\nCoverage: retained records; attribution: current-conversation-branch.\nAI dates: created-at-bangkok 2026-10-26 to 2026-10-26.\nFleet: 0 boxes; online 0, offline 0, unclaimed 0, disabled 0. Current snapshot: 2026-10-26T02:30:00.000Z; persisted status.\nNeeds a decision (checked 2026-10-26T02:30:00.000Z):\nPayments awaiting an answer: 0. Basis: station-attempts-older-than-native-pending-threshold.\nOpen sync quarantines: 0. Basis: open-quarantine-events-in-selected-parks.\nRecorded reconciliation lines off: Unavailable. Basis: current-business-date-not-reconciled.\nUnresolved late-payment alerts: 0. Basis: unresolved-native-late-payment-alert-rows.\nEnd-of-day review rows still inside: 0. Basis: current-business-date-native-end-of-day-rows.\nErasure requests awaiting action: Not built. Basis: suite-erasure-request-queue-not-built.\nApproval requests awaiting action: Not built. Basis: dual-control-request-queue-not-built."}",
+        "headers": Object {
+          "content-type": "application/json",
+        },
+        "method": "POST",
+        "redirect": "error",
+        "signal": AbortSignal {
+          Symbol(kEvents): Map {},
+          Symbol(events.maxEventTargetListeners): 0,
+          Symbol(events.maxEventTargetListenersWarned): false,
+          Symbol(kHandlers): Map {},
+          Symbol(kAborted): false,
+          Symbol(kReason): undefined,
+          Symbol(kComposite): false,
+        },
+      },
+    ]
+
+
+Number of calls: 1
+
+ ❯ test/s637-registration-review.test.ts:120:32
+    118|     // Absence is safe. If registered, execute the actual closure; the…
+    119|     if (job) try { await job.run({ db: ctx.db, env, log: ctx.app.log, …
+    120|     expect(forbiddenFetch).not.toHaveBeenCalled();
+       |                                ^
+    121|     expect((await records()).filter(row => row.name === 'console.diges…
+    122|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 22 passed (23)
+   Start at  02:31:16
+   Duration  21.83s (transform 6.10s, setup 0ms, collect 11.11s, tests 10.32s, environment 0ms, prepare 148ms)
+
+C:\w\admin-overview-v2\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/s637-registration-review.test.ts"`
+Exit status 1

@@ -1,0 +1,313 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/s637-decisions-review.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/s637-decisions-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-decisions-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s637-decisions-review.test.ts (17 tests | 17 failed) 2553ms
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R1 high: one Overview read returns all seven scoped decision items without requiring detail-screen grants 44ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R2 high: pending payment counts preserve the native states and exclude stationless hosted checkouts 24ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R3 high: open quarantine count is park-scoped rather than the existing operator-wide first-page count 15ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R4 high: late-payment alerts retain both native categories and acknowledgment is not resolution 19ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R5 medium: missing erasure and approval queues are explicitly not built, never fabricated zeroes 16ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R6 high: removing Overview reach refuses the next whole read rather than returning an old decision snapshot 15ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 exact clock, count and ownership review > R7 medium: native pending threshold is strictly older, not equal or a replacement provider-poller rule 5ms
+     → missing decision pendingPayments: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R8 high: pending reference ownership is checked against the actual station and branch, including stale descriptors 9ms
+     → expected [] to deeply equal [ Array(1) ]
+   × SCRUM-637 exact clock, count and ownership review > R9 medium: exact pending and quarantine counts are not truncated to existing page or watchdog batch sizes 57ms
+     → missing decision pendingPayments: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R10 high: saved cash reconciliation uses native off-line tolerance, not a cancelling total difference 5ms
+     → missing decision cashVariances: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R11 medium: a missing current-day reconciliation is unavailable, not an uncounted zero or partial total 4ms
+     → missing decision cashVariances: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R12 high: each saved close follows that park business date and cannot be substituted with another operator record 4ms
+     → missing decision cashVariances: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R13 high: malformed saved reconciliation cannot be presented as successfully matched 5ms
+     → promise resolved "{ …(3) }" instead of rejecting
+   × SCRUM-637 exact clock, count and ownership review > R14 medium: native end-of-day review rows include ordinary current occupants and grouped children without an invented overdue threshold 13ms
+     → missing decision strandedOccupants: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R15 medium: native manual resolutions remove review rows at their effective time without inventing exit events 5ms
+     → missing decision strandedOccupants: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R16 high: an empty selection returns genuine scoped zeros while retaining not-built queue states 3ms
+     → missing decision pendingPayments: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R17 high: repeated reads preserve every synthetic source record and expose only decision fields 8ms
+     → expected [] to deeply equal [ 'pendingPayments', …(6) ]
+
+ Test Files  1 failed (1)
+      Tests  17 failed (17)
+   Start at  07:42:46
+   Duration  6.40s (transform 2.33s, setup 0ms, collect 3.69s, tests 2.55s, environment 0ms, prepare 36ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+(node:2905) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 17 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R1 high: one Overview read returns all seven scoped decision items without requiring detail-screen grants
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:143:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R2 high: pending payment counts preserve the native states and exclude stationless hosted checkouts
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:165:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R3 high: open quarantine count is park-scoped rather than the existing operator-wide first-page count
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:181:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R4 high: late-payment alerts retain both native categories and acknowledgment is not resolution
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:196:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R5 medium: missing erasure and approval queues are explicitly not built, never fabricated zeroes
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:203:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R6 high: removing Overview reach refuses the next whole read rather than returning an old decision snapshot
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:213:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R7 medium: native pending threshold is strictly older, not equal or a replacement provider-poller rule
+AssertionError: missing decision pendingPayments: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:227:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R8 high: pending reference ownership is checked against the actual station and branch, including stale descriptors
+AssertionError: expected [] to deeply equal [ Array(1) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   "01a17203-2c7a-7d51-aaba-d580c8a57132",[39m
+[32m- ][39m
+[31m+ [][39m
+
+ ❯ test/s637-decisions-review.test.ts:240:53
+    238|     await ctx.db.update(station).set({ archivedAt: NOW }).where(eq(sta…
+    239|     const result = await read(f, [f.a, f.foreign, { ...f.archived, arc…
+    240|     expect(result.parks.map(park => park.branchId)).toEqual([f.a.id]);
+       |                                                     ^
+    241|     expect(item(result, 'pendingPayments').count).toBe(1);
+    242|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R9 medium: exact pending and quarantine counts are not truncated to existing page or watchdog batch sizes
+AssertionError: missing decision pendingPayments: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:255:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R10 high: saved cash reconciliation uses native off-line tolerance, not a cancelling total difference
+AssertionError: missing decision cashVariances: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:264:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R11 medium: a missing current-day reconciliation is unavailable, not an uncounted zero or partial total
+AssertionError: missing decision cashVariances: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:275:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R12 high: each saved close follows that park business date and cannot be substituted with another operator record
+AssertionError: missing decision cashVariances: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:286:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R13 high: malformed saved reconciliation cannot be presented as successfully matched
+AssertionError: promise resolved "{ …(3) }" instead of rejecting
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "generatedAt": "2026-10-25T03:30:00.000Z",[39m
+[31m+   "items": [],[39m
+[31m+   "parks": [],[39m
+[2m  }[22m
+
+ ❯ test/s637-decisions-review.test.ts:294:32
+    292|     const f = await estate();
+    293|     await close(f, f.a, [{}] as EodLine[]);
+    294|     await expect(read(f, [f.a])).rejects.toThrow();
+       |                                ^
+    295|   });
+    296|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R14 medium: native end-of-day review rows include ordinary current occupants and grouped children without an invented overdue threshold
+AssertionError: missing decision strandedOccupants: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:304:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R15 medium: native manual resolutions remove review rows at their effective time without inventing exit events
+AssertionError: missing decision strandedOccupants: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:319:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R16 high: an empty selection returns genuine scoped zeros while retaining not-built queue states
+AssertionError: missing decision pendingPayments: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:330:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/17]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R17 high: repeated reads preserve every synthetic source record and expose only decision fields
+AssertionError: expected [] to deeply equal [ 'pendingPayments', …(6) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   "pendingPayments",[39m
+[32m-   "syncQuarantine",[39m
+[32m-   "cashVariances",[39m
+[32m-   "latePayments",[39m
+[32m-   "strandedOccupants",[39m
+[32m-   "erasureRequests",[39m
+[32m-   "approvalRequests",[39m
+[32m- ][39m
+[31m+ [][39m
+
+ ❯ test/s637-decisions-review.test.ts:352:50
+    350|     for (const key of ['amountSatang', 'payload', 'phone', 'childName'…
+    351|     expect(raw).not.toContain(privateMarker);
+    352|     expect(second.items.map(entry => entry.key)).toEqual(KEYS);
+       |                                                  ^
+    353|   });
+    354| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/17]⎯

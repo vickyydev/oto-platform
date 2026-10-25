@@ -1,0 +1,93 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = 'C:/w/admin-overview-v2', OUT = 'C:/w/admin637-release-20261026';
+const DOCUMENT = 'docs/architecture/POS_RULES_RECONCILIATION.md';
+const APP = '7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae';
+const IMAGE = 'sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26';
+const MANIFEST = '261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c';
+const PACKAGE_COMMAND = 'pnpm -r --workspace-concurrency=1 --filter=!oto-platform --filter=!@oto/api --filter=!@oto/pos --filter=!@oto/box-agent test';
+const need = (ok, code) => { if (!ok) throw new Error(code); };
+const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
+const write = (name, value) => fs.writeFileSync(path.join(OUT, name), JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
+function docker(...args) {
+  const result = spawnSync('docker', args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+  need(result.status === 0 && result.signal === null, 'SUPPLEMENT_DOCKER_FAILED');
+  return result.stdout.trim();
+}
+function boundary() {
+  const setup = read(path.join(OUT, 'integration-setup.json')), app = JSON.parse(docker('inspect', APP))[0];
+  const net = JSON.parse(docker('network', 'inspect', 'oto-s637-20261026r1'))[0];
+  need(setup.appId === APP && setup.image === IMAGE && app.Id === APP && app.Name === '/oto-s637-20261026-app'
+    && app.Image === IMAGE && app.State.Running && app.Mounts.length === 0
+    && Object.keys(app.HostConfig.PortBindings ?? {}).length === 0
+    && app.Config.WorkingDir === '/workspace' && net.Internal === true && net.Id === setup.networkId
+    && Object.keys(app.NetworkSettings.Networks).length === 1
+    && app.NetworkSettings.Networks['oto-s637-20261026r1']?.NetworkID === setup.networkId
+    && [['ticket', 'SCRUM-637'], ['lane', 'admin-overview-v2'], ['run', '20261026r1']]
+      .every(([key, value]) => app.Config.Labels?.[`oto.agent.${key}`] === value && net.Labels?.[`oto.agent.${key}`] === value), 'EXACT_OWN_APP_REQUIRED');
+  return setup;
+}
+function hostInputs(spec) {
+  const rows = spec.rows.map(row => ({ path: row.path, sha256: hash(fs.readFileSync(path.join(ROOT, row.path))) }));
+  const docs = spec.docs.map(row => ({ path: row.path, sha256: hash(fs.readFileSync(path.join(ROOT, row.path))) }));
+  need(rows.length === 3781 && hash(JSON.stringify(rows)) === MANIFEST
+    && JSON.stringify(docs) === JSON.stringify(spec.docs), 'FROZEN_HOST_INPUTS_CHANGED');
+  return { sourceFiles: rows.length, sourceManifestSha256: MANIFEST, apiDocsSha256: hash(JSON.stringify(docs)) };
+}
+function runtimeInputs() {
+  const program = `const fs=require('fs'),c=require('crypto');const h=b=>c.createHash('sha256').update(b).digest('hex');
+if(fs.realpathSync('/workspace/docs/architecture')!=='/workspace/docs/architecture')throw Error('DOCUMENT_BOUNDARY');
+const s=JSON.parse(fs.readFileSync('/tmp/admin637-combined-source.json','utf8'));
+const rows=s.rows.map(r=>({path:r.path,sha256:h(fs.readFileSync('/workspace/'+r.path))}));
+const docs=s.docs.map(r=>({path:r.path,sha256:h(fs.readFileSync('/workspace/'+r.path))}));
+const p='/workspace/${DOCUMENT}';if(fs.existsSync(p)&&!fs.lstatSync(p).isFile())throw Error('DOCUMENT_NOT_REGULAR');
+process.stdout.write(JSON.stringify({sourceFiles:rows.length,sourceManifestSha256:h(JSON.stringify(rows)),apiDocsSha256:h(JSON.stringify(docs)),documentSha256:fs.existsSync(p)?h(fs.readFileSync(p)):null}));`;
+  return JSON.parse(docker('exec', APP, 'node', '-e', program));
+}
+/** A pure command: check before dispatch and after success OR failure; return the original package exit. */
+export function guardedPackageCommand(documentSha256) {
+  need(/^[a-f0-9]{64}$/.test(documentSha256 ?? ''), 'DOCUMENT_HASH_REQUIRED');
+  const program = `const fs=require("fs"),c=require("crypto");if(c.createHash("sha256").update(fs.readFileSync("/workspace/${DOCUMENT}")).digest("hex")!=="${documentSha256}")throw Error("PRICING_DOC_INPUT_CHANGED");`;
+  const check = `node -e '${program}'`;
+  return `${check}\nif ${PACKAGE_COMMAND}; then package_status=0; else package_status=$?; fi\n${check}\nexit "$package_status"`;
+}
+export function copyPricingDocument({ explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_DOCUMENT_COPY_REQUIRED');
+  need(!fs.existsSync(path.join(OUT, 'pricing-provenance-doc-input.json')), 'PRESERVE_DOCUMENT_RECEIPT');
+  const setup = boundary(), current = read(path.join(OUT, 'combined-current.json'));
+  need(/^combined-source-\d+\.json$/.test(current.specFile ?? ''), 'FROZEN_SPEC_REQUIRED');
+  const spec = read(path.join(OUT, current.specFile)), before = hostInputs(spec), runtimeBefore = runtimeInputs();
+  const absolute = path.join(ROOT, DOCUMENT);
+  need(fs.lstatSync(absolute).isFile() && fs.realpathSync(absolute).startsWith(fs.realpathSync(ROOT) + path.sep), 'OWN_HOST_DOCUMENT_REQUIRED');
+  const documentSha256 = hash(fs.readFileSync(absolute));
+  need(runtimeBefore.sourceFiles === 3781 && runtimeBefore.sourceManifestSha256 === MANIFEST
+    && runtimeBefore.apiDocsSha256 === before.apiDocsSha256
+    && (runtimeBefore.documentSha256 === null || runtimeBefore.documentSha256 === documentSha256), 'EXACT_RUNTIME_SUPPLEMENT_REQUIRED');
+  write('pricing-provenance-doc-intent.json', { ticket: 'SCRUM-637', at: new Date().toISOString(), appId: APP,
+    document: DOCUMENT, documentSha256, hostBefore: before, runtimeBefore, staging: false });
+  docker('cp', absolute, APP + ':/workspace/' + DOCUMENT);
+  boundary(); const after = hostInputs(spec), runtimeAfter = runtimeInputs();
+  need(hash(fs.readFileSync(absolute)) === documentSha256 && JSON.stringify(before) === JSON.stringify(after)
+    && runtimeAfter.sourceFiles === 3781 && runtimeAfter.sourceManifestSha256 === MANIFEST
+    && runtimeAfter.apiDocsSha256 === before.apiDocsSha256 && runtimeAfter.documentSha256 === documentSha256, 'SUPPLEMENT_INPUTS_CHANGED');
+  const receipt = { ticket: 'SCRUM-637', completedAt: new Date().toISOString(), passed: true, appId: APP, image: IMAGE,
+    networkId: setup.networkId, document: DOCUMENT, documentSha256, hostBefore: { ...before, documentSha256 },
+    hostAfter: { ...after, documentSha256 }, runtimeBefore, runtimeAfter, coreSourceUnchanged: true,
+    fourApiInputsUnchanged: true, exactSingleDocumentCopy: true, staging: false,
+    packageGateName: 'workspace-package-tests-2', packageCommand: guardedPackageCommand(documentSha256) };
+  write('pricing-provenance-doc-input.json', receipt); return receipt;
+}
+export function main(argv = process.argv.slice(2)) {
+  need(argv.length === 1 && argv[0] === '--copy', 'EXPLICIT_COPY_MODE_REQUIRED');
+  const result = copyPricingDocument({ explicitExecute: true }); process.stdout.write(JSON.stringify(result) + '\n'); return result;
+}
+if (process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === path.resolve(fileURLToPath(import.meta.url)).toLowerCase()) {
+  try { main(); } catch (error) {
+    process.stderr.write((/^[A-Z][A-Z0-9_]+$/.test(error?.message ?? '') ? error.message : 'SUPPLEMENT_FAILED') + '\n'); process.exitCode = 2;
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "proof-cleanup-red-2",
+  "startedAt": "2026-10-25T08:18:35.660Z",
+  "completedAt": "2026-10-25T08:18:35.811Z",
+  "exitCode": 1,
+  "source": [
+    {
+      "path": "C:/w/admin637-staging-proof.mjs",
+      "sha256": "7b0aca34641528c16d729f1ccdb879c9d11f92a7e01419e5f62c141f8905b428"
+    },
+    {
+      "path": "C:/w/admin637-staging-proof.test.mjs",
+      "sha256": "40e11058233f8d65858473c6c0f8f0cedbf9bc958e1c809329a644bd86b5dc6c"
+    }
+  ],
+  "sourceUnchanged": true,
+  "tests": 15,
+  "passed": 14,
+  "failed": 1,
+  "logSha256": "8bf2169fe1d3146015a4918f094818a90cf805024a2655cb6b88ec6ee4ff628e",
+  "actualStaging": false,
+  "authAttempts": 0
+}

@@ -1,0 +1,42 @@
+{
+  "ticket": "SCRUM-637",
+  "run": "20261026r1",
+  "name": "workspace-package-tests-1",
+  "command": "pnpm -r --workspace-concurrency=1 --filter=!oto-platform --filter=!@oto/api --filter=!@oto/pos --filter=!@oto/box-agent test",
+  "startedAt": "2026-10-25T19:47:10.881Z",
+  "completedAt": "2026-10-25T19:48:34.816Z",
+  "exitCode": 1,
+  "signal": null,
+  "childError": false,
+  "outputLimitExceeded": false,
+  "progressWriteError": false,
+  "gateTerminalKnown": true,
+  "passed": false,
+  "verificationError": null,
+  "logSha256": "59ec8593127e6d884d451f6e41d50fcaefcf5a78db052eda6f092594def74caf",
+  "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+  "before": {
+    "sourceFiles": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "docsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+    "dependencyMetadataSha256": "5ce9d0280b617db3b17c9e0e9c111c2033ff46f1d9fc475ffa5faff9b2590c50",
+    "hostUnchanged": true,
+    "runtimeUnchanged": true,
+    "supplementalDocsUnchanged": true,
+    "installedDependenciesUnchanged": true
+  },
+  "after": {
+    "sourceFiles": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "docsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+    "dependencyMetadataSha256": "5ce9d0280b617db3b17c9e0e9c111c2033ff46f1d9fc475ffa5faff9b2590c50",
+    "hostUnchanged": true,
+    "runtimeUnchanged": true,
+    "supplementalDocsUnchanged": true,
+    "installedDependenciesUnchanged": true
+  },
+  "appId": "7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae",
+  "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+  "digestDefaultOff": true,
+  "staging": false
+}

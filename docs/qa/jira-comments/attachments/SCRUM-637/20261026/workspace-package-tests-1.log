@@ -1,0 +1,304 @@
+Scope: 14 of 18 workspace projects
+
+> @oto/messaging@0.1.0 test /workspace/packages/messaging
+> vitest run
+
+
+ RUN  v3.2.7 /workspace/packages/messaging
+
+ ✓ test/console.test.ts (9 tests) 22ms
+ ✓ test/config-window.test.ts (7 tests) 16ms
+ ✓ test/webhook.test.ts (12 tests) 32ms
+ ✓ test/whatsapp-parse.test.ts (15 tests) 39ms
+ ✓ test/whatsapp-send.test.ts (20 tests) 43ms
+ ✓ test/simulator.test.ts (15 tests) 83ms
+
+ Test Files  6 passed (6)
+      Tests  78 passed (78)
+   Start at  19:47:12
+   Duration  2.49s (transform 1.93s, setup 0ms, collect 3.52s, tests 235ms, environment 3ms, prepare 5.14s)
+
+
+> @oto/print@0.1.0 test /workspace/packages/print
+> vitest run
+
+
+ RUN  v3.2.7 /workspace/packages/print
+
+ ✓ test/booth-voucher-slip.test.ts (33 tests) 29315ms
+   ✓ the booth voucher slip, customised per booth > replaces only the QR for an existing POS and keeps the platform reference  1377ms
+   ✓ the booth voucher slip, customised per booth > prints byte for byte the committed voucher when every choice is its default  999ms
+   ✓ the booth voucher slip, customised per booth > prints the same without the fields at all — a job stored before they existed  576ms
+   ✓ the booth voucher slip, customised per booth > leaves the logo off when the booth says so, and nothing else  1748ms
+   ✓ the booth voucher slip, customised per booth > lays out the bilingual showcase with matching QR, dates and prize terms  558ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: plain  1874ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: no staff  1155ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: reprint  1151ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: no terms  1002ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: no expiry  1024ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: empty footer  851ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: blank footer  1002ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: long venue  2118ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: no Thai  911ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: explicit defaults  1258ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: empty header  1181ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: plain  812ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: no staff  942ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: reprint  917ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: no terms  984ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: no expiry  1137ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: empty footer  819ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: blank footer  862ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: long venue  2099ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: no Thai  714ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: explicit defaults  648ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: empty header  550ms
+ ✓ test/emit.test.ts (34 tests) 6139ms
+   ✓ the emitted bytes are the rendered bitmap > receipt on escpos576 round-trips through the wire format  486ms
+   ✓ the emitted bytes are the rendered bitmap > receipt on escpos512 round-trips through the wire format  392ms
+   ✓ the emitted bytes are the rendered bitmap > booth-voucher on escpos576 round-trips through the wire format  434ms
+   ✓ the emitted bytes are the rendered bitmap > booth-voucher on escpos512 round-trips through the wire format  405ms
+   ✓ the emitted bytes are the rendered bitmap > test-page on escpos576 round-trips through the wire format  452ms
+   ✓ the emitted bytes are the rendered bitmap > test-page on escpos512 round-trips through the wire format  470ms
+   ✓ the emitted bytes are the rendered bitmap > test-page on tspl400 round-trips through the wire format  417ms
+   ✓ ESC/POS job frame > bands at the device band height so a job stays inside the input buffer  1260ms
+ ✓ test/templates.test.ts (29 tests) 4669ms
+   ✓ the booth voucher > is not admin-editable: a branch’s templates change nothing about it  523ms
+   ✓ the booth voucher > prints nothing for an empty footer line  509ms
+   ✓ the booth voucher > marks a reprint at the top, and a first print not at all (SCRUM-223)  527ms
+ ✓ test/layout.test.ts (17 tests) 3765ms
+   ✓ a receipt is a variable number of lines > grows with the content rather than being clipped  1969ms
+   ✓ a receipt is a variable number of lines > wraps a line longer than the paper instead of losing it off the edge  311ms
+   ✓ a forced break is reported, because nothing else can report it > leaves the test page clean on the narrowest band stock  960ms
+ ✓ test/samples.test.ts (14 tests) 3726ms
+   ✓ the named preview scenarios > simple renders every printout through the one drawing path  508ms
+   ✓ the named preview scenarios > full renders every printout through the one drawing path  1014ms
+   ✓ the named preview scenarios > long_names renders every printout through the one drawing path  2176ms
+ ✓ test/credit-voucher.test.ts (3 tests) 421ms
+ ✓ test/fonts.test.ts (16 tests) 252ms
+ ✓ test/single-renderer.test.ts (7 tests) 82ms
+ ✓ test/fixtures.test.ts (76 tests) 90ms
+ ✓ test/codes.test.ts (31 tests) 108ms
+ ✓ test/money-contract.test.ts (11 tests) 25ms
+
+ Test Files  11 passed (11)
+      Tests  271 passed (271)
+   Start at  19:47:16
+   Duration  60.45s (transform 1.33s, setup 0ms, collect 6.87s, tests 48.59s, environment 7ms, prepare 1.40s)
+
+
+> @oto/shared@0.1.0 test /workspace/packages/shared
+> vitest run
+
+
+ RUN  v3.2.7 /workspace/packages/shared
+
+ ✓ test/handoff-target.test.ts (34 tests) 13ms
+ ✓ test/payments.test.ts (24 tests) 35ms
+ ✓ test/permission-words.test.ts (6 tests) 38ms
+ ✓ test/events.test.ts (11 tests) 22ms
+ ✓ test/booth-staff.test.ts (13 tests) 24ms
+ ✓ test/wallet.test.ts (21 tests) 48ms
+ ✓ test/ui-preferences.test.ts (10 tests) 185ms
+ ✓ test/voucher-promo.test.ts (8 tests) 40ms
+ ✓ test/events-e3.test.ts (13 tests) 30ms
+ ✓ test/station-session.test.ts (19 tests) 155ms
+ ✓ test/wallet-tender.test.ts (5 tests) 43ms
+ ✓ test/booth-duty.test.ts (10 tests) 20ms
+ ✓ test/release.test.ts (5 tests) 19ms
+ ✓ test/s216-r45-review.test.ts (2 tests) 19ms
+ ✓ test/events-e2.test.ts (11 tests) 20ms
+ ✓ test/analytics.test.ts (6 tests) 8ms
+ ✓ test/s216-r4-reports.test.ts (8 tests) 15ms
+ ✓ test/stock-r1.test.ts (22 tests) 28ms
+ ✓ test/s216-r3-summary.test.ts (4 tests) 33ms
+ ✓ test/booth-voucher-slip.test.ts (8 tests) 16ms
+ ✓ test/inbox.test.ts (33 tests) 22ms
+ ✓ test/item-cart.test.ts (9 tests) 17ms
+ ✓ test/kiosk.test.ts (8 tests) 30ms
+ ✓ test/s221-r4-review-reason.test.ts (9 tests) 22ms
+ ✓ test/parties.test.ts (8 tests) 28ms
+ ✓ test/benefits.test.ts (28 tests) 41ms
+ ✓ test/supervision.test.ts (35 tests) 33ms
+ ✓ test/discount-scopes.test.ts (17 tests) 34ms
+ ✓ test/display-credit.test.ts (4 tests) 56ms
+ ✓ test/refund.test.ts (11 tests) 57ms
+ ✓ test/s496-review-packs.test.ts (38 tests) 83ms
+ ✓ test/assistant-i1b.test.ts (15 tests) 105ms
+ ✓ test/eod-r1.test.ts (11 tests) 100ms
+ ✓ test/s221-r3-benefit-checkout.test.ts (13 tests) 56ms
+ ✓ test/sale-print.test.ts (7 tests) 126ms
+ ✓ test/band-code.test.ts (13 tests) 296ms
+ ✓ test/s494-food.test.ts (7 tests) 127ms
+ ✓ test/booking-qr.test.ts (14 tests) 180ms
+ ✓ test/shared.test.ts (25 tests) 224ms
+ ✓ test/cart-totals-line-target.test.ts (5 tests) 49ms
+ ✓ test/stock-r4.test.ts (7 tests) 35ms
+ ✓ test/benefit-code-shown.test.ts (5 tests) 19ms
+ ✓ test/s221-r4-benefit-report.test.ts (3 tests) 9ms
+ ✓ test/business-date.test.ts (33 tests) 784ms
+   ✓ business date — the boundary, minute by minute > every minute before 05:00 Bangkok belongs to the previous business date, and 05:00 starts the new one  539ms
+ ✓ test/stock-r1-recheck.test.ts (4 tests) 17ms
+ ❯ test/pricing-engine.test.ts (131 tests | 1 failed) 1104ms
+   ✓ pricing regression fixtures — cart cases > WE-1 — Weekday, tourist, 2 kids + 1 adult, 2 Hours Play 12ms
+   ✓ pricing regression fixtures — cart cases > WE-2 — Weekend (or a Songkran weekday), same cart — the tourist kid price is weekend-invariant, the adult is not 1ms
+   ✓ pricing regression fixtures — cart cases > WE-3 — Included adults exactly met — thai, Full Day Pass, 1 kid + 1 adult, weekday 1ms
+   ✓ pricing regression fixtures — cart cases > WE-4 — Overflow by one — thai, Full Day Pass, 2 kids + 2 adults, weekday 1ms
+   ✓ pricing regression fixtures — cart cases > WE-5a — Tier side-by-side — tourist, 2 Hours Play, 1 kid + 1 adult, weekday 0ms
+   ✓ pricing regression fixtures — cart cases > WE-5b — Tier side-by-side — tourist, weekend 8ms
+   ✓ pricing regression fixtures — cart cases > WE-5c — Tier side-by-side — expat, weekday 2ms
+   ✓ pricing regression fixtures — cart cases > WE-5d — Tier side-by-side — expat, weekend 4ms
+   ✓ pricing regression fixtures — cart cases > WE-5e — Tier side-by-side — thai, weekday 1ms
+   ✓ pricing regression fixtures — cart cases > WE-5f — Tier side-by-side — thai, weekend 16ms
+   ✓ pricing regression fixtures — cart cases > WE-6 — A manual discount and a promo together — manual FIRST, promo against the balance 2ms
+   ✓ pricing regression fixtures — cart cases > WE-7a — Percent rounding — a 10% MANUAL discount at the platform's satang granularity 0ms
+   ✓ pricing regression fixtures — cart cases > WE-7b — Percent rounding — the same manual discount with the prototype's whole-baht rounding 1ms
+   ✓ pricing regression fixtures — cart cases > WE-7c — Percent rounding — a 10% PROMO on the same cart matches the manual one at satang granularity 0ms
+   ✓ pricing regression fixtures — cart cases > WE-7d — Percent rounding — the baht policy does NOT reach the promo path 1ms
+   ✓ pricing regression fixtures — cart cases > WE-8 — Free-item promo — the code as the catalogue stores it, applied the way the till applies it 2ms
+   ✓ pricing regression fixtures — cart cases > WE-12 — Eat & Play, weekend, 1 kid + 2 adults — the adult price is weekend-invariant and is neither the kid price nor the flat admission 0ms
+   ✓ pricing regression fixtures — cart cases > EC-1 — Socks and an add-on split the cart across two taxable categories 1ms
+   ✓ pricing regression fixtures — cart cases > EC-2 — An add-on's tax_category_override points at a different CATEGORY, never at a rate 148ms
+   ✓ pricing regression fixtures — cart cases > EC-3 — The service-fee row lands in drop_off and sits last in the breakdown 1ms
+   ✓ pricing regression fixtures — cart cases > EC-4 — A stored-value load is untaxed at load, is priced into the line, and still counts toward the total 1ms
+   ✓ pricing regression fixtures — cart cases > EC-5 — An ORDER-WIDE before-tax discount is apportioned across categories and the parts sum to it exactly 1ms
+   ✓ pricing regression fixtures — cart cases > EC-6 — A component-scoped comp takes only that component's base 0ms
+   ✓ pricing regression fixtures — cart cases > EC-7 — Line scope runs before order scope, and the order-scope discount finds nothing left 1ms
+   ✓ pricing regression fixtures — cart cases > EC-8 — A comp takes the whole order, the free item included — and since ruling 1 there is no longer an excess to drop 1ms
+   ✓ pricing regression fixtures — cart cases > EC-9 — A promo scoped to add-ons discounts the add-ons — not a share of every category 1ms
+   ✓ pricing regression fixtures — cart cases > EC-10 — Two stackable promo codes apply sequentially, not additively 0ms
+   ✓ pricing regression fixtures — cart cases > EC-11 — A tier the package has not priced resolves to 0 rather than poisoning the total 0ms
+   ✓ pricing regression fixtures — cart cases > EC-15 — A scoped promo may not re-discount a component a manual discount already zeroed — so it takes nothing, and says so 1ms
+   ✓ pricing regression fixtures — cart cases > EC-16 — A cart priced under one rate mode and totalled under another is REFUSED, not quietly mixed 21ms
+   ✓ pricing regression fixtures — cart cases > EC-17 — TWO OVERLAPPING SCOPED DISCOUNTS — the second both SPENDS and is ATTRIBUTED against what the first left, and the two are different lines 1ms
+   ✓ pricing regression fixtures — cart cases > WE-13 — The S2-09a acceptance cart — 2 Hours Play, 2 kids + 3 adults, weekend, expat 1ms
+   ✓ pricing regression fixtures — cart cases > EC-18 — after_tax placement, end to end from a cart — the discount cannot reduce the tax the guest is charged 1ms
+   ✓ pricing regression fixtures — cart cases > EC-19 — A stocked add-on split across sizes prints its sizes in the row label 1ms
+   ✓ pricing regression fixtures — cart cases > EC-20 — same_as_kid adults — a tier with no adult rule at all charges the adult the kid price 13ms
+   ✓ pricing regression fixtures — cart cases > EC-21 — free_adults with overflow same_as_kid — the overflow adult pays the KID price, not a set price 16ms
+   ✓ pricing regression fixtures — cart cases > MD-1 — Two manual discounts sharing an id are REFUSED — the id keys one amount, one receipt row, one audit row 28ms
+   ✓ pricing regression fixtures — cart cases > MD-2 — The same cart with distinct ids — each component-scoped discount lands on its own component and its own taxable category 1ms
+   ✓ pricing regression fixtures — cart cases > EC-23 — A promo stored with a NEGATIVE value is a surcharge nobody charges — the cart reports it, the cascade refuses it 0ms
+   × pricing regression fixtures — rule provenance > every rule the fixture file claims is a real catalogue rule, and every one is exercised 67ms
+     → ENOENT: no such file or directory, open '/workspace/docs/architecture/POS_RULES_RECONCILIATION.md'
+   ✓ pricing regression fixtures — rule provenance > cites the rules that decide what a guest pays 0ms
+   ✓ pricing regression fixtures — tax cascade cases > WE-9 — Inclusive VAT with a service charge inside the tax base 0ms
+   ✓ pricing regression fixtures — tax cascade cases > WE-9b — Inclusive VAT with the service charge outside the tax base 0ms
+   ✓ pricing regression fixtures — tax cascade cases > WE-10 — Exclusive VAT + service + a 5% exclusive secondary tax on (price + VAT) 0ms
+   ✓ pricing regression fixtures — tax cascade cases > WE-10b — The same, with the service charge outside the tax base 0ms
+   ✓ pricing regression fixtures — tax cascade cases > WE-11 — after_tax placement — the same grand total as WE-6 but a different reported VAT 0ms
+   ✓ pricing regression fixtures — tax cascade cases > EC-12 — A category with no rule is untaxed but its base still counts toward the total 0ms
+   ✓ pricing regression fixtures — tax cascade cases > EC-13 — Two inclusive taxes each unwind from the SAME taxable amount 0ms
+   ✓ pricing regression fixtures — tax cascade cases > EC-14 — after_tax placement clamps the grand total at zero and reports the unapplied remainder 0ms
+   ✓ pricing regression fixtures — tax cascade cases > TX-ATTR-1 — Divergent rules, ORDER-WIDE discount — spreading is correct, because nothing was targeted 0ms
+   ✓ pricing regression fixtures — tax cascade cases > TX-ATTR-2 — Divergent rules, the SAME discount scoped to tickets — spreading it overstates VAT by 654 satang 0ms
+   ✓ pricing regression fixtures — tax cascade cases > TX-ATTR-3 — Mixed inclusive and exclusive, ORDER-WIDE discount 0ms
+   ✓ pricing regression fixtures — tax cascade cases > TX-ATTR-4 — Mixed inclusive and exclusive, the same discount scoped to MERCHANDISE — 700 satang of the guest's own money 0ms
+   ✓ pricing regression fixtures — tax cascade cases > TX-ATTR-5 — A discount scoped to a category with no base in this cart is dropped, and reported 4ms
+   ✓ pricing regression fixtures — tax cascade cases > TX-ATTR-6 — Two allocations naming the SAME category, handed to the cascade directly 0ms
+   ✓ pricing regression fixtures — tax cascade cases > TX-ATTR-7 — Ungrouped inputs sharing a category are grouped before a named allocation is placed 0ms
+   ✓ pricing regression fixtures — tax cascade cases > EC-22 — A secondary rate that is configured but switched OFF reports the rate and charges nothing 0ms
+   ✓ pricing regression fixtures — rate mode > RM-1 — 2026-09-22 0ms
+   ✓ pricing regression fixtures — rate mode > RM-2 — 2026-09-26 0ms
+   ✓ pricing regression fixtures — rate mode > RM-3 — 2026-09-27 0ms
+   ✓ pricing regression fixtures — rate mode > RM-4 — 2026-04-13 0ms
+   ✓ pricing regression fixtures — rate mode > RM-5 — 2026-04-14 0ms
+   ✓ pricing regression fixtures — rate mode > RM-6 — 2026-04-15 0ms
+   ✓ pricing regression fixtures — rate mode > RM-7 — 2026-04-16 0ms
+   ✓ pricing regression fixtures — rate mode > RM-8 — 2026-04-12 0ms
+   ✓ rateModeToday — the clock seam > takes the instant as an argument and reads the day in the BRANCH timezone 56ms
+   ✓ rateModeToday — the clock seam > prices by the BUSINESS day, so Saturday 00:30 is still Friday (ruling 3) 1ms
+   ✓ rateModeToday — the clock seam > applies a holiday range at the same seam, with its name for the POS indicator 0ms
+   ✓ rateModeToday — the clock seam > omitting the instant reads the clock — which is why a till must not omit it 4ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-1 — Friday 23:00 — an hour before midnight, and every date agrees 1ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-2 — Saturday 00:30 — still FRIDAY's trading day, so still Friday's prices and Friday's codes 0ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-3 — Saturday 04:59 — the last minute of Friday's trading day 1ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-4 — Saturday 05:00 — the trading day turns over, and pricing and promo validity turn over with it 0ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-5 — Sunday 23:00 — a weekend evening, priced as one 0ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-6 — Monday 00:30 — still SUNDAY's trading day, so still WEEKEND prices 0ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-7 — Monday 05:00 — the weekend is over for pricing as well as for the ledger 0ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-8 — Friday 06:00 — the UTC date says Thursday, and a code valid FROM Friday would be refused on Friday 1ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > TD-9 — A branch with no late night — a 00:00 day start puts the calendar day and the trading day back together 2ms
+   ✓ pricing regression fixtures — the trading day (rulings 3 and 4) > the cases actually straddle both boundaries they claim to 1ms
+   ✓ the ordering of discounts is load-bearing > manual first then promo differs from promo first then manual (WE-6) 0ms
+   ✓ the ordering of discounts is load-bearing > a promo scoped to add-ons never reaches the drop-off service fee (R-29, EC-9) 4ms
+   ✓ the ordering of discounts is load-bearing > the everything scope matches every row, for a caller that does not short-circuit 2ms
+   ✓ rounding > rounds manual percentages to whole baht while fixed, comp and promo amounts keep satang 26ms
+   ✓ rounding > rounds half-up at the satang 1ms
+   ✓ rounding > percentOf rounds once, at the policy unit 0ms
+   ✓ rounding > a manual discount never exceeds its base and a dead base yields nothing 5ms
+   ✓ rounding > apportion splits into whole satang that sum back to the total exactly 1ms
+   ✓ rounding > apportion holds its invariants over 200,000 generated splits  568ms
+   ✓ rounding > apportion is exact at the magnitude its comment claims, and the product is not beyond it 1ms
+   ✓ tax cascade details > sums inputs that share a category, in first-seen order 0ms
+   ✓ tax cascade details > a receipt shows the service charge first, then one row per (mode, tax name) 0ms
+   ✓ tax cascade details > a secondary rate switched off keeps its identity and charges nothing (EC-22) 0ms
+   ✓ tax cascade details > an inclusive rate is reported, never added 0ms
+   ✓ tax cascade details > routes each kind of line to the taxable category the prototype gives it (R-31) 0ms
+   ✓ promo validation > accepts a clean code 0ms
+   ✓ promo validation > refuses a code already on the cart, however it was typed 0ms
+   ✓ promo validation > refuses to stack unless every code, the new one included, is stackable 0ms
+   ✓ promo validation > checks the window against the date it is given, and names the date the same way everywhere 0ms
+   ✓ promo validation > enforces usage limits, and the per-customer one only when the phone is known 3ms
+   ✓ promo validation > refuses a code whose scope matches nothing in the cart 0ms
+   ✓ promo validation > refuses a free-item code on an empty cart, or one whose item is gone 0ms
+   ✓ orphaned manual discounts > drops a discount whose line is gone, and one whose component fell to zero 0ms
+   ✓ a repeated discount id is refused, not silently charged to the guest > names the id, at the function that cannot represent it (MD-1) 0ms
+   ✓ a repeated discount id is refused, not silently charged to the guest > and the ฿250 that used to go missing, written down next to the rule (MD-2) 0ms
+   ✓ a promo stored with a negative value (EC-23) > is reported by the cart and refused by the cascade, and the guest pays the full price 0ms
+   ✓ a promo stored with a negative value (EC-23) > and the rounding of a negative is ours, not the prototype’s 1ms
+   ✓ a free-item promo puts BOTH halves in the cart > resolves the code value to the item price, which is what makes the discount appear 7ms
+   ✓ a free-item promo puts BOTH halves in the cart > a free-item code discounts the line it added and nothing else (ruling 1) 1ms
+   ✓ a free-item promo puts BOTH halves in the cart > a free merch item books against merch, not F&B 0ms
+   ✓ a free-item promo puts BOTH halves in the cart > refuses to guess a stub when the cart holds no real line 0ms
+   ✓ prepaid food is priced into the line, not only taxed > a drop-off line total covers the food the tax engine charges 0ms
+   ✓ a cart priced under another context is refused, not silently mixed > names the stale lines and offers the repair 1ms
+   ✓ a cart priced under another context is refused, not silently mixed > trust_stored reproduces the drift and does NOT return the recorded total 0ms
+   ✓ a cart priced under another context is refused, not silently mixed > and it refuses a drop-off line the prototype deliberately leaves unpriced (S2-13) 0ms
+   ✓ a cart priced under another context is refused, not silently mixed > a promo line is never stale — its total is its item price, not a participant price 0ms
+   ✓ a discount lands on the category it targeted > an add-ons promo reduces the add-ons, not a share of every category (EC-9) 0ms
+   ✓ a discount lands on the category it targeted > a component-scoped manual discount follows its component to its category 0ms
+   ✓ a discount lands on the category it targeted > an order-scope discount still spreads, because it targeted nothing (EC-5) 0ms
+   ✓ a discount lands on the category it targeted > what spreading a scoped discount costs, measured (TX-ATTR-1 vs TX-ATTR-2) 0ms
+   ✓ a discount lands on the category it targeted > with mixed inclusive and exclusive rules the guest pays the difference (TX-ATTR-3 vs -4) 0ms
+   ✓ a discount lands on the category it targeted > allocates each discount against what the earlier ones LEFT, and each SPENDS only its own scope (EC-17) 0ms
+   ✓ a discount lands on the category it targeted > a scoped code whose scope is already spent takes nothing, and says so (EC-15) 1ms
+   ✓ a discount lands on the category it targeted > the ฿1,000 of lockers survives every combination of the two discounts (ruling 2) 0ms
+   ✓ a discount lands on the category it targeted > but the cascade itself still drops a named allocation it cannot place (TX-ATTR-5) 0ms
+   ✓ a discount lands on the category it targeted > groups inputs that share a category before placing a named allocation (TX-ATTR-7) 0ms
+   ✓ a discount lands on the category it targeted > reads a plain satang total as one order-wide discount, unchanged 0ms
+   ✓ the engine is environment-free > gives the same answer under a different host timezone 6ms
+   ✓ the engine is environment-free > prices every cart without constructing a single formatter 3ms
+   ✓ the engine is environment-free > stamps a version on every priced cart 0ms
+   ✓ pricing regression fixtures — business dates are present > has a distinct case per id 0ms
+   ✓ pricing regression fixtures — business dates are present > covers midnight, the day start and both sides of it 14ms
+ ✓ test/s494-money-restock.test.ts (7 tests) 5ms
+ ✓ test/s494-gate.test.ts (3 tests) 8ms
+ ✓ test/s494-money-gate.test.ts (2 tests) 3ms
+ ✓ test/booth-code.test.ts (26 tests) 2116ms
+   ✓ the check character > catches every single-character error, in every position  941ms
+   ✓ the check character > is ISO/IEC 7064 MOD 37-2 exactly: a standard implementation agrees on every code  894ms
+
+ Test Files  1 failed | 49 passed (50)
+      Tests  1 failed | 770 passed (771)
+   Start at  19:48:17
+   Duration  7.86s (transform 10.91s, setup 0ms, collect 99.35s, tests 6.60s, environment 38ms, prepare 20.30s)
+
+/workspace/packages/shared:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/shared@0.1.0 test: `vitest run`
+Exit status 1
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/pricing-engine.test.ts > pricing regression fixtures — rule provenance > every rule the fixture file claims is a real catalogue rule, and every one is exercised
+Error: ENOENT: no such file or directory, open '/workspace/docs/architecture/POS_RULES_RECONCILIATION.md'
+ ❯ catalogueRuleIds test/pricing-engine.test.ts:335:22
+    333|
+    334|   function catalogueRuleIds(): Set<string> {
+    335|     const markdown = readFileSync(CATALOGUE, 'utf8');
+       |                      ^
+    336|     return new Set([...markdown.matchAll(/^- (R-\d{2,3}) /gm)].map((ma…
+    337|   }
+ ❯ test/pricing-engine.test.ts:347:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯

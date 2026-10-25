@@ -1,0 +1,184 @@
+TAP version 13
+# Subtest: inert import and unarmed execute cannot dispatch, read environment or create an attempt
+ok 1 - inert import and unarmed execute cannot dispatch, read environment or create an attempt
+  ---
+  duration_ms: 95.6302
+  type: 'test'
+  ...
+# Subtest: exact reviewed plan binds both services, fixed actors and public closure; no old-source/foreign substitution
+ok 2 - exact reviewed plan binds both services, fixed actors and public closure; no old-source/foreign substitution
+  ---
+  duration_ms: 11.2721
+  type: 'test'
+  ...
+# Subtest: auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused
+ok 3 - auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused
+  ---
+  duration_ms: 2.9197
+  type: 'test'
+  ...
+# Subtest: GET grammar is exact: no foreign origin, fragments, operators, duplicate/foreign parks, dates or aggregate/detail fan-out
+ok 4 - GET grammar is exact: no foreign origin, fragments, operators, duplicate/foreign parks, dates or aggregate/detail fan-out
+  ---
+  duration_ms: 1.734
+  type: 'test'
+  ...
+# Subtest: native shell bootstrap allows only exact health badge grammar and reviewed static paths
+ok 5 - native shell bootstrap allows only exact health badge grammar and reviewed static paths
+  ---
+  duration_ms: 1.8863
+  type: 'test'
+  ...
+# Subtest: exact six green CI jobs and latest same-source API+Console are required, including deploy finish times
+ok 6 - exact six green CI jobs and latest same-source API+Console are required, including deploy finish times
+  ---
+  duration_ms: 2.6027
+  type: 'test'
+  ...
+# Subtest: overview reach cannot promote branch/foreign/dept grants to operator-wide usage
+ok 7 - overview reach cannot promote branch/foreign/dept grants to operator-wide usage
+  ---
+  duration_ms: 5.6814
+  type: 'test'
+  ...
+# Subtest: actual-schema postconditions preserve all five same-date scoped groups and honest unavailable/unbuilt states
+ok 8 - actual-schema postconditions preserve all five same-date scoped groups and honest unavailable/unbuilt states
+  ---
+  duration_ms: 110.9848
+  type: 'test'
+  ...
+# Subtest: Q18 refuses schema-valid future prices, wrong currency/cache semantics or omitted/unmatched tokens in every bucket
+ok 9 - Q18 refuses schema-valid future prices, wrong currency/cache semantics or omitted/unmatched tokens in every bucket
+  ---
+  duration_ms: 3.9582
+  type: 'test'
+  ...
+# Subtest: actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged
+ok 10 - actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged
+  ---
+  duration_ms: 5.2717
+  type: 'test'
+  ...
+# Subtest: installed lock/runtime binding cannot silently change under a source-bound schema import
+ok 11 - installed lock/runtime binding cannot silently change under a source-bound schema import
+  ---
+  duration_ms: 7.2096
+  type: 'test'
+  ...
+# Subtest: original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth
+ok 12 - original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth
+  ---
+  duration_ms: 1.0853
+  type: 'test'
+  ...
+# Subtest: all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed
+ok 13 - all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed
+  ---
+  duration_ms: 0.8118
+  type: 'test'
+  ...
+# Subtest: failed cleanup retains the original privately for a real retry instead of confirming an anonymous session
+ok 14 - failed cleanup retains the original privately for a real retry instead of confirming an anonymous session
+  ---
+  duration_ms: 0.7821
+  type: 'test'
+  ...
+# Subtest: FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401
+ok 15 - FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401
+  ---
+  duration_ms: 0.6322
+  type: 'test'
+  ...
+# Subtest: actual request captures the observed cookie before malformed sign-in body failure and preserves unresolved issuance through cleanup
+ok 16 - actual request captures the observed cookie before malformed sign-in body failure and preserves unresolved issuance through cleanup
+  ---
+  duration_ms: 41.3378
+  type: 'test'
+  ...
+# Subtest: actual request captures the observed cookie before stalled sign-in body failure and preserves unresolved issuance through cleanup
+ok 17 - actual request captures the observed cookie before stalled sign-in body failure and preserves unresolved issuance through cleanup
+  ---
+  duration_ms: 32.1379
+  type: 'test'
+  ...
+# Subtest: actual released-schema loader passes file URLs for Windows ESM while preserving the filesystem tsconfig path
+ok 18 - actual released-schema loader passes file URLs for Windows ESM while preserving the filesystem tsconfig path
+  ---
+  duration_ms: 2.423
+  type: 'test'
+  ...
+# Subtest: FINDING high: native Overview GET201 is refused without an observed200 record
+not ok 19 - FINDING high: native Overview GET201 is refused without an observed200 record
+  ---
+  duration_ms: 5.9946
+  type: 'test'
+  location: 'C:\\w\\admin637-staging-proof.test.mjs:306:34'
+  failureType: 'testCodeFailure'
+  error: |-
+    Only actual native GET200 may be recorded as an observed200.
+
+    false !== true
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/w/admin637-staging-proof.test.mjs:310:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: FINDING high: native Overview GET202 is refused without an observed200 record
+not ok 20 - FINDING high: native Overview GET202 is refused without an observed200 record
+  ---
+  duration_ms: 5.5691
+  type: 'test'
+  location: 'C:\\w\\admin637-staging-proof.test.mjs:306:34'
+  failureType: 'testCodeFailure'
+  error: |-
+    Only actual native GET200 may be recorded as an observed200.
+
+    false !== true
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/w/admin637-staging-proof.test.mjs:310:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: FINDING high: delayed native health failure must settle before Overview proof completion
+not ok 21 - FINDING high: delayed native health failure must settle before Overview proof completion
+  ---
+  duration_ms: 9.2613
+  type: 'test'
+  location: 'C:\\w\\admin637-staging-proof.test.mjs:314:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Every native fetch/body/fulfill must settle, including context-close cancellation, before proof completion.
+
+    true !== false
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/w/admin637-staging-proof.test.mjs:326:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 18
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 630.9498

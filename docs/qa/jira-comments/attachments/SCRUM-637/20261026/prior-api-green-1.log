@@ -1,0 +1,1146 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/s637-overview-review.test.ts test/s637-decisions-review.test.ts test/s637-digest-review.test.ts test/overview.test.ts test/s610-overview-review.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/s637-digest-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-digest-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/s637-digest-review.test.ts (16 tests) 3271ms
+stdout | test/s637-decisions-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-decisions-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s637-decisions-review.test.ts (17 tests | 15 failed) 3448ms
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R1 high: one Overview read returns all seven scoped decision items without requiring detail-screen grants 72ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R2 high: pending payment counts preserve the native states and exclude stationless hosted checkouts 75ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R3 high: open quarantine count is park-scoped rather than the existing operator-wide first-page count 35ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R4 high: late-payment alerts retain both native categories and acknowledgment is not resolution 32ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R5 medium: missing erasure and approval queues are explicitly not built, never fabricated zeroes 27ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R6 high: removing Overview reach refuses the next whole read rather than returning an old decision snapshot 27ms
+     → expected 500 to be 200 // Object.is equality
+   × SCRUM-637 exact clock, count and ownership review > R7 medium: native pending threshold is strictly older, not equal or a replacement provider-poller rule 8ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-067f-7c86-8368-c0ed5b1f990b,01a17208-067f-7c86-8368-c0eed7e2589a
+   × SCRUM-637 exact clock, count and ownership review > R8 high: pending reference ownership is checked against the actual station and branch, including stale descriptors 9ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8, $9))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0687-7070-bb23-ca2c75aa2ddf,01a17208-0687-7070-bb23-ca2e5bfdcf96,01a17208-0687-7070-bb23-ca2f5c94b0e6
+   × SCRUM-637 exact clock, count and ownership review > R9 medium: exact pending and quarantine counts are not truncated to existing page or watchdog batch sizes 77ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0691-7f44-ae3f-b57ee3aeb222,01a17208-0691-7f44-ae3f-b57f15b5937b
+   × SCRUM-637 exact clock, count and ownership review > R10 high: saved cash reconciliation uses native off-line tolerance, not a cancelling total difference 7ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-06de-765d-9dc3-ff5663b5a431,01a17208-06de-765d-9dc3-ff5723e1e845
+   × SCRUM-637 exact clock, count and ownership review > R11 medium: a missing current-day reconciliation is unavailable, not an uncounted zero or partial total 6ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-06e5-745b-9beb-d8ea7347f50f,01a17208-06e5-745b-9beb-d8eb3b15fa64
+   × SCRUM-637 exact clock, count and ownership review > R12 high: each saved close follows that park business date and cannot be substituted with another operator record 6ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-06eb-77d0-8a06-12371bcd3b31,01a17208-06eb-77d0-8a06-123861fff3c8
+   ✓ SCRUM-637 exact clock, count and ownership review > R13 high: malformed saved reconciliation cannot be presented as successfully matched 7ms
+   × SCRUM-637 exact clock, count and ownership review > R14 medium: native end-of-day review rows include ordinary current occupants and grouped children without an invented overdue threshold 20ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-06f9-7647-9d7f-740a9fb4e26c
+   × SCRUM-637 exact clock, count and ownership review > R15 medium: native manual resolutions remove review rows at their effective time without inventing exit events 10ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-070d-7dcf-893d-db3b986887fe
+   ✓ SCRUM-637 exact clock, count and ownership review > R16 high: an empty selection returns genuine scoped zeros while retaining not-built queue states 6ms
+   × SCRUM-637 exact clock, count and ownership review > R17 high: repeated reads preserve every synthetic source record and expose only decision fields 12ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-071e-7c8c-8e27-321338358971
+stdout | test/overview.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/overview.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/overview.test.ts (9 tests | 1 failed | 6 skipped) 3185ms
+   ↓ Overview existing-source figures > reads all seven totals from existing rules with only the overview grant
+   ↓ Overview existing-source figures > preserves each park’s business day, selected source and rollup and gate freshness
+   ↓ Overview existing-source figures > filters every figure to the selected park and excludes operator/platform or unassigned counts
+   ↓ Overview existing-source figures > keeps signed satang compatible with the analytics response contract
+   ↓ Overview existing-source figures > does not turn a failed source query into an empty successful total
+   ↓ Overview existing-source figures > resolves branch reach and archives before any figures are loaded
+   ✓ GET /overview access > requires a signed-in overview reader and validates its park filter 10ms
+   × GET /overview access > answers only the branch manager’s grant reach, independently of the session seat 31ms
+     → {"error":{"code":"INTERNAL","message":"Internal server error"}}: expected 500 to be 200 // Object.is equality
+   ✓ GET /overview access > hides foreign, absent and archived parks without disclosing their names 46ms
+stdout | test/s637-overview-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-overview-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s637-overview-review.test.ts (7 tests | 6 failed) 4423ms
+   × SCRUM-637 Overview v2 composed native read model > R1: exposes the exact five existing summaries with one captured time and calendar date 65ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3,01a17208-20b4-7532-8fbe-4101e4417aca
+   × SCRUM-637 Overview v2 composed native read model > R2: retains distinct selected-period members instead of summing per-park counts 32ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3,01a17208-20b4-7532-8fbe-4101e4417aca
+   × SCRUM-637 Overview v2 composed native read model > R3: includes unassigned AI once only for an unfiltered genuine operator grant 29ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3,01a17208-20b4-7532-8fbe-4101e4417aca
+   × SCRUM-637 Overview v2 composed native read model > R4: copies safe source/date/status text, preserving unavailable USD pricing and native review-row units 28ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3,01a17208-20b4-7532-8fbe-4101e4417aca
+   ✓ SCRUM-637 Overview v2 composed native read model > R5: keeps failed child queries as failures instead of returning an all-clear summary 21ms
+   × SCRUM-637 Overview v2 composed native read model > R6: HTTP output validates all composed groups and forbids browser caching 50ms
+     → {"error":{"code":"INTERNAL","message":"Internal server error"}}: expected 500 to be 200 // Object.is equality
+   × SCRUM-637 Overview v2 composed native read model > R7: a live archive cannot remain in a freshly requested child scope or copied text 46ms
+     → Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3
+stdout | test/s610-overview-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s610-overview-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s610-overview-review.test.ts (6 tests | 2 failed) 3034ms
+   × SCRUM-610 Overview adversarial review > FINDING R1 high: totals must follow the overview grant, never the session branch or source-screen grants; select only the held park 61ms
+     → expected 500 to be 200 // Object.is equality
+   ✓ SCRUM-610 Overview adversarial review > FINDING R2 high: a guessed foreign park must be indistinguishable from a missing one; fence by operator before reporting scope 19ms
+   ✓ SCRUM-610 Overview adversarial review > FINDING R3 high: an operator-wide grant for another operator must not widen the current operator; reject empty reach 5ms
+   ✓ SCRUM-610 Overview adversarial review > FINDING R4 high: department grants cannot imply park-wide aggregate access; reject an unresolvable park reach 4ms
+   ✓ SCRUM-610 Overview adversarial review > FINDING R5 medium: a malformed or repeated park filter must never silently fall back to every park; validate the query 5ms
+   × SCRUM-610 Overview adversarial review > FINDING R6 high: archived parks must disappear even for an operator-wide holder; filter before building the picker and totals 54ms
+     → expected 500 to be 200 // Object.is equality
+
+ Test Files  4 failed | 1 passed (5)
+      Tests  24 failed | 25 passed | 6 skipped (55)
+   Start at  07:47:58
+   Duration  28.44s (transform 3.02s, setup 0ms, collect 10.24s, tests 17.36s, environment 1ms, prepare 193ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+(node:3158) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3358) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3518) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3708) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5253) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/overview.test.ts > Overview existing-source figures
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8, $9, $10))
+params: 01a17208-1547-7c72-a620-3436e5658ed9,01a17208-1547-7c72-a620-3436e5658ed9,Wed Jul 15 2026 11:50:00 GMT+0000 (Coordinated Universal Time),01a17208-1547-7c72-a620-3436e5658ed9,01a17208-1547-7c72-a620-3436e5658ed9,01a17208-1547-7c72-a620-3436e5658ed9,01a17208-1548-762f-8223-4dce484188b9,01a17208-1549-7699-8759-6d60899b692f,01a17208-0c9d-766f-ad71-89a3725e57d0,01a17208-0c9c-731a-ae99-85f9c203b8ea
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/overview.test.ts:108:16
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/overview.test.ts:108:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/25]⎯
+
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 24 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/overview.test.ts > GET /overview access > answers only the branch manager’s grant reach, independently of the session seat
+AssertionError: {"error":{"code":"INTERNAL","message":"Internal server error"}}: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ test/overview.test.ts:166:38
+    164|     await ctx.db.update(session).set({ branchId: chalong }).where(eq(s…
+    165|     const res = await ctx.app.inject({ method: 'GET', url: '/overview'…
+    166|     expect(res.statusCode, res.body).toBe(200);
+       |                                      ^
+    167|     expect(res.json().selectedBranchIds).toEqual([central]);
+    168|     expect(res.json().branches.map((b: { id: string }) => b.id)).toEqu…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/25]⎯
+
+ FAIL  test/s610-overview-review.test.ts > SCRUM-610 Overview adversarial review > FINDING R1 high: totals must follow the overview grant, never the session branch or source-screen grants; select only the held park
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ test/s610-overview-review.test.ts:52:33
+     50|   it('FINDING R1 high: totals must follow the overview grant, never th…
+     51|     const response = await read();
+     52|     expect(response.statusCode).toBe(200);
+       |                                 ^
+     53|     const body = response.json();
+     54|     expect(body.branches.map((b: { id: string }) => b.id)).toEqual([ce…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/25]⎯
+
+ FAIL  test/s610-overview-review.test.ts > SCRUM-610 Overview adversarial review > FINDING R6 high: archived parks must disappear even for an operator-wide holder; filter before building the picker and totals
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ test/s610-overview-review.test.ts:97:33
+     95|     });
+     96|     const response = await read();
+     97|     expect(response.statusCode).toBe(200);
+       |                                 ^
+     98|     expect(JSON.stringify(response.json())).not.toContain(archived);
+     99|     expect((await read(`?branchId=${archived}`)).statusCode).toBe(404);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R1 high: one Overview read returns all seven scoped decision items without requiring detail-screen grants
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ overview test/s637-decisions-review.test.ts:76:31
+     74| async function overview(branchId?: string): Promise<ConsoleDecisionsSn…
+     75|   const response = await ctx.app.inject({ method: 'GET', url: `/overvi…
+     76|   expect(response.statusCode).toBe(200);
+       |                               ^
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+ ❯ test/s637-decisions-review.test.ts:143:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R2 high: pending payment counts preserve the native states and exclude stationless hosted checkouts
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ overview test/s637-decisions-review.test.ts:76:31
+     74| async function overview(branchId?: string): Promise<ConsoleDecisionsSn…
+     75|   const response = await ctx.app.inject({ method: 'GET', url: `/overvi…
+     76|   expect(response.statusCode).toBe(200);
+       |                               ^
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+ ❯ test/s637-decisions-review.test.ts:165:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R3 high: open quarantine count is park-scoped rather than the existing operator-wide first-page count
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ overview test/s637-decisions-review.test.ts:76:31
+     74| async function overview(branchId?: string): Promise<ConsoleDecisionsSn…
+     75|   const response = await ctx.app.inject({ method: 'GET', url: `/overvi…
+     76|   expect(response.statusCode).toBe(200);
+       |                               ^
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+ ❯ test/s637-decisions-review.test.ts:181:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R4 high: late-payment alerts retain both native categories and acknowledgment is not resolution
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ overview test/s637-decisions-review.test.ts:76:31
+     74| async function overview(branchId?: string): Promise<ConsoleDecisionsSn…
+     75|   const response = await ctx.app.inject({ method: 'GET', url: `/overvi…
+     76|   expect(response.statusCode).toBe(200);
+       |                               ^
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+ ❯ test/s637-decisions-review.test.ts:196:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R5 medium: missing erasure and approval queues are explicitly not built, never fabricated zeroes
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ overview test/s637-decisions-review.test.ts:76:31
+     74| async function overview(branchId?: string): Promise<ConsoleDecisionsSn…
+     75|   const response = await ctx.app.inject({ method: 'GET', url: `/overvi…
+     76|   expect(response.statusCode).toBe(200);
+       |                               ^
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+ ❯ test/s637-decisions-review.test.ts:203:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R6 high: removing Overview reach refuses the next whole read rather than returning an old decision snapshot
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ overview test/s637-decisions-review.test.ts:76:31
+     74| async function overview(branchId?: string): Promise<ConsoleDecisionsSn…
+     75|   const response = await ctx.app.inject({ method: 'GET', url: `/overvi…
+     76|   expect(response.statusCode).toBe(200);
+       |                               ^
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+ ❯ test/s637-decisions-review.test.ts:213:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R7 medium: native pending threshold is strictly older, not equal or a replacement provider-poller rule
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-067f-7c86-8368-c0ed5b1f990b,01a17208-067f-7c86-8368-c0eed7e2589a
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:227:17
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:227:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R8 high: pending reference ownership is checked against the actual station and branch, including stale descriptors
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8, $9))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0687-7070-bb23-ca2c75aa2ddf,01a17208-0687-7070-bb23-ca2e5bfdcf96,01a17208-0687-7070-bb23-ca2f5c94b0e6
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:239:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:239:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R9 medium: exact pending and quarantine counts are not truncated to existing page or watchdog batch sizes
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0691-7f44-ae3f-b57ee3aeb222,01a17208-0691-7f44-ae3f-b57f15b5937b
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:254:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:254:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R10 high: saved cash reconciliation uses native off-line tolerance, not a cancelling total difference
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-06de-765d-9dc3-ff5663b5a431,01a17208-06de-765d-9dc3-ff5723e1e845
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:263:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:263:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R11 medium: a missing current-day reconciliation is unavailable, not an uncounted zero or partial total
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-06e5-745b-9beb-d8ea7347f50f,01a17208-06e5-745b-9beb-d8eb3b15fa64
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:274:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:274:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R12 high: each saved close follows that park business date and cannot be substituted with another operator record
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-06eb-77d0-8a06-12371bcd3b31,01a17208-06eb-77d0-8a06-123861fff3c8
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:285:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:285:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R14 medium: native end-of-day review rows include ordinary current occupants and grouped children without an invented overdue threshold
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-06f9-7647-9d7f-740a9fb4e26c
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:303:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:303:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R15 medium: native manual resolutions remove review rows at their effective time without inventing exit events
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-070d-7dcf-893d-db3b986887fe
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:318:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:318:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/25]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R17 high: repeated reads preserve every synthetic source record and expose only decision fields
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7))
+params: 01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-0248-74b8-8c73-72784bcf8d29,01a17208-071e-7c8c-8e27-321338358971
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:346:19
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ test/s637-decisions-review.test.ts:346:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/25]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R1: exposes the exact five existing summaries with one captured time and calendar date
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3,01a17208-20b4-7532-8fbe-4101e4417aca
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:49:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:49:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/25]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R2: retains distinct selected-period members instead of summing per-park counts
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3,01a17208-20b4-7532-8fbe-4101e4417aca
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:65:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:65:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/25]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R3: includes unassigned AI once only for an unfiltered genuine operator grant
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3,01a17208-20b4-7532-8fbe-4101e4417aca
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:73:17
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:73:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/25]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R4: copies safe source/date/status text, preserving unavailable USD pricing and native review-row units
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7, $8))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3,01a17208-20b4-7532-8fbe-4101e4417aca
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:88:20
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:88:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/25]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R6: HTTP output validates all composed groups and forbids browser caching
+AssertionError: {"error":{"code":"INTERNAL","message":"Internal server error"}}: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ test/s637-overview-review.test.ts:110:48
+    108|   it('R6: HTTP output validates all composed groups and forbids browse…
+    109|     const response = await ctx.app.inject({ method: 'GET', url: '/over…
+    110|     expect(response.statusCode, response.body).toBe(200);
+       |                                                ^
+    111|     expect(response.headers['cache-control']).toBe('private, no-store'…
+    112|     for (const key of ['members', 'bookings', 'assistantUsage', 'inbox…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/25]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R7: a live archive cannot remain in a freshly requested child scope or copied text
+Error: Failed query: select "id", "timezone", "business_day_start", (select count(*)::integer from "pos"."payment_attempt"
+        inner join "core"."station" on "id" = "station_id"
+          and "operator_id" = $1
+          and "branch_id" = "branch_id"
+        where "operator_id" = $2
+          and "branch_id" = "id"
+          and "status" in ('sent_to_terminal', 'unknown', 'inquiring')
+          and "created_at" < $3), (select count(*)::integer from "edge"."sync_quarantine"
+        inner join "core"."box" on "id" = "box_id"
+        where "operator_id" = $4 and "branch_id" = "id"
+          and "status" = 'open'), (select count(*)::integer from "core"."alert"
+        where "operator_id" = $5 and "branch_id" = "id"
+          and "category" in ('payments.late_payment', 'bookings.late_payment')
+          and "resolved_at" is null) from "core"."branch" where ("core"."branch"."operator_id" = $6 and "core"."branch"."archived_at" is null and "core"."branch"."id" in ($7))
+params: 01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,Sun Oct 25 2026 03:20:00 GMT+0000 (Coordinated Universal Time),01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b2-7ed1-a324-b0d826a65d83,01a17208-20b4-7532-8fbe-4100af49b7c3
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+     71|     // Reload ownership and clocks from the same snapshot as the sourc…
+     72|     // A stale or forged descriptor cannot widen reach or substitute a…
+     73|     const source = await tx.select({
+       |                    ^
+     74|       id: branch.id, timezone: branch.timezone, businessDayStart: bran…
+     75|       pendingPayments: sql<number>`(select count(*)::integer from ${pa…
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:121:22
+
+Caused by: error: column reference "id" is ambiguous
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:161:13
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:154:19
+ ❯ db.transaction.isolationLevel src/services/console-decisions.ts:73:20
+ ❯ NodePgSession.transaction ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:259:19
+ ❯ overviewForScopeOf src/services/console.ts:185:21
+ ❯ test/s637-overview-review.test.ts:121:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 104, severity: 'ERROR', code: '42702', detail: undefined, hint: undefined, position: '142', internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'parse_relation.c', routine: 'colNameToVar' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/25]⎯

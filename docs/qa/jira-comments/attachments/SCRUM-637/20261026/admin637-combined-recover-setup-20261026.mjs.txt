@@ -1,0 +1,16 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { recoverSetupFromIntent } from './admin637-combined-integration-20261026.mjs';
+
+export function main(argv = process.argv.slice(2)) {
+  if (argv.length !== 2 || argv[0] !== '--execute') throw new Error('EXPLICIT_RECOVERY_REQUIRED');
+  const result = recoverSetupFromIntent({ explicitExecute: true, expectedNetworkId: argv[1] });
+  process.stdout.write(JSON.stringify(result) + '\n');
+  return result;
+}
+if (process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === path.resolve(fileURLToPath(import.meta.url)).toLowerCase()) {
+  try { main(); } catch (error) {
+    process.stderr.write((/^[A-Z][A-Z0-9_]+$/.test(error?.message ?? '') ? error.message : 'RECOVERY_FAILED') + '\n');
+    process.exitCode = 2;
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "proof-native-review-red-1",
+  "startedAt": "2026-10-25T10:06:14.012Z",
+  "completedAt": "2026-10-25T10:06:14.803Z",
+  "exitCode": 1,
+  "source": [
+    {
+      "path": "C:/w/admin637-staging-proof.mjs",
+      "sha256": "5f9eda37393a3400900d1ba6264cfdffb0894496e634929cffde8f0ea731c6ae"
+    },
+    {
+      "path": "C:/w/admin637-staging-proof.test.mjs",
+      "sha256": "71e25b64c9d8388597e38a05594d885e590f66bdb9a1306a8151ad5e25c406e0"
+    }
+  ],
+  "sourceUnchanged": true,
+  "tests": 21,
+  "passed": 18,
+  "failed": 3,
+  "logSha256": "91fa3cca420dc2176063285ba28ce8a313474b9e45d9101d831fcb7006ff6fe3",
+  "actualStaging": false,
+  "authAttempts": 0
+}

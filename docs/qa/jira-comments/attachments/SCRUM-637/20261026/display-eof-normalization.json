@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-25T20:12:10.170Z",
+  "ticket": "SCRUM-637",
+  "onlyCopiedDisplayLogsChanged": true,
+  "originalExternalLogsChanged": false,
+  "sourceGraphChanged": false,
+  "entries": [
+    {
+      "path": "20261026/prior-api-all-2.log",
+      "originalSourceSha256": "82d98d6f88ff59c6b75e9455610d469164fa08c588f77e42635b852ce808f190",
+      "displayBeforeSha256": "ca951a44da828775e8daf05b6c47f0ca73a1f5246543decaddc84499a0872572",
+      "displayAfterSha256": "d72a0d6c22b2a7e95a7ff895eaef8fd956a7d0868a215b6fb81558c75bfb819b",
+      "removedBytes": 1
+    },
+    {
+      "path": "20261026/prior-api-green-1.log",
+      "originalSourceSha256": "5b7a31bac1f2a234886a452c6586abba720820e03de08be584693f61e422f87e",
+      "displayBeforeSha256": "5b7a31bac1f2a234886a452c6586abba720820e03de08be584693f61e422f87e",
+      "displayAfterSha256": "d33b0c074bc4a62adada2f7596c3e4a10e94a5792acba126bf29e60f4aa30e3f",
+      "removedBytes": 1
+    },
+    {
+      "path": "20261026/prior-api-red-1.log",
+      "originalSourceSha256": "19a67a46bbb7700a5a2b04de5251381feb4b608c6be594e472592abf00a77f60",
+      "displayBeforeSha256": "bafb587ff90c1148831a0b49734903dc6a5e25213018eb56145b72cad0af390f",
+      "displayAfterSha256": "22be8a84448da5ba735d6b79eb376a7f3d37c137ec995600dc097ac41dd02a4c",
+      "removedBytes": 1
+    },
+    {
+      "path": "20261026/prior-console-green-1.log",
+      "originalSourceSha256": "c7c6d6bb5bd97247bfba2506395fd5b025b9e5e1f9f0e3301a1242ce5ef899df",
+      "displayBeforeSha256": "c7c6d6bb5bd97247bfba2506395fd5b025b9e5e1f9f0e3301a1242ce5ef899df",
+      "displayAfterSha256": "f0cf4ab11670951de99f871e1c028ef14bc626893715c3b15f384f6b269659be",
+      "removedBytes": 1
+    },
+    {
+      "path": "20261026/prior-decisions-red-2.log",
+      "originalSourceSha256": "b5e68d09da28bd3861ec21bdc98a520f9f35eddf62a943648335447d07036e7d",
+      "displayBeforeSha256": "fef64acf5122aa56da5dc65793378236401938a954674696caeb26590e8e506b",
+      "displayAfterSha256": "edb69a2109db55af35405f5d6c191127ea1476984c41b7d53b0e6588a42ed641",
+      "removedBytes": 1
+    },
+    {
+      "path": "20261026/prior-digest-review-red-2.log",
+      "originalSourceSha256": "860dc93cc3003b72af7c9ef54ed72107e3e77be91bfcca7b95a7d8c22086bca8",
+      "displayBeforeSha256": "c8151967cd336f9ec1d1439f30dccd0d190ddae740da2f090f048e8d1a217968",
+      "displayAfterSha256": "e0b8aa52f3d2b8df85e3c7003854d897bd97dc63f64ca5ab4bc7d475e36d28ae",
+      "removedBytes": 1
+    },
+    {
+      "path": "20261026/prior-markup-red-1.log",
+      "originalSourceSha256": "bfcc151dd868486480dcd4f7a624b5f75aeece8c58168f0570ace39d422ae982",
+      "displayBeforeSha256": "bfcc151dd868486480dcd4f7a624b5f75aeece8c58168f0570ace39d422ae982",
+      "displayAfterSha256": "2dca0ea0ff3ac175196e0b18338455788df5308a3d977a3b153bce7e8c532233",
+      "removedBytes": 1
+    },
+    {
+      "path": "20261026/workspace-package-tests-1.log",
+      "originalSourceSha256": "59ec8593127e6d884d451f6e41d50fcaefcf5a78db052eda6f092594def74caf",
+      "displayBeforeSha256": "ced614ed497832f50052ba2131606ad5feba6dab3ac547be22eda2d12b0febb8",
+      "displayAfterSha256": "e048057d528fcb191ee93e293249c67ec8bfc3337c0ffc71bee66b7639561153",
+      "removedBytes": 1
+    }
+  ]
+}

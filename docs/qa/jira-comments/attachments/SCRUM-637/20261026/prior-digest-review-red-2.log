@@ -1,0 +1,262 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/s637-digest-review.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/s637-digest-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-digest-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s637-digest-review.test.ts (19 tests | 3 failed) 2600ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R1: disabled and missing destination perform no snapshot, dispatch or intent writes 6ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R2: before the actual local start sends nothing; the boundary and later startup catch up the current day only 10ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R3: the same trusted snapshot and exact text use one selected live owned branch, without global buckets or fake grants 7ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R4: independent timezone/branch/operator keys do not suppress one another; archived parents and branches never send 11ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R5: accepted day receipts suppress another tick/Retry but not the next native date 12ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R6: failed durable intent persistence dispatches zero requests and exposes only a safe code 12ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R7: snapshot refusal cannot become a zero digest or leave a dispatch intent 6ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R8: an unknown response remains uncertain across another tick and does not resend 7ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R9: acknowledgement followed by failed durable delivery recording is not claimed successful or resent 15ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R10: an orphaned intent after process death blocks a fresh worker without an absence-based guess 6ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R11: a proven predispatch refusal is recorded and may retry; already accepted siblings stay accepted 12ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R12: two existing exclusive runners cannot send the same claimed day concurrently 61ms
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R17: a changed clock between eligibility and the real Overview snapshot cannot send under the earlier date/start 57ms
+     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received:
+
+[1m  1st spy call:
+
+[22m    Array [
+      "Admin status summary
+    Checked: 2026-10-25T00:30:00.000Z
+    Parks: ZZ TEST Digest A1
+    Park business dates and legacy figures:
+    ZZ TEST Digest A1: business date 2026-10-24; Asia/Bangkok; start 08:00.
+    Revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Revenue source oto_pos; Provisional; last rollup unavailable; occupancy stale as of unavailable.
+    Selected park totals: revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Calendar period: 2026-10-25 to 2026-10-25 (Bangkok calendar today, separate from park business dates).
+    Members & visits: 0 visit records; 0 distinct visiting members; draft 0, active 0, closed 0. Basis: visit-date.
+    Booking activity: 0 bookings; THB 0.00 priced booking value; 0 redeemed booking-date cohort. This value is not payment revenue.
+    Internal assistant asks: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; 90-day retention; attribution: seat-at-ask.
+    Inbox AI turns: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; attribution: current-conversation-branch.
+    AI dates: created-at-bangkok 2026-10-25 to 2026-10-25.
+    Fleet: 0 boxes; online 0, offline 0, unclaimed 0, disabled 0. Current snapshot: 2026-10-25T00:30:00.000Z; persisted status.
+    Needs a decision (checked 2026-10-25T00:30:00.000Z):
+    Payments awaiting an answer: 0. Basis: station-attempts-older-than-native-pending-threshold.
+    Open sync quarantines: 0. Basis: open-quarantine-events-in-selected-parks.
+    Recorded reconciliation lines off: Unavailable. Basis: current-business-date-not-reconciled.
+    Unresolved late-payment alerts: 0. Basis: unresolved-native-late-payment-alert-rows.
+    End-of-day review rows still inside: 0. Basis: current-business-date-native-end-of-day-rows.
+    Erasure requests awaiting action: Not built. Basis: suite-erasure-request-queue-not-built.
+    Approval requests awaiting action: Not built. Basis: dual-control-request-queue-not-built.",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R18: branch archived after the real snapshot leaves no dispatch or intent 27ms
+     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received:
+
+[1m  1st spy call:
+
+[22m    Array [
+      "Admin status summary
+    Checked: 2026-10-25T00:30:00.000Z
+    Parks: ZZ TEST Digest A1
+    Park business dates and legacy figures:
+    ZZ TEST Digest A1: business date 2026-10-25; Asia/Bangkok; start 05:00.
+    Revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Revenue source oto_pos; Provisional; last rollup unavailable; occupancy stale as of unavailable.
+    Selected park totals: revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Calendar period: 2026-10-25 to 2026-10-25 (Bangkok calendar today, separate from park business dates).
+    Members & visits: 0 visit records; 0 distinct visiting members; draft 0, active 0, closed 0. Basis: visit-date.
+    Booking activity: 0 bookings; THB 0.00 priced booking value; 0 redeemed booking-date cohort. This value is not payment revenue.
+    Internal assistant asks: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; 90-day retention; attribution: seat-at-ask.
+    Inbox AI turns: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; attribution: current-conversation-branch.
+    AI dates: created-at-bangkok 2026-10-25 to 2026-10-25.
+    Fleet: 0 boxes; online 0, offline 0, unclaimed 0, disabled 0. Current snapshot: 2026-10-25T00:30:00.000Z; persisted status.
+    Needs a decision (checked 2026-10-25T00:30:00.000Z):
+    Payments awaiting an answer: 0. Basis: station-attempts-older-than-native-pending-threshold.
+    Open sync quarantines: 0. Basis: open-quarantine-events-in-selected-parks.
+    Recorded reconciliation lines off: Unavailable. Basis: current-business-date-not-reconciled.
+    Unresolved late-payment alerts: 0. Basis: unresolved-native-late-payment-alert-rows.
+    End-of-day review rows still inside: 0. Basis: current-business-date-native-end-of-day-rows.
+    Erasure requests awaiting action: Not built. Basis: suite-erasure-request-queue-not-built.
+    Approval requests awaiting action: Not built. Basis: dual-control-request-queue-not-built.",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R18: operator archived after the real snapshot leaves no dispatch or intent 23ms
+     → expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received:
+
+[1m  1st spy call:
+
+[22m    Array [
+      "Admin status summary
+    Checked: 2026-10-25T00:30:00.000Z
+    Parks: ZZ TEST Digest A1
+    Park business dates and legacy figures:
+    ZZ TEST Digest A1: business date 2026-10-25; Asia/Bangkok; start 05:00.
+    Revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Revenue source oto_pos; Provisional; last rollup unavailable; occupancy stale as of unavailable.
+    Selected park totals: revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Calendar period: 2026-10-25 to 2026-10-25 (Bangkok calendar today, separate from park business dates).
+    Members & visits: 0 visit records; 0 distinct visiting members; draft 0, active 0, closed 0. Basis: visit-date.
+    Booking activity: 0 bookings; THB 0.00 priced booking value; 0 redeemed booking-date cohort. This value is not payment revenue.
+    Internal assistant asks: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; 90-day retention; attribution: seat-at-ask.
+    Inbox AI turns: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; attribution: current-conversation-branch.
+    AI dates: created-at-bangkok 2026-10-25 to 2026-10-25.
+    Fleet: 0 boxes; online 0, offline 0, unclaimed 0, disabled 0. Current snapshot: 2026-10-25T00:30:00.000Z; persisted status.
+    Needs a decision (checked 2026-10-25T00:30:00.000Z):
+    Payments awaiting an answer: 0. Basis: station-attempts-older-than-native-pending-threshold.
+    Open sync quarantines: 0. Basis: open-quarantine-events-in-selected-parks.
+    Recorded reconciliation lines off: Unavailable. Basis: current-business-date-not-reconciled.
+    Unresolved late-payment alerts: 0. Basis: unresolved-native-late-payment-alert-rows.
+    End-of-day review rows still inside: 0. Basis: current-business-date-native-end-of-day-rows.
+    Erasure requests awaiting action: Not built. Basis: suite-erasure-request-queue-not-built.
+    Approval requests awaiting action: Not built. Basis: dual-control-request-queue-not-built.",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+   ✓ SCRUM-637 generic private HTTPS adapter — fake fetch only > R13: absent/non-HTTPS/userinfo/fragment configuration creates no sender and performs zero requests 2ms
+   ✓ SCRUM-637 generic private HTTPS adapter — fake fetch only > R14: sends only JSON text with redirects refused and cancels an unused response body 2ms
+   ✓ SCRUM-637 generic private HTTPS adapter — fake fetch only > R15: a dispatched HTTP error/redirect response is not accepted or represented as a safe no-send 1ms
+   ✓ SCRUM-637 generic private HTTPS adapter — fake fetch only > R16: the finite timeout aborts a stalled request and returns no raw URL or error 12ms
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 16 passed (19)
+   Start at  07:52:03
+   Duration  6.48s (transform 2.37s, setup 0ms, collect 3.73s, tests 2.60s, environment 0ms, prepare 32ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+(node:8933) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R17: a changed clock between eligibility and the real Overview snapshot cannot send under the earlier date/start
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received:
+
+[1m  1st spy call:
+
+[22m    Array [
+      "Admin status summary
+    Checked: 2026-10-25T00:30:00.000Z
+    Parks: ZZ TEST Digest A1
+    Park business dates and legacy figures:
+    ZZ TEST Digest A1: business date 2026-10-24; Asia/Bangkok; start 08:00.
+    Revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Revenue source oto_pos; Provisional; last rollup unavailable; occupancy stale as of unavailable.
+    Selected park totals: revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Calendar period: 2026-10-25 to 2026-10-25 (Bangkok calendar today, separate from park business dates).
+    Members & visits: 0 visit records; 0 distinct visiting members; draft 0, active 0, closed 0. Basis: visit-date.
+    Booking activity: 0 bookings; THB 0.00 priced booking value; 0 redeemed booking-date cohort. This value is not payment revenue.
+    Internal assistant asks: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; 90-day retention; attribution: seat-at-ask.
+    Inbox AI turns: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; attribution: current-conversation-branch.
+    AI dates: created-at-bangkok 2026-10-25 to 2026-10-25.
+    Fleet: 0 boxes; online 0, offline 0, unclaimed 0, disabled 0. Current snapshot: 2026-10-25T00:30:00.000Z; persisted status.
+    Needs a decision (checked 2026-10-25T00:30:00.000Z):
+    Payments awaiting an answer: 0. Basis: station-attempts-older-than-native-pending-threshold.
+    Open sync quarantines: 0. Basis: open-quarantine-events-in-selected-parks.
+    Recorded reconciliation lines off: Unavailable. Basis: current-business-date-not-reconciled.
+    Unresolved late-payment alerts: 0. Basis: unresolved-native-late-payment-alert-rows.
+    End-of-day review rows still inside: 0. Basis: current-business-date-native-end-of-day-rows.
+    Erasure requests awaiting action: Not built. Basis: suite-erasure-request-queue-not-built.
+    Approval requests awaiting action: Not built. Basis: dual-control-request-queue-not-built.",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ test/s637-digest-review.test.ts:224:24
+    222|         } });
+    223|       } catch (error) { failure = error; }
+    224|       expect(send).not.toHaveBeenCalled();
+       |                        ^
+    225|       expect(await rows()).toEqual([]);
+    226|       expect(failure).toBeInstanceOf(JobFailedError);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R18: branch archived after the real snapshot leaves no dispatch or intent
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R18: operator archived after the real snapshot leaves no dispatch or intent
+AssertionError: expected "spy" to not be called at all, but actually been called 1 times[90m
+
+Received:
+
+[1m  1st spy call:
+
+[22m    Array [
+      "Admin status summary
+    Checked: 2026-10-25T00:30:00.000Z
+    Parks: ZZ TEST Digest A1
+    Park business dates and legacy figures:
+    ZZ TEST Digest A1: business date 2026-10-25; Asia/Bangkok; start 05:00.
+    Revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Revenue source oto_pos; Provisional; last rollup unavailable; occupancy stale as of unavailable.
+    Selected park totals: revenue THB 0.00; guests 0; inside 0; bookings 0; unanswered 0; alerts 0; offline boxes 0.
+    Calendar period: 2026-10-25 to 2026-10-25 (Bangkok calendar today, separate from park business dates).
+    Members & visits: 0 visit records; 0 distinct visiting members; draft 0, active 0, closed 0. Basis: visit-date.
+    Booking activity: 0 bookings; THB 0.00 priced booking value; 0 redeemed booking-date cohort. This value is not payment revenue.
+    Internal assistant asks: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; 90-day retention; attribution: seat-at-ask.
+    Inbox AI turns: 0; 0 tokens (input 0, output 0, cache-read 0).
+    Price unavailable: no_rate_configured (USD estimate); 0 unpriced tokens; excludes unpersisted cache writes.
+    Coverage: retained records; attribution: current-conversation-branch.
+    AI dates: created-at-bangkok 2026-10-25 to 2026-10-25.
+    Fleet: 0 boxes; online 0, offline 0, unclaimed 0, disabled 0. Current snapshot: 2026-10-25T00:30:00.000Z; persisted status.
+    Needs a decision (checked 2026-10-25T00:30:00.000Z):
+    Payments awaiting an answer: 0. Basis: station-attempts-older-than-native-pending-threshold.
+    Open sync quarantines: 0. Basis: open-quarantine-events-in-selected-parks.
+    Recorded reconciliation lines off: Unavailable. Basis: current-business-date-not-reconciled.
+    Unresolved late-payment alerts: 0. Basis: unresolved-native-late-payment-alert-rows.
+    End-of-day review rows still inside: 0. Basis: current-business-date-native-end-of-day-rows.
+    Erasure requests awaiting action: Not built. Basis: suite-erasure-request-queue-not-built.
+    Approval requests awaiting action: Not built. Basis: dual-control-request-queue-not-built.",
+    ]
+[39m[90m
+
+Number of calls: [1m1[22m
+[39m
+ ❯ test/s637-digest-review.test.ts:245:24
+    243|         } });
+    244|       } catch (error) { failure = error; }
+    245|       expect(send).not.toHaveBeenCalled();
+       |                        ^
+    246|       expect(await rows()).toEqual([]);
+    247|       expect(failure).toBeInstanceOf(JobFailedError);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯

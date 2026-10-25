@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "digest-review-red-2",
+  "command": "cd apps/api\npnpm test test/s637-digest-review.test.ts",
+  "startedAt": "2026-10-25T07:52:03.229Z",
+  "completedAt": "2026-10-25T07:52:10.354Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "d23ea72638d716b3bdb84c028b8191809a12b53c0c49cabec49336957572bb61",
+  "logSha256": "860dc93cc3003b72af7c9ef54ed72107e3e77be91bfcca7b95a7d8c22086bca8",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

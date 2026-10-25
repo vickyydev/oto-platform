@@ -1,0 +1,1211 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/s637-overview-review.test.ts test/s637-decisions-review.test.ts test/s637-digest-review.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/s637-decisions-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-decisions-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s637-decisions-review.test.ts (17 tests | 17 failed) 3347ms
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R1 high: one Overview read returns all seven scoped decision items without requiring detail-screen grants 49ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R2 high: pending payment counts preserve the native states and exclude stationless hosted checkouts 28ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R3 high: open quarantine count is park-scoped rather than the existing operator-wide first-page count 17ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R4 high: late-payment alerts retain both native categories and acknowledgment is not resolution 20ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R5 medium: missing erasure and approval queues are explicitly not built, never fabricated zeroes 18ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 real HTTP decision add-on and native source contracts > R6 high: removing Overview reach refuses the next whole read rather than returning an old decision snapshot 17ms
+     → expected { …(5) } to have property "decisions"
+   × SCRUM-637 exact clock, count and ownership review > R7 medium: native pending threshold is strictly older, not equal or a replacement provider-poller rule 5ms
+     → missing decision pendingPayments: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R8 high: pending reference ownership is checked against the actual station and branch, including stale descriptors 10ms
+     → expected [] to deeply equal [ Array(1) ]
+   × SCRUM-637 exact clock, count and ownership review > R9 medium: exact pending and quarantine counts are not truncated to existing page or watchdog batch sizes 63ms
+     → missing decision pendingPayments: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R10 high: saved cash reconciliation uses native off-line tolerance, not a cancelling total difference 6ms
+     → missing decision cashVariances: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R11 medium: a missing current-day reconciliation is unavailable, not an uncounted zero or partial total 5ms
+     → missing decision cashVariances: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R12 high: each saved close follows that park business date and cannot be substituted with another operator record 4ms
+     → missing decision cashVariances: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R13 high: malformed saved reconciliation cannot be presented as successfully matched 6ms
+     → promise resolved "{ …(3) }" instead of rejecting
+   × SCRUM-637 exact clock, count and ownership review > R14 medium: native end-of-day review rows include ordinary current occupants and grouped children without an invented overdue threshold 6ms
+     → Failed query: insert into "pos"."sale" ("id", "operator_id", "branch_id", "station_id", "box_id", "business_date", "business_day_start", "timezone", "occurred_at", "received_at", "clock_trust", "origin", "sales_channel", "box_seq", "source_event_id", "action_id", "created_by_account_id", "device_credential_id", "staff_token_jti", "member_id", "visit_id", "booking_id", "pricing_mode", "pricing_mode_reason", "holiday_id", "holiday_name", "customer_tier", "tier_claim_id", "engine_version", "catalogue_version", "tax_config", "tax_breakdown", "subtotal_satang", "manual_discount_satang", "promo_discount_satang", "discount_satang", "net_satang", "service_charge_satang", "tax_inclusive_satang", "tax_exclusive_satang", "gross_satang", "unapplied_discount_satang", "refunded_satang", "receipt_series", "receipt_seq", "receipt_number", "status", "finalised_at", "voided_at", "voided_by_account_id", "void_reason", "refunded_at", "note", "created_at", "updated_at") values ($1, $2, $3, $4, default, $5, $6, $7, $8, default, default, default, default, default, default, default, default, default, default, default, default, default, $9, $10, default, default, $11, default, $12, default, $13, $14, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+params: 01a17200-fc4f-7b00-8d8b-9e8718902a6c,01a17200-f7dd-77ec-8639-b1939b199ecc,01a17200-fc4c-76bb-84ad-b724d080ab64,01a17200-fc4d-78dc-a63a-58fbb4814928,2026-10-25,05:00,Asia/Bangkok,2026-10-25T03:10:00.000Z,weekday,ZZ TEST local fixture,ZZ TEST,ZZ TEST,{},[]
+   × SCRUM-637 exact clock, count and ownership review > R15 medium: native manual resolutions remove review rows at their effective time without inventing exit events 15ms
+     → Failed query: insert into "pos"."sale" ("id", "operator_id", "branch_id", "station_id", "box_id", "business_date", "business_day_start", "timezone", "occurred_at", "received_at", "clock_trust", "origin", "sales_channel", "box_seq", "source_event_id", "action_id", "created_by_account_id", "device_credential_id", "staff_token_jti", "member_id", "visit_id", "booking_id", "pricing_mode", "pricing_mode_reason", "holiday_id", "holiday_name", "customer_tier", "tier_claim_id", "engine_version", "catalogue_version", "tax_config", "tax_breakdown", "subtotal_satang", "manual_discount_satang", "promo_discount_satang", "discount_satang", "net_satang", "service_charge_satang", "tax_inclusive_satang", "tax_exclusive_satang", "gross_satang", "unapplied_discount_satang", "refunded_satang", "receipt_series", "receipt_seq", "receipt_number", "status", "finalised_at", "voided_at", "voided_by_account_id", "void_reason", "refunded_at", "note", "created_at", "updated_at") values ($1, $2, $3, $4, default, $5, $6, $7, $8, default, default, default, default, default, default, default, default, default, default, default, default, default, $9, $10, default, default, $11, default, $12, default, $13, $14, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+params: 01a17200-fc5e-766f-9a11-e93c4e0543c5,01a17200-f7dd-77ec-8639-b1939b199ecc,01a17200-fc56-7bad-bcf9-80308d354820,01a17200-fc58-7813-b228-7173f4db0910,2026-10-25,05:00,Asia/Bangkok,2026-10-25T03:10:00.000Z,weekday,ZZ TEST local fixture,ZZ TEST,ZZ TEST,{},[]
+   × SCRUM-637 exact clock, count and ownership review > R16 high: an empty selection returns genuine scoped zeros while retaining not-built queue states 17ms
+     → missing decision pendingPayments: expected undefined to be defined
+   × SCRUM-637 exact clock, count and ownership review > R17 high: repeated reads preserve every synthetic source record and expose only decision fields 14ms
+     → expected [] to deeply equal [ 'pendingPayments', …(6) ]
+stdout | test/s637-digest-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-digest-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s637-digest-review.test.ts (16 tests | 14 failed) 3569ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R1: disabled and missing destination perform no snapshot, dispatch or intent writes 7ms
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R2: before the actual local start sends nothing; the boundary and later startup catch up the current day only 5ms
+     → expected "spy" to be called once with arguments: [ Array(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R3: the same trusted snapshot and exact text use one selected live owned branch, without global buckets or fake grants 4ms
+     → expected "spy" to be called 1 times, but got 0 times
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R4: independent timezone/branch/operator keys do not suppress one another; archived parents and branches never send 3ms
+     → expected "spy" to be called 3 times, but got 0 times
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R5: accepted day receipts suppress another tick/Retry but not the next native date 3ms
+     → expected "spy" to be called 1 times, but got 0 times
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R6: failed durable intent persistence dispatches zero requests and exposes only a safe code 4ms
+     → Expected a recorded digest failure
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R7: snapshot refusal cannot become a zero digest or leave a dispatch intent 2ms
+     → Expected a recorded digest failure
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R8: an unknown response remains uncertain across another tick and does not resend 2ms
+     → Expected a recorded digest failure
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R9: acknowledgement followed by failed durable delivery recording is not claimed successful or resent 4ms
+     → Expected a recorded digest failure
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R10: an orphaned intent after process death blocks a fresh worker without an absence-based guess 5ms
+     → Expected a recorded digest failure
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R11: a proven predispatch refusal is recorded and may retry; already accepted siblings stay accepted 3ms
+     → Expected a recorded digest failure
+   × SCRUM-637 branch morning digest — real receipts, injected transport only > R12: two existing exclusive runners cannot send the same claimed day concurrently 1006ms
+     → expected "spy" to be called 1 times, but got 0 times
+   ✓ SCRUM-637 generic private HTTPS adapter — fake fetch only > R13: absent/non-HTTPS/userinfo/fragment configuration creates no sender and performs zero requests 3ms
+   × SCRUM-637 generic private HTTPS adapter — fake fetch only > R14: sends only JSON text with redirects refused and cancels an unused response body 4ms
+     → expected 'undefined' to be 'function' // Object.is equality
+   × SCRUM-637 generic private HTTPS adapter — fake fetch only > R15: a dispatched HTTP error/redirect response is not accepted or represented as a safe no-send 2ms
+     → send is not a function
+   × SCRUM-637 generic private HTTPS adapter — fake fetch only > R16: the finite timeout aborts a stalled request and returns no raw URL or error 2ms
+     → send is not a function
+stdout | test/s637-overview-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-overview-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s637-overview-review.test.ts (7 tests | 7 failed) 2679ms
+   × SCRUM-637 Overview v2 composed native read model > R1: exposes the exact five existing summaries with one captured time and calendar date 50ms
+     → expected undefined to deeply equal { members: { …(7) }, …(4) }
+   × SCRUM-637 Overview v2 composed native read model > R2: retains distinct selected-period members instead of summing per-park counts 15ms
+     → expected { …(5) } to have property "aggregates.members.totals.visits" with value 2
+   × SCRUM-637 Overview v2 composed native read model > R3: includes unassigned AI once only for an unfiltered genuine operator grant 16ms
+     → expected { …(5) } to have property "aggregates.assistantUsage.totals.totalTokens" with value 22
+   × SCRUM-637 Overview v2 composed native read model > R4: copies safe source/date/status text, preserving unavailable USD pricing and native review-row units 14ms
+     → expected { …(5) } to have property "statusSummary"
+   × SCRUM-637 Overview v2 composed native read model > R5: keeps failed child queries as failures instead of returning an all-clear summary 19ms
+     → promise resolved "{ …(5) }" instead of rejecting
+   × SCRUM-637 Overview v2 composed native read model > R6: HTTP output validates all composed groups and forbids browser caching 27ms
+     → expected undefined to be 'private, no-store' // Object.is equality
+   × SCRUM-637 Overview v2 composed native read model > R7: a live archive cannot remain in a freshly requested child scope or copied text 9ms
+     → expected { …(5) } to have property "aggregates.members.totals.visits" with value 1
+
+ Test Files  3 failed (3)
+      Tests  38 failed | 2 passed (40)
+   Start at  07:40:20
+   Duration  18.47s (transform 3.45s, setup 0ms, collect 8.17s, tests 9.59s, environment 0ms, prepare 207ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+(node:250) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1682) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1858) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 38 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R1 high: one Overview read returns all seven scoped decision items without requiring detail-screen grants
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:143:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R2 high: pending payment counts preserve the native states and exclude stationless hosted checkouts
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:165:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R3 high: open quarantine count is park-scoped rather than the existing operator-wide first-page count
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:181:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R4 high: late-payment alerts retain both native categories and acknowledgment is not resolution
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:196:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R5 medium: missing erasure and approval queues are explicitly not built, never fabricated zeroes
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:203:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 real HTTP decision add-on and native source contracts > R6 high: removing Overview reach refuses the next whole read rather than returning an old decision snapshot
+AssertionError: expected { …(5) } to have property "decisions"
+ ❯ overview test/s637-decisions-review.test.ts:78:16
+     76|   expect(response.statusCode).toBe(200);
+     77|   const body = response.json();
+     78|   expect(body).toHaveProperty('decisions');
+       |                ^
+     79|   return body.decisions as ConsoleDecisionsSnapshot;
+     80| }
+ ❯ test/s637-decisions-review.test.ts:213:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R7 medium: native pending threshold is strictly older, not equal or a replacement provider-poller rule
+AssertionError: missing decision pendingPayments: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:227:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R8 high: pending reference ownership is checked against the actual station and branch, including stale descriptors
+AssertionError: expected [] to deeply equal [ Array(1) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   "01a17200-fbee-7cb6-a45c-6884e2552b8b",[39m
+[32m- ][39m
+[31m+ [][39m
+
+ ❯ test/s637-decisions-review.test.ts:240:53
+    238|     await ctx.db.update(station).set({ archivedAt: NOW }).where(eq(sta…
+    239|     const result = await read(f, [f.a, f.foreign, { ...f.archived, arc…
+    240|     expect(result.parks.map(park => park.branchId)).toEqual([f.a.id]);
+       |                                                     ^
+    241|     expect(item(result, 'pendingPayments').count).toBe(1);
+    242|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R9 medium: exact pending and quarantine counts are not truncated to existing page or watchdog batch sizes
+AssertionError: missing decision pendingPayments: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:255:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R10 high: saved cash reconciliation uses native off-line tolerance, not a cancelling total difference
+AssertionError: missing decision cashVariances: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:264:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R11 medium: a missing current-day reconciliation is unavailable, not an uncounted zero or partial total
+AssertionError: missing decision cashVariances: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:275:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R12 high: each saved close follows that park business date and cannot be substituted with another operator record
+AssertionError: missing decision cashVariances: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:286:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R13 high: malformed saved reconciliation cannot be presented as successfully matched
+AssertionError: promise resolved "{ …(3) }" instead of rejecting
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "generatedAt": "2026-10-25T03:30:00.000Z",[39m
+[31m+   "items": [],[39m
+[31m+   "parks": [],[39m
+[2m  }[22m
+
+ ❯ test/s637-decisions-review.test.ts:294:32
+    292|     const f = await estate();
+    293|     await close(f, f.a, [{}] as EodLine[]);
+    294|     await expect(read(f, [f.a])).rejects.toThrow();
+       |                                ^
+    295|   });
+    296|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R14 medium: native end-of-day review rows include ordinary current occupants and grouped children without an invented overdue threshold
+Error: Failed query: insert into "pos"."sale" ("id", "operator_id", "branch_id", "station_id", "box_id", "business_date", "business_day_start", "timezone", "occurred_at", "received_at", "clock_trust", "origin", "sales_channel", "box_seq", "source_event_id", "action_id", "created_by_account_id", "device_credential_id", "staff_token_jti", "member_id", "visit_id", "booking_id", "pricing_mode", "pricing_mode_reason", "holiday_id", "holiday_name", "customer_tier", "tier_claim_id", "engine_version", "catalogue_version", "tax_config", "tax_breakdown", "subtotal_satang", "manual_discount_satang", "promo_discount_satang", "discount_satang", "net_satang", "service_charge_satang", "tax_inclusive_satang", "tax_exclusive_satang", "gross_satang", "unapplied_discount_satang", "refunded_satang", "receipt_series", "receipt_seq", "receipt_number", "status", "finalised_at", "voided_at", "voided_by_account_id", "void_reason", "refunded_at", "note", "created_at", "updated_at") values ($1, $2, $3, $4, default, $5, $6, $7, $8, default, default, default, default, default, default, default, default, default, default, default, default, default, $9, $10, default, default, $11, default, $12, default, $13, $14, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+params: 01a17200-fc4f-7b00-8d8b-9e8718902a6c,01a17200-f7dd-77ec-8639-b1939b199ecc,01a17200-fc4c-76bb-84ad-b724d080ab64,01a17200-fc4d-78dc-a63a-58fbb4814928,2026-10-25,05:00,Asia/Bangkok,2026-10-25T03:10:00.000Z,weekday,ZZ TEST local fixture,ZZ TEST,ZZ TEST,{},[]
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ inside test/s637-decisions-review.test.ts:123:3
+    121|   const saleId = newId(), adult = newId(), child = newId(), checkinId …
+    122|   const entered = new Date(NOW.getTime() - 20 * 60_000);
+    123|   await ctx.db.insert(sale).values({
+       |   ^
+    124|     id: saleId, operatorId, branchId: f.a.id, stationId: f.stationA.id,
+    125|     businessDate: summaryBranchToday(f.a, NOW), businessDayStart: '05:…
+ ❯ test/s637-decisions-review.test.ts:299:5
+
+Caused by: error: new row for relation "sale" violates check constraint "sale_actor_check"
+ ❯ ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:149:14
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ inside test/s637-decisions-review.test.ts:123:3
+ ❯ test/s637-decisions-review.test.ts:299:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 755, severity: 'ERROR', code: '23514', detail: 'Failing row contains (01a17200-fc4f-7b00-8d8b-9e8718902a6c, 01a17200-f7dd-77ec-8639-b1939b199ecc, 01a17200-fc4c-76bb-84ad-b724d080ab64, 01a17200-fc4d-78dc-a63a-58fbb4814928, null, 2026-10-25, 05:00:00, Asia/Bangkok, 2026-10-25 03:10:00+00, 2026-10-25 07:40:29.647916+00, trusted, cloud, till, null, null, null, null, null, null, null, null, weekday, ZZ TEST local fixture, null, null, ZZ TEST, ZZ TEST, null, {}, [], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, null, tendering, null, null, null, null, null, null, 2026-10-25 07:40:29.647916+00, 2026-10-25 07:40:29.647916+00, null, null).', hint: undefined, position: undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: 'pos', table: 'sale', dataType: undefined, constraint: 'sale_actor_check', file: 'execMain.c', routine: 'ExecConstraints' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R15 medium: native manual resolutions remove review rows at their effective time without inventing exit events
+Error: Failed query: insert into "pos"."sale" ("id", "operator_id", "branch_id", "station_id", "box_id", "business_date", "business_day_start", "timezone", "occurred_at", "received_at", "clock_trust", "origin", "sales_channel", "box_seq", "source_event_id", "action_id", "created_by_account_id", "device_credential_id", "staff_token_jti", "member_id", "visit_id", "booking_id", "pricing_mode", "pricing_mode_reason", "holiday_id", "holiday_name", "customer_tier", "tier_claim_id", "engine_version", "catalogue_version", "tax_config", "tax_breakdown", "subtotal_satang", "manual_discount_satang", "promo_discount_satang", "discount_satang", "net_satang", "service_charge_satang", "tax_inclusive_satang", "tax_exclusive_satang", "gross_satang", "unapplied_discount_satang", "refunded_satang", "receipt_series", "receipt_seq", "receipt_number", "status", "finalised_at", "voided_at", "voided_by_account_id", "void_reason", "refunded_at", "note", "created_at", "updated_at") values ($1, $2, $3, $4, default, $5, $6, $7, $8, default, default, default, default, default, default, default, default, default, default, default, default, default, $9, $10, default, default, $11, default, $12, default, $13, $14, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+params: 01a17200-fc5e-766f-9a11-e93c4e0543c5,01a17200-f7dd-77ec-8639-b1939b199ecc,01a17200-fc56-7bad-bcf9-80308d354820,01a17200-fc58-7813-b228-7173f4db0910,2026-10-25,05:00,Asia/Bangkok,2026-10-25T03:10:00.000Z,weekday,ZZ TEST local fixture,ZZ TEST,ZZ TEST,{},[]
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:73:11
+ ❯ inside test/s637-decisions-review.test.ts:123:3
+    121|   const saleId = newId(), adult = newId(), child = newId(), checkinId …
+    122|   const entered = new Date(NOW.getTime() - 20 * 60_000);
+    123|   await ctx.db.insert(sale).values({
+       |   ^
+    124|     id: saleId, operatorId, branchId: f.a.id, stationId: f.stationA.id,
+    125|     businessDate: summaryBranchToday(f.a, NOW), businessDayStart: '05:…
+ ❯ test/s637-decisions-review.test.ts:312:41
+
+Caused by: error: new row for relation "sale" violates check constraint "sale_actor_check"
+ ❯ ../../node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.0/node_modules/pg-pool/index.js:45:11
+ ❯ ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/node-postgres/session.ts:149:14
+ ❯ NodePgPreparedQuery.queryWithCache ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.23.1_pg@8.23.0/node_modules/src/pg-core/session.ts:71:12
+ ❯ inside test/s637-decisions-review.test.ts:123:3
+ ❯ test/s637-decisions-review.test.ts:312:41
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 755, severity: 'ERROR', code: '23514', detail: 'Failing row contains (01a17200-fc5e-766f-9a11-e93c4e0543c5, 01a17200-f7dd-77ec-8639-b1939b199ecc, 01a17200-fc56-7bad-bcf9-80308d354820, 01a17200-fc58-7813-b228-7173f4db0910, null, 2026-10-25, 05:00:00, Asia/Bangkok, 2026-10-25 03:10:00+00, 2026-10-25 07:40:29.662529+00, trusted, cloud, till, null, null, null, null, null, null, null, null, weekday, ZZ TEST local fixture, null, null, ZZ TEST, ZZ TEST, null, {}, [], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, null, tendering, null, null, null, null, null, null, 2026-10-25 07:40:29.662529+00, 2026-10-25 07:40:29.662529+00, null, null).', hint: undefined, position: undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: 'pos', table: 'sale', dataType: undefined, constraint: 'sale_actor_check', file: 'execMain.c', routine: 'ExecConstraints' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R16 high: an empty selection returns genuine scoped zeros while retaining not-built queue states
+AssertionError: missing decision pendingPayments: expected undefined to be defined
+ ❯ item test/s637-decisions-review.test.ts:84:45
+     82|   const items = branchId ? snapshot.parks.find(park => park.branchId =…
+     83|   const result = items?.find(entry => entry.key === key);
+     84|   expect(result, `missing decision ${key}`).toBeDefined();
+       |                                             ^
+     85|   return result!;
+     86| }
+ ❯ test/s637-decisions-review.test.ts:330:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/38]⎯
+
+ FAIL  test/s637-decisions-review.test.ts > SCRUM-637 exact clock, count and ownership review > R17 high: repeated reads preserve every synthetic source record and expose only decision fields
+AssertionError: expected [] to deeply equal [ 'pendingPayments', …(6) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   "pendingPayments",[39m
+[32m-   "syncQuarantine",[39m
+[32m-   "cashVariances",[39m
+[32m-   "latePayments",[39m
+[32m-   "strandedOccupants",[39m
+[32m-   "erasureRequests",[39m
+[32m-   "approvalRequests",[39m
+[32m- ][39m
+[31m+ [][39m
+
+ ❯ test/s637-decisions-review.test.ts:352:50
+    350|     for (const key of ['amountSatang', 'payload', 'phone', 'childName'…
+    351|     expect(raw).not.toContain(privateMarker);
+    352|     expect(second.items.map(entry => entry.key)).toEqual(KEYS);
+       |                                                  ^
+    353|   });
+    354| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R2: before the actual local start sends nothing; the boundary and later startup catch up the current day only
+AssertionError: expected "spy" to be called once with arguments: [ Array(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ test/s637-digest-review.test.ts:90:18
+     88|     expect(send).not.toHaveBeenCalled();
+     89|     const result = await run(send, { now: new Date('2026-10-24T22:00:0…
+     90|     expect(send).toHaveBeenCalledExactlyOnceWith(summary);
+       |                  ^
+     91|     expect(result.groups).toEqual([expect.objectContaining({ operatorI…
+     92|     await run(send, { now });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R3: the same trusted snapshot and exact text use one selected live owned branch, without global buckets or fake grants
+AssertionError: expected "spy" to be called 1 times, but got 0 times
+ ❯ test/s637-digest-review.test.ts:99:18
+     97|     const send = accepted(); const read = snapshot();
+     98|     await run(send, { snapshot: read });
+     99|     expect(read).toHaveBeenCalledTimes(1);
+       |                  ^
+    100|     const [db, scope] = read.mock.calls[0]!;
+    101|     expect(db).toBe(ctx.db); expect(scope.operatorId).toBe(opA);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R4: independent timezone/branch/operator keys do not suppress one another; archived parents and branches never send
+AssertionError: expected "spy" to be called 3 times, but got 0 times
+ ❯ test/s637-digest-review.test.ts:123:18
+    121|     const send = accepted(); const read = snapshot();
+    122|     const result = await run(send, { snapshot: read });
+    123|     expect(send).toHaveBeenCalledTimes(3);
+       |                  ^
+    124|     expect(result.groups.map(g => [g.operatorId, g.branchId, g.date]).…
+    125|       [opA, parkA, '2026-10-25'], [opA, parkA2, '2026-10-24'], [opB, p…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R5: accepted day receipts suppress another tick/Retry but not the next native date
+AssertionError: expected "spy" to be called 1 times, but got 0 times
+ ❯ test/s637-digest-review.test.ts:136:18
+    134|   it('R5: accepted day receipts suppress another tick/Retry but not th…
+    135|     const send = accepted(); await run(send); await run(send);
+    136|     expect(send).toHaveBeenCalledTimes(1);
+       |                  ^
+    137|     await run(send, { now: new Date('2026-10-26T00:30:00Z') });
+    138|     expect(send).toHaveBeenCalledTimes(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R6: failed durable intent persistence dispatches zero requests and exposes only a safe code
+Error: Expected a recorded digest failure
+ ❯ failed test/s637-digest-review.test.ts:38:9
+     36|     return error as JobFailedError;
+     37|   }
+     38|   throw new Error('Expected a recorded digest failure');
+       |         ^
+     39| }
+     40|
+ ❯ test/s637-digest-review.test.ts:144:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R7: snapshot refusal cannot become a zero digest or leave a dispatch intent
+Error: Expected a recorded digest failure
+ ❯ failed test/s637-digest-review.test.ts:38:9
+     36|     return error as JobFailedError;
+     37|   }
+     38|   throw new Error('Expected a recorded digest failure');
+       |         ^
+     39| }
+     40|
+ ❯ test/s637-digest-review.test.ts:152:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R8: an unknown response remains uncertain across another tick and does not resend
+Error: Expected a recorded digest failure
+ ❯ failed test/s637-digest-review.test.ts:38:9
+     36|     return error as JobFailedError;
+     37|   }
+     38|   throw new Error('Expected a recorded digest failure');
+       |         ^
+     39| }
+     40|
+ ❯ test/s637-digest-review.test.ts:160:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R9: acknowledgement followed by failed durable delivery recording is not claimed successful or resent
+Error: Expected a recorded digest failure
+ ❯ failed test/s637-digest-review.test.ts:38:9
+     36|     return error as JobFailedError;
+     37|   }
+     38|   throw new Error('Expected a recorded digest failure');
+       |         ^
+     39| }
+     40|
+ ❯ test/s637-digest-review.test.ts:168:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R10: an orphaned intent after process death blocks a fresh worker without an absence-based guess
+Error: Expected a recorded digest failure
+ ❯ failed test/s637-digest-review.test.ts:38:9
+     36|     return error as JobFailedError;
+     37|   }
+     38|   throw new Error('Expected a recorded digest failure');
+       |         ^
+     39| }
+     40|
+ ❯ test/s637-digest-review.test.ts:177:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R11: a proven predispatch refusal is recorded and may retry; already accepted siblings stay accepted
+Error: Expected a recorded digest failure
+ ❯ failed test/s637-digest-review.test.ts:38:9
+     36|     return error as JobFailedError;
+     37|   }
+     38|   throw new Error('Expected a recorded digest failure');
+       |         ^
+     39| }
+     40|
+ ❯ test/s637-digest-review.test.ts:186:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 branch morning digest — real receipts, injected transport only > R12: two existing exclusive runners cannot send the same claimed day concurrently
+AssertionError: expected "spy" to be called 1 times, but got 0 times
+ ❯ test/s637-digest-review.test.ts:202:43
+    200|     const first = firstRunner.runJob(job.name, { force: true });
+    201|     try {
+    202|       await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+       |                                           ^
+    203|       expect(await secondRunner.runJob(job.name, { force: true })).toB…
+    204|     } finally { release(); await first; }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 generic private HTTPS adapter — fake fetch only > R14: sends only JSON text with redirects refused and cancels an unused response body
+AssertionError: expected 'undefined' to be 'function' // Object.is equality
+
+Expected: [32m"[7mf[27mun[7mction[27m"[39m
+Received: [31m"un[7mdefined[27m"[39m
+
+ ❯ test/s637-digest-review.test.ts:223:25
+    221|     const fetcher = vi.fn<typeof fetch>().mockResolvedValue({ status: …
+    222|     const send = createConsoleDigestSender('https://example.invalid/di…
+    223|     expect(typeof send).toBe('function');
+       |                         ^
+    224|     expect(await send(summary)).toEqual({ state: 'accepted', status: 2…
+    225|     const [, options] = fetcher.mock.calls[0]!;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 generic private HTTPS adapter — fake fetch only > R15: a dispatched HTTP error/redirect response is not accepted or represented as a safe no-send
+TypeError: send is not a function
+ ❯ test/s637-digest-review.test.ts:234:20
+    232|       const fetcher = vi.fn<typeof fetch>().mockResolvedValue({ ...res…
+    233|       const send = createConsoleDigestSender('https://example.invalid/…
+    234|       expect(await send(summary)).toMatchObject({ state: 'uncertain', …
+       |                    ^
+    235|       expect(fetcher).toHaveBeenCalledTimes(1);
+    236|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/38]⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 generic private HTTPS adapter — fake fetch only > R16: the finite timeout aborts a stalled request and returns no raw URL or error
+TypeError: send is not a function
+ ❯ test/s637-digest-review.test.ts:244:26
+    242|     }));
+    243|     const send = createConsoleDigestSender('https://example.invalid/di…
+    244|     const result = await send(summary);
+       |                          ^
+    245|     expect(result).toEqual({ state: 'uncertain', code: 'transport-time…
+    246|     expect(fetcher.mock.calls[0]![1]!.signal!.aborted).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/38]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R1: exposes the exact five existing summaries with one captured time and calendar date
+AssertionError: expected undefined to deeply equal { members: { …(7) }, …(4) }
+
+[32m- Expected:[39m
+{
+  "assistantUsage": {
+    "attribution": "seat-at-ask",
+    "basis": "created-at-bangkok",
+    "branches": [
+      {
+        "businessDate": "2026-10-24",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "name": "ZZ TEST Overview v2 0",
+        "timezone": "Pacific/Honolulu",
+      },
+      {
+        "businessDate": "2026-10-25",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "name": "ZZ TEST Overview v2 1",
+        "timezone": "Pacific/Kiritimati",
+      },
+    ],
+    "coverage": "retained-records",
+    "currency": "USD",
+    "excludesCacheWrites": true,
+    "generatedAt": "2026-10-25T03:30:00.000Z",
+    "operatorWide": {
+      "rows": [
+        {
+          "cacheReadTokens": 0,
+          "count": 1,
+          "date": "2026-10-25",
+          "inputTokens": 7,
+          "outputTokens": 0,
+          "reason": "no_rate_configured",
+          "spendEstimate": null,
+          "totalTokens": 7,
+          "unpricedTokens": 7,
+        },
+      ],
+      "totals": {
+        "cacheReadTokens": 0,
+        "count": 1,
+        "inputTokens": 7,
+        "outputTokens": 0,
+        "reason": "no_rate_configured",
+        "spendEstimate": null,
+        "totalTokens": 7,
+        "unpricedTokens": 7,
+      },
+    },
+    "parks": [
+      {
+        "branchId": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "rows": [
+          {
+            "cacheReadTokens": 3,
+            "count": 1,
+            "date": "2026-10-25",
+            "inputTokens": 10,
+            "outputTokens": 2,
+            "reason": "no_rate_configured",
+            "spendEstimate": null,
+            "totalTokens": 15,
+            "unpricedTokens": 15,
+          },
+        ],
+        "totals": {
+          "cacheReadTokens": 3,
+          "count": 1,
+          "inputTokens": 10,
+          "outputTokens": 2,
+          "reason": "no_rate_configured",
+          "spendEstimate": null,
+          "totalTokens": 15,
+          "unpricedTokens": 15,
+        },
+      },
+      {
+        "branchId": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "rows": [
+          {
+            "cacheReadTokens": 0,
+            "count": 0,
+            "date": "2026-10-25",
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "reason": "no_rate_configured",
+            "spendEstimate": null,
+            "totalTokens": 0,
+            "unpricedTokens": 0,
+          },
+        ],
+        "totals": {
+          "cacheReadTokens": 0,
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "reason": "no_rate_configured",
+          "spendEstimate": null,
+          "totalTokens": 0,
+          "unpricedTokens": 0,
+        },
+      },
+    ],
+    "period": {
+      "from": "2026-10-25",
+      "to": "2026-10-25",
+    },
+    "retentionDays": 90,
+    "selectedBranchIds": [
+      "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+      "01a17201-14bc-7ed6-9ada-f12c300a1816",
+    ],
+    "totals": {
+      "cacheReadTokens": 3,
+      "count": 2,
+      "inputTokens": 17,
+      "outputTokens": 2,
+      "reason": "no_rate_configured",
+      "spendEstimate": null,
+      "totalTokens": 22,
+      "unpricedTokens": 22,
+    },
+  },
+  "bookings": {
+    "basis": "booking-date",
+    "branches": [
+      {
+        "businessDate": "2026-10-24",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "name": "ZZ TEST Overview v2 0",
+        "timezone": "Pacific/Honolulu",
+      },
+      {
+        "businessDate": "2026-10-25",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "name": "ZZ TEST Overview v2 1",
+        "timezone": "Pacific/Kiritimati",
+      },
+    ],
+    "generatedAt": "2026-10-25T03:30:00.000Z",
+    "parks": [
+      {
+        "branchId": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "rows": [
+          {
+            "bookedValueSatang": 0,
+            "bookings": 0,
+            "date": "2026-10-25",
+            "redeemedBookings": 0,
+          },
+        ],
+        "totals": {
+          "bookedValueSatang": 0,
+          "bookings": 0,
+          "redeemedBookings": 0,
+        },
+      },
+      {
+        "branchId": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "rows": [
+          {
+            "bookedValueSatang": 0,
+            "bookings": 0,
+            "date": "2026-10-25",
+            "redeemedBookings": 0,
+          },
+        ],
+        "totals": {
+          "bookedValueSatang": 0,
+          "bookings": 0,
+          "redeemedBookings": 0,
+        },
+      },
+    ],
+    "period": {
+      "from": "2026-10-25",
+      "to": "2026-10-25",
+    },
+    "redemptionBasis": "booking-date-cohort",
+    "selectedBranchIds": [
+      "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+      "01a17201-14bc-7ed6-9ada-f12c300a1816",
+    ],
+    "totals": {
+      "bookedValueSatang": 0,
+      "bookings": 0,
+      "redeemedBookings": 0,
+    },
+    "valueBasis": "priced-booking-value",
+  },
+  "fleet": {
+    "asOf": "2026-10-25T03:30:00.000Z",
+    "basis": "current-snapshot",
+    "branches": [
+      {
+        "businessDate": "2026-10-24",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "name": "ZZ TEST Overview v2 0",
+        "timezone": "Pacific/Honolulu",
+      },
+      {
+        "businessDate": "2026-10-25",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "name": "ZZ TEST Overview v2 1",
+        "timezone": "Pacific/Kiritimati",
+      },
+    ],
+    "generatedAt": "2026-10-25T03:30:00.000Z",
+    "parks": [
+      {
+        "boxes": 0,
+        "branchId": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "disabled": 0,
+        "offline": 0,
+        "online": 0,
+        "unclaimed": 0,
+      },
+      {
+        "boxes": 0,
+        "branchId": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "disabled": 0,
+        "offline": 0,
+        "online": 0,
+        "unclaimed": 0,
+      },
+    ],
+    "selectedBranchIds": [
+      "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+      "01a17201-14bc-7ed6-9ada-f12c300a1816",
+    ],
+    "totals": {
+      "boxes": 0,
+      "disabled": 0,
+      "offline": 0,
+      "online": 0,
+      "unclaimed": 0,
+    },
+  },
+  "inboxAiUsage": {
+    "attribution": "current-conversation-branch",
+    "basis": "created-at-bangkok",
+    "branches": [
+      {
+        "businessDate": "2026-10-24",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "name": "ZZ TEST Overview v2 0",
+        "timezone": "Pacific/Honolulu",
+      },
+      {
+        "businessDate": "2026-10-25",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "name": "ZZ TEST Overview v2 1",
+        "timezone": "Pacific/Kiritimati",
+      },
+    ],
+    "coverage": "retained-records",
+    "currency": "USD",
+    "excludesCacheWrites": true,
+    "generatedAt": "2026-10-25T03:30:00.000Z",
+    "operatorWide": {
+      "rows": [
+        {
+          "cacheReadTokens": 0,
+          "count": 0,
+          "date": "2026-10-25",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "reason": "no_rate_configured",
+          "spendEstimate": null,
+          "totalTokens": 0,
+          "unpricedTokens": 0,
+        },
+      ],
+      "totals": {
+        "cacheReadTokens": 0,
+        "count": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "reason": "no_rate_configured",
+        "spendEstimate": null,
+        "totalTokens": 0,
+        "unpricedTokens": 0,
+      },
+    },
+    "parks": [
+      {
+        "branchId": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "rows": [
+          {
+            "cacheReadTokens": 0,
+            "count": 0,
+            "date": "2026-10-25",
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "reason": "no_rate_configured",
+            "spendEstimate": null,
+            "totalTokens": 0,
+            "unpricedTokens": 0,
+          },
+        ],
+        "totals": {
+          "cacheReadTokens": 0,
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "reason": "no_rate_configured",
+          "spendEstimate": null,
+          "totalTokens": 0,
+          "unpricedTokens": 0,
+        },
+      },
+      {
+        "branchId": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "rows": [
+          {
+            "cacheReadTokens": 0,
+            "count": 0,
+            "date": "2026-10-25",
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "reason": "no_rate_configured",
+            "spendEstimate": null,
+            "totalTokens": 0,
+            "unpricedTokens": 0,
+          },
+        ],
+        "totals": {
+          "cacheReadTokens": 0,
+          "count": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "reason": "no_rate_configured",
+          "spendEstimate": null,
+          "totalTokens": 0,
+          "unpricedTokens": 0,
+        },
+      },
+    ],
+    "period": {
+      "from": "2026-10-25",
+      "to": "2026-10-25",
+    },
+    "retentionDays": null,
+    "selectedBranchIds": [
+      "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+      "01a17201-14bc-7ed6-9ada-f12c300a1816",
+    ],
+    "totals": {
+      "cacheReadTokens": 0,
+      "count": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "reason": "no_rate_configured",
+      "spendEstimate": null,
+      "totalTokens": 0,
+      "unpricedTokens": 0,
+    },
+  },
+  "members": {
+    "basis": "visit-date",
+    "branches": [
+      {
+        "businessDate": "2026-10-24",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "name": "ZZ TEST Overview v2 0",
+        "timezone": "Pacific/Honolulu",
+      },
+      {
+        "businessDate": "2026-10-25",
+        "businessDayStart": "05:00",
+        "id": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "name": "ZZ TEST Overview v2 1",
+        "timezone": "Pacific/Kiritimati",
+      },
+    ],
+    "generatedAt": "2026-10-25T03:30:00.000Z",
+    "parks": [
+      {
+        "branchId": "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+        "rows": [
+          {
+            "activeVisits": 0,
+            "closedVisits": 0,
+            "date": "2026-10-25",
+            "draftVisits": 1,
+            "visitingMembers": 1,
+            "visits": 1,
+          },
+        ],
+        "totals": {
+          "activeVisits": 0,
+          "closedVisits": 0,
+          "draftVisits": 1,
+          "visitingMembers": 1,
+          "visits": 1,
+        },
+      },
+      {
+        "branchId": "01a17201-14bc-7ed6-9ada-f12c300a1816",
+        "rows": [
+          {
+            "activeVisits": 0,
+            "closedVisits": 1,
+            "date": "2026-10-25",
+            "draftVisits": 0,
+            "visitingMembers": 1,
+            "visits": 1,
+          },
+        ],
+        "totals": {
+          "activeVisits": 0,
+          "closedVisits": 1,
+          "draftVisits": 0,
+          "visitingMembers": 1,
+          "visits": 1,
+        },
+      },
+    ],
+    "period": {
+      "from": "2026-10-25",
+      "to": "2026-10-25",
+    },
+    "selectedBranchIds": [
+      "01a17201-14bc-7ed6-9ada-f12b9ebea222",
+      "01a17201-14bc-7ed6-9ada-f12c300a1816",
+    ],
+    "totals": {
+      "activeVisits": 0,
+      "closedVisits": 1,
+      "draftVisits": 1,
+      "visitingMembers": 1,
+      "visits": 2,
+    },
+  },
+}
+
+[31m+ Received:[39m
+undefined
+
+ ❯ test/s637-overview-review.test.ts:58:29
+     56|       fleet: await fleetSnapshotOf(ctx.db, input),
+     57|     };
+     58|     expect(body.aggregates).toEqual(expected);
+       |                             ^
+     59|     expect(result.generatedAt).toBe(now.toISOString());
+     60|     expect(result.parks.map(park => park.businessDate)).toEqual(['2026…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/38]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R2: retains distinct selected-period members instead of summing per-park counts
+AssertionError: expected { …(5) } to have property "aggregates.members.totals.visits" with value 2
+
+[32m- Expected:[39m
+2
+
+[31m+ Received:[39m
+undefined
+
+ ❯ test/s637-overview-review.test.ts:66:20
+     64|   it('R2: retains distinct selected-period members instead of summing …
+     65|     const result = await overviewOf(ctx.db, { operatorId, effective, n…
+     66|     expect(result).toHaveProperty('aggregates.members.totals.visits', …
+       |                    ^
+     67|     expect(result).toHaveProperty('aggregates.members.totals.visitingM…
+     68|     expect(result).toHaveProperty('aggregates.members.parks.0.totals.v…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/38]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R3: includes unassigned AI once only for an unfiltered genuine operator grant
+AssertionError: expected { …(5) } to have property "aggregates.assistantUsage.totals.totalTokens" with value 22
+
+[32m- Expected:[39m
+22
+
+[31m+ Received:[39m
+undefined
+
+ ❯ test/s637-overview-review.test.ts:74:17
+     72|   it('R3: includes unassigned AI once only for an unfiltered genuine o…
+     73|     const all = await overviewOf(ctx.db, { operatorId, effective, now …
+     74|     expect(all).toHaveProperty('aggregates.assistantUsage.totals.total…
+       |                 ^
+     75|     expect(all).toHaveProperty('aggregates.assistantUsage.operatorWide…
+     76|     const branchUnion: EffectivePermission[] = parks.map(scopeId => ({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/38]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R4: copies safe source/date/status text, preserving unavailable USD pricing and native review-row units
+AssertionError: expected { …(5) } to have property "statusSummary"
+ ❯ test/s637-overview-review.test.ts:89:20
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/38]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R5: keeps failed child queries as failures instead of returning an all-clear summary
+AssertionError: promise resolved "{ …(5) }" instead of rejecting
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "branches": [[39m
+[31m+     {[39m
+[31m+       "businessDate": "2026-10-24",[39m
+[31m+       "businessDayStart": "05:00",[39m
+[31m+       "id": "01a17201-14bc-7ed6-9ada-f12b9ebea222",[39m
+[31m+       "name": "ZZ TEST Overview v2 0",[39m
+[31m+       "timezone": "Pacific/Honolulu",[39m
+[31m+     },[39m
+[31m+     {[39m
+[31m+       "businessDate": "2026-10-25",[39m
+[31m+       "businessDayStart": "05:00",[39m
+[31m+       "id": "01a17201-14bc-7ed6-9ada-f12c300a1816",[39m
+[31m+       "name": "ZZ TEST Overview v2 1",[39m
+[31m+       "timezone": "Pacific/Kiritimati",[39m
+[31m+     },[39m
+[31m+   ],[39m
+[31m+   "generatedAt": "2026-10-25T03:30:00.000Z",[39m
+[31m+   "parks": [[39m
+[31m+     {[39m
+[31m+       "analyticsSource": "oto_pos",[39m
+[31m+       "bookingsToday": 0,[39m
+[31m+       "boxesOffline": 0,[39m
+[31m+       "branchId": "01a17201-14bc-7ed6-9ada-f12b9ebea222",[39m
+[31m+       "businessDate": "2026-10-24",[39m
+[31m+       "guests": 0,[39m
+[31m+       "inParkNow": 0,[39m
+[31m+       "inboxUnanswered": 0,[39m
+[31m+       "lastRolledUpAt": null,[39m
+[31m+       "occupancyAsOf": null,[39m
+[31m+       "occupancyStale": true,[39m
+[31m+       "openAlerts": 0,[39m
+[31m+       "provisional": true,[39m
+[31m+       "revenueSatang": 0,[39m
+[31m+     },[39m
+[31m+     {[39m
+[31m+       "analyticsSource": "oto_pos",[39m
+[31m+       "bookingsToday": 0,[39m
+[31m+       "boxesOffline": 0,[39m
+[31m+       "branchId": "01a17201-14bc-7ed6-9ada-f12c300a1816",[39m
+[31m+       "businessDate": "2026-10-25",[39m
+[31m+       "guests": 0,[39m
+[31m+       "inParkNow": 0,[39m
+[31m+       "inboxUnanswered": 0,[39m
+[31m+       "lastRolledUpAt": null,[39m
+[31m+       "occupancyAsOf": null,[39m
+[31m+       "occupancyStale": true,[39m
+[31m+       "openAlerts": 0,[39m
+[31m+       "provisional": true,[39m
+[31m+       "revenueSatang": 0,[39m
+[31m+     },[39m
+[31m+   ],[39m
+[31m+   "selectedBranchIds": [[39m
+[31m+     "01a17201-14bc-7ed6-9ada-f12b9ebea222",[39m
+[31m+     "01a17201-14bc-7ed6-9ada-f12c300a1816",[39m
+[31m+   ],[39m
+[31m+   "totals": {[39m
+[31m+     "bookingsToday": 0,[39m
+[31m+     "boxesOffline": 0,[39m
+[31m+     "guests": 0,[39m
+[31m+     "inParkNow": 0,[39m
+[31m+     "inboxUnanswered": 0,[39m
+[31m+     "openAlerts": 0,[39m
+[31m+     "revenueSatang": 0,[39m
+[31m+   },[39m
+[2m  }[22m
+
+ ❯ test/s637-overview-review.test.ts:105:68
+    103|       return typeof value === 'function' ? value.bind(target) : value;
+    104|     } });
+    105|     await expect(overviewOf(broken, { operatorId, effective, now })).r…
+       |                                                                    ^
+    106|   });
+    107|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/38]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R6: HTTP output validates all composed groups and forbids browser caching
+AssertionError: expected undefined to be 'private, no-store' // Object.is equality
+
+[32m- Expected:[39m
+"private, no-store"
+
+[31m+ Received:[39m
+undefined
+
+ ❯ test/s637-overview-review.test.ts:111:47
+    109|     const response = await ctx.app.inject({ method: 'GET', url: '/over…
+    110|     expect(response.statusCode, response.body).toBe(200);
+    111|     expect(response.headers['cache-control']).toBe('private, no-store'…
+       |                                               ^
+    112|     for (const key of ['members', 'bookings', 'assistantUsage', 'inbox…
+    113|     expect(response.json()).toHaveProperty('decisions.items');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/38]⎯
+
+ FAIL  test/s637-overview-review.test.ts > SCRUM-637 Overview v2 composed native read model > R7: a live archive cannot remain in a freshly requested child scope or copied text
+AssertionError: expected { …(5) } to have property "aggregates.members.totals.visits" with value 1
+
+[32m- Expected:[39m
+1
+
+[31m+ Received:[39m
+undefined
+
+ ❯ test/s637-overview-review.test.ts:123:22
+    121|       const result = await overviewOf(ctx.db, { operatorId, effective,…
+    122|       expect(result.selectedBranchIds).toEqual([parks[0]]);
+    123|       expect(result).toHaveProperty('aggregates.members.totals.visits'…
+       |                      ^
+    124|       expect(result).toHaveProperty('aggregates.members.selectedBranch…
+    125|       expect((result as unknown as { statusSummary: string }).statusSu…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/38]⎯

@@ -1,0 +1,5 @@
+import fs from 'node:fs';
+import { main } from './admin637-combined-integration-20261026.mjs';
+const r=JSON.parse(fs.readFileSync('C:/w/admin637-release-20261026/pricing-provenance-doc-input.json','utf8'));
+if(r.passed!==true||r.packageGateName!=='workspace-package-tests-2')throw Error('EXACT_DOCUMENT_RECEIPT_REQUIRED');
+await main(['run',r.packageGateName,r.packageCommand]);

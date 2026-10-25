@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "registration-green-1",
+  "command": "pnpm --filter @oto/api test test/s637-registration-review.test.ts test/s637-digest-review.test.ts test/s637-overview-review.test.ts test/s637-decisions-review.test.ts test/ops-jobs.test.ts test/boot-guard.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "startedAt": "2026-10-25T19:35:12.197Z",
+  "completedAt": "2026-10-25T19:37:32.275Z",
+  "exitCode": 0,
+  "signal": null,
+  "inputsBefore": {
+    "apps/api/test/s637-registration-review.test.ts": "2c17a74462916373838e1bcbb69da70a1454338bd8ca1d115e83c79f1aafaf91",
+    "apps/api/src/env.ts": "66dd272d181528ebb399d25da53f3c96ab89c0634819781cdd7cac90f74ab382",
+    "apps/api/src/services/jobs.ts": "881abf1c2464dc3f26241f27dc28667fd90f88a89f95795bfbec75a31ac8b5f9",
+    ".env.example": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db",
+    "apps/api/src/services/console-digest.ts": "e91d800817478c09af8ef16f1e7b7bc24b5c82f778339c8ef88fcb98adf38686"
+  },
+  "inputsAfter": {
+    "apps/api/test/s637-registration-review.test.ts": "2c17a74462916373838e1bcbb69da70a1454338bd8ca1d115e83c79f1aafaf91",
+    "apps/api/src/env.ts": "66dd272d181528ebb399d25da53f3c96ab89c0634819781cdd7cac90f74ab382",
+    "apps/api/src/services/jobs.ts": "881abf1c2464dc3f26241f27dc28667fd90f88a89f95795bfbec75a31ac8b5f9",
+    ".env.example": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db",
+    "apps/api/src/services/console-digest.ts": "e91d800817478c09af8ef16f1e7b7bc24b5c82f778339c8ef88fcb98adf38686"
+  },
+  "sourceUnchanged": true,
+  "runtimeContainerId": "c9b5a837cf00eaa6e83c4c6ce1dbbcd0617b7cfe6b0e12d0483a295341bd4c63",
+  "logSha256": "3805d8f94ecbc142bd9a5fb43f78b3ad00a2828c275979701a6a3bcb752da861",
+  "actualStaging": false
+}

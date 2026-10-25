@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-637",
+  "completedAt": "2026-10-25T19:53:34.338Z",
+  "passed": true,
+  "appId": "7fd9b57eca90a3a4462fc29e073669384d1329cf53a3eed555baacea86e11eae",
+  "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+  "networkId": "5395752fd165a7d4cc967c620362438759367c298e6d95d71b4894b1f5f52a01",
+  "document": "docs/architecture/POS_RULES_RECONCILIATION.md",
+  "documentSha256": "274df17dbadf41e6640feb16324e0a468842ce9ae4957c2e963a00c9bb88d118",
+  "hostBefore": {
+    "sourceFiles": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "apiDocsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+    "documentSha256": "274df17dbadf41e6640feb16324e0a468842ce9ae4957c2e963a00c9bb88d118"
+  },
+  "hostAfter": {
+    "sourceFiles": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "apiDocsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+    "documentSha256": "274df17dbadf41e6640feb16324e0a468842ce9ae4957c2e963a00c9bb88d118"
+  },
+  "runtimeBefore": {
+    "sourceFiles": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "apiDocsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+    "documentSha256": null
+  },
+  "runtimeAfter": {
+    "sourceFiles": 3781,
+    "sourceManifestSha256": "261ac9f76976c5290a7127346136d7edcfc4fe05a94e079ed051425b3b8ebe2c",
+    "apiDocsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+    "documentSha256": "274df17dbadf41e6640feb16324e0a468842ce9ae4957c2e963a00c9bb88d118"
+  },
+  "coreSourceUnchanged": true,
+  "fourApiInputsUnchanged": true,
+  "exactSingleDocumentCopy": true,
+  "staging": false,
+  "packageGateName": "workspace-package-tests-2",
+  "packageCommand": "node -e 'const fs=require(\"fs\"),c=require(\"crypto\");if(c.createHash(\"sha256\").update(fs.readFileSync(\"/workspace/docs/architecture/POS_RULES_RECONCILIATION.md\")).digest(\"hex\")!==\"274df17dbadf41e6640feb16324e0a468842ce9ae4957c2e963a00c9bb88d118\")throw Error(\"PRICING_DOC_INPUT_CHANGED\");'\nif pnpm -r --workspace-concurrency=1 --filter=!oto-platform --filter=!@oto/api --filter=!@oto/pos --filter=!@oto/box-agent test; then package_status=0; else package_status=$?; fi\nnode -e 'const fs=require(\"fs\"),c=require(\"crypto\");if(c.createHash(\"sha256\").update(fs.readFileSync(\"/workspace/docs/architecture/POS_RULES_RECONCILIATION.md\")).digest(\"hex\")!==\"274df17dbadf41e6640feb16324e0a468842ce9ae4957c2e963a00c9bb88d118\")throw Error(\"PRICING_DOC_INPUT_CHANGED\");'\nexit \"$package_status\""
+}

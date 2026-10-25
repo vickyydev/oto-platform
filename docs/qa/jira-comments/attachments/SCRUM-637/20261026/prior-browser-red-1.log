@@ -1,0 +1,284 @@
+
+> @oto/console@0.1.0 e2e /workspace/apps/console
+> node e2e/run.mjs -- e2e/overview.spec.ts
+
+[console-e2e] building the Console (CONSOLE_E2E_BUILT=1): the run serves dist/public through vite preview
+
+> @oto/console@0.1.0 build /workspace/apps/console
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2287 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                        1.33 kB │ gzip:   0.58 kB
+dist/public/assets/logo-oto-nNYXf9Wy.png    173.77 kB
+dist/public/assets/index-CaH3r7Z2.css        98.59 kB │ gzip:  16.04 kB
+dist/public/assets/react-C6LhzTnE.js        185.71 kB │ gzip:  58.56 kB
+dist/public/assets/vendor-DAC0YWBt.js       397.48 kB │ gzip: 116.94 kB
+dist/public/assets/index-Ckp9N7sV.js      1,205.66 kB │ gzip: 324.57 kB
+✓ built in 4.54s
+
+> @oto/pos@0.1.0 build /workspace/apps/pos
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2384 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                                 1.98 kB │ gzip:   0.81 kB
+dist/public/sw.js                                      7.75 kB
+dist/public/assets/inter-cyrillic-DqGufNeO.woff2      18.75 kB
+dist/public/assets/inter-latin-Dx4kXJAl.woff2         48.26 kB
+dist/public/assets/inter-latin-ext-DO1Apj_S.woff2     85.07 kB
+dist/public/assets/logo-oto-nNYXf9Wy.png             173.77 kB
+dist/public/assets/index-CSvdVv6e.css                200.44 kB │ gzip:  29.32 kB
+dist/public/assets/index-LYnQhDk9.js               2,336.32 kB │ gzip: 645.88 kB
+✓ built in 4.13s
+[console-e2e] making oto_console_e2e_1792914019917 on the isolated test server
+[console-e2e] applying migrations
+
+> oto-platform@0.1.0 db:migrate /workspace
+> pnpm --filter @oto/db migrate
+
+
+> @oto/db@0.1.0 migrate /workspace/packages/db
+> drizzle-kit migrate
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/workspace/packages/db/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[⣯] applying migrations...[2K[1G[⣟] applying migrations...[2K[1G[⡿] applying migrations...[2K[1G[⢿] applying migrations...[2K[1G[⣻] applying migrations...[2K[1G[⣽] applying migrations...[2K[1G[⣷] applying migrations...[2K[1G[⣯] applying migrations...[2K[1G[⣟] applying migrations...[2K[1G[⡿] applying migrations...[2K[1G[✓] migrations applied successfully![console-e2e] seeding
+
+> oto-platform@0.1.0 db:seed /workspace
+> pnpm --filter @oto/db seed
+
+
+> @oto/db@0.1.0 seed /workspace/packages/db
+> tsx src/seed/index.ts
+
+Full seed (SEED_PROFILE=staging): platform rows plus the demo tenant.
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+[console-e2e] api on 39811, console on 37721
+
+Running 11 tests using 1 worker
+
+  ✓   1 e2e/overview.spec.ts:100:1 › Overview displays returned totals, selected parks and source freshness on desktop and phone (738ms)
+  ✓   2 e2e/overview.spec.ts:132:1 › Overview-only permission shows numbers while source offers and other page guards retain their permissions (521ms)
+  ✓   3 e2e/overview.spec.ts:148:1 › a pending or failed summary has no invented figures and can be retried; no parks is a separate empty state (382ms)
+  ✓   4 e2e/overview.spec.ts:176:1 › figure actions use the existing source pages and signed-in cross-app destinations (1.1s)
+  ✘   5 e2e/overview.spec.ts:220:1 › Overview v2 renders returned aggregate dates, distinct members and unavailable USD on desktop and phone (5.3s)
+  ✘   6 e2e/overview.spec.ts:244:1 › decision rows distinguish a real zero, missing cash close and unbuilt requests without an overdue-person claim (5.2s)
+  ✘   7 e2e/overview.spec.ts:256:1 › Copy status summary writes the exact current server text to the native clipboard and makes no business request (5.2s)
+  ✘   8 e2e/overview.spec.ts:274:1 › actor/operator A to B to A discards both earlier reads and masks their figures before effect cleanup (5.2s)
+  ✘   9 e2e/overview.spec.ts:290:1 › grant narrowing drops an obsolete selected park before reading the current default (5.2s)
+  ✘  10 e2e/overview.spec.ts:306:3 › a pending source handoff cannot navigate after actor-ABA (359ms)
+  ✘  11 e2e/overview.spec.ts:306:3 › a pending source handoff cannot navigate after lock (313ms)
+
+
+  1) e2e/overview.spec.ts:220:1 › Overview v2 renders returned aggregate dates, distinct members and unavailable USD on desktop and phone
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Members & visits', exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Members & visits', exact: true }) with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'Members & visits', exact: true })
+
+
+      221 |   const state = await session(page); await page.goto('/overview'); await legacyReady(page);
+      222 |   for (const title of ['Members & visits', 'Booking activity', 'Internal assistant', 'Inbox AI', 'Fleet', 'Needs a decision'])
+    > 223 |     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible({ timeout: 5000 });
+          |                                                                           ^
+      224 |   await expect(group(page, 'Members & visits')).toContainText('Visiting members');
+      225 |   await expect(group(page, 'Members & visits')).toContainText('7');
+      226 |   await expect(group(page, 'Members & visits')).toContainText('Bangkok calendar');
+        at /workspace/apps/console/e2e/overview.spec.ts:223:75
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/overview-Overview-v2-rende-914be-le-USD-on-desktop-and-phone/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/overview-Overview-v2-rende-914be-le-USD-on-desktop-and-phone/error-context.md
+
+  2) e2e/overview.spec.ts:244:1 › decision rows distinguish a real zero, missing cash close and unbuilt requests without an overdue-person claim
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('section').filter({ has: getByRole('heading', { name: 'Needs a decision', exact: true }) }).last()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('section').filter({ has: getByRole('heading', { name: 'Needs a decision', exact: true }) }).last() with timeout 5000ms
+      - waiting for locator('section').filter({ has: getByRole('heading', { name: 'Needs a decision', exact: true }) }).last()
+
+
+      244 | test('decision rows distinguish a real zero, missing cash close and unbuilt requests without an overdue-person claim', async ({ page }) => {
+      245 |   const state = await session(page); await page.goto('/overview');
+    > 246 |   const decisions = group(page, 'Needs a decision'); await expect(decisions).toBeVisible({ timeout: 5000 });
+          |                                                                              ^
+      247 |   const row = (label: string) => decisions.getByRole('listitem').filter({ has: page.getByText(label, { exact: true }) });
+      248 |   await expect(row('Open sync quarantine')).toContainText('0');
+      249 |   await expect(row('Cash variance lines')).toContainText('Unavailable');
+        at /workspace/apps/console/e2e/overview.spec.ts:246:78
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/overview-decision-rows-dis-727f0-out-an-overdue-person-claim/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/overview-decision-rows-dis-727f0-out-an-overdue-person-claim/error-context.md
+
+  3) e2e/overview.spec.ts:256:1 › Copy status summary writes the exact current server text to the native clipboard and makes no business request
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator: getByRole('button', { name: 'Copy status summary', exact: true })
+    Expected: enabled
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeEnabled" getByRole('button', { name: 'Copy status summary', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Copy status summary', exact: true })
+
+
+      257 |   const state = await session(page); await page.goto('/overview');
+      258 |   const copy = page.getByRole('button', { name: 'Copy status summary', exact: true });
+    > 259 |   await expect(copy).toBeEnabled({ timeout: 5000 });
+          |                      ^
+      260 |   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(page.url()).origin });
+      261 |   await page.evaluate(() => navigator.clipboard.writeText('ZZ TEST clipboard sentinel'));
+      262 |   await copy.click();
+        at /workspace/apps/console/e2e/overview.spec.ts:259:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/overview-Copy-status-summa-882e3-d-makes-no-business-request/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/overview-Copy-status-summa-882e3-d-makes-no-business-request/error-context.md
+
+  4) e2e/overview.spec.ts:274:1 › actor/operator A to B to A discards both earlier reads and masks their figures before effect cleanup
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 1
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      277 |     await page.goto('/overview'); await expect.poll(() => state.reads.length).toBe(1);
+      278 |     state.actor = 'fixture-b'; state.operator = 'fixture-operator-b'; state.overrideRevenue = 888888; state.holds.push(second.promise);
+    > 279 |     await refreshSession(page); await expect.poll(() => state.reads.length, { timeout: 5000 }).toBe(2);
+          |                                                                                                ^
+      280 |     state.actor = 'fixture'; state.operator = 'fixture'; state.overrideRevenue = 77777; state.holds.push(current.promise);
+      281 |     await refreshSession(page); await expect.poll(() => state.reads.length, { timeout: 5000 }).toBe(3);
+      282 |     first.release(); second.release();
+        at /workspace/apps/console/e2e/overview.spec.ts:279:96
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/overview-actor-operator-A--f38cd-gures-before-effect-cleanup/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/overview-actor-operator-A--f38cd-gures-before-effect-cleanup/error-context.md
+
+  5) e2e/overview.spec.ts:290:1 › grant narrowing drops an obsolete selected park before reading the current default
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 3
+    Received: 2
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      295 |     await expect(page.getByRole('article', { name: 'Revenue today', exact: true })).toContainText('4,321');
+      296 |     state.narrow = true; state.holds.push(narrowed.promise); await refreshSession(page);
+    > 297 |     await expect.poll(() => state.reads.length, { timeout: 5000 }).toBe(3); expect(state.reads.at(-1)?.branchId).toBe('');
+          |                                                                    ^
+      298 |     await expect(page.getByRole('article', { name: 'Revenue today', exact: true })).toHaveCount(0);
+      299 |     narrowed.release(); await legacyReady(page);
+      300 |     await expect(page.getByRole('combobox', { name: 'Park', exact: true }).getByRole('option', { name: parks[1].name, exact: true })).toHaveCount(0);
+        at /workspace/apps/console/e2e/overview.spec.ts:297:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/overview-grant-narrowing-d-5b347-reading-the-current-default/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/overview-grant-narrowing-d-5b347-reading-the-current-default/error-context.md
+
+  6) e2e/overview.spec.ts:306:3 › a pending source handoff cannot navigate after actor-ABA ─────────
+
+    Error: page.evaluate: Execution context was destroyed, most likely because of a navigation
+
+      318 |       const response = page.waitForResponse(result => new URL(result.url()).pathname === '/api/auth/handoff');
+      319 |       held.release(); await (await response).finished();
+    > 320 |       await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+          |                  ^
+      321 |       expect(navigations).toBe(0); expect(new URL(page.url()).pathname).toBe('/overview');
+      322 |       expect(state.writes).toEqual(['POST /api/auth/handoff']);
+      323 |     } finally { held.release(); }
+        at /workspace/apps/console/e2e/overview.spec.ts:320:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/overview-a-pending-source--d6a58-ot-navigate-after-actor-ABA/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/overview-a-pending-source--d6a58-ot-navigate-after-actor-ABA/error-context.md
+
+  7) e2e/overview.spec.ts:306:3 › a pending source handoff cannot navigate after lock ──────────────
+
+    Error: page.evaluate: Execution context was destroyed, most likely because of a navigation.
+
+      318 |       const response = page.waitForResponse(result => new URL(result.url()).pathname === '/api/auth/handoff');
+      319 |       held.release(); await (await response).finished();
+    > 320 |       await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+          |                  ^
+      321 |       expect(navigations).toBe(0); expect(new URL(page.url()).pathname).toBe('/overview');
+      322 |       expect(state.writes).toEqual(['POST /api/auth/handoff']);
+      323 |     } finally { held.release(); }
+        at /workspace/apps/console/e2e/overview.spec.ts:320:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/overview-a-pending-source-handoff-cannot-navigate-after-lock/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/overview-a-pending-source-handoff-cannot-navigate-after-lock/error-context.md
+
+  7 failed
+    e2e/overview.spec.ts:220:1 › Overview v2 renders returned aggregate dates, distinct members and unavailable USD on desktop and phone
+    e2e/overview.spec.ts:244:1 › decision rows distinguish a real zero, missing cash close and unbuilt requests without an overdue-person claim
+    e2e/overview.spec.ts:256:1 › Copy status summary writes the exact current server text to the native clipboard and makes no business request
+    e2e/overview.spec.ts:274:1 › actor/operator A to B to A discards both earlier reads and masks their figures before effect cleanup
+    e2e/overview.spec.ts:290:1 › grant narrowing drops an obsolete selected park before reading the current default
+    e2e/overview.spec.ts:306:3 › a pending source handoff cannot navigate after actor-ABA ──────────
+    e2e/overview.spec.ts:306:3 › a pending source handoff cannot navigate after lock ───────────────
+  4 passed (37.0s)
+[console-e2e] dropped oto_console_e2e_1792914019917
+/workspace/apps/console:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/console@0.1.0 e2e: `node e2e/run.mjs -- e2e/overview.spec.ts`
+Exit status 1
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[plugin vite:reporter]
+(!) /workspace/apps/pos/src/api/platform.ts is dynamically imported by /workspace/apps/pos/src/api/catalogBridge.ts but also statically imported by /workspace/apps/pos/src/api/catalogBridge.ts, /workspace/apps/pos/src/api/members.ts, /workspace/apps/pos/src/auth/OperatorContext.tsx, /workspace/apps/pos/src/branch/BranchContext.tsx, /workspace/apps/pos/src/components/auth/LockScreen.tsx, /workspace/apps/pos/src/components/book/BookCheckingPayment.tsx, /workspace/apps/pos/src/components/book/BookIdentify.tsx, /workspace/apps/pos/src/components/book/BookVerifyFamily.tsx, /workspace/apps/pos/src/components/history/SaleDetail.tsx, /workspace/apps/pos/src/components/mobile/MobileTill.tsx, /workspace/apps/pos/src/components/mobile/history/MobileHistory.tsx, /workspace/apps/pos/src/components/shared/PricingModeIndicator.tsx, /workspace/apps/pos/src/components/shared/PrinterHealthIndicator.tsx, /workspace/apps/pos/src/components/shared/VerifyTierModal.tsx, /workspace/apps/pos/src/components/till/VisitChildrenModal.tsx, /workspace/apps/pos/src/lib/deferredTierVerification.ts, /workspace/apps/pos/src/lib/demoControls.ts, /workspace/apps/pos/src/lib/displaySession.ts, /workspace/apps/pos/src/lib/themePref.ts, /workspace/apps/pos/src/pages/Book.tsx, /workspace/apps/pos/src/pages/History.tsx, /workspace/apps/pos/src/pages/StationSetup.tsx, /workspace/apps/pos/src/pages/Till.tsx, /workspace/apps/pos/src/station/StationContext.tsx, dynamic import will not move module into another chunk.
+
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[WebServer] (node:1911) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)

@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "url-fragment-green-1",
+  "command": "pnpm --filter @oto/api test test/s637-registration-review.test.ts test/s637-digest-review.test.ts",
+  "startedAt": "2026-10-25T19:40:51.582Z",
+  "completedAt": "2026-10-25T19:41:25.126Z",
+  "exitCode": 0,
+  "signal": null,
+  "inputsBefore": {
+    "apps/api/test/s637-registration-review.test.ts": "1ada394f2420a66bebcf94c50f4fd270bc229135b95e1edfbd08d58e56de657e",
+    "apps/api/src/env.ts": "ffb8650a16d74f3435af601e33c21ff635b77855e10c9b68bcf23f8a07a1b352",
+    "apps/api/src/services/jobs.ts": "881abf1c2464dc3f26241f27dc28667fd90f88a89f95795bfbec75a31ac8b5f9",
+    ".env.example": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db",
+    "apps/api/src/services/console-digest.ts": "b622019c60311cccebeb5de335017ddc1383ac133951fd511f15de7793d556ad"
+  },
+  "inputsAfter": {
+    "apps/api/test/s637-registration-review.test.ts": "1ada394f2420a66bebcf94c50f4fd270bc229135b95e1edfbd08d58e56de657e",
+    "apps/api/src/env.ts": "ffb8650a16d74f3435af601e33c21ff635b77855e10c9b68bcf23f8a07a1b352",
+    "apps/api/src/services/jobs.ts": "881abf1c2464dc3f26241f27dc28667fd90f88a89f95795bfbec75a31ac8b5f9",
+    ".env.example": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db",
+    "apps/api/src/services/console-digest.ts": "b622019c60311cccebeb5de335017ddc1383ac133951fd511f15de7793d556ad"
+  },
+  "sourceUnchanged": true,
+  "runtimeContainerId": "c9b5a837cf00eaa6e83c4c6ce1dbbcd0617b7cfe6b0e12d0483a295341bd4c63",
+  "logSha256": "d11173305b1a85edc739b3fcd11cd801b2a11648f019768bbcbeaa1a655bd54b",
+  "actualStaging": false
+}

@@ -1,6 +1,6 @@
 # SCRUM-637 Q19 - approved registration proposal
 
-**APPROVED AND APPLIED LOCALLY, 26 October 2026, Q19.** Sourcebb3d9135 includes the reviewed registration and the required test-only capturing-sender fence. Actual native RED/GREEN pins cover registration, strict private HTTPS config, exclusive workers, durable daily suppression, watchdog cleanup and unchanged owner settings. A separate actual RED/GREEN enforces the stated ban on empty fragments in both config and adapter validation. Full combined gates are running; no deployment or staging acceptance is claimed.
+**APPROVED AND BUILT; FULL LOCAL RELEASE GREEN, 26 October 2026, Q19.** Ten combined/post-rebase gates pass on manifest261ac9f7. The reviewed patch plus mandatory test-sender fence and strict empty-fragment validation are covered by actual RED/GREEN tests. The default-off exclusive registration, per-branch/day durable dispatch and owner expectation/mute preservation pass. CI, automatic deployment and new staging screenshots remain pending; real webhook acceptance is not claimed.
 
 The patch touches exactly `apps/api/src/env.ts`, `apps/api/src/services/jobs.ts`, and `.env.example`. It is based on the current frozen 637 files; recheck the base hashes before any application.
 

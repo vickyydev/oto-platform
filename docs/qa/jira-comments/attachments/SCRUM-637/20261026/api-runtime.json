@@ -1,0 +1,31 @@
+{
+  "createdAt": "2026-10-25T19:24:59.561Z",
+  "id": "c9b5a837cf00eaa6e83c4c6ce1dbbcd0617b7cfe6b0e12d0483a295341bd4c63",
+  "name": "oto-s637-20261026-api",
+  "mode": "api",
+  "host": "127.0.0.1",
+  "port": 51193,
+  "user": "oto",
+  "database": "postgres",
+  "temporary": true,
+  "mountTypes": [],
+  "labels": {
+    "ticket": "SCRUM-637",
+    "lane": "admin-overview-v2",
+    "run": "20261026r1"
+  },
+  "baselineContainerIds": [
+    "83828b463f0b5ae2a64d70878099d5fe299e4b811decc075333f373d981ec01a",
+    "5b5ad70fd3aecf514625c077214d1fb00979067578e885152706ea3b10a49831",
+    "2b6efe94892891ef608f80f228a9c4c6c3f54d3ee6188267f7131c7205d5db43",
+    "2afc9985eaec2abe07eca6aa58aa15d6078c35a9290bcc2a890d5b2d84b051e3",
+    "81821fc1f43bc8f540c879c5b0fbc381faaec86309f34eafb8df94b4eff659ba",
+    "cf854c43dcd283c35919e1c6a581dbbfd3539636832ff3910adc2e3bf5821af0",
+    "85c6ce32a42aba5581817c6323334afbc808020056311be901039150be47dc13",
+    "ceda2dc3b92a3264a97efc0bb5164abc655403f22846438a00b53cb22059f270",
+    "cbc3eb441a04b866bec0bd92928ff95dec63bb01a3884e98d8cb588a30d68309",
+    "41925d9b0cf1df7647253188f2086c34fbbdcc49b446f2b964e43c6fa3920dbe"
+  ],
+  "ready": true,
+  "readyAt": "2026-10-25T19:25:03.458Z"
+}

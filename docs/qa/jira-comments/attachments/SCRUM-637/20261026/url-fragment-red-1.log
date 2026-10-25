@@ -1,0 +1,121 @@
+
+> @oto/api@0.1.0 test C:\w\admin-overview-v2\apps\api
+> vitest run --pool=forks "test/s637-registration-review.test.ts" "test/s637-digest-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-overview-v2/apps/api
+
+stdout | test/s637-digest-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-digest-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:76776) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ test/s637-digest-review.test.ts (19 tests | 1 failed) 8203ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R1: disabled and missing destination perform no snapshot, dispatch or intent writes 21ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R2: before the actual local start sends nothing; the boundary and later startup catch up the current day only 43ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R3: the same trusted snapshot and exact text use one selected live owned branch, without global buckets or fake grants 29ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R4: independent timezone/branch/operator keys do not suppress one another; archived parents and branches never send 51ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R5: accepted day receipts suppress another tick/Retry but not the next native date 47ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R6: failed durable intent persistence dispatches zero requests and exposes only a safe code 34ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R7: snapshot refusal cannot become a zero digest or leave a dispatch intent 20ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R8: an unknown response remains uncertain across another tick and does not resend 30ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R9: acknowledgement followed by failed durable delivery recording is not claimed successful or resent 41ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R10: an orphaned intent after process death blocks a fresh worker without an absence-based guess 18ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R11: a proven predispatch refusal is recorded and may retry; already accepted siblings stay accepted 50ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R12: two existing exclusive runners cannot send the same claimed day concurrently 96ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R17: a changed clock between eligibility and the real Overview snapshot cannot send under the earlier date/start 113ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R18: branch archived after the real snapshot leaves no dispatch or intent 84ms
+   ✓ SCRUM-637 branch morning digest — real receipts, injected transport only > R18: operator archived after the real snapshot leaves no dispatch or intent 79ms
+   × SCRUM-637 generic private HTTPS adapter — fake fetch only > R13: absent/non-HTTPS/userinfo/fragment configuration creates no sender and performs zero requests 15ms
+     → expected [AsyncFunction] to be undefined
+   ✓ SCRUM-637 generic private HTTPS adapter — fake fetch only > R14: sends only JSON text with redirects refused and cancels an unused response body 10ms
+   ✓ SCRUM-637 generic private HTTPS adapter — fake fetch only > R15: a dispatched HTTP error/redirect response is not accepted or represented as a safe no-send 10ms
+   ✓ SCRUM-637 generic private HTTPS adapter — fake fetch only > R16: the finite timeout aborts a stalled request and returns no raw URL or error 21ms
+stdout | test/s637-registration-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s637-registration-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:11792) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ test/s637-registration-review.test.ts (24 tests | 1 failed) 8944ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R1 high: the typed switch defaults off outside the test override and an absent destination remains absent 18ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R2 high: parses the explicit strict true switch without truthy-string coercion 11ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R2 high: parses the explicit strict false switch without truthy-string coercion 13ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R3 high: refuses invalid switch spelling case 0 14ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R3 high: refuses invalid switch spelling case 1 10ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R3 high: refuses invalid switch spelling case 2 11ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R3 high: refuses invalid switch spelling case 3 10ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R4 high: accepts a private HTTPS destination and normalizes a blank destination to absence 13ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses plain HTTP without echoing its private destination 11ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses userinfo without echoing its private destination 10ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses fragment without echoing its private destination 10ms
+   × SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses empty fragment without echoing its private destination 19ms
+     → expected false to be true // Object.is equality
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses malformed without echoing its private destination 10ms
+   ✓ SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R6 critical: inherited developer configuration cannot enable or supply a destination to NODE_ENV=test 13ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R7 high: off does not register a digest even when a capturing sender is supplied 12ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R7 high: unset does not register a digest even when a capturing sender is supplied 9ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R7 high: no-destination does not register a digest even when a capturing sender is supplied 9ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R8 high: explicit test opt-in with a capturing sender registers one exclusive job at the native rollup interval 10ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R9 critical: test opt-in without an injected sender produces no send, intent or fallback global fetch 14ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R10 high: the registered closure uses real decision counts and exact Copy text with runtime PAYMENT_PENDING_MIN 287ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R11 high: the normal API-only role remains idle with no delivery, intent, run or expectation registration 20ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R12 critical: two actual registered exclusive runners cannot overlap and a forced Retry does not resend an accepted day 201ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R13 high: off resolves only the old digest missing/failing expectations and still reports unrelated silence 171ms
+   ✓ SCRUM-637 native default-job registration and durable delivery; all transport is intercepted > R13 high: no-destination resolves only the old digest missing/failing expectations and still reports unrelated silence 169ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s637-digest-review.test.ts > SCRUM-637 generic private HTTPS adapter — fake fetch only > R13: absent/non-HTTPS/userinfo/fragment configuration creates no sender and performs zero requests
+AssertionError: expected [AsyncFunction] to be undefined
+
+- Expected:
+undefined
+
++ Received:
+[Function anonymous]
+
+ ❯ test/s637-digest-review.test.ts:260:66
+    258|     const fetcher = vi.fn<typeof fetch>();
+    259|     for (const url of [undefined, '', '[PRIVATE_TEST_DESTINATION_REDACTED]',…
+    260|       expect(createConsoleDigestSender(url, { fetch: fetcher })).toBeU…
+       |                                                                  ^
+    261|     }
+    262|     expect(fetcher).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/s637-registration-review.test.ts > SCRUM-637 registration configuration; private destination never appears in assertions or diagnostics > R5 high: refuses empty fragment without echoing its private destination
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ privateConfigRefusal test/s637-registration-review.test.ts:41:20
+     39|   let errorText = '', rejected = false;
+     40|   try { envOf(extra); } catch (error) { rejected = true; errorText = e…
+     41|   expect(rejected).toBe(true);
+       |                    ^
+     42|   expect(errorText.includes('zz-test-private-destination')).toBe(false…
+     43|   expect(errorText.includes(destination)).toBe(false);
+ ❯ test/s637-registration-review.test.ts:93:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 41 passed (43)
+   Start at  02:40:12
+   Duration  32.97s (transform 6.24s, setup 0ms, collect 15.04s, tests 17.15s, environment 1ms, prepare 302ms)
+
+C:\w\admin-overview-v2\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/s637-registration-review.test.ts" "test/s637-digest-review.test.ts"`
+Exit status 1
