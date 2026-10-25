@@ -60,6 +60,20 @@ afterAll(async () => {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+describe('Assistant settings atomic replacement (SCRUM-638)', () => {
+  it('registers one typed keyed write that reaches the audited transaction, without an exemption', () => {
+    const settings = routes.filter(r => r.path === '/assistant-settings');
+    expect(settings.map(r => r.method).sort()).toEqual(['GET', 'PUT']);
+    const write = settings.find(r => r.method === 'PUT')!;
+    expect(write.optionsText).toContain("req.headers['idempotency-key']");
+    expect(write.optionsText).toContain('An Idempotency-Key is required');
+    expect(write.optionsText).toContain('body:');
+    expect(write.optionsText).toContain('response:');
+    expect(reachesText(write.handlerText, text => /\bwithTx\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(write.handlerText, text => /\baudit\.record\s*\(/.test(text), functions)).toBe(true);
+  });
+});
+
 describe('Aggregate read registration (SCRUM-636)', () => {
   it('registers exactly five read-only facades without a mutation exemption', () => {
     const expected = [

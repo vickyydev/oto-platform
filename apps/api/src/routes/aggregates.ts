@@ -55,7 +55,7 @@ const reach = 'Read-only counts within console:overview:read reach, independent 
   'Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. ' +
   'Optional branchId selects one reachable park. No private record identities or message text are returned. ';
 const period = 'Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. ';
-const pricing = 'Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. ';
+const pricing = 'Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. Valid operator model rates apply at each record created_at before grouping. Without configured rates, spendEstimate is null with reason no_rate_configured, including empty buckets. Unknown models or records before a model rate remain unpriced; their input, output and cache-read tokens are retained in unpricedTokens with reason unpriced_tokens. Only known rates contribute to the estimate; an entirely unpriced group stays null, while an empty group with configured rates is zero. ';
 
 export async function aggregateRoutes(app: App): Promise<void> {
   app.get('/aggregates/members', {

@@ -66054,7 +66054,7 @@
     },
     "/aggregates/assistant-usage": {
       "get": {
-        "description": "Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant.",
+        "description": "Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. Valid operator model rates apply at each record created_at before grouping. Without configured rates, spendEstimate is null with reason no_rate_configured, including empty buckets. Unknown models or records before a model rate remain unpriced; their input, output and cache-read tokens are retained in unpricedTokens with reason unpriced_tokens. Only known rates contribute to the estimate; an entirely unpriced group stays null, while an empty group with configured rates is zero. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant.",
         "parameters": [
           {
             "schema": {
@@ -66556,7 +66556,7 @@
     },
     "/aggregates/inbox-ai-usage": {
       "get": {
-        "description": "Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented.",
+        "description": "Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. Valid operator model rates apply at each record created_at before grouping. Without configured rates, spendEstimate is null with reason no_rate_configured, including empty buckets. Unknown models or records before a model rate remain unpriced; their input, output and cache-read tokens are retained in unpricedTokens with reason unpriced_tokens. Only known rates contribute to the estimate; an entirely unpriced group stays null, while an empty group with configured rates is zero. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented.",
         "parameters": [
           {
             "schema": {
@@ -67225,6 +67225,700 @@
                     "asOf",
                     "totals",
                     "parks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assistant-settings": {
+      "get": {
+        "description": "Read the operator assistant caps, native fallback and immutable effective-dated USD rates. No provider, enabled state, model choice or credentials.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "operatorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "schemaVersion": {
+                      "type": "number",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "overrides": {
+                      "type": "object",
+                      "properties": {
+                        "internal": {
+                          "type": "object",
+                          "properties": {
+                            "personDailyCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyAskCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyTokenCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "concurrentPerPerson": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100
+                            },
+                            "concurrentPerOperator": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1000
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "inbox": {
+                          "type": "object",
+                          "properties": {
+                            "dailyTurnCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyTokenCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "debounceSeconds": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 600
+                            },
+                            "debounceMaxSeconds": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 3600
+                            },
+                            "firstBubbleMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 120000
+                            },
+                            "bubbleGapMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 60000
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "internal",
+                        "inbox"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "rates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "model": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "effectiveFrom": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "inputUsdPerMillion": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "outputUsdPerMillion": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "cacheReadUsdPerMillion": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "model",
+                          "effectiveFrom",
+                          "inputUsdPerMillion",
+                          "outputUsdPerMillion",
+                          "cacheReadUsdPerMillion"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 1000
+                    },
+                    "effective": {
+                      "type": "object",
+                      "properties": {
+                        "internal": {
+                          "type": "object",
+                          "properties": {
+                            "personDailyCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyAskCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyTokenCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "concurrentPerPerson": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100
+                            },
+                            "concurrentPerOperator": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1000
+                            }
+                          },
+                          "required": [
+                            "personDailyCap",
+                            "dailyAskCap",
+                            "dailyTokenCap",
+                            "concurrentPerPerson",
+                            "concurrentPerOperator"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "inbox": {
+                          "type": "object",
+                          "properties": {
+                            "dailyTurnCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyTokenCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "debounceSeconds": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 600
+                            },
+                            "debounceMaxSeconds": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 3600
+                            },
+                            "firstBubbleMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 120000
+                            },
+                            "bubbleGapMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 60000
+                            }
+                          },
+                          "required": [
+                            "dailyTurnCap",
+                            "dailyTokenCap",
+                            "debounceSeconds",
+                            "debounceMaxSeconds",
+                            "firstBubbleMs",
+                            "bubbleGapMs"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "internal",
+                        "inbox"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "environment",
+                        "operator",
+                        "invalid"
+                      ]
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "updatedBy": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "operatorId",
+                    "schemaVersion",
+                    "overrides",
+                    "rates",
+                    "effective",
+                    "source",
+                    "revision",
+                    "updatedAt",
+                    "updatedBy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Atomically replace sparse numeric overrides and append USD rate versions at the expected revision. Requires Idempotency-Key; saved rate history is immutable.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "schemaVersion": {
+                    "type": "number",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  "overrides": {
+                    "type": "object",
+                    "properties": {
+                      "internal": {
+                        "type": "object",
+                        "properties": {
+                          "personDailyCap": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "dailyAskCap": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "dailyTokenCap": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "concurrentPerPerson": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                          },
+                          "concurrentPerOperator": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1000
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "inbox": {
+                        "type": "object",
+                        "properties": {
+                          "dailyTurnCap": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "dailyTokenCap": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "debounceSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 600
+                          },
+                          "debounceMaxSeconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 3600
+                          },
+                          "firstBubbleMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 120000
+                          },
+                          "bubbleGapMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 60000
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "internal",
+                      "inbox"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "rates": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "model": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "effectiveFrom": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "inputUsdPerMillion": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "outputUsdPerMillion": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "cacheReadUsdPerMillion": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "model",
+                        "effectiveFrom",
+                        "inputUsdPerMillion",
+                        "outputUsdPerMillion",
+                        "cacheReadUsdPerMillion"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 1000
+                  }
+                },
+                "required": [
+                  "expectedRevision",
+                  "schemaVersion",
+                  "overrides",
+                  "rates"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "operatorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "schemaVersion": {
+                      "type": "number",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "overrides": {
+                      "type": "object",
+                      "properties": {
+                        "internal": {
+                          "type": "object",
+                          "properties": {
+                            "personDailyCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyAskCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyTokenCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "concurrentPerPerson": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100
+                            },
+                            "concurrentPerOperator": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1000
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "inbox": {
+                          "type": "object",
+                          "properties": {
+                            "dailyTurnCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyTokenCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "debounceSeconds": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 600
+                            },
+                            "debounceMaxSeconds": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 3600
+                            },
+                            "firstBubbleMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 120000
+                            },
+                            "bubbleGapMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 60000
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "internal",
+                        "inbox"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "rates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "model": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "effectiveFrom": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "inputUsdPerMillion": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "outputUsdPerMillion": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "cacheReadUsdPerMillion": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "model",
+                          "effectiveFrom",
+                          "inputUsdPerMillion",
+                          "outputUsdPerMillion",
+                          "cacheReadUsdPerMillion"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 1000
+                    },
+                    "effective": {
+                      "type": "object",
+                      "properties": {
+                        "internal": {
+                          "type": "object",
+                          "properties": {
+                            "personDailyCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyAskCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyTokenCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "concurrentPerPerson": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100
+                            },
+                            "concurrentPerOperator": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1000
+                            }
+                          },
+                          "required": [
+                            "personDailyCap",
+                            "dailyAskCap",
+                            "dailyTokenCap",
+                            "concurrentPerPerson",
+                            "concurrentPerOperator"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "inbox": {
+                          "type": "object",
+                          "properties": {
+                            "dailyTurnCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "dailyTokenCap": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "debounceSeconds": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 600
+                            },
+                            "debounceMaxSeconds": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 3600
+                            },
+                            "firstBubbleMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 120000
+                            },
+                            "bubbleGapMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 60000
+                            }
+                          },
+                          "required": [
+                            "dailyTurnCap",
+                            "dailyTokenCap",
+                            "debounceSeconds",
+                            "debounceMaxSeconds",
+                            "firstBubbleMs",
+                            "bubbleGapMs"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "internal",
+                        "inbox"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "environment",
+                        "operator",
+                        "invalid"
+                      ]
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "updatedBy": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "operatorId",
+                    "schemaVersion",
+                    "overrides",
+                    "rates",
+                    "effective",
+                    "source",
+                    "revision",
+                    "updatedAt",
+                    "updatedBy"
                   ],
                   "additionalProperties": false
                 }

@@ -610,6 +610,13 @@
       "when": 1792832256866,
       "tag": "0086_department_mirror",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1792917844789,
+      "tag": "0087_assistant_settings",
+      "breakpoints": true
     }
   ]
 }

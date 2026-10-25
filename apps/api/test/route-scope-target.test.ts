@@ -63,6 +63,21 @@ afterAll(async () => {
 /** Routes Fastify or a plugin registers for us, which we do not configure. */
 const NOT_OURS = new Set(['/docs/json', '/*']);
 
+describe('Assistant settings operator ownership (SCRUM-638)', () => {
+  it('declares the operator target and derives identity from fresh auth on both routes', () => {
+    const settings = routes.filter(r => r.path === '/assistant-settings');
+    expect(settings.map(r => r.method).sort()).toEqual(['GET', 'PUT']);
+    for (const route of settings) {
+      const config = configs.get(`${route.method} ${route.path}`);
+      expect(config?.permission).toBe('inbox:ai:manage');
+      expect(config?.target).toEqual({ operator: true });
+      expect(reachesText(route.handlerText, text => /auth\.operatorId/.test(text), functions)).toBe(true);
+      expect(route.optionsText).toContain('preValidation:');
+      expect(route.optionsText).toContain('operatorOnly: true');
+    }
+  });
+});
+
 describe('Aggregate selected parks (SCRUM-636)', () => {
   it('binds every aggregate to the current operator and fresh dynamic authority', () => {
     for (const path of [
@@ -146,6 +161,9 @@ const NO_TARGET_NEEDED = new Set([
  * operator-scoped grant. The reads beside them keep their gates.
  */
 const OPERATOR_WIDE_WRITES = [
+  'GET /assistant-settings',
+  'HEAD /assistant-settings',
+  'PUT /assistant-settings',
   'POST /tiers',
   'PATCH /tiers/:code',
   'DELETE /tiers/:code',

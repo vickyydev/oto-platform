@@ -376,6 +376,18 @@ describe('every create names its record where OD-12 says (SCRUM-270)', () => {
     }
   });
 
+  it('assistant settings replaces one operator/key document without minting a record id (SCRUM-638)', () => {
+    const settings = routes.filter(r => r.path === '/assistant-settings');
+    expect(settings.map(r => r.method).sort()).toEqual(['GET', 'PUT']);
+    for (const route of settings) {
+      expect(reachesText(route.handlerText, MINTS_ITS_ID, functions, 2)).toBe(false);
+      expect(route.optionsText).toContain('querystring:');
+    }
+    expect(settings.find(r => r.method === 'PUT')!.optionsText).toContain('body:');
+    expect(settings.find(r => r.method === 'PUT')!.optionsText).toContain("req.headers['idempotency-key']");
+    expect(settings.find(r => r.method === 'PUT')!.optionsText).toContain('An Idempotency-Key is required');
+  });
+
   it('Staff summary identifiers are read targets rather than new record identities (SCRUM-634)', () => {
     const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');
     expect(route).toBeDefined();

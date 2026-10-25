@@ -26824,7 +26824,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. */
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. Valid operator model rates apply at each record created_at before grouping. Without configured rates, spendEstimate is null with reason no_rate_configured, including empty buckets. Unknown models or records before a model rate remain unpriced; their input, output and cache-read tokens are retained in unpricedTokens with reason unpriced_tokens. Only known rates contribute to the estimate; an entirely unpriced group stays null, while an empty group with configured rates is zero. Retained internal assistant records, by created_at Bangkok calendar day and the seat recorded at ask time. Count excludes off/capped; token sums retain all scoped records. The90-day retention means this is not a lifetime billing ledger. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. */
         get: {
             parameters: {
                 query: {
@@ -26955,7 +26955,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. No rates are configured: every spendEstimate is null with reason no_rate_configured, including empty buckets; unpricedTokens retains all scoped input, output and cache-read tokens. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented. */
+        /** @description Read-only counts within console:overview:read reach, independent of the session seat and detail-page grants. Only live parks owned by the current operator are eligible. Foreign, absent or archived park:404; owned unreachable park:403. Optional branchId selects one reachable park. No private record identities or message text are returned. Explicit real from/to calendar dates, inclusive and ordered, at most31 days. Unknown or repeated query fields are refused. Spend is an estimate in USD excluding unpersisted cache writes, never satang revenue. Valid operator model rates apply at each record created_at before grouping. Without configured rates, spendEstimate is null with reason no_rate_configured, including empty buckets. Unknown models or records before a model rate remain unpriced; their input, output and cache-read tokens are retained in unpricedTokens with reason unpriced_tokens. Only known rates contribute to the estimate; an entirely unpriced group stays null, while an empty group with configured rates is zero. Retained Inbox AI records, by created_at Bangkok calendar day and the conversation current park, which may change after a turn. Count requires non-null latency, including failed/shadow/zero-latency turns; token sums retain all scoped records. The unassigned bucket is included once only with an unfiltered operator-wide Overview grant. No channel default or historical park attribution is invented. */
         get: {
             parameters: {
                 query: {
@@ -27142,6 +27142,203 @@ export interface paths {
             };
         };
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assistant-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the operator assistant caps, native fallback and immutable effective-dated USD rates. No provider, enabled state, model choice or credentials. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            operatorId: string;
+                            /** @enum {number} */
+                            schemaVersion: 1;
+                            overrides: {
+                                internal: {
+                                    personDailyCap?: number;
+                                    dailyAskCap?: number;
+                                    dailyTokenCap?: number;
+                                    concurrentPerPerson?: number;
+                                    concurrentPerOperator?: number;
+                                };
+                                inbox: {
+                                    dailyTurnCap?: number;
+                                    dailyTokenCap?: number;
+                                    debounceSeconds?: number;
+                                    debounceMaxSeconds?: number;
+                                    firstBubbleMs?: number;
+                                    bubbleGapMs?: number;
+                                };
+                            };
+                            rates: {
+                                model: string;
+                                /** Format: date-time */
+                                effectiveFrom: string;
+                                inputUsdPerMillion: number;
+                                outputUsdPerMillion: number;
+                                cacheReadUsdPerMillion: number;
+                            }[];
+                            effective: {
+                                internal: {
+                                    personDailyCap: number;
+                                    dailyAskCap: number;
+                                    dailyTokenCap: number;
+                                    concurrentPerPerson: number;
+                                    concurrentPerOperator: number;
+                                };
+                                inbox: {
+                                    dailyTurnCap: number;
+                                    dailyTokenCap: number;
+                                    debounceSeconds: number;
+                                    debounceMaxSeconds: number;
+                                    firstBubbleMs: number;
+                                    bubbleGapMs: number;
+                                };
+                            };
+                            /** @enum {string} */
+                            source: "environment" | "operator" | "invalid";
+                            revision: number;
+                            /** Format: date-time */
+                            updatedAt: string | null;
+                            /** Format: uuid */
+                            updatedBy: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        /** @description Atomically replace sparse numeric overrides and append USD rate versions at the expected revision. Requires Idempotency-Key; saved rate history is immutable. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        expectedRevision: number;
+                        /** @enum {number} */
+                        schemaVersion: 1;
+                        overrides: {
+                            internal: {
+                                personDailyCap?: number;
+                                dailyAskCap?: number;
+                                dailyTokenCap?: number;
+                                concurrentPerPerson?: number;
+                                concurrentPerOperator?: number;
+                            };
+                            inbox: {
+                                dailyTurnCap?: number;
+                                dailyTokenCap?: number;
+                                debounceSeconds?: number;
+                                debounceMaxSeconds?: number;
+                                firstBubbleMs?: number;
+                                bubbleGapMs?: number;
+                            };
+                        };
+                        rates: {
+                            model: string;
+                            /** Format: date-time */
+                            effectiveFrom: string;
+                            inputUsdPerMillion: number;
+                            outputUsdPerMillion: number;
+                            cacheReadUsdPerMillion: number;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            operatorId: string;
+                            /** @enum {number} */
+                            schemaVersion: 1;
+                            overrides: {
+                                internal: {
+                                    personDailyCap?: number;
+                                    dailyAskCap?: number;
+                                    dailyTokenCap?: number;
+                                    concurrentPerPerson?: number;
+                                    concurrentPerOperator?: number;
+                                };
+                                inbox: {
+                                    dailyTurnCap?: number;
+                                    dailyTokenCap?: number;
+                                    debounceSeconds?: number;
+                                    debounceMaxSeconds?: number;
+                                    firstBubbleMs?: number;
+                                    bubbleGapMs?: number;
+                                };
+                            };
+                            rates: {
+                                model: string;
+                                /** Format: date-time */
+                                effectiveFrom: string;
+                                inputUsdPerMillion: number;
+                                outputUsdPerMillion: number;
+                                cacheReadUsdPerMillion: number;
+                            }[];
+                            effective: {
+                                internal: {
+                                    personDailyCap: number;
+                                    dailyAskCap: number;
+                                    dailyTokenCap: number;
+                                    concurrentPerPerson: number;
+                                    concurrentPerOperator: number;
+                                };
+                                inbox: {
+                                    dailyTurnCap: number;
+                                    dailyTokenCap: number;
+                                    debounceSeconds: number;
+                                    debounceMaxSeconds: number;
+                                    firstBubbleMs: number;
+                                    bubbleGapMs: number;
+                                };
+                            };
+                            /** @enum {string} */
+                            source: "environment" | "operator" | "invalid";
+                            revision: number;
+                            /** Format: date-time */
+                            updatedAt: string | null;
+                            /** Format: uuid */
+                            updatedBy: string | null;
+                        };
+                    };
+                };
+            };
+        };
         post?: never;
         delete?: never;
         options?: never;

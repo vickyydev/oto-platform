@@ -41,6 +41,7 @@ import { StaffBenefits } from '@/pages/StaffBenefits';
 import { Reports, ReportsLanding } from '@/pages/Reports';
 import { ChannelsLanding } from '@/pages/Channels';
 import { TeamsRouting } from '@/pages/TeamsRouting';
+import { AssistantSettings } from '@/pages/AssistantSettings';
 import { Operations } from '@/pages/Operations';
 import { Staff } from '@/pages/Staff';
 
@@ -148,6 +149,7 @@ const pageElements: Record<string, ReactElement> = {
   'tier-verifications': <Operations page="tier-verifications" />,
   wallets: <Operations page="wallets" />,
   'teams-routing': <TeamsRouting />,
+  'assistant-settings': <AssistantSettings />,
   'reports-sales': <Reports page="sales" />,
   'reports-profitability': <Reports page="profitability" />,
   'reports-discounts': <Reports page="discounts" />,
