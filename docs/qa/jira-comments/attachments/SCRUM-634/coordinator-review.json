@@ -1,0 +1,112 @@
+{
+  "ticket": "SCRUM-634",
+  "reviewedAt": "2026-10-25T02:34:30.423Z",
+  "passed": true,
+  "actualStaging": false,
+  "acceptance": false,
+  "scope": "Read-only whole-source review of initial and corrected coordinator scripts plus existing local receipt inspection. No script import/execution, Docker commands, network, authentication, source edits or Git actions by reviewer.",
+  "inputs": {
+    "runner": {
+      "path": "C:/w/admin634-staging-runner.mjs",
+      "sha256": "11f3bb3de5f1c981ee5189b351c7722140811890418d1600449500867a7e87dc"
+    },
+    "cleanup": {
+      "path": "C:/w/admin634-remove-test-containers.mjs",
+      "sha256": "95b24b5748fa3d0efba7c3b23717d6b20e08519bb7e1d1dae8e6fdc0329c05a5"
+    },
+    "probe": {
+      "path": "C:/w/admin634-navigation-probe.json",
+      "sha256": "55cecc3ebf6042acf86e8fe8b9105e6cb4730ae2263086776aca9884eb7ce69e"
+    },
+    "setup": {
+      "path": "C:/w/admin634-integrated/setup.json",
+      "sha256": "9360931b9c6e70141206a3d1eba9f8f0c289be738b33427143b7bab58d3e2be2"
+    },
+    "baseline": {
+      "path": "C:/w/admin634-integrated/other-containers-before.json",
+      "sha256": "9b8526cc8e3e887ecb28ec308350999648ea83cb69d588296aaf99c900162864"
+    },
+    "postRebase": {
+      "path": "C:/w/admin634-integrated/post-rebase-checks.json",
+      "sha256": "f2736140b3f2633476b0c918939ffd89e2d3314f9cb88e404b1ed9df119e3544"
+    },
+    "published": {
+      "path": "C:/w/admin634-source-published.json",
+      "sha256": "b3e83598894c8eb477b2ffa67b02dde703cf10fea4b15b0b7529cd8ccdc0d4fa"
+    }
+  },
+  "priorReviewedHashes": {
+    "runner": "0a548376f0450d4070a97f0e8e8235bf4d2a31e775f6fc93cea186f224c54472",
+    "cleanup": "8650c50b4c3624e9ee7bd05ddcdea463cc9ddd30e3987b22142751596320b050"
+  },
+  "findings": [
+    {
+      "id": "C1",
+      "severity": "P2",
+      "state": "closed",
+      "problem": "Initial coordinator scripts performed work at module top level, so import could run capture or cleanup.",
+      "resolution": "Both now export their entry function and invoke it only when resolve(process.argv[1]) exactly equals fileURLToPath(import.meta.url). Import has no file, network or Docker actions and does not change process.exitCode. Explicit CLI behavior remains unchanged.",
+      "evidence": "Whole corrected sources re-read; source-only correction review. Coordinator reports syntax passed; reviewer did not execute import or syntax."
+    },
+    {
+      "id": "C2",
+      "severity": "P2",
+      "state": "closed",
+      "problem": "Initial cleanup used a negative node/vitest/esbuild process blacklist.",
+      "resolution": "Every non-zombie process must now be the known tail keepalive. Any other live command refuses removal. Existing zero non-self database client check remains.",
+      "evidence": "Exact corrected idle predicate reviewed; no live Docker process list fetched by reviewer."
+    }
+  ],
+  "runner": {
+    "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+    "wholeSourceRead": true,
+    "importInertBySource": true,
+    "gates": "Reads exact-source six completed-success jobs and three live deployments. Calls the already reviewed underlying source gates, whose exact job/source/unique service checks prevent a weaker coordinator precheck from bypassing acceptance.",
+    "assetReviewRequired": true,
+    "reviewedHelperSha256": "90d36a46d79b320d520c3fde007a3f2afdef37ac58170d1a5f2efa55fc747ed3",
+    "attempts": "Explicit assets/capture modes, vN attempt suffixes, exclusive plan/summary paths and fresh proof output preserve previous attempts.",
+    "readiness": "Requires receipt.complete, actual native comparisons for both ADMIN frames, and working/attendance/leave/payroll status ready in both comparisons. A not-ready result sets nonzero exit.",
+    "limits": [
+      "acceptanceReady here means technical proof readiness; final visual approval/publication remains separate. Every actual PNG must be opened and reviewed before Jira Deployed.",
+      "No actual CI/live asset collection/staging flow was run or accepted by this review."
+    ],
+    "safeOutput": "Whitelisted source/path/count/cleanup summary and static error-code categories only; no raw exception, cookie, token, phone, credentials or upstream HR body."
+  },
+  "cleanup": {
+    "exactOwnContainerIds": [
+      "a4f48004a0513b71759611045d8b7914aa4eefff7b7b0103ec4280aa17ac12f2",
+      "0831864e93b70ab5dbb04ac2e6964b85fde68bb1b420324902e6efb9283dbaa0"
+    ],
+    "baselineContainerCount": 10,
+    "wholeSourceRead": true,
+    "importInertBySource": true,
+    "guards": "Pins both setup IDs; expected names and ticket labels; API image matches setup; all other IDs must exactly equal captured baseline before and after. Requires local post-rebase exit0/source unchanged and source-published receipt.",
+    "apiImage": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+    "idle": "Only tail or zombie processes accepted; zero non-self client backend sessions required.",
+    "operation": "Only docker rm -f on two explicit full IDs. No -v, prune, image, volume or network deletion.",
+    "priorCleanupResultPreserved": true,
+    "limits": [
+      "No current Docker inventory/process state was fetched by reviewer; the script rechecks at actual execution.",
+      "CI-green execution timing remains coordinator-controlled; this script itself proves local tests finished and source published."
+    ]
+  },
+  "localNavigationProbe": {
+    "path": "C:/w/admin634-navigation-probe.json",
+    "sha256": "55cecc3ebf6042acf86e8fe8b9105e6cb4730ae2263086776aca9884eb7ce69e",
+    "reported": {
+      "localOnly": true,
+      "actualStaging": false,
+      "nativeIntent": true,
+      "documentAborted": true,
+      "clickResolved": true,
+      "consoleErrors": 0,
+      "pageErrors": 0,
+      "expectedFailedRequest": true,
+      "passed": true
+    },
+    "inspected": true,
+    "rerunByReviewer": false,
+    "limits": "Existing local browser receipt supports CDP intent, resolved click and expected document abort with no browser errors. It is not staging evidence, actual asset closure, destination UI acceptance or an authentication cleanup proof."
+  },
+  "disposition": "Both provisional source findings closed against these exact coordinator hashes. Explicit root execution may proceed only when the separately required CI/live gates and asset review are satisfied. No release acceptance is asserted by this review."
+}

@@ -1,0 +1,72 @@
+{
+  "ticket": "SCRUM-634",
+  "at": "2026-10-25T02:42:56.134Z",
+  "runId": 40154287659,
+  "conclusion": "success",
+  "headSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "jobs": [
+    {
+      "name": "oto-app",
+      "id": 121052204728,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T02:23:58Z",
+      "completedAt": "2026-10-25T02:33:15Z",
+      "active": [],
+      "failed": []
+    },
+    {
+      "name": "api-tests (1)",
+      "id": 121052204859,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T02:23:58Z",
+      "completedAt": "2026-10-25T02:36:47Z",
+      "active": [],
+      "failed": []
+    },
+    {
+      "name": "api-tests (2)",
+      "id": 121052204871,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T02:23:58Z",
+      "completedAt": "2026-10-25T02:41:46Z",
+      "active": [],
+      "failed": []
+    },
+    {
+      "name": "ci",
+      "id": 121052204883,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T02:23:58Z",
+      "completedAt": "2026-10-25T02:35:47Z",
+      "active": [],
+      "failed": []
+    },
+    {
+      "name": "api-tests (3)",
+      "id": 121052204891,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T02:23:58Z",
+      "completedAt": "2026-10-25T02:37:13Z",
+      "active": [],
+      "failed": []
+    },
+    {
+      "name": "pos-tests",
+      "id": 121052204986,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-25T02:23:58Z",
+      "completedAt": "2026-10-25T02:25:31Z",
+      "active": [],
+      "failed": []
+    }
+  ],
+  "status": "completed",
+  "updatedAt": "2026-10-25T02:41:47Z",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/40154287659"
+}
