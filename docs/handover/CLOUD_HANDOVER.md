@@ -17,6 +17,15 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**25 October 2026, SCRUM-634 SOURCE ON MAIN; EXACT-SHA CI RUNNING:** Implementation b91e957c779cb74a0c1495f24257bd69218286ae is pushed and Jira is Testing/outcome12562. Rebase changed no bytes. All163 post-rebase focused/inventory cases, API/Console compilers, generated contracts and changed-file lint pass on frozen55e085b68fedd8a18844a7933b2ea7dbe9819665045d00497e9ee13b807849ed. Local broad coverage and its explicitly preserved one-line route-census correction are recorded under attachments/SCRUM-634; original failed full frame remains failed rather than relabelled.
+
+CI40154287659 is watched by that exact source SHA. Latest observed app and till jobs are green; the workspace browser suite and three API shards remain running with no failed step. Resume with scripts/agent/watch-ci.sh b91e957c779cb74a0c1495f24257bd69218286ae 110, then inspect all six exact jobs and the whole app compiler output. Render is automatic on green; recent API/Admin/OTO App deploy histories were read before any possible trigger and still show the previous704bb source. No manual trigger or634 staging acceptance is claimed.
+
+The reviewed staging helper and public asset collector are prepared. Require three latest live deployments on the same tested source, collect/review actual Admin assets, then capture native desktop/phone and existing-demo restriction proof, compare all four headlines with same-actor native APIs and close every owned session200/401. Local Chromium confirms the actual button navigation-intent/abort mechanism; it is not staging proof. Two own local test containers remain available until final testing; exact guarded cleanup is prepared and preserves the ten other containers plus images/volumes/networks.
+
+No owner/planner ruling or SMS is pending.629–633 remain Deployed with20 verified historical PNGs; parent628 remains In Progress.634 must have committed/attached inspected postdeploy PNGs and Deployed readback before parent acceptance, and P4 still waits for P3 Deployed. Continue CI/rollout/proof; do not restart implementation or take another ticket.
+
+
 **25 October 2026, SCRUM-634 LOCAL COVERAGE READY; SOURCE LANDING:** Staff & HR now reads native on-shift, attendance-issue, leave-entry and company payroll-month status through the acting user's app APIs, with fixed fresh-handoff links. Both platform gates and native salary/advisor/park/tenant checks remain. Only app-owned status SELECTs are added; no direct platform HR/payroll reads, migration or original rule change.
 
 The complete three-shard API frame covers364 files and has exactly one stale ordered-inventory assertion. Its original command remains failed. The one missing protected GET expectation is added; the entire25-case file plus138 focused cases pass, along with API/Console compilers, contracts and lint. The byte bridge proves only that single test expectation differs from the broad frame, yielding5410 current passing cases/3skips/5TODOs without claiming a fresh full-command rerun. Every production/dependency byte and every other test is unchanged.
