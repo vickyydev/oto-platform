@@ -1,0 +1,29 @@
+{
+  "ticket": "SCRUM-634",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "initialUninstrumentedAttempt": {
+    "errorCode": "STATIC_REFERENCE_REFUSED",
+    "timestampNotCaptured": true,
+    "authenticated": false
+  },
+  "instrumentedAttempt": {
+    "ticket": "SCRUM-634",
+    "startedAt": "2026-10-25T02:52:13.634Z",
+    "authenticated": false,
+    "businessWrites": 0,
+    "helperSha256": "cbe6213a7d9a16be8349a06741eae722ea1c4d2d122ce6bb9cf1f39205c4f5b1",
+    "passed": false,
+    "errorCode": "STATIC_REFERENCE_REFUSED",
+    "referenceDiagnostic": {
+      "basePath": "/assets/index-C2S5370C.js",
+      "candidate": null,
+      "rawSha256": "e7ac0786668e0ff0f02b62bd04f45ff636fd82db63b1104601c975dc005f3a67",
+      "hasQuery": false,
+      "hasFragment": false
+    },
+    "completedAt": "2026-10-25T02:52:19.747Z"
+  },
+  "diagnosis": "The static-import regular expression reads the colon after the permission key catalog:menu:import as a module path. This is an external collector parser fault, before any authenticated staging proof.",
+  "productionSourceChanged": false,
+  "stagingAcceptance": false
+}

@@ -15,3 +15,7 @@ This checkpoint is local only. Source landing, exact-source CI, automatic API/Ad
 ## Source CI and cleanup
 
 Implementation `b91e957c779cb74a0c1495f24257bd69218286ae` passed all six jobs in CI `40154287659`; the exact-SHA watcher exited0. Fresh source CI is fully green. The whole668-line app compiler review retains418/54/109 with no increases; its one inherited display-only continuation difference is recorded in [ci-compiler-review.json](ci-compiler-review.json). Both own test containers are removed and all ten other containers/data plus images/volumes/networks are preserved: [cleanup.json](cleanup.json). Automatic same-source API/Admin/OTO App rollout and native staging proof are in progress; this is not Deployed acceptance yet.
+
+## Live rollout and staging proof
+
+All three automatic deployments are live on the six-green source, with the final deployment at2026-10-25T02:45:13.564893Z: [rollout.json](rollout.json). The public collector stopped before authentication because its regular expression confused a permission label with an import; [staging-qa-history.json](staging-qa-history.json) preserves that failed attempt and diagnostic. A narrow external QA parser correction and actual native comparisons/screenshots are pending. No production failure or staging acceptance is claimed.

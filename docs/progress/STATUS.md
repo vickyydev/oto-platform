@@ -1,5 +1,12 @@
 # Current status - read this first when resuming
 
+**25 October 2026, SCRUM-634 LIVE; STAGING COLLECTOR CORRECTION:** All six CI40154287659 jobs passed for source b91e957c779cb74a0c1495f24257bd69218286ae. The latest automatic API, Admin and OTO App deployments are now observed live on that same source, with the final deployment finishing2026-10-25T02:45:13.564893Z. No manual deployment was triggered. Rollout evidence is attachments/SCRUM-634/rollout.json.
+
+The first public asset collection failed before authentication: its import regular expression mistook the permission key catalog:menu:import for an actual module import and tried to enqueue a colon. The original failure and safe diagnostic remain in staging-qa-history.json. Correct only this external QA parser, prove its regression and retain all path/source guards, then collect/review assets and run actual same-actor native comparisons and desktop/phone/restricted-demo screenshots. No product failure or owner/planner ruling is established. Jira remains Testing/outcome12562; staging acceptance is not claimed.
+
+The two exact ticket-owned test containers are removed and all ten original other containers/data are preserved. Source, full exact-SHA CI and compiler baseline remain unchanged. No business write, invitation, SMS or payment is required. Continue proof publication and634Deployed, then parent628 acceptance; P4 still waits for P3 Deployed.
+
+
 **25 October 2026, SCRUM-634 CI GREEN; AUTOMATIC ROLLOUT IN PROGRESS:** Source b91e957c779cb74a0c1495f24257bd69218286ae passed all six jobs in CI40154287659; the exact-SHA watcher exited0. The fresh complete CI suite is green, including the route-inventory correction. Whole app compiler668lines are read:418 diagnostics/54files/109 buckets exactly match baseline. One inherited diagnostic's checkout-path/abbreviated union display differs; no error count, file, code or position changes. Evidence ci-terminal.json and ci-compiler-review.json are under attachments/SCRUM-634.
 
 Render automatically selected that same tested SHA for API, Admin and OTO App, with no manual trigger. Admin is live; API and OTO App were last observed update_in_progress. Re-read current deployment histories and require all three latest deployments live on b91 before collecting the actual Admin public asset closure and running native proof. Staging screenshots and634Deployed are still pending; Jira stays Testing/outcome12562.
