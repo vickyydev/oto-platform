@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "console-green-1",
+  "command": "pnpm --filter @oto/console typecheck\npnpm --filter @oto/console test",
+  "startedAt": "2026-10-25T07:47:57.605Z",
+  "completedAt": "2026-10-25T07:48:19.867Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "0a4b2bab290f6b1da27b551c5bbf9cee90b0ed0813615bb90e85433c00874505",
+  "logSha256": "c7c6d6bb5bd97247bfba2506395fd5b025b9e5e1f9f0e3301a1242ce5ef899df",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

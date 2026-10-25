@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "post-rebase-compilers-contracts-lint-1",
+  "command": "pnpm --filter @oto/api typecheck\npnpm --filter @oto/console typecheck\npnpm --filter @oto/api-types typecheck\npnpm api-types:check\npnpm --filter @oto/api-types test\npnpm exec eslint apps/api/src/services/console.ts apps/api/src/services/console-summary.ts apps/api/src/services/console-decisions.ts apps/api/src/services/console-digest.ts apps/api/src/routes/console.ts apps/api/test/s637-overview-review.test.ts apps/api/test/s637-decisions-review.test.ts apps/api/test/s637-digest-review.test.ts packages/api-types/test/seam-walker.test.ts apps/console/src/pages/Overview.tsx apps/console/src/api/overview.ts apps/console/test/overview-markup.test.ts apps/console/e2e/overview.spec.ts",
+  "startedAt": "2026-10-25T08:25:01.611Z",
+  "completedAt": "2026-10-25T08:25:52.231Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "e1a4f1cd27b96afb606250ecf431f1ef8874e8e93986829fa88be1017506dd5b",
+  "logSha256": "85479013be9e5885d0b8159dee7c065d90a25bf0db4cd9495bf012326eeb4721",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

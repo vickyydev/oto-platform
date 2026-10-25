@@ -1,0 +1,12 @@
+{
+  "ticket": "SCRUM-637",
+  "completedAt": "2026-10-25T08:26:40.605Z",
+  "removedIds": [
+    "5d7fab37721fe6da01bb65886884f2dbfc013be50af90f0c4e66da7547e70be4",
+    "fe5170d60bacf511a4311697f4884854c0a2627a1b0ecb8e1b6169e181ac96ed"
+  ],
+  "baselinePreserved": 10,
+  "remaining": 10,
+  "onlyExactOwnedContainersRemoved": true,
+  "volumesImagesNetworksAndBindsRemoved": false
+}

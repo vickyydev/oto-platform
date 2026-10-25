@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "workspace-compilers-builds-1",
+  "command": "pnpm exec turbo run typecheck build --env-mode=loose --concurrency=1 --force",
+  "startedAt": "2026-10-25T07:53:47.628Z",
+  "completedAt": "2026-10-25T07:56:33.695Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "5dcab101d1720d8b8ed7b5d211653f06b67ff7ad8bb42707a5d9212d4d72872d",
+  "logSha256": "4ab5fe6e79ee1c21ccbaa0339801e0dd5430d6de82138876d2047d2f67e5ee64",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

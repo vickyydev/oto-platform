@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "migration-file-isolated-1",
+  "command": "cd apps/api\npnpm test test/s217b-r4a.test.ts",
+  "startedAt": "2026-10-25T08:13:18.377Z",
+  "completedAt": "2026-10-25T08:13:41.329Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "5dcab101d1720d8b8ed7b5d211653f06b67ff7ad8bb42707a5d9212d4d72872d",
+  "logSha256": "a24253117bff543cddbb116c210951979c3e9fe73e39f2810eb2adaa26eb6039",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

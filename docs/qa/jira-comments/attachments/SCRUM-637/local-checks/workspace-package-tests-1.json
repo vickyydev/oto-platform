@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-637",
+  "name": "workspace-package-tests-1",
+  "command": "pnpm -r --workspace-concurrency=1 --filter=!@oto/api --filter=!@oto/pos test",
+  "startedAt": "2026-10-25T07:58:01.431Z",
+  "completedAt": "2026-10-25T07:59:27.451Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "5dcab101d1720d8b8ed7b5d211653f06b67ff7ad8bb42707a5d9212d4d72872d",
+  "logSha256": "bc448eb12a012e92f2ba79d4f666c629698f48d718254b113d94529a4c8d04ce",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}
