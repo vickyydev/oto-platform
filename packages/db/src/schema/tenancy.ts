@@ -277,6 +277,8 @@ export const session = core.table(
     accountId: uuid('account_id')
       .notNull()
       .references(() => account.id, { onDelete: 'cascade' }),
+    /** Session-only working operator; the account's home operator stays unchanged. */
+    operatorOverride: uuid('operator_override').references(() => operator.id),
     /** SHA-256 of the opaque cookie token — the raw token is never stored. */
     tokenHash: text('token_hash').notNull(),
     /** Active branch for this session (POS pickers scope to it). */

@@ -730,10 +730,22 @@ export async function pickStation(
   let minted: MintedStaffToken | null = null;
   let unavailable: string | null = null;
   await withTx(db, ctx, 'session.station_pick', async (tx) => {
-    await tx
+    // The authorization above belongs to the captured operator and branch.
+    // A concurrent operator/branch selection must not attach this old till
+    // or mint its shift token after the session moved. UPDATE rechecks these
+    // predicates after waiting for the same row lock used by the switch.
+    const [picked] = await tx
       .update(sessionTable)
       .set({ stationId: row.id })
-      .where(eq(sessionTable.id, auth.sessionId));
+      .where(and(
+        eq(sessionTable.id, auth.sessionId),
+        eq(sessionTable.accountId, auth.accountId),
+        eq(sessionTable.branchId, row.branchId),
+        sql`coalesce(${sessionTable.operatorOverride},
+          (select ${account.operatorId} from ${account} where ${account.id} = ${auth.accountId})) = ${auth.operatorId}`,
+      ))
+      .returning({ id: sessionTable.id });
+    if (!picked) throw new AppError(409, 'SESSION_CONTEXT_CHANGED', 'Your working park group or branch changed. Choose the station again.');
 
     /**
      * The shift token, minted inside the same transaction as the pick.
