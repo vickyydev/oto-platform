@@ -1,0 +1,130 @@
+diff --git a/apps/api/src/env.ts b/apps/api/src/env.ts
+--- a/apps/api/src/env.ts
++++ b/apps/api/src/env.ts
+@@ -362,6 +362,18 @@
+    * impossible.
+    */
+   ALERT_CHANNELS: z.string().default('console'),
++  /** Morning branch status digest; separate from alert-channel delivery. */
++  CONSOLE_DIGEST_ENABLED: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
++  /** Private destination: never expose its value through status or error text. */
++  ALERT_WEBHOOK_URL: z.preprocess(
++    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
++    z.string().trim().refine(value => {
++      try {
++        const url = new URL(value);
++        return url.protocol === 'https:' && !url.username && !url.password && !url.hash;
++      } catch { return false; }
++    }, 'ALERT_WEBHOOK_URL must use HTTPS without userinfo or a fragment').optional(),
++  ),
+   /**
+    * How often the watchdog compares what should have run with what did
+    * (S2-03). Everything else records what happened; this is the only check
+@@ -1118,6 +1130,10 @@
+     // And the internal assistant (SCRUM-591), for the same reason.
+     if (overrides.INTERNAL_AI_ENABLED === undefined) raw.INTERNAL_AI_ENABLED = 'false';
+     if (overrides.INTERNAL_AI_OTOAPP_TOOLS === undefined) raw.INTERNAL_AI_OTOAPP_TOOLS = 'false';
++    // A developer's destination must never turn a test into a real message.
++    // Registration tests opt in explicitly and inject a capturing sender.
++    if (overrides.CONSOLE_DIGEST_ENABLED === undefined) raw.CONSOLE_DIGEST_ENABLED = 'false';
++    if (overrides.ALERT_WEBHOOK_URL === undefined) raw.ALERT_WEBHOOK_URL = '';
+   }
+   const env = EnvSchema.parse(raw);
+   assertProductionSafe(env);
+diff --git a/apps/api/src/services/jobs.ts b/apps/api/src/services/jobs.ts
+--- a/apps/api/src/services/jobs.ts
++++ b/apps/api/src/services/jobs.ts
+@@ -59,6 +59,8 @@
+ import { closeAbandoned } from './assistant/engine';
+ import { runAssistantPurge } from './assistant/views';
+ import { runWalletExpiryJob, runWalletLiabilityJob } from './wallet';
++import { overviewForScopeOf } from './console';
++import { createConsoleDigestSender, runConsoleDigest, type DigestSender } from './console-digest';
+ 
+ /** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
+ export const WALLET_EXPIRY_JOB = 'job:wallet.expiry';
+@@ -101,6 +103,8 @@
+ export const WATCHDOG_JOB = 'job:watchdog';
+ /** SCRUM-591 — the internal assistant's ask-log retention (plan §D.3, G4). */
+ export const ASSISTANT_PURGE_JOB = 'job:assistant.purge';
++/** SCRUM-637: one exclusive sweep, with durable branch/day delivery receipts. */
++export const CONSOLE_DIGEST_JOB = 'job:console.digest';
+ 
+ /**
+  * Timers drift, and a tick arriving a few milliseconds early must not be
+@@ -238,7 +242,12 @@
+    * the one `job:inbox.ai` asks. Absent, one is built from the env.
+    */
+   inboxAi?: InboxAiRuntime;
+-}
++  /** Tests inject a capturing sender; the configured destination stays private. */
++  consoleDigestSender?: DigestSender;
++}
++
++const consoleDigestConfigured = (env: Env): boolean =>
++  env.CONSOLE_DIGEST_ENABLED === true && Boolean(env.ALERT_WEBHOOK_URL);
+ 
+ // --- The watchdog -----------------------------------------------------------
+ 
+@@ -360,6 +369,15 @@
+    * Declaring an expectation is how something asks to be alerted on.
+    */
+   for (const expectation of expectations) {
++    // Conditional registration leaves historical expectations intact. Turning
++    // this digest off is not a missed run or a recovered delivery; its existing
++    // alert history says explicitly why those exact conditions no longer apply.
++    if (expectation.name === CONSOLE_DIGEST_JOB && !consoleDigestConfigured(env)) {
++      const clear = { category: 'ops.disabled', reason: 'digest_disabled', summary: 'The branch digest is disabled or has no destination' };
++      await close(`ops.missing:${CONSOLE_DIGEST_JOB}`, 'ops.missing', CONSOLE_DIGEST_JOB, clear);
++      await close(`ops.failing:${CONSOLE_DIGEST_JOB}`, 'ops.failing', CONSOLE_DIGEST_JOB, clear);
++      continue;
++    }
+     if (expectation.mutedUntil && expectation.mutedUntil > now) continue;
+     const last = byName.get(expectation.name);
+     /**
+@@ -479,6 +497,22 @@
+    * deployment never gets this far: `assertProductionSafe` refuses the boot.
+    */
+   gatewayFor(deps.env, deps.log);
++
++  const digestSender = consoleDigestConfigured(deps.env)
++    ? deps.consoleDigestSender ?? createConsoleDigestSender(deps.env.ALERT_WEBHOOK_URL)
++    : undefined;
++  const digestJobs: JobDefinition[] = digestSender ? [{
++    name: CONSOLE_DIGEST_JOB,
++    description: 'Posts the shared status summary for each live park after its business-day start; ambiguous delivery is held for review',
++    intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
++    exclusive: true,
++    run: async ({ db, env, now }) => ({ detail: { ...await runConsoleDigest(db, {
++      enabled: env.CONSOLE_DIGEST_ENABLED,
++      now,
++      sender: digestSender,
++      snapshot: (source, scope) => overviewForScopeOf(source, { ...scope, pendingMinutes: env.PAYMENT_PENDING_MIN }),
++    }) } }),
++  }] : [];
+ 
+   return [
+     {
+@@ -897,6 +931,7 @@
+       }),
+     },
+     ...buildOtoAppNightJobs(deps),
++    ...digestJobs,
+   ];
+ }
+ 
+diff --git a/.env.example b/.env.example
+--- a/.env.example
++++ b/.env.example
+@@ -98,6 +98,11 @@
+ PROCESS_ROLES=api
+ # Where an alert goes. `console` until the owner names a channel (decision 17).
+ ALERT_CHANNELS=console
++# Optional morning branch digest, separate from ALERT_CHANNELS. It uses the
++# branch business-day start and catches up only the current day. Keep off in QA;
++# tests inject delivery. The private HTTPS destination accepts JSON {text}.
++CONSOLE_DIGEST_ENABLED=false
++ALERT_WEBHOOK_URL=
+ # Enables the staging-only operator controls — "Reset demo data" and the
+ # device simulators' fault injection. NEVER true on a real deployment.
+ OPS_TEST_CONTROLS=false
