@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-628",
+  "sourceSha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+  "ciRunId": "40154287659",
+  "evidenceCommit": "74bcec6fd7f66b26f3a9f03bf1de38822c64ab86",
+  "status": "Deployed",
+  "readBackAt": "2026-10-25T03:27:37.958Z",
+  "attachments": [
+    {
+      "id": "12029",
+      "name": "SCRUM-628-01-staff-current.png"
+    }
+  ],
+  "commentId": "12563",
+  "allSixChildrenDeployed": true,
+  "childEvidencePngs": 23,
+  "parentScreenshotReusedUnchanged": true,
+  "p4Started": false
+}

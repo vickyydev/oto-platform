@@ -288,11 +288,15 @@ Acceptance: a person granted in the console opens the OTO App with the right rol
 
 Also in P3 (from the OTO App inventory): the two lifecycle gaps close in P3-5 - reactivating a platform account switches its OTO App user back on, and an OTO App-side switch-off (including the 03:00 leaver run) deactivates the platform account through the identity seam; and the OTO App pages that call routes which do not exist (the core dashboard and the troubleshooting flows) either get their routes or lose their links.
 
+P3 Deployed (2026-10-25, SCRUM-628): all629–634 children Deployed/23 images. Current unchanged Staff frame is attached12029, evidence74bcec6fd7f66b26f3a9f03bf1de38822c64ab86, outcome12563; parent readback2026-10-25T03:27:37.958Z. Historical child screenshots retain their original release dates, and invitation/advisor positive checks remain local. Final634 sourceb91e957c779cb74a0c1495f24257bd69218286ae/CI40154287659, actual native comparisons/four fresh links/seven closed sessions complete. See attachments/SCRUM-628/README.md. Final Done stays with the owner.
+
 ## 10. P4 — analytics and platform (Codex)
 
 | Ticket | Deliverable |
 |---|---|
 | P4-1 | The five aggregates |
+
+Pickup (2026-10-25, SCRUM-636): P3 parent628 is Deployed with proof. Begin the five reach-filtered read-only aggregates on a fresh lane. Source definitions, original domain/day rules and operator/branch ownership are inspected before implementation; protected engines remain untouched. No implementation/release/staging acceptance yet;637 waits for636Deployed.
 | P4-2 | Overview v2 with them |
 | P4-3 | Assistant settings: `core.setting`, routes, screen; the engines read the row |
 | P4-4 | Platform section: operators, system roles, platform alerts and jobs, environment, test controls |
