@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "members-red-and-integration",
+  "command": "cd apps/api && pnpm test test/aggregates-members.test.ts test/aggregates-domain.test.ts test/aggregates-ai.test.ts test/s636-aggregates-review.test.ts",
+  "startedAt": "2026-10-25T03:53:42.862Z",
+  "completedAt": "2026-10-25T03:54:01.378Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "948fbb0f2da85e3fcb6e827636c25579a61eefb93ddc32ebc157762b3e1689c8",
+  "logSha256": "47f0a42bd53e22c7792041f94f9ad83a226bad8e4cfedbdf31565d5cceb7f4bd",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

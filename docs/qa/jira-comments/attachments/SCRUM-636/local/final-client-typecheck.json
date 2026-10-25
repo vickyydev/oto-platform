@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "final-client-typecheck",
+  "command": "pnpm --filter @oto/api-types typecheck\npnpm api-types:check\nnode scripts/check-no-mock-members.mjs",
+  "startedAt": "2026-10-25T04:24:30.532Z",
+  "completedAt": "2026-10-25T04:24:38.341Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "23146c7d38a08775df6f34b3f8a5a54c0280c6604acdbf2a9b82c962c4d2d615",
+  "logSha256": "1fcac5c76bd39abf3e635d240d3e0005c48db363af65905a62119ffa0cc5a5b9",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

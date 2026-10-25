@@ -1,0 +1,187 @@
+
+   • Packages in scope: @oto/admin-screens, @oto/api, @oto/api-types, @oto/assistant, @oto/booth, @oto/box-agent, @oto/config, @oto/console, @oto/db, @oto/inbox, @oto/launcher, @oto/messaging, @oto/payments-2c2p, @oto/pos, @oto/print, @oto/shared, @oto/telemetry
+   • Running typecheck, build in 17 packages
+   • Remote caching disabled
+
+@oto/shared:typecheck: cache miss, executing 309e9f6c85c376ba
+@oto/shared:typecheck: 
+@oto/shared:typecheck: > @oto/shared@0.1.0 typecheck /workspace/packages/shared
+@oto/shared:typecheck: > tsc -p tsconfig.json
+@oto/shared:typecheck: 
+@oto/telemetry:typecheck: cache miss, executing 0ae639bcbd66a9e9
+@oto/telemetry:typecheck: 
+@oto/telemetry:typecheck: > @oto/telemetry@0.1.0 typecheck /workspace/packages/telemetry
+@oto/telemetry:typecheck: > tsc -p tsconfig.json
+@oto/telemetry:typecheck: 
+@oto/messaging:typecheck: cache miss, executing 7e39c541b6fb33be
+@oto/messaging:typecheck: 
+@oto/messaging:typecheck: > @oto/messaging@0.1.0 typecheck /workspace/packages/messaging
+@oto/messaging:typecheck: > tsc -p tsconfig.json
+@oto/messaging:typecheck: 
+@oto/print:typecheck: cache miss, executing ed588f81298e34bf
+@oto/print:typecheck: 
+@oto/print:typecheck: > @oto/print@0.1.0 typecheck /workspace/packages/print
+@oto/print:typecheck: > tsc -p tsconfig.json
+@oto/print:typecheck: 
+@oto/assistant:typecheck: cache miss, executing 3c73b582c9af6459
+@oto/assistant:typecheck: 
+@oto/assistant:typecheck: > @oto/assistant@0.1.0 typecheck /workspace/packages/assistant
+@oto/assistant:typecheck: > tsc -p tsconfig.json
+@oto/assistant:typecheck: 
+@oto/booth:build: cache miss, executing 9bb2b36abea1c8f0
+@oto/booth:build: 
+@oto/booth:build: > @oto/booth@0.1.0 build /workspace/apps/booth
+@oto/booth:build: > vite build --config vite.config.ts
+@oto/booth:build: 
+@oto/booth:build: vite v7.3.6 building client environment for production...
+@oto/booth:build: transforming...
+@oto/booth:build: ✓ 303 modules transformed.
+@oto/booth:build: rendering chunks...
+@oto/booth:build: computing gzip size...
+@oto/booth:build: dist/public/index.html                                  1.80 kB │ gzip:   0.95 kB
+@oto/booth:build: dist/public/assets/NotoSansThai-Regular-BtLaeNM3.ttf   37.78 kB
+@oto/booth:build: dist/public/assets/NotoSansThai-Bold-DqyRvOXX.ttf      37.82 kB
+@oto/booth:build: dist/public/assets/index-Z304SnOf.css                  20.23 kB │ gzip:   4.56 kB
+@oto/booth:build: dist/public/assets/index-CuuEH66v.js                  446.04 kB │ gzip: 133.60 kB
+@oto/booth:build: ✓ built in 1.50s
+@oto/api-types:typecheck: cache miss, executing 5a41473adfba3d0d
+@oto/api-types:typecheck: 
+@oto/api-types:typecheck: > @oto/api-types@0.1.0 typecheck /workspace/packages/api-types
+@oto/api-types:typecheck: > tsc -p tsconfig.json
+@oto/api-types:typecheck: 
+@oto/booth:typecheck: cache miss, executing e08b35bb50ae86a0
+@oto/booth:typecheck: 
+@oto/booth:typecheck: > @oto/booth@0.1.0 typecheck /workspace/apps/booth
+@oto/booth:typecheck: > tsc -p tsconfig.json --noEmit
+@oto/booth:typecheck: 
+@oto/db:typecheck: cache miss, executing 43d3c08213dc0c66
+@oto/db:typecheck: 
+@oto/db:typecheck: > @oto/db@0.1.0 typecheck /workspace/packages/db
+@oto/db:typecheck: > tsc -p tsconfig.json
+@oto/db:typecheck: 
+@oto/payments-2c2p:typecheck: cache miss, executing 1e23cafe3e6cc7cf
+@oto/payments-2c2p:typecheck: 
+@oto/payments-2c2p:typecheck: > @oto/payments-2c2p@0.1.0 typecheck /workspace/packages/payments-2c2p
+@oto/payments-2c2p:typecheck: > tsc -p tsconfig.json
+@oto/payments-2c2p:typecheck: 
+@oto/box-agent:typecheck: cache miss, executing e2212b67f75454f1
+@oto/box-agent:typecheck: 
+@oto/box-agent:typecheck: > @oto/box-agent@0.1.0 typecheck /workspace/packages/box-agent
+@oto/box-agent:typecheck: > tsc -p tsconfig.json && tsc -p tsconfig.test.json
+@oto/box-agent:typecheck: 
+@oto/pos:build: cache miss, executing e37045098332a5d7
+@oto/pos:build: 
+@oto/pos:build: > @oto/pos@0.1.0 build /workspace/apps/pos
+@oto/pos:build: > vite build --config vite.config.ts
+@oto/pos:build: 
+@oto/pos:build: vite v7.3.6 building client environment for production...
+@oto/pos:build: transforming...
+@oto/pos:build: ✓ 2384 modules transformed.
+@oto/pos:build: [plugin vite:reporter] 
+@oto/pos:build: (!) /workspace/apps/pos/src/api/platform.ts is dynamically imported by /workspace/apps/pos/src/api/catalogBridge.ts but also statically imported by /workspace/apps/pos/src/api/catalogBridge.ts, /workspace/apps/pos/src/api/members.ts, /workspace/apps/pos/src/auth/OperatorContext.tsx, /workspace/apps/pos/src/branch/BranchContext.tsx, /workspace/apps/pos/src/components/auth/LockScreen.tsx, /workspace/apps/pos/src/components/book/BookCheckingPayment.tsx, /workspace/apps/pos/src/components/book/BookIdentify.tsx, /workspace/apps/pos/src/components/book/BookVerifyFamily.tsx, /workspace/apps/pos/src/components/history/SaleDetail.tsx, /workspace/apps/pos/src/components/mobile/MobileTill.tsx, /workspace/apps/pos/src/components/mobile/history/MobileHistory.tsx, /workspace/apps/pos/src/components/shared/PricingModeIndicator.tsx, /workspace/apps/pos/src/components/shared/PrinterHealthIndicator.tsx, /workspace/apps/pos/src/components/shared/VerifyTierModal.tsx, /workspace/apps/pos/src/components/till/VisitChildrenModal.tsx, /workspace/apps/pos/src/lib/deferredTierVerification.ts, /workspace/apps/pos/src/lib/demoControls.ts, /workspace/apps/pos/src/lib/displaySession.ts, /workspace/apps/pos/src/lib/themePref.ts, /workspace/apps/pos/src/pages/Book.tsx, /workspace/apps/pos/src/pages/History.tsx, /workspace/apps/pos/src/pages/StationSetup.tsx, /workspace/apps/pos/src/pages/Till.tsx, /workspace/apps/pos/src/station/StationContext.tsx, dynamic import will not move module into another chunk.
+@oto/pos:build: 
+@oto/pos:build: rendering chunks...
+@oto/pos:build: computing gzip size...
+@oto/pos:build: dist/public/index.html                                 1.98 kB │ gzip:   0.81 kB
+@oto/pos:build: dist/public/sw.js                                      7.75 kB
+@oto/pos:build: dist/public/assets/inter-cyrillic-DqGufNeO.woff2      18.75 kB
+@oto/pos:build: dist/public/assets/inter-latin-Dx4kXJAl.woff2         48.26 kB
+@oto/pos:build: dist/public/assets/inter-latin-ext-DO1Apj_S.woff2     85.07 kB
+@oto/pos:build: dist/public/assets/logo-oto-nNYXf9Wy.png             173.77 kB
+@oto/pos:build: dist/public/assets/index-CSvdVv6e.css                200.44 kB │ gzip:  29.32 kB
+@oto/pos:build: dist/public/assets/index-LYnQhDk9.js               2,336.32 kB │ gzip: 645.88 kB
+@oto/pos:build: 
+@oto/pos:build: (!) Some chunks are larger than 500 kB after minification. Consider:
+@oto/pos:build: - Using dynamic import() to code-split the application
+@oto/pos:build: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+@oto/pos:build: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+@oto/pos:build: ✓ built in 5.16s
+@oto/launcher:build: cache miss, executing ee0a30e5b3f47916
+@oto/launcher:build: 
+@oto/launcher:build: > @oto/launcher@0.1.0 build /workspace/apps/launcher
+@oto/launcher:build: > vite build --config vite.config.ts
+@oto/launcher:build: 
+@oto/launcher:build: vite v7.3.6 building client environment for production...
+@oto/launcher:build: transforming...
+@oto/launcher:build: ✓ 1737 modules transformed.
+@oto/launcher:build: rendering chunks...
+@oto/launcher:build: computing gzip size...
+@oto/launcher:build: dist/public/index.html                      1.59 kB │ gzip:   0.72 kB
+@oto/launcher:build: dist/public/assets/logo-oto-nNYXf9Wy.png  173.77 kB
+@oto/launcher:build: dist/public/assets/index-Dzcr-ygT.css      35.12 kB │ gzip:   7.24 kB
+@oto/launcher:build: dist/public/assets/index-Dpmr31ID.js      348.40 kB │ gzip: 105.52 kB
+@oto/launcher:build: ✓ built in 1.96s
+@oto/inbox:typecheck: cache miss, executing 19e6bbcba0981bde
+@oto/inbox:typecheck: 
+@oto/inbox:typecheck: > @oto/inbox@0.1.0 typecheck /workspace/apps/inbox
+@oto/inbox:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit
+@oto/inbox:typecheck: 
+@oto/pos:typecheck: cache miss, executing 4f47bdf63e4c0cb1
+@oto/pos:typecheck: 
+@oto/pos:typecheck: > @oto/pos@0.1.0 typecheck /workspace/apps/pos
+@oto/pos:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit
+@oto/pos:typecheck: 
+@oto/inbox:build: cache miss, executing d993427fa4961463
+@oto/inbox:build: 
+@oto/inbox:build: > @oto/inbox@0.1.0 build /workspace/apps/inbox
+@oto/inbox:build: > vite build --config vite.config.ts
+@oto/inbox:build: 
+@oto/inbox:build: vite v7.3.6 building client environment for production...
+@oto/inbox:build: transforming...
+@oto/inbox:build: ✓ 1718 modules transformed.
+@oto/inbox:build: rendering chunks...
+@oto/inbox:build: computing gzip size...
+@oto/inbox:build: dist/public/index.html                   1.10 kB │ gzip:  0.53 kB
+@oto/inbox:build: dist/public/assets/index-B7ndgi0p.css   56.26 kB │ gzip:  9.75 kB
+@oto/inbox:build: dist/public/assets/vendor-BEqRa825.js   75.01 kB │ gzip: 19.92 kB
+@oto/inbox:build: dist/public/assets/index-Cip15XJZ.js   181.18 kB │ gzip: 45.12 kB
+@oto/inbox:build: dist/public/assets/react-CMVXFKhj.js   185.16 kB │ gzip: 58.31 kB
+@oto/inbox:build: ✓ built in 1.70s
+@oto/launcher:typecheck: cache miss, executing 1bb2152384351dc8
+@oto/launcher:typecheck: 
+@oto/launcher:typecheck: > @oto/launcher@0.1.0 typecheck /workspace/apps/launcher
+@oto/launcher:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit
+@oto/launcher:typecheck: 
+@oto/admin-screens:typecheck: cache miss, executing 9939582703935861
+@oto/admin-screens:typecheck: 
+@oto/admin-screens:typecheck: > @oto/admin-screens@0.1.0 typecheck /workspace/packages/admin-screens
+@oto/admin-screens:typecheck: > tsc -p tsconfig.json --noEmit
+@oto/admin-screens:typecheck: 
+@oto/api:typecheck: cache miss, executing 41ea43b8de90b7e6
+@oto/api:typecheck: 
+@oto/api:typecheck: > @oto/api@0.1.0 typecheck /workspace/apps/api
+@oto/api:typecheck: > tsc -p tsconfig.json
+@oto/api:typecheck: 
+@oto/console:build: cache miss, executing de32c8dec155e6f1
+@oto/console:build: 
+@oto/console:build: > @oto/console@0.1.0 build /workspace/apps/console
+@oto/console:build: > vite build --config vite.config.ts
+@oto/console:build: 
+@oto/console:build: vite v7.3.6 building client environment for production...
+@oto/console:build: transforming...
+@oto/console:build: ✓ 2287 modules transformed.
+@oto/console:build: rendering chunks...
+@oto/console:build: computing gzip size...
+@oto/console:build: dist/public/index.html                        1.33 kB │ gzip:   0.58 kB
+@oto/console:build: dist/public/assets/logo-oto-nNYXf9Wy.png    173.77 kB
+@oto/console:build: dist/public/assets/index-CaH3r7Z2.css        98.59 kB │ gzip:  16.04 kB
+@oto/console:build: dist/public/assets/react-C6LhzTnE.js        185.71 kB │ gzip:  58.56 kB
+@oto/console:build: dist/public/assets/vendor-DAC0YWBt.js       397.48 kB │ gzip: 116.94 kB
+@oto/console:build: dist/public/assets/index-Ckp9N7sV.js      1,205.66 kB │ gzip: 324.57 kB
+@oto/console:build: 
+@oto/console:build: (!) Some chunks are larger than 500 kB after minification. Consider:
+@oto/console:build: - Using dynamic import() to code-split the application
+@oto/console:build: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+@oto/console:build: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+@oto/console:build: ✓ built in 5.52s
+@oto/console:typecheck: cache miss, executing 84bd97913673a734
+@oto/console:typecheck: 
+@oto/console:typecheck: > @oto/console@0.1.0 typecheck /workspace/apps/console
+@oto/console:typecheck: > tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p e2e/tsconfig.json --noEmit
+@oto/console:typecheck: 
+
+ Tasks:    21 successful, 21 total
+Cached:    0 cached, 21 total
+  Time:    3m8.295s 
+
+• turbo 2.10.12

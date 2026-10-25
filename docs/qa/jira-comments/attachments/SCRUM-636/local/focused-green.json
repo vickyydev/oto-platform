@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "focused-green",
+  "command": "cd apps/api && pnpm test test/aggregates-members.test.ts test/aggregates-domain.test.ts test/aggregates-ai.test.ts test/s636-aggregates-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "startedAt": "2026-10-25T03:59:03.888Z",
+  "completedAt": "2026-10-25T03:59:34.314Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceManifestSha256": "9ef38ab145814303306f62bc63e926423780e5b7897ebcdf633538c293fea1a0",
+  "logSha256": "ee9011fd17ae053bf2cdcec2b3304862286fd1684633545a53341ee14f453bdc",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

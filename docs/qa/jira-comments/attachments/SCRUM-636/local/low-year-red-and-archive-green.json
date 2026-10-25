@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "low-year-red-and-archive-green",
+  "command": "cd apps/api && pnpm test test/s636-aggregates-review.test.ts test/aggregates-ai.test.ts",
+  "startedAt": "2026-10-25T03:58:15.384Z",
+  "completedAt": "2026-10-25T03:58:26.922Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "f2d57257284de1b279d1ed72056a6291a8a1371f7f275587932160de7dce37dc",
+  "logSha256": "26212a6276ab91091959be814d5fc88070e6d095ac01351fa940c08879df1ab3",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

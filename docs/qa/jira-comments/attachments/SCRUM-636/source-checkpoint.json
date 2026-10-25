@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-636",
+  "at": "2026-10-25T04:38:06.811Z",
+  "sourceCheckpointSha": "cc9884d5b1d84892eab33d4f00a53059037a5493",
+  "sourceBranch": "lane/admin-aggregates",
+  "status": "In Progress",
+  "commentId": "12565",
+  "pending": [
+    "Q18"
+  ],
+  "mainFeatureReleased": false,
+  "stagingAccepted": false,
+  "files": 74
+}

@@ -1,0 +1,661 @@
+
+   • Packages in scope: @oto/admin-screens, @oto/api-types, @oto/assistant, @oto/booth, @oto/box-agent, @oto/config, @oto/console, @oto/db, @oto/inbox, @oto/launcher, @oto/messaging, @oto/payments-2c2p, @oto/print, @oto/shared, @oto/telemetry
+   • Running test in 15 packages
+   • Remote caching disabled
+
+@oto/shared:test: cache bypass, force executing 5a49c544583c1c9d
+@oto/shared:test: 
+@oto/shared:test: > @oto/shared@0.1.0 test /workspace/packages/shared
+@oto/shared:test: > vitest run
+@oto/shared:test: 
+@oto/shared:test: 
+@oto/shared:test:  RUN  v3.2.7 /workspace/packages/shared
+@oto/shared:test: 
+@oto/shared:test:  ✓ test/handoff-target.test.ts (34 tests) 12ms
+@oto/shared:test:  ✓ test/payments.test.ts (24 tests) 19ms
+@oto/shared:test:  ✓ test/booth-staff.test.ts (13 tests) 15ms
+@oto/shared:test:  ✓ test/permission-words.test.ts (6 tests) 27ms
+@oto/shared:test:  ✓ test/events.test.ts (11 tests) 8ms
+@oto/shared:test:  ✓ test/wallet.test.ts (21 tests) 47ms
+@oto/shared:test:  ✓ test/voucher-promo.test.ts (8 tests) 34ms
+@oto/shared:test:  ✓ test/ui-preferences.test.ts (10 tests) 178ms
+@oto/shared:test:  ✓ test/events-e3.test.ts (13 tests) 16ms
+@oto/shared:test:  ✓ test/station-session.test.ts (19 tests) 64ms
+@oto/shared:test:  ✓ test/wallet-tender.test.ts (5 tests) 25ms
+@oto/shared:test:  ✓ test/booth-duty.test.ts (10 tests) 6ms
+@oto/shared:test:  ✓ test/release.test.ts (5 tests) 5ms
+@oto/shared:test:  ✓ test/events-e2.test.ts (11 tests) 7ms
+@oto/shared:test:  ✓ test/analytics.test.ts (6 tests) 6ms
+@oto/shared:test:  ✓ test/s216-r45-review.test.ts (2 tests) 12ms
+@oto/shared:test:  ✓ test/s216-r4-reports.test.ts (8 tests) 5ms
+@oto/shared:test:  ✓ test/stock-r1.test.ts (22 tests) 6ms
+@oto/shared:test:  ✓ test/s216-r3-summary.test.ts (4 tests) 10ms
+@oto/shared:test:  ✓ test/booth-voucher-slip.test.ts (8 tests) 10ms
+@oto/shared:test:  ✓ test/s496-review-packs.test.ts (38 tests) 13ms
+@oto/shared:test:  ✓ test/benefits.test.ts (28 tests) 15ms
+@oto/shared:test:  ✓ test/kiosk.test.ts (8 tests) 17ms
+@oto/shared:test:  ✓ test/parties.test.ts (8 tests) 25ms
+@oto/shared:test:  ✓ test/s221-r4-review-reason.test.ts (9 tests) 23ms
+@oto/shared:test:  ✓ test/eod-r1.test.ts (11 tests) 35ms
+@oto/shared:test:  ✓ test/display-credit.test.ts (4 tests) 11ms
+@oto/shared:test:  ✓ test/item-cart.test.ts (9 tests) 26ms
+@oto/shared:test:  ✓ test/discount-scopes.test.ts (17 tests) 17ms
+@oto/shared:test:  ✓ test/booking-qr.test.ts (14 tests) 51ms
+@oto/shared:test:  ✓ test/s494-food.test.ts (7 tests) 54ms
+@oto/shared:test:  ✓ test/supervision.test.ts (35 tests) 39ms
+@oto/shared:test:  ✓ test/s221-r3-benefit-checkout.test.ts (13 tests) 38ms
+@oto/shared:test:  ✓ test/inbox.test.ts (33 tests) 16ms
+@oto/shared:test:  ✓ test/assistant-i1b.test.ts (15 tests) 45ms
+@oto/shared:test:  ✓ test/refund.test.ts (11 tests) 47ms
+@oto/shared:test:  ✓ test/sale-print.test.ts (7 tests) 57ms
+@oto/shared:test:  ✓ test/shared.test.ts (25 tests) 80ms
+@oto/shared:test:  ✓ test/band-code.test.ts (13 tests) 110ms
+@oto/shared:test:  ✓ test/cart-totals-line-target.test.ts (5 tests) 37ms
+@oto/shared:test:  ✓ test/stock-r4.test.ts (7 tests) 25ms
+@oto/shared:test:  ✓ test/s221-r4-benefit-report.test.ts (3 tests) 11ms
+@oto/shared:test:  ✓ test/business-date.test.ts (33 tests) 259ms
+@oto/shared:test:  ✓ test/benefit-code-shown.test.ts (5 tests) 4ms
+@oto/shared:test:  ✓ test/stock-r1-recheck.test.ts (4 tests) 4ms
+@oto/shared:test:  ✓ test/pricing-engine.test.ts (131 tests) 478ms
+@oto/shared:test:  ✓ test/s494-money-restock.test.ts (7 tests) 5ms
+@oto/shared:test:  ✓ test/s494-gate.test.ts (3 tests) 4ms
+@oto/shared:test:  ✓ test/s494-money-gate.test.ts (2 tests) 3ms
+@oto/shared:test:  ✓ test/booth-code.test.ts (26 tests) 1111ms
+@oto/shared:test:    ✓ the check character > catches every single-character error, in every position  372ms
+@oto/shared:test:    ✓ the check character > is ISO/IEC 7064 MOD 37-2 exactly: a standard implementation agrees on every code  597ms
+@oto/shared:test: 
+@oto/shared:test:  Test Files  50 passed (50)
+@oto/shared:test:       Tests  771 passed (771)
+@oto/shared:test:    Start at  04:06:57
+@oto/shared:test:    Duration  3.58s (transform 5.36s, setup 0ms, collect 42.84s, tests 3.17s, environment 14ms, prepare 7.79s)
+@oto/shared:test: 
+@oto/telemetry:test: cache bypass, force executing d2d01cbd0edacc37
+@oto/telemetry:test: 
+@oto/telemetry:test: > @oto/telemetry@0.1.0 test /workspace/packages/telemetry
+@oto/telemetry:test: > vitest run
+@oto/telemetry:test: 
+@oto/telemetry:test: 
+@oto/telemetry:test:  RUN  v3.2.7 /workspace/packages/telemetry
+@oto/telemetry:test: 
+@oto/telemetry:test:  ✓ test/logger.test.ts (7 tests) 12ms
+@oto/telemetry:test:  ✓ test/scrub.test.ts (6 tests) 6ms
+@oto/telemetry:test:  ✓ test/redact.test.ts (22 tests) 39ms
+@oto/telemetry:test:  ✓ test/eslint-rule.test.mjs (1 test) 59ms
+@oto/telemetry:test: 
+@oto/telemetry:test:  Test Files  4 passed (4)
+@oto/telemetry:test:       Tests  36 passed (36)
+@oto/telemetry:test:    Start at  04:07:01
+@oto/telemetry:test:    Duration  674ms (transform 223ms, setup 0ms, collect 606ms, tests 116ms, environment 1ms, prepare 573ms)
+@oto/telemetry:test: 
+@oto/print:test: cache bypass, force executing cf3b2d71c0b3051c
+@oto/print:test: 
+@oto/print:test: > @oto/print@0.1.0 test /workspace/packages/print
+@oto/print:test: > vitest run
+@oto/print:test: 
+@oto/print:test: 
+@oto/print:test:  RUN  v3.2.7 /workspace/packages/print
+@oto/print:test: 
+@oto/print:test:  ✓ test/booth-voucher-slip.test.ts (33 tests) 6916ms
+@oto/print:test:    ✓ the booth voucher slip, customised per booth > replaces only the QR for an existing POS and keeps the platform reference  317ms
+@oto/print:test:    ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: long venue  524ms
+@oto/print:test:    ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: long venue  471ms
+@oto/print:test:  ✓ test/emit.test.ts (34 tests) 2580ms
+@oto/print:test:    ✓ ESC/POS job frame > bands at the device band height so a job stays inside the input buffer  487ms
+@oto/print:test:  ✓ test/templates.test.ts (29 tests) 2326ms
+@oto/print:test:  ✓ test/layout.test.ts (17 tests) 1835ms
+@oto/print:test:    ✓ a receipt is a variable number of lines > grows with the content rather than being clipped  992ms
+@oto/print:test:    ✓ a forced break is reported, because nothing else can report it > leaves the test page clean on the narrowest band stock  451ms
+@oto/print:test:  ✓ test/samples.test.ts (14 tests) 1681ms
+@oto/print:test:    ✓ the named preview scenarios > full renders every printout through the one drawing path  415ms
+@oto/print:test:    ✓ the named preview scenarios > long_names renders every printout through the one drawing path  1011ms
+@oto/print:test:  ✓ test/credit-voucher.test.ts (3 tests) 156ms
+@oto/print:test:  ✓ test/fonts.test.ts (16 tests) 149ms
+@oto/print:test:  ✓ test/single-renderer.test.ts (7 tests) 59ms
+@oto/print:test:  ✓ test/fixtures.test.ts (76 tests) 61ms
+@oto/print:test:  ✓ test/codes.test.ts (31 tests) 53ms
+@oto/print:test:  ✓ test/money-contract.test.ts (11 tests) 14ms
+@oto/print:test: 
+@oto/print:test:  Test Files  11 passed (11)
+@oto/print:test:       Tests  271 passed (271)
+@oto/print:test:    Start at  04:07:02
+@oto/print:test:    Duration  20.24s (transform 272ms, setup 0ms, collect 2.56s, tests 15.83s, environment 1ms, prepare 478ms)
+@oto/print:test: 
+@oto/messaging:test: cache bypass, force executing 13d1d6fb338c40df
+@oto/messaging:test: 
+@oto/messaging:test: > @oto/messaging@0.1.0 test /workspace/packages/messaging
+@oto/messaging:test: > vitest run
+@oto/messaging:test: 
+@oto/messaging:test: 
+@oto/messaging:test:  RUN  v3.2.7 /workspace/packages/messaging
+@oto/messaging:test: 
+@oto/messaging:test:  ✓ test/console.test.ts (9 tests) 6ms
+@oto/messaging:test:  ✓ test/config-window.test.ts (7 tests) 5ms
+@oto/messaging:test:  ✓ test/simulator.test.ts (15 tests) 13ms
+@oto/messaging:test:  ✓ test/whatsapp-parse.test.ts (15 tests) 14ms
+@oto/messaging:test:  ✓ test/whatsapp-send.test.ts (20 tests) 15ms
+@oto/messaging:test:  ✓ test/webhook.test.ts (12 tests) 18ms
+@oto/messaging:test: 
+@oto/messaging:test:  Test Files  6 passed (6)
+@oto/messaging:test:       Tests  78 passed (78)
+@oto/messaging:test:    Start at  04:07:23
+@oto/messaging:test:    Duration  631ms (transform 437ms, setup 0ms, collect 755ms, tests 70ms, environment 1ms, prepare 966ms)
+@oto/messaging:test: 
+@oto/booth:test: cache bypass, force executing 26b0a3e11d765139
+@oto/booth:test: 
+@oto/booth:test: > @oto/booth@0.1.0 test /workspace/apps/booth
+@oto/booth:test: > node --disable-warning=ExperimentalWarning --experimental-strip-types --test "test/*.test.ts"
+@oto/booth:test: 
+@oto/booth:test: TAP version 13
+@oto/booth:test: # Subtest: a press the box already recorded says the voucher is being printed, never "Booth not ready"
+@oto/booth:test: ok 1 - a press the box already recorded says the voucher is being printed, never "Booth not ready"
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 1.65254
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: no wheel and no internet: "connect to internet", and nothing for staff to publish
+@oto/booth:test: ok 2 - no wheel and no internet: "connect to internet", and nothing for staff to publish
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.191589
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: no wheel and online: nobody is sent to the network — staff are told to publish it
+@oto/booth:test: ok 3 - no wheel and online: nobody is sent to the network — staff are told to publish it
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.225112
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: no wheel, and the box has not answered yet: the guest line alone, no instruction to staff
+@oto/booth:test: ok 4 - no wheel, and the box has not answered yet: the guest line alone, no instruction to staff
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.092509
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: a press refused for having no wheel follows the same rule as the screen
+@oto/booth:test: ok 5 - a press refused for having no wheel follows the same rule as the screen
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.094503
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the other refusals keep their lines
+@oto/booth:test: ok 6 - the other refusals keep their lines
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.100203
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the new box’s hint names the two-character code prefix a booth needs
+@oto/booth:test: ok 7 - the new box’s hint names the two-character code prefix a booth needs
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 1.067838
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the PIN pad asks for a PIN, not a badge nothing can check yet
+@oto/booth:test: ok 8 - the PIN pad asks for a PIN, not a badge nothing can check yet
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.191835
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: guests pressing the button into the form do not keep it open
+@oto/booth:test: ok 9 - guests pressing the button into the form do not keep it open
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 1.764049
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: a key that is not the button restarts the idle countdown; the button never does
+@oto/booth:test: ok 10 - a key that is not the button restarts the idle countdown; the button never does
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.184099
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: staff typing keep it open, but never past the cap
+@oto/booth:test: ok 11 - staff typing keep it open, but never past the cap
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.233702
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the button is whatever key the booth is set to, and never Enter
+@oto/booth:test: ok 12 - the button is whatever key the booth is set to, and never Enter
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.177329
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: signing in turns the panel into staff’s buttons, with both countdowns from then
+@oto/booth:test: ok 13 - signing in turns the panel into staff’s buttons, with both countdowns from then
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.208916
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: a panel closed by hand has nothing left to fire, and a key does not bring a countdown back
+@oto/booth:test: ok 14 - a panel closed by hand has nothing left to fire, and a key does not bring a countdown back
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.144952
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the pointer is hidden once nobody has moved it, and shown again when it moves
+@oto/booth:test: ok 15 - the pointer is hidden once nobody has moved it, and shown again when it moves
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 3.575903
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: on the game the button key spins immediately; overlays move, select and repeat
+@oto/booth:test: ok 16 - on the game the button key spins immediately; overlays move, select and repeat
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 1.841353
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: in a staff field the key is the field’s: nothing is drawn, and the page is told
+@oto/booth:test: ok 17 - in a staff field the key is the field’s: nothing is drawn, and the page is told
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.148826
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: a release whose press was swallowed elsewhere is still a press — but not in a field
+@oto/booth:test: ok 18 - a release whose press was swallowed elsewhere is still a press — but not in a field
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.140616
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: SCRUM-467: a wall clock stepped back does not hold the lockout
+@oto/booth:test: ok 19 - SCRUM-467: a wall clock stepped back does not hold the lockout
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.258102
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: SCRUM-467: the kiosk takes the keyboard back when its window loses it
+@oto/booth:test: ok 20 - SCRUM-467: the kiosk takes the keyboard back when its window loses it
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 1.34105
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the notice renders full screen, in both languages, with the way back
+@oto/booth:test: ok 21 - the notice renders full screen, in both languages, with the way back
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 10.6299
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the notice shows no code and no credential
+@oto/booth:test: ok 22 - the notice shows no code and no credential
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 2.810872
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the box says it needs service: the page reads it, whatever else the state says
+@oto/booth:test: ok 23 - the box says it needs service: the page reads it, whatever else the state says
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 1.115439
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: a press refused with needs_service gets the notice’s line, not "Booth not ready"
+@oto/booth:test: ok 24 - a press refused with needs_service gets the notice’s line, not "Booth not ready"
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.237211
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: reads the hand-off from the fragment with its case intact, and nothing that is not one
+@oto/booth:test: ok 25 - reads the hand-off from the fragment with its case intact, and nothing that is not one
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.807559
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: scrubs the hand-off from the fragment and keeps the stage flags
+@oto/booth:test: ok 26 - scrubs the hand-off from the fragment and keeps the stage flags
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.161234
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: acts only on a booth identity from a usable session
+@oto/booth:test: ok 27 - acts only on a booth identity from a usable session
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 1.588308
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: forgets a held sign-on once the session behind it would have ended
+@oto/booth:test: ok 28 - forgets a held sign-on once the session behind it would have ended
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.307658
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: a switched-off prize is never a slice
+@oto/booth:test: ok 29 - a switched-off prize is never a slice
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 1.574516
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: the slice to stop on is found by the prize, not by its place in the bundle
+@oto/booth:test: ok 30 - the slice to stop on is found by the prize, not by its place in the bundle
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.158785
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: a code is shown in groups of 2, 4, 4 and the rest, whatever its length
+@oto/booth:test: ok 31 - a code is shown in groups of 2, 4, 4 and the rest, whatever its length
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 0.188737
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: one duration snapshot drives the spin and landing even when configuration rerenders
+@oto/booth:test: ok 32 - one duration snapshot drives the spin and landing even when configuration rerenders
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 90.176424
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: # Subtest: a historical wheel without a duration lands at the ten-second default
+@oto/booth:test: ok 33 - a historical wheel without a duration lands at the ten-second default
+@oto/booth:test:   ---
+@oto/booth:test:   duration_ms: 32.594648
+@oto/booth:test:   type: 'test'
+@oto/booth:test:   ...
+@oto/booth:test: 1..33
+@oto/booth:test: # tests 33
+@oto/booth:test: # suites 0
+@oto/booth:test: # pass 33
+@oto/booth:test: # fail 0
+@oto/booth:test: # cancelled 0
+@oto/booth:test: # skipped 0
+@oto/booth:test: # todo 0
+@oto/booth:test: # duration_ms 626.492364
+@oto/db:test: cache bypass, force executing 314cbb377ed239f4
+@oto/db:test: 
+@oto/db:test: > @oto/db@0.1.0 test /workspace/packages/db
+@oto/db:test: > vitest run --no-file-parallelism
+@oto/db:test: 
+@oto/db:test: 
+@oto/db:test:  RUN  v3.2.7 /workspace/packages/db
+@oto/db:test: 
+@oto/db:test:  ✓ test/migration-0026.test.ts (14 tests) 7539ms
+@oto/db:test:    ✓ on a database from before 0026 > leaves every till’s row as it was, and copies nothing in: those misses name nobody  2357ms
+@oto/db:test:    ✓ the migration, run twice > leaves the same database when it is applied again  488ms
+@oto/db:test:    ✓ the migration, run twice > builds the same database from empty a second time  2198ms
+@oto/db:test:  ✓ test/migration-0025.test.ts (3 tests) 7070ms
+@oto/db:test:    ✓ 0025 — the voucher lines written before the rule > rewrites the old label to the last four on open, voided and finalised sales, and leaves every other row  2284ms
+@oto/db:test:    ✓ the migration, run twice > leaves the same database when it is applied again  537ms
+@oto/db:test:    ✓ the migration, run twice > builds the same database from empty a second time  2240ms
+@oto/db:test:  ✓ test/migration-0024.test.ts (5 tests) 6989ms
+@oto/db:test:    ✓ promo.redemption_throttle — the hash of the code beside each miss > leaves a row written before 0024 with its misses, and null beside them  2384ms
+@oto/db:test:    ✓ the migration, run twice > leaves the same database when it is applied again  478ms
+@oto/db:test:    ✓ the migration, run twice > builds the same database from empty a second time  2184ms
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > writes the three, in order and enabled, for a park with an empty table
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > writes the three, in order and enabled, for a park with an empty table
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 2 department(s), 2 team(s), 6 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > writes nothing on the second run — same rows, same ids, same updated_at
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > writes nothing on the second run — same rows, same ids, same updated_at
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 2 department(s), 2 team(s), 6 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > PLANT — leaves a park that renamed one tender and archived another alone
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 2 department(s), 2 team(s), 6 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > converges the park with none and not the park beside it
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > converges the park with none and not the park beside it
+@oto/db:test: Inbox: laid 6 role(s), 0 late permission grant(s), 4 department(s), 4 team(s), 12 routing rule(s), 60 template(s), 0 template translation(s) and 6 console channel account(s) at 2 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > the sync and the full seed do not write two lists
+@oto/db:test: Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > the sync and the full seed do not write two lists
+@oto/db:test: Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > the sync and the full seed do not write two lists > a seeded park keeps exactly three tenders through a later sync
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/platform-sync-tenders.test.ts > the sync and the full seed do not write two lists > a seeded park keeps exactly three tenders through a later sync
+@oto/db:test: Stock: laid places at 2 branch(es) and 0 stocked size(s) at 0 branch(es) that had none — opening counts are done in the app.
+@oto/db:test: 
+@oto/db:test:  ✓ test/platform-sync-tenders.test.ts (7 tests) 5640ms
+@oto/db:test:  ✓ test/analytics-r1-migration.test.ts (10 tests) 5306ms
+@oto/db:test:    ✓ migration 0064 — analytics round 1 > applies again over a migrated database as a no-op  395ms
+@oto/db:test:    ✓ migration 0064 — analytics round 1 > marks every existing day once, and fills the calendar from the branch’s holidays  459ms
+@oto/db:test:  ✓ test/s220-e3-review-migration.test.ts (6 tests) 5279ms
+@oto/db:test:    ✓ E3 review — the event check-in migration > applies to two empty databases alike, and a second migrate of one is a no-op  505ms
+@oto/db:test:  ✓ test/migration-0023.test.ts (5 tests) 5174ms
+@oto/db:test:    ✓ the migration, run twice > leaves the same database when it is applied again  471ms
+@oto/db:test:    ✓ the migration, run twice > builds the same database from empty a second time  2336ms
+@oto/db:test:  ✓ test/eod-r1-migration.test.ts (5 tests) 5031ms
+@oto/db:test:    ✓ migration 0052 — the End of Day > builds from empty twice, and migrating a built database again is a no-op  456ms
+@oto/db:test:  ✓ test/migration-0048.test.ts (6 tests) 5042ms
+@oto/db:test:    ✓ migration 0048 — the stock ledger > builds from empty twice, and migrating a built database again is a no-op  501ms
+@oto/db:test:  ✓ test/migration-0021.test.ts (14 tests) 5394ms
+@oto/db:test:    ✓ the migration, run twice > leaves the same database when it is applied again  472ms
+@oto/db:test:    ✓ the migration, run twice > builds the same database from empty a second time  2637ms
+@oto/db:test:  ✓ test/s494-money-migration-0054.test.ts (3 tests) 4934ms
+@oto/db:test:    ✓ migration 0054 — a tier claim with no document expiry > builds from empty twice, and migrating a built database again is a no-op  462ms
+@oto/db:test:  ✓ test/migration-0022.test.ts (9 tests) 5104ms
+@oto/db:test:    ✓ the migration, run twice > leaves the same database when it is applied again  503ms
+@oto/db:test:    ✓ the migration, run twice > builds the same database from empty a second time  2257ms
+@oto/db:test:  ✓ test/s221-r1-review-migration.test.ts (5 tests) 5082ms
+@oto/db:test:    ✓ the staff-benefits migration (SCRUM-218 review) > applies twice clean: a second run of the migrator over a built database changes nothing  606ms
+@oto/db:test:  ✓ test/s220-e2-review-migration.test.ts (6 tests) 5167ms
+@oto/db:test:    ✓ E2 review — the attendee link migration > applies to two empty databases alike, and a second migrate of one is a no-op  544ms
+@oto/db:test:  ✓ test/analytics-r45-migration.test.ts (5 tests) 4468ms
+@oto/db:test:  ✓ test/migration-0038.test.ts (2 tests) 5182ms
+@oto/db:test:    ✓ on a database holding staging-shaped bookings > migrates the demo rows as paid, with no attempt, marked legacy — and keeps their money and lines  2604ms
+@oto/db:test:  ✓ test/migration-0045.test.ts (7 tests) 4626ms
+@oto/db:test: stdout | test/inbox-i1.test.ts > platform-sync lays the inbox configuration (I1)
+@oto/db:test: Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+@oto/db:test: 
+@oto/db:test: stdout | test/inbox-i1.test.ts > platform-sync lays the inbox configuration (I1)
+@oto/db:test: Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+@oto/db:test: 
+@oto/db:test: stdout | test/inbox-i1.test.ts > platform-sync lays the inbox configuration (I1) > a second and a third run lay nothing, and never undo an edit
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/inbox-i1.test.ts > platform-sync lays the inbox configuration (I1) > a second and a third run lay nothing, and never undo an edit
+@oto/db:test: Stock: laid places at 2 branch(es) and 0 stocked size(s) at 0 branch(es) that had none — opening counts are done in the app.
+@oto/db:test: 
+@oto/db:test:  ✓ test/inbox-i1.test.ts (25 tests) 3683ms
+@oto/db:test:    ✓ 0078_inbox_schema — structure (I1) > applies a second time as a clean no-op  419ms
+@oto/db:test: stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+@oto/db:test: Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+@oto/db:test: 
+@oto/db:test: stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+@oto/db:test: Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+@oto/db:test: 
+@oto/db:test:  ✓ test/inbox-ai-a1b.test.ts (22 tests) 3630ms
+@oto/db:test:    ✓ 0080_inbox_ai — structure > applies a second time as a clean no-op  394ms
+@oto/db:test: stdout | test/assistant-i1b.test.ts > platform-sync lays the two permissions
+@oto/db:test: Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+@oto/db:test: 
+@oto/db:test: stdout | test/assistant-i1b.test.ts > platform-sync lays the two permissions
+@oto/db:test: Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+@oto/db:test: 
+@oto/db:test:  ✓ test/assistant-i1b.test.ts (18 tests) 3816ms
+@oto/db:test:    ✓ 0081_assistant — structure > applies a second time as a clean no-op  444ms
+@oto/db:test:  ✓ test/migration-0039.test.ts (5 tests) 3443ms
+@oto/db:test:    ✓ 0039 lands after 0038 and only adds (gate reproductions) > brings rows written at the 0038 state through with today’s slip, and a re-run changes nothing  1169ms
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives the branch its three places, the sell point among them
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives the branch its three places, the sell point among them
+@oto/db:test: Stock: laid places at 1 branch(es) and 8 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives the branch its three places, the sell point among them
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > lays the stocked items, one per size, linked — and writes no opening quantity
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > lays the stocked items, one per size, linked — and writes no opening quantity
+@oto/db:test: Stock: laid places at 1 branch(es) and 8 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > lays the stocked items, one per size, linked — and writes no opening quantity
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > changes nothing the second time — same rows, same ids, same updated_at
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > changes nothing the second time — same rows, same ids, same updated_at
+@oto/db:test: Stock: laid places at 1 branch(es) and 8 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > changes nothing the second time — same rows, same ids, same updated_at
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > PLANT — leaves a branch a manager has set up alone: a retired place, an unlinked item
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > PLANT — leaves a branch a manager has set up alone: a retired place, an unlinked item
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives a branch with places but no items its items, pars at its own sell point
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives a branch with places but no items its items, pars at its own sell point
+@oto/db:test: Stock: laid places at 0 branch(es) and 8 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives a branch with places but no items its items, pars at its own sell point
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > does not stock a sized product whose sizes the seed does not name exactly (H3: all or none)
+@oto/db:test: Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > does not stock a sized product whose sizes the seed does not name exactly (H3: all or none)
+@oto/db:test: Stock: laid places at 1 branch(es) and 5 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+@oto/db:test: 
+@oto/db:test: stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > does not stock a sized product whose sizes the seed does not name exactly (H3: all or none)
+@oto/db:test: Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+@oto/db:test: 
+@oto/db:test:  ✓ test/stock-r2-platform-sync.test.ts (7 tests) 3328ms
+@oto/db:test:  ✓ test/s220-e4-review-migration.test.ts (4 tests) 2796ms
+@oto/db:test:    ✓ review — the party tab migration > is twice-clean: a database at head migrates again with nothing applied  467ms
+@oto/db:test:  ✓ test/migration-0047.test.ts (4 tests) 2243ms
+@oto/db:test:  ✓ test/s221-r4-migration.test.ts (4 tests) 2486ms
+@oto/db:test:  ✓ test/migration-0019.test.ts (29 tests) 2309ms
+@oto/db:test:  ✓ test/s631-department-migration.test.ts (8 tests) 2992ms
+@oto/db:test:    ✓ SCRUM-631 expand-only department projection migration > replays the committed platform chain without another migration record or changing department data  494ms
+@oto/db:test:  ✓ test/kiosk-k1-migration.test.ts (3 tests) 2328ms
+@oto/db:test:  ✓ test/events-e5-migration.test.ts (3 tests) 2234ms
+@oto/db:test:  ✓ test/migration-0062.test.ts (2 tests) 2229ms
+@oto/db:test:  ✓ test/s221-r3-migration.test.ts (4 tests) 2368ms
+@oto/db:test:  ✓ test/s494-gate-migration-0053.test.ts (3 tests) 2271ms
+@oto/db:test:  ✓ test/events-e3-migration.test.ts (3 tests) 2325ms
+@oto/db:test:  ✓ test/eod-r2-migration.test.ts (4 tests) 2601ms
+@oto/db:test:  ✓ test/migration-0040.test.ts (6 tests) 2538ms
+@oto/db:test:  ✓ test/events-e4-migration.test.ts (3 tests) 2557ms
+@oto/db:test:  ✓ test/s221-r2-migration.test.ts (4 tests) 2472ms
+@oto/db:test:  ✓ test/migration-0020.test.ts (11 tests) 2587ms
+@oto/db:test:  ✓ test/migration-0048-recheck.test.ts (1 test) 2372ms
+@oto/db:test:  ✓ test/s502-prepaid-stay-index-migration.test.ts (3 tests) 2332ms
+@oto/db:test:  ✓ test/events-e2-migration.test.ts (3 tests) 2260ms
+@oto/db:test:  ✓ test/s216-review-migration.test.ts (4 tests) 12ms
+@oto/db:test:  ✓ test/schema-shape.test.ts (14 tests) 9ms
+@oto/db:test:  ✓ test/testing-setup-step.test.ts (4 tests) 4ms
+@oto/db:test: 
+@oto/db:test:  Test Files  44 passed (44)
+@oto/db:test:       Tests  313 passed (313)
+@oto/db:test:    Start at  04:07:25
+@oto/db:test:    Duration  179.78s (transform 1.11s, setup 0ms, collect 14.95s, tests 157.25s, environment 6ms, prepare 2.02s)
+@oto/db:test: 
+@oto/payments-2c2p:test: cache bypass, force executing 455253c280b7edf7
+@oto/payments-2c2p:test: 
+@oto/payments-2c2p:test: > @oto/payments-2c2p@0.1.0 test /workspace/packages/payments-2c2p
+@oto/payments-2c2p:test: > vitest run
+@oto/payments-2c2p:test: 
+@oto/payments-2c2p:test: 
+@oto/payments-2c2p:test:  RUN  v3.2.7 /workspace/packages/payments-2c2p
+@oto/payments-2c2p:test: 
+@oto/payments-2c2p:test:  ✓ test/envelope.test.ts (12 tests) 9ms
+@oto/payments-2c2p:test:  ✓ test/simulator.test.ts (15 tests) 12ms
+@oto/payments-2c2p:test:  ✓ test/twoc2p.test.ts (10 tests) 21ms
+@oto/payments-2c2p:test:  ✓ test/hosted.test.ts (14 tests) 16ms
+@oto/payments-2c2p:test:  ✓ test/maintenance.test.ts (9 tests) 34ms
+@oto/payments-2c2p:test:  ✓ test/wire.test.ts (21 tests) 219ms
+@oto/payments-2c2p:test: 
+@oto/payments-2c2p:test:  Test Files  6 passed (6)
+@oto/payments-2c2p:test:       Tests  81 passed (81)
+@oto/payments-2c2p:test:    Start at  04:10:26
+@oto/payments-2c2p:test:    Duration  1.46s (transform 889ms, setup 0ms, collect 1.53s, tests 312ms, environment 1ms, prepare 868ms)
+@oto/payments-2c2p:test: 
+@oto/assistant:test: cache bypass, force executing e9e4038f85814f7a
+@oto/assistant:test: 
+@oto/assistant:test: > @oto/assistant@0.1.0 test /workspace/packages/assistant
+@oto/assistant:test: > vitest run
+@oto/assistant:test: 
+@oto/assistant:test: 
+@oto/assistant:test:  RUN  v3.2.7 /workspace/packages/assistant
+@oto/assistant:test: 
+@oto/assistant:test:  ✓ test/pacing.test.ts (11 tests) 57ms
+@oto/assistant:test:  ✓ test/guards.test.ts (100 tests) 61ms
+@oto/assistant:test:  ✓ test/prompt.test.ts (21 tests) 17ms
+@oto/assistant:test:  ✓ test/intents.test.ts (29 tests) 56ms
+@oto/assistant:test:  ✓ test/gate.test.ts (33 tests) 66ms
+@oto/assistant:test:  ✓ test/internal.test.ts (97 tests) 46ms
+@oto/assistant:test:  ✓ test/client.test.ts (27 tests) 129ms
+@oto/assistant:test:  ✓ test/tool-loop.test.ts (116 tests) 221ms
+@oto/assistant:test: 
+@oto/assistant:test:  Test Files  8 passed (8)
+@oto/assistant:test:       Tests  434 passed (434)
+@oto/assistant:test:    Start at  04:10:28
+@oto/assistant:test:    Duration  1.81s (transform 1.34s, setup 0ms, collect 6.59s, tests 653ms, environment 1ms, prepare 1.22s)
+@oto/assistant:test: 
+@oto/api-types:test: cache bypass, force executing ec3acd47736c1099
+@oto/api-types:test: 
+@oto/api-types:test: > @oto/api-types@0.1.0 test /workspace/packages/api-types
+@oto/api-types:test: > vitest run
+@oto/api-types:test: 
+@oto/api-types:test: 
+@oto/api-types:test:  RUN  v3.2.7 /workspace/packages/api-types
+@oto/api-types:test: 
+@oto/api-types:test:  ❯ test/seam-walker.test.ts (10 tests | 1 failed) 26ms
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > finds what it is meant to check 1ms
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > reads every call path, or names it in DYNAMIC 1ms
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > reads lifted DELETE bodies, file downloads and native download addresses 1ms
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > keeps the typed POS forwarding adapter to its declared transport methods 0ms
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > reaches a route that answers the call’s method 6ms
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > writes only query parameters the route reads 3ms
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > sends only body fields the route reads 2ms
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > names, in a generated type, the route the call reaches 2ms
+@oto/api-types:test:    × every front-end call reaches a route the api describes (SCRUM-293) > leaves no route without a caller, a machine caller or a NOT_YET_CALLED reason 9ms
+@oto/api-types:test:      → expected [ 'GET /aggregates/members', …(4) ] to deeply equal []
+@oto/api-types:test:    ✓ every front-end call reaches a route the api describes (SCRUM-293) > does not let hand-typed response types regrow (migration-list.ts) 0ms
+@oto/api-types:test: 
+@oto/api-types:test: ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+@oto/api-types:test: 
+@oto/api-types:test:  FAIL  test/seam-walker.test.ts > every front-end call reaches a route the api describes (SCRUM-293) > leaves no route without a caller, a machine caller or a NOT_YET_CALLED reason
+@oto/api-types:test: AssertionError: expected [ 'GET /aggregates/members', …(4) ] to deeply equal []
+@oto/api-types:test: 
+@oto/api-types:test: [32m- Expected[39m
+@oto/api-types:test: [31m+ Received[39m
+@oto/api-types:test: 
+@oto/api-types:test: [32m- [][39m
+@oto/api-types:test: [31m+ [[39m
+@oto/api-types:test: [31m+   "GET /aggregates/members",[39m
+@oto/api-types:test: [31m+   "GET /aggregates/bookings",[39m
+@oto/api-types:test: [31m+   "GET /aggregates/assistant-usage",[39m
+@oto/api-types:test: [31m+   "GET /aggregates/inbox-ai-usage",[39m
+@oto/api-types:test: [31m+   "GET /aggregates/fleet",[39m
+@oto/api-types:test: [31m+ ][39m
+@oto/api-types:test: 
+@oto/api-types:test:  ❯ test/seam-walker.test.ts:287:63
+@oto/api-types:test:     285|       .filter((r) => !called.has(routeKey(r)) && !machineCaller(r.path…
+@oto/api-types:test:     286|       .map(routeKey);
+@oto/api-types:test:     287|     expect(orphans.filter((key) => !NOT_YET_CALLED.has(key))).toEqual(…
+@oto/api-types:test:        |                                                               ^
+@oto/api-types:test:     288|     // A line for a route that now has a caller, or no longer exists, …
+@oto/api-types:test:     289|     expect([...NOT_YET_CALLED.keys()].filter((key) => !orphans.include…
+@oto/api-types:test: 
+@oto/api-types:test: ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+@oto/api-types:test: 
+@oto/api-types:test: 
+@oto/api-types:test:  Test Files  1 failed (1)
+@oto/api-types:test:       Tests  1 failed | 9 passed (10)
+@oto/api-types:test:    Start at  04:10:30
+@oto/api-types:test:    Duration  2.78s (transform 459ms, setup 0ms, collect 2.35s, tests 26ms, environment 0ms, prepare 138ms)
+@oto/api-types:test: 
+@oto/api-types:test:  ELIFECYCLE  Test failed. See above for more details.
+@oto/box-agent:test: cache bypass, force executing 984ec3a6d0c1c1a5
+@oto/admin-screens:test: cache bypass, force executing 002b934c59072cbf
+@oto/launcher:test: cache bypass, force executing fc73edd2b55d5037
+@oto/inbox:test: cache bypass, force executing b3e0e0dd01c28ec7
+
+ Tasks:    8 successful, 13 total
+Cached:    0 cached, 13 total
+  Time:    3m47.706s 
+Failed:    @oto/api-types#test
+
+• turbo 2.10.12
+@oto/api-types#test:  ERROR  command (/workspace/packages/api-types) /usr/local/bin/pnpm run test exited (1)
+ ERROR  run failed: command  exited (1)

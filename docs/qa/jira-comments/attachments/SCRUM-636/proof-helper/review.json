@@ -1,0 +1,55 @@
+{
+  "ticket": "SCRUM-636",
+  "reviewedHelper": "C:/w/admin636-staging-proof.mjs",
+  "helperSha256": "7c431f66a948b8de26a06b5c343d93e0264ece07de9f8a99b6c2143fe9821581",
+  "preparation": "C:/w/admin636-staging-preparation.md",
+  "wholeHelperAndPreparationRead": true,
+  "verdict": "HOLD: R12 and R13 reproduced; no helper fix made",
+  "findings": [
+    {
+      "id": "R12",
+      "severity": "P1",
+      "lines": [105, 110, 111, 135, 285],
+      "problem": "The advertised sourceManifestSha256 is only compared to local-release.json. Only aggregates.ts and that receipt are compared to the Git feature tree. A changed imported shared validator, aggregate service or dependency/runtime input can reach schema import and later proof with both checked blobs and the claimed full manifest unchanged. sourceGate only checks remote CI/deployment and does not close this local binding gap.",
+      "actualCounterfactual": "The exact pre-import function prefix, with only import.meta.url parameterized, accepts a changed synthetic shared-dependency file and reaches the schema-import boundary. The unchanged control passes and route-blob drift is correctly refused. No actual TypeScript dependency import or live execution was performed.",
+      "prescribedFix": "Before importing application code, recompute the current complete source/dependency-input manifest using the same reviewed integration filter, compare it to the frozen local-release manifest and the exact feature Git tree, and reject unexpected/untracked/different inputs. Bind the actual runtime/dependency installation used by the schema loader. Recheck this binding in sourceGate before authentication and before/after capture. An isolated frozen feature checkout with verified dependency/runtime inputs is an acceptable alternative.",
+      "regression": "Current shared/service or package/lock input drift must fail before import/auth; source drift after initial validation must fail before capture. Keep unchanged and direct-route-drift controls."
+    },
+    {
+      "id": "R13",
+      "severity": "P2",
+      "lines": [220, 223, 226, 229],
+      "problem": "A sign-out timeout, body error or other throw skips the original-cookie GET /me because both calls share one try. finally clears the only retained cookie. The run correctly remains incomplete, but the independent best-effort revocation read required by the preparation is missing on exactly the uncertain path.",
+      "actualCounterfactual": "The exact closeContext closure, with a captured synthetic request function, performs only sign-out when it throws; the desired independent original-cookie /me assertion fails. Normal logout verifies the original cookie, a still-live cookie is refused, and another context can still be cleaned after the first timeout.",
+      "prescribedFix": "Attempt sign-out and original-cookie /me independently while retaining the private original cookie through both bounded attempts. Preserve the original timeout/auth uncertainty; a later401 must not invent a logout200 or clear unresolvedAuth. Keep the overall run incomplete on any unknown, continue cleanup of remaining contexts, and clear the in-memory cookie only after both attempts.",
+      "regression": "Timeout/malformed logout must still attempt original-cookie /me; normal200/401 passes, current200 fails, unresolved sign-in/logout uncertainty remains and all other contexts are independently attempted."
+    }
+  ],
+  "offlineReceipt": {
+    "path": "C:/w/admin636-proof-review-red.json",
+    "tests": 12,
+    "pass": 10,
+    "fail": 2,
+    "exitCode": 1,
+    "testsSha256": "8b4e37fc6f4855a4b1a1784ba18e249b9b0455fc4dbf72bb1711ca2b3298cb0b",
+    "logSha256": "24dde2f4e829f0c3fce8253f3ca22d41796e5d2e99e2fca1b4e934f224487d0a",
+    "wholeLogRead": true,
+    "helperBeforeAfterIdentical": true,
+    "globalFetchDispatches": 0
+  },
+  "confirmedWithinScope": [
+    "Import is inert; explicit execution and concrete approved plan are required.",
+    "Wrong SHA, incomplete/red CI or duplicate job names are refused by the actual sourceGate closure before any Render/auth request. Render/API requests have explicit30-second AbortSignal limits and bounded response bodies.",
+    "Remote gate statically requires the exact latest live API deployment, full source SHA, service name/ID and finishedAt. API-only scope is stated; Admin/App feature deployment is not claimed.",
+    "The fixed API origin, exact paths, methods and body/query grammar allow only demo auth/sign-out and read-only aggregate/me calls. Negative queries stay bounded to known aggregate GET query keys. Business/payment/assistant/Inbox-detail/OTO-App/media routes are excluded.",
+    "Durable intents precede dispatch; redirects are manual, there is no retry loop, and uncertain auth/pending/journal state prevents complete:true. Final cleanup is attempted for each context.",
+    "The blank labelled API evidence card is generated only from actual validated reads after the main checks and successful cleanup. It expressly does not claim a native Overview screen or invented populated/foreign fixtures. All page requests are aborted.",
+    "Only aggregate totals, finite authority identifiers/hashes, statuses, safe error codes and timestamps are serialized. Raw credentials, cookies, me/permission bodies, personal names or contacts are not persisted."
+  ],
+  "limits": [
+    "This is a read-only source and bounded offline closure review, not staging acceptance.",
+    "No full executeReviewedPlan run, production TS loader/dependency import, environment/secret read, auth, browser, metadata network request, business write, runtime/container or Git mutation was performed.",
+    "Q17/Q18, full release facts, schema execution under the coordinator's chosen loader, current demo reach, generated receipts and actual PNG pixels remain unverified by this review.",
+    "The suite ran once interactively and once unchanged through the capture runner; the persisted second run reproduces the same10 passing pins and2 meaningful finding failures."
+  ]
+}

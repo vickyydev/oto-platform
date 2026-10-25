@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "focused-red",
+  "command": "cd apps/api && pnpm test test/aggregates-domain.test.ts test/aggregates-ai.test.ts test/s636-aggregates-review.test.ts",
+  "startedAt": "2026-10-25T03:50:50.515Z",
+  "completedAt": "2026-10-25T03:51:05.072Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "0e84b4777ab6715572766b683922dd043d2bef5b8534b9f154071d8ed250f405",
+  "logSha256": "8f254c495b9d449631fa9d851a9ec8ca5ee011a35615929adae944ab992032c6",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

@@ -1,0 +1,112 @@
+TAP version 13
+# Subtest: import is inert; no network dispatch
+ok 1 - import is inert; no network dispatch
+  ---
+  duration_ms: 0.5515
+  type: 'test'
+  ...
+# Subtest: plan refuses missing approval, unresolved rulings, wrong actors, invalid dates and source
+ok 2 - plan refuses missing approval, unresolved rulings, wrong actors, invalid dates and source
+  ---
+  duration_ms: 1.9516
+  type: 'test'
+  ...
+# Subtest: exact request grammar refuses all business writers, foreign paths and query/body escapes
+ok 3 - exact request grammar refuses all business writers, foreign paths and query/body escapes
+  ---
+  duration_ms: 0.4373
+  type: 'test'
+  ...
+# Subtest: armed negative grammar is limited to aggregate GETs and finite known query keys
+ok 4 - armed negative grammar is limited to aggregate GETs and finite known query keys
+  ---
+  duration_ms: 0.1097
+  type: 'test'
+  ...
+# Subtest: Overview reach requires the named permission and exact operator or branch scope
+ok 5 - Overview reach requires the named permission and exact operator or branch scope
+  ---
+  duration_ms: 0.5708
+  type: 'test'
+  ...
+# Subtest: actual pre-import prefix accepts an unchanged synthetic source and blocks route drift
+ok 6 - actual pre-import prefix accepts an unchanged synthetic source and blocks route drift
+  ---
+  duration_ms: 9.3363
+  type: 'test'
+  ...
+# Subtest: FINDING P1 R12: current dependency drift must block before schema import
+ok 7 - FINDING P1 R12: current dependency drift must block before schema import
+  ---
+  duration_ms: 0.957
+  type: 'test'
+  ...
+# Subtest: actual close verifies original cookie after successful logout, and refuses a still-live cookie
+ok 8 - actual close verifies original cookie after successful logout, and refuses a still-live cookie
+  ---
+  duration_ms: 0.3292
+  type: 'test'
+  ...
+# Subtest: FINDING P2 R13: timeout logout must still attempt independent original-cookie revocation read
+ok 9 - FINDING P2 R13: timeout logout must still attempt independent original-cookie revocation read
+  ---
+  duration_ms: 0.2918
+  type: 'test'
+  ...
+# Subtest: cleanup after one timeout remains independent for another context
+ok 10 - cleanup after one timeout remains independent for another context
+  ---
+  duration_ms: 0.3935
+  type: 'test'
+  ...
+# Subtest: actual release closure blocks wrong SHA, incomplete CI, duplicate jobs and red jobs before any Render/auth request
+ok 11 - actual release closure blocks wrong SHA, incomplete CI, duplicate jobs and red jobs before any Render/auth request
+  ---
+  duration_ms: 3.3975
+  type: 'test'
+  ...
+# Subtest: R12 calibration: archived old helper accepts dependency drift; current rejects it with unchanged blobs
+ok 12 - R12 calibration: archived old helper accepts dependency drift; current rejects it with unchanged blobs
+  ---
+  duration_ms: 1.0527
+  type: 'test'
+  ...
+# Subtest: R12 full binding refuses changed service/lock inputs, extra source, nonregular files and Git diff
+ok 13 - R12 full binding refuses changed service/lock inputs, extra source, nonregular files and Git diff
+  ---
+  duration_ms: 1.5998
+  type: 'test'
+  ...
+# Subtest: R12 installed schema-loader metadata drift is refused before import
+ok 14 - R12 installed schema-loader metadata drift is refused before import
+  ---
+  duration_ms: 0.332
+  type: 'test'
+  ...
+# Subtest: R12 sourceGate rechecks actual current local inputs before remote/auth/capture work
+ok 15 - R12 sourceGate rechecks actual current local inputs before remote/auth/capture work
+  ---
+  duration_ms: 0.4423
+  type: 'test'
+  ...
+# Subtest: R13 calibration: archived old helper skips timeout probe; current probes but retains unknown and incomplete cleanup
+ok 16 - R13 calibration: archived old helper skips timeout probe; current probes but retains unknown and incomplete cleanup
+  ---
+  duration_ms: 0.1905
+  type: 'test'
+  ...
+# Subtest: offline suite performed no global network dispatch
+ok 17 - offline suite performed no global network dispatch
+  ---
+  duration_ms: 0.0357
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 93.2277

@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "api-full-shard-1",
+  "command": "cd apps/api && pnpm test --shard=1/3",
+  "startedAt": "2026-10-25T04:03:06.801Z",
+  "completedAt": "2026-10-25T04:17:03.203Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "c3b68618feb060fc58bdcf77dd1c3f4832df49aee969281d671b9a926e576fb8",
+  "logSha256": "6594ac4b2f0b28e028a02cdb0064dee133acea38b0830bceacda91a4133a308e",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

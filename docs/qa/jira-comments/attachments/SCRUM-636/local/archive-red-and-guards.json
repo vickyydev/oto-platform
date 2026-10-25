@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-636",
+  "name": "archive-red-and-guards",
+  "command": "cd apps/api && pnpm test test/aggregates-members.test.ts test/aggregates-domain.test.ts test/aggregates-ai.test.ts test/s636-aggregates-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "startedAt": "2026-10-25T03:55:51.897Z",
+  "completedAt": "2026-10-25T03:56:20.844Z",
+  "exitCode": 1,
+  "signal": null,
+  "sourceManifestSha256": "136856f5c8c3202fc5e9e0980e74f9a4a0e13f3fcbf21933dd1731ed7a14af85",
+  "logSha256": "a41356fab1b0af95341220ff32823dc2c3d8ad5d8bda2ae735d0e57faf05b2f3",
+  "hostSourceUnchanged": true,
+  "apiDocInputsSha256": "e80cc668d8763ffb5bb5ebe5cbd3d808a43389528b006b2b54e6e0f66261b7fe",
+  "hostAndContainerApiDocsUnchanged": true,
+  "staging": false
+}

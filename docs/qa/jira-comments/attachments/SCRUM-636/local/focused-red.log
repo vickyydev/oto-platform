@@ -1,0 +1,963 @@
+
+> @oto/api@0.1.0 test /workspace/apps/api
+> vitest run --pool=forks test/aggregates-domain.test.ts test/aggregates-ai.test.ts test/s636-aggregates-review.test.ts
+
+
+ RUN  v3.2.7 /workspace/apps/api
+
+stdout | test/aggregates-domain.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-domain.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/aggregates-domain.test.ts (17 tests | 14 failed) 2484ms
+   × SCRUM-636 booking-date cohort aggregates > counts every ledger status and its priced value, including archived bookings 10ms
+     → expected { bookings: +0, …(2) } to deeply equal { bookings: 5, …(2) }
+   × SCRUM-636 booking-date cohort aggregates > fills each requested date in order and never derives visit dates from creation timestamps or park clocks 3ms
+     → Cannot read properties of undefined (reading 'rows')
+   × SCRUM-636 booking-date cohort aggregates > adds only the selected parks without the ledger page-size cap 10ms
+     → expected { bookings: +0, …(2) } to deeply equal { bookings: 105, …(2) }
+   × SCRUM-636 booking-date cohort aggregates > uses the authoritative redemption row, not status or legacy payload markers 7ms
+     → expected { bookings: +0, …(2) } to deeply equal { bookings: 3, …(2) }
+   × SCRUM-636 booking-date cohort aggregates > keeps redemption in its booking-date cohort even when claimed outside the requested date range 2ms
+     → Cannot read properties of undefined (reading 'rows')
+   × SCRUM-636 booking-date cohort aggregates > does not trust a foreign operator redemption attached to an otherwise own booking 2ms
+     → expected { bookings: +0, …(2) } to deeply equal { bookings: 1, …(2) }
+   ✓ SCRUM-636 booking-date cohort aggregates > fences the redemption branch owner even when its operator column claims the caller 2ms
+   × SCRUM-636 booking-date cohort aggregates > rejects a mismatched redemption park that the current counter and offline writers cannot create 2ms
+     → expected { bookings: +0, …(2) } to deeply equal { bookings: 1, …(2) }
+   × SCRUM-636 booking-date cohort aggregates > fences both booking operator and actual branch owner against corrupted parent references 3ms
+     → expected [] to deeply equal [ Array(1) ]
+   × SCRUM-636 booking-date cohort aggregates > revalidates archived parks in the database rather than trusting a stale descriptor 2ms
+     → expected [] to deeply equal [ Array(1) ]
+   ✓ SCRUM-636 booking-date cohort aggregates > returns genuine zeros and no park rows when no park is selected 2ms
+   × SCRUM-636 current persisted fleet aggregates > counts all four persisted statuses separately, including empty parks 3ms
+     → expected { boxes: +0, online: +0, …(3) } to deeply equal { boxes: 4, online: 1, …(3) }
+   × SCRUM-636 current persisted fleet aggregates > does not reclassify persisted status using heartbeat age, registration, opening hours or a new threshold 3ms
+     → expected { boxes: +0, online: +0, …(3) } to deeply equal { boxes: 3, online: 1, …(3) }
+   × SCRUM-636 current persisted fleet aggregates > excludes archived boxes without erasing their persisted status 2ms
+     → expected { boxes: +0, online: +0, …(3) } to deeply equal { boxes: 1, online: 1, …(3) }
+   × SCRUM-636 current persisted fleet aggregates > excludes unselected parks and returns only current database-owned live parks 2ms
+     → expected [] to deeply equal [ { …(6) } ]
+   × SCRUM-636 current persisted fleet aggregates > fences both box operator and branch owner, even for a corrupted selected parent 3ms
+     → expected [] to deeply equal [ { …(6) } ]
+   ✓ SCRUM-636 current persisted fleet aggregates > never presents an empty selection as the whole operator fleet 2ms
+stdout | test/aggregates-ai.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/aggregates-ai.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/aggregates-ai.test.ts (11 tests | 11 failed) 2381ms
+   × SCRUM-636 AI usage: real native-table projections > assistant preserves count-state predicate separately from sums across all scoped rows 11ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 3, inputTokens: 19, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > Inbox counts latency including zero/failure/shadow, while token sums include no-latency rows 12ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 3, inputTokens: 16, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > assistant totals include selected parks plus exactly one authorized branchless bucket 3ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 1, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > assistant groups half-open Bangkok dates despite the park timezone and trading cutoff 4ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 4, inputTokens: 4, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > assistant returns dense genuine zero days and supports only the authorized unassigned scope 3ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 7, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > Inbox totals include selected parks plus exactly one authorized branchless bucket 7ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 1, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > Inbox groups half-open Bangkok dates despite the park timezone and trading cutoff 12ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 4, inputTokens: 4, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > Inbox returns dense genuine zero days and supports only the authorized unassigned scope 5ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 7, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > assistant fences referenced account and branch ownership without dropping an inactive own account 4ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 1, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > Inbox fences both conversation operator and owned branch references 8ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 1, …(3) }
+   × SCRUM-636 AI usage: real native-table projections > Inbox honestly follows the current conversation branch and never infers the channel park 4ms
+     → expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 2, …(3) }
+stdout | test/s636-aggregates-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s636-aggregates-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ❯ test/s636-aggregates-review.test.ts (44 tests | 44 failed) 2316ms
+   × SCRUM-636 /aggregates/members adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 4ms
+     → expected 404 to be 401 // Object.is equality
+   × SCRUM-636 /aggregates/members adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 3ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/members adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 5ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/members adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 3ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/members adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 3ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/members adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 2ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/members adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 3ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/bookings adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 1ms
+     → expected 404 to be 401 // Object.is equality
+   × SCRUM-636 /aggregates/bookings adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/bookings adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 4ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/bookings adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/bookings adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 2ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/bookings adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 2ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/bookings adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 1ms
+     → expected 404 to be 401 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 4ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 2ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 2ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 1ms
+     → expected 404 to be 401 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 4ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 3ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 2ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 3ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/fleet adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller 1ms
+     → expected 404 to be 401 // Object.is equality
+   × SCRUM-636 /aggregates/fleet adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/fleet adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden 4ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/fleet adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/fleet adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority 2ms
+     → expected 404 to be 403 // Object.is equality
+   × SCRUM-636 /aggregates/fleet adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks 2ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/fleet adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach 3ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/members bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields 2ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/members bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/bookings bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields 2ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/bookings bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields 2ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/assistant-usage bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period 3ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields 3ms
+     → expected 404 to be 400 // Object.is equality
+   × SCRUM-636 /aggregates/inbox-ai-usage bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period 2ms
+     → expected 404 to be 200 // Object.is equality
+   × SCRUM-636 current fleet contract > FINDING R10 medium: fleet is a current snapshot and must refuse historical date filters 2ms
+     → expected 404 to be 200 // Object.is equality
+
+ Test Files  3 failed (3)
+      Tests  69 failed | 3 passed (72)
+   Start at  03:50:51
+   Duration  13.75s (transform 2.37s, setup 0ms, collect 6.09s, tests 7.18s, environment 0ms, prepare 127ms)
+
+ ELIFECYCLE  Test failed. See above for more details.
+(node:87) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:131) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:167) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 69 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > assistant preserves count-state predicate separately from sums across all scoped rows
+AssertionError: expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 3, inputTokens: 19, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "cacheReadTokens": 48,[39m
+[32m-   "count": 3,[39m
+[32m-   "inputTokens": 19,[39m
+[32m-   "outputTokens": 34,[39m
+[32m-   "totalTokens": 101,[39m
+[31m+   "cacheReadTokens": 0,[39m
+[31m+   "count": 0,[39m
+[31m+   "inputTokens": 0,[39m
+[31m+   "outputTokens": 0,[39m
+[31m+   "totalTokens": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-ai.test.ts:77:27
+     75|     await question(f, { state: 'failed', reason: 'PROVIDER_ERROR' });
+     76|     const result = await assistantUsageAggregateOf(ctx.db, input(f));
+     77|     expect(result.totals).toEqual(metrics(3, 19, 34, 48));
+       |                           ^
+     78|     expect(result.parks[0]!.rows).toEqual([{ date: dates[0], ...metric…
+     79|     expect(result).toMatchObject({ basis: 'created-at-bangkok', attrib…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/69]⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > Inbox counts latency including zero/failure/shadow, while token sums include no-latency rows
+AssertionError: expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 3, inputTokens: 16, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "cacheReadTokens": 48,[39m
+[32m-   "count": 3,[39m
+[32m-   "inputTokens": 16,[39m
+[32m-   "outputTokens": 32,[39m
+[32m-   "totalTokens": 96,[39m
+[31m+   "cacheReadTokens": 0,[39m
+[31m+   "count": 0,[39m
+[31m+   "inputTokens": 0,[39m
+[31m+   "outputTokens": 0,[39m
+[31m+   "totalTokens": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-ai.test.ts:92:27
+     90|     await turn(t, { state: 'cancelled', latencyMs: null, inputTokens: …
+     91|     const result = await inboxAiUsageAggregateOf(ctx.db, input(f));
+     92|     expect(result.totals).toEqual(metrics(3, 16, 32, 48));
+       |                           ^
+     93|     expect(result).toMatchObject({ basis: 'created-at-bangkok', attrib…
+     94|     expect(Object.keys(result.totals).sort()).toEqual(['cacheReadToken…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/69]⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > assistant totals include selected parks plus exactly one authorized branchless bucket
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > Inbox totals include selected parks plus exactly one authorized branchless bucket
+AssertionError: expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 1, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "cacheReadTokens": 1,[39m
+[32m-   "count": 1,[39m
+[32m-   "inputTokens": 1,[39m
+[32m-   "outputTokens": 1,[39m
+[32m-   "totalTokens": 3,[39m
+[31m+   "cacheReadTokens": 0,[39m
+[31m+   "count": 0,[39m
+[31m+   "inputTokens": 0,[39m
+[31m+   "outputTokens": 0,[39m
+[31m+   "totalTokens": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-ai.test.ts:102:31
+    100|       const f = await fixture();await implementation.add(f, f.a.id, 1)…
+    101|       const selected = await implementation.read(ctx.db, input(f, [f.a…
+    102|       expect(selected.totals).toEqual(metrics(1, 1, 1, 1));expect(sele…
+       |                               ^
+    103|       const broad = await implementation.read(ctx.db, input(f, [f.a, f…
+    104|       expect(broad.totals).toEqual(metrics(3, 111, 111, 111));expect(b…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/69]⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > assistant groups half-open Bangkok dates despite the park timezone and trading cutoff
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > Inbox groups half-open Bangkok dates despite the park timezone and trading cutoff
+AssertionError: expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 4, inputTokens: 4, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "cacheReadTokens": 4,[39m
+[32m-   "count": 4,[39m
+[32m-   "inputTokens": 4,[39m
+[32m-   "outputTokens": 4,[39m
+[32m-   "totalTokens": 12,[39m
+[31m+   "cacheReadTokens": 0,[39m
+[31m+   "count": 0,[39m
+[31m+   "inputTokens": 0,[39m
+[31m+   "outputTokens": 0,[39m
+[31m+   "totalTokens": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-ai.test.ts:112:29
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/69]⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > assistant returns dense genuine zero days and supports only the authorized unassigned scope
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > Inbox returns dense genuine zero days and supports only the authorized unassigned scope
+AssertionError: expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 7, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "cacheReadTokens": 7,[39m
+[32m-   "count": 1,[39m
+[32m-   "inputTokens": 7,[39m
+[32m-   "outputTokens": 7,[39m
+[32m-   "totalTokens": 21,[39m
+[31m+   "cacheReadTokens": 0,[39m
+[31m+   "count": 0,[39m
+[31m+   "inputTokens": 0,[39m
+[31m+   "outputTokens": 0,[39m
+[31m+   "totalTokens": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-ai.test.ts:119:70
+    117|       expect(empty.totals).toEqual(metrics());expect(empty.parks).toHa…
+    118|       await implementation.add(f, null, 7);const unassigned = await im…
+    119|       expect(unassigned.parks).toEqual([]);expect(unassigned.totals).t…
+       |                                                                      ^
+    120|       const none = await implementation.read(ctx.db, input(f, [], fals…
+    121|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/69]⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > assistant fences referenced account and branch ownership without dropping an inactive own account
+AssertionError: expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 1, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "cacheReadTokens": 3,[39m
+[32m-   "count": 1,[39m
+[32m-   "inputTokens": 1,[39m
+[32m-   "outputTokens": 2,[39m
+[32m-   "totalTokens": 6,[39m
+[31m+   "cacheReadTokens": 0,[39m
+[31m+   "count": 0,[39m
+[31m+   "inputTokens": 0,[39m
+[31m+   "outputTokens": 0,[39m
+[31m+   "totalTokens": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-ai.test.ts:131:27
+    129|     await question(f, { accountId: f.outsider, branchId: null, inputTo…
+    130|     const result = await assistantUsageAggregateOf(ctx.db, input(f, [f…
+    131|     expect(result.totals).toEqual(metrics(1, 1, 2, 3));expect(result.o…
+       |                           ^
+    132|   });
+    133| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/69]⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > Inbox fences both conversation operator and owned branch references
+AssertionError: expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 1, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "cacheReadTokens": 3,[39m
+[32m-   "count": 1,[39m
+[32m-   "inputTokens": 1,[39m
+[32m-   "outputTokens": 2,[39m
+[32m-   "totalTokens": 6,[39m
+[31m+   "cacheReadTokens": 0,[39m
+[31m+   "count": 0,[39m
+[31m+   "inputTokens": 0,[39m
+[31m+   "outputTokens": 0,[39m
+[31m+   "totalTokens": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-ai.test.ts:140:27
+    138|     await turn(await thread(f, null, true), { inputTokens: 4000 });
+    139|     const result = await inboxAiUsageAggregateOf(ctx.db, input(f, [f.a…
+    140|     expect(result.totals).toEqual(metrics(1, 1, 2, 3));expect(result.o…
+       |                           ^
+    141|   });
+    142| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/69]⎯
+
+ FAIL  test/aggregates-ai.test.ts > SCRUM-636 AI usage: real native-table projections > Inbox honestly follows the current conversation branch and never infers the channel park
+AssertionError: expected { count: +0, inputTokens: +0, …(3) } to deeply equal { count: 1, inputTokens: 2, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[2m    "cacheReadTokens": 0,[22m
+[32m-   "count": 1,[39m
+[32m-   "inputTokens": 2,[39m
+[31m+   "count": 0,[39m
+[31m+   "inputTokens": 0,[39m
+[2m    "outputTokens": 0,[22m
+[32m-   "totalTokens": 2,[39m
+[31m+   "totalTokens": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-ai.test.ts:146:148
+    144|     const f = await fixture(), t = await thread(f);await turn(t, { inp…
+    145|     await ctx.db.update(conversation).set({ branchId: f.b.id }).where(…
+    146|     const moved = await inboxAiUsageAggregateOf(ctx.db, input(f));expe…
+       |                                                                                                                                                    ^
+    147|     await ctx.db.update(conversation).set({ branchId: null }).where(eq…
+    148|     expect((await inboxAiUsageAggregateOf(ctx.db, input(f))).totals).t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > counts every ledger status and its priced value, including archived bookings
+AssertionError: expected { bookings: +0, …(2) } to deeply equal { bookings: 5, …(2) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "bookedValueSatang": 1500,[39m
+[32m-   "bookings": 5,[39m
+[31m+   "bookedValueSatang": 0,[39m
+[31m+   "bookings": 0,[39m
+[2m    "redeemedBookings": 0,[22m
+[2m  }[22m
+
+ ❯ test/aggregates-domain.test.ts:92:27
+     90|     const result = await bookingAggregateOf(ctx.db, daily(e));
+     91|     expect(result).toMatchObject({ basis: 'booking-date', valueBasis: …
+     92|     expect(result.totals).toEqual({ bookings: 5, bookedValueSatang: 15…
+       |                           ^
+     93|     expect(result.parks).toHaveLength(1);
+     94|     expect(result.parks[0]!.totals).toEqual(result.totals);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > fills each requested date in order and never derives visit dates from creation timestamps or park clocks
+TypeError: Cannot read properties of undefined (reading 'rows')
+ ❯ test/aggregates-domain.test.ts:104:29
+    102|     await booked(e, { bookingDate: '2026-10-27', totalSatang: 9000 });
+    103|     const result = await bookingAggregateOf(ctx.db, daily(e));
+    104|     expect(result.parks[0]!.rows).toEqual([
+       |                             ^
+    105|       { date: DATES[0], bookings: 1, bookedValueSatang: 123, redeemedB…
+    106|       { date: DATES[1], ...ZERO_BOOKINGS },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > adds only the selected parks without the ledger page-size cap
+AssertionError: expected { bookings: +0, …(2) } to deeply equal { bookings: 105, …(2) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "bookedValueSatang": 735,[39m
+[32m-   "bookings": 105,[39m
+[31m+   "bookedValueSatang": 0,[39m
+[31m+   "bookings": 0,[39m
+[2m    "redeemedBookings": 0,[22m
+[2m  }[22m
+
+ ❯ test/aggregates-domain.test.ts:120:29
+    118|     await booked(e, { branchId: e.b.id, totalSatang: 11 });
+    119|     const selected = await bookingAggregateOf(ctx.db, daily(e));
+    120|     expect(selected.totals).toEqual({ bookings: 105, bookedValueSatang…
+       |                             ^
+    121|     const both = await bookingAggregateOf(ctx.db, daily(e, [e.a, e.b])…
+    122|     expect(both.parks.map((p) => p.branchId)).toEqual([e.a.id, e.b.id]…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > uses the authoritative redemption row, not status or legacy payload markers
+AssertionError: expected { bookings: +0, …(2) } to deeply equal { bookings: 3, …(2) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "bookedValueSatang": 600,[39m
+[32m-   "bookings": 3,[39m
+[32m-   "redeemedBookings": 1,[39m
+[31m+   "bookedValueSatang": 0,[39m
+[31m+   "bookings": 0,[39m
+[31m+   "redeemedBookings": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-domain.test.ts:133:27
+    131|     await booked(e, { payload: { redemption: { redeemedAt: NOW.toISOSt…
+    132|     const result = await bookingAggregateOf(ctx.db, daily(e));
+    133|     expect(result.totals).toEqual({ bookings: 3, bookedValueSatang: 60…
+       |                           ^
+    134|     expect(result.parks[0]!.rows[1]!.redeemedBookings).toBe(1);
+    135|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > keeps redemption in its booking-date cohort even when claimed outside the requested date range
+TypeError: Cannot read properties of undefined (reading 'rows')
+ ❯ test/aggregates-domain.test.ts:142:29
+    140|     await redeemed(e, id, { redeemedAt: new Date('2026-11-10T23:59:00.…
+    141|     const result = await bookingAggregateOf(ctx.db, daily(e));
+    142|     expect(result.parks[0]!.rows[0]).toEqual({ date: DATES[0], booking…
+       |                             ^
+    143|     expect(result.totals.redeemedBookings).toBe(1);
+    144|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > does not trust a foreign operator redemption attached to an otherwise own booking
+AssertionError: expected { bookings: +0, …(2) } to deeply equal { bookings: 1, …(2) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "bookedValueSatang": 100,[39m
+[32m-   "bookings": 1,[39m
+[31m+   "bookedValueSatang": 0,[39m
+[31m+   "bookings": 0,[39m
+[2m    "redeemedBookings": 0,[22m
+[2m  }[22m
+
+ ❯ test/aggregates-domain.test.ts:150:65
+    148|     const id = await booked(e);
+    149|     await redeemed(e, id, { operatorId: e.foreignOperatorId, branchId:…
+    150|     expect((await bookingAggregateOf(ctx.db, daily(e))).totals).toEqua…
+       |                                                                 ^
+    151|   });
+    152| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > rejects a mismatched redemption park that the current counter and offline writers cannot create
+AssertionError: expected { bookings: +0, …(2) } to deeply equal { bookings: 1, …(2) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "bookedValueSatang": 100,[39m
+[32m-   "bookings": 1,[39m
+[31m+   "bookedValueSatang": 0,[39m
+[31m+   "bookings": 0,[39m
+[2m    "redeemedBookings": 0,[22m
+[2m  }[22m
+
+ ❯ test/aggregates-domain.test.ts:164:77
+    162|     const id = await booked(e);
+    163|     await redeemed(e, id, { branchId: e.b.id });
+    164|     expect((await bookingAggregateOf(ctx.db, daily(e, [e.a, e.b]))).to…
+       |                                                                             ^
+    165|       bookings: 1, bookedValueSatang: 100, redeemedBookings: 0,
+    166|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > fences both booking operator and actual branch owner against corrupted parent references
+AssertionError: expected [] to deeply equal [ Array(1) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   "01a1712e-d809-73c6-822b-641b58cfd608",[39m
+[32m- ][39m
+[31m+ [][39m
+
+ ❯ test/aggregates-domain.test.ts:175:49
+    173|     await booked(e, { branchId: e.foreign.id, totalSatang: 9000 });
+    174|     const result = await bookingAggregateOf(ctx.db, daily(e, [e.a, e.f…
+    175|     expect(result.parks.map((p) => p.branchId)).toEqual([e.a.id]);
+       |                                                 ^
+    176|     expect(result.totals).toEqual({ bookings: 1, bookedValueSatang: 15…
+    177|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 booking-date cohort aggregates > revalidates archived parks in the database rather than trusting a stale descriptor
+AssertionError: expected [] to deeply equal [ Array(1) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   "01a1712e-d80c-761a-bd35-5edc1488b1c1",[39m
+[32m- ][39m
+[31m+ [][39m
+
+ ❯ test/aggregates-domain.test.ts:183:49
+    181|     await booked(e, { branchId: e.archived.id, totalSatang: 8000 });
+    182|     const result = await bookingAggregateOf(ctx.db, daily(e, [e.a, { .…
+    183|     expect(result.parks.map((p) => p.branchId)).toEqual([e.a.id]);
+       |                                                 ^
+    184|     expect(result.totals).toEqual(ZERO_BOOKINGS);
+    185|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 current persisted fleet aggregates > counts all four persisted statuses separately, including empty parks
+AssertionError: expected { boxes: +0, online: +0, …(3) } to deeply equal { boxes: 4, online: 1, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "boxes": 4,[39m
+[32m-   "disabled": 1,[39m
+[32m-   "offline": 1,[39m
+[32m-   "online": 1,[39m
+[32m-   "unclaimed": 1,[39m
+[31m+   "boxes": 0,[39m
+[31m+   "disabled": 0,[39m
+[31m+   "offline": 0,[39m
+[31m+   "online": 0,[39m
+[31m+   "unclaimed": 0,[39m
+[2m  }[22m
+
+ ❯ test/aggregates-domain.test.ts:204:27
+    202|     expect(result.basis).toBe('current-snapshot');
+    203|     expect(result.asOf).toBe(NOW.toISOString());
+    204|     expect(result.totals).toEqual({ boxes: 4, online: 1, offline: 1, u…
+       |                           ^
+    205|     expect(result.parks).toEqual([
+    206|       { branchId: e.a.id, ...result.totals },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 current persisted fleet aggregates > does not reclassify persisted status using heartbeat age, registration, opening hours or a new threshold
+AssertionError: expected { boxes: +0, online: +0, …(3) } to deeply equal { boxes: 3, online: 1, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "boxes": 3,[39m
+[32m-   "disabled": 1,[39m
+[32m-   "offline": 1,[39m
+[32m-   "online": 1,[39m
+[31m+   "boxes": 0,[39m
+[31m+   "disabled": 0,[39m
+[31m+   "offline": 0,[39m
+[31m+   "online": 0,[39m
+[2m    "unclaimed": 0,[22m
+[2m  }[22m
+
+ ❯ test/aggregates-domain.test.ts:217:27
+    215|     await boxed(e, { status: 'disabled', lastHeartbeatAt: NOW, registe…
+    216|     const result = await fleetAggregateOf(ctx.db, scope(e));
+    217|     expect(result.totals).toEqual({ boxes: 3, online: 1, offline: 1, u…
+       |                           ^
+    218|   });
+    219| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 current persisted fleet aggregates > excludes archived boxes without erasing their persisted status
+AssertionError: expected { boxes: +0, online: +0, …(3) } to deeply equal { boxes: 1, online: 1, …(3) }
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "boxes": 1,[39m
+[31m+   "boxes": 0,[39m
+[2m    "disabled": 0,[22m
+[2m    "offline": 0,[22m
+[32m-   "online": 1,[39m
+[31m+   "online": 0,[39m
+[2m    "unclaimed": 0,[22m
+[2m  }[22m
+
+ ❯ test/aggregates-domain.test.ts:224:63
+    222|     await boxed(e, { status: 'offline', archivedAt: NOW });
+    223|     await boxed(e, { status: 'online' });
+    224|     expect((await fleetAggregateOf(ctx.db, scope(e))).totals).toEqual(…
+       |                                                               ^
+    225|   });
+    226| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 current persisted fleet aggregates > excludes unselected parks and returns only current database-owned live parks
+AssertionError: expected [] to deeply equal [ { …(6) } ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   {[39m
+[32m-     "boxes": 1,[39m
+[32m-     "branchId": "01a1712e-d817-72e8-96c1-ac1911c4f0de",[39m
+[32m-     "disabled": 0,[39m
+[32m-     "offline": 0,[39m
+[32m-     "online": 1,[39m
+[32m-     "unclaimed": 0,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ [][39m
+
+ ❯ test/aggregates-domain.test.ts:233:26
+    231|     await boxed(e, { branchId: e.archived.id, status: 'offline' });
+    232|     const result = await fleetAggregateOf(ctx.db, scope(e, [e.a, { ...…
+    233|     expect(result.parks).toEqual([{ branchId: e.a.id, boxes: 1, online…
+       |                          ^
+    234|   });
+    235| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/69]⎯
+
+ FAIL  test/aggregates-domain.test.ts > SCRUM-636 current persisted fleet aggregates > fences both box operator and branch owner, even for a corrupted selected parent
+AssertionError: expected [] to deeply equal [ { …(6) } ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   {[39m
+[32m-     "boxes": 1,[39m
+[32m-     "branchId": "01a1712e-d819-7d60-a37e-276e26d6686d",[39m
+[32m-     "disabled": 0,[39m
+[32m-     "offline": 0,[39m
+[32m-     "online": 1,[39m
+[32m-     "unclaimed": 0,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ [][39m
+
+ ❯ test/aggregates-domain.test.ts:243:26
+    241|     await boxed(e, { operatorId: e.foreignOperatorId, branchId: e.fore…
+    242|     const result = await fleetAggregateOf(ctx.db, scope(e, [e.a, e.for…
+    243|     expect(result.parks).toEqual([{ branchId: e.a.id, boxes: 1, online…
+       |                          ^
+    244|     expect(result.totals).toEqual({ boxes: 1, online: 1, offline: 0, u…
+    245|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/fleet adversarial review > FINDING R1 high: the read must exist and authenticate before returning aggregates; reject an anonymous caller
+AssertionError: expected 404 to be 401 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 401[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:84:65
+     82| describe.each(paths)('SCRUM-636 %s adversarial review', (path) => {
+     83|   it('FINDING R1 high: the read must exist and authenticate before ret…
+     84|     expect((await read(path, queryOf(path), false)).statusCode).toBe(4…
+       |                                                                 ^
+     85|   });
+     86| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/fleet adversarial review > FINDING R2 high: Overview reach alone governs the read, independently of the session seat and detail-screen grants
+AssertionError: expected 404 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:89:33
+     87|   it('FINDING R2 high: Overview reach alone governs the read, independ…
+     88|     const response = await read(path);
+     89|     expect(response.statusCode).toBe(200);
+       |                                 ^
+     90|     const body = response.json();
+     91|     expect(body.branches.map((entry: { id: string }) => entry.id)).toE…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/fleet adversarial review > FINDING R3 high: foreign and absent parks must be indistinguishable, while an owned unreachable park is forbidden
+AssertionError: expected 404 to be 403 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 403[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:111:71
+    109|     expect(foreign.json().error.code).toBe(absent.json().error.code);
+    110|     expect(foreign.json().error.message).toBe(absent.json().error.mess…
+    111|     expect((await read(path, branchQuery(path, central))).statusCode).…
+       |                                                                       ^
+    112|   });
+    113| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/fleet adversarial review > FINDING R4 high: changing or removing grants must affect the next request; never reuse an earlier broad reach
+AssertionError: expected 404 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:116:71
+    114|   it('FINDING R4 high: changing or removing grants must affect the nex…
+    115|     await grant('operator', [operatorId]);
+    116|     expect((await read(path, branchQuery(path, central))).statusCode).…
+       |                                                                       ^
+    117|     await grant('branch', [chalong]);
+    118|     expect((await read(path, branchQuery(path, central))).statusCode).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/fleet adversarial review > FINDING R5 high: another operator or a department grant cannot imply park-wide aggregate authority
+AssertionError: expected 404 to be 403 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 403[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:125:43
+    123|   it('FINDING R5 high: another operator or a department grant cannot i…
+    124|     await grant('operator', [foreignOperator]);
+    125|     expect((await read(path)).statusCode).toBe(403);
+       |                                           ^
+    126|     await grant('department', [newId()]);
+    127|     expect((await read(path)).statusCode).toBe(403);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/fleet adversarial review > FINDING R6 medium: malformed or duplicate park filters must not fall back to all reachable parks
+AssertionError: expected 404 to be 400 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 400[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:131:73
+    129| 
+    130|   it('FINDING R6 medium: malformed or duplicate park filters must not …
+    131|     expect((await read(path, branchQuery(path, 'invalid'))).statusCode…
+       |                                                                         ^
+    132|     expect((await read(path, `${branchQuery(path, chalong)}&branchId=$…
+    133|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/fleet adversarial review > FINDING R7 high: archived parks must be absent from both the picker and aggregates even for operator-wide reach
+AssertionError: expected 404 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:138:33
+    136|     await grant('operator', [operatorId]);
+    137|     const response = await read(path);
+    138|     expect(response.statusCode).toBe(200);
+       |                                 ^
+    139|     expect(JSON.stringify(response.json())).not.toContain(archivedBran…
+    140|     expect((await read(path, branchQuery(path, archivedBranch))).statu…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage bounded calendar contract > FINDING R8 medium: require real, ordered dates and at most 31 inclusive days; reject ambiguous or extra query fields
+AssertionError: expected 404 to be 400 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 400[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:157:59
+    155|       `?from=2026-10-01&to=2026-10-02&operatorId=${foreignOperator}`,
+    156|     ]) {
+    157|       expect((await read(path, query)).statusCode, query).toBe(400);
+       |                                                           ^
+    158|     }
+    159|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/members bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/bookings bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/assistant-usage bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 /aggregates/inbox-ai-usage bounded calendar contract > FINDING R9 medium: accept both a real leap day and the exact 31-day boundary with a typed explicit period
+AssertionError: expected 404 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:167:35
+    165|     ]) {
+    166|       const response = await read(path, `?from=${period.from}&to=${per…
+    167|       expect(response.statusCode).toBe(200);
+       |                                   ^
+    168|       expect(response.json().period).toEqual(period);
+    169|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/69]⎯
+
+ FAIL  test/s636-aggregates-review.test.ts > SCRUM-636 current fleet contract > FINDING R10 medium: fleet is a current snapshot and must refuse historical date filters
+AssertionError: expected 404 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 404[39m
+
+ ❯ test/s636-aggregates-review.test.ts:176:33
+    174|   it('FINDING R10 medium: fleet is a current snapshot and must refuse …
+    175|     const response = await read('/aggregates/fleet');
+    176|     expect(response.statusCode).toBe(200);
+       |                                 ^
+    177|     const body = response.json();
+    178|     expect(body.basis).toBe('current-snapshot');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/69]⎯
+
