@@ -1,3 +1,6 @@
+import { createCatalogueAdminApi } from '@oto/admin-screens/lifted/api/platform';
+import { createMenuCatalogueApi } from '@oto/admin-screens/lifted/api/menu';
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Permission } from '@oto/shared/permissions';
 import { TicketsPanelWithPorts } from '@oto/admin-screens/lifted/admin/tickets/TicketsPanel';
@@ -9,7 +12,7 @@ import { formatWWPrice } from '@oto/admin-screens/lifted/lib/pricingMode';
 import { isTierPriced } from '@oto/admin-screens/lifted/lib/pricing';
 import { apiPackageToTicketType, ticketTypeToApiBody } from '@oto/admin-screens/lifted/api/mappers';
 import type { AddOn, TicketType, TierDef } from '@oto/admin-screens/lifted/model/types';
-import { catalogueApi, createCatalogueMenu } from '@/api/catalogue';
+import { createCatalogueMenu } from '@/api/catalogue';
 import { organisationApi } from '@/api/organisation';
 import { useSession } from '@/auth/SessionContext';
 import { ErrorNote, Loading, PermissionRequired } from '@/components/Panel';
@@ -30,6 +33,8 @@ interface Snapshot {
 
 /** The host owns only the canonical records these three panels actually read. */
 export function Catalogue({ page }: { page: Page }) {
+  const working = useWorkingAuthority();
+  const catalogueApi = useMemo(() => createCatalogueAdminApi(working.api), [working.api]);
   const { me, permissions, has } = useSession();
   const readPermission: Permission = page === 'add-ons' ? 'catalog:menu:read' : 'catalog:package:read';
   const allowed = has(readPermission);
@@ -47,7 +52,7 @@ export function Catalogue({ page }: { page: Page }) {
     mounted.current = true;
     return () => { mounted.current = false; epoch.current++; };
   }, []);
-  const operatorId = me?.account.operatorId;
+  const operatorId = me?.operatorContext.effectiveOperatorId;
   const can = useCallback((permission: Permission, branchId?: string) => permissions.some((grant) =>
     grant.permission === permission && (
       (grant.scopeType === 'operator' && (grant.scopeId === null || grant.scopeId === operatorId)) ||
@@ -55,41 +60,41 @@ export function Catalogue({ page }: { page: Page }) {
     )), [permissions, operatorId]);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!working.isCurrent() || !allowed) return;
     let current = true;
     setParksError(null);
     const own = me?.branch;
     const read = has('admin:branch:read')
-      ? organisationApi.branchesApi.list().then(({ branches }) => branches.filter((row) => !row.archived))
+      ? working.run(() => organisationApi.branchesApi.list()).then(({ branches }) => branches.filter((row) => !row.archived))
       : Promise.resolve(own ? [own] : []);
     void read.then((rows) => {
-      if (!current) return;
+      if (!working.isCurrent() || !current) return;
       const reachable = rows.filter((row) => can(readPermission, row.id));
       setParks(reachable);
       setParkId((previous) => reachable.some((row) => row.id === previous) ? previous
         : (reachable.find((row) => row.id === own?.id)?.id ?? reachable[0]?.id ?? ''));
     }).catch((failure: unknown) => {
-      if (current) setParksError(failure instanceof Error ? failure.message : 'The parks could not be read.');
+      if (working.isCurrent() && current) setParksError(failure instanceof Error ? failure.message : 'The parks could not be read.');
     });
     return () => { current = false; };
-  }, [allowed, me?.account.id, me?.branch, has, can, readPermission, refresh]);
+  }, [allowed, me?.account.id, me?.branch, has, can, readPermission, refresh, working.isCurrent, working.run]);
 
   const reload = useCallback(async (saved = false) => {
-    if (!allowed || !parkId) return;
+    if (!working.isCurrent() || !allowed || !parkId) return;
     const request = ++epoch.current;
     const owner = me?.account.id;
     setError(null);
     try {
       // A separate cache per read prevents an old park's completion replacing
       // the hidden fields used by a newer park's product editor.
-      const menu = createCatalogueMenu();
+      const menu = createMenuCatalogueApi(working.api);
       const [tierAnswer, ticketAnswer, menuAnswer] = await Promise.all([
-        page === 'add-ons' ? Promise.resolve(null) : catalogueApi.tiers(),
-        page === 'add-ons' ? Promise.resolve(null) : catalogueApi.packages(parkId),
+        page === 'add-ons' ? Promise.resolve(null) : working.run(() => catalogueApi.tiers()),
+        page === 'add-ons' ? Promise.resolve(null) : working.run(() => catalogueApi.packages(parkId)),
         page === 'tiers' || !can('catalog:menu:read', parkId) ? Promise.resolve(null) : menu.menuApi.load(parkId),
       ]);
       const mapped = menuAnswer ? menu.mapMenu(menuAnswer) : null;
-      if (mounted.current && request === epoch.current && active.current.parkId === parkId &&
+      if (working.isCurrent() && mounted.current && request === epoch.current && active.current.parkId === parkId &&
         active.current.page === page && active.current.accountId === owner) {
         setSnapshot({ tiers: tierAnswer?.tiers ?? [], tickets: ticketAnswer?.packages.map(apiPackageToTicketType) ?? [],
           addOns: mapped?.addOns ?? [], menu,
@@ -97,7 +102,7 @@ export function Catalogue({ page }: { page: Page }) {
         });
       }
     } catch (failure) {
-      if (mounted.current && request === epoch.current && active.current.parkId === parkId &&
+      if (working.isCurrent() && mounted.current && request === epoch.current && active.current.parkId === parkId &&
         active.current.page === page && active.current.accountId === owner) {
         setSnapshot(null);
         const message = failure instanceof Error ? failure.message : 'The catalogue could not be read.';
@@ -105,7 +110,7 @@ export function Catalogue({ page }: { page: Page }) {
       }
       throw failure;
     }
-  }, [allowed, parkId, page, me?.account.id, can]);
+  }, [allowed, parkId, page, me?.account.id, can, working.isCurrent, working.api, working.run, catalogueApi]);
 
   useEffect(() => {
     setSnapshot(null);
@@ -123,11 +128,11 @@ export function Catalogue({ page }: { page: Page }) {
   }), [snapshot?.tiers, membership]);
   const owner = me?.account.id;
   const afterWrite = async (write: () => Promise<unknown>) => {
-    if (!mounted.current || active.current.parkId !== parkId || active.current.page !== page || active.current.accountId !== owner) {
+    if (!working.isCurrent() || !mounted.current || active.current.parkId !== parkId || active.current.page !== page || active.current.accountId !== owner) {
       throw new Error('The catalogue changed. Open the editor again.');
     }
     await write();
-    if (mounted.current && active.current.parkId === parkId && active.current.page === page && active.current.accountId === owner) {
+    if (working.isCurrent() && mounted.current && active.current.parkId === parkId && active.current.page === page && active.current.accountId === owner) {
       // The committed mutation is complete. Only this read's own epoch may
       // show its refresh failure; retrying the page must never repeat the write.
       await reload(true).catch(() => {});
@@ -150,18 +155,18 @@ export function Catalogue({ page }: { page: Page }) {
           isDefaultTier: membership.isDefaultTier, tierLabel: membership.tierLabel,
           canCreate: can('catalog:package:create', parkId), canUpdate: can('catalog:package:update', parkId),
           upsertTicketType: (ticket) => afterWrite(() => snapshot.tickets.some((row) => row.id === ticket.id)
-            ? catalogueApi.updatePackage(parkId, ticket.id, ticketTypeToApiBody(ticket))
-            : catalogueApi.createPackage(parkId, ticketTypeToApiBody(ticket))),
-          deleteTicketType: (id) => afterWrite(() => catalogueApi.archivePackage(parkId, id)),
+            ? working.run(() => catalogueApi.updatePackage(parkId, ticket.id, ticketTypeToApiBody(ticket)))
+            : working.run(() => catalogueApi.createPackage(parkId, ticketTypeToApiBody(ticket)))),
+          deleteTicketType: (id) => afterWrite(() => working.run(() => catalogueApi.archivePackage(parkId, id))),
         }} /> : <EmptyNote title="No default tier" detail="A default customer tier must be configured before editing ticket prices." /> : null}
         {page === 'tiers' ? <MarketsTiersSectionWithPorts ports={{
           tiers: snapshot.tiers, ticketTypes: snapshot.tickets, isTierPriced,
           countTierUsage: (id) => snapshot.tickets.filter((ticket) => ticket.prices[id] !== undefined).length,
           canCreate: can('catalog:package:create'), canUpdate: can('catalog:package:update'),
           upsertTier: (tier) => afterWrite(() => snapshot.tiers.some((row) => row.id === tier.id)
-            ? catalogueApi.updateTier(tier.id, tier)
-            : catalogueApi.createTier({ ...tier, code: tier.id })),
-          deleteTier: (id) => afterWrite(() => catalogueApi.deleteTier(id)),
+            ? working.run(() => catalogueApi.updateTier(tier.id, tier))
+            : working.run(() => catalogueApi.createTier({ ...tier, code: tier.id }))),
+          deleteTier: (id) => afterWrite(() => working.run(() => catalogueApi.deleteTier(id))),
         }} /> : null}
         {page === 'add-ons' ? <AddOnsPanelWithPorts ports={{
           addOns: snapshot.addOns, formatWWPrice, canManage: can('catalog:menu:manage', parkId),

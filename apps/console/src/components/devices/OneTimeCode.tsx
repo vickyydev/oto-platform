@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { formatWhen } from '@/lib/time';
@@ -29,15 +30,19 @@ export function OneTimeCode({
   expiresAt?: string | null;
   detail?: string;
 }) {
+  const working = useWorkingAuthority();
   const { me } = useSession();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
+    if (!working.isCurrent()) return;
     try {
-      await navigator.clipboard.writeText(code);
+      await working.run(() => navigator.clipboard.writeText(code));
+      if (!working.isCurrent()) return;
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      window.setTimeout(() => { if (!working.isCurrent()) return; return setCopied(false); }, 2000);
     } catch {
+      if (!working.isCurrent()) return;
       // Clipboard access is refused in plenty of ordinary places — an insecure
       // origin, a locked-down browser. The code is on screen either way, which
       // is what it is for.

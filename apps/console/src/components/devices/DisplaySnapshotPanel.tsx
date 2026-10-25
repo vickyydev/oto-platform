@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useRef, useState } from 'react';
 import type { DisplaySnapshotResponse } from '@oto/shared';
 import { ApiError } from '@/api/client';
@@ -19,6 +20,7 @@ export function DisplaySnapshotPanel({
   timezone?: string | null;
   revoked: boolean;
 }) {
+  const working = useWorkingAuthority();
   const [result, setResult] = useState<DisplaySnapshotResponse | null>(null);
   const [busy, setBusy] = useState(true);
   const [failed, setFailed] = useState<string | null>(null);
@@ -30,9 +32,10 @@ export function DisplaySnapshotPanel({
     setBusy(true);
     setResult(null);
     setFailed(null);
-    void fleetApi
-      .displaySnapshot(credentialId)
+    void working.run(() => fleetApi
+      .displaySnapshot(credentialId))
       .then((response) => {
+        if (!working.isCurrent()) return;
         if (sequence !== readSequence.current) return;
         const saved = response.snapshot;
         if (saved && (saved.document.stationId !== saved.stationId
@@ -43,6 +46,7 @@ export function DisplaySnapshotPanel({
         setResult(response);
       })
       .catch((error: unknown) => {
+        if (!working.isCurrent()) return;
         if (sequence !== readSequence.current) return;
         setFailed(
           error instanceof ApiError && error.status === 403
@@ -53,12 +57,13 @@ export function DisplaySnapshotPanel({
         );
       })
       .finally(() => {
+        if (!working.isCurrent()) return;
         if (sequence === readSequence.current) setBusy(false);
       });
     return () => {
       readSequence.current += 1;
     };
-  }, [credentialId, stationId, refresh]);
+  }, [credentialId, stationId, refresh, working.run, working.isCurrent]);
 
   const saved = result?.snapshot;
   return (

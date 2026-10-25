@@ -1,3 +1,6 @@
+import { createCareAdminApi } from '@oto/admin-screens/lifted/api/care';
+import { apiUrl } from '@/api/client';
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import type { Permission } from '@oto/shared/permissions';
@@ -25,12 +28,13 @@ const messageOf = (failure: unknown) => failure instanceof Error ? failure.messa
 
 /** The approved native forms receive one current account and park snapshot. */
 export function Care({ page }: { page: Page }) {
+  const working = useWorkingAuthority();
   const { me, permissions, has } = useSession();
   const search = useSearch(), [, navigate] = useLocation();
   const requestedTemplate = new URLSearchParams(search).get('template');
   const askedType = requestedTemplate && templateKinds.has(requestedTemplate) ? requestedTemplate : null;
   const permission: Permission = page === 'care' ? 'pos:checkin:read' : 'pos:print:read';
-  const allowed = has(permission), operatorId = me?.account.operatorId;
+  const allowed = has(permission), operatorId = me?.operatorContext.effectiveOperatorId;
   const authority = permissions.map(row => [row.permission, row.scopeType, row.scopeId].join(':')).sort().join('|');
   const [parks, setParks] = useState<Park[] | null>(null), [parkId, setParkId] = useState('');
   const [stored, setStored] = useState<Snapshot | null>(null), [error, setError] = useState<string | null>(null);
@@ -40,12 +44,12 @@ export function Care({ page }: { page: Page }) {
   const [stationFailure, setStationFailure] = useState<{ version: number; message: string } | null>(null);
   const [stationRefresh, setStationRefresh] = useState(0);
   const mounted = useRef(false), requests = useRef(0), stationRequests = useRef(0);
-  const contextKey = [me?.account.id, operatorId, authority, page, parkId].join('|');
+  const contextKey = [working.epoch, me?.account.id, operatorId, authority, page, parkId].join('|');
   const active = useRef({ key: contextKey, version: 0 });
   if (active.current.key !== contextKey) active.current = { key: contextKey, version: active.current.version + 1 };
   const version = active.current.version, snapshot = stored?.version === version ? stored : null;
-  const contextApi = useMemo(() => ({ version, api: createConsoleCare() }), [version]).api;
-  const current = useCallback(() => mounted.current && active.current.version === version, [version]);
+  const contextApi = useMemo(() => ({ version, api: createCareAdminApi({ ...working.api, href: apiUrl }) }), [version, working.api]).api;
+  const current = useCallback(() => working.isCurrent() && mounted.current && active.current.version === version, [version, working.isCurrent]);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; requests.current++; }; }, []);
   const can = useCallback((held: Permission, branchId: string) => permissions.some(row => row.permission === held && (
     row.scopeType === 'operator' && (row.scopeId === null || row.scopeId === operatorId) ||
@@ -61,7 +65,7 @@ export function Care({ page }: { page: Page }) {
     const request = ++stationRequests.current;
     const live = () => current() && request === stationRequests.current;
     setStationFailure(null);
-    void fleetApi.stations(parkId).then(answer => {
+    void working.run(() => fleetApi.stations(parkId)).then(answer => {
       if (!live()) return;
       setStationList({ version, rows: answer.stations.filter(row => row.branchId === parkId && !row.archived) });
     }).catch(failure => {
@@ -71,25 +75,25 @@ export function Care({ page }: { page: Page }) {
       }
     });
     return () => { stationRequests.current++; };
-  }, [canReadStations, parkId, current, version, stationRefresh]);
+  }, [canReadStations, parkId, current, version, stationRefresh, working.run]);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!working.isCurrent() || !allowed) return;
     let live = true;
     setParks(null); setParksError(null);
     const own = me?.branch;
-    const read = has('admin:branch:read') ? organisationApi.branchesApi.list().then(answer => answer.branches.filter(row => !row.archived)) : Promise.resolve(own ? [own] : []);
+    const read = has('admin:branch:read') ? working.run(() => organisationApi.branchesApi.list()).then(answer => answer.branches.filter(row => !row.archived)) : Promise.resolve(own ? [own] : []);
     void read.then(rows => {
-      if (!live) return;
+      if (!working.isCurrent() || !live) return;
       const reachable = rows.filter(row => can(permission, row.id));
       setParks(reachable);
       setParkId(previous => reachable.some(row => row.id === previous) ? previous : reachable.find(row => row.id === own?.id)?.id ?? reachable[0]?.id ?? '');
-    }).catch(failure => { if (live) setParksError(messageOf(failure)); });
+    }).catch(failure => { if (working.isCurrent() && live) setParksError(messageOf(failure)); });
     return () => { live = false; };
-  }, [allowed, me?.account.id, me?.branch, has, permission, can, refresh]);
+  }, [allowed, me?.account.id, me?.branch, has, permission, can, refresh, working.isCurrent, working.run]);
 
   const reload = useCallback(async (saved = false) => {
-    if (!allowed || !parkId) return;
+    if (!working.isCurrent() || !allowed || !parkId) return;
     const request = ++requests.current, live = () => current() && request === requests.current;
     const api = contextApi; setError(null);
     try {
@@ -99,7 +103,7 @@ export function Care({ page }: { page: Page }) {
     } catch (failure) {
       if (live()) { setStored(null); setError((saved ? 'Saved, but the settings could not be refreshed. ' : '') + messageOf(failure)); }
     }
-  }, [allowed, parkId, page, current, version, contextApi]);
+  }, [allowed, parkId, page, current, version, contextApi, working.isCurrent]);
   useEffect(() => { setStored(null); void reload(); return () => { requests.current++; }; }, [reload]);
 
   if (!allowed) return <PermissionRequired permission={permission} />;

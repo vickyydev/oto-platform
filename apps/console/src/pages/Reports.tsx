@@ -1,3 +1,9 @@
+import { createAnalyticsReportsApi } from '@oto/admin-screens/lifted/api/analyticsReports';
+import { createWalletAdminApi } from '@oto/admin-screens/lifted/api/wallet';
+import { createVoucherPromotionsApi } from '@oto/admin-screens/lifted/api/voucherPromotions';
+import { createWalletReportReader } from '@oto/admin-screens/lifted/lib/reporting';
+import { apiUrl } from '@/api/client';
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Permission } from '@oto/shared/permissions';
 import { SalesReportPanelWithPorts } from '@oto/admin-screens/lifted/admin/reports/SalesReportPanel';
@@ -20,9 +26,10 @@ type Park = Awaited<ReturnType<typeof reportsApi.parks>>[number];
 
 /** Every actor/authority lifetime owns a fresh host and its pending reports. */
 export function Reports({ page }: { page: Page }) {
+  const working = useWorkingAuthority();
   const { me, permissions, has } = useSession();
   if (!me || !has('analytics:read')) return <PermissionRequired permission="analytics:read" />;
-  const contextKey = JSON.stringify([me.account.id, me.account.operatorId, me.branch?.id,
+  const contextKey = JSON.stringify([working.epoch, me?.operatorContext, me.account.id, me.operatorContext.effectiveOperatorId, me.branch?.id,
     permissions.map(row => [row.permission, row.scopeType, row.scopeId]).sort()]);
   return <ReportHost key={`${contextKey}:${page}`} me={me} permissions={permissions} page={page} contextKey={contextKey} />;
 }
@@ -30,35 +37,40 @@ export function Reports({ page }: { page: Page }) {
 function ReportHost({ me, permissions, page, contextKey }: {
   me: MeResponse; permissions: EffectivePermission[]; page: Page; contextKey: string;
 }) {
+  const working = useWorkingAuthority();
+  const transport = useMemo(() => ({ ...working.api, href: apiUrl }), [working.api]);
+  const analytics = useMemo(() => createAnalyticsReportsApi(transport), [transport]);
+  const wallet = useMemo(() => createWalletAdminApi(transport), [transport]);
+  const vouchers = useMemo(() => createVoucherPromotionsApi(transport), [transport]);
   const [parks, setParks] = useState<Park[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [metadata, setMetadata] = useState<Discount[] | null>(null);
   const [metadataError, setMetadataError] = useState<string | null>(null);
   const can = useCallback((permission: Permission, branchId?: string) => permissions.some(grant => grant.permission === permission && (
-    grant.scopeType === 'operator' && (grant.scopeId === null || grant.scopeId === me.account.operatorId) ||
+    grant.scopeType === 'operator' && (grant.scopeId === null || grant.scopeId === me.operatorContext.effectiveOperatorId) ||
     branchId !== undefined && grant.scopeType === 'branch' && grant.scopeId === branchId
-  )), [permissions, me.account.operatorId]);
+  )), [permissions, me.operatorContext.effectiveOperatorId]);
   const canReadMetadata = can('catalog:menu:read', me.branch?.id);
   useEffect(() => {
     let live = true;
     setError(null);
-    void reportsApi.parks().then(rows => {
-      if (live) setParks(rows.filter(park => can('analytics:read', park.id)));
+    void working.run(() => reportsApi.parks()).then(rows => {
+      if (working.isCurrent() && live) setParks(rows.filter(park => can('analytics:read', park.id)));
     }).catch((failure: unknown) => {
-      if (live) setError(failure instanceof Error ? failure.message : 'The report parks could not be read.');
+      if (working.isCurrent() && live) setError(failure instanceof Error ? failure.message : 'The report parks could not be read.');
     });
     return () => { live = false; };
-  }, [refresh, can]);
+  }, [refresh, can, working.run, working.isCurrent]);
   useEffect(() => {
     if (page !== 'wallet-promo' || !canReadMetadata) return;
     let live = true;
     setMetadata(null); setMetadataError(null);
-    void reportsApi.discounts().then(rows => { if (live) setMetadata(rows); }).catch((failure: unknown) => {
-      if (live) setMetadataError(failure instanceof Error ? failure.message : 'Promo-code metadata could not be read.');
+    void working.run(() => reportsApi.discounts()).then(rows => { if (working.isCurrent() && live) setMetadata(rows); }).catch((failure: unknown) => {
+      if (working.isCurrent() && live) setMetadataError(failure instanceof Error ? failure.message : 'Promo-code metadata could not be read.');
     });
     return () => { live = false; };
-  }, [page, canReadMetadata, refresh]);
+  }, [page, canReadMetadata, refresh, working.run, working.isCurrent]);
   const ports = useMemo(() => {
     const branches = parks ?? [];
     const clock = branches.find(park => park.id === me.branch?.id) ?? branches[0];
@@ -72,12 +84,12 @@ function ReportHost({ me, permissions, page, contextKey }: {
         ? { from: filters.startDate, to: filters.endDate }
         : branches.some(park => park.id === filters.branchId)
           ? { branches: [filters.branchId], from: filters.startDate, to: filters.endDate } : null,
-      api: reportsApi.analytics,
-      walletReport: reportsApi.walletReader(branches),
-      discountTransactions: reportsApi.analytics.discountTransactions,
-      voucherReport: reportsApi.voucherReport,
+      api: analytics,
+      walletReport: createWalletReportReader({ getBranches: () => branches.map(branch => ({ id: branch.id, apiId: branch.id })), getWalletReport: wallet.getWalletReport }),
+      discountTransactions: analytics.discountTransactions,
+      voucherReport: (query: Parameters<typeof reportsApi.voucherReport>[0]) => vouchers.report({ branchApiId: query.branches?.[0] ?? null, from: query.from, to: query.to }),
     };
-  }, [parks, me.branch, contextKey, refresh]);
+  }, [parks, me.branch, contextKey, refresh, analytics, wallet, vouchers]);
   const metadataUnavailable = !canReadMetadata ? 'Promo-code metadata needs catalogue read access at the seated park.'
     : metadataError ? 'Promo-code metadata could not be loaded. ' + metadataError
       : metadata === null ? 'Loading promo-code metadata…' : undefined;
@@ -97,22 +109,24 @@ function ReportHost({ me, permissions, page, contextKey }: {
 }
 
 export function ReportsLanding() {
+  const working = useWorkingAuthority();
   const { has, me, permissions } = useSession();
-  const owner = JSON.stringify([me?.account.id, me?.account.operatorId, me?.branch?.id, permissions]);
+  const owner = JSON.stringify([working.epoch, me?.operatorContext, me?.account.id, me?.operatorContext.effectiveOperatorId, me?.branch?.id, permissions]);
   return <><AreaLanding id="reports" />{has('analytics:read') && has('app:radar:access') && <RadarTile key={owner} />}</>;
 }
 
 export function RadarTile() {
+  const working = useWorkingAuthority();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   return <Panel title="Radar" description="Deep analysis, revenue planning and trends.">
     <Button disabled={pending} onClick={() => {
-      if (pending) return;
+      if (!working.isCurrent() || pending) return;
       setPending(true); setError(null);
-      void reportsApi.openRadar(() => mounted.current).catch((failure: unknown) => {
-        if (!mounted.current) return;
+      void working.run(() => reportsApi.openRadar(() => working.isCurrent() && mounted.current)).catch((failure: unknown) => {
+        if (!working.isCurrent() || !mounted.current) return;
         setError(failure instanceof Error ? failure.message : 'Radar could not be opened.');
         setPending(false);
       });

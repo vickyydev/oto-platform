@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
+import { api, ApiError } from '@/api/client';
 
 const parkA = { id: '01900000-0000-7000-8000-000000000001', name: 'ZZ TEST Central', timezone: 'Asia/Bangkok' };
 const parkB = { ...parkA, id: '01900000-0000-7000-8000-000000000002', name: 'ZZ TEST Riverside' };
@@ -22,6 +23,15 @@ type NativeContent = {
   onRetry: () => void; onOpenSource: (source: string) => void;
 };
 
+function nativeWorkingHook() {
+  const source = readFileSync(new URL('../src/lib/workingAuthority.ts', import.meta.url), 'utf8');
+  const ast = ts.createSourceFile('workingAuthority.ts', source, ts.ScriptTarget.Latest, true);
+  const hook = ast.statements.find((node): node is ts.FunctionDeclaration =>
+    ts.isFunctionDeclaration(node) && node.name?.text === 'useWorkingAuthority');
+  if (!hook) throw new Error('Native working-authority hook missing');
+  return hook.getText(ast).replace(/^export\s+/, '');
+}
+
 /** Executes the entire native Staff function and its actual callbacks with inert JSX/hook adapters. */
 function staffHarness(options: { read?: (branchId: string | null) => Promise<unknown>; handoff?: () => Promise<string> } = {}) {
   const path = new URL('../src/pages/Staff.tsx', import.meta.url), source = readFileSync(path, 'utf8');
@@ -30,12 +40,35 @@ function staffHarness(options: { read?: (branchId: string | null) => Promise<unk
   if (!page?.body) throw new Error('Native Staff function missing');
   const slots: unknown[] = [], effects: Array<{ deps?: unknown[]; cleanup?: () => void }> = [], pending: Array<() => void> = [];
   let cursor = 0, session = initialSession();
+  let providerEpoch = 0, providerKey = '', providerMounted = true;
+  const isCurrentAuthority = (held: number) => providerMounted && held === providerEpoch;
+  const sessionPort = () => {
+    const heldPermissions = session.permissions;
+    const operatorContext = {
+      sessionId: session.me.account.id === 'zz-actor-a'
+        ? '01964000-0000-7000-8000-000000000009' : '01964000-0000-7000-8000-00000000000a',
+      homeOperatorId: session.me.account.operatorId, effectiveOperatorId: session.me.account.operatorId,
+      operatorOverride: null, branchId: session.me.branch.id, stationId: null, revision: 0,
+    };
+    return { ...session, authorityEpoch: providerEpoch, refreshing: false, isCurrentAuthority,
+      me: { ...session.me, sessionLocked: session.locked, operatorContext }, operatorContext,
+      effectiveOperatorId: operatorContext.effectiveOperatorId,
+      has: (permission: string) => heldPermissions.some(row => row.permission === permission) };
+  };
+  let confirmedSession = sessionPort();
   const useState = (initial: unknown) => {
     const slot = cursor++;
     if (!(slot in slots)) slots[slot] = typeof initial === 'function' ? initial() : initial;
     return [slots[slot], (next: unknown) => { slots[slot] = typeof next === 'function' ? next(slots[slot]) : next; }];
   };
   const useRef = (initial: unknown) => { const slot = cursor++; if (!(slot in slots)) slots[slot] = { current: initial }; return slots[slot]; };
+  const useMemo = (callback: () => unknown, deps: unknown[]) => {
+    const slot = cursor++, previous = slots[slot] as { deps: unknown[]; value: unknown } | undefined;
+    if (!previous || deps.some((value, index) => !Object.is(value, previous.deps[index]))) {
+      slots[slot] = { deps, value: callback() };
+    }
+    return (slots[slot] as { value: unknown }).value;
+  };
   const useEffect = (effect: () => (() => void) | undefined, deps?: unknown[]) => {
     const slot = cursor++, previous = effects[slot];
     if (!previous || !deps || deps.some((value, index) => !Object.is(value, previous.deps?.[index]))) pending.push(() => {
@@ -48,12 +81,14 @@ function staffHarness(options: { read?: (branchId: string | null) => Promise<unk
   const component = Symbol('StaffContent'), button = Symbol('Button');
   const exports: { Staff?: () => Node } = {};
   const jsx = (type: unknown, props: Record<string, unknown>): Node => ({ type, props });
-  runInNewContext(ts.transpileModule(page.getText(ast), { fileName: 'Staff.tsx', compilerOptions: {
+  runInNewContext(ts.transpileModule(nativeWorkingHook() + '\n' + page.getText(ast), { fileName: 'Staff.tsx', compilerOptions: {
     target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
   } }).outputText, {
     exports, require: (name: string) => { if (name !== 'react/jsx-runtime') throw new Error('Unexpected native dependency'); return { jsx, jsxs: jsx, Fragment: Symbol('Fragment') }; },
-    useSession: () => ({ ...session, has: (permission: string) => session.permissions.some(row => row.permission === permission) }),
-    useState, useRef, useEffect, staffApi: { read, sourceDestination: handoff }, window: { location: { assign } },
+    useSession: () => confirmedSession,
+    useState, useRef, useEffect, useMemo,
+    useCallback: (callback: () => unknown, deps: unknown[]) => useMemo(() => callback, deps), api, ApiError,
+    staffApi: { read, sourceDestination: handoff }, window: { location: { assign } },
     StaffContent: component, CommandBar: Symbol('CommandBar'), PermissionRequired: Symbol('PermissionRequired'),
     ErrorNote: Symbol('ErrorNote'), RefreshCw: Symbol('RefreshCw'), Button: button,
   });
@@ -68,6 +103,10 @@ function staffHarness(options: { read?: (branchId: string | null) => Promise<unk
     read, handoff, assign,
     render(next = session, flush = true) {
       session = next; cursor = 0;
+      const nextKey = JSON.stringify(session);
+      if (nextKey !== providerKey) {
+        providerKey = nextKey; providerEpoch++; confirmedSession = sessionPort();
+      }
       const tree = exports.Staff!();
       if (flush) while (pending.length) pending.shift()?.();
       return {
@@ -76,7 +115,7 @@ function staffHarness(options: { read?: (branchId: string | null) => Promise<unk
         refresh: () => (find(tree, node => node.type === button)?.props.onClick as (() => void) | undefined)?.(),
       };
     },
-    unmount() { effects.forEach(effect => effect?.cleanup?.()); },
+    unmount() { providerMounted = false; effects.forEach(effect => effect?.cleanup?.()); },
   };
 }
 async function settled() { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); }

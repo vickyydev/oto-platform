@@ -61,7 +61,18 @@ function snapshot(branchId = '', narrow = false, marker = 'ZZ TEST current summa
 }
 
 async function session(page: Page, sourceAccess = true, overviewAccess = true) {
-  const control = { actor: 'fixture', operator: 'fixture', locked: false, narrow: false, marker: 'ZZ TEST current summary',
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
+  const control = { actor: '01964000-0000-7000-8000-00000000f0e1', operator: '01964000-0000-7000-8000-00000000f0e2', locked: false, narrow: false, marker: 'ZZ TEST current summary',
     overrideRevenue: null as number | null, writes: [] as string[],
     permissions: ['app:console:access', ...(overviewAccess ? ['console:overview:read'] : []),
       ...(sourceAccess ? ['app:pos:access', 'analytics:read', 'pos:checkin:read', 'pos:booking:read',
@@ -75,8 +86,9 @@ async function session(page: Page, sourceAccess = true, overviewAccess = true) {
   await page.route('**/api/**', (route) => route.fulfill({ status: 403,
     json: { error: { code: 'PERMISSION_DENIED', message: 'Not on this fixture’s access.' } } }));
   await page.route('**/api/me', (route) => route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(control.actor, control.operator, null),
     account: { id: control.actor, phone: '', status: 'active', mustChangePassword: false, operatorId: control.operator },
-    employee: { id: 'fixture', name: 'ZZ TEST Overview', nickname: null }, branch: null,
+    employee: { id: '01964000-0000-7000-8000-00000000f0e1', name: 'ZZ TEST Overview', nickname: null }, branch: null,
     isPlatformAdmin: false, photoFileId: null, sessionLocked: control.locked,
   } }));
   await page.route('**/api/me/permissions', (route) => route.fulfill({ json: {
@@ -298,15 +310,15 @@ test('actor/operator A to B to A discards both earlier reads and masks their fig
   const state = await session(page), first = pause(), second = pause(), current = pause(); state.holds.push(first.promise);
   try {
     await page.goto('/overview'); await expect.poll(() => state.reads.length).toBe(1);
-    state.actor = 'fixture-b'; state.operator = 'fixture-operator-b'; state.overrideRevenue = 888888; state.holds.push(second.promise);
+    state.actor = '01964000-0000-7000-8000-00000000f0e3'; state.operator = '01964000-0000-7000-8000-00000000f0e4'; state.overrideRevenue = 888888; state.holds.push(second.promise);
     await refreshSession(page); await expect.poll(() => state.reads.length, { timeout: 5000 }).toBe(2);
-    state.actor = 'fixture'; state.operator = 'fixture'; state.overrideRevenue = 77777; state.holds.push(current.promise);
+    state.actor = '01964000-0000-7000-8000-00000000f0e1'; state.operator = '01964000-0000-7000-8000-00000000f0e2'; state.overrideRevenue = 77777; state.holds.push(current.promise);
     await refreshSession(page); await expect.poll(() => state.reads.length, { timeout: 5000 }).toBe(3);
     first.release(); second.release();
     await expect(page.getByRole('article', { name: 'Revenue today', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Copy status summary', exact: true })).toBeDisabled();
     current.release(); await expect(page.getByRole('article', { name: 'Revenue today', exact: true })).toContainText('777.77');
-    expect(state.reads.map(read => read.actor)).toEqual(['fixture', 'fixture-b', 'fixture']); expect(state.writes).toEqual([]);
+    expect(state.reads.map(read => read.actor)).toEqual(['01964000-0000-7000-8000-00000000f0e1', '01964000-0000-7000-8000-00000000f0e3', '01964000-0000-7000-8000-00000000f0e1']); expect(state.writes).toEqual([]);
   } finally { first.release(); second.release(); current.release(); }
 });
 
@@ -337,7 +349,7 @@ for (const change of ['actor-ABA', 'lock'] as const) {
       await expect.poll(() => issued).toBe(1);
       if (change === 'lock') { state.locked = true; await refreshSession(page);
         await expect(page.getByRole('article', { name: 'Revenue today', exact: true })).toHaveCount(0);
-      } else { state.actor = 'fixture-b'; await refreshSession(page); state.actor = 'fixture'; await refreshSession(page); }
+      } else { state.actor = '01964000-0000-7000-8000-00000000f0e3'; await refreshSession(page); state.actor = '01964000-0000-7000-8000-00000000f0e1'; await refreshSession(page); }
       const response = page.waitForResponse(result => new URL(result.url()).pathname === '/api/auth/handoff');
       held.release(); await (await response).finished();
       await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));

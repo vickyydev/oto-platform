@@ -20,6 +20,17 @@ const unlinked = { id: APP_USER, fullName: 'ZZ TEST OTO Person', email: 'zz-test
   branches: [{ id: 'app-park', name: 'ZZ TEST Park', platformBranchId: BRANCH }] };
 
 async function fixture(page: Page, options: { linked?: boolean; read?: boolean; assign?: boolean; retainedAccess?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const writes: Array<{ method: string; path: string; body: unknown; key: string | undefined }> = [];
   const identities = new Map([[SOM, options.linked ? [identity()] : []], [MAI, [identity(MAI_USER, MAI)]]]);
   let claimed = false;
@@ -28,6 +39,7 @@ async function fixture(page: Page, options: { linked?: boolean; read?: boolean; 
     const url = new URL(request.url());
     const path = url.pathname.replace(/^\/api/, '');
     if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(OPERATOR, OPERATOR, null),
       account: { id: OPERATOR, phone: '', status: 'active', mustChangePassword: false, operatorId: OPERATOR },
       employee: { id: OPERATOR, name: 'ZZ TEST Admin', nickname: null }, branch: null,
       isPlatformAdmin: false, photoFileId: null, sessionLocked: false,

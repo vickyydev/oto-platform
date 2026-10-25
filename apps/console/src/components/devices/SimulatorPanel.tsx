@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useState } from 'react';
 import { Loader2, ScanLine, Zap } from 'lucide-react';
 import type { KioskSimulatorAnswer, KioskSimulatorControl, PrinterFault, SimulatorAction } from '@oto/shared';
@@ -102,6 +103,7 @@ export function SimulatorPanel({
   canCommand: boolean;
   onSent: (actionId?: string | null) => void;
 }) {
+  const working = useWorkingAuthority();
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
@@ -112,21 +114,26 @@ export function SimulatorPanel({
   const scanners = simulated.filter((d) => d.kind === 'scanner');
 
   const send = async (key: string, action: SimulatorAction, said: string) => {
+    if (!working.isCurrent()) return;
     setBusy(key);
     setNote(null);
     setFailed(null);
     try {
-      const result = await simulatorApi.send(box.id, action);
+      const result = await working.run(() => simulatorApi.send(box.id, action));
+      if (!working.isCurrent()) return;
       setNote(`${said} The box takes it on its next poll.`);
       onSent(result.actionId);
     } catch (err) {
+      if (!working.isCurrent()) return;
       if (isMissingRoute(err)) {
         setMissing(true);
       } else {
         setFailed(err instanceof Error ? err.message : 'That could not be queued');
       }
     } finally {
-      setBusy(null);
+      if (working.isCurrent()) {
+        setBusy(null);
+      }
     }
   };
 
@@ -269,19 +276,26 @@ const KIOSK_CONTROLS: Array<{ control: KioskSimulatorControl; label: string; det
 ];
 
 function KioskControls({ station, disabled }: { station: StationRow; disabled: boolean }) {
+  const working = useWorkingAuthority();
   const [busy, setBusy] = useState<KioskSimulatorControl | null>(null);
   const [state, setState] = useState<KioskSimulatorAnswer | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
 
   const press = async (control: KioskSimulatorControl) => {
+    if (!working.isCurrent()) return;
     setBusy(control);
     setFailed(null);
     try {
-      setState(await simulatorApi.kiosk(station.id, control));
+      const next = await working.run(() => simulatorApi.kiosk(station.id, control));
+      if (!working.isCurrent()) return;
+      setState(next);
     } catch (err) {
+      if (!working.isCurrent()) return;
       setFailed(err instanceof Error ? err.message : 'That could not be applied');
     } finally {
-      setBusy(null);
+      if (working.isCurrent()) {
+        setBusy(null);
+      }
     }
   };
 

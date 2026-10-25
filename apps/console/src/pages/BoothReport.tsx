@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Download, FerrisWheel, RefreshCw } from 'lucide-react';
 import {
@@ -35,8 +36,9 @@ import { formatWhen, timeAgo } from '@/lib/time';
  * prize. The `#debug` distribution run is never in it.
  */
 export function BoothReport() {
+  const working = useWorkingAuthority();
   const { me, permissions } = useSession();
-  const authorityKey = JSON.stringify([me?.account.id, me?.account.operatorId, me?.branch?.id, me?.sessionLocked, permissions]);
+  const authorityKey = JSON.stringify([working.epoch, me?.operatorContext, me?.account.id, me?.operatorContext.effectiveOperatorId, me?.branch?.id, me?.sessionLocked, permissions]);
   const authority = useRef({ key: authorityKey, epoch: 0 });
   if (authority.current.key !== authorityKey) authority.current = { key: authorityKey, epoch: authority.current.epoch + 1 };
   const authorityEpoch = authority.current.epoch;
@@ -70,21 +72,21 @@ export function BoothReport() {
 
   useEffect(() => {
     let active = true;
-    const current = () => active && mounted.current && authority.current.epoch === authorityEpoch;
-    void directoryApi
-      .branches()
+    const current = () => active && working.isCurrent() && mounted.current && authority.current.epoch === authorityEpoch;
+    void working.run(() => directoryApi
+      .branches())
       .then((r) => { if (current()) setDirectory({ epoch: authorityEpoch, branches: r.branches.filter((b) => !b.archived) }); })
       .catch(() => { if (current()) setDirectory({ epoch: authorityEpoch, branches: [] }); });
     return () => { active = false; };
-  }, [authorityEpoch]);
+  }, [authorityEpoch, working.isCurrent, working.run]);
 
   useEffect(() => {
     if (!from || !to) return;
     let active = true;
-    const current = () => active && mounted.current && owner.current.epoch === epoch;
+    const current = () => active && working.isCurrent() && mounted.current && owner.current.epoch === epoch;
     setReport({ epoch, data: null, error: null });
-    void boothReportApi
-      .read({ branchId, from, to })
+    void working.run(() => boothReportApi
+      .read({ branchId, from, to }))
       .then((answer) => {
         if (current()) setReport({ epoch, data: answer, error: null });
       })
@@ -94,15 +96,15 @@ export function BoothReport() {
     return () => {
       active = false;
     };
-  }, [epoch, branchId, from, to]);
+  }, [epoch, branchId, from, to, working.isCurrent, working.run]);
 
   const download = async () => {
-    if (exportInFlight.current === epoch) return;
+    if (!working.isCurrent() || exportInFlight.current === epoch) return;
     exportInFlight.current = epoch;
     setExporting({ epoch, pending: true });
-    const current = () => mounted.current && owner.current.epoch === epoch;
+    const current = () => working.isCurrent() && mounted.current && owner.current.epoch === epoch;
     try {
-      const file = await boothReportApi.exportFile({ branchId, from, to });
+      const file = await working.run(() => boothReportApi.exportFile({ branchId, from, to }));
       if (!current()) return;
       const url = URL.createObjectURL(file.blob);
       const link = document.createElement('a');

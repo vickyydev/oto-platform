@@ -9,6 +9,17 @@ interface Park { id: string; name: string; code: string; timezone: string; count
 interface Holiday { id: string; name: string; startsOn: string; endsOn: string; pricedSales: number }
 
 async function fixture(page: Page, options: { platform?: boolean; permissions?: string[] } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const calls: Array<{ method: string; path: string; body: unknown; key: string | undefined }> = [];
   const runtimeErrors: Array<{ name: string; missingExport: string | null }> = [];
   page.on('pageerror', error => runtimeErrors.push({ name: error.name, missingExport: /does not provide an export named ['"]([A-Za-z_$][\w$]*)['"]/.exec(error.message)?.[1] ?? null }));
@@ -31,6 +42,7 @@ async function fixture(page: Page, options: { platform?: boolean; permissions?: 
     if (request.postData()) body = request.postDataJSON();
     calls.push({ method, path, body, key: request.headers()['idempotency-key'] });
     if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(state.actorId, OPERATOR, (parks.find(park => park.id === state.branchId) ?? null)?.id ?? null),
       account: { id: state.actorId, phone: '', operatorId: OPERATOR, status: 'active', mustChangePassword: false },
       employee: { id: state.actorId, name: state.actorId === ACTOR ? 'ZZ TEST Administrator' : 'ZZ TEST Next administrator', nickname: null }, branch: parks.find(park => park.id === state.branchId) ?? null,
       isPlatformAdmin: options.platform ?? true, photoFileId: null, sessionLocked: false,
@@ -42,7 +54,7 @@ async function fixture(page: Page, options: { platform?: boolean; permissions?: 
     if (path === '/branches' && method === 'GET') return route.fulfill({ json: { branches: parks.filter(park => !park.archived) } });
     if (path === '/branches/oto-app' && method === 'GET') return route.fulfill({ json: { installed: true, branches: parks.map((park, index) => ({ branchId: park.id, branchName: park.name, status: 'SUCCESS', appBranchId: `zz-app-${index}`, appBranchName: park.name, error: null })), appOnly: [] } });
     if (path === '/me/session/branch' && method === 'PUT') { state.branchId = (body as { branchId: string }).branchId; return route.fulfill({ json: { ok: true } }); }
-    if (path === '/auth/sign-in' && method === 'POST') return route.fulfill({ json: { ok: true } });
+    if (path === '/auth/sign-in' && method === 'POST') { fixtureSessionActor = null; return route.fulfill({ json: { ok: true } }); }
     if (path.startsWith('/branches/') && method === 'PATCH' && !path.includes('/holidays/')) {
       const park = parks.find(row => path === `/branches/${row.id}`);
       if (park) { Object.assign(park, body); return route.fulfill({ json: { ok: true, otoApp: null } }); }
@@ -190,10 +202,13 @@ test('Switch here sends one keyed platform UUID and waits for the canonical sess
   await button.evaluate(element => { (element as HTMLButtonElement).click(); (element as HTMLButtonElement).click(); });
   await expect.poll(() => puts.length).toBe(1);
   expect(puts[0]).toEqual({ body: { branchId: OTHER_PARK }, key: expect.stringMatching(/^[0-9a-f-]{36}$/i) });
-  await expect(page.getByText('Active', { exact: true }).locator('..')).toContainText('ZZ TEST Central');
-  release();
+  try {
+    await expect(page.getByText('Active', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Switch here', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Registered branches', exact: true })).toHaveCount(0);
+  } finally { release(); }
   await expect(page.getByText('Active', { exact: true }).locator('..')).toContainText('ZZ TEST Other park');
-  expect(calls.filter(call => call.path === '/me')).toHaveLength(2);
+  expect(calls.filter(call => call.path === '/me')).toHaveLength(4);
   expect(puts).toHaveLength(1); expect(runtimeErrors).toEqual([]);
 });
 
@@ -272,13 +287,13 @@ test('the native branch editor and Holidays controls fit a 390px phone', async (
 });
 
 for (const failingRead of ['me', 'permissions'] as const) test(`an accepted branch switch removes stale authority while its canonical ${failingRead} read is pending or fails`, async ({ page }) => {
-  const { calls } = await fixture(page);
-  let accepted = false, waiting = false, release!: () => void;
+  const { calls, state } = await fixture(page);
+  let accepted = false, waiting = false, unavailable = true, release!: () => void;
   const held = new Promise<void>(resolve => { release = resolve; });
   await page.route('**/api/me/session/branch', route => { accepted = true; return route.fallback(); });
   const path = failingRead === 'me' ? '/api/me' : '/api/me/permissions';
   await page.route('**' + path, async route => {
-    if (!accepted) return route.fallback(); waiting = true; await held;
+    if (!accepted || !unavailable) return route.fallback(); waiting = true; await held;
     return route.fulfill({ status: 500, json: { error: { code: 'UNAVAILABLE', message: 'ZZ TEST canonical session read failed.' } } });
   });
   await page.goto('/organisation/branches');
@@ -288,8 +303,23 @@ for (const failingRead of ['me', 'permissions'] as const) test(`an accepted bran
     await expect(page.getByText('Active', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Registered branches', exact: true })).toHaveCount(0);
   } finally { release(); }
-  await expect(page.locator('input[type="password"]')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Confirm the current operator', exact: true })).toBeVisible();
+  await expect(page.getByText('ZZ TEST canonical session read failed.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
+  await expect(page.locator('input[type="password"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Active', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Switch here', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Registered branches', exact: true })).toHaveCount(0);
+  expect(state.branchId).toBe(OTHER_PARK);
+  expect(calls.filter(call => call.method === 'POST' && call.path.endsWith('/clone'))).toEqual([]);
+  const writesBeforeRetry = calls.filter(call => call.method === 'PUT' && call.path === '/me/session/branch');
+  expect(writesBeforeRetry).toHaveLength(1);
+  expect(writesBeforeRetry[0]).toMatchObject({ body: { branchId: OTHER_PARK }, key: expect.stringMatching(/^[0-9a-f-]{36}$/i) });
+  unavailable = false;
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(page.getByText('Active', { exact: true }).locator('..')).toContainText('ZZ TEST Other park');
+  expect(calls.filter(call => call.method === 'PUT' && call.path === '/me/session/branch')).toEqual(writesBeforeRetry);
   expect(calls.filter(call => call.method === 'POST' && call.path.endsWith('/clone'))).toEqual([]);
 });
 
@@ -337,11 +367,19 @@ test('a completed branch creation cannot discard a new form opened after the fir
 
 test('an explicit switch refusal keeps its native error, while an uncertain accepted write removes the old branch authority', async ({ page }) => {
   const { state } = await fixture(page); const keys: Array<string | undefined> = [];
+  const bodies: unknown[] = [];
+  let uncertain = false, canonicalUnavailable = true, canonicalFailures = 0;
+  await page.route('**/api/me', route => {
+    if (!uncertain || !canonicalUnavailable) return route.fallback();
+    canonicalFailures++;
+    return route.fulfill({ status: 503, json: { error: { code: 'UNAVAILABLE', message: 'ZZ TEST uncertain branch read unavailable.' } } });
+  });
   await page.route('**/api/me/session/branch', route => {
     keys.push(route.request().headers()['idempotency-key']);
+    bodies.push(route.request().postDataJSON());
     if (keys.length === 1) return route.fulfill({ status: 403, json: { error: { code: 'PERMISSION_DENIED', message: 'ZZ TEST no access at selected park' } } });
     // The server moved the original session before its connection failed.
-    state.branchId = OTHER_PARK; return route.abort('failed');
+    uncertain = true; state.branchId = OTHER_PARK; return route.abort('failed');
   });
   await page.goto('/organisation/branches');
   await page.getByRole('button', { name: 'Switch here', exact: true }).click();
@@ -350,6 +388,17 @@ test('an explicit switch refusal keeps its native error, while an uncertain acce
   await page.getByRole('button', { name: 'Switch here', exact: true }).click();
   await expect.poll(() => state.branchId).toBe(OTHER_PARK);
   await expect(page.getByText('Active', { exact: true })).toHaveCount(0);
-  await expect(page.locator('input[type="password"]')).toBeVisible();
-  expect(keys).toHaveLength(2); expect(new Set(keys).size).toBe(2);
+  await expect(page.getByRole('heading', { name: 'Registered branches', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Switch here', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Confirm the current operator', exact: true })).toBeVisible();
+  expect(canonicalFailures).toBe(1);
+  await expect(page.locator('input[type="password"]')).toHaveCount(0);
+  expect(keys).toHaveLength(3); expect(new Set(keys).size).toBe(2);
+  expect(keys[0]).not.toBe(keys[1]); expect(keys[1]).toBe(keys[2]);
+  expect(bodies).toEqual([{ branchId: OTHER_PARK }, { branchId: OTHER_PARK }, { branchId: OTHER_PARK }]);
+  canonicalUnavailable = false;
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(page.getByText('Active', { exact: true }).locator('..')).toContainText('ZZ TEST Other park');
+  await expect(page.getByText('ZZ TEST no access at selected park', { exact: true })).toHaveCount(0);
+  expect(keys).toHaveLength(3);
 });

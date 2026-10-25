@@ -13,6 +13,17 @@ async function fixture(page: Page, options: {
   directory?: 'sibling-only' | 'absent';
   clock?: { today: string; businessDayStart: string };
 } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const calls: Array<{ method: string; path: string; query: string; actor: string; app?: string }> = [];
   const runtimeErrors: string[] = [];
   const control = {
@@ -27,9 +38,10 @@ async function fixture(page: Page, options: {
     if (!url.pathname.startsWith('/api/')) return route.fallback();
     const path = url.pathname.slice(4).replace(/\/$/, ''), method = request.method(), actor = control.actorId;
     calls.push({ method, path, query: url.search, actor, ...(path === '/auth/handoff' ? { app: request.postDataJSON()?.app as string } : {}) });
-    if (path === '/me') return route.fulfill({ json: { account: { id: actor, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: actor, name: 'ZZ TEST Report reader', nickname: null }, branch: options.directory ? { id: PARK, name: parks[0]!.name, code: parks[0]!.code, timezone: parks[0]!.timezone } : parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
+    if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(actor, OPERATOR, (options.directory ? { id: PARK, name: parks[0]!.name, code: parks[0]!.code, timezone: parks[0]!.timezone } : parks[0])?.id ?? null), account: { id: actor, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: actor, name: 'ZZ TEST Report reader', nickname: null }, branch: options.directory ? { id: PARK, name: parks[0]!.name, code: parks[0]!.code, timezone: parks[0]!.timezone } : parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: [...access.filter(permission => (options.analytics !== false || permission !== 'analytics:read') && (options.metadata !== false || permission !== 'catalog:menu:read') && !(options.directory === 'absent' && permission === 'admin:branch:read')), ...(control.radar ? ['app:radar:access'] : [])].map(permission => ({ permission, scopeType: options.branchOnly || options.directory && ['analytics:read', 'admin:branch:read'].includes(permission) ? 'branch' : 'operator', scopeId: options.directory === 'sibling-only' && permission === 'admin:branch:read' ? OTHER : options.branchOnly || options.directory && permission === 'analytics:read' ? PARK : OPERATOR })) } });
-    if (path === '/auth/sign-in' && method === 'POST') return route.fulfill({ json: { accountId: actor, mustChangePassword: false } });
+    if (path === '/auth/sign-in' && method === 'POST') { fixtureSessionActor = null; return route.fulfill({ json: { accountId: actor, mustChangePassword: false } }); }
     if (path === '/auth/handoff' && method === 'POST') return route.fulfill({ status: 403, json: { error: { code: 'ZZ_TEST_REFUSED', message: 'ZZ TEST Radar refused.' } } });
     if (path === '/branches') return options.directory
       ? route.fulfill({ status: 403, json: { error: { code: 'PERMISSION_DENIED', message: 'ZZ TEST Branch directory is not readable at this seat.' } } })

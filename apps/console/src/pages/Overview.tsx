@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowUpRight, Clock3, Loader2, RefreshCw } from 'lucide-react';
@@ -21,10 +22,11 @@ const sourceNames: Record<AnalyticsSource, string> = { oto_pos: 'OTO POS', pisel
 type RequestOwner = { key: string; serial: number };
 
 export function Overview() {
-  const { state, me, has, locked, permissions } = useSession();
-  const allowed = state === 'signed-in' && !locked && !!me && me.account.status === 'active'
+  const working = useWorkingAuthority();
+  const { state, me, has, locked, permissions, refreshing } = useSession();
+  const allowed = state === 'signed-in' && !refreshing && !locked && !!me && me.account.status === 'active'
     && !me.account.mustChangePassword && has('console:overview:read');
-  const authority = JSON.stringify([state, locked, me?.account.id, me?.account.operatorId, me?.account.status,
+  const authority = JSON.stringify([working.epoch, me?.operatorContext, refreshing, state, locked, me?.account.id, me?.operatorContext.effectiveOperatorId, me?.account.status,
     me?.account.mustChangePassword, me?.branch?.id, permissions.map(row => [row.permission, row.scopeType, row.scopeId]).sort()]);
   const [selection, setSelection] = useState<{ epoch: number; branchId: string } | null>(null);
   const [directory, setDirectory] = useState<{ epoch: number; branches: OverviewBranch[] } | null>(null);
@@ -41,7 +43,7 @@ export function Overview() {
   if (owner.current.key !== requestKey) { owner.current.key = requestKey; owner.current.serial++; }
   owner.current.allowed = allowed;
   const viewOwner = { key: requestKey, serial: owner.current.serial };
-  const current = (held: RequestOwner) => owner.current.mounted && owner.current.allowed
+  const current = (held: RequestOwner) => working.isCurrent() && owner.current.mounted && owner.current.allowed
     && owner.current.key === held.key && owner.current.serial === held.serial;
 
   useEffect(() => {
@@ -50,21 +52,21 @@ export function Overview() {
   }, []);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!working.isCurrent() || !allowed) return;
     let active = true;
     const held = { key: requestKey, serial: ++owner.current.serial };
     setResult({ ...held, data: null, error: null });
-    void overviewApi.read(branchId).then((answer) => {
-      if (!active || !owner.current.mounted || !owner.current.allowed || owner.current.key !== held.key || owner.current.serial !== held.serial) return;
+    void working.run(() => overviewApi.read(branchId)).then((answer) => {
+      if (!working.isCurrent() || !active || !owner.current.mounted || !owner.current.allowed || owner.current.key !== held.key || owner.current.serial !== held.serial) return;
       setDirectory({ epoch, branches: answer.branches });
       setResult({ ...held, data: answer, error: null });
     }).catch((failure: unknown) => {
-      if (active && owner.current.mounted && owner.current.allowed && owner.current.key === held.key && owner.current.serial === held.serial) {
+      if (working.isCurrent() && active && owner.current.mounted && owner.current.allowed && owner.current.key === held.key && owner.current.serial === held.serial) {
         setResult({ ...held, data: null, error: failure instanceof Error ? failure.message : 'Could not read today’s figures.' });
       }
     });
     return () => { active = false; };
-  }, [allowed, branchId, epoch, requestKey]);
+  }, [allowed, branchId, epoch, requestKey, working.isCurrent, working.run]);
 
   if (!allowed) return <PermissionRequired permission="console:overview:read" />;
   const visible = result && current(result) ? result : null;
@@ -85,7 +87,7 @@ export function Overview() {
     if (!current(viewOwner) || !visible?.data || pendingSource.current && current(pendingSource.current)) return;
     const held = { ...viewOwner }; pendingSource.current = held;
     setSource({ ...held, opening: target, error: null });
-    void overviewApi.openSource(target, () => current(held) && pendingSource.current === held).catch((failure: unknown) => {
+    void working.run(() => overviewApi.openSource(target, () => current(held) && pendingSource.current === held)).catch((failure: unknown) => {
       if (current(held) && pendingSource.current === held) setSource({ ...held, opening: null,
         error: failure instanceof Error ? failure.message : 'Could not open the source screen.' });
     }).finally(() => {
@@ -102,6 +104,7 @@ export function Overview() {
     setCopy({ ...held, pending: true, message: null, error: null });
     try {
       if (!navigator.clipboard?.writeText) throw new Error();
+      if (!current(held)) return;
       await navigator.clipboard.writeText(text);
       if (current(held) && pendingCopy.current === held) setCopy({ ...held, pending: false, message: 'Status summary copied.', error: null });
     } catch {

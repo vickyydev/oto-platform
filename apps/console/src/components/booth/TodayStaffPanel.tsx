@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, Ticket, TriangleAlert, UserPlus, Users, X } from 'lucide-react';
 import { staffCandidates, type BranchStaffMember } from '@/api/fleet';
@@ -48,6 +49,7 @@ export function TodayStaffPanel({
   id?: string;
   className?: string;
 }) {
+  const working = useWorkingAuthority();
   const [view, setView] = useState<BoothDutyView | null>(null);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,16 +61,19 @@ export function TodayStaffPanel({
   const [rule, setRule] = useState<BoothDutyRule | null>(null);
 
   const load = useCallback(async () => {
+    if (!working.isCurrent()) return;
     try {
-      const next = await boothApi.duty(boothId);
+      const next = await working.run(() => boothApi.duty(boothId));
+      if (!working.isCurrent()) return;
       setView(next);
       setRule(next.rule);
       setError(null);
     } catch (err) {
+      if (!working.isCurrent()) return;
       if (isMissingRoute(err)) setMissing(true);
       else setError(err instanceof ApiError ? err.message : 'Today’s staff could not be read');
     }
-  }, [boothId]);
+  }, [boothId, working.isCurrent, working.run]);
 
   useEffect(() => {
     setView(null);
@@ -79,23 +84,29 @@ export function TodayStaffPanel({
   useEffect(() => {
     if (readOnly) return;
     let cancelled = false;
-    void staffCandidates(branchId)
-      .then((r) => !cancelled && setCandidates(r.staff))
-      .catch(() => !cancelled && setCandidates([]));
+    void working.run(() => staffCandidates(branchId))
+      .then((r) => { if (!working.isCurrent()) return; return !cancelled && setCandidates(r.staff); })
+      .catch(() => { if (!working.isCurrent()) return; return !cancelled && setCandidates([]); });
     return () => {
       cancelled = true;
     };
-  }, [branchId, readOnly]);
+  }, [branchId, readOnly, working.run, working.isCurrent]);
 
   const act = async (fn: () => Promise<unknown>) => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     try {
-      await fn();
+      await working.run(fn);
+      if (!working.isCurrent()) return;
       await load();
+      if (!working.isCurrent()) return;
     } catch (err) {
+      if (!working.isCurrent()) return;
       setError(err instanceof ApiError ? err.message : 'That could not be saved');
     } finally {
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 
@@ -105,7 +116,7 @@ export function TodayStaffPanel({
       variant="outline"
       className="rounded-full px-3.5"
       disabled={busy}
-      onClick={() => void act(() => boothApi.syncDuty(boothId))}
+      onClick={() => void act(() => working.run(() => boothApi.syncDuty(boothId)))}
     >
       <RefreshCw className={busy ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
       Sync now
@@ -196,7 +207,7 @@ export function TodayStaffPanel({
                       type="button"
                       aria-label={`Take ${person.displayName} off today’s roster`}
                       disabled={busy}
-                      onClick={() => void act(() => boothApi.removeDuty(boothId, person.id))}
+                      onClick={() => void act(() => working.run(() => boothApi.removeDuty(boothId, person.id)))}
                       className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground disabled:opacity-50"
                     >
                       <X className="w-4 h-4" />
@@ -265,7 +276,7 @@ export function TodayStaffPanel({
                   onClick={() => {
                     const accountId = adding;
                     setAdding('');
-                    void act(() => boothApi.addDuty(boothId, { accountId }));
+                    void act(() => working.run(() => boothApi.addDuty(boothId, { accountId })));
                   }}
                 >
                   <UserPlus className="w-4 h-4" />
@@ -284,7 +295,7 @@ export function TodayStaffPanel({
                   onClick={() => {
                     const displayName = name.trim();
                     setName('');
-                    void act(() => boothApi.addDuty(boothId, { displayName }));
+                    void act(() => working.run(() => boothApi.addDuty(boothId, { displayName })));
                   }}
                 >
                   <Users className="w-4 h-4" />
@@ -330,7 +341,7 @@ export function TodayStaffPanel({
                       disabled={
                         busy || (rule.groupText === view.rule.groupText && rule.dutyText === view.rule.dutyText)
                       }
-                      onClick={() => void act(() => boothApi.saveDutyRule(boothId, rule))}
+                      onClick={() => void act(() => working.run(() => boothApi.saveDutyRule(boothId, rule)))}
                     >
                       Save rule
                     </Button>

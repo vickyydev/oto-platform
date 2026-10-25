@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { ApiError } from '@/api/client';
@@ -16,6 +17,7 @@ export function DisplayPairPanel({
   onClose: () => void;
   onPaired: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [stationId, setStationId] = useState(stations[0]?.id ?? '');
   const [name, setName] = useState('');
   const [pairingCode, setPairingCode] = useState('');
@@ -29,6 +31,7 @@ export function DisplayPairPanel({
     /^[0-9]{6}$/.test(pairingCode);
 
   const submit = async () => {
+    if (!working.isCurrent()) return;
     if (inFlight.current || !valid) return;
     inFlight.current = true;
     setBusy(true);
@@ -36,13 +39,15 @@ export function DisplayPairPanel({
     const code = pairingCode;
     setPairingCode('');
     try {
-      const result = await fleetApi.claimDisplay(stationId, {
+      const result = await working.run(() => fleetApi.claimDisplay(stationId, {
         pairingCode: code,
         name: name.trim(),
-      });
+      }));
+      if (!working.isCurrent()) return;
       setPaired({ display: result.device.name, station: result.station.name });
       onPaired();
     } catch (err) {
+      if (!working.isCurrent()) return;
       // Keep server bodies and the submitted code out of the page and evidence.
       setFailed(
         err instanceof ApiError && err.code === 'DISPLAY_PAIRING_INVALID'
@@ -57,7 +62,9 @@ export function DisplayPairPanel({
       );
     } finally {
       inFlight.current = false;
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 

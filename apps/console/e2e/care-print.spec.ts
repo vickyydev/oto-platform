@@ -11,6 +11,17 @@ const hold = () => { let release!: () => void; const promise = new Promise<void>
 const config = (weekday = 12345) => ({ policy: { bands: [{ id: 'zz-band', label: 'ZZ TEST All ages', minAge: 0, maxAge: null, requirement: 'none' }], siblingWaiver: { enabled: false, guardianMinAge: 12, waivableRequirement: 'drop_off', staffOnly: true }, confirmations: [{ id: 'zz-consent', text: 'ZZ TEST Consent', required: true, order: 0 }] }, pricing: { oneTimeFee: { weekday, weekend: 16789 }, nannyHourly: { weekday: 23456, weekend: 27890 }, extraHour: { weekday: 34567, weekend: 38901 }, fullDayHours: 8, nannyRatioSoftMax: 4, prepaidFoodUnused: 'refund' }, photoRetentionDays: 30 });
 type Body = Record<string, unknown>;
 async function fixture(page: Page, options: { branchOnly?: boolean; command?: boolean; stationRead?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const calls: Array<{ method: string; path: string; query: string; body: Body | undefined; key: string | undefined }> = [];
   const control = { refused: new Set<string>(), pending: new Map<string, Promise<void>>(), uncertainOnce: new Set<string>(), credentialForFirst: false };
   const parks = [PARK, OTHER].map((id, i) => ({ id, name: i ? 'ZZ TEST Other care park' : 'ZZ TEST Care park', code: 'zz-care-' + i, timezone: 'Asia/Bangkok', country: 'TH', archived: false, address: null, openingHours: null, businessDayStart: '05:00:00' }));
@@ -32,7 +43,8 @@ async function fixture(page: Page, options: { branchOnly?: boolean; command?: bo
     await control.pending.get(method + ' ' + path);
     if (control.refused.has(method + ' ' + path)) return route.fulfill({ status: 409, json: { error: { code: 'ZZ_TEST_REFUSED', message: 'ZZ TEST Keep this care draft.' } } });
     if (control.uncertainOnce.delete(method + ' ' + path)) return route.abort('failed');
-    if (path === '/me') return route.fulfill({ json: { account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Care administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
+    if (path === '/me') return route.fulfill({ json: {
+      operatorContext: fixtureOperatorContext(ACTOR, OPERATOR, (parks[0])?.id ?? null), account: { id: ACTOR, operatorId: OPERATOR, phone: '', status: 'active', mustChangePassword: false }, employee: { id: ACTOR, name: 'ZZ TEST Care administrator', nickname: null }, branch: parks[0], isPlatformAdmin: false, photoFileId: null, sessionLocked: false, preferences: { theme: 'light', language: 'en' } } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: access.filter(permission => (options.command !== false || permission !== 'admin:box:command') && (options.stationRead !== false || permission !== 'admin:station:read')).map(permission => ({ permission, scopeType: options.branchOnly ? 'branch' : 'operator', scopeId: options.branchOnly ? PARK : OPERATOR })) } });
     if (path === '/branches') return route.fulfill({ json: { branches: parks } });
     const stationList = /^\/branches\/([^/]+)\/stations$/.exec(path);

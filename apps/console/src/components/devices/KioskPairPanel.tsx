@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { normaliseKioskPairingCode } from '@oto/shared';
@@ -24,6 +25,7 @@ export function KioskPairPanel({
   onClose: () => void;
   onPaired: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [stationId, setStationId] = useState(stations[0]?.id ?? '');
   const [name, setName] = useState('');
   const [digits, setDigits] = useState('');
@@ -35,16 +37,19 @@ export function KioskPairPanel({
   const valid = stations.some((station) => station.id === stationId) && name.trim().length > 0 && code !== null;
 
   const submit = async () => {
+    if (!working.isCurrent()) return;
     if (inFlight.current || !valid || !code) return;
     inFlight.current = true;
     setBusy(true);
     setFailed(null);
     setDigits('');
     try {
-      const result = await fleetApi.claimKiosk(stationId, { pairingCode: code, name: name.trim() });
+      const result = await working.run(() => fleetApi.claimKiosk(stationId, { pairingCode: code, name: name.trim() }));
+      if (!working.isCurrent()) return;
       setPaired({ kiosk: result.device.name, station: result.station.name });
       onPaired();
     } catch (err) {
+      if (!working.isCurrent()) return;
       // Server bodies and the submitted code stay out of the page, as on the display's panel.
       setFailed(
         err instanceof ApiError && err.code === 'KIOSK_PAIRING_INVALID'
@@ -61,7 +66,9 @@ export function KioskPairPanel({
       );
     } finally {
       inFlight.current = false;
-      setBusy(false);
+      if (working.isCurrent()) {
+        setBusy(false);
+      }
     }
   };
 

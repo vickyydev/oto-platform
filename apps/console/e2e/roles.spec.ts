@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { PERMISSION_WORDS } from '@oto/shared/permissions';
+import { PERMISSIONS, PERMISSION_WORDS } from '@oto/shared/permissions';
 import { pressLandsOn } from './console';
 
 const SOM = '01900000-0000-7000-8000-000000000010';
@@ -25,6 +25,17 @@ const preview = (query: URLSearchParams) => ({
 });
 
 async function fixture(page: Page, options: { read?: boolean; assign?: boolean; platform?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const writes: Array<{ method: string; path: string; body: unknown; key: string | undefined }> = [];
   const previews: URLSearchParams[] = [];
   let granted = false;
@@ -33,8 +44,9 @@ async function fixture(page: Page, options: { read?: boolean; assign?: boolean; 
     const url = new URL(request.url());
     const path = url.pathname.replace(/^\/api/, '');
     if (path === '/me') return route.fulfill({ json: {
-      account: { id: 'caller', phone: '', status: 'active', mustChangePassword: false, operatorId: OPERATOR },
-      employee: { id: 'caller', name: 'ZZ TEST Admin', nickname: null }, branch: null,
+      operatorContext: fixtureOperatorContext('01964000-0000-7000-8000-00000000f111', OPERATOR, null),
+      account: { id: '01964000-0000-7000-8000-00000000f111', phone: '', status: 'active', mustChangePassword: false, operatorId: OPERATOR },
+      employee: { id: '01964000-0000-7000-8000-00000000f111', name: 'ZZ TEST Admin', nickname: null }, branch: null,
       isPlatformAdmin: options.platform ?? false, photoFileId: null, sessionLocked: false,
     } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: [
@@ -116,7 +128,8 @@ test('the full permission catalogue and long park scopes remain usable on a phon
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/people/roles');
   const picker = page.getByRole('combobox', { name: 'Permission', exact: true });
-  await expect(picker.getByRole('option')).toHaveCount(138);
+  await expect(picker.getByRole('option')).toHaveCount(PERMISSIONS.length);
+  await expect(picker.locator('option[value="platform:operator:switch"]')).toHaveText(PERMISSION_WORDS['platform:operator:switch']);
   await picker.selectOption(longest.permission);
   await expect(picker).toHaveValue(longest.permission);
   await expect(page.getByRole('list', { name: 'Permission holders', exact: true })).toContainText(scopeName);

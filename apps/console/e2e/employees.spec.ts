@@ -20,6 +20,17 @@ const rows = () => [employee(), employee({
 })];
 
 async function fixture(page: Page, options: { read?: boolean; sourceAccess?: boolean } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const reads: string[] = [];
   const writes: Array<{ method: string; path: string; body: unknown; key: string | undefined }> = [];
   await page.route('**/api/**', (route) => {
@@ -30,8 +41,9 @@ async function fixture(page: Page, options: { read?: boolean; sourceAccess?: boo
       method: request.method(), path, body: request.postDataJSON(), key: request.headers()['idempotency-key'],
     });
     if (path === '/me') return route.fulfill({ json: {
-      account: { id: 'caller', phone: '', status: 'active', mustChangePassword: false, operatorId: 'operator' },
-      employee: { id: 'caller', name: 'ZZ TEST Admin', nickname: null }, branch: null,
+      operatorContext: fixtureOperatorContext('01964000-0000-7000-8000-00000000f091', '01964000-0000-7000-8000-00000000f092', null),
+      account: { id: '01964000-0000-7000-8000-00000000f091', phone: '', status: 'active', mustChangePassword: false, operatorId: '01964000-0000-7000-8000-00000000f092' },
+      employee: { id: '01964000-0000-7000-8000-00000000f091', name: 'ZZ TEST Admin', nickname: null }, branch: null,
       isPlatformAdmin: false, photoFileId: null, sessionLocked: false,
     } });
     if (path === '/me/permissions') return route.fulfill({ json: { permissions: [

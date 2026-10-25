@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { voucherLedgerApi, type BoothSpinRow, type BoothSpins } from '@/api/vouchers';
@@ -35,6 +36,7 @@ export function BoothSpinsPanel({
   /** Today's spins as read, and whether every one of them is on screen. */
   onToday?: (spins: BoothSpins, whole: boolean) => void;
 }) {
+  const working = useWorkingAuthority();
   const [date, setDate] = useState('');
   const [offset, setOffset] = useState(0);
   const [refresh, setRefresh] = useState(0);
@@ -51,9 +53,10 @@ export function BoothSpinsPanel({
     let active = true;
     setData(null);
     setError(null);
-    void voucherLedgerApi
-      .spins(id, date, offset)
+    void working.run(() => voucherLedgerApi
+      .spins(id, date, offset))
       .then((answer) => {
+        if (!working.isCurrent()) return;
         if (!active) return;
         setData(answer);
         if (date === '') {
@@ -61,12 +64,13 @@ export function BoothSpinsPanel({
         }
       })
       .catch((e: unknown) => {
+        if (!working.isCurrent()) return;
         if (active) setError(e instanceof Error ? e.message : 'Could not read spins.');
       });
     return () => {
       active = false;
     };
-  }, [id, date, offset, refresh]);
+  }, [id, date, offset, refresh, working.run, working.isCurrent]);
 
   return (
     <CardShell

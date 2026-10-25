@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowUpRight, CalendarCheck, ClipboardList, Landmark, Loader2, RefreshCw, Users, type LucideIcon } from 'lucide-react';
 import { staffApi, type StaffSource, type StaffSummary } from '@/api/staff';
@@ -14,10 +15,11 @@ type ReadResult = RequestOwner & { data: StaffSummary | null; error: string | nu
 type SourceResult = RequestOwner & { opening: StaffSource | null; error: string | null };
 
 export function Staff() {
-  const { state, me, locked, has, permissions } = useSession();
-  const allowed = state === 'signed-in' && !locked && me?.account.status === 'active'
+  const working = useWorkingAuthority();
+  const { state, me, locked, has, permissions, refreshing } = useSession();
+  const allowed = state === 'signed-in' && !refreshing && !locked && me?.account.status === 'active'
     && !me.account.mustChangePassword && has('app:oto_app:access') && has('admin:account:read');
-  const authority = JSON.stringify([state, locked, me?.account.id, me?.account.operatorId, me?.account.status,
+  const authority = JSON.stringify([working.epoch, me?.operatorContext, refreshing, state, locked, me?.account.id, me?.operatorContext.effectiveOperatorId, me?.account.status,
     me?.account.mustChangePassword, me?.branch?.id,
     permissions.map(row => [row.permission, row.scopeType, row.scopeId]).sort()]);
   const [selection, setSelection] = useState<{ authorityEpoch: number; branchId: string } | null>(null);
@@ -41,7 +43,7 @@ export function Staff() {
   }
   owner.current.allowed = allowed;
   const viewOwner = { key: requestKey, serial: owner.current.serial };
-  const current = (held: RequestOwner) => owner.current.mounted && owner.current.allowed
+  const current = (held: RequestOwner) => working.isCurrent() && owner.current.mounted && owner.current.allowed
     && owner.current.key === held.key && owner.current.serial === held.serial;
 
   useEffect(() => {
@@ -51,22 +53,22 @@ export function Staff() {
   }, []);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!working.isCurrent() || !allowed) return;
     let active = true;
     const held = { key: requestKey, serial: ++owner.current.serial };
     setResult({ ...held, data: null, error: null });
-    void staffApi.read(branchId).then(answer => {
-      if (!active || !owner.current.mounted || !owner.current.allowed
+    void working.run(() => staffApi.read(branchId)).then(answer => {
+      if (!working.isCurrent() || !active || !owner.current.mounted || !owner.current.allowed
         || owner.current.key !== held.key || owner.current.serial !== held.serial) return;
       setResult({ ...held, data: answer, error: null });
       setDirectory({ authorityEpoch, branches: answer.branches, selected: answer.selectedBranchId });
     }).catch((failure: unknown) => {
-      if (active && owner.current.mounted && owner.current.allowed && owner.current.key === held.key && owner.current.serial === held.serial) {
+      if (working.isCurrent() && active && owner.current.mounted && owner.current.allowed && owner.current.key === held.key && owner.current.serial === held.serial) {
         setResult({ ...held, data: null, error: failure instanceof Error ? failure.message : 'Could not read the staff summary.' });
       }
     });
     return () => { active = false; };
-  }, [allowed, authorityEpoch, branchId, requestKey]);
+  }, [allowed, authorityEpoch, branchId, requestKey, working.isCurrent, working.run]);
 
   const visible = result && current(result) ? result : null;
   const options = directory?.authorityEpoch === authorityEpoch && allowed ? directory : null;
@@ -91,7 +93,7 @@ export function Staff() {
     const held = { ...viewOwner };
     pendingSource.current = held;
     setSource({ ...held, opening: target, error: null });
-    void staffApi.sourceDestination(target).then(destination => {
+    void working.run(() => staffApi.sourceDestination(target)).then(destination => {
       if (current(held) && pendingSource.current === held) window.location.assign(destination);
     }).catch((failure: unknown) => {
       if (current(held) && pendingSource.current === held) {

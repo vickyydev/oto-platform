@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useMemo, useState } from 'react';
 import { KeyRound, UserPlus } from 'lucide-react';
 import {
@@ -65,6 +66,7 @@ export function BoothStaffPanel({
   id?: string;
   className?: string;
 }) {
+  const working = useWorkingAuthority();
   const [candidates, setCandidates] = useState<BranchStaffMember[] | null>(null);
   const [candidatesFailed, setCandidatesFailed] = useState<string | null>(null);
   const [adding, setAdding] = useState('');
@@ -83,11 +85,13 @@ export function BoothStaffPanel({
     let cancelled = false;
     setCandidates(null);
     setCandidatesFailed(null);
-    void staffCandidates(branchId)
+    void working.run(() => staffCandidates(branchId))
       .then((result) => {
+        if (!working.isCurrent()) return;
         if (!cancelled) setCandidates(result.staff);
       })
       .catch((reason: unknown) => {
+        if (!working.isCurrent()) return;
         if (cancelled) return;
         setCandidates([]);
         setCandidatesFailed(
@@ -97,7 +101,7 @@ export function BoothStaffPanel({
     return () => {
       cancelled = true;
     };
-  }, [branchId]);
+  }, [branchId, working.run, working.isCurrent]);
 
   const byId = useMemo(
     () => new Map((candidates ?? []).map((c) => [c.accountId, c])),
@@ -122,22 +126,46 @@ export function BoothStaffPanel({
     setExpires('');
   };
 
+  const copyPin = async (pin: string) => {
+    if (!working.isCurrent()) return;
+    try {
+      await working.run(() => navigator.clipboard.writeText(pin));
+      if (!working.isCurrent()) return;
+      setNotice('PIN copied.');
+    } catch {
+      if (working.isCurrent()) setNotice('Copy did not work. Write the PIN down.');
+    }
+  };
+  const invokeStaffChange = async (action: () => void) => {
+    if (!working.isCurrent()) return;
+    try {
+      await action();
+    } catch {
+      if (working.isCurrent()) setNotice('The change could not be confirmed. Refresh the staff list before trying again.');
+    }
+  };
   /**
    * Issue a PIN: one press, no digits typed (SCRUM-428). The platform draws
    * five digits nobody else on this person's booths holds and answers them
    * once; issuing again replaces them.
    */
   const issuePin = async (accountId: string, expiresAt: string | null) => {
+    if (!working.isCurrent()) return;
     setNotice(null);
     setConfirm(null);
     setGenerated(null);
-    const result = await onSetPin(accountId, { expiresAt });
-    closePin();
-    if (result) {
-      if (result.pin) setGenerated({ accountId, pin: result.pin });
-      setNotice(
-        `PIN issued for ${nameOf(accountId)}. It reaches the booth at the box's next pull — within about a minute when the box is online.`,
-      );
+    try {
+      const result = await onSetPin(accountId, { expiresAt });
+      if (!working.isCurrent()) return;
+      closePin();
+      if (result) {
+        if (result.pin) setGenerated({ accountId, pin: result.pin });
+        setNotice(
+          `PIN issued for ${nameOf(accountId)}. It reaches the booth at the box's next pull — within about a minute when the box is online.`,
+        );
+      }
+    } catch {
+      if (working.isCurrent()) setNotice('PIN issue could not be confirmed. Refresh the staff list before trying again.');
     }
   };
 
@@ -304,10 +332,11 @@ export function BoothStaffPanel({
                       className="rounded-full px-3.5"
                       disabled={busy}
                       onClick={() => {
+                        if (!working.isCurrent()) return;
                         setConfirm(null);
                         setNotice(null);
-                        if (confirm.what === 'remove') onRemove(member.accountId);
-                        else onClearPin(member.accountId);
+                        if (confirm.what === 'remove') void invokeStaffChange(() => onRemove(member.accountId));
+                        else void invokeStaffChange(() => onClearPin(member.accountId));
                       }}
                     >
                       {confirm.what === 'remove' ? 'Remove' : 'Remove PIN'}
@@ -378,10 +407,7 @@ export function BoothStaffPanel({
                       size="sm"
                       className="rounded-full px-3.5"
                       onClick={() =>
-                        void navigator.clipboard
-                          .writeText(generated.pin)
-                          .then(() => setNotice('PIN copied.'))
-                          .catch(() => setNotice('Copy did not work. Write the PIN down.'))
+                        void copyPin(generated.pin)
                       }
                     >
                       Copy PIN
@@ -436,8 +462,9 @@ export function BoothStaffPanel({
               className="rounded-full px-4 font-bold"
               disabled={busy || adding === '' || onList.has(adding)}
               onClick={() => {
+                if (!working.isCurrent()) return;
                 setNotice(null);
-                onAdd(adding);
+                void invokeStaffChange(() => onAdd(adding));
                 setAdding('');
               }}
             >

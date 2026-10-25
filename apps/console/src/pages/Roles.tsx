@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useMemo, useState } from 'react';
 import {
   AccountPermissionsDialog, AdminNotifications, createRolesApi,
@@ -5,7 +6,6 @@ import {
 } from '@oto/admin-screens';
 import { Search, ShieldCheck, Users } from 'lucide-react';
 import { Link } from 'wouter';
-import { api } from '@/api/client';
 import { directoryApi } from '@/api/platform';
 import { useSession } from '@/auth/SessionContext';
 import { ErrorNote, Loading } from '@/components/Panel';
@@ -15,9 +15,9 @@ import { SelectChip, Tag } from '@/components/redesign/chips';
 import { CardShell, StripedList } from '@/components/redesign/layout';
 import { EmptyNote } from '@/components/redesign/StatTile';
 
-const rolesApi = createRolesApi(api);
-
 export function Roles() {
+  const working = useWorkingAuthority();
+  const rolesApi = useMemo(() => createRolesApi(working.api), [working.api]);
   const { me, has } = useSession();
   const [catalogue, setCatalogue] = useState<RoleCatalogue | null>(null);
   const [catalogueError, setCatalogueError] = useState<string | null>(null);
@@ -34,32 +34,32 @@ export function Roles() {
     let active = true;
     setCatalogue(null);
     setCatalogueError(null);
-    void rolesApi.catalogue().then((answer) => {
-      if (active) { setCatalogue(answer); setPermission((held) => held || answer.permissions[0]?.permission || ''); }
+    void working.run(() => rolesApi.catalogue()).then((answer) => {
+      if (working.isCurrent() && active) { setCatalogue(answer); setPermission((held) => held || answer.permissions[0]?.permission || ''); }
     }).catch((failure: unknown) => {
-      if (active) setCatalogueError(message(failure, 'Could not read the role catalogue.'));
+      if (working.isCurrent() && active) setCatalogueError(message(failure, 'Could not read the role catalogue.'));
     });
     return () => { active = false; };
-  }, [catalogueRefresh]);
+  }, [catalogueRefresh, working.run, working.isCurrent, rolesApi]);
 
   useEffect(() => {
     let active = true;
     setHolders(null);
     setHoldersError(null);
     if (!permission) return;
-    void rolesApi.holders(permission).then((answer) => { if (active) setHolders(answer); })
-      .catch((failure: unknown) => { if (active) setHoldersError(message(failure, 'Could not read permission holders.')); });
+    void working.run(() => rolesApi.holders(permission)).then((answer) => { if (working.isCurrent() && active) setHolders(answer); })
+      .catch((failure: unknown) => { if (working.isCurrent() && active) setHoldersError(message(failure, 'Could not read permission holders.')); });
     return () => { active = false; };
-  }, [permission, holdersRefresh]);
+  }, [permission, holdersRefresh, working.run, working.isCurrent, rolesApi]);
 
   useEffect(() => {
     let active = true;
-    void directoryApi.branches().then((answer) => {
-      if (active) setBranches(answer.branches.filter((branch) => !branch.archived)
+    void working.run(() => directoryApi.branches()).then((answer) => {
+      if (working.isCurrent() && active) setBranches(answer.branches.filter((branch) => !branch.archived)
         .map((branch) => ({ id: branch.id, apiId: branch.id, name: branch.name })));
-    }).catch((failure: unknown) => { if (active) setBranchError(message(failure, 'Could not read the parks.')); });
+    }).catch((failure: unknown) => { if (working.isCurrent() && active) setBranchError(message(failure, 'Could not read the parks.')); });
     return () => { active = false; };
-  }, []);
+  }, [working.run, working.isCurrent]);
 
   if (!me) return null;
   return <>
@@ -69,16 +69,16 @@ export function Roles() {
     <CardShell title="Who holds a permission?" icon={Users}
       note="people and scopes within your reach"
       actions={catalogue && <SelectChip label="Permission" value={permission}
-        onChange={(value) => { setHolders(null); setHoldersError(null); setPermission(value); }}
+        onChange={(value) => { if (value === permission) return; setHolders(null); setHoldersError(null); setPermission(value); }}
         options={catalogue.permissions.map((entry) => ({ value: entry.permission, label: entry.words }))} />}>
       <p className="text-sm text-muted-foreground">Pick a permission to see the accounts and role assignments that give it to them.</p>
       {holdersError ? <ErrorNote message={holdersError} onRetry={() => setHoldersRefresh((held) => held + 1)} />
         : permission && !holders ? <Loading what="permission holders" />
-          : holders ? <PermissionHoldersContent result={holders} onPermissions={setPermissionsFor} />
+          : holders ? <PermissionHoldersContent result={holders} onPermissions={account => { if (working.isCurrent()) setPermissionsFor(account); }} />
             : <p className="text-sm text-muted-foreground">The permission picker is available after the role catalogue is read.</p>}
     </CardShell>
-    <AccountPermissionsDialog account={permissionsFor} api={api} branches={branches}
-      me={{ operatorId: me.account.operatorId, isPlatformAdmin: me.isPlatformAdmin }}
+    <AccountPermissionsDialog account={permissionsFor} api={working.api} branches={branches}
+      me={{ operatorId: me.operatorContext.effectiveOperatorId, isPlatformAdmin: me.isPlatformAdmin }}
       canAssign={has('admin:role:assign')} onClose={() => setPermissionsFor(null)}
       onSaved={() => setHoldersRefresh((held) => held + 1)} />
     <AdminNotifications />

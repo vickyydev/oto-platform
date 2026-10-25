@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useRef, useState } from 'react';
 import type { Permission } from '@oto/shared/permissions';
 import { openInboxSettings, type InboxSetting } from '@/api/inbox-routing';
@@ -15,39 +16,41 @@ const SETTINGS: { kind: InboxSetting; title: string; description: string; permis
 ];
 
 export function ChannelsLanding() {
+  const working = useWorkingAuthority();
   const { me, permissions, has, locked } = useSession();
-  const owner = JSON.stringify([me?.account.id, me?.account.operatorId, me?.branch?.id, locked,
+  const owner = JSON.stringify([working.epoch, me?.operatorContext, me?.account.id, me?.operatorContext.effectiveOperatorId, me?.branch?.id, locked,
     permissions.map(row => [row.permission, row.scopeType, row.scopeId]).sort()]);
   const authority = useRef(owner);
   authority.current = owner;
   const area = findArea('channels')!;
   if (!me || locked || !canSeeArea(area, has, me.isPlatformAdmin)) return <AreaLanding id="channels" />;
   const operatorKb = permissions.some(grant => grant.permission === 'inbox:kb:manage' && grant.scopeType === 'operator'
-    && (grant.scopeId === null || grant.scopeId === me.account.operatorId));
+    && (grant.scopeId === null || grant.scopeId === me.operatorContext.effectiveOperatorId));
   const settings = has('app:inbox:access') ? SETTINGS.filter(setting => has(setting.permission)
     && (setting.kind !== 'examples' || operatorKb)) : [];
   return <>
     <AreaLanding id="channels" />
     {settings.length ? <div className="grid min-w-0 gap-4 @xl:grid-cols-2">
       {settings.map(setting => <InboxSettingTile key={`${owner}:${setting.kind}`} setting={setting}
-        isCurrent={() => authority.current === owner} />)}
+        isCurrent={() => working.isCurrent() && authority.current === owner} />)}
     </div> : <Panel title="Inbox settings"><p className="text-sm text-muted-foreground">Inbox settings are not on your access.</p></Panel>}
   </>;
 }
 
 function InboxSettingTile({ setting, isCurrent }: { setting: typeof SETTINGS[number]; isCurrent: () => boolean }) {
+  const working = useWorkingAuthority();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(false);
   const inFlight = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const current = () => mounted.current && isCurrent();
+  const current = () => working.isCurrent() && mounted.current && isCurrent();
   return <Panel title={setting.title} description={setting.description}>
     <Button disabled={pending} onClick={() => {
       if (inFlight.current || !current()) return;
       inFlight.current = true;
       setPending(true); setError(null);
-      void openInboxSettings(setting.kind, current).catch((failure: unknown) => {
+      void working.run(() => openInboxSettings(setting.kind, current)).catch((failure: unknown) => {
         if (!current()) return;
         inFlight.current = false; setPending(false);
         setError(failure instanceof Error ? failure.message : 'Inbox settings could not be opened.');

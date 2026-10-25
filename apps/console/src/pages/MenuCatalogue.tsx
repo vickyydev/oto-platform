@@ -1,3 +1,5 @@
+import { createMenuApi } from '@oto/admin-screens/lifted/api/menu';
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Permission } from '@oto/shared/permissions';
 import { AdminNotifications, adminToast } from '@oto/admin-screens';
@@ -28,6 +30,7 @@ interface Snapshot extends MappedMenu {
 
 /** The native catalogue controls receive only this account's current park snapshot. */
 export function MenuCatalogue({ page }: { page: Page }) {
+  const working = useWorkingAuthority();
   const { me, permissions, has } = useSession();
   const allowed = has('catalog:menu:read');
   const [parks, setParks] = useState<Park[] | null>(null);
@@ -37,7 +40,7 @@ export function MenuCatalogue({ page }: { page: Page }) {
   const [parksError, setParksError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
   const epoch = useRef(0), mounted = useRef(false);
-  const owner = me?.account.id, operatorId = me?.account.operatorId;
+  const owner = me?.account.id, operatorId = me?.operatorContext.effectiveOperatorId;
   const authority = permissions.map(grant => [grant.permission, grant.scopeType, grant.scopeId].join(':')).sort().join('|');
   const active = useRef({ parkId, page, owner, authority });
   active.current = { parkId, page, owner, authority };
@@ -51,36 +54,36 @@ export function MenuCatalogue({ page }: { page: Page }) {
       (branchId !== undefined && grant.scopeType === 'branch' && grant.scopeId === branchId)
     )), [permissions, operatorId]);
   useEffect(() => {
-    if (!allowed) return;
+    if (!working.isCurrent() || !allowed) return;
     let current = true;
     setParksError(null);
     const own = me?.branch;
     const read = has('admin:branch:read')
-      ? organisationApi.branchesApi.list().then(answer => answer.branches.filter(row => !row.archived))
+      ? working.run(() => organisationApi.branchesApi.list()).then(answer => answer.branches.filter(row => !row.archived))
       : Promise.resolve(own ? [own] : []);
     void read.then(rows => {
-      if (!current) return;
+      if (!working.isCurrent() || !current) return;
       const reachable = rows.filter(row => can('catalog:menu:read', row.id));
       setParks(reachable);
       setParkId(previous => reachable.some(row => row.id === previous) ? previous
         : (reachable.find(row => row.id === own?.id)?.id ?? reachable[0]?.id ?? ''));
     }).catch((failure: unknown) => {
-      if (current) setParksError(failure instanceof Error ? failure.message : 'The parks could not be read.');
+      if (working.isCurrent() && current) setParksError(failure instanceof Error ? failure.message : 'The parks could not be read.');
     });
     return () => { current = false; };
-  }, [allowed, owner, me?.branch, has, can, refresh]);
+  }, [allowed, owner, me?.branch, has, can, refresh, working.isCurrent, working.run]);
   const reload = useCallback(async (saved = false) => {
-    if (!allowed || !parkId) return;
+    if (!working.isCurrent() || !allowed || !parkId) return;
     const request = ++epoch.current;
-    const current = () => mounted.current && request === epoch.current && active.current.parkId === parkId &&
+    const current = () => working.isCurrent() && mounted.current && request === epoch.current && active.current.parkId === parkId &&
       active.current.page === page && active.current.owner === owner && active.current.authority === authority;
     setError(null);
     try {
-      const menu = createConsoleMenu();
+      const menu = createMenuApi(working.api);
       const [answer, discountAnswer, stock] = await Promise.all([
         menu.menuApi.load(parkId),
         page === 'categories' ? menu.menuApi.discounts() : Promise.resolve(null),
-        page === 'merch' && can('pos:stock:read', parkId) ? readMenuStock(parkId) : Promise.resolve(null),
+        page === 'merch' && can('pos:stock:read', parkId) ? working.run(() => readMenuStock(parkId)) : Promise.resolve(null),
       ]);
       const mapped = menu.mapMenu(answer);
       const stocks = new Map(stock?.products.map(row => [row.productId, row]) ?? []);
@@ -105,7 +108,7 @@ export function MenuCatalogue({ page }: { page: Page }) {
       }
       throw failure;
     }
-  }, [allowed, parkId, page, owner, authority, can]);
+  }, [allowed, parkId, page, owner, authority, can, working.isCurrent, working.api, working.run]);
   useEffect(() => {
     setSnapshot(null);
     void reload().catch(() => {});
@@ -114,7 +117,7 @@ export function MenuCatalogue({ page }: { page: Page }) {
   const menuHelpers = useMemo(() => createMenuHelpers({ catalog: {
     getMenuCategories: () => snapshot?.categories ?? [], getModifierGroups: () => snapshot?.modifierGroups ?? [],
   } }), [snapshot]);
-  const current = () => mounted.current && active.current.parkId === parkId && active.current.page === page && active.current.owner === owner && active.current.authority === authority;
+  const current = () => working.isCurrent() && mounted.current && active.current.parkId === parkId && active.current.page === page && active.current.owner === owner && active.current.authority === authority;
   const afterWrite = async (write: () => Promise<unknown>) => {
     if (!current()) throw new Error('The catalogue changed. Open the editor again.');
     await write();
@@ -137,7 +140,7 @@ export function MenuCatalogue({ page }: { page: Page }) {
       snapshot && selected ? <div key={`${owner}:${parkId}:${page}:${authority}`}>
         {page === 'menu' && <MenuPanelWithPorts ports={{
           menuItems: snapshot.menuItems, menuCategories: snapshot.categories, modifierGroups: snapshot.modifierGroups, menuHelpers,
-          branch: selected, apiBranchId: parkId, fileApi: snapshot.api.menuApi, formatWWPrice, toast: adminToast,
+          branch: selected, apiBranchId: parkId, fileApi: snapshot.api.menuApi, formatWWPrice, toast: (...args) => { if (working.isCurrent()) adminToast(...args); },
           canCreate: canManage, canManageItem, canImport: can('catalog:menu:import', parkId), canExport: canManage,
           canManageInlineGroups: canManageShared,
           onImported: async () => { if (current()) await reload(true).catch(() => {}); },

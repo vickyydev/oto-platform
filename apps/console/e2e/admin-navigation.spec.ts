@@ -47,16 +47,28 @@ test('old page addresses open their pages; new navigation keeps the page permiss
 });
 
 test('partial access hides areas and child links; the area gate never replaces an existing page guard', async ({ page }) => {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   await page.route('**/api/**', (route) => route.fulfill({ status: 403,
     json: { error: { code: 'PERMISSION_DENIED', message: 'No read access in this fixture.' } } }));
   await page.route('**/api/me', (route) => route.fulfill({ json: {
-    account: { id: 'fixture', phone: '', status: 'active', mustChangePassword: false, operatorId: 'fixture' },
-    employee: { id: 'fixture', name: 'ZZ TEST Navigation', nickname: null }, branch: null,
+      operatorContext: fixtureOperatorContext('01964000-0000-7000-8000-00000000f041', '01964000-0000-7000-8000-00000000f042', null),
+    account: { id: '01964000-0000-7000-8000-00000000f041', phone: '', status: 'active', mustChangePassword: false, operatorId: '01964000-0000-7000-8000-00000000f042' },
+    employee: { id: '01964000-0000-7000-8000-00000000f041', name: 'ZZ TEST Navigation', nickname: null }, branch: null,
     isPlatformAdmin: false, photoFileId: null, sessionLocked: false,
   } }));
   await page.route('**/api/me/permissions', (route) => route.fulfill({ json: { permissions:
     ['app:console:access', 'admin:audit:read', 'pos:booking:read'].map((permission) => ({
-      permission, scopeType: 'branch', scopeId: 'fixture',
+      permission, scopeType: 'branch', scopeId: '01964000-0000-7000-8000-00000000f043',
     })),
   } }));
   await page.goto('/watch');

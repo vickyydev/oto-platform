@@ -32,6 +32,17 @@ async function fixture(page: Page, options: {
   read?: (route: Route, branchId: string | null, index: number) => Promise<unknown>;
   permissionRows?: () => Array<{ permission: string; scopeType: string; scopeId: string }>;
 } = {}) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: operatorId,
+      operatorOverride: null, branchId, stationId: null, revision: 0 };
+  };
+
   const seen = {
     permissions: [...permissionNames],
     reads: [] as Array<string | null>,
@@ -41,8 +52,9 @@ async function fixture(page: Page, options: {
   await page.route('**/api/**', async route => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname.replace(/^\/api/, '');
     if (path === '/me') return route.fulfill({ json: {
-      account: { id: 'zz-actor', phone: '', status: 'active', mustChangePassword: false, operatorId: 'zz-operator' },
-      employee: { id: 'zz-actor', name: 'ZZ TEST Admin', nickname: null },
+      operatorContext: fixtureOperatorContext('01964000-0000-7000-8000-00000000f121', '01964000-0000-7000-8000-00000000f122', ({ id: PARK_A, name: 'ZZ TEST Central', code: 'ZZ', timezone: 'Asia/Bangkok' })?.id ?? null),
+      account: { id: '01964000-0000-7000-8000-00000000f121', phone: '', status: 'active', mustChangePassword: false, operatorId: '01964000-0000-7000-8000-00000000f122' },
+      employee: { id: '01964000-0000-7000-8000-00000000f121', name: 'ZZ TEST Admin', nickname: null },
       branch: { id: PARK_A, name: 'ZZ TEST Central', code: 'ZZ', timezone: 'Asia/Bangkok' },
       isPlatformAdmin: false, photoFileId: null, sessionLocked: false,
     } });
@@ -215,7 +227,7 @@ test('a narrowed authority resets an explicit unreachable park and recovers the 
   let reduced = false, refusedReads = 0;
   const seen = await fixture(page, {
     permissionRows: () => permissionNames.map(permission => ({
-      permission, scopeType: reduced ? 'branch' : 'operator', scopeId: reduced ? PARK_A : 'zz-operator',
+      permission, scopeType: reduced ? 'branch' : 'operator', scopeId: reduced ? PARK_A : '01964000-0000-7000-8000-00000000f122',
     })),
     read: async (route, branchId) => {
       if (reduced && branchId === PARK_B) {

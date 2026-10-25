@@ -8,7 +8,10 @@ const session = vi.hoisted(() => ({ platform: true, allowed: new Set(['admin:ope
 vi.mock('@/auth/SessionContext', () => ({ useSession: () => ({
   state: 'signed-in', authorityEpoch: 1, refreshing: false, isCurrentAuthority: (epoch: number) => epoch === 1,
   me: { isPlatformAdmin: session.platform, branch: null, sessionLocked: false,
-    account: { id: 'caller', operatorId: 'operator', status: 'active', mustChangePassword: false } },
+    account: { id: 'caller', operatorId: 'operator', status: 'active', mustChangePassword: false },
+    operatorContext: { sessionId: '01964000-0000-7000-8000-000000000009',
+      homeOperatorId: 'operator', effectiveOperatorId: 'operator', operatorOverride: null,
+      branchId: null, stationId: null, revision: 0 } },
   permissions: [...session.allowed].map((permission) => ({ permission, scopeType: 'operator', scopeId: null })),
   has: (permission: string) => session.allowed.has(permission),
 }) }));

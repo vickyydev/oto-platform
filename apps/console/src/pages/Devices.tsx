@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -110,6 +111,7 @@ type View = (typeof VIEWS)[number]['id'];
  * should not be looking at it wondering why.
  */
 export function Devices() {
+  const working = useWorkingAuthority();
   const { me, has, permissions } = useSession();
   const timezone = me?.branch?.timezone;
 
@@ -128,9 +130,10 @@ export function Devices() {
   const [branchId, setBranchId] = useState(me?.branch?.id ?? '');
 
   useEffect(() => {
-    void directoryApi
-      .branches()
+    void working.run(() => directoryApi
+      .branches())
       .then((r) => {
+        if (!working.isCurrent()) return;
         const live = r.branches.filter((b) => !b.archived);
         setBranches(live);
         // A platform-wide account has no branch of its own on /me, and every
@@ -138,8 +141,8 @@ export function Devices() {
         // rather than on nothing.
         setBranchId((current) => current || (live[0]?.id ?? ''));
       })
-      .catch(() => setBranches(null));
-  }, []);
+      .catch(() => { if (working.isCurrent()) setBranches(null); });
+  }, [working.run, working.isCurrent]);
 
   const fleet = useFleet(branchId);
   const [openBox, setOpenBox] = useState<BoxRow | null>(null);
@@ -169,7 +172,7 @@ export function Devices() {
         (grant) =>
           grant.permission === 'admin:device:pair' &&
           (grant.scopeType === 'operator'
-            ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
+            ? grant.scopeId === null || grant.scopeId === me?.operatorContext.effectiveOperatorId
             : grant.scopeType === 'branch' && grant.scopeId === s.branchId),
       ),
   );
@@ -180,7 +183,7 @@ export function Devices() {
     (grant) =>
       grant.permission === 'admin:station:read' &&
       (grant.scopeType === 'operator'
-        ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
+        ? grant.scopeId === null || grant.scopeId === me?.operatorContext.effectiveOperatorId
         : grant.scopeType === 'branch' && grant.scopeId === branchId),
   );
   const snapshotStations = fleet.stations.filter(
@@ -189,7 +192,7 @@ export function Devices() {
   const boxLogStations = fleet.stations.filter(s => s.branchId === branchId &&
     fleet.boxes.some(box => box.id === s.boxId) && permissions.some(grant =>
       grant.permission === 'admin:box:read' && (grant.scopeType === 'operator'
-        ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
+        ? grant.scopeId === null || grant.scopeId === me?.operatorContext.effectiveOperatorId
         : grant.scopeType === 'branch' && grant.scopeId === s.branchId)));
 
   const [view, setView] = useState<View>('all');
@@ -477,6 +480,7 @@ interface Fleet {
 }
 
 function useFleet(branchId: string): Fleet {
+  const working = useWorkingAuthority();
   const [boxes, setBoxes] = useState<BoxRow[]>([]);
   const [stations, setStations] = useState<StationRow[]>([]);
   const [deviceLists, setDeviceLists] = useState<Record<string, BoxDeviceList>>({});
@@ -505,20 +509,21 @@ function useFleet(branchId: string): Fleet {
   const reads = useRef(0);
 
   const readDevices = useCallback(async (boxId: string) => {
+    if (!working.isCurrent()) return;
     reads.current += 1;
     const ticket = reads.current;
     newestRead.current.set(boxId, ticket);
     setDeviceLists((held) => ({ ...held, [boxId]: readingDevices(held[boxId]) }));
     try {
-      const { devices } = await fleetApi.boxDevices(boxId);
-      if (newestRead.current.get(boxId) !== ticket) return;
+      const { devices } = await working.run(() => fleetApi.boxDevices(boxId));
+      if (!working.isCurrent() || newestRead.current.get(boxId) !== ticket) return;
       setDeviceLists((held) => ({ ...held, [boxId]: devicesRead(devices) }));
     } catch (err) {
-      if (newestRead.current.get(boxId) !== ticket) return;
+      if (!working.isCurrent() || newestRead.current.get(boxId) !== ticket) return;
       const message = readFailureMessage(err);
       setDeviceLists((held) => ({ ...held, [boxId]: devicesFailed(held[boxId], message) }));
     }
-  }, []);
+  }, [working.run, working.isCurrent]);
 
   // A different branch is a different fleet: nothing read for the last one
   // says anything about this one, so none of it is carried across.
@@ -529,6 +534,7 @@ function useFleet(branchId: string): Fleet {
   }, [branchId]);
 
   const load = useCallback(async () => {
+    if (!working.isCurrent()) return;
     if (!branchId) {
       setLoading(false);
       return;
@@ -540,11 +546,12 @@ function useFleet(branchId: string): Fleet {
     // the other panels, so each settles on its own and the page reports the
     // first real failure rather than the first absence.
     const [boxRes, stationRes, credentialRes] = await Promise.allSettled([
-      fleetApi.boxes(branchId),
-      fleetApi.stations(branchId),
-      fleetApi.credentials(branchId, true),
+      working.run(() => fleetApi.boxes(branchId)),
+      working.run(() => fleetApi.stations(branchId)),
+      working.run(() => fleetApi.credentials(branchId, true)),
     ]);
 
+    if (!working.isCurrent()) return;
     const failures: string[] = [];
     const absent = { boxes: false, stations: false, credentials: false };
     const answered = { ...NOTHING_READ };
@@ -588,11 +595,12 @@ function useFleet(branchId: string): Fleet {
     // check a box that was fine. `readDevices` carries the difference.
     await Promise.all(loadedBoxes.map((box) => readDevices(box.id)));
 
+    if (!working.isCurrent()) return;
     setMissing(absent);
     setRead(answered);
     setError(failures[0] ?? null);
     setLoading(false);
-  }, [branchId, readDevices]);
+  }, [branchId, readDevices, working.run, working.isCurrent]);
 
   useEffect(() => {
     void load();
@@ -772,6 +780,7 @@ function AddBoxPanel({
   onClose: () => void;
   onAdded: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [name, setName] = useState('');
   const [slot, setSlot] = useState('');
   const [role, setRole] = useState<BoxRole>('counter');
@@ -786,14 +795,15 @@ function AddBoxPanel({
   } | null>(null);
 
   const submit = async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setFailed(null);
     try {
-      const result = await fleetApi.createBox(branchId, {
+      const result = await working.run(() => fleetApi.createBox(branchId, {
         name: name.trim(),
         slot: slot.trim(),
         role,
-      });
+      }));
       onAdded();
       setCreated({ boxId: result.box.id, code: result.claimCode, expiresAt: result.expiresAt });
     } catch (err) {
@@ -804,11 +814,12 @@ function AddBoxPanel({
   };
 
   const issueFresh = async () => {
+    if (!working.isCurrent()) return;
     if (!created) return;
     setBusy(true);
     setFailed(null);
     try {
-      const result = await fleetApi.reissueClaimCode(created.boxId);
+      const result = await working.run(() => fleetApi.reissueClaimCode(created.boxId));
       onAdded();
       setCreated({ boxId: created.boxId, code: result.claimCode, expiresAt: result.expiresAt });
       if (!result.claimCode) setFailed('That request was replayed too. Press it once more.');
@@ -1188,15 +1199,17 @@ function CredentialRowItem({
   canBoxLog: boolean;
   onBoxLog: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const outstanding = credential.pairingOutstanding || !credential.pairedAt;
 
   const revoke = async () => {
+    if (!working.isCurrent()) return;
     setBusy(true);
     setFailed(null);
     try {
-      await fleetApi.revokeCredential(credential.id, 'Revoked from the console');
+      await working.run(() => fleetApi.revokeCredential(credential.id, 'Revoked from the console'));
       onChanged();
     } catch (err) {
       setFailed(err instanceof Error ? err.message : 'Could not revoke it');
@@ -1274,6 +1287,7 @@ function PairPanel({
   onClose: () => void;
   onPaired: () => void;
 }) {
+  const working = useWorkingAuthority();
   const [stationId, setStationId] = useState(stations[0]?.id ?? '');
   // A self-service kiosk pairs from its own code (Pair a kiosk, S2-20 K2), as a display does.
   const [kind, setKind] = useState<CredentialKind>('booth');
@@ -1289,7 +1303,8 @@ function PairPanel({
   } | null>(null);
 
   const mint = async () => {
-    const result = await fleetApi.pair(stationId, { kind, label: label.trim() || undefined });
+    if (!working.isCurrent()) return;
+    const result = await working.run(() => fleetApi.pair(stationId, { kind, label: label.trim() || undefined }));
     onPaired();
     setPaired({
       credentialId: result.credential.id,
@@ -1314,6 +1329,7 @@ function PairPanel({
   };
 
   const pairAgain = async () => {
+    if (!working.isCurrent()) return;
     if (!paired) return;
     setBusy(true);
     setFailed(null);
@@ -1322,7 +1338,7 @@ function PairPanel({
         // A credential whose code nobody saw can never be redeemed, so it is
         // revoked rather than left in Paired screens waiting for a screen that
         // is never coming.
-        await fleetApi.revokeCredential(paired.credentialId, 'Superseded: its code was not shown');
+        await working.run(() => fleetApi.revokeCredential(paired.credentialId, 'Superseded: its code was not shown'));
       } catch {
         // Not worth stopping for. Somebody is standing at the screen waiting
         // for a code, and the stale row can be revoked from the list below.

@@ -1,3 +1,4 @@
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowUpRight, Loader2, RefreshCw, Search, Users } from 'lucide-react';
 import { employeeSourcePath, employeesApi, type DirectoryEmployee, type EmployeeDirectory } from '@/api/employees';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { formatExact } from '@/lib/time';
 
 export function Employees() {
+  const working = useWorkingAuthority();
   const { has } = useSession();
   const allowed = has('admin:account:read');
   const [query, setQuery] = useState('');
@@ -23,45 +25,47 @@ export function Employees() {
   const sourcePending = useRef(false);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!working.isCurrent() || !allowed) return;
     let active = true;
     setData(null);
     setError(null);
-    void employeesApi.read(query.trim()).then((answer) => { if (active) setData(answer); })
+    void working.run(() => employeesApi.read(query.trim())).then((answer) => { if (working.isCurrent() && active) setData(answer); })
       .catch((failure: unknown) => {
-        if (active) setError(failure instanceof Error ? failure.message : 'Could not read employees.');
+        if (working.isCurrent() && active) setError(failure instanceof Error ? failure.message : 'Could not read employees.');
       });
     return () => { active = false; };
-  }, [allowed, query, refresh]);
+  }, [allowed, query, refresh, working.isCurrent, working.run]);
 
   useEffect(() => () => { sourceRequest.current++; }, []);
 
   if (!allowed) return <PermissionRequired permission="admin:account:read" />;
   const reload = () => {
+    if (!working.isCurrent()) return;
     setData(null);
     setError(null);
     setRefresh((held) => held + 1);
   };
   const search = (next: string) => {
+    if (!working.isCurrent()) return;
     setData(null);
     setError(null);
     setSourceError(null);
     setQuery(next);
   };
   const openSource = (employee: DirectoryEmployee) => {
-    if (sourcePending.current || !has('app:oto_app:access') || !employeeSourcePath(employee)) return;
+    if (!working.isCurrent() || sourcePending.current || !has('app:oto_app:access') || !employeeSourcePath(employee)) return;
     sourcePending.current = true;
     const request = ++sourceRequest.current;
     setOpeningEmployee(employee.id);
     setSourceError(null);
-    void employeesApi.sourceDestination(employee).then((destination) => {
-      if (request === sourceRequest.current) window.location.assign(destination);
+    void working.run(() => employeesApi.sourceDestination(employee)).then((destination) => {
+      if (working.isCurrent() && request === sourceRequest.current) window.location.assign(destination);
     }).catch((failure: unknown) => {
-      if (request === sourceRequest.current) {
+      if (working.isCurrent() && request === sourceRequest.current) {
         setSourceError(failure instanceof Error ? failure.message : 'Could not open OTO App.');
       }
     }).finally(() => {
-      if (request === sourceRequest.current) {
+      if (working.isCurrent() && request === sourceRequest.current) {
         sourcePending.current = false;
         setOpeningEmployee(null);
       }
