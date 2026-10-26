@@ -34,6 +34,8 @@ Worktrees: Codex works in `C:/w/<lane>` worktrees on `lane/<topic>` branches as 
 
 ### Questions and standing authorizations (owner directive 2026-10-23)
 
+Planner Q23 / SCRUM-640 (2026-10-26): delivered ask-context patch 287c9d96 has an early OTO opener refusal return (engine.ts:814-836) before the post-call context check (line 849). Please recheck the captured pin immediately after the opener settles and add a native held-opener/same-session-switch regression proving that the refusal cannot continue an ask in the wrong context. This source-confirmed path has not yet been reproduced natively and is not a private-data leak claim. The planner's separate revoked-session hand-off flag is being reproduced against the untouched checkpoint; its suspected boundary is HandoffRejected thrown by the new live mint before the bridge returns the existing structured 401. Both are protected-planner follow-ups; the 638 release continues independently.
+
 Scope and boundary questions go to the **planner, not the owner**. Post the question in STATUS and the ticket exactly as today; the planner answers in this plan and STATUS, normally the same day. Ask the owner directly only when the answer would: send an SMS or any real customer message, touch payment data or record a payment, drop or rewrite existing data (a destructive migration), change a prototype or original-app rule's observable behavior, or change an Inbox channel mode.
 
 While a question is pending, **the lane does not stop**: finish everything in the current subtask that does not depend on the answer; if fully blocked, take the next subtask in the phase that does not depend on it, or its read-only preparation, and say so in STATUS. "Parked" means that ticket waits — never the lane and never the day.
