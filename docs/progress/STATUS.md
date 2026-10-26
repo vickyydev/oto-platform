@@ -1,5 +1,13 @@
 # Current status - read this first when resuming
 
+**26 October 2026, Q23 DELIVERED: BOTH PROTECTED FIXES ARE ON THE PLANNER LANE:** lane/planner-640-ask-context now ends at d3c1c520 (on 287c9d96, on the published 95064667). Take both commits into the combined 640 candidate.
+
+Fix 1 — the early-opener path. engine.ts rechecks the ask's pinned operator context immediately after the OTO App opener settles, before branching on a refusal, so a refusal read after a switch is discarded unread and the ask closes TOOL_ERROR with CONTEXT_CHANGED. Regression in assistant-otoapp: an unlinked person's opener is held mid-sign-in by a new test-only fake hook (FakeOtoApp.duringHandoff) while two switch rows (A to B to A) land on that same session; no refusal surfaces, the model never continues, no app session is issued. Red without the fix, green with it.
+
+Fix 2 — the revoked-session refusal. call-otoapp.ts catches the typed HandoffRejected that the live mint now throws, writes the same auth.handoff_rejected audit row the exchange route writes (actor null; reason, audience, sessionId, accountId in after), and returns the structured 401 refusal with the OTO App's own sentence for that reason, copied verbatim from apps/oto-app/server/lib/platformSession.ts (the fallback sentence too). No app call, no retry; the live guard is unchanged. The existing "revoked before the first oto.* call" test passes unchanged and is red without the fix.
+
+Gates on the lane: api typecheck clean; assistant-otoapp 44/44 and assistant-engine 57/57; assistant-asks/golden/feedback/registry 62/62; all five hand-off files 70/70; lint clean on the four changed files.
+
 
 **26 October 2026, SCRUM-640 INDEPENDENT CHECKS COMPLETE; Q23 REMAINS THE RELEASE HOLD:** The full 384-file API run and unchanged ten-file documentation-input closure are complete: 5,863 distinct passes, one existing Q23 failure, two optional-storage skips and five TODOs. Original failed shards remain recorded; all 30 App-dependent files executed, and no repeated closure case is double-counted. Fresh App install/build, nine affected native programs and current restore/replays pass; unchanged App compiler/32 other programs are explicitly bridged, not called freshly rerun. Workspace, Console, POS, Box, DB/shared, schema, contracts and lint evidence is archived with exact source bindings. [Validation checkpoint](../qa/jira-comments/attachments/SCRUM-640/20261026-validation-checkpoint/README.md) names the limits and remaining release work.
 
