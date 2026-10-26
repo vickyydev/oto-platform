@@ -1,0 +1,41 @@
+{
+  "ticket": "SCRUM-643",
+  "passed": true,
+  "reviewedAt": "2026-10-26T17:13:47.424Z",
+  "scope": "Independent source review of current partial read-only API/storage surface; not full P5 completion or release acceptance",
+  "sourceFilesSha256": {
+    "apps/api/src/routes/suite-controls.ts": "e53a694741c94743798e2f288a12ae6872388c4ec4af9f80d326502d8126734e",
+    "apps/api/src/services/suite-controls.ts": "95873f8533d63be6425044ddd6a39f69c5db562fb566a0d68f94ab2d644e7aaf",
+    "apps/api/test/suite-controls-review.test.ts": "fff4f1b48f5c58afbc14d03bee389fcda3e12d2f1ea598ee5b64c5738126a757",
+    "packages/db/src/schema/suite-controls.ts": "1f80d74f330ae96bf5953915e16561ae420b590883b721d943a06894b365abc0",
+    "packages/db/src/schema/index.ts": "e56e77f10668194e04c3feb6ee0fc15994c00f6a48f265e7483d06b4875b4934",
+    "packages/db/migrations/0089_suite_controls.sql": "f4de0838b5f840b32ca02915354fc10fa49349304c824b06c576f74b9236f6b3",
+    "packages/db/migrations/meta/0089_snapshot.json": "2974ebf1ae82ab91f7a829fa5f5714b80668e087e9ba2dcbfaf6353d11247a8f",
+    "packages/db/migrations/meta/_journal.json": "3013a143e7ec89aa2264374322b2a46d0d6d62b2d1bf3801e8f10e32bc7718dc",
+    "packages/db/test/suite-controls.test.ts": "a5324ad0a102381d5f5cae7174ac61ddc2fed2ac6627c6e1fb42517aaba64939",
+    "packages/db/test/schema-shape.test.ts": "ae19d984c408784568031e826193f3881c7b0eef2502fc7894a21825bd8da9e4",
+    "packages/shared/src/permissions.ts": "22b01b1c2084c88f68b917bba2fb68b0ec1fc004fd7e29c1459099601fe82539",
+    "packages/shared/src/permission-words.ts": "349f58a406790fd4e741cb420b91d74506dd77be633a0055406890964983c033",
+    "packages/shared/test/permission-words.test.ts": "0a1b694fd9cc6d7e2077df1daad3bf196c3afa06c3266967cfd9e1dc24a5bcb4",
+    "packages/shared/test/operator-switch-permission.test.ts": "17bc8acf4223435d336213727d19cc0a8b185ba5bd5ec01292a456bffac00fbe"
+  },
+  "permissionSourceMatchesObserved783PassFrame": true,
+  "checks": {
+    "operatorReadAuthority": "Both GET routes use the native operatorOnly permission guard. No platform-only requirement is invented for the approved operator read grants.",
+    "urlProjection": "HTTP(S) only; credentials, query, fragment, non-root origins and non-string values are omitted. This surface performs no outbound URL requests.",
+    "maintenance": "Active only when expiresAt > generatedAt; exact boundary returns saved non-maintenance restoration state, retains stored state and performs no update.",
+    "releaseFacts": "No inferred build/deploy success; nullable version/commit/actor/CI/time and false CI remain distinct, archived apps excluded, count and page share one read-only repeatable-read transaction.",
+    "schema": "Exactly3 new tables; global unique stable app keys, separate platform-null/scoped flag uniqueness, structural scope constraints, target/operator/actor FKs, mandatory kill expiry/reason, finite positive revisions and nullable deployment facts.",
+    "schemaClassification": "Only registry/deploy facts are classified platform-owned; feature flags retain real operator FK, and the nonpartial archived app key is explicitly justified.",
+    "snapshot": "New unique ID chains to0088;0089 is provisional until landing."
+  },
+  "findings": [],
+  "requiredAdditionalRegressions": [],
+  "limits": [
+    "API/DB gates were coordinator-owned and running during review; no reviewer tests or runtime/live/Git actions were taken.",
+    "Current API tests directly pin8 HTTP/service cases and DB tests pin actual migration/constraints; source inspection does not claim their terminal result.",
+    "Flag lineage validation, writes, maintenance enforcement, expiry jobs, alerts, approvals and protected consumers remain explicitly held/unimplemented integration underQ24; no complete643 acceptance is claimed.",
+    "The URL reader does not enforce origin reachability or perform health probes; future writers/handoff integrations retain their separate allowlist and validation duties."
+  ],
+  "repositoryEdits": false
+}

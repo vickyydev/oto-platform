@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-643",
+  "mode": "api-green",
+  "attempt": "v2",
+  "command": "pnpm --filter @oto/api test test/suite-controls-review.test.ts",
+  "startedAt": "2026-10-26T17:28:24.900Z",
+  "completedAt": "2026-10-26T17:28:45.538Z",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "bc6e201ba2aca73bf7db366fa09a2f9498b2677b2f10d34b1df21e19e03369ba",
+  "runnerSha256": "5c45063ac468763166c12cb490ea9d93a7df9792f5d11a92d8e4093c22701d8d",
+  "staging": false,
+  "localOnly": true
+}

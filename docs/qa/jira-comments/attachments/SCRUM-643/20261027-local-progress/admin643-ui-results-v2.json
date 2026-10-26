@@ -1,0 +1,164 @@
+{
+  "ticket": "SCRUM-643",
+  "version": 2,
+  "createdAt": "2026-10-26T17:26:39.335Z",
+  "uiFrozen": true,
+  "sourceLanded": false,
+  "staging": false,
+  "priorReceipt": {
+    "path": "C:/w/admin643-ui-results.json",
+    "sha256": "37ac312e8042489969608f148df810bf7d45a7633cfbfcdec46642c74c4282f4",
+    "unchanged": true
+  },
+  "ownedFiles": [
+    {
+      "path": "apps/console/src/api/suite-controls.ts",
+      "sha256": "b8932161c75533e76884458995c484a15d4fa201c703c35d9bacb07a73de2d09"
+    },
+    {
+      "path": "apps/console/src/pages/SuiteControls.tsx",
+      "sha256": "5656a897acac125e8e63e87a4f40f642a8aeb788a1e7ef8e9f0948452c582d3c"
+    },
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "01ff13c0b1ad1a11ab37792858d07af1257054be64be0bf3d75835ad6c1549b9"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "d55ba10ae421eb092b4a7fa756813c669d72d052f667c6ca754618b9ca8bcf23"
+    },
+    {
+      "path": "apps/console/test/suite-controls.test.ts",
+      "sha256": "a084e7c2f60b261f0ade04f44ff1fe208319da55fe7755d88ee5dd584e88db4e"
+    },
+    {
+      "path": "apps/console/e2e/suite-controls.spec.ts",
+      "sha256": "6516bd71dc4461e080dfe4839c54ef7162b5fa4731cc0ce19e335f1cd4507a65"
+    }
+  ],
+  "changedFilesSinceV1": [
+    {
+      "path": "apps/console/src/pages/SuiteControls.tsx",
+      "sha256": "5656a897acac125e8e63e87a4f40f642a8aeb788a1e7ef8e9f0948452c582d3c"
+    },
+    {
+      "path": "apps/console/e2e/suite-controls.spec.ts",
+      "sha256": "6516bd71dc4461e080dfe4839c54ef7162b5fa4731cc0ce19e335f1cd4507a65"
+    }
+  ],
+  "fix": "Empty current-page history no longer displays an inverted range or claims that all release history is absent.",
+  "baseline": {
+    "native": {
+      "passed": 6,
+      "failed": 1,
+      "notRun": 1,
+      "log": {
+        "path": "C:/w/admin643-ui-browser-shrink-red.log",
+        "exitCode": 1,
+        "sha256": "3fe8ba2008edd50a5d1a46ac69d5ed37e21b3386ec6ad283dae3b00809585f0f"
+      },
+      "receipt": {
+        "phase": "shrink-red",
+        "startedAt": "2026-10-26T17:22:37.349Z",
+        "finishedAt": "2026-10-26T17:23:36.336Z",
+        "exitCode": 1,
+        "nativeExitCode": 1,
+        "failure": null,
+        "teardown": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        },
+        "databaseCensusUnchanged": true,
+        "logSha256": "3fe8ba2008edd50a5d1a46ac69d5ed37e21b3386ec6ad283dae3b00809585f0f",
+        "staging": false,
+        "built": true,
+        "command": "pnpm --filter @oto/console e2e -- suite-controls.spec.ts --max-failures=1"
+      },
+      "observed": "Valid offset50,total1,deployments[] rendered 51-50 of1 records and No releases are recorded.",
+      "artifacts": [
+        {
+          "path": "C:/w/admin643-ui-shrink-red-artifacts/error-context.md",
+          "sha256": "7bdb56fbc5632f1b2431c25f8cd318138bfd81d61eac4bb96b9501b84b344fb1"
+        },
+        {
+          "path": "C:/w/admin643-ui-shrink-red-artifacts/test-failed-1.png",
+          "sha256": "1c76f7f06844991c6b76c03e923fc0c613eca5c5ffb32d2d3f3a74d01fbafa1a"
+        }
+      ]
+    }
+  },
+  "green": {
+    "consoleUnits": {
+      "passed": 366,
+      "todo": 3,
+      "files": 38,
+      "log": {
+        "path": "C:/w/admin643-ui-unit-green-v2.log",
+        "exitCode": 0,
+        "sha256": "d0bb2d583236d92243533017be9af07c7b172582d50bcca9945cc3633f456c2a"
+      }
+    },
+    "consoleOwnTypecheck": {
+      "projects": 3,
+      "diagnostics": 0,
+      "log": {
+        "path": "C:/w/admin643-ui-typecheck-v2.log",
+        "exitCode": 0,
+        "sha256": "6d505d7069af392db41ea95aaff6388736dbf5734e8025cc6d327ca580df2f8d"
+      }
+    },
+    "changedFileLint": {
+      "files": 6,
+      "errors": 0,
+      "warnings": 0,
+      "log": {
+        "path": "C:/w/admin643-ui-lint-v2.log",
+        "exitCode": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "builtBrowser": {
+      "passed": 8,
+      "log": {
+        "path": "C:/w/admin643-ui-browser-shrink-green.log",
+        "exitCode": 0,
+        "sha256": "2f5417b78c0ced397f39f112fada2d5b7736c25c8e691f1017a01ff176813f1b"
+      },
+      "receipt": {
+        "phase": "shrink-green",
+        "startedAt": "2026-10-26T17:24:46.612Z",
+        "finishedAt": "2026-10-26T17:25:47.311Z",
+        "exitCode": 0,
+        "nativeExitCode": 0,
+        "failure": null,
+        "teardown": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        },
+        "databaseCensusUnchanged": true,
+        "logSha256": "2f5417b78c0ced397f39f112fada2d5b7736c25c8e691f1017a01ff176813f1b",
+        "staging": false,
+        "built": true,
+        "command": "pnpm --filter @oto/console e2e -- suite-controls.spec.ts"
+      }
+    },
+    "apiTypesSeam": {
+      "passed": 10,
+      "log": {
+        "path": "C:/w/admin643-ui-seam-v1.log",
+        "exitCode": 0,
+        "sha256": "9bb4e880fa844fbf09a8602cba9939de828ac97d070e7157e0ac108e387f6399"
+      },
+      "reused": true,
+      "reason": "Typed API adapter bytes unchanged since v1 seam10 pass; this correction adds no API caller."
+    }
+  },
+  "limits": [
+    "Registry and release history are read-only. No mutation, provider, deployment or consumer integration is presented as working.",
+    "Native browser responses are local intercepted fixtures; no staging/authentication/helper execution or real business mutation occurred.",
+    "Red and green own embedded servers were stopped, helper databases dropped and native database censuses unchanged.",
+    "No Git, docs, Jira, generated client or other owned-lane files were edited. Full coordinator release gates remain separate."
+  ]
+}

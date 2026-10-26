@@ -1,0 +1,105 @@
+{
+  "ticket": "SCRUM-643",
+  "passed": true,
+  "reviewedAt": "2026-10-26T17:28:25.589Z",
+  "reviewedUiReceipt": {
+    "path": "C:/w/admin643-ui-results-v2.json",
+    "sha256": "2aff47140a44198375efbf08567b19d96e43badd75e961a0d95c794262b099aa"
+  },
+  "sourceFiles": [
+    {
+      "path": "apps/console/src/api/suite-controls.ts",
+      "sha256": "b8932161c75533e76884458995c484a15d4fa201c703c35d9bacb07a73de2d09"
+    },
+    {
+      "path": "apps/console/src/pages/SuiteControls.tsx",
+      "sha256": "5656a897acac125e8e63e87a4f40f642a8aeb788a1e7ef8e9f0948452c582d3c"
+    },
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "01ff13c0b1ad1a11ab37792858d07af1257054be64be0bf3d75835ad6c1549b9"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "d55ba10ae421eb092b4a7fa756813c669d72d052f667c6ca754618b9ca8bcf23"
+    },
+    {
+      "path": "apps/console/test/suite-controls.test.ts",
+      "sha256": "a084e7c2f60b261f0ade04f44ff1fe208319da55fe7755d88ee5dd584e88db4e"
+    },
+    {
+      "path": "apps/console/e2e/suite-controls.spec.ts",
+      "sha256": "6516bd71dc4461e080dfe4839c54ef7162b5fa4731cc0ce19e335f1cd4507a65"
+    }
+  ],
+  "scope": "Independent source and recorded evidence review of partial read-only Console Apps/Releases UI",
+  "checks": {
+    "authority": "Actual operator-wide own/null read grants, current working-session epoch, active account, unlocked/password-ready session; stale actor/operator/revision/read identities cannot publish old answers.",
+    "queries": "Retry and release offset changes mask prior answers immediately; late handlers check authority and current read identity.",
+    "aliases": "Existing route loop offers /apps?/organisation/apps and /releases?/watch/releases with the same section guard.",
+    "navigation": "All51 pre643 section definitions retained exactly, all10 areas retained; two additive pages and expanded area offers preserve existing page permissions.",
+    "truth": "No mutation/provider/deploy controls, nullable facts say Not recorded and CI false says Failed; unavailable does not render empty success.",
+    "phone": "Native wrapping/min-width components; recorded built390px case checks horizontal width at390 for long metadata."
+  },
+  "closedFindings": [
+    {
+      "severity": "low",
+      "description": "Shrinking release history yielded an inverted range and falsely implied no history on an empty offset page.",
+      "red": {
+        "pass": 6,
+        "fail": 1,
+        "notRun": 1,
+        "logSha256": "3fe8ba2008edd50a5d1a46ac69d5ed37e21b3386ec6ad283dae3b00809585f0f",
+        "stoppedAfterOneFailure": true
+      },
+      "fix": "Empty current page shows0 records on this page and the actual total; retained Newer navigation and total0 wording remain correct.",
+      "green": {
+        "pass": 8,
+        "fail": 0,
+        "logSha256": "2f5417b78c0ced397f39f112fada2d5b7736c25c8e691f1017a01ff176813f1b"
+      },
+      "changedFiles": [
+        "apps/console/src/pages/SuiteControls.tsx",
+        "apps/console/e2e/suite-controls.spec.ts"
+      ]
+    }
+  ],
+  "openFindings": [],
+  "evidence": {
+    "consoleUnits": {
+      "pass": 366,
+      "todo": 3,
+      "files": 38
+    },
+    "compilers": {
+      "projects": 3,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    "lint": {
+      "files": 6,
+      "errors": 0,
+      "warnings": 0
+    },
+    "nativeBuiltFile": {
+      "pass": 8,
+      "syntheticApiFixtures": true
+    },
+    "apiTypesSeam": {
+      "pass": 10,
+      "reusedUnchangedAdapter": true
+    },
+    "cleanup": {
+      "helperDatabaseDropped": true,
+      "harnessDatabasesAbsent": true,
+      "embeddedServerStopped": true
+    }
+  },
+  "limits": [
+    "No reviewer tests, browser, server, auth, Git or live actions.",
+    "Recorded eight built-browser cases use synthetic API fixtures; they are native UI coverage, not deployed data or server/domain integration proof.",
+    "Q24 mutations/maintenance enforcement/flags/protected consumers remain separate and unoffered; this is not a full643 release or staging acceptance.",
+    "Original unit/browser REDs, first GREEN and shrink RED are preserved; no historical failed result is relabelled."
+  ],
+  "repositoryEdits": false
+}

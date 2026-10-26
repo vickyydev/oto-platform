@@ -1,0 +1,110 @@
+{
+  "ticket": "SCRUM-643",
+  "passed": true,
+  "frozenAt": "2026-10-26T17:05:11.727Z",
+  "ownedFiles": {
+    "packages/shared/src/permissions.ts": "22b01b1c2084c88f68b917bba2fb68b0ec1fc004fd7e29c1459099601fe82539",
+    "packages/shared/src/permission-words.ts": "349f58a406790fd4e741cb420b91d74506dd77be633a0055406890964983c033",
+    "packages/shared/test/permission-words.test.ts": "0a1b694fd9cc6d7e2077df1daad3bf196c3afa06c3266967cfd9e1dc24a5bcb4",
+    "packages/shared/test/operator-switch-permission.test.ts": "17bc8acf4223435d336213727d19cc0a8b185ba5bd5ec01292a456bffac00fbe"
+  },
+  "receipts": {
+    "red": {
+      "path": "C:/w/admin643-permissions-red.json",
+      "sha256": "e065b5be2fd59d2d194e7239dd3d33615f90acd8ff72abc37be3e0f1920e6b86",
+      "exitCode": 1,
+      "logSha256": "bced53e0c8e486b066f87646071533698a1f81729bbbfc15798499c00619f011",
+      "inputsUnchanged": true,
+      "dependenciesUnchanged": true
+    },
+    "green": {
+      "path": "C:/w/admin643-permissions-green.json",
+      "sha256": "6efe43aaab4801aa971b689b8c971cbb8894ce5dffdba4f1f698d365ed428f5b",
+      "exitCode": 0,
+      "logSha256": "3778eb9b6bc1805fa7aee70e3ba35c7e539bc48e2b837ded50ab787f6bbd60ae",
+      "inputsUnchanged": true,
+      "dependenciesUnchanged": true
+    },
+    "typecheck": {
+      "path": "C:/w/admin643-permissions-typecheck.json",
+      "sha256": "db7287ee4ade13ca7f4557c8de700985a90ecccf512cf140c67232f2bd871d4e",
+      "exitCode": 0,
+      "logSha256": "a7ae3383f8e34f13242909e4fd2a6e87bfe2d35f721233a334187994410cce20",
+      "inputsUnchanged": true,
+      "dependenciesUnchanged": true
+    },
+    "lint": {
+      "path": "C:/w/admin643-permissions-lint.json",
+      "sha256": "0bd420c5173dc9fad6c2a1d566a068eeba32cfdff94878eb571c2e5a2330c856",
+      "exitCode": 0,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "inputsUnchanged": true,
+      "dependenciesUnchanged": true
+    },
+    "full": {
+      "path": "C:/w/admin643-permissions-full.json",
+      "sha256": "7c4cda50d26ac06771614752637dcef97a1b9707cebf6c95a8651dc3ede9972f",
+      "exitCode": 0,
+      "logSha256": "aa9b21a602e0e6b479f96e4b71680ebcfe952ecc93b4a01b1d30ac21ab8688d1",
+      "inputsUnchanged": true,
+      "dependenciesUnchanged": true
+    }
+  },
+  "actualRed": {
+    "files": 3,
+    "pass": 36,
+    "fail": 7,
+    "setupOrImportFailures": 0
+  },
+  "actualFocusedGreen": {
+    "files": 3,
+    "pass": 43,
+    "fail": 0
+  },
+  "wholeSharedGreen": {
+    "files": 51,
+    "pass": 783,
+    "fail": 0,
+    "skip": 0,
+    "todo": 0,
+    "includesFocusedCases": true
+  },
+  "compiler": {
+    "package": "@oto/shared",
+    "exitCode": 0,
+    "diagnostics": 0,
+    "wholeOutputRead": true
+  },
+  "eslint": {
+    "files": 4,
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0,
+    "wholeOutputRead": true
+  },
+  "redGreenTestBytesIdentical": true,
+  "legacyPreservation": {
+    "path": "C:/w/admin643-permissions-legacy-preservation.json",
+    "sha256": "c97e440ecf376bc82fd5afcf9c51ad1512683b10fc0a12f75e9e7906386e4872",
+    "originalPermissionCount": 139,
+    "currentPermissionCount": 144,
+    "currentRoleCounts": {
+      "platform_admin": 144,
+      "operator_admin": 141,
+      "branch_manager": 103,
+      "reception": 62,
+      "staff": 22
+    },
+    "everyExistingPermissionAndAssignmentPreserved": true,
+    "everyExistingSentencePreserved": true,
+    "allInboxRoleBundlesUnchanged": true
+  },
+  "notes": [
+    "Only the five approved strings and sentences are added. ALL excludes exactly the three new suite write permissions; platform_admin explicitly receives the complete vocabulary.",
+    "The existing640 operator-selection test retains all original scope/control assertions and accounts explicitly for the three new platform-only suite writes.",
+    "Vocabulary/bundle membership does not grant null-scope authority or implement routes, maintenance, approval or kill-switch consumers."
+  ],
+  "wholeFeatureReleaseOrLiveAcceptance": false,
+  "repositoryFilesOutsideOwnershipChanged": false,
+  "gitJiraOrLiveActions": false
+}

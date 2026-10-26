@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-643",
+  "mode": "full-db",
+  "attempt": "v1",
+  "command": "pnpm --filter @oto/db test",
+  "startedAt": "2026-10-26T17:17:13.853Z",
+  "completedAt": "2026-10-26T17:27:12.216Z",
+  "exitCode": 1,
+  "signal": null,
+  "logSha256": "df147be0877b1763a098c684bc4e88739c6b374c148f0f46f115f70269cec688",
+  "runnerSha256": "5c45063ac468763166c12cb490ea9d93a7df9792f5d11a92d8e4093c22701d8d",
+  "staging": false,
+  "localOnly": true
+}

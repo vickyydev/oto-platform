@@ -1,0 +1,44 @@
+{
+  "ticket": "SCRUM-643",
+  "at": "2026-10-26T17:32:23.794Z",
+  "staging": false,
+  "releaseGreen": false,
+  "archives": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-api-green-v2.json",
+      "sha256": "acc5a35c2680b311d122109a0ee1340885ebdfede1171005c0e25cc70bc18b59"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-api-red-v2.json",
+      "sha256": "f383bb0b063cc1ae9bcff559534343d617559d3d3ce98dafcc911caba0ef6f6e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-full-db-v1.json",
+      "sha256": "fbf060cd2d85d02c8b6c573925b21bf7041de5750588373687640a96d421721e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-guards-v2.json",
+      "sha256": "a0759cae59b060166667cad19f61c319af5d648824e63f30d0ab53a3a9ddae6e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-contracts-v2.json",
+      "sha256": "be93f398e56cdf1eaf069e1bd476ce562d7c775aa1bda2fcc0024fd89974fd89"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-ui-results-v2.json",
+      "sha256": "2aff47140a44198375efbf08567b19d96e43badd75e961a0d95c794262b099aa"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-ui-independent-review.json",
+      "sha256": "db59f40b5a46b74ec283d252dee429675d2c08df5b980f79c949b519c1fb0820"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-permissions-review.json",
+      "sha256": "caa00590cab4623cacc9b842bf4b81066a2ea0f80bdb4830ec4eb174fb6f6018"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-local-progress/admin643-read-surface-independent-review.json",
+      "sha256": "b5fd5dde5bacb8afa48ba9b4296446f44c3bd3eefdb029115b2cb71390c8be00"
+    }
+  ]
+}
