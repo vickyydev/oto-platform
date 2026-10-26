@@ -34,6 +34,7 @@ import { audit } from '../audit';
 import type { FileStorage } from '../files';
 import { recordRun } from '../ops';
 import { withTx, type Exec, type Tx } from '../tx';
+import { assistantSettingOverridesOf } from '../assistant-settings';
 import type { InboxAiRuntime } from './ai-runtime';
 import { loadTurnKnowledge, type TurnKnowledge } from './ai-knowledge';
 import { aiEligibility, dueAiMessageIds, type IneligibleReason } from './ai-turns';
@@ -422,8 +423,14 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   if (now.getTime() - turn.dueAt.getTime() > AI_STALE_MS) return { conv, silence: 'STALE' };
 
   // §D.4 guard 4: the daily caps. Raised once a day, on the first turn over.
+  // SCRUM-638: the operator's saved caps first — sparse and validated, so an
+  // absent or invalid row leaves the native numbers; the global config is
+  // never mutated. A zero cap still means zero.
+  const saved = (await assistantSettingOverridesOf(db, turn.operatorId)).inbox;
+  const dailyTurnCap = saved.dailyTurnCap ?? cfg.dailyTurnCap;
+  const dailyTokenCap = saved.dailyTokenCap ?? cfg.dailyTokenCap;
   const usage = await todaysUsage(db, turn.operatorId, now);
-  if (usage.turns >= cfg.dailyTurnCap || usage.tokens >= cfg.dailyTokenCap) {
+  if (usage.turns >= dailyTurnCap || usage.tokens >= dailyTokenCap) {
     if (!usage.raised) await raiseGuard(db, turn, conv.branchId, 'CAP_DAILY');
     return { conv, silence: 'CAP_DAILY' };
   }
@@ -1046,7 +1053,14 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         );
         items.push(...brochure.map((f) => ({ body: null, mediaFileIds: [f] })), ...holding.items);
       }
-      const messageIds = await writeLines(tx, conv, v.language, items, at, random, deps.runtime.config.pacing);
+      // SCRUM-638: the operator's saved typing pace, the same fresh-read rule
+      // as the caps; the document's two fields map onto the native ceilings.
+      const pace = (await assistantSettingOverridesOf(tx, conv.operatorId)).inbox;
+      const pacing = {
+        firstBubbleMaxMs: pace.firstBubbleMs ?? deps.runtime.config.pacing.firstBubbleMaxMs,
+        bubbleGapMaxMs: pace.bubbleGapMs ?? deps.runtime.config.pacing.bubbleGapMaxMs,
+      };
+      const messageIds = await writeLines(tx, conv, v.language, items, at, random, pacing);
       const routing = await applyRouting(tx, classified, v.branchNamed, handover, r.knowledge, at);
 
       if (v.action === 'answer') {

@@ -36,6 +36,7 @@ import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import { errors } from '../../lib/errors';
 import type { AuthContext } from '../../plugins/session';
 import { branchReach } from '../access-control';
+import { assistantSettingOverridesOf } from '../assistant-settings';
 import { audit } from '../audit';
 import { claimClientId, markReplay } from '../client-id';
 import { holdsAnywhere } from '../inbox/read-visibility';
@@ -319,12 +320,17 @@ export async function circuitOpen(db: Exec, operatorId: string, now: Date): Prom
 }
 
 async function gateOf(tx: Exec, runtime: InternalAiRuntime, auth: AuthContext, now: Date): Promise<Gate> {
-  const cfg = runtime.config;
-  if (!cfg.enabled) return { open: false, state: 'off', reason: 'DISABLED', line: 'off', raise: false };
+  const base = runtime.config;
+  if (!base.enabled) return { open: false, state: 'off', reason: 'DISABLED', line: 'off', raise: false };
   if (!runtime.client) return { open: false, state: 'off', reason: 'NO_CLIENT', line: 'off', raise: false };
   if (await circuitOpen(tx, auth.operatorId, now)) {
     return { open: false, state: 'off', reason: 'CIRCUIT_OPEN', line: 'off', raise: false };
   }
+  // SCRUM-638: the operator's saved caps, read fresh inside this gate's
+  // transaction. The reader returns only validated sparse overrides — an
+  // absent or invalid row changes nothing — and the global config is a copy
+  // here, never mutated.
+  const cfg = { ...base, ...(await assistantSettingOverridesOf(tx, auth.operatorId)).internal };
   const usage = await todaysUsage(tx, auth, now);
   const open = await inFlight(tx, auth, now, cfg.wallMs + ASSISTANT_ABANDON_GRACE_MS);
   if (open.person >= cfg.concurrentPerPerson || open.operator >= cfg.concurrentPerOperator) {
