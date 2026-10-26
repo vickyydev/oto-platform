@@ -1,0 +1,31 @@
+{
+  "ticket": "SCRUM-640",
+  "artifacts": [
+    {
+      "path": "C:/w/admin640-q23-native-run-20261026-v1.mjs",
+      "sha256": "5e70a2bfe7a9f389d263d62f68cfdebcad02c1d50b6386e6ed4919da078aba3c",
+      "bytes": 12220
+    },
+    {
+      "path": "C:/w/admin640-q23-native-reporter-20261026-v1.mjs",
+      "sha256": "1c765fec0937c9029f13c001047a4c5c1018b9bcc6dc789fc84196cfb8a0ce01",
+      "bytes": 1696
+    },
+    {
+      "path": "C:/w/admin640-q23-prepare-native-20261026-v1.mjs",
+      "sha256": "8aa516da775739f941826778736e1ff3603066bfaae45023fd72638932de5e15",
+      "bytes": 7490
+    },
+    {
+      "path": "C:/w/admin640-q23-prepare-native-20261026-v1.mjs.before-todo-census",
+      "sha256": "b15333585ba932b273168f405108e258dbb4b005f0a2712f8967f4c3f09019bd",
+      "bytes": 7221
+    },
+    {
+      "path": "C:/w/admin640-combined-native-gates.mjs",
+      "sha256": "ef796feda88c4921781f496866c295fe8a7ee04b663ec17ce9963b581b2263e6",
+      "bytes": 9170
+    }
+  ],
+  "helperCopiesOmitted": "Helpers remain external with exact hashes; intent.json binds the executed runner, reporter and installed runtime."
+}

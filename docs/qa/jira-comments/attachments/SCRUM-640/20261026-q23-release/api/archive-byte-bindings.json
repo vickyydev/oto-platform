@@ -1,0 +1,97 @@
+{
+  "ticket": "SCRUM-640",
+  "copies": [
+    {
+      "sourcePath": "C:\\w\\admin640-q23-native-20261026-v1\\result.json",
+      "archivePath": "result.json",
+      "sourceSha256": "13f262d3be80c867de54f0d54e252ba22fef04ec2a2162647fdf14aa5f988698",
+      "archiveSha256": "13f262d3be80c867de54f0d54e252ba22fef04ec2a2162647fdf14aa5f988698",
+      "bytes": 1944,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:\\w\\admin640-q23-native-20261026-v1\\01.json",
+      "archivePath": "01.json",
+      "sourceSha256": "6a715200208ac5270b574d00db25e89fafefcfa3fe6e2420579e3fb73bd98b3c",
+      "archiveSha256": "6a715200208ac5270b574d00db25e89fafefcfa3fe6e2420579e3fb73bd98b3c",
+      "bytes": 2092,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:\\w\\admin640-q23-native-20261026-v1\\case-census.json",
+      "archivePath": "case-census.json",
+      "sourceSha256": "934950f8865f1d988277455f7d869fdc40977a6e93987547dbd28ca6365fe5f7",
+      "archiveSha256": "934950f8865f1d988277455f7d869fdc40977a6e93987547dbd28ca6365fe5f7",
+      "bytes": 119593,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:\\w\\admin640-q23-native-20261026-v1\\source-manifest.json",
+      "archivePath": "source-manifest.json",
+      "sourceSha256": "8cb11b0e87537a6f191ca29d3ddee4a8c30e8082843499b73a224a4a44ab31ce",
+      "archiveSha256": "8cb11b0e87537a6f191ca29d3ddee4a8c30e8082843499b73a224a4a44ab31ce",
+      "bytes": 571113,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:\\w\\admin640-q23-native-20261026-v1\\intent.json",
+      "archivePath": "intent.json",
+      "sourceSha256": "7a8c605766fd5fddb71afef973a615f9815dade1c1ab14f0e9ab86d2284392f1",
+      "archiveSha256": "7a8c605766fd5fddb71afef973a615f9815dade1c1ab14f0e9ab86d2284392f1",
+      "bytes": 2840,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:\\w\\admin640-q23-native-20261026-v1\\setup.json",
+      "archivePath": "setup.json",
+      "sourceSha256": "25c7108d206a214e4b8bd7785233411493e131f67a8d23e62511f67a23c81aca",
+      "archiveSha256": "25c7108d206a214e4b8bd7785233411493e131f67a8d23e62511f67a23c81aca",
+      "bytes": 133,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:\\w\\admin640-q23-native-20261026-v1\\affected-file-plan.json",
+      "archivePath": "affected-file-plan.json",
+      "sourceSha256": "022c370e5d36389dd74e31ea27309fb4f4328873dc12ea23059643e0dd1b8777",
+      "archiveSha256": "022c370e5d36389dd74e31ea27309fb4f4328873dc12ea23059643e0dd1b8777",
+      "bytes": 1867,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:/w/admin640-q23-native-preparation-20261026-v1.json",
+      "archivePath": "preparation.json",
+      "sourceSha256": "e309a54f340035c1af85c5e6e18e3dc911d4cdac18e196edad38ecc7c8baf51a",
+      "archiveSha256": "e309a54f340035c1af85c5e6e18e3dc911d4cdac18e196edad38ecc7c8baf51a",
+      "bytes": 2177,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:/w/admin640-q23-native-preparation-failed-20261026-v1.json",
+      "archivePath": "preparation-failed-original.json",
+      "sourceSha256": "c4caab83149f82ea882691c16c23042ec1cc31fd3233823f033dc41919d9dbcc",
+      "archiveSha256": "c4caab83149f82ea882691c16c23042ec1cc31fd3233823f033dc41919d9dbcc",
+      "bytes": 428,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:/w/admin640-q23-delivery-review-20261026.json",
+      "archivePath": "planner-delivery-review.json",
+      "sourceSha256": "6ccc5a5a6f3d57132dd2da769893cb288a28813bfa50d926c780f17a2851b60b",
+      "archiveSha256": "6ccc5a5a6f3d57132dd2da769893cb288a28813bfa50d926c780f17a2851b60b",
+      "bytes": 5718,
+      "transformation": "none"
+    },
+    {
+      "sourcePath": "C:\\w\\admin640-q23-native-20261026-v1\\01.log",
+      "archivePath": "01.log.txt",
+      "sourceSha256": "7395213e4314efb2e680de1f9c1e423cd3aa6f2f8d904e194f38b51f34cc0c43",
+      "archiveSha256": "e421bc66fcd19d9f52177fdb0f56979bae89f52ae3247eb94875ee80f5aed9ed",
+      "sourceBytes": 30582,
+      "archiveBytes": 30581,
+      "transformation": "display copy only: CRLF to LF, trailing horizontal whitespace and extra EOF blank lines removed; results/content unchanged; original RAM-sanitized log preserved externally"
+    }
+  ],
+  "originalsPreserved": true,
+  "logRedactedBeforeFirstDiskWrite": true,
+  "unredactedRawLogRetained": false
+}

@@ -1,0 +1,3833 @@
+{
+  "completedAt": "2026-10-26T15:23:50.513Z",
+  "files": [
+    {
+      "file": "apps/api/test/assistant-asks.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "654b91d38bb75d569c2cdb52f424ffe833002c09275d7df152da4e9facbe366c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f37b3e1e8172c204b743029f46b22f71ad07cbc1ec2d3eb91881ce3c3cfb2f8b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "accf29dd18baf51bea6f27391e2ae2441ec13c69e0bcbdddf2d6e48f56db6645",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e3ded9acb7c387628e49b111c67e81aa060c6538180dec23f7ecdfeecd6062e7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6e702cd0bd33e51c4f63e7ec8a7a5bde8631b3d8a62a2e4756dd61a42d971920",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "120c1713d5a9069a156ef57de77210c754f331e8e9ee30469638610a407fc030",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0e79b8388e6ca8544a23d28c9c4b9631e0aacd80a1108cf6bfef5ea9ab3ee626",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6f62d2aa7b92aee6e227f51564ad98c36c9ba446bc423fbf16780b17608835e6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4921b5fd4979b81f5eb6d60a263cd848af0790f63f3a759a222875bd6aa896a5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f89bb48a3f9afa1515fe3d7d24ea0cce0ee803af39518025c8cc79c1168e33d9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 10
+      }
+    },
+    {
+      "file": "apps/api/test/assistant-engine.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "24ea0482e95c4888bc79c1fde8369f447b0cc42d94dc07a0baaeb4cc480c324a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1254b55ccf0b410bc926bf25c5e2f3c8c477fe33f527b3705eb8a1d9c05dc23a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e0561f9dcad70b50a1e53ad666766b9e59d566a714b272070fca252fb94434d1",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "81ac06205c12b175c20c7e7d3be6d9b85174c416da1dd13cead02272b19eb1dc",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c918cf37731e3ddf968f50b0acb90156b0bef067fea38d6ea4524c190812a63a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "94ad5d78209621059a2591cccb47d0da84914e9e43b75e45fdb356ea5c18745e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9f2b8bf5eba311021e674c265006a81eb146d385a80e3fe802d60b9d182fa623",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "69dfb3ec023f0581aa99f76a1e974765230115c8d5f21e926bad02ee85e2b612",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8aea62af1ca1ba116891b1a246833503c36cc98d6a3b287d2e02625f424775e0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b0db813841510e6e79ce01c9ca4e5ae42e91af21a16578446eaebd6d733daa57",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3d653763766ba46b01c9f2294169e72e4456b2a146eef1e434338ad8ec30a559",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3cc3f542fa2e721c6e3c75c9f0434763f2df00bd7dba330a267dfee195ea04fb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4a6f0d8e7fd010899c3f6f3bd2205787b8e1c291dc7b23146bdb58775be56f4c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7296814d5e24eac45176f270b09981f38ce9d015d32c1268d8378ca3aa7004c3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "44fdcd3b512c6eb5e559b40155d91cd8d7ffcfbff468c560da1341ecec4c60ad",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "337328194d2300baf39275e8101305985f53c1bebd87244c20d9547e71a3d3a4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "24226d3257a3df3f9c25e0001aabb1149f1fa20ae0c0707e8f8f336fa1d2ca6f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "616592f2e56394a4cb42c8b3b179f3e5e8d667a98bfa04d0caa9cd115bb6a069",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "947d6b21ef23789b1b549065383a6ed5606b8d624656c4d16051794155d660bc",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4efb1fc3dc7b1fd650153faf7cb9b054acc2f6a58a14c2c4c28342e94ee3cc17",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b01896b89901098adaca250710aeddf70f73951dc3cccbc26d3d707bd2be2a51",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6d9dbddf09861bb5b984d8d2b6fbab2b0dbce2a1112e4e6f1b690a3e73244567",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8cf5931059fa9ef18ef6b5495300434de2e373ed96e70b7e56069902685d4d5e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b2efc83292ab8bfcec7950131e84e28d15bf65fba07d3f9278a63987b6cfbc8e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5cf2f859bc1cf9928c9191d938ad6f693209f762e283dbc2a3eeddd8ae71a7d5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "129aa18ab7851bb29b67db97a0e1cd04fc996d7358c60153a8a149d6c10f8c78",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3b93de00490db5ce60936e2dfe60a06d767e9d1dd28de84fd7cf8d6a1f27a8d2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b9738b79ece27a899926c33985445ce4f74bbe48eb5c40d8a77f7cd289fb2dea",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9895032ba0e207fc95565356a37e9c0815d91310923c38c71d31595367e75fc3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ab8d11ff8db67bbec359cb497d1eadf48db3d61647ac59c688e7a5ac2adf1cf5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "880a174c2082690bee09251e275cfe4ae5d0a5e1a6c8b759e48840ece3dc0f91",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b733cb8d7f601d1a080d7ac8e463bf377feb6af97c57e10dc6715a7cd4f1087b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2c614a3e657ecdc37b32b3327280a6326a8d1162a4643286b088297b408f3a9d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dfe8819bc6262de8e3d7c262a1859fd162360a0d94e835f6c737fd617196ac45",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "34939d564ae6b1303c0e933baf3ffe2f003f6aa487c5d9c167638aec539d181e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3338f576f0ee4ec0c86f3e306c97ff2b8bc010630745ba8925f92d735a6dd030",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "006e2de82eaa993fe34bda5ca0784a701cdcb8fa74077284cfaa5943e58095a9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "33ce3c8bd60661c5c098a8c859d34fada6d95a2bf7f8b0a3fbf76743e51d930a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "84cceabb78fa53ec9ca17ea27a8c8cfe6ea97101cf1d5505c508352fe0893916",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4c6ac30dfece0b983e853ad715ec5dd2b03bc0a8c708bc4453822865827685a5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "90223f64df99a1652753c8db60fe362dc3ac4ecc1ca89b8973ae7dbf21e8a578",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "adcee30b0a3d47be0680a3b503a05e2ea3c524a3f953fd7c35c8f67e75b7dd34",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5a8ad235ac69c0a210ae5a942a908cbc74392eb67c224b47fa7898027deb218e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d9b54c4492d3bf989cf7468b9fb5f78362ccb38f973f7c07e20cdbc18e679ced",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "14333de33e5679fe9e9f67717198cc92226da522dd58bf7567b69dbdae0c6bd4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a16a889f53e7b34c60b74908f8d9fb53a5fee1bada0cbc5a9c673e9f2408b094",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "39fc86d24d26da9786aa4931852c0faedf2793c812eefd83250b15fa48d2289f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b5ff3fa63b10ceb9f10a9a3a2b392fea506d7b96999776db5c7739c20045fc96",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b0ad975a7e4adf8717c1e6a269a4d8d400858ef52e35486d352ef0491ef1a1e9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "48758d2e1db6672f849eb7fc6994a6240484887ff68105d65068ab6f4bb4fad4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "28001a06a74b8c3abd46fd7d126a7bed446ffd8664f5af8a9f532325ead753d9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b0efb8cff2c7565068e296985d1a44fda616631f22c771d9e037f1be732fc790",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6baf0c0d0bd805336ca70c0a3c29bd011740a8ac9cd081db44c257f82666d749",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d05fd0dbdc5502b0cfe9062e7267c7f06b6e6683f588ea6386d1b93f25649f88",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5491d9fd241210e04ba4184c9ac037710573f13214065459bd32ac4d5a6db2ac",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d749353bc81f348fc93c952236c0a8f813c7b3dc7e78c0091a982f20c7ec19d0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8cff57a93e259ce5302e133104153e01bf1195233b8664cbf0de87212fb83bdc",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "da16134e521f31b4f4b2fc3fcdca3395def0ee931bdb570a959f7519bed2569d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "105ead3b7468f3a2a605cd7161cfb31e01c335c2a6c1e57e32b22a041e21d159",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 59
+      }
+    },
+    {
+      "file": "apps/api/test/assistant-feedback.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "af96e96c7a6a00fc0f046d8ef95b6856a07ef00a5750f7cf7eca77c4b71e37f7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8251d4680f77530aae48dc67de77b5115a8c7797be50fd2c2ae52a6b32b3a93c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 2
+      }
+    },
+    {
+      "file": "apps/api/test/assistant-golden.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "dae30742eaa1381d25c2a216d7c342055c2b3b1a2a4d94b2e55e518814a78af2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9fe7d3d18f75c3b5363f240577e621ec382c3037a7097104350c6f0818e436bb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "04712d18eb0acb4b237c3b00ad889f9b7e1d475cb37f8267823665dc27af2525",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d72ce7e5de8f4ccf2145d106acd8228ec80c5e818a4afe50249681b26f8cbaf8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "812b23403f9e2cc9264226d22b473116dd9e62e8413fb3ba5942b56317a7bf1d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "279a28a6c9c1d9826762b1184fc58926a0aa972f8c16d9a5d658a78574078a33",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "06581faf5b5955461d39db2935b3b72bca9e7fe3ad99c695867c7b2d19255e56",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "cf060a5338f2541d17b03e8291c5488c1799d2656c3508dd8985811395123044",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9df9d20a6be9d4b6bd0d29e7c35c2c124845764940d953f5250b3923b6713303",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8a6b98b54b6001fd135c6f5ad6666de185b7eecc3368a48d3b4347c86892318f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0262fbc4ce9bf273e6526a554f90843bfe23652faa97fcaf18777ee6d34c9d79",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "179e46df7f27d261f4afc0208a322b0a70906c52e654f0ffb8558b5192e706f8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8fea7c84734585126f21e863530d945f27db2bc99764cd9344e32b3aaef83c06",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c687cc868de16e9c881dde3a9db0768c42d9805cbf66b41eb5170cf1f0185238",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7165f0c42ce405afdcb6d028ef482019d5208332b7c34fe0a2aba070e13fd0b9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f619ddc3354effae2a0b97f98d4f0d2e2c01533473f9b2efd2be8a09199c4bcb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "639f3d9d84601e0aea3632b3444f5e31b14d4a3b95dda51f5fbb7f8600192fba",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "582d7a74c83af43dedd21d930608d6b0b53741fa9c96da3e92e80937412bdc73",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "eb3767b50223e852de0b03aec10b2020b5311a34a21ff1aad897450612d13fee",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "92b99a97c4a00454a7d652d797e46427d351d3c70a15baafc8586d8d90719cfe",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e83586d1c3039f73d0d948e7358eddce1f3ebd51819778cdaacc4c151b09ee82",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9b6da925459c6e28068f9a6ca5d49bd52a271c045dc48be901c8b7e8cfdf9e3f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4c7e108bb433971b93853d542fe09692e4aa5cd890f5384705b3f6457de8f53b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ef859d8737bb14505325d3fc63cfd82903e16a7460e1553c06f4b91caca690d8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "51d09a97d199a11b22b2379a3c152ce1fe1b0a5cac178849dba19e82ca6cf426",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "16f7b0d5c436b2585e943755e49b3a0356e760b9f6610860ba067ed06a6b4888",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2694fc837c71411d1df8786ee84ba834fb0a008e75a4b01f08c7766aad1b4aa9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e08477bac394b27a388a56ff353650d661748fa4d8d6c3052ec0f46486f8290c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "65fb46237c198cdc03d1b59c8fffd62f00a477ce70b30d2f4e272caeb7544009",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "13d8fdc63c14c630ffdb5e83669f471f2250920a80bac3eca5dc76de67a461bd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0f445f70bde6285a136c781463c099158e0a32b465c88017e936572341389759",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ac55bf654441e9c69000c3a0bdf216921c33797cadd224f38b4329e06e51e814",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e204a12334a8242812a51148f762087293009ebc63ddbb85f71728d45353550d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0f9197e28d57f903c44c7c00cd06d8cfca48ec03f961f00902f471658d82f7b7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8b88c3b51be5c52445c38ab3a6868f067279ba7bc9d4905fb7935e78ff5d9203",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fc9abfc28b7a3466856aa142d136be410e8859ee4dbec950065814db17788231",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2769471fc7cb511e01be5e983f745fe02071ef8d0a8609e73496f8dde0f1ee71",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f582859e196500ec154cd13f1b56633b34938f37be25703a10915f1e332e798c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "84ba50c0189ecab359ff3203e5f6f2f5ca81cbdb9625e487c65de0c849efffb2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6dc7222b5af4f3c7cd5b1dd2ce9fdbb953358f6a56770b67a11aa2eb033f6f42",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1b347a2548cce41f3041687992f076b4452e110cc5a65d01f08d9c7066a67e77",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 41
+      }
+    },
+    {
+      "file": "apps/api/test/assistant-otoapp.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "7196ee2dacd328e7b1db57185a331dfe40b14f096950e4093f270caab41e3a82",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0817e2b74525311a270b4c01dd0c19bf9a8e0123cab26aea9c520710751afe5c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fe9c8e62a4e55d92ba92aa45692aa6f8148ca026baab8352a97e66d2ee3b9645",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "39f8a54a8151564054a8933db911193794eaad72a860a25bf47a77436f06e4e2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2caeb306522adbde4b42208b1ab4161ee96048dcf37d03cb1ef8683959379978",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "02ab7f174b816d1d5ace8798186bc46a8f6df5c40982477a548d6299f3c1744b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ff06c9fc791f90c3e43414b00f6529d0df5f60ddbdb69531e3c1ce82c7218626",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d1784b7294f922683a3b025bfdc670935d38be5190503c7061a4657e8486dcf4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "27cbeaf4e029f9c865bd0422588da34b798c3f358541be8bea221c15419b435e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4b3de3f7ad665d15a0bfde48b32773a535c1e9ae0f23e8274aa8881ce3fb5861",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a88f49a3606a86978ff8b847d4c254dc58eea28d2a482a7bdcec441bfaa2fd81",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5d1edc09ed10f6b16105debe4ffa855037b61cb20de05315405805bcba236ae3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4523e36dee86f856ccf59ee09e2becd35e4a2651a1c4bc06190142e593ae4eb8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8ed697a334583729634956f93057bced31a35b4a1adc193eb9a59f30ff3ad10a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "40c21b934a966327b7f2f659b73136fc3518e2d330bf66c5dc869bb0d51f1f27",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7875acd8beac0efd96491839e90e9dcd0968a17228dd64d2460603806943b20d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2e75fcd82b94837371f85897a60394abb2a5b3e89b32e8e155589c7288b80066",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dee57965252e553087a9c839cef81dcf438ea32fc13681d79f8766f5af87c592",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "22fecbf4ed2cb27f68b02b53e424f6ef8ba03ff4ebb3cfdfd802574203215800",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d749e00df9e02873109b22336f965556bcf46b2f7606ba29912afc5cbb933a56",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4d2d8f760a69609f53e275c2cc15a1f2350b24f4d31acca86ba41848da692f6e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "092d2cd30c709204248562f201f8794b6e4767b85fadb1923460164378c2eb9d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d5d866b0c80f2d49eff6ed1fdcf3c3305a40f90e396d5a38bebc72d30891a0ba",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "12a84b0fcdc72f11e920f9b6fdf21d32ac7efd2e343168ce5d7e6d54f25546cd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3543e0efcf5411953f308025f9227325f7d4a3416e1dceb81015814c104e2b43",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1c480aa224856c1ec1ee4600a20471bf8dc7f83060cbeb0c9a9f90af5ae0d05a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b7e22f050b6ed1d7670f31e346a694577ce795f83bbff2631484e3896ef8b269",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ce218dd880c875d6effc397c5b8ebbdbee812678b5db84f051ab669b7750eb21",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4f00ac6879b6e94d42828082e4a397833d4f8f55ccbf1fb8b488b9bfd9fcc4d2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "91a94145e0cd91887d444c5cb2095cafeee1747631d425c5526a96432740af67",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e5d2b8756dea35130142f277ad247265fc110301272c9f2bcc0916064a8206f6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3d1ffe955c4709dba45f9092001352be367011e0801a2ed1bbc01becd937addf",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8d3d2c82cdb959c63777645e8e25922651e0062eb4bbafde2da821752cd775bb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "86468850792359426da0f47ad53435a315a61ff1829814906b6edbced524caf7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8b9623c43b245b7cc1e631f7e92bd50710c6edac7261c8a08f354daa2f29e06b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "91143bb04bff854d7c7a737f4c61c6b148caf5bcb245a1753fc7772b401087b5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ffbe6767309a03e85828967e8b7b6408efea5131938e767194662d8d11740542",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "53443810c326b7e5eb29fb11ddab74a0aebdee482fad055218280465904c414d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f62465e11511ddba7f8dfd3451dd47dadc9a6c566da10d4f2ba8b51329ee0ed1",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fa5a145e815dd438e3435c52d5d06c9f7564de0970edf5cd760f77e339c89dd4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "13b47e272d44b978e7bd136d704bf393406ac44d94dbf908ddb3c07451241793",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b2151471f9f674c8a8103102839da76367262d952d016c69f5735ff2f74af1c2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c1fcdefeb8a604f146616f0f771bd83d0dd5fa95baec1ec0dfad8352f8a80f76",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2ec614a473b963000a99da34f869156318aec4da9519c38af037368955376226",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 44
+      }
+    },
+    {
+      "file": "apps/api/test/assistant-registry.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "1a856a7d86851d7cfd95f311e8e135c735f13914d9f99bdb56495dee71bcdea3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "bd2309a4cc0ac86b9c911e68c29c893434fe6dfeea861cf51c150b218249bfae",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9d836d7c1caf540cc167b92218d784bf111b55c387be0037dc9a24048b783fec",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "89d568313e82358c70b750d9de8a2152f468c70a5ba1a7a9b7a88b1e1c7fc42f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "aa89098a6f01f9c20140de5b1d0557a5ca0dc0b382bebaa9fe8317a63165309d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "bd0b62f6ae4f7f17ab067905253aa7a9d4d05f4cd1dc7cac01aa852077a799a4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "253f8092be80431163ab5b12ca1e43867d4c7172e1bdeacd12d2ea329295927c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1456e0d6874560eab7e967c29f130dc1a9ae746a89bfb96a6950f719bf75603a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4d1521b825048f7a10b5838a43c02ed32622bce676fd8b6eb5afb30457bbaa8d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 9
+      }
+    },
+    {
+      "file": "apps/api/test/assistant-settings-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "11e41f4a593928a9871862434a5a237e878fcc9a292dd5a61209394b58afa81c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ab8fede23c34c74cf22b619aaed4b68975dc4b8b9a47ffa19484638ae5cd1bf2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6165a096389f49f5824a47f3659e9a58d33ca1f2b35efcdb2767daf2a4dece5e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1d10abdbb869bb6cea2cec9f17b7b34924fb9a390502b696c3d5e1162c591d9f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a7faba43060a27661b1f1677984a5dc564875fcc5745993e7cc647f532e3fed8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "78c33475dec1626a37438a0e2bdeb1bd418c63b31db8aa4739da2aa9641a67f2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9332af86f34636f26971b3965d24c3d738da3d46aed63ffafee4b4fe051ffcca",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4ae6c75e21163cb8a5062822a775c4a9ed8acf16065fce2c8d9cbfffcbf905c8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "160dcae405a8350fe7140e8cfc47818666c5f6ba69046d900d59dccfa022a4f7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fb8132f1cd106bea16ac2b6c22c59a771c111a4532840ff22cc9883dd89f32a5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5da5ce534ec7cebffb5d8064d0197e5e6ea291152aec4a4f5edea6b19f2c0b88",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a92e25ee400c173bf816cd93198b29f324231ed43858763c1cddae1fa5358eb4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d8254f26947c5db9e35777af6349fbea51bd568ed4ade9ccf06ce71d4084ee4e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dfcf7eedca567d4a6a829328ff409c0e728d947a13dfe21a4baa22ebca297741",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c97e40d024755f22594ebb50753c5e370b4443b3b882887aa365085fdd2741ee",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4722e8f3bca6b07958d2c0c9b5be5dcd8447c429d513b5e22682d3c1b299b161",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "18ae0e37b804cad8a10ad33384bcad36daf1e28aa59de4c6d05bd18b802e078b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "70b2bcc6c95c9279bbe1905e2e5f2f8751758359cbff152c9d6d49545039a886",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "cf3f1a3b7ef1f802cbd3e0c796de3f6bf1772f28d0e32cf77e38d5f58106d889",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d882a048d9d2962cd243a00068162b52e89ce73ea0df8688bd3a3bc42e79c458",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1dede6b5e08b5775bf9ff2bfe9eb5002318c4f742324ab366b56c17ed0583eec",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "cacbfcbc2e8bc98bab75e607e5e19eb06825c63a740efcdd7414fe029dff29d8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ef1da4bdf619024d5c80dd7b6973786d0ffc0d26487d7d7bb7e4e35ab570df47",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e747d5e2b163b5de82b0bcf2aac36de82420245dd4f76ee48061f451a27dac6c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d7ea028dc92a4436c58b557d179bda45e62b22104333454891e9ff2f72ed0719",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c1779b2efba7c01f241786f4c377b28c22af2bad6db8123a9f2d7f7bd9f62dd0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8d8b1c0cbf7a8ec1155df41a9478f5e3c663463a17ef01df25540b339abb301b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7f31fb35100750e0c3356df932006f2553a43a7a67c720b2f42d21e3fbe5a534",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "04e45ddea150b7af363887b931ba9c858ae9a1b24b899d6325235264e93ff5b5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e68055c685bd5087d9cffbdbdbf3ce9712b9a9f150741bd4d3270d2c89e00edb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "422931c624267bcd4a76be5117c4781ee01700ff51393b79072394e45565799c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "55011800897012b8d40b81dceb8861ff8d6c4775ba76a741096df3c53e4eb1a8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "711724c600de586c0d20483c1fc314f7e31d805ae09d57ff2cd426aa44701aa3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d719eb57cd3ea9488a659d41da78790d40b0bc70338519edb344c203aa74587a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2558dfd9808228be18c364c57d311a969a47668a6787ba17b9e10b1e15f0273e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "232ce94ac4c54918624c273f1d4358762df1e100ddbe5a2c7b865e75f77e4c17",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5925a0017069e5d34a2601c26a73609ca6533ba9342529beec2f7216b468277c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "60651d3ce5afd29376d952d50a7cb738bd94a20b7a59e2129e932b6232ddf731",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9043a1bd0cacf338046ffa7f3c77001e14c2596ff1f1c73aed8c57fb953e0270",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5f16693f7836e7204053556846331db675e5c9b71fb015b22914c1cf7c0c86ae",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ce056fbf1022a2f4b2a68dff3389453c8a4aade8c68a74f77dda0387edd1816a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c739c494a9b68b5bfba4c84fd5d8cab278f8da51b8d597323aa727414b750822",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dfea660a7349b4c083c5d596fafb8d53e690e8059d7e2656e42c7e8c7cabe6c4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7a93985ed683481c9e78d51bf1b2fbf1d485ad555b41b0832d9ec69d9558e0e5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d8c534cb9f1ef7d6ede56742febd9be9aafe3b40fc4551e650b7576ae7f6a079",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9ec0cdf571340fb97e6b4a8b3041789658ac5d80ed51a90795e163246fe353ea",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "48dc09b2589354d8adc50c804fffd5c2a2d8734f997ad0ac179978510e5b570e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "11dcd10e8e8e59e22e24cc2784dd2826807a3a999658633018da2c5fb4c73f3f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "bb3fad920b7f818f3bf8e90896715c38617dc80638157ba22d69909d78303c49",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 49
+      }
+    },
+    {
+      "file": "apps/api/test/audit-read.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "3e82c8602ed6cf4fe367da548e8c6b2eccbe02dd24df58f562df9d41f4948e81",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "552979f065196e091d20b73d299d152119ec98697bc1a8b199fea2bc27e0176d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a86aa7cd42be2e5fec93737da19e9c3ed0449e08e229531116c77b71b212a393",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5f35245423196e44cc7907d8dacd9a65c3d44174673eb157bb9fa04b4b88c0b7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9478659a3c61252018fa7acd345b33a1fb7d0bd25a57d272d06c792388c94dcd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1b4b40f37cb300a737ecd659e21fb96d2a0908af836b1093e234518f04ede05b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0998ac3a4bfa2a6f6a257384c2259404f216110363918d17a4494d38528cbb96",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "53d09dc9b4bda4f5a19c4bbfe17e5d4d326d3dd5c07a3779e8e377b2dcf9bb8c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8197feab5db6d94b7526b27fe056422be2bf3d9c0b6022774affdf4959ab5eac",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 9
+      }
+    },
+    {
+      "file": "apps/api/test/auth-handoff-files-tx.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "2f861e2413d65ab2732f2a155b1dca86b2cb670fc0b17a8fa413bb44c78177c9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "21c8abac6db17163c0e30d3c5a098ce4e3b992d3430b460d954bd3338d34daf5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "62f71726fbe3784c855f66f256943cb282fefe8c29613070170ee0256c8b86bd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0cf0f719bb27faebfae7c682339178c5953d84b30dcb78c5c0261af1bd4f0fba",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d36eab1fb1c9a0468fbe9dd0452c8f34a0b9d17573cb17f49e9e695884774a83",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "575898ada9dc754861e20a57039c77275ab0b6ad83e261045095ee67e39752ab",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f3e09e08ae8137b3433684b8fb0712db5c675aa8d678252cda3e8aae697392e2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "25fc169c7a6a69d7399042c24c743b73832655a529e94d0222bc15f051900fce",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4798850ba0f55af753b281ba567c5551c1069af37b9be37760320959dd377012",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "18e512ce03b84568e797ba15fde1eac68b1995f8b9935d6b271d258806e3e618",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 10
+      }
+    },
+    {
+      "file": "apps/api/test/events-e5-audit.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "9ddcbc9d9775f2e8eafcdfb37f25edab29a730eab96209d0e03cfc6592e11d65",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "166096fd3367500215f8e6a19266b62bd379428b71fdbb8e2316b82c0489b005",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ae3751e5fe015b3bebd142c014e926b80f3f2dbf3c559e834be809731402f7ae",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "643d740a5b6024ebe10995cbb06d5245e9e6b715f093a0d42b3f491308c85184",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3c2888b05c4e94e5418f1a0c0f17a3f752a8ffeea01cfc804598a44270bfb0bf",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "35a16c707dfeb18982b466edd7a478e0e4fc437267b74015856b6c7f3024c058",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a84372cb20909e651994435b717e3f251dbe5273eb6be15476a0ea7d6e2ce3ee",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "920a0c13e2068f8013271b05326bf3b0c03b4de2d840706e8da813336d6322ec",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dde9c99d7540d88c28bac12cba9b1983cee173f251bbb30f2c9a2b7c79ab225f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "30aaf2f8dbb7ff007b7f3b3594c967c44529d992f302eea9a611588d184e3bc6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fda40e36e6baa2e53a150ffb87ebd900ce57b5c43dda6f3b2ee0f0087b065eb1",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "935006172c8b2a7cfe0ef2d05a3d1c286aac9be718c05f2633f73e395646c62f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 12
+      }
+    },
+    {
+      "file": "apps/api/test/handoff-department.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "35d7900de17a58dab00fe56cb18cacdb993b413a2cfded2fabd470e9e6c68ede",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "52382b0af9c759af9e52b2d5cc3424f674f352d4535033fb72c8285121592c02",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "68b0766f0035ac89b99ad5bec0d831ec9b308b7c447e5729f0a98ddad09e3efe",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ed513fb0ce8c99a4cf91ee7b2cb6eb6ca969f7eab81870e9b499c5ad8db86a1e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "15265fca4a33d204664666f6348eb7fc7be3395aece7d852a742498ec88b9e01",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1900d0e0c776104aee3af614aabe58c682239b3355ed38a2d07fdfb851ac1f42",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "49b4e224f362ba0e1f2d42a069139a2543472aa6b495163e527d15658ea28cc0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d783feef7ec9e2a24b4f256121589bd76d63ade50d8e872eaf44d4232dadfe46",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "deb478346440621a34296d798625214622b16de980cadfcb79d2518531124644",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 9
+      }
+    },
+    {
+      "file": "apps/api/test/handoff.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "44c3036ed0f4bc15378016934698ef081b8ece15c0db1825ffd6e4e4695d9f26",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "12a26cff6455569b1c4e664d6cfe7e1418cc4b5dd55481b3cbd286e5b01df1ff",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e04a04feea7c8938c3c1b456042c0a3fa1669cc8d869285e86db16286058b427",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "82afb4c9116df9f0d490ecf213e200be40cb8f1319ab5b3d389c92d938acc5a5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6109e14d07bd6dad8655930daa41988ed47c00a472ea12afa392a0900d73b28d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7d8590530dca433ddfe22be33fcc02bab636ed06ab17bc0ba84415b93e3c7677",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2dc19355d26ef27f85fac5c5614f792686afca41f5d6cba40e8cb3c89df6b23d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9bf8b93f81ad7f76909e32b28e5fb9a39a821695708401bd231f8b3003bef367",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9f99c57488813e9daaf12592aaa3982f646beffb596fb556f3d595508ea173fb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d07a78736388dfd7331a5bbea4e49dbb76647407ebc0f2f80c9584870e5abfea",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8aa7f6a3642b7ef038d5f59df6a38a702e3ebc76b5d81add72ea36b2f75d9a39",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c276807e9aff5093334a1c0569aa411e03f8eacfede18548d01dfc1830b9ad2a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5fdec078ab3085b30a0b634bcddd5164a5618c5f2a83412818f7b60f897528fa",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ef5ad8c2e8c3770d5254f7aa6d7121ec855e97cca640519f10660822270f451f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "50cae0e7672e55ab0d6b9981c791f7c714d7921f4afb4a8b3aef18a1b10b8a22",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e186d3daeb1eb3aa79303ec289b8f20bc76070df83c8487d468fcafbbfcda608",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8e4e88d115ea8be6e49c27c587d2da3ef09bcf2655bacf9b3ffecaec026ff740",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9081e64a5b684da21ee190099461347c19fee35f8aa6022d1340bc1860bc94e0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b413eeb8ff97b820d95ba124eb1022ba71dd669b0ff968eebc136a69e58ef35f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c928d56870679cd21e95a13a2821d019b48bd764434838483fd428e39174caa3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "70e3616d00eacf26f28903dafae0d7f9ed2b0cb7fd8ae9e634b915560a61ad30",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "149bf00ea271f4eefcdef93577e6c20dfd0f01837c276ae6dd29bc866e3967e3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 22
+      }
+    },
+    {
+      "file": "apps/api/test/id-conformance.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "5c3072487f7ca32f31492db45357ce841a4b46872df97781324142618b6f2e37",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a14b57a859e61ba4d1b8e604054d7c258e9b1b3102bbe273f4d24e702cfdc463",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5b4296db03deb0c3c9910e51a413df2428b11de48b8affe793bbcb1156ab15d4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "723cac4ec70731cd4ff83a49af7d12f6a8d40dc6661c04a94000b1d6d52e41d8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6ddb9d0289cb5092964ed6f6a04dd98a8c8ee9825793bd6dc57bfacbe10ba7fd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ab95154b6d8ba4cc9166c60e506a65504f678f41ae9970f5f9d4ac042098e43a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "59675c57a03483ba209a6916daeab95c4b7bf0ea47ed3d22dd9dd2910bfdfdb6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "107822aaec975f659c9ad0b724dcb5084482ef774eed4e0ea1a33399d96ea811",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a02beed97aa63eb605670a6f3b5d7a1ec33b47a69aecd36597c7e05dd2841a5b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "43dec6053ded6b3dbecdd8d827834a0ee3f7a9f58ad2395cb4d5110867f31d76",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7583c30bbf56c8971e3432f774521b4c444fe4be93fa5f22772dff93e729dcdb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "01929fcd80bebf32b0f6d41fb8412e971eec847929393e6eb6f27bab9523b27d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f54bd3cd3ebe4a55c13e54d9ed178aa47c23bdb13cae5b1aec44076c7240c0af",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d0a95c935fc87ec30db3154cfa76e782dabbe5654021bb85844907e7d8ce2b7b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "53b017a7af0c543bc060708cbd051bed2f50e5f144a6b3dd56322a64a87f0373",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "03502dc7de68da33111822dacc44d93c8dd73d8376a596691f6da3f230024626",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f5763f06ebfdbff679a7e138bb59371a748e96b857c412bdc6ee42d632f781d0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "11f76a675b68a4d130be9426703ed8e616522f89ab811c96cb5f02826526c1f7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3fdf582afb95a90bf8eff56e803d69016104ad5b8e9ec90edadf54cb7a689590",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4373a29438fc0c1910550205c5a2749fe617ed9d39a6679954982774b6ad1681",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5fed869a7d7b35fe260ebb27cdd76e3eeb853ebe3387345e8d9e918e3871a5f6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "269fc2606d728f35716890dfded6cc354b75b7cdfb4fedd7233ef1d47d078857",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "171cc868203e2681cc98fe9ea171d742b42f4946b40152ad3002d2413d952b56",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2179936c347770c02051f3d2e49651ca9f9bbcfe197e521751a1f2720bc12fec",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b79eec08ec6b7e09ad7c5b43c7965c53499b589b4494c68357388b5d2c57f474",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 25
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-audit-context-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "dc8f812c34e8a950fbf0b88fa8efc5bac7d7cd9bb8e75a44a5b529957e80dc25",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "86b045dfe97cadb9fd933ee1337b43025c1f2bcb52ba61090dafdcdaf749ff00",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ec65a31dbbc78dcc105b819261575f6679a545997a2ef0d268123190390c7d34",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fdcf9ef840ddde6dacbbf2ebd87e0ad6b3fefa3081043de2e940ab70cab270f1",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "77623ee78ff666d3d003a73bba066666a6799822cf75169294b5d0ba0a2e611c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b78fbba2f1519012ed05c54ab533685ba8c24e3d53973dcefaa6cbde7cd8bf1c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b9bfa38d2bb739d68f3b59a8dad893a78a8f3f073e4e168e7c6da22b8912a315",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f16784f4ca1ac8a915ecd7ca8a62f89ee5ceffff976088484dc1142339fd3e89",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f5556893c941f978263800ca8f59f3c904aafebb56ecaa6355ad1c59016d7d77",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b5028f8899a3d3ae369317bc6c47750058d4b19037c5a9be3970cb3eaf9a7690",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8cea83e1cc35b842eb76ed2665ca1c10fa5df5eb3ed9087eb391e1a99fa40b87",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "89e604245f814d099c3b45c711a410dccef8a53a08ab2ca90849f5790be685c4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a98c9372eafa8596f7c168d67edf802f4d086fdf4fe90a9aa6f023f1d32bf27b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "19cc4afa6693be4865ae80a793d8302a931cdee9ad46c76e4488edb68de52010",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4257066f2d931a12c204256016720b6b12afa8bfcbe371999c6ea041387b6be7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "607159181dc0431a9f0166f89d18c2b2c1e0bb19a0be83c38ec22d15ea536986",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6e7e86d38c83ed9a523584268d8f90fb5d34b3df5e73c3ad5e15830923099021",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "63ace376f89723bdb9384908dbae578ae96bee937d6103eb269c67a42863475e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b828079e1ebb3569bb3f2990a0dd500ac9cd4d7c45c8752ae5c1458b238877fd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8cc24aa9ab8419a8496b9562547566328aef4d7219152db0c6522241de704ffc",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 20
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-handoff-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "11a36d886c36bbf2d3db89e22eabe07e52fdc3a5007309642baf5e5bd8e4e56a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2bb9a92afd39ca7b440f35e25aaf1201e3923c5e9c8741d93b91a9a95c21bdae",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8dc6ec6dd07128371ec6895931b71aad410ce41150a35a1add71ddce29a51aeb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ef45f6f607064d2129376c5bec993fbceb1ea6035b6129101d2aa52fb1d2cf5b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "cc350eaf26f945d556178f30681be677e814571ad9eac93696ef6f902c68f6ba",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d03e0a82308bce75540651b4fa026196fe24e91c860e18fa907dd02218da3fef",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d5be3331877ffce3e4e05d8984e6b9b6b030e989c20995c9e068313c64914b7b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "70e59e362c20cc5d8d8a60aa8e8108ef36a1af6b8823e55fd5b01021e4f7d9d1",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ffab5edf8efa0e76e56c490aae9fe89a84fa6ad2c91e3359b4e196d93908bcbd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "93a58b27ca9115725ab66ebd0c498bcc58a85a9aa920bca80a06820b0c056641",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "37c2052dc93ef6386dec6c43c12b0928b7f7ccee828f46f723123bc06b371e38",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "82cb08245e8a18efc39fbfd0882d3a38d32e1f246132f327ff4fd664d5f7eb98",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7f19090468d843b607239b48ff77a490dbd314cedcd3d382333ddd20e17dfaaa",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "97af0d2cdf97b2c04cf79901428e347e0c39be33559dd9676518befc6e3d7997",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3dba9e5e15ec84f014ac4474cf628a34c7dcc68b68718a1d5acbc9ee9c23ef3f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9f6b6d74ee9c95a1bdfeaacc04d9a309539288d5707808804309565253a4ceeb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4142908d6ade68d4c5bf54041b68207ec3f639cf90b3b9c7b9203509fdf52b3e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0ce19779f5e5d06c83c27045141339bf8371da5a060a3718cefa85df164ea993",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "05d3b70df258be0fad238ecfa419e01c299016725c316db4ea728162c03ad3ed",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dd2f83aa6bab7fadc0ace83ddc7a1170481a7c1b7648adb8642891dbaa11a10b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c94a2b2e11428db7da2d43d5f8da4cc2e9888056d565cf17bef14d6b417c37d7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "30ab7272a9170cac41d0ee3b996dc8bfe94747a92fbe7dd8491509c9f198b354",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "64092396dbde9da227ea106e53756ccf0c947186108601b96d5456a792370acf",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9d2c87aa45ebfcc0f78fdf012d43e1dd120b73359d8e0b18324ad60b87c8315f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2f6e30cb229eefc632ce19e4d11eb2402524fe3c7f960a299557473a031dcb34",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 25
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-idempotency-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "efe32e651199a0932158e8e7f4d202734d6a87ea135b337938385a56807adc6f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d89429833d73e90a66efe250e0ebd4c2fef24bdc7666cf109a7c5635e5144557",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d1acee2951e26bb1057ef4102be9850284309c69390913fc1e9a153db8942382",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "cc6a8c9b5d11afdc54aa501b2799c904fffce57b0561c78286831154b4d57809",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4735105eacc93f0a2f4f32b5568c434845b345274c0830f4eb81a9f126d83f00",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b4b03dd53554df83f67d53be4982330fb5ac0017bd5ca8e8d6bf80b37f2aded5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4ec65254e13d21ff505c66fa06835658db578fec4595c3d64d76d04d2f52cd7e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0bb86afaa1e3fb51d97e3e6ecd695901d0d5938f63584ba4f5f55a7f2d1ab46e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0b11bb5b5afd6581b56eaf425201d78e0045475fc73f0378e786dba32e509fb6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9353aa870e89212670e9082b711c9f336322ccb020346fe2665221b4fa36f7dd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e21580973d45d062e8fe311fab6752226eeb40a8cdf8826306719f84ee5eb0fc",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5f163363c91fb92934a4d6976fc43d7bfd09b89227bb4412aac6df8f3185bd32",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0e691abad863a4ad96be9d21ecbd224588aca77da86afc4841e40524cb285ef7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8c808cda6c40fe3b4c9a6b2219b6bb183d4ef04fee0c035184985ff2977c97a2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4569e888b6a26cdf549ef2c9251dd89c6ab6c7cf8d47c96a8dd6649a33d386c7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "19b723fc53c39d2b6ae26c726defc4d49639c7f9cf21f692fb5fb6f5462afb56",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ca372c24c9c39f88c3b65455c483932b8622c3c91e9e3992da449f148221025b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8c4af7095fadf64e039c03713a69c420e5b1fbb8200d19aaf3d939a42fa8572e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ec2bd3e3ac35a3c17d06193a3e45f3bf2b55fb2e4124cfce021517f79ea72dd7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3d31fd868c61ef16cf45551e2d3f61d349bbe4b5120fd7d9da8634c74a7e5575",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0886db3a7eeb155462e3c521bb541b76aee37b6083d006b8f42d95d9e4ea7180",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 21
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-lifecycle-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "294cab5a066da8361b792920f6ad8900f9a385d11c5a2f95f6fb27fdab198b49",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "760c1214b4fd869dbf177df8146d518810e64e0c70a9fec2b078d2442182bb93",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "86c51859b2ff5ce1b246c5b0bda2bd3d41ea77b215018f16be98137a862fea47",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "582c77d5bd8f7be27f1c76fce374fa77aa268ef34957bd912da054e11135158b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b944f43c57847c1afc1c31b1ffdf24574f33ff12383e309406e5f97bc1776864",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f8d05a2441f2de90dea909ed9f9ab7f5b7d56bac8a05d7892eca0535cc4b664d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9c66e7c84995647fe083cb04b203f79a12228ab6c189741ee332ec0feed5a99e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "55944e554fd8625e95b9e8aad9b9ee7be5a5a200881fd2ebc96ceca9cca7c2ca",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5eb5703a112bc33b3e94f40eecaf9ed61cafc40fd81b32aca4d0d4bfed601a0e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 9
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-request-race-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "2f22cf40b470e4ddcb83ae7f9e2814146fe449be157397b5551aebe91e7565dd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "bb7c0835eb6cd88db137b019efccc94a4c9397cdb57ef3a9446ab970960ec55c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0d69752c5cbf74db14ac492b63fa760367121fd7c379ff084897a62f9f78757c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ad6c3c7c0b31b9c38e48d3a6f996cf6740aff3b173e414693b3721ae6af010cb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "39784f2b6b35c5d8fb2b16c147cab0a92fad369536ffd5af79a256cc6a78dd0f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2e499779ccf1b86bd236d44a1544e08708c5e411cffb872e8827cf7762a57ce8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d1b389428902e2ac58f56909d2991b8b543e50e0b0c3a6923f375afad734d122",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6798183ac78e57d8323010fc49fa609e9170544176dd3cacee3c332820359fd2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6a60ad7bd02536c0bb25bbef37ad74afabc4d383b632919af0509d5e40effa33",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "56e19730542266f33111c4f98a4fe614239ec0cb6770f30b18bccfd1d369da49",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 10
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "7bbfeaa9f03233e6decedfd5310a609af8824c40dc6a12efb2b999ea029e4d35",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1e180ccb3f544953f5045574c3a9df453d46ff3944ea791bd06532b5ca9d9b79",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2c069e508e2bb974c00108aae65d4e44f00efcbca9c3a70c769cdcec2b8253ca",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "bc0451b27f598c776973029a24133899c8f3b82ddc772d72648d475145b84338",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "522542527ca43c7aacb4eda14c7397787624b0a849dabc3c3492ffd6067ede24",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "132202ba9d2a9852d1cb838a2c10f9e5029b0fd0403b28437c830fbd8a176b85",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "087cffdc964cd710ae603215ac367fd733bc3ab8c557a2e6c6d63b9dc91ed9f5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "61eb9de35fb01b10106b8188dd874f19691d040f48fa3ce609523e46acbec06e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ba49e4acbcffdee9f97b1b14ce2102282b8337ea037b9a18a822a37170f714d0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "451860a492a32e1b3ed31b38af2bd31934c334fab4057f27fbd389c420170936",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "246ebc0f8e450e81ff627bfdfc99b541c7873202be6ea4486adba6587bbe2a00",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3dc1d5eb718ccac44ae9465eb3caefc8d40bdbe82070be2789b9d7c626e82a71",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "339399098f493c00a2227f6196e8e6a17bdaba8e07470bb9b1e6106cc875bb3e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "21d8fafb2b1dd5c58a9c6290325d94978d60ede9020526d5b0c35ce6901af776",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6a329d8cc90f58be69120b0c1e0c2b1eed16a24548413da126526ccee699f4dd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "eea174f7dae0ae794b6f3869f96887f71f370ce49c671e06b9cc9aad1fdbdfae",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0047b3cd6f7c4ab2e349cf714d643e7c232d34d9ae0c7548a7d80d3a670301e7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fa6902a5bdd3732b526b3fd7918637dfa242e6bbab706a3bcfffbdfc28c68540",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "cb76f3c64d4bede5b8442b9f1834c58b93e98a12d644629e8c160beae7e47fd3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c03cd0e297de0e9b451db5ef021322362b8854b0e8d88c9c3c252b7e2bad5bc1",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "53f405f04fc188fd3e185d5511c9117bce5015aff919a6a3507c93c4676f4ca6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ac55b3e0da08253714553869a55ba7218da31c351191b40759622c7c84aa4297",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "acdf65fd7ba161085f896a133b8ca14d8b3c815c747ab37099e3a8270321dfab",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "eb017ed0e616c251f64f3fc99b1ba7c9984d41912b57c9e6e7f935fd581cc32d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b55a9f01d91f8ab125037a9770175cba05318b7064319935c3b65d7c91f5662b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "551e5d0dba138ab0a9824ecffc8cdd53bc23160f82ce778d5e457bbf9420ab33",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7368844481803202c7fe6c6ced3a122076500c1fc3a3bd2acc17e9199fad4c4b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4ac0a43b0cb557182d64ca7f0a02456b5aff262f7a02d106fe90d5250b5d6ff6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4ff527f44e03be6901a2ad897465feeafff4547da2185a38bb894814c3f4d2c9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 29
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-route-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "042fcc0ec0dd11e312ab95d08b7d66975aa09774f48af6bf68354c1b0e9bff47",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5ed1dfebd74c91e80594021b9738532f97001d0876b33e7d03b00c70691592b6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7360d76fe9917de002485091927b7ce86a8dd53a1c2e276f6adab9a311497702",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6f714499c4a8b1ae6aa2972d2c9691f864ea738dfe9c2a538478d477b1f59f72",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "714212b00b0145162bcbc32acc38d56a30e3c67d8c6f0aa77fa5ecbac7a93796",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a80aab92408b1ff9e2ac975e8260260ecf3e97b2773f9cd82f9ecfd8f6ca6e67",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "97447286211cd453a55ce71deb144ac02aa333e8d92014b7847c5e35c951fa2c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "afe31542801ab6031bf599411aeeb4ca84e93927e7c081e2b669a53a8965b522",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "39019548dc6dc0a893fbd7282c9bca390dae749cc1096e3a83acacb7e772e9ef",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dbd438c95c8dd7c58bffe8351ef5ef57cdf3d4358b2c136451cca124d990348b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "aa89ee62c383f858aa340c5b9ff9e6281d03fb2ffbdf85204d1b0381e4057673",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "86282071f2124eda90afabe6c2d235eb13387c59f9cffa55051768829e4ba150",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "63eda16923001221932d114ea79f5c6c6f8f2a93d167b762fec22444214dc228",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3841a03d5112213028e5dd26ad6bd45aef67f0f9ed41badea7500f598f11a908",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "452277fefb2ad3b6c8a1c3012baedeeedc24043f12fb24d5c2246cdf8303b77d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a025284b7a132d976b78a9750603fb40b258dad88cdf581cea5777a9dc02f190",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3e03793811c6de53e84a945858ad944f1e64a815c3e9ea7ea70f22e9d6e4c17e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "383136a0feea41006657aca4caaf223e69a319dc38e51ddd8d47bbc319a77878",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3dc78e18d3368f45f9b8178664f35664044e35d04b4750ecac032c578370b2b8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "769f699cb761b8b50146e1963c254b8a64e04b1b8cf1261e70a800411e403ded",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "53955cb6c597aa3f302b02e3fa247db32dcb3277c5516a2d8579f4f33a7828fc",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1b2a7df317e256ec6e08833e476ec89a1d0adbff70a9c76b71b3784af6b31986",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e2e597511d7fc0b93af9187cf11299a0b0eafdd266e43487f38255ef04da3261",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3c882be6917a5ed86235ed7b612fe0345f5add8b9d095838af290298515ce0bb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3437c3a5af181817125d788f312c8932ce11af989525830277f8904a8643bc1a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "bad1bfa6e7b0a6d6c0d638ed61c2448e6e0b4337ac4f4e9ec7731565c08671cd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 26
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-seat-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "3504c755d94736765ee1c31c470d7790e4d36be9a985b4f549753b80c017092a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "0bfe44ca9919918d23775399e830dd0ebfc5ef18ce7b0a8888b09663e9304eaf",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 2
+      }
+    },
+    {
+      "file": "apps/api/test/operator-switch-session-review.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "0a626f51fdea9c3b8cbd780e59265c8979cccccd2d759ff38e9416f1dfbfeff7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e444aaa5ca085f1ec7c35a37d639df86d86038c5765772a83209e2a7f4b07573",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dbdef4dea68ecc27f1fcadee382d8f7d7f702988156304b519f677e84346114b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "561917d23ba8675fbdd3b67b0543d7f43430606f9b6ccc676d283abebc27624c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fd95876bbd7cf82da6d56a4a4ac0e8b303c02b2dccd5fd683cde05c26534a631",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6a9ad2ddf13ae63995bae1bc4168d8c54d799cc370b425efa93309979f4415df",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4c5371d981d54d0b0ea0e4d63a2fb1a5fe83e0e8063e4222a10f454e7bcf84e9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "fe0460861e68b00d778fc1ad93b5c29d7cdb8194ad9b311d931b5a01594f81bc",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e908eb16bcf84509a4156a95161796de7bc378d85b9a51e95f252e2e570339ab",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dee0515fec773338703dc0180b07bb7813e58f232ae1c5744fe7de11c18fa9db",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d4c2dc894a34e87be5da953ef1bb04ba19e88482569b731f791a56998f3f7a4f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b096fbdcf65796272e84d5d807e4696986c53eadc567531868392ddf7860ee0e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b3646d976a1d48c771e3c3cf630622a9edf8581242b39eaa1f14c4d51082b183",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f1b7ff6d79c5f1b702d73f9e38eb25d9558c323f271bc04787248951ce13234e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f136a400634b0bc74f9b47c2cea3c34818b72eaa4b2dd4010a69a76340569386",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "27149b679d923243438a11f474d94d03c63cee6d4e343b78434fa339202758c4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b29b3690d89b5c98635de55cb7773a2fac485ac541e9bfee75b0fc5e49fabd2c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d977705c5eb30c2a31a9c33bd29a734865afdc96c6fe2686d26b0946612f524b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3da74fe0f2bf3e3a7fa72379d9196830e55b24101b250b598ef618a62f7ac774",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8052bf07fa45ba84f6dce5baac8b9df4e5fb5f3a3c42143eedaed6f21b452d42",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b6dcabf1cc7d00d43f8733c15fc7996ae51ac4044074af8bb7234da59e3628c5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "10693508651b03aa86a63978dd4c600603b11651862583df07c17aff617ed2d2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4e6ec6eeceb15d43587cdb85e6013388fa696b42105ee114d2ab7ad345d67ca7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e54cbe073c0d9861e74cdc79bf99bc0bd7212d49ea26cf3f81303c8afc064679",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ddc3453b40002dcf1bcba2581ec60dc7b6005267bf34e1ee8d70f3d650e5207f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3bef33e69cd1c1566bba63a554c6d4c9efe1cb229a594db06504fd3bddebfc18",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e2bd2231b78b48a5b93ba3ca4a6f9fe4e727f9a369b468771f6b109f637ca706",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9bae717b35d459f19c5aac3b222f15263b07b11a52bdc1d7bae1569448599b4f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ab89fa10b578eda44c1f83c2a2234ff4862ebcdf9535ee6264f2c95ee90ec581",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "38aa437069713d635949d1eb903429d9ab0cc6aef14c9fedfb54f1d0632127d0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9d38f0e99e919497dee618db140080a0039d6d8b07b908a5761d179f735a43d5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "aef3e51b68df1189d4107fe460904b55b725ff86e1ea6e4ab1a326075ce9cf3a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e93d4cc0015e5af775d1cb9409b0e6b1d84d7315a4188259857369d7369cd4dd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a09b231cff36ae334273e6b6c395afe285abf80afa7770a3a7e80e784a175fd5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2ec042d5bfeea8eef499a06e1489a5611fdbdfc4355273d3dc1513cbff7562a1",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ee8238ae64ec064aec64b76d2ea4c84afc726097df84964e3ba9b8b9d4c6b809",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f0df7a34a5625e875fe869a8f4b00f2899ec30e08fd10f802e3bb28ab1f58704",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "19b7308f8669d92a3135f54e6b9c6168b1847eab3a345c4ac0a5e292b74f253b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4dc246f6a17118ae197e50458afca0b3d05d6e6670793546d0be983d7797cc8b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 39
+      }
+    },
+    {
+      "file": "apps/api/test/route-scope-target.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "7f810d13cdf7d0ff24b07c79045e74cf6b8f23cb04c07629f361ed6cc826d4fd",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2def1742acbf4b79c927bc57029f1c96ff8df319e69f9f7e1f70702d576d8584",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "bf14a46255dce6fcf7714f92afa3a19ed08e274f79f4489307abab7e78365998",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6a4ec50ac12d9b34446159f131cc362fdc38881b03e2df06e0b58011c8c46442",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7e2467633b0223ce2066b055cc7175f5aeda82209ad36da800d07a2d77396179",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "07af1476c68c3e177b303383f0fafba223ad9897ec934cd165a2472e9f80816f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "beebd07d0951ae257360e725ffcaed7d0258c2b929038ed9c9c165faa765aa18",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "85bfce18a40e4fa011ae7e4cabdf740c62e6452cf273a39c10067185ef116cd9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "916f53191994f53dc9325b2059444e86d6af72393c06b638be30a1f8f01efefa",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a29956a5f88f3cb0f87825f2b36fc543c3b2543a38b9c24279e9f3407535dc23",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c24e845d93604f66a2251aa8673a14c7254061c43b946c08aab83ad87c811d3d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "81a3551e02bca130e61e1c9e4248074b67e8e05e1f1e43fd0d16bdccc6acd351",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "43c3e0df29d918ff3d1c5030332a5516763c8317db23522ed075e4a7ac4f57a6",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5bdb489ae28214a22b3e7686b0e21b32d748e21cc4d8d03d54285ac1f1778801",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c593065f31dcc95757d1b33ff567316fb59b54c5989d547f0ec420d75ed94437",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a250e3ec0baed751e2df307a039ac08d52f01608847b2cfdb1787578eed56b5f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5a0867f9d3cc06a7837aebb0a1da0ab03591074753299833222f7a274eba8f92",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "47e69be4d07766b8f7ca2f0645e00f9b3694ba25c6db4ca4e4bfa47e45782da0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "b682a9cf1368450a2b9655081fec11584d4d5b660c9bdcebc09b920d97ba4eb7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "aaaa30326abb4c20aca0bb1daecf79e9980765c4dd6b984dbb73b481cc547247",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 20
+      }
+    },
+    {
+      "file": "apps/api/test/route-write-conformance.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "eaad96dbd9616fd1393de594c36810306634b7e03f5cef71e239936733051231",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1983eb628420d50682fcdb655b5dc8e98c3d12f4c4b5d0b670bc8806f01d6b58",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "63d719d44e4b11a240c9dc41adf2afb17a1311142ae0cb8b202055c198f65db9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7d89bc38f6792cfcfcb6615ce4dabd7c8691873ca9c27ac498f62d6fc934ccd5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c0465eaa447d5d0670dc4fd9e9fae38a5da0a59b0651313a40ccd28c03c10751",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "d37982993a832580f5ddd265a862969a337de0baae21617d5eae115c784ce63c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "412424d09deff0a3d206211c1a761dbdcec8c214a542d3ada981cc3c189f7231",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2571d1b768f864fe968bff527c9449ad8d14622b659e8cc9900e09b542d21f4f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "db818f540459da7e69a12ca80acb0fac85b49a60105b2b64f6e7bbf22db1170b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "714c2865a6461a2f59a465ab080457b32ad499b2ca632b9c58d8afd888eaf467",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6f0cbc288aa9cf86105acbd6fdf85a16699cfb3f457ce33b5b16a913183bceef",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1ad3848a45b38bbe721834866fb091bba2ec0087e0a844ea7b768a25b3d5af95",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ff0a691438111721cf46ff671e7ac9d3bc2935049c9781bd9ca57157e38bfe61",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4b7ea858ae5ed67696f8af11719240ec4d5c8247e23a66b81f429dd00b7c4898",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f4ae385ed2f4342092386f309722806bd60bc7062437f90e86304520713a415b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9fe3d8b64520f6d7e7b1a2f4b076b6aa4bd6157622819509313a5df1770bf6c3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "937a8190f2203f13c6ced8bd4ed181abd95ebe1a701b136f6c6ff1b00bf21193",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "03e7af0e8f00c81bb5bbf92774917ec85606d236c23d6b9e820d1f119a5f39db",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5fc92a0932900720cd6784eb63c11bcf16372c6c4f2bc934f93d8aaae9c7b1ff",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7d166a64d77031536e0b0cecdb443935a9cf47c16ac759db63b04ee243f73cb7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 20
+      }
+    },
+    {
+      "file": "apps/api/test/routes-guarded.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "76735a360b8f17da8aba5a2a840c2b632ba57a5bf279de8ca7226b3f4752b85a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6b2bc5f18efc31879586d5193750b7b482dd0a0c19a7ef82bf61c75889b9a10c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4e19d284298ae1bbd6a9ab30314cc28646af443a011483e0815ad03b4a3dfe3a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "956e6db7178f552f605e29a8273958d816e29b4596dbc1eff7fbfaad97333f96",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6ae8316f6fd70f0b3a7737596fc4dba796494c13ee631aaec20e39992831c666",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2b84366d10c99c2073f2f570258ffc315bc93e3fcc621b25be8153818740d095",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8a4fc087fca23c2d2d7e0d8001ed2d81a1e00be27d26ae52312e68b0b8f7dfa5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a390c580f9df1065d5d98d735a62821631fe14941a88712b62e281e79008a211",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "dff0a0f5eb96deb2fc7cbec69019277c3dc9da980ddb8b6396ca2b40380b9096",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f5b75baa829b6db6f6d105ca98419cc924cf3bc7fdd1493a1452c79a2a43fad5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "358d4ee4a6ef244de5b76bb763c31bc4731517f253c1bf0da16216dfc8322f5e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a49fadd4da8868195110071edf0831e0a5ac1ec8ade32077d6132c48e8d3fe73",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "7f8b7c0dd60d0cc1f86e806fbf51d7b47c0559bd6af36e036432ca2addaf7822",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1945b2d6c8a6ad06bb38472780de46cfe0dd2edd166161f7190571b7fcee3850",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f255aad15d7a263c377e22bb3701d3ec933bd7f8b730bf1fc88fcc28279c1830",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "e25f3a00661b4298f98ee101a731c9ea0eb76796375747bf7263c976b6f71f65",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "73533c7ab55e34edc47b8f271775e921583a161914283862e9d53fff0c93d907",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6f3604768ede3ee95995ddffe2309ef451c4186353bce82f0d3533d624f6373a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9ee46fb109b71f7dc8e0ccabb1889aa23d0a0ab9c619dbbac5951fbe6625cde7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3fe66f4ae331568d2f93c3880e0a3fb9bfd9d791b5b505f85ef42da509ecd881",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "02ad524faf6ebc8bc95b95c1f4e13bc985b04cb84c394751df16b44b92808533",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "30701766056b7802ef1b04dc686681f62d89349966d045d33f9d6ebda166a46c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 22
+      }
+    },
+    {
+      "file": "apps/api/test/s221-r4-closing-audit.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "3664b7f5fcae664d87f36a88c1bb54310305020a35965a309dac7778fc5512d3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "370e30253a95d89dc4be07519853b2d53a9c2295fafe624e79dba0fcb7c37418",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "95eb20001989bbcb061b0249d244cf205cd4f215bacc1fafe45be3dbbab59353",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "993fd4a45a0848ba7dfa8d1e1e661424dc7f348ef579e932466caf451ad37b12",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a121354c8b678a3089daa538a9c1086d73f54e937f47e2017b0d725689714c00",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "137c1809699e5112d4bd31ff6a34fb2b98dfa969175c4324638e05a5486fc95e",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "44046a06370a9a0ae7dbc032c390d84597d05776360b190f04c118f6314082b1",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "cb17b7949a26681575cc552900d060feb2f599b8c10e304cb473fed5a5258471",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "06ad8c7530690aa0757338891ee74c409b07abff9d18b78b345477e744384deb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "c1d865a87a374922aa6149fd6289916fbeb2fd9c91570ef2006870fa9ec4719c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "a5444791cc711caa8bd5d7ccf37e69154639a8a548cdfa229d2512d8e9028082",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f0c49b4b1d21f4d3e52d4e6103866b079ca0bdb8afb619068ef0780120762aa2",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f5b9aba00f129f336c23772cf397864e18476b3531f332bd457e3c98ad5b1493",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6837fb4e6c8c902bcdc6ed3aff14eb899472f7d2d8c7132af2486990d7cb28b9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "74ba5c077f6f7bfead404a203ead263a3e8cfc897964f5beda584bbd680bad72",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9279aa2d74debacb5f5a442436bb94b42cac7c17055bee2a07088ef4d794010d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "831135adcccc6c9914b6ec1f8efe1e927ce638f4ccfb736e9d152d070133c5df",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ba0dc21e4553186fc93970158e27284db57019ffe70c4d6e792725823f4d141f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ac5609c8cf01a1e15afb3d582efdeaa1ccce298d9701d20fbd0d911d169ebb91",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f8f2d35b4fae97da1d3a3dc0b190f836a23858d64af514e0c4c748ee5973c1b8",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3ebdbcad50c95246925162fb94c520d7a5cce13744765caf9760d383b3114c2d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "33db74f7fccd5f230b2a076759183b41d2e966d34236b9259046c1710988923b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1812ae709a2c0a0b20e4c4ea3a8be273512d6286f87b6106557a496737ba315c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3a96db9ff98b249a0313353c989997cd1d8ce918abcaf8e37b2c7b113c11e15d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "92886bd1431b7055b4f5f57f9c821871f93a32b63f5258145a74ebd45f18737d",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "13e83b31a995a8cdd8161ee5e7911ae8345a63e354f3261949a9b1f0ac506b34",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8078919033e36614f441156e3e9af947727453aaa13c45a26c108ccb280baaa7",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8d229e11acf591214d2322a37bfb8cd4b4226803b5dd41831470f6798e8f2cfa",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "512b164ccdf5c8391288a14d1220422f04499cededa82ec44d4cbee59f028d72",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "da1aacd62ba68c24f08823271dce12461e8da2a1e4545a42a054832f351deec5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "82f3ce5c97c416e9c2387572925741244870ea110274d22c6a24b0a6d7289d09",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4a285c9bf5a30638e45fa6e5b630b780c873b5749945e122fa8cacadfb2cc916",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "8e2c0b0b1431ddd1ef8b2884ca7a870a89e7eaa9996e8670f3a8ce1b9bbc0d6c",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "4c306e082c625bc3e7c326684f634c3b236835fb030f19a0f0ff336a0e8d4f6b",
+          "state": "todo",
+          "mode": "todo",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "9d929541252506efd8f3d4d3b581bc91a5741cf3ea6f6a6c5d4ba5d3c0b08dec",
+          "state": "todo",
+          "mode": "todo",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ce348bf80763b0f7d0c00a518f58ab7f760d1fe74d4119e0272711c53d66aa1d",
+          "state": "todo",
+          "mode": "todo",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "1f11a9dae133a04d2886b79992d2f6a37a7d0c4d3009ebb918ce857886ffaf42",
+          "state": "todo",
+          "mode": "todo",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 33,
+        "todo": 4
+      }
+    },
+    {
+      "file": "apps/api/test/s629-handoff-role.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "632bb9100bf8373ccbbf1eb02bc7200c6cadaf1473985c24773528de0f1cb9c9",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5d4f767f693a69d6696f8977bcb819aaf27e454d11570c08b433b62c63ea6f0a",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "f62755cc473d74e154af257e0b37b34360e4cc089528097bc2b37394ac783cf0",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "6cc3efb1869b43159c05d20de75805c36420551d3443316933710efc727c9a9f",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 4
+      }
+    },
+    {
+      "file": "apps/api/test/wallet-r5-closing-audit.test.ts",
+      "state": "pass",
+      "tests": [
+        {
+          "nameSha256": "506dc81e97d0dc52d49f6132dd30c642ccdb5e087c83d143295774608d3ff698",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3ef7b1a71e701bac35695c43e076f3d1240078e58a332a9d1797360be1f326f5",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "2cdada01d6561eb938e4fd1e1b1250053d3879030980c3c882d45ee1d01ef103",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "ce0e4bddbc7472e79d4aae41104b5a6c318a1cdf3bd0a4bded2a7d9ad049f67b",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "5c2ba5e045c34cdd077fdc08eaa63ae1ea7fb861395e73849518e5cc956ab8cb",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "11346b39aa5c9425aef96c95fa6cb01d62a2434154cc367020bdd564348c4df4",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "cdc70d62e8cd0965b2a225ef6c0370ea76fdcde2a30118e05f4b47e98396c1e3",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "501057a7108de1ffcd580990e46a9b18af0a5de7632add0fdcc48b08f2de4095",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        },
+        {
+          "nameSha256": "3179b9fa6dc93832a83efc09b81f54f3976cabede318b74ef444ec370d192f14",
+          "state": "pass",
+          "mode": "run",
+          "errorHashes": []
+        }
+      ],
+      "counts": {
+        "pass": 9
+      }
+    }
+  ],
+  "unhandledErrors": 0,
+  "unhandledErrorHashes": [],
+  "totals": {
+    "files": 28,
+    "tests": 594,
+    "pass": 590,
+    "fail": 0,
+    "skip": 0,
+    "todo": 4,
+    "other": 0
+  }
+}

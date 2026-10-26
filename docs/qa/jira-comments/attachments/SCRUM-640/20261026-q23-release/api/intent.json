@@ -1,0 +1,45 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "q23-affected",
+  "attempt": "v1",
+  "sourceHead": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "sourceInputs": 3809,
+  "installed": [
+    {
+      "path": "node_modules/.modules.yaml",
+      "sha256": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d"
+    },
+    {
+      "path": "node_modules/.pnpm/lock.yaml",
+      "sha256": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+    },
+    {
+      "path": "node_modules/.pnpm/embedded-postgres@16.14.0-beta.17/node_modules/embedded-postgres/package.json",
+      "sha256": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+    },
+    {
+      "path": "node_modules/.pnpm/pg@8.23.0/node_modules/pg/package.json",
+      "sha256": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28"
+    },
+    {
+      "path": "node_modules/.pnpm/vitest@3.2.7_@types+node@25_31b9f5e9de5ca818bd43df3a46e351ce/node_modules/vitest/package.json",
+      "sha256": "3f3dc1ef7acc6ffac8d0a7f10c4460f98e36026837b57f774426d962d546d740"
+    },
+    {
+      "path": "node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/package.json",
+      "sha256": "822ef7ca6452205657b6288b066481ecf508bfbf43455d715cf7d3ec457561e6"
+    }
+  ],
+  "programs": [
+    "pnpm --filter @oto/api test --maxWorkers=1 --fileParallelism=false --reporter=default --reporter=C:/w/admin640-q23-native-reporter-20261026-v1.mjs test/assistant-asks.test.ts test/assistant-engine.test.ts test/assistant-feedback.test.ts test/assistant-golden.test.ts test/assistant-otoapp.test.ts test/assistant-registry.test.ts test/assistant-settings-review.test.ts test/audit-read.test.ts test/auth-handoff-files-tx.test.ts test/events-e5-audit.test.ts test/handoff-department.test.ts test/handoff.test.ts test/id-conformance.test.ts test/operator-switch-audit-context-review.test.ts test/operator-switch-handoff-review.test.ts test/operator-switch-idempotency-review.test.ts test/operator-switch-lifecycle-review.test.ts test/operator-switch-request-race-review.test.ts test/operator-switch-review.test.ts test/operator-switch-route-review.test.ts test/operator-switch-seat-review.test.ts test/operator-switch-session-review.test.ts test/route-scope-target.test.ts test/route-write-conformance.test.ts test/routes-guarded.test.ts test/s221-r4-closing-audit.test.ts test/s629-handoff-role.test.ts test/wallet-r5-closing-audit.test.ts"
+  ],
+  "helperSha256": "5e70a2bfe7a9f389d263d62f68cfdebcad02c1d50b6386e6ed4919da078aba3c",
+  "startedAt": "2026-10-26T15:19:14.384Z",
+  "hostFreeMiB": 3721,
+  "nodeVersion": "v22.17.1",
+  "platform": "win32",
+  "arch": "x64",
+  "reporterSha256": "1c765fec0937c9029f13c001047a4c5c1018b9bcc6dc789fc84196cfb8a0ce01",
+  "staging": false
+}

@@ -1,0 +1,7 @@
+{
+  "ownNativeServer": true,
+  "port": 53760,
+  "databasesBefore": 0,
+  "credentialsPersisted": false,
+  "nodeVersion": "v22.17.1"
+}

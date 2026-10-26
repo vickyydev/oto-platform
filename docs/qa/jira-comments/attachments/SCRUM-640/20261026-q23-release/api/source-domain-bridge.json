@@ -1,0 +1,91 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T15:31:18.222Z",
+  "sourceHead": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "currentSourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "originalManifest": {
+    "path": "C:\\w\\admin640-api-verification-20261026\\source-manifest.json",
+    "sha256": "31ed84b3b69fffe8c27330c3628b734381846e9500e5423adfa31b8dd31f4acf",
+    "bytes": 571347
+  },
+  "originalInputCount": 3811,
+  "currentManifest": {
+    "path": "C:\\w\\admin640-q23-native-20261026-v1\\source-manifest.json",
+    "sha256": "8cb11b0e87537a6f191ca29d3ddee4a8c30e8082843499b73a224a4a44ab31ce",
+    "bytes": 571113
+  },
+  "currentInputCount": 3809,
+  "originalInputsCompared": 3811,
+  "unchangedOriginalInputs": 3803,
+  "changedInputs": [
+    {
+      "path": "apps/api/src/services/assistant/call-otoapp.ts",
+      "before": "2f5fc7fc21b61aefa9e08148ee5c96b2aa50561038a4a7e64bb98c84b3cba136",
+      "after": "23bd8ce47cd6a6adff1c7f3edf9271fded08db7cc97a79d30f8f25dfc636aa57"
+    },
+    {
+      "path": "apps/api/src/services/assistant/engine.ts",
+      "before": "d1f7fe16cbd41004a50d71c4c0c9a96da6d2f78354f2a83b25153242813972bd",
+      "after": "f81cd2a254215950357edf37aedea6d8c0b5298e239f0c6748634681d46f4e9a"
+    },
+    {
+      "path": "apps/api/test/assistant-otoapp.test.ts",
+      "before": "a189c94f1794ed6af2b5485105bf257a9ffc89e3f24dca09e0c5c24a87d17185",
+      "after": "56ff792789edfeb4e42c4ac38c62a7f96bfd6f7ae12a63a5fa17555ee85c9c4b"
+    },
+    {
+      "path": "apps/api/test/fake-otoapp.ts",
+      "before": "2f07e20450b4da11f41b5717af014c29f7a609b78f75d88bddfa72e1c2d47090",
+      "after": "146ff25ce2e441e687ebb4785019b135b82f8be11df2668555fa6e11c3b35760"
+    },
+    {
+      "path": "apps/console/e2e/assistant-settings.spec.ts",
+      "before": "57f1554a7d7951ad4c655e373b3201740db0aab53e7ce947f3cefe5509e0c694",
+      "after": "0ad093009b0cdf9cc9a7a58f2c334b4efa813e267d1b23544c857177444e818a"
+    },
+    {
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "before": "7fe291c7b14dfda71f7b1747893b93b31ca79164b6c63fa904244cc687ff7191",
+      "after": "0c3e2dba34ce2f74cfd702a02d65d68c397834cb1cc83fb5495687c51a567c03"
+    },
+    {
+      "path": "apps/console/src/pages/AreaLanding.tsx",
+      "before": "bbfc43c30910a0e98092465e39a19f87394a88fb100fb418c549c8ad34ae2188",
+      "after": "9844d978c2015990124c26dc4bdb654cce76abe46dcacea0fb7abfef4b24b2e5"
+    },
+    {
+      "path": "apps/console/src/pages/AssistantSettings.tsx",
+      "before": "da5a2e9979d960fb33c1836b016537e0a959528ca20fa729169aeb993aae57fd",
+      "after": "eb085095ef2075509940d564646a033f52788248cbf8e1780c17c2286b6123d3"
+    }
+  ],
+  "oldOnlyFilterInputs": [
+    ".env.example",
+    ".gitignore"
+  ],
+  "allCurrentBytesMatchNativeBeforeAfterManifest": true,
+  "appInputCount": 1092,
+  "allAppInputsUnchanged": true,
+  "dependencyInputCount": 28,
+  "allDependencyInputsUnchanged": true,
+  "allDbInputsUnchanged": true,
+  "priorUIBridge": {
+    "path": "C:/w/admin640-final-api-source-bridge-20261026.json",
+    "sha256": "7875635dedb1f08b8fd3f582c2ddd20a59b9e1ccd2a2e93a1dd2825bec96e9b4",
+    "bytes": 1063
+  },
+  "plannerDeliveryReview": {
+    "path": "C:/w/admin640-q23-delivery-review-20261026.json",
+    "sha256": "6ccc5a5a6f3d57132dd2da769893cb288a28813bfa50d926c780f17a2851b60b",
+    "bytes": 5718
+  },
+  "previousAppDomainReuse": {
+    "path": "C:\\w\\admin640-api-verification-20261026\\app-domain-reuse-confirmation.json",
+    "sha256": "887e7ac7d7b22f9f4748555db6fe988fc4116b5ca3dfee5560a2d60d028eea98",
+    "bytes": 27603
+  },
+  "limits": [
+    "The source bridge reuses domain-specific prior evidence; it does not relabel it as a fresh current-frame run.",
+    "Current root compiler, DB, shared, Console and other release checks are independently coordinated and are not claimed by this archive."
+  ]
+}

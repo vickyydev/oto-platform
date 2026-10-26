@@ -1,0 +1,26 @@
+{
+  "ticket": "SCRUM-640",
+  "checkedAt": "2026-10-26T15:31:18.267Z",
+  "scope": "all archive files before this report, README and index",
+  "scannedFiles": 15,
+  "patternNames": [
+    "syntheticAuthCode",
+    "jwt",
+    "databaseUrl",
+    "bearerValue",
+    "cookieValue",
+    "quotedSecretValue"
+  ],
+  "hits": {
+    "syntheticAuthCode": 0,
+    "jwt": 0,
+    "databaseUrl": 0,
+    "bearerValue": 0,
+    "cookieValue": 0,
+    "quotedSecretValue": 0
+  },
+  "passed": true,
+  "credentialsPrinted": false,
+  "rawSensitiveCandidatesPersisted": false,
+  "limits": "Pattern scan supplements the existing RAM-before-disk sanitizer and source review; it cannot establish absence of every possible private value."
+}

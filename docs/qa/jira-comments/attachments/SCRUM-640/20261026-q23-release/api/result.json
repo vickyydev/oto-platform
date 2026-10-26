@@ -1,0 +1,31 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "q23-affected",
+  "attempt": "v1",
+  "sourceHead": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "completedAt": "2026-10-26T15:23:58.854Z",
+  "fatal": null,
+  "programs": [
+    {
+      "command": "pnpm --filter @oto/api test --maxWorkers=1 --fileParallelism=false --reporter=default --reporter=C:/w/admin640-q23-native-reporter-20261026-v1.mjs test/assistant-asks.test.ts test/assistant-engine.test.ts test/assistant-feedback.test.ts test/assistant-golden.test.ts test/assistant-otoapp.test.ts test/assistant-registry.test.ts test/assistant-settings-review.test.ts test/audit-read.test.ts test/auth-handoff-files-tx.test.ts test/events-e5-audit.test.ts test/handoff-department.test.ts test/handoff.test.ts test/id-conformance.test.ts test/operator-switch-audit-context-review.test.ts test/operator-switch-handoff-review.test.ts test/operator-switch-idempotency-review.test.ts test/operator-switch-lifecycle-review.test.ts test/operator-switch-request-race-review.test.ts test/operator-switch-review.test.ts test/operator-switch-route-review.test.ts test/operator-switch-seat-review.test.ts test/operator-switch-session-review.test.ts test/route-scope-target.test.ts test/route-write-conformance.test.ts test/routes-guarded.test.ts test/s221-r4-closing-audit.test.ts test/s629-handoff-role.test.ts test/wallet-r5-closing-audit.test.ts",
+      "passed": true,
+      "receiptSha256": "6a715200208ac5270b574d00db25e89fafefcfa3fe6e2420579e3fb73bd98b3c"
+    }
+  ],
+  "cleanup": {
+    "ownNativeServer": true,
+    "port": 53760,
+    "databasesBefore": 0,
+    "credentialsPersisted": false,
+    "nodeVersion": "v22.17.1",
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "staging": false,
+  "passed": true
+}

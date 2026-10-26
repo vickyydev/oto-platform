@@ -1,0 +1,6105 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "whole-file outcome replacement, not a fresh monolithic battery",
+  "recordedAt": "2026-10-26T15:31:15.285Z",
+  "originalFullRun": {
+    "path": "C:\\w\\admin640-api-verification-20261026\\actual-v1\\result.json",
+    "sha256": "2ac8f0465f208117604646206ab2fc7364ab9420f6a0654987027fe1acb5cf74",
+    "bytes": 1388566
+  },
+  "originalFullRunPassed": false,
+  "documentationClosure": {
+    "path": "C:\\w\\admin640-api-verification-20261026\\docs-followup-v1\\result.json",
+    "sha256": "4820552a6864587efcf80462d9d2ee51dd491cf2df6b509526eca775ffda1046",
+    "bytes": 88505
+  },
+  "priorComposition": {
+    "path": "C:\\w\\admin640-api-verification-20261026\\coverage-composition.json",
+    "sha256": "7aae746e5751ec42060fef313db92bd934010539ea1e323681d29c0676fb0e46",
+    "bytes": 3880
+  },
+  "currentRun": {
+    "path": "C:\\w\\admin640-q23-native-20261026-v1\\result.json",
+    "sha256": "13f262d3be80c867de54f0d54e252ba22fef04ec2a2162647fdf14aa5f988698",
+    "bytes": 1944
+  },
+  "currentCensus": {
+    "path": "C:\\w\\admin640-q23-native-20261026-v1\\case-census.json",
+    "sha256": "934950f8865f1d988277455f7d869fdc40977a6e93987547dbd28ca6365fe5f7",
+    "bytes": 119593
+  },
+  "previousTotals": {
+    "files": 384,
+    "tests": 5871,
+    "pass": 5863,
+    "fail": 1,
+    "skip": 2,
+    "todo": 5,
+    "other": 0
+  },
+  "currentRunTotals": {
+    "files": 28,
+    "tests": 594,
+    "pass": 590,
+    "fail": 0,
+    "skip": 0,
+    "todo": 4,
+    "other": 0
+  },
+  "finalTotals": {
+    "files": 384,
+    "tests": 5872,
+    "pass": 5865,
+    "fail": 0,
+    "skip": 2,
+    "todo": 5,
+    "other": 0
+  },
+  "allPriorCaseIdentitiesRetained": true,
+  "addedCases": [
+    {
+      "file": "apps/api/test/assistant-otoapp.test.ts",
+      "nameSha256": "4523e36dee86f856ccf59ee09e2becd35e4a2651a1c4bc06190142e593ae4eb8",
+      "state": "pass"
+    }
+  ],
+  "removedCases": [],
+  "stateChanges": [
+    {
+      "file": "apps/api/test/assistant-otoapp.test.ts",
+      "nameSha256": "dee57965252e553087a9c839cef81dcf438ea32fc13681d79f8766f5af87c592",
+      "before": "fail",
+      "after": "pass"
+    }
+  ],
+  "replacements": [
+    {
+      "file": "apps/api/test/assistant-asks.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "1be3a9773edff385824dec98e5aa131fc76ff03753eb0e2bfddccddc8d96a019",
+      "afterFileCensusSha256": "1be3a9773edff385824dec98e5aa131fc76ff03753eb0e2bfddccddc8d96a019"
+    },
+    {
+      "file": "apps/api/test/assistant-engine.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 59,
+        "pass": 59,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 59,
+        "pass": 59,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "b9ed7ab63f83039b96de2d6ad68ce6e40650b1ba437fde21e707f87a39c28364",
+      "afterFileCensusSha256": "b9ed7ab63f83039b96de2d6ad68ce6e40650b1ba437fde21e707f87a39c28364"
+    },
+    {
+      "file": "apps/api/test/assistant-feedback.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "85c3f34401431807661deda4b28d4796ea387fd616c3a00d49d5b55181c7cac3",
+      "afterFileCensusSha256": "85c3f34401431807661deda4b28d4796ea387fd616c3a00d49d5b55181c7cac3"
+    },
+    {
+      "file": "apps/api/test/assistant-golden.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 41,
+        "pass": 41,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 41,
+        "pass": 41,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "54af7996ee3d9a8d972dc71aefebff1c20971019131f2afd71a4563c860a7cfc",
+      "afterFileCensusSha256": "54af7996ee3d9a8d972dc71aefebff1c20971019131f2afd71a4563c860a7cfc"
+    },
+    {
+      "file": "apps/api/test/assistant-otoapp.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 43,
+        "pass": 42,
+        "fail": 1,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 44,
+        "pass": 44,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "ac8fdda3be53515b7688cd37a276f15ca798903ddb6b66cdb1b2de39ff2ab6ad",
+      "afterFileCensusSha256": "ebfabbac68f74682fa5d6db8bb9a07a29d254da17431798d854dda55e35e70d0"
+    },
+    {
+      "file": "apps/api/test/assistant-registry.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "f5cfafb1a8ca17b0ab8cf048b1dc236e7cb4f2e802c720928630e31412accba3",
+      "afterFileCensusSha256": "f5cfafb1a8ca17b0ab8cf048b1dc236e7cb4f2e802c720928630e31412accba3"
+    },
+    {
+      "file": "apps/api/test/assistant-settings-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 49,
+        "pass": 49,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 49,
+        "pass": 49,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "ed7949599e4ddf0654afdf7306efa4001f33525b5a10670a08b4d371bbb8cc74",
+      "afterFileCensusSha256": "ed7949599e4ddf0654afdf7306efa4001f33525b5a10670a08b4d371bbb8cc74"
+    },
+    {
+      "file": "apps/api/test/audit-read.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "e15f32bee6163d436cdced8e0834cd2c2b75a1a3ebe11f1fbfa90d503e43ad83",
+      "afterFileCensusSha256": "e15f32bee6163d436cdced8e0834cd2c2b75a1a3ebe11f1fbfa90d503e43ad83"
+    },
+    {
+      "file": "apps/api/test/auth-handoff-files-tx.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "4e12212445099fd97cef319eb519f395f272d99f4eac0b1a942647e343b036d6",
+      "afterFileCensusSha256": "4e12212445099fd97cef319eb519f395f272d99f4eac0b1a942647e343b036d6"
+    },
+    {
+      "file": "apps/api/test/events-e5-audit.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "21187436e10e605b0f72e236bde0e8dbefe67101c814468e6b47dab1c4c7fd8a",
+      "afterFileCensusSha256": "21187436e10e605b0f72e236bde0e8dbefe67101c814468e6b47dab1c4c7fd8a"
+    },
+    {
+      "file": "apps/api/test/handoff-department.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "682b50c72a85598b2b2e3943fcf749f6c35813266de8a818d905439bec54d46c",
+      "afterFileCensusSha256": "682b50c72a85598b2b2e3943fcf749f6c35813266de8a818d905439bec54d46c"
+    },
+    {
+      "file": "apps/api/test/handoff.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "20ffc4614daa4f7c6e66f6d5f055d7df4404acb0d71b42fdde13881705c70002",
+      "afterFileCensusSha256": "20ffc4614daa4f7c6e66f6d5f055d7df4404acb0d71b42fdde13881705c70002"
+    },
+    {
+      "file": "apps/api/test/id-conformance.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "fb9596b26a942a430e9718d16aa063ffd2f19695bd12ad3456e4191220eef97a",
+      "afterFileCensusSha256": "fb9596b26a942a430e9718d16aa063ffd2f19695bd12ad3456e4191220eef97a"
+    },
+    {
+      "file": "apps/api/test/operator-switch-audit-context-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "11ab7d551ce2e792f1119d9822697930e874ad8b549790812fde3719f1a6e284",
+      "afterFileCensusSha256": "11ab7d551ce2e792f1119d9822697930e874ad8b549790812fde3719f1a6e284"
+    },
+    {
+      "file": "apps/api/test/operator-switch-handoff-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "1609296e35d3b1c77d8e1b0c7805a324e7e512c7c2d1acc7210bb1632616c69d",
+      "afterFileCensusSha256": "1609296e35d3b1c77d8e1b0c7805a324e7e512c7c2d1acc7210bb1632616c69d"
+    },
+    {
+      "file": "apps/api/test/operator-switch-idempotency-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "741eb525166b90e499df06971bf936072c6da9926c4b5f869ac7db0795a8f1e2",
+      "afterFileCensusSha256": "741eb525166b90e499df06971bf936072c6da9926c4b5f869ac7db0795a8f1e2"
+    },
+    {
+      "file": "apps/api/test/operator-switch-lifecycle-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "501bbd7edcaad434cf137c5d1c13562efa7dd8621c76d0a7e3b604d5a3e36d2f",
+      "afterFileCensusSha256": "501bbd7edcaad434cf137c5d1c13562efa7dd8621c76d0a7e3b604d5a3e36d2f"
+    },
+    {
+      "file": "apps/api/test/operator-switch-request-race-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "6c078902a62c05e19045b308cc9ba9b959f6f79a787a0be382ad3feeaf72c831",
+      "afterFileCensusSha256": "6c078902a62c05e19045b308cc9ba9b959f6f79a787a0be382ad3feeaf72c831"
+    },
+    {
+      "file": "apps/api/test/operator-switch-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "a064636700307c5cebd653927dca301b6fe942fad37e76ab30afda00bcf09782",
+      "afterFileCensusSha256": "a064636700307c5cebd653927dca301b6fe942fad37e76ab30afda00bcf09782"
+    },
+    {
+      "file": "apps/api/test/operator-switch-route-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "ec1fa38bcc0ccb608466a5f3eb9d174d1b5ce9977eae9ef03bc4c66e59e261ce",
+      "afterFileCensusSha256": "ec1fa38bcc0ccb608466a5f3eb9d174d1b5ce9977eae9ef03bc4c66e59e261ce"
+    },
+    {
+      "file": "apps/api/test/operator-switch-seat-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "d6c5fb550da1c8f3645102de926f47bc2fc858afa84824783983373416319540",
+      "afterFileCensusSha256": "d6c5fb550da1c8f3645102de926f47bc2fc858afa84824783983373416319540"
+    },
+    {
+      "file": "apps/api/test/operator-switch-session-review.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 39,
+        "pass": 39,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 39,
+        "pass": 39,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "28605b3b77a9fa791ac4070be6e7e991678e53913e9af171bf413587e3664fca",
+      "afterFileCensusSha256": "28605b3b77a9fa791ac4070be6e7e991678e53913e9af171bf413587e3664fca"
+    },
+    {
+      "file": "apps/api/test/route-scope-target.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "022116cd49a84a27b79e64b3667dda9865183dbc1fc39cb1add51c4aeb0016db",
+      "afterFileCensusSha256": "022116cd49a84a27b79e64b3667dda9865183dbc1fc39cb1add51c4aeb0016db"
+    },
+    {
+      "file": "apps/api/test/route-write-conformance.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "6a0b7f555ec1a3f86a3a1bc480e8188cbc2b0c38f90d2ea2f5b08babbfaeeccf",
+      "afterFileCensusSha256": "6a0b7f555ec1a3f86a3a1bc480e8188cbc2b0c38f90d2ea2f5b08babbfaeeccf"
+    },
+    {
+      "file": "apps/api/test/routes-guarded.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "80347279ce2c8aae83e4d633f96c1958efb6cea7f0e1137546ca7d70f09fa8a7",
+      "afterFileCensusSha256": "80347279ce2c8aae83e4d633f96c1958efb6cea7f0e1137546ca7d70f09fa8a7"
+    },
+    {
+      "file": "apps/api/test/s221-r4-closing-audit.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 37,
+        "pass": 33,
+        "fail": 0,
+        "skip": 0,
+        "todo": 4,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 37,
+        "pass": 33,
+        "fail": 0,
+        "skip": 0,
+        "todo": 4,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "10d62aed294dddcbfde2c979968149ad93c2e50b2edf07e92639f35afe19700d",
+      "afterFileCensusSha256": "10d62aed294dddcbfde2c979968149ad93c2e50b2edf07e92639f35afe19700d"
+    },
+    {
+      "file": "apps/api/test/s629-handoff-role.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "c7bde64d6ce799f069619197c922420ab6c54c00a228f68e2f5c64a6719901ee",
+      "afterFileCensusSha256": "c7bde64d6ce799f069619197c922420ab6c54c00a228f68e2f5c64a6719901ee"
+    },
+    {
+      "file": "apps/api/test/wallet-r5-closing-audit.test.ts",
+      "beforeCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "afterCounts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "beforeFileCensusSha256": "49671cf31761358558a4a5cd663d00118c6f768e0ac419557545230ffaf73f3f",
+      "afterFileCensusSha256": "49671cf31761358558a4a5cd663d00118c6f768e0ac419557545230ffaf73f3f"
+    }
+  ],
+  "finalFileMap": [
+    {
+      "file": "apps/api/test/access-restore.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "de97d5821c22f0b1fa28c5570d54d78ee3a8a9381bf5f751002bb88f6ee6c6b9"
+    },
+    {
+      "file": "apps/api/test/access-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e5e1460a2df82d2a312d5abb1c5596409082b98a0e20db18be34b1274a4d7d5b"
+    },
+    {
+      "file": "apps/api/test/accounts-console.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2938e9d60e57be8c11859677456b76aa2535371a98ec63ab2b891160aaabb092"
+    },
+    {
+      "file": "apps/api/test/accounts-operators-tx.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "11cd8156659c4fc9fb0eadd95a67ae53fe99455be81c42d267bea5b7b796c087"
+    },
+    {
+      "file": "apps/api/test/aggregates-ai.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "68114c39389b553688e2d9bb4537eafba2d3994cae893d532b9efe41cc01ec09"
+    },
+    {
+      "file": "apps/api/test/aggregates-domain.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "5bc57360450709181ce6e5157b25d9f9ed6c39b29d939824e76f86d29c92507e"
+    },
+    {
+      "file": "apps/api/test/aggregates-members.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "585e458939c0df5cfc18f57674c56c486b6ece7dc058d8b180f297db0befc966"
+    },
+    {
+      "file": "apps/api/test/analytics-r1.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "15c6d17fd52be4816914990361a895f6fef7e48b7898d4aca834a705862d08fe"
+    },
+    {
+      "file": "apps/api/test/analytics-r2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "7c5e450cd723bc95f201a6ec7dd0c9167126cd6977511d0f6fe7903e3765e54f"
+    },
+    {
+      "file": "apps/api/test/app-identities.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b9d254f37585249a4fbc4b6c67056596fb8a2950314bc2fafa906eb83bff3970"
+    },
+    {
+      "file": "apps/api/test/archive-races.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ccf9749bf6d0a8081409f4ed6dcff177a1d6727ee7e7f11d3c179474cdfa837b"
+    },
+    {
+      "file": "apps/api/test/archived-tenancy.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fcd4f7de97fa1d5cc4a894b0ca4088ae489f11180e0fe0b776b02e069aac042b"
+    },
+    {
+      "file": "apps/api/test/arrival-r1-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "640e950d09df27c99d11e47a9a6e7b364b0b9b54e7e29e83b657277af8f3efd7"
+    },
+    {
+      "file": "apps/api/test/arrival-r1-gate2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "cbe551d42e95076c8a9dc6903e77d800a1cd97f9feebb9ab8f04cae52efd8a8e"
+    },
+    {
+      "file": "apps/api/test/arrival-r1-gate3.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "64d85199eec53ba330a4963ffcf03f1871ccf58a3ab81bedd247a37bebb7f56e"
+    },
+    {
+      "file": "apps/api/test/assistant-asks.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1be3a9773edff385824dec98e5aa131fc76ff03753eb0e2bfddccddc8d96a019"
+    },
+    {
+      "file": "apps/api/test/assistant-engine.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 59,
+        "pass": 59,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b9ed7ab63f83039b96de2d6ad68ce6e40650b1ba437fde21e707f87a39c28364"
+    },
+    {
+      "file": "apps/api/test/assistant-feedback.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "85c3f34401431807661deda4b28d4796ea387fd616c3a00d49d5b55181c7cac3"
+    },
+    {
+      "file": "apps/api/test/assistant-golden.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 41,
+        "pass": 41,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "54af7996ee3d9a8d972dc71aefebff1c20971019131f2afd71a4563c860a7cfc"
+    },
+    {
+      "file": "apps/api/test/assistant-otoapp.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 44,
+        "pass": 44,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ebfabbac68f74682fa5d6db8bb9a07a29d254da17431798d854dda55e35e70d0"
+    },
+    {
+      "file": "apps/api/test/assistant-registry.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f5cfafb1a8ca17b0ab8cf048b1dc236e7cb4f2e802c720928630e31412accba3"
+    },
+    {
+      "file": "apps/api/test/assistant-settings-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 49,
+        "pass": 49,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ed7949599e4ddf0654afdf7306efa4001f33525b5a10670a08b4d371bbb8cc74"
+    },
+    {
+      "file": "apps/api/test/audit-read.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e15f32bee6163d436cdced8e0834cd2c2b75a1a3ebe11f1fbfa90d503e43ad83"
+    },
+    {
+      "file": "apps/api/test/auth-codes.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2cd6b075c693c3d09b6abfbaebbedb39f13a950ce0ade48b3bf20ec8289c072d"
+    },
+    {
+      "file": "apps/api/test/auth-enumeration.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "671f2edaf5007c4c3ffcb440388cd3fa292c0734ff7b36d039a743252fcc54e8"
+    },
+    {
+      "file": "apps/api/test/auth-handoff-files-tx.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4e12212445099fd97cef319eb519f395f272d99f4eac0b1a942647e343b036d6"
+    },
+    {
+      "file": "apps/api/test/auth.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8567b631ba889ed1c1cf50726210ed4bed93aa904f724bf149f50d27e952c05d"
+    },
+    {
+      "file": "apps/api/test/benefits-r1.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "187544c2772a05a03e01be99664999b88429197b204e21928f4d733d29977ea4"
+    },
+    {
+      "file": "apps/api/test/benefits-r2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1791ae644cfd8a7a917c464a1e5f921d5bb68fb27d33ab2f3ea91c6bd7f4e9fd"
+    },
+    {
+      "file": "apps/api/test/benefits-r3.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4a062c13744a58df6d4acb4800c4e1c9c6b43ff3217ce415c3abf6d8adffa924"
+    },
+    {
+      "file": "apps/api/test/benefits-r4.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b3d5576e66dec2be4f33f172140d64a5adfa81c7e9164f65294fe3a7c08e01b2"
+    },
+    {
+      "file": "apps/api/test/booking-checkout.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 28,
+        "pass": 28,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c94ec2928c0d4d364377dda7edf3f8c35830203de2490f204af58dbae2aed016"
+    },
+    {
+      "file": "apps/api/test/booking-supervised.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "3cfcee755e581be513ced662da9bb422eff026b30cdbdb118a5193d98f941629"
+    },
+    {
+      "file": "apps/api/test/bookings-redeem.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 37,
+        "pass": 37,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "80bfb07e856721b96274fba6d6115d3a75c92c7ee72347480e9d8cc9f173e716"
+    },
+    {
+      "file": "apps/api/test/boot-guard.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f2ccd2522d33c23d52a291f2cd300228f8059c8eb0c5dd3c3e9e3fadf07557a0"
+    },
+    {
+      "file": "apps/api/test/booth-admin.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 39,
+        "pass": 39,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8cc1c91d50ad75bd3f3d5d1af9211f887a51a4fd658abb54c9575cae6bf7d4b3"
+    },
+    {
+      "file": "apps/api/test/booth-api.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4106f661dcfd1a44a555336bc983a304b9327998777495894abc281db3452d50"
+    },
+    {
+      "file": "apps/api/test/booth-duty-refute.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "570d3b1a86d88bdc9ac5062c1964baf3752bfe0c5c40e3be54e201049e65b166"
+    },
+    {
+      "file": "apps/api/test/booth-duty.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "87bfa3a6eb92a70ce7bc57ece3479d74956cacbbff16d33df6ac1f290a948393"
+    },
+    {
+      "file": "apps/api/test/booth-health.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8f4c1e8a34619a2edda7a3fc6efdc2e1e503cecd5b8556a52eafbe0720f28283"
+    },
+    {
+      "file": "apps/api/test/booth-pairing.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e777896929f98e9698e485642f5656ef569a150ccc0f45aac895d01b58e9278a"
+    },
+    {
+      "file": "apps/api/test/booth-setup-publish.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6692f0899ad8689a39603c12316df359fa0f48c6f20892109777d8ee964b26e5"
+    },
+    {
+      "file": "apps/api/test/booth-sync.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "abd63de77e5938acfb36a5a1e63e33cff92c8c459ea1bb041e69e2c28ce8ffab"
+    },
+    {
+      "file": "apps/api/test/booth-voucher-slip.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "30d80636e23f786fe978f5943c20288dde09f3da27ba4682f8c5f1bee50b6b0b"
+    },
+    {
+      "file": "apps/api/test/box-agent.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c89d8314be7e60e38103f3bafb6a7dabdc4ba384a7a08b6b741bd00c6d95a1ee"
+    },
+    {
+      "file": "apps/api/test/box-api.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ce6c1824f9ef985ba0b5443e67bfcdc8cd8bc0917d36cf9f5a1ad0e54425cf47"
+    },
+    {
+      "file": "apps/api/test/box-booth-staff.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d64ab331dee98cc44b6a51feee5c2f39892ec51eea32ef6ea78d13b50f4553ea"
+    },
+    {
+      "file": "apps/api/test/box-cache-survives.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "bafe47759ab74c28bf44d60d8f1261b6f563d7942851c912fc66214b83ce5a50"
+    },
+    {
+      "file": "apps/api/test/box-clock.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "db9a14ef6bc9cdf483cbe35e7fd9f6448dfdf927102ef2c9ac941e89bae57022"
+    },
+    {
+      "file": "apps/api/test/box-epoch-adopt-race.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8fb3bfd87a5e6e8f538c619f3c1008edc8b8f923a74ac3dd307bf9b4b1ec42db"
+    },
+    {
+      "file": "apps/api/test/box-epoch-regressed-note.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e86ae018dd4f957db5011dbcf0ebfe67a233073b6c76b3f0caf7c76ca1683ce3"
+    },
+    {
+      "file": "apps/api/test/box-epoch-regressed-resend.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b8e9d1dd9544d310dbf19f87c425ab452bb74a51e27d68faa642c031a794614c"
+    },
+    {
+      "file": "apps/api/test/box-epoch-regressed-sale.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "84cf83c0639d60c1bba995bcd074b0626d3adb3486b9117fb089eac4930c698f"
+    },
+    {
+      "file": "apps/api/test/branch-clone.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0816954555b2495eaf570200f372c964e979cfa9605606661c225640950625ff"
+    },
+    {
+      "file": "apps/api/test/branch-scoping.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9d6e567828ae18e6b8e7781e955be635f76417e3322f5ae8e6a249abc197a35f"
+    },
+    {
+      "file": "apps/api/test/bridge-convergence.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "31617173c5bcc7dd7e4208280e6e2f5ecf376a0215cab91cce417ccf27d5689a"
+    },
+    {
+      "file": "apps/api/test/catalog-payment-methods.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "88b14dae142c40162f9b6ed5825b0e9d78bb8b461562418c9c8432d3867cc7b1"
+    },
+    {
+      "file": "apps/api/test/catalog.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "41afab33494c988e2b7b1e13b89b66613d51665b93bacd70eaf2fe60e8d2174a"
+    },
+    {
+      "file": "apps/api/test/checkin-board-gate-r2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "80038ede8a319d55eec93fe9b15c65351e7ef1969c4448796d68b5abe8f27a93"
+    },
+    {
+      "file": "apps/api/test/checkin-board-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9eb5b31fd9b18d19b3c8e28d267ea5ba882fcf10247a5fc5aa5ca004589c84a0"
+    },
+    {
+      "file": "apps/api/test/checkin-board.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "24acb86c577b6d5aa739ca753ad0bc13413181097890b3cd42b2e1f4a89de8e1"
+    },
+    {
+      "file": "apps/api/test/checkin.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0a02c253a35813ab15684072c187c68412722700ed047484c82744eaec080ed3"
+    },
+    {
+      "file": "apps/api/test/console-branch-scope.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 27,
+        "pass": 27,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9f0e4dc15b578da10a9c458b30a9e23b2d0def162e70dac0afeb33b78099332e"
+    },
+    {
+      "file": "apps/api/test/console-otoapp.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "84ada969f52f4aad836f29c92b14f1fd373128dee611342bc62021d532dfe157"
+    },
+    {
+      "file": "apps/api/test/console-staff.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "248d23f3fceede0816dbe755af4f7c7e3630458dc15eeb24a94b8bf0b945e549"
+    },
+    {
+      "file": "apps/api/test/demo-reset.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "5af41b02a7cce8bc95f2d7aba9f8ef7de3d73436aaf93e002f1185de91b28124"
+    },
+    {
+      "file": "apps/api/test/departments.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "aa71d02eed9f1048a5b4a02d2b27bb66cea95d201230d7f06f44f1bc6e4c5bf3"
+    },
+    {
+      "file": "apps/api/test/employees.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a16a6e0162bd4af664e4d60f37de5d1a955b73d37959df03aec7518f8bb099e1"
+    },
+    {
+      "file": "apps/api/test/eod-r1-gate-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b2be6bd97d28f104f24ac50397570c92171edf6446c92eb3712921c26cb36035"
+    },
+    {
+      "file": "apps/api/test/eod-r1-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "eb71ce16263d69cb1a560d09d964bcfb6de030a5b1c8dabac520adf338eccbc3"
+    },
+    {
+      "file": "apps/api/test/eod-r1.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "15db271b168f533e227adb9db6a0e0e85a1c789dc1d751813a46fab5b28b9c32"
+    },
+    {
+      "file": "apps/api/test/eod-r2-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2c8c3431d81f5adb2254628d939e3e203fba6a4d0f2fd67945fa43718767315c"
+    },
+    {
+      "file": "apps/api/test/eod-r2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2676ef51172a382175d0b2beae97ef6cd7001c0109233317df0b0c55d7c2ea75"
+    },
+    {
+      "file": "apps/api/test/eod-r3-settlement.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e6853dbf42d7d992a6caa2849fe8015241445e6a8db8e3ff54a5903db8106299"
+    },
+    {
+      "file": "apps/api/test/events-e1.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f12a5afee2dacb595ddd414b2426beedf1d713450e753af9ff3c6c84be0da176"
+    },
+    {
+      "file": "apps/api/test/events-e2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9197e3a61ff6e813d671e34ea554b470c731ef01422b9ba68ab52821b9fa1ab1"
+    },
+    {
+      "file": "apps/api/test/events-e3-offline.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e40a9e7ff08e810e29eea93c38294aa40663533bba4db1bc7b03b0a1966c130b"
+    },
+    {
+      "file": "apps/api/test/events-e3.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 31,
+        "pass": 31,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d04055126ea662a8e6a652d4782c39f20dd3461626b7d800871fc0dbc457f3fa"
+    },
+    {
+      "file": "apps/api/test/events-e4.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 31,
+        "pass": 31,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a7091e7abf8cc168a1fc811bcfb7bd87593ce99b343b4db9e7fc9a3d340d6f29"
+    },
+    {
+      "file": "apps/api/test/events-e5-audit.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "21187436e10e605b0f72e236bde0e8dbefe67101c814468e6b47dab1c4c7fd8a"
+    },
+    {
+      "file": "apps/api/test/events-e5.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fe2e671fb02cbd1319799949ea3cc68ad2799900efe20ee5f0937ad352c7309f"
+    },
+    {
+      "file": "apps/api/test/files.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 3,
+        "fail": 0,
+        "skip": 2,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9f6853a3f24a8a7d07aebaa4abfbab9fd3689c3bcd60f1f4e744cd7425b3118a"
+    },
+    {
+      "file": "apps/api/test/fixture-tenancy.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "3f9b0683a979cb45a2f4b7a6d4b12ef74cd1ea5b0dfbc573a5ddfbdda1ce114d"
+    },
+    {
+      "file": "apps/api/test/fleet-api.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 70,
+        "pass": 70,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c5f218622f331715230c36cd197345c94a30c6800b0f2edbd34ff071338540ca"
+    },
+    {
+      "file": "apps/api/test/g17-round0-review-2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "baace0287051cf7fad0f3fa95fff43d078db05abe53abd39169b75ab0aa5536d"
+    },
+    {
+      "file": "apps/api/test/g17-round0-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 32,
+        "pass": 32,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4fc11a14cb41a6b8791b946138f6db058ab1ebbb73cd9f87898343348f98a635"
+    },
+    {
+      "file": "apps/api/test/gate-sync.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6ce1c9cae46bec7d78c44e2ce67e6cdd77341e8b88fe90f50a096a3591f70d64"
+    },
+    {
+      "file": "apps/api/test/handoff-department.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "682b50c72a85598b2b2e3943fcf749f6c35813266de8a818d905439bec54d46c"
+    },
+    {
+      "file": "apps/api/test/handoff.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "20ffc4614daa4f7c6e66f6d5f055d7df4404acb0d71b42fdde13881705c70002"
+    },
+    {
+      "file": "apps/api/test/id-conformance.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fb9596b26a942a430e9718d16aa063ffd2f19695bd12ad3456e4191220eef97a"
+    },
+    {
+      "file": "apps/api/test/inbox-actions.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 45,
+        "pass": 45,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e872930529c2bb600b1f5eb6f017054fc509ff3da9acc6bee47d9e86bf73d829"
+    },
+    {
+      "file": "apps/api/test/inbox-ai-cancel.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c57e3557c9a81b4efaf1507ab2d75539dbc29a49734f80814de08039d9c1d038"
+    },
+    {
+      "file": "apps/api/test/inbox-ai-engine.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 46,
+        "pass": 46,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d53fe4904ab4f2acdc1af4a70bbdd6c120a4f684ca92dfc2a94ed87d3bf18cd9"
+    },
+    {
+      "file": "apps/api/test/inbox-ai-golden.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "36b8d236d5973c90afc15f33c52f4ae10f7f4a6ee00923d15838c09d27ff4f52"
+    },
+    {
+      "file": "apps/api/test/inbox-ai-kb.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f16a6c38beba3a3a9892b368bdbc3752cb51ee821bbb3a9ba587629f3682359f"
+    },
+    {
+      "file": "apps/api/test/inbox-i1b-demo.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d8b24dbbc8d4b34fd8147cd6f0d744c7d048681317b3d41f0a573c437e1f73f4"
+    },
+    {
+      "file": "apps/api/test/inbox-ingest.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "316ededa24a9fffff81897419ca297875ba1f4e3a4a81e3adaa5289c68a9017f"
+    },
+    {
+      "file": "apps/api/test/inbox-mirror.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "191c8d8f2e191e07fec6518546f93e791c98aa3f6dc5085858a84dbcb243bb2d"
+    },
+    {
+      "file": "apps/api/test/inbox-privacy.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "167304a7fa878b7d57edcfddefed79d21172e9607bcdbedb9dee00a9ec51f6b3"
+    },
+    {
+      "file": "apps/api/test/inbox-read.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 40,
+        "pass": 40,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6c8494c290806ef81ce21425c0c7df427b38cdedfe812d0d7ef370901cecd8fe"
+    },
+    {
+      "file": "apps/api/test/inbox-reply.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1c776a6469b1563556d4946b8fa80efc36ba18e841bf8aff4730127a9cd7f088"
+    },
+    {
+      "file": "apps/api/test/inbox-send-media.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8ba245cdf16f94d2ef607cc894f300c0a0f121009145c04f9c1e6f75eab3f536"
+    },
+    {
+      "file": "apps/api/test/kiosk-k1.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4251f17e911463d4a52664f557e66169955db07d03584dc6b28659e2871e6418"
+    },
+    {
+      "file": "apps/api/test/latent-gaps.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "097700f4cae02ffb86c99cdd00b14e08e8ddddb0dac175b1974934fe96582eb1"
+    },
+    {
+      "file": "apps/api/test/leaks-and-trail.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "bba98d1f569ad3a2c43a12967e3711966bceb24fb52b500bdb0ef3e07a3066e9"
+    },
+    {
+      "file": "apps/api/test/me-preferences.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "58111d1670a0d27765283cfdceee82c156fb71a818f12c0b6123eb6ed83f86ab"
+    },
+    {
+      "file": "apps/api/test/member-tier-revoke.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "780d649d80923fd3423e5cace5110cb50faf0bdee7099a60c486bc5a5966420f"
+    },
+    {
+      "file": "apps/api/test/members-children-archive.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d2b7fba38383e5e5bc923b2bcf1aa28a66a87ab9a23502401c7c8def364140ae"
+    },
+    {
+      "file": "apps/api/test/members-fields.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f9307aef662a1762db010f830cb1964e2c67d5754ea3430d0bead99cd316756b"
+    },
+    {
+      "file": "apps/api/test/members-register.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d018bbeda9638e7eec8a6e1bdf4eeec597bc84a6ccbd8d27afb8a052ae0577c7"
+    },
+    {
+      "file": "apps/api/test/members-visits.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 32,
+        "pass": 32,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ea30a9093c533aad8f162d0718e1b286cf04866fe45b79d5689d06d4cead620d"
+    },
+    {
+      "file": "apps/api/test/menu-api.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 48,
+        "pass": 48,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e0068bfa24ece0f4fc4dae7223fff2931980bcd35aebaac8d367ce6588165be8"
+    },
+    {
+      "file": "apps/api/test/menu-sheet.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e4939a7a11d4777d8d3a78ea3638ac93b7cfc808e06ac1dce934930fc21a6d42"
+    },
+    {
+      "file": "apps/api/test/menu-tax-seam.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d92d794afe7e5e837b8506216e541dbec7b369c48525376364432fc60c219aef"
+    },
+    {
+      "file": "apps/api/test/money-fields.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1b0511e406076ed5b7b4a84a0ee8506dae16fe523bcce4fca56d614363848efe"
+    },
+    {
+      "file": "apps/api/test/occupancy-freshness.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "893952e9fb1cba3621783769214862474e9cb47890bce974701fb35df542ecc4"
+    },
+    {
+      "file": "apps/api/test/occupancy-gate-attacks.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "972ff561fe855ef1eb705ed9c747b3a099097e82e34a8e4c00a494e18797ad69"
+    },
+    {
+      "file": "apps/api/test/occupancy-gate-final.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "be9590585f832b404a59213754678d07bc4ea13863ae11ccb7f577f0527a7471"
+    },
+    {
+      "file": "apps/api/test/occupancy-gate-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c36c086a9f94e9f9a9e9ca7fa8bf1b009dd90487351ae06ba1342b7100e06de9"
+    },
+    {
+      "file": "apps/api/test/occupancy.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "37445a06b682dfa59b40c30a1fe508973e203cbf32574b1a06c7c1e219febf95"
+    },
+    {
+      "file": "apps/api/test/offline-booking-redeem.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "601f84d3af7d7ca7ddf37fedb2a3b5ee74422a03de344de7bb2b5758c1e4ff9e"
+    },
+    {
+      "file": "apps/api/test/offline-capability.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 23,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 1,
+        "other": 0
+      },
+      "fileCensusSha256": "3e7f545ca887bcc1102e5792570d88fead8343de9381bed1fefa5dcea05fe396"
+    },
+    {
+      "file": "apps/api/test/offline-checkin-gate-r4.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "772ebe626688843be55900f8a195e022016f4fbb0411c09ca7a8b9d9ea11de00"
+    },
+    {
+      "file": "apps/api/test/offline-checkin.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2567304824d7a09a2625c1c9176a64cdaea065fc50e5965a191bf33d6d96f6fd"
+    },
+    {
+      "file": "apps/api/test/offline-selling.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1d4b13d001b2643b6443f87e3b172fb32afbc273fc220cfd02a61f9e598cf98e"
+    },
+    {
+      "file": "apps/api/test/offline-stock.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ed8d7f7116bac2823cb51d579cb5196190d3ade263cfd487eeb7068b3466cda3"
+    },
+    {
+      "file": "apps/api/test/offline-wallet-gate-r4-final.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "edc9936f57563fec053e5b4a14455c93e7f7f416e3c18d14dee8ab27e3f24347"
+    },
+    {
+      "file": "apps/api/test/offline-wallet-gate-r4-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "5bbba4fe5047c9b68a7d5d1f5d9865d6c70891f8f7aa6da4cbd266b9019af5f2"
+    },
+    {
+      "file": "apps/api/test/offline-wallet-gate-r4.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8fcf1d7ddeee3021387d06867805b19100d206e1aa396a9266cfae7e63e30cb0"
+    },
+    {
+      "file": "apps/api/test/offline-wallet.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e90e950b893bfdf79ab4570b10bf7cc4b9a0ebdf87970db993d552b9238b775e"
+    },
+    {
+      "file": "apps/api/test/operator-switch-audit-context-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "11ab7d551ce2e792f1119d9822697930e874ad8b549790812fde3719f1a6e284"
+    },
+    {
+      "file": "apps/api/test/operator-switch-handoff-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1609296e35d3b1c77d8e1b0c7805a324e7e512c7c2d1acc7210bb1632616c69d"
+    },
+    {
+      "file": "apps/api/test/operator-switch-idempotency-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "741eb525166b90e499df06971bf936072c6da9926c4b5f869ac7db0795a8f1e2"
+    },
+    {
+      "file": "apps/api/test/operator-switch-lifecycle-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "501bbd7edcaad434cf137c5d1c13562efa7dd8621c76d0a7e3b604d5a3e36d2f"
+    },
+    {
+      "file": "apps/api/test/operator-switch-request-race-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6c078902a62c05e19045b308cc9ba9b959f6f79a787a0be382ad3feeaf72c831"
+    },
+    {
+      "file": "apps/api/test/operator-switch-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a064636700307c5cebd653927dca301b6fe942fad37e76ab30afda00bcf09782"
+    },
+    {
+      "file": "apps/api/test/operator-switch-route-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ec1fa38bcc0ccb608466a5f3eb9d174d1b5ce9977eae9ef03bc4c66e59e261ce"
+    },
+    {
+      "file": "apps/api/test/operator-switch-seat-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d6c5fb550da1c8f3645102de926f47bc2fc858afa84824783983373416319540"
+    },
+    {
+      "file": "apps/api/test/operator-switch-session-review.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 39,
+        "pass": 39,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "28605b3b77a9fa791ac4070be6e7e991678e53913e9af171bf413587e3664fca"
+    },
+    {
+      "file": "apps/api/test/ops-api.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a5c6b04e432a230ed185a42215f1560f11f332768d4daa31018dfc969b539b06"
+    },
+    {
+      "file": "apps/api/test/ops-jobs.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "7508349e8efe4399a437a2a9702a9ae07fb65239febf4460b7f67b9277d4abb5"
+    },
+    {
+      "file": "apps/api/test/oto-app-branch-mapping.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9c6fa5c3cad7a7c6c8362edac04748de7b761da4b97373d2d00f60b9bdc3e564"
+    },
+    {
+      "file": "apps/api/test/oto-app-branch-seam.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "467caf7fde74293f57bf0eed22c4914e6fd4a34a0197b77614a3160cab324bc0"
+    },
+    {
+      "file": "apps/api/test/otoapp-directory.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a598499dab371c159a54d9853042d80d2bca949a1acb39094ccb80e295f122ee"
+    },
+    {
+      "file": "apps/api/test/otoapp-events-seam.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "62c4183677ca105abb41cf784d504cd12b195fe0f308189fb1c4a22ac8c6963d"
+    },
+    {
+      "file": "apps/api/test/overview.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c54ff3bc6cb6b86fd9293cf1636704b286a1574cf967cf44709e68ff356b4abf"
+    },
+    {
+      "file": "apps/api/test/payments-2c2p.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 45,
+        "pass": 45,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f9d0db4e850f8de81a5ad5b66a2730b9d0475573115aea9435ccc5c195e069b1"
+    },
+    {
+      "file": "apps/api/test/payments-cash.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1cde270e80d6116ac87f414780bb33f398176538c53261acc65487c875cc4dba"
+    },
+    {
+      "file": "apps/api/test/payments-redaction.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f13e041c49bf05573a271857aa42c37cb59638f4b6bbdb364d98970b022d78ce"
+    },
+    {
+      "file": "apps/api/test/payments-terminal.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b18d1fed6f97829c62fb10ce9063e496f7dad58239434501452fa8440f34fbf6"
+    },
+    {
+      "file": "apps/api/test/permissions.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6c3ee252a607a3fcbd8dec983c2765be41c14b9ed9f91f89dcb4a3c562be3613"
+    },
+    {
+      "file": "apps/api/test/platform-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f6673c31f0e65284c8f7c36c2ea8ecee06ba51cc6f83cf3e9e2f5d357e0f7692"
+    },
+    {
+      "file": "apps/api/test/platform-sync.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "13422a5f6128b7c797967a77c5885a38e08fc653c014cf8107c1fa7cda546d46"
+    },
+    {
+      "file": "apps/api/test/print-api.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a3cf8c82164b7fca060fb2ec32d4c0c28146f7b123fd43224f1eb790d019d55b"
+    },
+    {
+      "file": "apps/api/test/print-preview-samples.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6c66ad4acba464b253a54eb0aacc5f414ee9d117c86f3f2e1ced129ca9c5bc9f"
+    },
+    {
+      "file": "apps/api/test/print-restart.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "bc84e7641c584975ee0e90151f31107749fec9bb950d61e0281722341e53644c"
+    },
+    {
+      "file": "apps/api/test/print-test-target.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "bca33d75a12ac83333fc1359044650b82bbd2ad9027dd16441ef4f7cdefca2df"
+    },
+    {
+      "file": "apps/api/test/printing-box.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4f7e3b9635094a8a304987354dbf9db3907f5eb6938dc4a4312074f2aba485b1"
+    },
+    {
+      "file": "apps/api/test/promo-codes.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 39,
+        "pass": 39,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "cc74617b36db41ef912e32fd60895de8d116d9060c74e2cbcf681f1ed38696bf"
+    },
+    {
+      "file": "apps/api/test/public.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a4dbc69067f134370428a51228c18d6ff2e92dc283c25b9b04175f71f0dc9006"
+    },
+    {
+      "file": "apps/api/test/rate-limit-public.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "5e58569ffb1e5fcba49bfac1c64337322bf69133bfab41ca7c596d090ded21d9"
+    },
+    {
+      "file": "apps/api/test/receipt-hwm.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "cd85e29a680aa5b7b71d94c69bbbb7f5be1c16a75991adac70665f09df88f3ff"
+    },
+    {
+      "file": "apps/api/test/release-r3-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1494a6d825939999f3901f22afa99c5206cccef3158e2ce644663a65fa7367b6"
+    },
+    {
+      "file": "apps/api/test/release-r92-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2ce573b8fde19ebd6d9c0460d4cd9c2e93902b59c9e575b2b2eea690837899ac"
+    },
+    {
+      "file": "apps/api/test/release.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ea017384d534840b5a4ecb8e2aaeef801b94e5a796009856d965235d57df8138"
+    },
+    {
+      "file": "apps/api/test/roles-console.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "74dd9b79bb555a7895d10d58e09c561e3d57599b88e997713e2697930dddeda6"
+    },
+    {
+      "file": "apps/api/test/route-scope-target.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "022116cd49a84a27b79e64b3667dda9865183dbc1fc39cb1add51c4aeb0016db"
+    },
+    {
+      "file": "apps/api/test/route-write-conformance.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6a0b7f555ec1a3f86a3a1bc480e8188cbc2b0c38f90d2ea2f5b08babbfaeeccf"
+    },
+    {
+      "file": "apps/api/test/routes-guarded.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "80347279ce2c8aae83e4d633f96c1958efb6cea7f0e1137546ca7d70f09fa8a7"
+    },
+    {
+      "file": "apps/api/test/s216-demo-day.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "71b8bc02d7742b945de2d42fca21d91277e0d4244bf1d0c7cfff7e91ad25af0d"
+    },
+    {
+      "file": "apps/api/test/s216-demofix-review-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "51780429c3b76fb965976324360b77edf0cce7c0a05ec0ae93ea59153dca0eb9"
+    },
+    {
+      "file": "apps/api/test/s216-demofix-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d5e375149b0323d78f5249bd735df4a3ed7e844b9b8c30feb58d95f799f6f20a"
+    },
+    {
+      "file": "apps/api/test/s216-r3-fix.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "da6643c8eda8f7f80070d33ca74b573d6e3122f184ac2b1049827741dadd1cd5"
+    },
+    {
+      "file": "apps/api/test/s216-r3-review-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0235db61fc3555887a3c5a537463d6f47eb66096c018ad2394147db1fb2c6897"
+    },
+    {
+      "file": "apps/api/test/s216-r3-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c012bbbf9b1330c3602530e4ec50e6ca3b2a13de9cef017f807d063a73d90951"
+    },
+    {
+      "file": "apps/api/test/s216-r3-summary.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "aa2ff683f5697d76c88f137058668fb507eca07afd0a9f3657878945c767ee4b"
+    },
+    {
+      "file": "apps/api/test/s216-r4-reports.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e23a57be902efb479ba9c398a64d91b5e086d964700efbbbf51f82ab0028b3f9"
+    },
+    {
+      "file": "apps/api/test/s216-r45-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "893e0c10af672b1c1da13bbbc2087c20efc6be9e3350e839567a5940d84a3b17"
+    },
+    {
+      "file": "apps/api/test/s216-r5-booth.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d1044935d2b9c4f679b0137d38dafa9af7252dc0447b49dc6d78823fa6257942"
+    },
+    {
+      "file": "apps/api/test/s216-r6-legacy.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "24797ce62f5288f52474313911cf6a99ec7b73cead4b7ce1ef6bf9aa4554faf7"
+    },
+    {
+      "file": "apps/api/test/s216-r6-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "bfcca95040f60bec3c99c31d399487f7a63e7da79cb013d5b1df733f5cd104b6"
+    },
+    {
+      "file": "apps/api/test/s216-r6-sweep.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1f0329eaf1ac964f568c700ecf692967b90a4d2b4a9e9d1afca2a27e7caa2cb4"
+    },
+    {
+      "file": "apps/api/test/s216-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6bbfa663a878da24fa07801003a6930d9b43cbaf69fbd320cc7666334d666a21"
+    },
+    {
+      "file": "apps/api/test/s217b-r1-review-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "26302c275b18f4c1c7d6ae526be21b7daf81b4a73764b54bfb9b4b11d19fa538"
+    },
+    {
+      "file": "apps/api/test/s217b-r1-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 42,
+        "pass": 42,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fa351374b14cbbe9746f537c5dcd81e5cf02c63e76e9a4496aa1d9bce9ad504d"
+    },
+    {
+      "file": "apps/api/test/s217b-r1.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 31,
+        "pass": 31,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e0dad663a487ace4d81bd4d1e4d2eb3ffcd5621fc84921622dfbbaca041307e2"
+    },
+    {
+      "file": "apps/api/test/s217b-r2-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 33,
+        "pass": 33,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8c9b44a61e8f438a21785684826ceaa774938e8fa527a54cabf5aaaa920aa568"
+    },
+    {
+      "file": "apps/api/test/s217b-r2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 33,
+        "pass": 33,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "67d8c9680acccd5c76ca64dc6a72ff7d29cb695067093ba9c45e149806e0a519"
+    },
+    {
+      "file": "apps/api/test/s217b-r3-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 44,
+        "pass": 44,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "25b9233b5219a3c36c1630c889cd21dc0dc1b280ac33078ac35ec996c19efd71"
+    },
+    {
+      "file": "apps/api/test/s217b-r3.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 41,
+        "pass": 41,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9e86472fbda7f89e83e2b6ff267e267d29ad080a074691e113360371d4ab2fd8"
+    },
+    {
+      "file": "apps/api/test/s217b-r4a-review.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 37,
+        "pass": 37,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "57701c12f8cd9dbe89829323aeed01ab9f6236ea11dedbf0281f7a9e431c9376"
+    },
+    {
+      "file": "apps/api/test/s217b-r4a.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 28,
+        "pass": 28,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a28cfec5942ae263689bdaa37f80b62c2db82466f47a36b45a8621d7d5c4910e"
+    },
+    {
+      "file": "apps/api/test/s217b-r4b-review.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8a15503161792420462c2a2c3986812fc556540f20a6d0f88575ca24e082491c"
+    },
+    {
+      "file": "apps/api/test/s217b-r4b.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 36,
+        "pass": 36,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "85714b9c42926c4e9cdfd37bcf28b45cd5184da8676898edf65542899c75e541"
+    },
+    {
+      "file": "apps/api/test/s217b-r5-review.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 30,
+        "pass": 30,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "04bab1c3e01249aa1968011c267a12b74d88f9d2be3d34eb0cd9174b0040840e"
+    },
+    {
+      "file": "apps/api/test/s217b-r5.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "de77ff0140f5f6f6104f9cd6deb4e7a3c61600a6990f86ce0ba17ee8a7bd739f"
+    },
+    {
+      "file": "apps/api/test/s217b-r6-review.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 65,
+        "pass": 65,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "752c416c6fde8422a499a52b871034ce482d673e92cbf5c149a4d776dd778fd9"
+    },
+    {
+      "file": "apps/api/test/s217b-r6.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 36,
+        "pass": 36,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0d7cd17ccc38f91bf9d3b92f84913d70fc52971a15c050e3f549b538dd68ce5b"
+    },
+    {
+      "file": "apps/api/test/s217b-r7-access-cross-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "61f7b7ddac02ea462769fa5388d5f355680eb7f329b8994c8bbcbf1b6e30a588"
+    },
+    {
+      "file": "apps/api/test/s217b-r7-access-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "85cdfa3f9738c56ae5a3380a26373ec8beb53cbe7c2da4e4c45b07df7c57888b"
+    },
+    {
+      "file": "apps/api/test/s217b-r7-finance-access-cross-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d39c7bdc9acb3341b6cfac069a4e71dc22c9586d9aaf9fb5599eb2f2d37b2e03"
+    },
+    {
+      "file": "apps/api/test/s217b-r7-finance-cross-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "90eb6eace4d4712d1a0e98118063894d764cfad0a05b37399cb742e6e36eebd1"
+    },
+    {
+      "file": "apps/api/test/s217b-r7-finance-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "3353ca9c43e6fd763596073cf168db5e40f245a9f43c88429da9c9b34f8c5498"
+    },
+    {
+      "file": "apps/api/test/s217b-r7-finance.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "59811ced27f21bee4f092556557d4ac59ea71cef688dd1fa17dafa2565e5ab34"
+    },
+    {
+      "file": "apps/api/test/s217b-r7-payroll-cross-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fdeba4cba4befdb3176af9a0b09a531a8e8c84c7b12fa2b9aee10e1dee9a6836"
+    },
+    {
+      "file": "apps/api/test/s217b-r7-readers-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "bbc4418223c61315ee871519f38172b9853dc0af82117693a7c65fea1f3b4d55"
+    },
+    {
+      "file": "apps/api/test/s217b-r7b-documents-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "5d598e779ae3d1e21272d76684398b4f470c22d7947fadb7ddad034130de43df"
+    },
+    {
+      "file": "apps/api/test/s217b-r8-finance-cross-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e1c3bf6e4ec3ab58ede972e412c0dc9ecbc7df1c9bbcc98c80dfd56373706450"
+    },
+    {
+      "file": "apps/api/test/s217b-r8-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "7192354ab40a5baf44120dbc1efd3d39f5607f8e2c1a5358bb949240de85e7b9"
+    },
+    {
+      "file": "apps/api/test/s217b-scheduling-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 32,
+        "pass": 32,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e0233c9f51c898c95efe820cacf2a10a11ea2de6bc18f51b780306ca6b2ac943"
+    },
+    {
+      "file": "apps/api/test/s217c-camp-sms-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 23,
+        "pass": 23,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "87f5034b83d1978246a44a42ac792486b11cc55bc344e5df1920171216f9588e"
+    },
+    {
+      "file": "apps/api/test/s217c-employee-history-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 28,
+        "pass": 28,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "acccfff9f26a8797de57331f10757514d8008b133de81b0849a82cac73c5ada3"
+    },
+    {
+      "file": "apps/api/test/s217c-fix-preview-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "74ca3d2863af28c1f3dd7a5fe12b3be02c5ed37f1e5e824cf1aeeb08cb360168"
+    },
+    {
+      "file": "apps/api/test/s217c-presence-delivery-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "baebe4059d05c8141a544251944956edeb27934693a721647c3f5d074eb045b0"
+    },
+    {
+      "file": "apps/api/test/s217c-presence-recovery-ui.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9302b433d87064454771aacdf4b7472bb574e595eb6b35c629f97f819fd70d1e"
+    },
+    {
+      "file": "apps/api/test/s217c-sop-history-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fd992b2654bbb73351b099f4c75275d5aa940fc73c2f43ac1d154f01f69b9fb2"
+    },
+    {
+      "file": "apps/api/test/s217c-sop-navigation-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "96499e6b1a9e197fb455547e16d75a47c4bfa3a6ca38c216e2522475aa5403b4"
+    },
+    {
+      "file": "apps/api/test/s220-e1-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "7d02dd4089e8ba413fe097570e752dcad9656f764504d52b56caba37d99d36b4"
+    },
+    {
+      "file": "apps/api/test/s220-e2-review-2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "23415abd45152b6c066fb2b6f7562b6f512f83032c5f56dd358b1cc939f84fa7"
+    },
+    {
+      "file": "apps/api/test/s220-e2-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 27,
+        "pass": 27,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8c832ea403f2085c47fec7ade0e57e5a48ba49dc302d2d7961b8cabdb983141a"
+    },
+    {
+      "file": "apps/api/test/s220-e3-review-2-offline.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 19,
+        "pass": 19,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "37a4e04fb17a8a45786e233a09e19bcc11b2fa91b545bcb6d183eee81455f72b"
+    },
+    {
+      "file": "apps/api/test/s220-e3-review-2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "7707212b58fe89f8fbebbb256ba45f2fa65d7a614397e8f8ccd8d53b5e4f9e96"
+    },
+    {
+      "file": "apps/api/test/s220-e3-review-3-offline.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "846ab89678f865badc6288389cdc62a715d60e3d83ca8b39ed794bbe9af0a77a"
+    },
+    {
+      "file": "apps/api/test/s220-e3-review-offline.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b7603eb4ce5afd6a4d518885ad49b0502db4d43559931931fd247ef216c8dae8"
+    },
+    {
+      "file": "apps/api/test/s220-e3-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 23,
+        "pass": 23,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d7eaef0d2ca490c23652fc818f127e62d91e678275f5337ca737876f341b1dc3"
+    },
+    {
+      "file": "apps/api/test/s220-e4-review-readday.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "5578e63f51cfdcda8cbf06e7fe0edc4988e6591cb666a4d76881ee824414be89"
+    },
+    {
+      "file": "apps/api/test/s220-e4-review-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c537bdeb62034a80c867c65a68ac0e06f8a3537e82dec2c7131c069ccefff543"
+    },
+    {
+      "file": "apps/api/test/s220-e4-review-silentzero.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "cd535460c4237d437e3ea3bb8e45edce87386a07382c0453d7e8763e386d8268"
+    },
+    {
+      "file": "apps/api/test/s220-e4-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "32d51686af1c94f93c08825bd5d6f2d384d76efec111ccf12845c95ac201c5c6"
+    },
+    {
+      "file": "apps/api/test/s220-e5-acceptance.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a3f955c474a80dcfd91d0fd176f9efe803bc234bfc61f59573d27c84d703581e"
+    },
+    {
+      "file": "apps/api/test/s220-e5-hazards.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "451451657d33ab74fe045ad24c2d5824eabb369153f8ad164de39aae075edd38"
+    },
+    {
+      "file": "apps/api/test/s220-e5-review-2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8eb37429e8352d34fb4335f7a06578322ced709db6ae0f99ca4c4d73d8dd7b1d"
+    },
+    {
+      "file": "apps/api/test/s220-e5-review.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "38f639846d37cccc8af5b8ae8ca41af38ebe5c3a3d8a62344d4f1e0ed8a642b0"
+    },
+    {
+      "file": "apps/api/test/s220-k1-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2e1618f6fe4f29a192bfb0af7097493cf1ab62d5c1fb9e51b57c561f55fcb692"
+    },
+    {
+      "file": "apps/api/test/s220-k2-kiosk-surface.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4b3626e113807f7223e2342dc73262dd1e16723d5bdd1cac2d7001f3bd896511"
+    },
+    {
+      "file": "apps/api/test/s220-k2-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6e9a9452ee086e1b673c08607832129906c7330c0ec36f6a16c9d9d49197774a"
+    },
+    {
+      "file": "apps/api/test/s221-r1-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "413e1bd7e2d3f4650143e3bbf352e6c79bc61248e979664294685fb0ac294b73"
+    },
+    {
+      "file": "apps/api/test/s221-r2-review-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0d388de97ab090306b05922191f807c95128dc0e1911cd49c28cb3a7deebb31f"
+    },
+    {
+      "file": "apps/api/test/s221-r2-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1b19222471a720f174fa9825d9b81019cc60461950d2312a509fd1d2b303b244"
+    },
+    {
+      "file": "apps/api/test/s221-r3-review-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "28fb5db88d789551d231acadc80db035830941e67053f28a71018bcae23900fc"
+    },
+    {
+      "file": "apps/api/test/s221-r3-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8bb1015ecf8528ebc14549a72c690ff406a86853b1fce254f8cec24726c5f5d7"
+    },
+    {
+      "file": "apps/api/test/s221-r4-acceptance.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "5369573ed964828c4e608c7ef628992b5d01f3453ec631810f4b28b3b31f5b59"
+    },
+    {
+      "file": "apps/api/test/s221-r4-closing-audit.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 37,
+        "pass": 33,
+        "fail": 0,
+        "skip": 0,
+        "todo": 4,
+        "other": 0
+      },
+      "fileCensusSha256": "10d62aed294dddcbfde2c979968149ad93c2e50b2edf07e92639f35afe19700d"
+    },
+    {
+      "file": "apps/api/test/s221-r4-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ad6c39b3005b739ce882c19288e37afcb5b7aacdeda1c32776b096f8cadce3b3"
+    },
+    {
+      "file": "apps/api/test/s494-checkin-sync.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "269988ded7520462559a12c1d5e2b08742ee2777d03d254347783470f7e693e6"
+    },
+    {
+      "file": "apps/api/test/s494-checkin.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "3da7a1648013aa378facc1d54836f58ea4f9ac7e5593086891cd72ff80ae28af"
+    },
+    {
+      "file": "apps/api/test/s494-final-gate-offline-registration.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8a44249a1b6790df2609d5d3bed07ee0b9ec475996d315db17ffcae1123f0a1b"
+    },
+    {
+      "file": "apps/api/test/s494-food-gate-r2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8b30c9c5b5ebdc6af322ab5e937cfe26b77617327d0b805a6c46c7cd9ba749c7"
+    },
+    {
+      "file": "apps/api/test/s494-food-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fe200a05a96891440a683641f3d02db614f5eda7ebe4275c8fcb8f6fec4fb7b1"
+    },
+    {
+      "file": "apps/api/test/s494-food.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4dd47f6e6a2df54545979b1273921b15dc97ad621154f11ce26b927574d66154"
+    },
+    {
+      "file": "apps/api/test/s494-gate-offline.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "867875e8160deaeaeb2eac617bf12b818cc2e92d78183444ce9138c5a4f2f3e8"
+    },
+    {
+      "file": "apps/api/test/s494-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8792b2a14c958c49af0bbc7231e4b3bd928c894a1bd2a05ad43b0e9767e04898"
+    },
+    {
+      "file": "apps/api/test/s494-money-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1a782c202aa39c812eed0816c7c437c75992a0bb1bdc968eeed9832603066dd3"
+    },
+    {
+      "file": "apps/api/test/s494-money.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "12565a9943dc1e893403d70a77c2dc916926f3ca3d5979777150b43a31fd1d05"
+    },
+    {
+      "file": "apps/api/test/s495-review-partial-refund.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2c0cdd6be5421513c32527599fc7b5ffe2a7c7837bca9c728595625f78eef90a"
+    },
+    {
+      "file": "apps/api/test/s495-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ab54ec0a7fd92719351f1db56c7133c914f3c0b4d458b1b6075277825c9af930"
+    },
+    {
+      "file": "apps/api/test/s496-review-booking.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a8857bdb6d3dfb2e88b0ab36ab4048adf4109ad7dff3c8d2707a2fefbfc14dbd"
+    },
+    {
+      "file": "apps/api/test/s496-review-stock.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c0656f5089f4bfa923ade942cb45ad63ea41c41f097e2136f229f3af2b645af7"
+    },
+    {
+      "file": "apps/api/test/s498-offline-food.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "90850ce4b9079c9b68d5cce2af51c488ad44ddcc82fc01b59612d884c9b4f282"
+    },
+    {
+      "file": "apps/api/test/s498-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "3f78d24556d8505fcddad1cccf6eba2e6541014d78309740078e717171c2c818"
+    },
+    {
+      "file": "apps/api/test/s502-review-demo.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e158cfac0cb2aa975f45f620f80fcd221cab244501d2bc17b2e109c2eb8cbc6f"
+    },
+    {
+      "file": "apps/api/test/s502-review-offline-switch.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c643068300e8e1e9c97a3a52b4db7f734c382f2f8f89319589afe538533d9cdd"
+    },
+    {
+      "file": "apps/api/test/s502-review-prepaid-index.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "126ea2c0f0150087dd72513ddd202116366687ae967e4a6aaf9ad20d0baa43be"
+    },
+    {
+      "file": "apps/api/test/s503-demo-controls.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9b13001a24f4bde04a8c6c80b6faa3e5bb5fb594613eff50048a7f8fb2a1fbf3"
+    },
+    {
+      "file": "apps/api/test/s504-review-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ba9e829aec41d068d36993af28623d644b06c02ecb08be7edcea35f4951284f3"
+    },
+    {
+      "file": "apps/api/test/s504-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f22b882d7e53ef274f0fb80995e958344b21cbda5318080a96c607932668af6c"
+    },
+    {
+      "file": "apps/api/test/s516-attendance-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "cdd3793d04fc17986e8bda02467c0d88d9f5f4f30364d3af5712d4c4bbc4c4c7"
+    },
+    {
+      "file": "apps/api/test/s518-import-preview-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "960a470fa080cd8963c44ca53210d2af1387dff720b4124ae177cc48c25f0887"
+    },
+    {
+      "file": "apps/api/test/s520-attendance-evidence-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b69f66f19086eb595de3353a38224c9375aaf08dfe3465c0fb8b053fa749827e"
+    },
+    {
+      "file": "apps/api/test/s539-suite-sign-in.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fa83f6b7b5565cfb6cba5b42f7e1484857e547c13d0fac1899327116a0a15b88"
+    },
+    {
+      "file": "apps/api/test/s548-qa-reports-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 36,
+        "pass": 36,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1cb804736252a15807d1b206839b79a89ef838fca64af1d872857a3dafaeafa3"
+    },
+    {
+      "file": "apps/api/test/s609-admin-navigation-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "46168471c436710a276a988ff3902cecb02323fe819407ee8258ef568798b2e6"
+    },
+    {
+      "file": "apps/api/test/s610-overview-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4ae81a1a25df1a7f4a3ccff5a7e71b3aaed702cf11afc1d5d71800b36eb1e93e"
+    },
+    {
+      "file": "apps/api/test/s611-accounts-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8b5e6cfa5716c297c71275a2be8fa5ebeec6c611af9e00b4dabafa99ef261c2e"
+    },
+    {
+      "file": "apps/api/test/s612-roles-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "98eb6e84dffd8b09683a83de2aacf5e2fe6b9d0d2f5fd6e59cd6091577d668a0"
+    },
+    {
+      "file": "apps/api/test/s613-app-access-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c78275ce3022c7085d5af6bc0404107f9b4d6de0cceafc9bd51f8d130fd45f54"
+    },
+    {
+      "file": "apps/api/test/s614-employees-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8ab304cd3e74537ae3422944081c2b364c1dd28b89364226ac3ab9a300b34c7d"
+    },
+    {
+      "file": "apps/api/test/s615-departments-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "88283ff6a8aab428fd598d76207c2dac8a2fd36359f17d53c481c0c17d239530"
+    },
+    {
+      "file": "apps/api/test/s616-access-review-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1221eeab88fa8245c957469ce00a8f6ad37e0c03126f40cffab85e52fec32128"
+    },
+    {
+      "file": "apps/api/test/s617-login-users-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8d8a2239e575405cd38cfb443a088789d8635e69bdf8abac64750a6278c4e360"
+    },
+    {
+      "file": "apps/api/test/s619-admin-screen-lift-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e9f2f63977fe4416e7bb194e10f014db3ae12cb3555346138c026f0b51f5ad53"
+    },
+    {
+      "file": "apps/api/test/s620-organisation-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1c644945d7f96c3b7ca09be58943ae02af5e1aed849dddd98366b4680b4ef4ba"
+    },
+    {
+      "file": "apps/api/test/s620-organisation-routes.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9056584172048685f32328743bb461258f615846dd61c11cc5f1622352b91c7c"
+    },
+    {
+      "file": "apps/api/test/s621-catalogue-contracts.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "baaadef3e2fe9a50bd7e73f5b05b545a72f4932e6facefaa44bc3f7c06fcdf7a"
+    },
+    {
+      "file": "apps/api/test/s621-catalogue-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "54e97748b87e9664337894c62b5fc64c03416437644ecf1f2ba9941b8bf901d5"
+    },
+    {
+      "file": "apps/api/test/s622-menu-contracts.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "78a7f4c3810ea76cb66616e6d51eb32639373b8db70f4344507c29d76e97bb01"
+    },
+    {
+      "file": "apps/api/test/s622-menu-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b6be004b324b674032830883c9411ab6f76ecf1488d71ecc479ed0b488a89cfa"
+    },
+    {
+      "file": "apps/api/test/s623-money-contracts.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f549a37ca30e52b346bb16d9997a2f42b0dd0e6eb0d88bb30421012aec6cd9df"
+    },
+    {
+      "file": "apps/api/test/s623-money-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e0f879965c3bc482edd2a7abcdacdb0e6d4c76ea773284ff14f0de560c74dc7b"
+    },
+    {
+      "file": "apps/api/test/s624-care-print-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0d4d6e072aee66c1e2f68c99498efab2d3802da9e0771c90b34f49249659a729"
+    },
+    {
+      "file": "apps/api/test/s625-reports-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "01831afaf7c8cda82f198da925b2b2661df9dc67cc36dca38578b908d6cbd3b3"
+    },
+    {
+      "file": "apps/api/test/s626-routing-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 27,
+        "pass": 27,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9d2268e97d94af9cd4d9baf4b67ad72cbdcda53918c7e76bb32d1aef8e13fc56"
+    },
+    {
+      "file": "apps/api/test/s627-pos-admin-redirect-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c48eab171016604b23a0d8cd44dd4361559423943c049c6cbdb2b9196008b8a2"
+    },
+    {
+      "file": "apps/api/test/s629-employee-role.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a5f0bc2891df5068bc9cdc21799c8c5eeb77835ba6c1214b0469b8e061e14192"
+    },
+    {
+      "file": "apps/api/test/s629-handoff-role.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c7bde64d6ce799f069619197c922420ab6c54c00a228f68e2f5c64a6719901ee"
+    },
+    {
+      "file": "apps/api/test/s629-role-mapping-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c86be3ea17b848a852425ff6d493850e5af58d45c58166eb46b586dca50fa217"
+    },
+    {
+      "file": "apps/api/test/s629-role-mapping.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2651077c5e539f2086a5c59d437bc7e8525d3a6b419ad5a4dd036a98ddcb5e3d"
+    },
+    {
+      "file": "apps/api/test/s630-salary-permission-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c6ce876c229cad9969d7eb7f3e853389f138012b7b684bde3bfa09d6932d4aa1"
+    },
+    {
+      "file": "apps/api/test/s631-department-mirror-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "dd6de866af05bb62d6e4bdb9ccec97a3a29397a6716fa6aa80b60f1ddce7df53"
+    },
+    {
+      "file": "apps/api/test/s631-department-seam-view.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "df53075642b8b87a50a474dcede6b844de2013063fcf1f346f143f34b3e27fef"
+    },
+    {
+      "file": "apps/api/test/s631-department-source.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "682674c85895d9ac392ac19b6cc997430c0aa98f40fcd3b6fa65ac0b2816b21f"
+    },
+    {
+      "file": "apps/api/test/s631-seed-replay-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "bdec06e75cea64ca9e3f92a52b05600632f8f53f9172a98e59219ee226ad3b02"
+    },
+    {
+      "file": "apps/api/test/s632-administration-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "11255c569e018812b1631853a9694af0c02c2df3d03972a3121210b91930b5fa"
+    },
+    {
+      "file": "apps/api/test/s633-account-lifecycle-serialization-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "006699f594cb93a014c4e6517daace590153bcfd171894f55b7afa1a717863aa"
+    },
+    {
+      "file": "apps/api/test/s633-account-reactivation-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "7206d5f963babc09b3dd3e4c0ee45c6a616534f993d685b76e312f749672968f"
+    },
+    {
+      "file": "apps/api/test/s633-lifecycle-identity-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "687b9fe2878a18405cc43cd3bf325432f34f95e8e316349897982c4a54c1f139"
+    },
+    {
+      "file": "apps/api/test/s633-lifecycle-link-concurrency-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a3a72c71aab22144b4ffcd4a4622e0bbcf7354a07ef8dd6ae5cc68ca84a6db41"
+    },
+    {
+      "file": "apps/api/test/s633-missing-route-navigation-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "396b9087066a2a7c0d43799538fe648a44057e0ba038e01a8447753ce472af9d"
+    },
+    {
+      "file": "apps/api/test/s633-provisioning-boundary-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "243d383007454914aafbafdf39280fd53725478418f6f396af380cb2191067bf"
+    },
+    {
+      "file": "apps/api/test/s634-staff-summary-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "07e9b5f21ad4fe84d71da9b37f26f22d140e2696ef22dd1416c63f2de9854d66"
+    },
+    {
+      "file": "apps/api/test/s636-aggregates-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 60,
+        "pass": 60,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a0ac2339c513fb7a3f989c97ae5c0bb72dce33160f0e6a34998da898bf9e15b9"
+    },
+    {
+      "file": "apps/api/test/s637-decisions-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e3f801b9d7daf897d6a9308f88a75f237e5d329a64025cc9db031430f627ef90"
+    },
+    {
+      "file": "apps/api/test/s637-digest-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 19,
+        "pass": 19,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "cccd23f4ac7614bcae36977da66878485da1b5cb3b830a44c223b547472f3f2a"
+    },
+    {
+      "file": "apps/api/test/s637-overview-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c6272eca6f9fc11f4135125cd6e2f165a7a9eef4e4e64ae92cd3899b5ef98189"
+    },
+    {
+      "file": "apps/api/test/s637-registration-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e62ef12d3c1cd7486558dcf0aac7499fdf63e82ece37f4acdac34f5da9c8dffb"
+    },
+    {
+      "file": "apps/api/test/s638-pricing-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "994243c2dbe6e171047a26e4fd372eedba33fd0cea722d9eabb61bc0ded0e692"
+    },
+    {
+      "file": "apps/api/test/s654-console-theme-review.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "02daf59bffd608f3dca2f6c6643fd859e87160e3e7b5f667f65321af13553aa2"
+    },
+    {
+      "file": "apps/api/test/safeguards.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e2ec2c55a1cca8b49c510d3563267b441a270e1145031b80108ea0ab4714a28e"
+    },
+    {
+      "file": "apps/api/test/sale-supervision-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2980641c03f29c8a87d3850985f4fa792269ac04e2fba656a5acf68f6f0b2ba5"
+    },
+    {
+      "file": "apps/api/test/sale-tier.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "9585304662901a6aeeb273bb6e0dcbd6a58ef671d2ab1a5f7e223be60b486f70"
+    },
+    {
+      "file": "apps/api/test/sales-fnb.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 32,
+        "pass": 32,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ff574ee20a01042686d382b8fee643ba336f8a33577797b1d4a8e0fa05841de7"
+    },
+    {
+      "file": "apps/api/test/sales-ledger-schema.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 19,
+        "pass": 19,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1f7766ec495b2dc5768975da8db74a4f1b1fbba6f5a8d152e8bad208d4fe4add"
+    },
+    {
+      "file": "apps/api/test/sales-printing-box-seam.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "803ac3767d50736ad8ef1a1d1a2209627493b1c7b7cce2565cf6819fc6bc56c0"
+    },
+    {
+      "file": "apps/api/test/sales-printing.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1690450210039e24c5deb10179372d1df75d645ec7b5781d9d93c74376caf75d"
+    },
+    {
+      "file": "apps/api/test/sales-reach.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "eb59c1bde6f49e3e47f750f468d146ae266eb1bc5c37477d0e6b5c4d3f04dac2"
+    },
+    {
+      "file": "apps/api/test/sales.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 68,
+        "pass": 68,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8ae740274bf218ae8153c21df461175f1b81e44c3dd44098c7fbbe63271f3f14"
+    },
+    {
+      "file": "apps/api/test/scanning-product.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "26505317c0c5ae03e25c2f4bf2cea09f1d23c853a6142523b9080d49c2c3ff1f"
+    },
+    {
+      "file": "apps/api/test/scanning-staff-token.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 24,
+        "pass": 24,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0fbf918a09e05ab2d7f837dc8d49deda49c4979a47057ddf8d5c750ba1216a3d"
+    },
+    {
+      "file": "apps/api/test/scrum-606-guard-targets.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0a084202702aa61c7fd87b3dfdace8c8ba4b6ed9ff84790ba22920921f229b5d"
+    },
+    {
+      "file": "apps/api/test/scrum-607-reach.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "aa49e003d563dbd8e858f217d88b6cf5d31d079169866d9b5d29769f4aed7507"
+    },
+    {
+      "file": "apps/api/test/security.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "758c9865e449a353032491b0b6b24c27890eef59333be05b4eee2b372faaf9ee"
+    },
+    {
+      "file": "apps/api/test/session-branch-station.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fe759ab2a8d608fd69b9e612b00d685e0d0d24d3879f7a4e96d3f9c7c831501f"
+    },
+    {
+      "file": "apps/api/test/sms.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 44,
+        "pass": 44,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ca2a38ba4bd7a087754ae188da55af1850018bc4e22f9044a0e1eb87c3355e48"
+    },
+    {
+      "file": "apps/api/test/staff-scope.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "abbf62b46700828b3c51d625861c85b392bac1d20cbf027df54ace3f4a1b9aeb"
+    },
+    {
+      "file": "apps/api/test/station-scans-poll.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a791ad57a1bb87a1792eaba9cb4427afd4a4879ab43d713595aea4ee83423ed1"
+    },
+    {
+      "file": "apps/api/test/station-scans.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8d91b5925d8c240085d67020849edfe5dcfe5ed65a3e2b603b2f3209f893b632"
+    },
+    {
+      "file": "apps/api/test/station-session-api.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 53,
+        "pass": 53,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "3b263a27df6d81235f8d2ae11cf994a0ac96f56c76409fb7672cb128890b2bc1"
+    },
+    {
+      "file": "apps/api/test/stock-fix-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "41bd281e8b6f6111d14fd01c91c8a95667be9d644f5d23c650e74f21a056861b"
+    },
+    {
+      "file": "apps/api/test/stock-fix.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b201536d6e741acfdae4182b076a81488c56cc10477983c53864da5b02d20235"
+    },
+    {
+      "file": "apps/api/test/stock-fix2-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fbf8c363623177d6ebf7c4018bf843f6964ea034989a011182d49b01d1476ddb"
+    },
+    {
+      "file": "apps/api/test/stock-fix2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c4d3e914169b3bc0f79729ab5191c3109ad02dfe1cb99cdc8f4ce3cb25b74fe4"
+    },
+    {
+      "file": "apps/api/test/stock-fix3-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "3b1502ce37f2ce6627dc6d455421698492ba40ffe3dba7ba21d894bdbf1e3849"
+    },
+    {
+      "file": "apps/api/test/stock-r1-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ee3d99b97fa5c43e126d4db82e469883e674d55096a570393a7ae73490bd448f"
+    },
+    {
+      "file": "apps/api/test/stock-r1-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "5a6370683e0cde43a5958047255394fa80a83a326ccc11d122c54934873e38a9"
+    },
+    {
+      "file": "apps/api/test/stock-r1.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0c5622f55b5d6ab07142ad6a0175d379905d541d531dbdb20793df9c147d8ab1"
+    },
+    {
+      "file": "apps/api/test/stock-r2-gate-final.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "da423fb233286b8b3fc1e35c377855129c8a1c31cf0a300908949dc39ad35993"
+    },
+    {
+      "file": "apps/api/test/stock-r2-gate-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "383a70cd872ffb8eec65a240b050491ec7b92de2d372105ee55d38c2931a99a0"
+    },
+    {
+      "file": "apps/api/test/stock-r2-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "2996e8f344665b7fcf0a48841437a08a9d768ee3c5139df96caaa8bebfa4ab71"
+    },
+    {
+      "file": "apps/api/test/stock-r2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 28,
+        "pass": 28,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "e1c70b55e179d8e7f464b6b391f1c65e5247d1647c61a81f5303f7426e7d29c5"
+    },
+    {
+      "file": "apps/api/test/stock-r3-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "6ca5b0b694aab18124a45e316bc88899e5129989be42ab3e644850d192c78672"
+    },
+    {
+      "file": "apps/api/test/stock-r3.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "179808763e876405b1ab49173206a7bbfd543dc4bb17689d776751e0921b8e77"
+    },
+    {
+      "file": "apps/api/test/stock-r4-closing.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "0114237b78f79165c8feb7adbb351dbef4ed849a1bb39cb66f96c66593fe6f9f"
+    },
+    {
+      "file": "apps/api/test/stock-r4-gate-facts.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "45e7bacb549b9b8233f54dc5e334799e771c18362346af5d3c0561efef21d567"
+    },
+    {
+      "file": "apps/api/test/stock-r4-gate-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "19660ca723b4f84d0dcbea27adbf4ba3b43ede6f127c3ca197e159f9d6ab6e06"
+    },
+    {
+      "file": "apps/api/test/stock-r4-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "32af59e1f6baae3d6a3d48d4a0f88d9e445e4239251a66912e9078592290d354"
+    },
+    {
+      "file": "apps/api/test/stock-r4.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 19,
+        "pass": 19,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4d5d7fa266aea8dfc20124325c62bbb001d3df1bd9b5066f7bc3e0a6c482a017"
+    },
+    {
+      "file": "apps/api/test/supervised-band-print.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8d2dd1ffef84de6bd56da50dbdecbe9e602a574102e3b11baae77eafaa8e1d1e"
+    },
+    {
+      "file": "apps/api/test/sync-api.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 57,
+        "pass": 57,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4dfb27d9da36403d4f188b0800575b601a9568f026df67653e8c5aab06bf2773"
+    },
+    {
+      "file": "apps/api/test/sync-keyring.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "dc4b3fa85edee44989f3d33d6f4dbda7ed3150dfbf4df9f6fe8e6b6e771d4b62"
+    },
+    {
+      "file": "apps/api/test/sync-ledger.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 33,
+        "pass": 33,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "454bd846fe8a1985506f666f7b81e93e770d0f601a14411f8d4343ff32527a8a"
+    },
+    {
+      "file": "apps/api/test/sync-sales.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "8666cd3eae18e21ce50fc0206ad8fcf8a0c588bc74018a57e30ea3890deda107"
+    },
+    {
+      "file": "apps/api/test/telemetry.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "c3432256965d8b37560878d29e7dea230fe5dd8e66f358d905d141d630436fd1"
+    },
+    {
+      "file": "apps/api/test/throttle-keys.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "f76cdd88c3f8df2ad17bf6b72d24274409b0900e5c7d05873f445d4bb8562120"
+    },
+    {
+      "file": "apps/api/test/transactions.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a8a4b10900af40bd6232475d4dca5d7f0ceddcea0606c1fde9cca8d989b917d8"
+    },
+    {
+      "file": "apps/api/test/trust-proxy.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "510a5168976b06a00b018e6c0a9d9c808a224a7cdb2e7e5f79f709e6f45da93d"
+    },
+    {
+      "file": "apps/api/test/twilio-verify-auth.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ebfc9a94158c3da38b755584ccf2592ef653ec8ea74d1564c251fdae3736fb7f"
+    },
+    {
+      "file": "apps/api/test/virtual-box-lease.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d36be33f0aff3c650a440a524102e7feca33b05f04e93938bc3f54533f9863c3"
+    },
+    {
+      "file": "apps/api/test/voucher-definitions.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "a4c716363e9427fac7d685f4d4962b7954482306fb7654b5aac2aa7cd753a203"
+    },
+    {
+      "file": "apps/api/test/vouchers-r5-gate.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "1861c3b1275868526410cdf4b1d955617ea614263529f9771a677316bf2bf716"
+    },
+    {
+      "file": "apps/api/test/vouchers-r5-promotions.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "acfa24acfa6a99df5429be43aae832562fd77bc4e06b5a5c976b67865d3a56a6"
+    },
+    {
+      "file": "apps/api/test/vouchers.test.ts",
+      "origin": "prior-documentation-closure",
+      "counts": {
+        "files": 1,
+        "tests": 107,
+        "pass": 107,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "04f0c55399fa0d2e763a4d4d9d49484a7ea2b09d6cefc9b498ca1c43d56c53b9"
+    },
+    {
+      "file": "apps/api/test/wallet-gate-r1-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d9b81a4a2ab2dd32fb54a71f176b99aa38eb1de0d411a4bec07457962284e1d6"
+    },
+    {
+      "file": "apps/api/test/wallet-gate-r1.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "7477346210c05518b5c4a2d3381ec9abc3b249b46cc42c314208bd97f1404110"
+    },
+    {
+      "file": "apps/api/test/wallet-gate-r2-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "4c2a45ee4895709795329d65fa04afda86536560961288623200d5ff07890a58"
+    },
+    {
+      "file": "apps/api/test/wallet-gate-r2.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "b60af8ea5f6719795825417f582abf10a94ae8f76b05e3b6f8690c2c61d1b7b5"
+    },
+    {
+      "file": "apps/api/test/wallet-gate-r3-final.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "890947a46410d75fbf6c55d95c828c5312377bef6d65f8166f01429de2816f27"
+    },
+    {
+      "file": "apps/api/test/wallet-gate-r3-recheck.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "fdb526768b1024361bfd1d0d254c3cd8e1e58ecf2fa8ccd7e54a19ef5659764d"
+    },
+    {
+      "file": "apps/api/test/wallet-gate-r3.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "3f1d90caa7b9e6211da266c6e7ab7b3fec9d12fc40e76ec1364b7010b5e94210"
+    },
+    {
+      "file": "apps/api/test/wallet-r3-figures.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "7c5c855a3920b7f9f8739c054669260ffc99fe716f2eb033bfee5f58fd166563"
+    },
+    {
+      "file": "apps/api/test/wallet-r3-lots.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "aa3fc76e14946c179c09e36b852aad63168bac7bc61507ba81ce54e815ebec1a"
+    },
+    {
+      "file": "apps/api/test/wallet-r3.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "cea52ab0a459a9d727df963f83085b628e32a8cbdb4a8e70cec730eb8e2c9543"
+    },
+    {
+      "file": "apps/api/test/wallet-r5-closing-audit.test.ts",
+      "origin": "current-Q23-native",
+      "counts": {
+        "files": 1,
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "49671cf31761358558a4a5cd663d00118c6f768e0ac419557545230ffaf73f3f"
+    },
+    {
+      "file": "apps/api/test/wallet-spend.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 15,
+        "pass": 15,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "ec44c0b7aee73db9ede0168700d6264685865a9785a7dc4be802ce6bde91cc30"
+    },
+    {
+      "file": "apps/api/test/wallet.test.ts",
+      "origin": "prior-full-native",
+      "counts": {
+        "files": 1,
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "fileCensusSha256": "d11c775e505c48c0c8560bf1258723e8a12d37f197699aafd7ec8bc36d45a35d"
+    }
+  ],
+  "limits": [
+    "Current 28-file run uses native Windows Node 22.17.1; previous full run uses Linux Node 22.23.3.",
+    "One new planner test simulates held-opener ABA using ledger updates; the whole operator-switch-handoff suite supplies complementary native operator PUT/ABA coverage.",
+    "Two optional platform-specific skips and five inherited TODOs remain in the unique composed census.",
+    "No staging, provider, real AI, SMS or payment execution; no fresh 384-file monolithic run claimed."
+  ]
+}

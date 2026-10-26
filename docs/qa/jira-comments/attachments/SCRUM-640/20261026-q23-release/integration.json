@@ -1,0 +1,37 @@
+{
+  "ticket": "SCRUM-640",
+  "at": "2026-10-26T15:11:19.032Z",
+  "sourceSha": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "mainBase": "c1424f44770325ab68ea42edc6afed89287fe531",
+  "plannerSource": "d3c1c520a2f052decdbbb15a447bb5ad439d907c",
+  "sourceFiles": 3809,
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "changed": [
+    "apps/api/src/services/assistant/call-otoapp.ts",
+    "apps/api/src/services/assistant/engine.ts",
+    "apps/api/test/assistant-otoapp.test.ts",
+    "apps/api/test/fake-otoapp.ts"
+  ],
+  "allEarlierDomainInputsOtherwiseUnchanged": true,
+  "commits": [
+    "da74e7fe7910e564600571d285ebb24a4ede8f82 feat(console): prepare isolated session operator switching",
+    "49dbbdd8f62f634e5ea83fc08ac51cc903d7fabb docs(console): preserve operator switch groundwork evidence",
+    "da99401d589ca1f30d1b7a85506426a3f7a3582f feat(auth): bind operator selection to the verified session",
+    "906e12e63fe2f962b89708d14d5d275045fc79e0 feat(console): fence controls by the confirmed working operator",
+    "518ad3d48431804586c9bb96353eef5c1b14e684 docs(console): preserve verified operator integration checkpoints",
+    "18c70d1e1b2f2d502a5cb0b4be2d9f5d8324844d fix(api): retain verified operator context in audit records",
+    "9b114406021fbea789c96bca97e7bda7e912bd6b docs(console): preserve the Q22 native audit checkpoint",
+    "44961921f72bb2ea13bc6415034e433b2e9346e3 docs(console): verify the Q22 checkpoint after rebase",
+    "335b9251980529072a6fd0c21fd5461afcfc3a9e docs(console): record the post-rebase Q22 gate",
+    "c58cd11f6ff29e3e1d01b88b88d5eb3d611a36d6 docs(console): correct the rebase preflight note",
+    "777bbf64a41fbc3ea43bea2ee08afa007009b00d feat(assistant): pin each ask to the operator context it was asked in",
+    "146214e495bd1884d7a695c6658dcacac497619b fix(console): scope assistant settings to working operator",
+    "690ecba2205b14cc14898e4ebf18de50878a3939 docs(console): archive combined operator switch preparation",
+    "63f810f11f690a07eccd319409dbb21cc93377bc test(console): preserve combined workspace checks",
+    "c75d83cbdc85e4a5c15562de6ed174422276e8bf docs(qa): archive combined linux POS checks",
+    "28af670978d057fd7d988c45ef8d0e4f773fc23f docs(qa): redact synthetic auth codes from display logs",
+    "59ffa3e72d106fda5bb3568edc213288cb25e193 fix(assistant): close the two operator-switch gaps at the app opener"
+  ],
+  "rebasePreservedAll16OriginalCommits": true,
+  "clean": true
+}

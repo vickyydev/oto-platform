@@ -1,0 +1,93 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T15:31:18.285Z",
+  "directory": "C:\\w\\admin640-q23-native-20261026-v1\\publication-v2",
+  "indexExcludesItself": true,
+  "files": [
+    {
+      "path": "01.json",
+      "sha256": "6a715200208ac5270b574d00db25e89fafefcfa3fe6e2420579e3fb73bd98b3c",
+      "bytes": 2092
+    },
+    {
+      "path": "01.log.txt",
+      "sha256": "e421bc66fcd19d9f52177fdb0f56979bae89f52ae3247eb94875ee80f5aed9ed",
+      "bytes": 30581
+    },
+    {
+      "path": "README.md",
+      "sha256": "0c8af53ca6aad1639b87358989e4204db84b62397029f1299ce1d579b2e70135",
+      "bytes": 3061
+    },
+    {
+      "path": "affected-file-plan.json",
+      "sha256": "022c370e5d36389dd74e31ea27309fb4f4328873dc12ea23059643e0dd1b8777",
+      "bytes": 1867
+    },
+    {
+      "path": "archive-byte-bindings.json",
+      "sha256": "db50914800362145cccbf5bd5926f98b63cb5c3f16ae0c835c663cdc07eea38e",
+      "bytes": 4374
+    },
+    {
+      "path": "case-census.json",
+      "sha256": "934950f8865f1d988277455f7d869fdc40977a6e93987547dbd28ca6365fe5f7",
+      "bytes": 119593
+    },
+    {
+      "path": "coverage-composition.json",
+      "sha256": "5a991257d0331e79ad19c6de1e4b1e0ac33b7d1cadb8a9858974b00a3fff51ef",
+      "bytes": 159309
+    },
+    {
+      "path": "external-artifacts.json",
+      "sha256": "1dd5e2e1d9207e106c1ced09489665b7c5b8583eb39f6df713fd26b66c91b681",
+      "bytes": 1114
+    },
+    {
+      "path": "intent.json",
+      "sha256": "7a8c605766fd5fddb71afef973a615f9815dade1c1ab14f0e9ab86d2284392f1",
+      "bytes": 2840
+    },
+    {
+      "path": "planner-delivery-review.json",
+      "sha256": "6ccc5a5a6f3d57132dd2da769893cb288a28813bfa50d926c780f17a2851b60b",
+      "bytes": 5718
+    },
+    {
+      "path": "preparation-failed-original.json",
+      "sha256": "c4caab83149f82ea882691c16c23042ec1cc31fd3233823f033dc41919d9dbcc",
+      "bytes": 428
+    },
+    {
+      "path": "preparation.json",
+      "sha256": "e309a54f340035c1af85c5e6e18e3dc911d4cdac18e196edad38ecc7c8baf51a",
+      "bytes": 2177
+    },
+    {
+      "path": "privacy-and-format-check.json",
+      "sha256": "898ca37cb15a6512831df7caf813544065074b90af361e30f3ea3de7f3a327e9",
+      "bytes": 708
+    },
+    {
+      "path": "result.json",
+      "sha256": "13f262d3be80c867de54f0d54e252ba22fef04ec2a2162647fdf14aa5f988698",
+      "bytes": 1944
+    },
+    {
+      "path": "setup.json",
+      "sha256": "25c7108d206a214e4b8bd7785233411493e131f67a8d23e62511f67a23c81aca",
+      "bytes": 133
+    },
+    {
+      "path": "source-domain-bridge.json",
+      "sha256": "5045cd7d17bb24231861e51e9dc2375bbf3cb2805ff4fd5c249d0090c6b3b117",
+      "bytes": 3883
+    },
+    {
+      "path": "source-manifest.json",
+      "sha256": "8cb11b0e87537a6f191ca29d3ddee4a8c30e8082843499b73a224a4a44ab31ce",
+      "bytes": 571113
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T15:34:38.888Z",
+  "localReleaseGreen": true,
+  "sourceCheckpoint": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "base": "c1424f44770325ab68ea42edc6afed89287fe531",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "sourceManifest": {
+    "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/source-manifest.json",
+    "sha256": "8cb11b0e87537a6f191ca29d3ddee4a8c30e8082843499b73a224a4a44ab31ce",
+    "bytes": 571113
+  },
+  "fullBatteryOnSingleFinalFrame": false,
+  "coverageMethod": "Verified unchanged source domains and exact case-identity replacement by fresh whole-file affected native checks after rebase.",
+  "integration": {
+    "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/integration.json",
+    "sha256": "30579567b6cdc707240d0b8bd0f95187d88383422a16ed31e36f0ea8948cacae",
+    "bytes": 2499
+  },
+  "sourceReview": {
+    "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/source-review.json",
+    "sha256": "6ccc5a5a6f3d57132dd2da769893cb288a28813bfa50d926c780f17a2851b60b",
+    "bytes": 5718
+  },
+  "postRebase": {
+    "results": [
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/contracts/result.json",
+        "sha256": "ec54a7390f669a8a79f69a0ed6bcc5c5ced3b5edbc16ac4614df8038cd1957a1",
+        "bytes": 1693
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/final/result.json",
+        "sha256": "0245f711c6dd07f5ab7bd9475151e7b6e791bda9fe4eee0e998cd6ff0b9411c0",
+        "bytes": 6344
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/api/result.json",
+        "sha256": "13f262d3be80c867de54f0d54e252ba22fef04ec2a2162647fdf14aa5f988698",
+        "bytes": 1944
+      }
+    ],
+    "ownedIndex": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/owned-gate-index.json",
+      "sha256": "ff4847fea8e87edebe0d5f15e5631c1ac5026de87a4dccc77af69f3f4263eb14",
+      "bytes": 11089
+    },
+    "apiIndex": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/api/publication-index.json",
+      "sha256": "d4ce7579068c20d519518ef906b1392d659ce7fc59db264054163c6a287a8b92",
+      "bytes": 2813
+    },
+    "apiWholeFiles": 28,
+    "apiPassed": 590,
+    "apiTodo": 4,
+    "dbPassed": 336,
+    "consolePassed": 363,
+    "consoleTodo": 3,
+    "clientPassed": 10,
+    "compilerDiagnostics": 0,
+    "consoleCompilerConfigurations": 3,
+    "routeGuards": 4,
+    "contracts": true,
+    "schema": true,
+    "lintFiles": 111,
+    "lintErrors": 0,
+    "lintWarnings": 1,
+    "warning": "Existing generated openapi file ignored by ESLint"
+  },
+  "composedApi": {
+    "wholeFiles": 384,
+    "passed": 5865,
+    "failed": 0,
+    "optionalStorageSkipped": 2,
+    "todo": 5,
+    "composition": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/api/coverage-composition.json",
+      "sha256": "5a991257d0331e79ad19c6de1e4b1e0ac33b7d1cadb8a9858974b00a3fff51ef",
+      "bytes": 159309
+    },
+    "sourceBridge": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/api/source-domain-bridge.json",
+      "sha256": "5045cd7d17bb24231861e51e9dc2375bbf3cb2805ff4fd5c249d0090c6b3b117",
+      "bytes": 3883
+    },
+    "originalFailedShardsPreserved": true
+  },
+  "priorCoverage": {
+    "consoleBrowser": 286,
+    "assistantSettingsBrowser": 23,
+    "linuxPos": 1437,
+    "boxSerial": 749,
+    "shared": 775,
+    "otherPackageCases": 1311,
+    "workspaceCompilers": 16,
+    "workspaceBuilds": 5,
+    "appCompiler": {
+      "diagnostics": 418,
+      "files": 54,
+      "fileCodeBuckets": 109,
+      "baselineUnchanged": true
+    },
+    "appNativePrograms": {
+      "total": 41,
+      "fresh": 9,
+      "unchangedBridged": 32
+    },
+    "appAvailability": {
+      "wholeFiles": 30,
+      "cases": 790,
+      "failed": 0,
+      "originalFailedRunPreserved": true
+    },
+    "appRestore": {
+      "platformMigrations": 89,
+      "appMigrations": 31,
+      "tables": 184,
+      "rows": 1108,
+      "views": 8,
+      "replays": 2
+    },
+    "bindings": [
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-combined-preparation/hash-index.json",
+        "sha256": "c9441625440b5742ff8d0d564db97e4210bde4ab8def5b918b3e752ccf15c582",
+        "bytes": 46792
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-combined-workspace/index.json",
+        "sha256": "889eb99c7a456d4007afd836ed98c9c9585560126995cc70219ba31f23690890",
+        "bytes": 18626
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-combined-pos/independent-checks.json",
+        "sha256": "73fdf44b88eddaedfd5eb27fa2e147940beaa63d942009691e2c5aa6486bc466",
+        "bytes": 3886
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-combined-api/checkpoint-summary.json",
+        "sha256": "e82ee6ad3bdf995aacc306026ee10a1e9fc563d52b88b24d580349666e390ef2",
+        "bytes": 1416
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-combined-api/app-domain-reuse-confirmation.json",
+        "sha256": "887e7ac7d7b22f9f4748555db6fe988fc4116b5ca3dfee5560a2d60d028eea98",
+        "bytes": 27603
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-validation-checkpoint/admin640-api-archive-independent-review-v2-20261026.json",
+        "sha256": "0cf1a904308c3425ef4d7e2c9ad4af7bc4a42c501d92cdac613c662dd2b6d1d3",
+        "bytes": 4891
+      }
+    ]
+  },
+  "migration": {
+    "number": "0088",
+    "tag": "0088_operator_switch",
+    "mainLastIndex": 87,
+    "candidateIndex": 88,
+    "sql": {
+      "path": "packages/db/migrations/0088_operator_switch.sql",
+      "sha256": "57302eac8aa840fc318b17726e4cbf23d3344e63c7ceecc486e78690cd51b625",
+      "bytes": 930
+    },
+    "expandOnly": true,
+    "applied0087Unchanged": true,
+    "appMigration": false
+  },
+  "cleanup": {
+    "allThreeCurrentPrivateServersStopped": true,
+    "scratchDatabaseCount": 0,
+    "newDockerContainers": 0,
+    "sharedContainersPreserved": 10
+  },
+  "limits": [
+    "No single final-frame full battery is claimed; original source-domain and command receipts define coverage.",
+    "The added opener regression interleaves actual revision audit rows during the held fake HTTP opener; native A-to-B-to-A switching is covered separately by the existing whole switch/handoff suite.",
+    "Original failed API shards, preparation failures and other historical closures remain intact.",
+    "No feature hosted CI, deployment or staging acceptance is claimed by this local binder."
+  ],
+  "coordinatorGates": [
+    "Main push and exact-SHA six-job CI",
+    "Automatic API and Console rollout",
+    "Native switch, refusal, restoration and bounded audit proof with inspected attached staging images",
+    "Parent635 fresh Overview and attachment acceptance before P5"
+  ],
+  "pushed": false,
+  "featureCi": false,
+  "renderDeploy": false,
+  "stagingAcceptance": false
+}

@@ -1,0 +1,55 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "contracts",
+  "attempt": "v2",
+  "sourceHead": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "completedAt": "2026-10-26T15:14:22.906Z",
+  "fatal": null,
+  "programs": [
+    {
+      "command": "pnpm --filter @oto/api typecheck",
+      "passed": true,
+      "receiptSha256": "bd976f0c8b15b844c0dfc978ef82b5417dbafcf499ff9a5c162ff05f2b51a7fa"
+    },
+    {
+      "command": "pnpm --filter @oto/db typecheck",
+      "passed": true,
+      "receiptSha256": "e85131bf1fb9f079c3ff72ff2417483d32ebf824269e368c65d2b6666698ec04"
+    },
+    {
+      "command": "pnpm --filter @oto/shared typecheck",
+      "passed": true,
+      "receiptSha256": "e7c514806cdd0c902270661000ac511e83f9fd3eaf1bb8eb31399a8cb1633647"
+    },
+    {
+      "command": "pnpm --filter @oto/api-types typecheck",
+      "passed": true,
+      "receiptSha256": "a1b02f7fb80f2599fcbdc8c5cd16ed085b2f32696e3b5f429da8d01c255ef4bb"
+    },
+    {
+      "command": "pnpm api-types:check",
+      "passed": true,
+      "receiptSha256": "7da1c1c572597be9ee836b7057cacda9d424d986acde99a2780dda3af9515a51"
+    },
+    {
+      "command": "pnpm --filter @oto/api-types test",
+      "passed": true,
+      "receiptSha256": "fa7ce126de83b4bed4cf5aff87a0c1951ac05dc0cf31fbef15b4567e8561899a"
+    }
+  ],
+  "cleanup": {
+    "ownNativeServer": true,
+    "port": 62781,
+    "databasesBefore": 0,
+    "credentialsPersisted": false,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "staging": false,
+  "passed": true
+}

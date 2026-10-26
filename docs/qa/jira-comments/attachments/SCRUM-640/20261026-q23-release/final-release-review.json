@@ -1,0 +1,83 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T15:38:59.289Z",
+  "passed": true,
+  "reviewScope": "Bounded independent final local-release binder, reference/index hashes, current source, migration numbering and terminal receipt/count review. No tests or product/source changes.",
+  "binder": {
+    "path": "docs/qa/jira-comments/attachments/SCRUM-640/local-release.json",
+    "sha256": "c54b71223b981c15744dbe3b86670008b4af0bc3f067c7a030daea81bbb0a78e",
+    "bytes": 7232
+  },
+  "checks": [
+    {
+      "name": "binder direct file references",
+      "passed": true,
+      "count": 17
+    },
+    {
+      "name": "four archived indexes",
+      "passed": true,
+      "indexes": 4,
+      "files": 204
+    },
+    {
+      "name": "current full source binding",
+      "passed": true,
+      "sourceHead": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+      "inputs": 3809,
+      "canonicalSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24"
+    },
+    {
+      "name": "migration numbering and immutable main 0087",
+      "passed": true,
+      "mainLastIndex": 87,
+      "nextFreeIndex": 88,
+      "candidateIndex": 88,
+      "mainFilesUnchanged": [
+        "packages/db/migrations/0087_assistant_settings.sql",
+        "packages/db/migrations/meta/0087_snapshot.json"
+      ],
+      "sqlSha256": "57302eac8aa840fc318b17726e4cbf23d3344e63c7ceecc486e78690cd51b625"
+    },
+    {
+      "name": "exact Q23 whole-file coverage replacement",
+      "passed": true,
+      "fresh": {
+        "files": 28,
+        "tests": 594,
+        "pass": 590,
+        "fail": 0,
+        "skip": 0,
+        "todo": 4,
+        "other": 0
+      },
+      "composed": {
+        "files": 384,
+        "tests": 5872,
+        "pass": 5865,
+        "fail": 0,
+        "skip": 2,
+        "todo": 5,
+        "other": 0
+      },
+      "addedCases": 1,
+      "removedCases": 0,
+      "oldFailureNowPasses": true
+    },
+    {
+      "name": "terminal native gate results and cleanup",
+      "passed": true,
+      "programs": 12,
+      "allThreePrivateServersStopped": true,
+      "allScratchDatabasesZero": true,
+      "logs": []
+    }
+  ],
+  "findings": [],
+  "limits": [
+    "The evidence is composed across verified source domains, not a single fresh final-frame full battery.",
+    "The earlier API failed run and documentation closure remain intact; only actual affected whole-file results replace old case outcomes.",
+    "Native App compiler baseline and unchanged App domains are reused with explicit source/runtime bridges; no fresh App whole compiler is claimed.",
+    "This review does not claim hosted feature CI, deployment or staging acceptance."
+  ]
+}

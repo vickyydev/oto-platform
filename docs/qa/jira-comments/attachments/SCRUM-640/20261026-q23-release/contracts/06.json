@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-640",
+  "command": "pnpm --filter @oto/api-types test",
+  "startedAt": "2026-10-26T15:14:09.188Z",
+  "completedAt": "2026-10-26T15:14:15.313Z",
+  "exitCode": 0,
+  "signal": null,
+  "processError": null,
+  "sourceHead": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "logSha256": "9749c975a85b9e572314f97cde1a73b42d493d7cbb0da388116ebf43564a5602",
+  "logBytes": 381,
+  "shell": "Git Bash set -eo pipefail",
+  "logRedactedBeforeDisk": true,
+  "passed": true
+}

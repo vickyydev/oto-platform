@@ -1,0 +1,6 @@
+
+> @oto/db@0.1.0 verify-schema C:\w\admin-operator-switch\packages\db
+> tsx scripts/verify-schema.ts
+
+schemas: analytics, assistant, booth, core, crm, drizzle, edge, inbox, otoapp, pos, promo, public
+schema verified against 0088_snapshot.json: tables, columns, foreign keys, indexes and checks all match, and public is empty.

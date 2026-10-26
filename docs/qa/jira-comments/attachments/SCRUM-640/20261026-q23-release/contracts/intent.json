@@ -1,0 +1,46 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "contracts",
+  "attempt": "v2",
+  "sourceHead": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "sourceInputs": 3809,
+  "installed": [
+    {
+      "path": "node_modules/.modules.yaml",
+      "sha256": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d"
+    },
+    {
+      "path": "node_modules/.pnpm/lock.yaml",
+      "sha256": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+    },
+    {
+      "path": "node_modules/.pnpm/embedded-postgres@16.14.0-beta.17/node_modules/embedded-postgres/package.json",
+      "sha256": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+    },
+    {
+      "path": "node_modules/.pnpm/pg@8.23.0/node_modules/pg/package.json",
+      "sha256": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28"
+    },
+    {
+      "path": "node_modules/.pnpm/vitest@3.2.7_@types+node@25_31b9f5e9de5ca818bd43df3a46e351ce/node_modules/vitest/package.json",
+      "sha256": "3f3dc1ef7acc6ffac8d0a7f10c4460f98e36026837b57f774426d962d546d740"
+    },
+    {
+      "path": "node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/package.json",
+      "sha256": "822ef7ca6452205657b6288b066481ecf508bfbf43455d715cf7d3ec457561e6"
+    }
+  ],
+  "programs": [
+    "pnpm --filter @oto/api typecheck",
+    "pnpm --filter @oto/db typecheck",
+    "pnpm --filter @oto/shared typecheck",
+    "pnpm --filter @oto/api-types typecheck",
+    "pnpm api-types:check",
+    "pnpm --filter @oto/api-types test"
+  ],
+  "helperSha256": "ef796feda88c4921781f496866c295fe8a7ee04b663ec17ce9963b581b2263e6",
+  "startedAt": "2026-10-26T15:11:35.173Z",
+  "hostFreeMiB": 3042,
+  "staging": false
+}

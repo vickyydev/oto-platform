@@ -1,0 +1,199 @@
+
+> @oto/db@0.1.0 test C:\w\admin-operator-switch\packages\db
+> vitest run --no-file-parallelism
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/db
+
+ ✓ test/migration-0025.test.ts (3 tests) 14645ms
+   ✓ 0025 — the voucher lines written before the rule > rewrites the old label to the last four on open, voided and finalised sales, and leaves every other row  6123ms
+   ✓ the migration, run twice > leaves the same database when it is applied again  770ms
+   ✓ the migration, run twice > builds the same database from empty a second time  3382ms
+ ✓ test/migration-0026.test.ts (14 tests) 14483ms
+   ✓ on a database from before 0026 > leaves every till’s row as it was, and copies nothing in: those misses name nobody  6398ms
+   ✓ the migration, run twice > leaves the same database when it is applied again  760ms
+   ✓ the migration, run twice > builds the same database from empty a second time  4119ms
+ ✓ test/migration-0024.test.ts (5 tests) 14063ms
+   ✓ promo.redemption_throttle — the hash of the code beside each miss > leaves a row written before 0024 with its misses, and null beside them  5998ms
+   ✓ the migration, run twice > leaves the same database when it is applied again  837ms
+   ✓ the migration, run twice > builds the same database from empty a second time  3700ms
+ ✓ test/s220-e2-review-migration.test.ts (6 tests) 10877ms
+   ✓ E2 review — the attendee link migration > applies to two empty databases alike, and a second migrate of one is a no-op  1043ms
+ ✓ test/s640-operator-switch-migration.test.ts (12 tests) 10939ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > migrates a real predecessor database without backfilling or altering existing session or audit data  6426ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > replays the complete native migration chain without another ledger row or any session/account/audit change  749ms
+ ✓ test/migration-0022.test.ts (9 tests) 11583ms
+   ✓ the migration, run twice > leaves the same database when it is applied again  710ms
+   ✓ the migration, run twice > builds the same database from empty a second time  6871ms
+ ✓ test/migration-0021.test.ts (14 tests) 10598ms
+   ✓ the migration, run twice > leaves the same database when it is applied again  694ms
+   ✓ the migration, run twice > builds the same database from empty a second time  5881ms
+ ✓ test/s221-r1-review-migration.test.ts (5 tests) 9994ms
+   ✓ the staff-benefits migration (SCRUM-218 review) > applies twice clean: a second run of the migrator over a built database changes nothing  872ms
+ ✓ test/analytics-r45-migration.test.ts (5 tests) 9426ms
+ ✓ test/s220-e3-review-migration.test.ts (6 tests) 12166ms
+   ✓ E3 review — the event check-in migration > applies to two empty databases alike, and a second migrate of one is a no-op  882ms
+ ✓ test/migration-0048.test.ts (6 tests) 9382ms
+   ✓ migration 0048 — the stock ledger > builds from empty twice, and migrating a built database again is a no-op  749ms
+ ✓ test/analytics-r1-migration.test.ts (10 tests) 9669ms
+   ✓ migration 0064 — analytics round 1 > applies again over a migrated database as a no-op  705ms
+ ✓ test/s494-money-migration-0054.test.ts (3 tests) 10326ms
+   ✓ migration 0054 — a tier claim with no document expiry > builds from empty twice, and migrating a built database again is a no-op  760ms
+stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > writes the three, in order and enabled, for a park with an empty table
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > writes the three, in order and enabled, for a park with an empty table
+Inbox: laid 3 role(s), 0 late permission grant(s), 2 department(s), 2 team(s), 6 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > writes nothing on the second run — same rows, same ids, same updated_at
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > writes nothing on the second run — same rows, same ids, same updated_at
+Inbox: laid 3 role(s), 0 late permission grant(s), 2 department(s), 2 team(s), 6 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > PLANT — leaves a park that renamed one tender and archived another alone
+Inbox: laid 3 role(s), 0 late permission grant(s), 2 department(s), 2 team(s), 6 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > converges the park with none and not the park beside it
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/platform-sync-tenders.test.ts > platformSync converges the tenders of a park that has none > converges the park with none and not the park beside it
+Inbox: laid 6 role(s), 0 late permission grant(s), 4 department(s), 4 team(s), 12 routing rule(s), 60 template(s), 0 template translation(s) and 6 console channel account(s) at 2 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/platform-sync-tenders.test.ts > the sync and the full seed do not write two lists
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/platform-sync-tenders.test.ts > the sync and the full seed do not write two lists
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+stdout | test/platform-sync-tenders.test.ts > the sync and the full seed do not write two lists > a seeded park keeps exactly three tenders through a later sync
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/platform-sync-tenders.test.ts > the sync and the full seed do not write two lists > a seeded park keeps exactly three tenders through a later sync
+Stock: laid places at 2 branch(es) and 0 stocked size(s) at 0 branch(es) that had none — opening counts are done in the app.
+
+ ✓ test/platform-sync-tenders.test.ts (7 tests) 8554ms
+ ✓ test/eod-r1-migration.test.ts (5 tests) 9100ms
+   ✓ migration 0052 — the End of Day > builds from empty twice, and migrating a built database again is a no-op  726ms
+ ✓ test/migration-0023.test.ts (5 tests) 9398ms
+   ✓ the migration, run twice > leaves the same database when it is applied again  734ms
+   ✓ the migration, run twice > builds the same database from empty a second time  5086ms
+ ✓ test/migration-0038.test.ts (2 tests) 10420ms
+   ✓ on a database holding staging-shaped bookings > migrates the demo rows as paid, with no attempt, marked legacy — and keeps their money and lines  6936ms
+ ✓ test/migration-0045.test.ts (7 tests) 9672ms
+stdout | test/assistant-i1b.test.ts > platform-sync lays the two permissions
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/assistant-i1b.test.ts > platform-sync lays the two permissions
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/assistant-i1b.test.ts (18 tests) 6085ms
+   ✓ 0081_assistant — structure > applies a second time as a clean no-op  696ms
+   ✓ the database refuses what the ask-log must never hold > records a tool call as words and numbers: GET templates only, one word for a code, never a URL with values  366ms
+ ✓ test/migration-0039.test.ts (5 tests) 7767ms
+   ✓ 0039 lands after 0038 and only adds (gate reproductions) > brings rows written at the 0038 state through with today’s slip, and a re-run changes nothing  4351ms
+stdout | test/inbox-i1.test.ts > platform-sync lays the inbox configuration (I1)
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-i1.test.ts > platform-sync lays the inbox configuration (I1)
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+stdout | test/inbox-i1.test.ts > platform-sync lays the inbox configuration (I1) > a second and a third run lay nothing, and never undo an edit
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/inbox-i1.test.ts > platform-sync lays the inbox configuration (I1) > a second and a third run lay nothing, and never undo an edit
+Stock: laid places at 2 branch(es) and 0 stocked size(s) at 0 branch(es) that had none — opening counts are done in the app.
+
+ ✓ test/inbox-i1.test.ts (25 tests) 6426ms
+   ✓ 0078_inbox_schema — structure (I1) > applies a second time as a clean no-op  696ms
+stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/inbox-ai-a1b.test.ts > platform-sync for the assistant
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+ ✓ test/inbox-ai-a1b.test.ts (22 tests) 6185ms
+   ✓ 0080_inbox_ai — structure > applies a second time as a clean no-op  730ms
+ ✓ test/kiosk-k1-migration.test.ts (3 tests) 3711ms
+ ✓ test/events-e2-migration.test.ts (3 tests) 3380ms
+ ✓ test/s220-e4-review-migration.test.ts (4 tests) 4139ms
+   ✓ review — the party tab migration > is twice-clean: a database at head migrates again with nothing applied  704ms
+ ✓ test/assistant-settings.test.ts (11 tests) 7721ms
+   ✓ SCRUM-638 expand-only operator settings storage > reapplies the native migration chain without another entry or changing stored data  778ms
+ ✓ test/s221-r4-migration.test.ts (4 tests) 3574ms
+ ✓ test/s631-department-migration.test.ts (8 tests) 4824ms
+   ✓ SCRUM-631 expand-only department projection migration > replays the committed platform chain without another migration record or changing department data  757ms
+ ✓ test/s221-r2-migration.test.ts (4 tests) 4019ms
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives the branch its three places, the sell point among them
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives the branch its three places, the sell point among them
+Stock: laid places at 1 branch(es) and 8 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives the branch its three places, the sell point among them
+Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > lays the stocked items, one per size, linked — and writes no opening quantity
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > lays the stocked items, one per size, linked — and writes no opening quantity
+Stock: laid places at 1 branch(es) and 8 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > lays the stocked items, one per size, linked — and writes no opening quantity
+Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > changes nothing the second time — same rows, same ids, same updated_at
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > changes nothing the second time — same rows, same ids, same updated_at
+Stock: laid places at 1 branch(es) and 8 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > changes nothing the second time — same rows, same ids, same updated_at
+Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > PLANT — leaves a branch a manager has set up alone: a retired place, an unlinked item
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > PLANT — leaves a branch a manager has set up alone: a retired place, an unlinked item
+Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives a branch with places but no items its items, pars at its own sell point
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives a branch with places but no items its items, pars at its own sell point
+Stock: laid places at 0 branch(es) and 8 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > gives a branch with places but no items its items, pars at its own sell point
+Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > does not stock a sized product whose sizes the seed does not name exactly (H3: all or none)
+Payment methods: wrote the 3 default tenders for 1 park(s) that had none.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > does not stock a sized product whose sizes the seed does not name exactly (H3: all or none)
+Stock: laid places at 1 branch(es) and 5 stocked size(s) at 1 branch(es) that had none — opening counts are done in the app.
+
+stdout | test/stock-r2-platform-sync.test.ts > platformSync lays down stock setup for a branch that has none (H4) > does not stock a sized product whose sizes the seed does not name exactly (H3: all or none)
+Inbox: laid 3 role(s), 0 late permission grant(s), 3 department(s), 3 team(s), 7 routing rule(s), 30 template(s), 0 template translation(s) and 3 console channel account(s) at 1 operator(s) — the rules' people are blank until somebody names them.
+
+ ✓ test/stock-r2-platform-sync.test.ts (7 tests) 5444ms
+ ✓ test/events-e3-migration.test.ts (3 tests) 4266ms
+ ✓ test/migration-0040.test.ts (6 tests) 4459ms
+ ✓ test/s221-r3-migration.test.ts (4 tests) 4999ms
+ ✓ test/migration-0048-recheck.test.ts (1 test) 3853ms
+ ✓ test/events-e4-migration.test.ts (3 tests) 3879ms
+ ✓ test/migration-0020.test.ts (11 tests) 4977ms
+ ✓ test/migration-0047.test.ts (4 tests) 3827ms
+ ✓ test/migration-0062.test.ts (2 tests) 3783ms
+ ✓ test/events-e5-migration.test.ts (3 tests) 4020ms
+ ✓ test/s494-gate-migration-0053.test.ts (3 tests) 4213ms
+ ✓ test/migration-0019.test.ts (29 tests) 4069ms
+ ✓ test/s502-prepaid-stay-index-migration.test.ts (3 tests) 4004ms
+ ✓ test/eod-r2-migration.test.ts (4 tests) 4200ms
+ ✓ test/s216-review-migration.test.ts (4 tests) 11ms
+ ✓ test/schema-shape.test.ts (14 tests) 12ms
+ ✓ test/testing-setup-step.test.ts (4 tests) 3ms
+
+ Test Files  46 passed (46)
+      Tests  336 passed (336)
+   Start at  22:14:56
+   Duration  349.43s (transform 2.07s, setup 0ms, collect 23.77s, tests 313.15s, environment 6ms, prepare 4.56s)

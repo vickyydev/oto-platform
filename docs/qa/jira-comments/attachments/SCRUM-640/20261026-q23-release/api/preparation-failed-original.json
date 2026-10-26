@@ -1,0 +1,11 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T15:19:10.272Z",
+  "passed": false,
+  "phase": "external runner preparation only",
+  "errorCode": "EXACT_EXISTING_TODO_SCOPE_REQUIRED",
+  "cause": "A naive static string scan counted an it.todo literal inside an existing test fixture; the actual inherited native census has four TODO cases.",
+  "nativePgStarted": false,
+  "testsExecuted": false,
+  "sourceChanged": false
+}

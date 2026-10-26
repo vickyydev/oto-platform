@@ -1,0 +1,103 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T15:14:12.915Z",
+  "passed": true,
+  "scope": "Read-only adversarial review of planner Q23 four-file source delivery; not a runtime/release approval",
+  "commit": "d3c1c520a2f052decdbbb15a447bb5ad439d907c",
+  "parent": "287c9d9690e5a7a4f9680a56f20a3cd4862933ac",
+  "patchSha256": "cdab882c7c95b785bd68aeecdd61de1601b4e93b69265af50f43d68ce180bd82",
+  "files": [
+    {
+      "path": "apps/api/src/services/assistant/call-otoapp.ts",
+      "parentSha256": "2f5fc7fc21b61aefa9e08148ee5c96b2aa50561038a4a7e64bb98c84b3cba136",
+      "deliveredSha256": "23bd8ce47cd6a6adff1c7f3edf9271fded08db7cc97a79d30f8f25dfc636aa57"
+    },
+    {
+      "path": "apps/api/src/services/assistant/engine.ts",
+      "parentSha256": "160f542ec143b8be148c53fa94ebe05218836809153a8a13d5f2d64d13ebc3a4",
+      "deliveredSha256": "a047fc940874f35fdd3d3bea1dff7f258c0a653581b1680974b800a72ea45e1e"
+    },
+    {
+      "path": "apps/api/test/assistant-otoapp.test.ts",
+      "parentSha256": "a189c94f1794ed6af2b5485105bf257a9ffc89e3f24dca09e0c5c24a87d17185",
+      "deliveredSha256": "56ff792789edfeb4e42c4ac38c62a7f96bfd6f7ae12a63a5fa17555ee85c9c4b"
+    },
+    {
+      "path": "apps/api/test/fake-otoapp.ts",
+      "parentSha256": "2f07e20450b4da11f41b5717af014c29f7a609b78f75d88bddfa72e1c2d47090",
+      "deliveredSha256": "146ff25ce2e441e687ebb4785019b135b82f8be11df2668555fa6e11c3b35760"
+    }
+  ],
+  "existingAssertionsUnchanged": true,
+  "existingFakeBehaviorAdditiveOnly": true,
+  "mintArgumentsUnchanged": true,
+  "nativeRevokedWordingExactlyEqual": true,
+  "nativeFallbackWordingExactlyEqual": true,
+  "productionFindings": [],
+  "checked": {
+    "earlyOpener": {
+      "path": "apps/api/src/services/assistant/engine.ts",
+      "line": 818,
+      "result": "askContextHolds runs after awaited opener and before opened.ok/refusal audit, trace or model continuation; mismatch records CONTEXT_CHANGED and throws ToolServerError. Existing post-tool check remains."
+    },
+    "revocation": {
+      "path": "apps/api/src/services/assistant/call-otoapp.ts",
+      "lines": [
+        303,
+        339
+      ],
+      "result": "Only HandoffRejected is translated. Other exceptions retain their existing failure path; tile/department and live handoff guards are unchanged. Rejection audit completes before the sanitized structured401 is returned; no app HTTP request or retry occurs at this boundary."
+    },
+    "audit": {
+      "path": "apps/api/src/services/assistant/call-otoapp.ts",
+      "lines": [
+        322,
+        329
+      ],
+      "result": "Action auth.handoff_rejected, entityType handoff, null actor and before/owner defaults match native rejected-exchange semantics. Only reason/audience/session/account identifiers enter after; no token/cookie/error message is recorded. Null actor keeps home/effective attribution null. Request identity reflects the earlier mint phase; no jti exists to attribute."
+    },
+    "cleanup": {
+      "result": "The opener holder caches an opened session before returning it. The existing outer finally closes that holder even when the new context check throws; no cleanup path was removed."
+    }
+  },
+  "newTest": {
+    "path": "apps/api/test/assistant-otoapp.test.ts",
+    "startLine": 502,
+    "realAskRoute": true,
+    "realDatabaseRevisionWrites": true,
+    "realLoopbackHttpOpener": true,
+    "hookAwaitedBeforeNativeExchange": true,
+    "modelContinuationBlocked": true,
+    "refusalSuppressed": true,
+    "noAppSessionIssued": true,
+    "limitation": "This is an in-flight opener/revision-only regression. It inserts two session.operator_switch audit-ledger rows directly; it does not invoke PUT /me/session/operator or make the intermediate effective operator B. The production revision query reads that ledger, so the same-operator changed-revision fence is exercised. Do not relabel it as a complete native A-to-B-to-A journey.",
+    "complementaryNativeCoverage": "Run the whole operator-switch-handoff-review.test.ts, including real B-to-A-to-B / legacy-home round-trip invalidation controls."
+  },
+  "requiredCombinedWholeFiles": [
+    "apps/api/test/assistant-otoapp.test.ts",
+    "apps/api/test/assistant-engine.test.ts",
+    "apps/api/test/assistant-asks.test.ts",
+    "apps/api/test/assistant-golden.test.ts",
+    "apps/api/test/assistant-feedback.test.ts",
+    "apps/api/test/assistant-registry.test.ts",
+    "apps/api/test/handoff.test.ts",
+    "apps/api/test/handoff-department.test.ts",
+    "apps/api/test/auth-handoff-files-tx.test.ts",
+    "apps/api/test/operator-switch-handoff-review.test.ts",
+    "apps/api/test/s629-handoff-role.test.ts"
+  ],
+  "additionalChecks": [
+    "Read the whole API typecheck output and require zero diagnostics on the actual combined source.",
+    "Force lint all four changed files; preserve the current native test assertions.",
+    "Verify only the four delivered paths change when applying the patch; retain combined638 settings/pricing additions when resolving engine context.",
+    "Bind actual combined affected-file GREEN results to the final source manifest before deciding whether the failed original384-file run is closed by this whole-file replacement."
+  ],
+  "testsRunByReviewer": false,
+  "plannerRuntimeClaimsIndependentlyVerified": false,
+  "releaseApproved": false,
+  "limits": [
+    "The latest main STATUS reports planner RED/GREEN and44/57/62/70 passes, but those runtime receipts were not independently reviewed in this source-only task.",
+    "This review covers d3c1c520 on287c9d96, not an as-yet-unobserved combined cherry-pick/rebase result.",
+    "No protected or other source, tests, Git refs, runtime, Jira, staging, provider or network state was modified."
+  ]
+}

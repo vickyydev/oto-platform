@@ -1,0 +1,50 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "q23-final",
+  "attempt": "v1",
+  "sourceHead": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "completedAt": "2026-10-26T15:22:31.114Z",
+  "fatal": null,
+  "programs": [
+    {
+      "command": "pnpm --filter @oto/db test",
+      "passed": true,
+      "receiptSha256": "572e7e6e99a02ac14e99d9f07552e28625857c948a8e930294be79744617cae0"
+    },
+    {
+      "command": "pnpm --filter @oto/db verify-schema",
+      "passed": true,
+      "receiptSha256": "1014a25b20a8b78eb13347b63134c73d4b23ea6c05bfefc1240cef92bfbe2ecd"
+    },
+    {
+      "command": "pnpm --filter @oto/console typecheck",
+      "passed": true,
+      "receiptSha256": "92139600562cd6c6a8d19faf673f03dc3348e616767e926cef8d80467c9d1b1a"
+    },
+    {
+      "command": "pnpm --filter @oto/console test --maxWorkers=1 --fileParallelism=false",
+      "passed": true,
+      "receiptSha256": "b9d885d6ce26979137694c05aa94abd3fc4e639506cc8039173e180802d3390b"
+    },
+    {
+      "command": "pnpm exec eslint 'apps/api/src/plugins/idempotency.ts' 'apps/api/src/plugins/session.ts' 'apps/api/src/routes/auth.ts' 'apps/api/src/routes/me.ts' 'apps/api/src/services/assistant/call-otoapp.ts' 'apps/api/src/services/assistant/engine.ts' 'apps/api/src/services/audit-context.ts' 'apps/api/src/services/audit.ts' 'apps/api/src/services/auth.ts' 'apps/api/src/services/fleet.ts' 'apps/api/src/services/handoff.ts' 'apps/api/src/services/operator-switch.ts' 'apps/api/test/assistant-engine.test.ts' 'apps/api/test/assistant-otoapp.test.ts' 'apps/api/test/fake-otoapp.ts' 'apps/api/test/id-conformance.test.ts' 'apps/api/test/operator-switch-audit-context-review.test.ts' 'apps/api/test/operator-switch-handoff-review.test.ts' 'apps/api/test/operator-switch-idempotency-review.test.ts' 'apps/api/test/operator-switch-lifecycle-review.test.ts' 'apps/api/test/operator-switch-request-race-review.test.ts' 'apps/api/test/operator-switch-review.test.ts' 'apps/api/test/operator-switch-route-review.test.ts' 'apps/api/test/operator-switch-seat-review.test.ts' 'apps/api/test/operator-switch-session-review.test.ts' 'apps/api/test/route-scope-target.test.ts' 'apps/api/test/route-write-conformance.test.ts' 'apps/api/test/routes-guarded.test.ts' 'apps/console/e2e/access-review.spec.ts' 'apps/console/e2e/account-theme.spec.ts' 'apps/console/e2e/accounts.spec.ts' 'apps/console/e2e/admin-navigation.spec.ts' 'apps/console/e2e/app-access.spec.ts' 'apps/console/e2e/assistant-settings.spec.ts' 'apps/console/e2e/care-print.spec.ts' 'apps/console/e2e/catalogue.spec.ts' 'apps/console/e2e/departments.spec.ts' 'apps/console/e2e/employees.spec.ts' 'apps/console/e2e/menu.spec.ts' 'apps/console/e2e/money.spec.ts' 'apps/console/e2e/operations.spec.ts' 'apps/console/e2e/operator-switch.spec.ts' 'apps/console/e2e/organisation.spec.ts' 'apps/console/e2e/overview.spec.ts' 'apps/console/e2e/platform.spec.ts' 'apps/console/e2e/reports.spec.ts' 'apps/console/e2e/roles.spec.ts' 'apps/console/e2e/staff.spec.ts' 'apps/console/e2e/teams-routing.spec.ts' 'apps/console/src/App.tsx' 'apps/console/src/api/client.ts' 'apps/console/src/api/platform.ts' 'apps/console/src/auth/SessionContext.tsx' 'apps/console/src/components/ConsoleLayout.tsx' 'apps/console/src/components/OperatorSwitchPicker.tsx' 'apps/console/src/components/booth/BoothSpinsPanel.tsx' 'apps/console/src/components/booth/BoothStaffPanel.tsx' 'apps/console/src/components/booth/TodayStaffPanel.tsx' 'apps/console/src/components/booth/VoucherSlipPanel.tsx' 'apps/console/src/components/devices/BoxDrawer.tsx' 'apps/console/src/components/devices/DisplayDiagnosticsPanel.tsx' 'apps/console/src/components/devices/DisplayPairPanel.tsx' 'apps/console/src/components/devices/DisplaySnapshotPanel.tsx' 'apps/console/src/components/devices/KioskPairPanel.tsx' 'apps/console/src/components/devices/OneTimeCode.tsx' 'apps/console/src/components/devices/PrintPanel.tsx' 'apps/console/src/components/devices/SimulatorPanel.tsx' 'apps/console/src/components/devices/StationDrawer.tsx' 'apps/console/src/components/devices/TerminalSimulatorPanel.tsx' 'apps/console/src/lib/platformAuthority.ts' 'apps/console/src/lib/platformStatus.tsx' 'apps/console/src/lib/workingAuthority.ts' 'apps/console/src/pages/Accounts.tsx' 'apps/console/src/pages/AreaLanding.tsx' 'apps/console/src/pages/AssistantSettings.tsx' 'apps/console/src/pages/BoothReport.tsx' 'apps/console/src/pages/Booths.tsx' 'apps/console/src/pages/Branches.tsx' 'apps/console/src/pages/Care.tsx' 'apps/console/src/pages/Catalogue.tsx' 'apps/console/src/pages/Channels.tsx' 'apps/console/src/pages/Departments.tsx' 'apps/console/src/pages/Devices.tsx' 'apps/console/src/pages/Employees.tsx' 'apps/console/src/pages/MenuCatalogue.tsx' 'apps/console/src/pages/Money.tsx' 'apps/console/src/pages/Operations.tsx' 'apps/console/src/pages/Overview.tsx' 'apps/console/src/pages/Reports.tsx' 'apps/console/src/pages/Roles.tsx' 'apps/console/src/pages/Staff.tsx' 'apps/console/src/pages/StaffBenefits.tsx' 'apps/console/src/pages/TeamsRouting.tsx' 'apps/console/src/pages/VoucherTypes.tsx' 'apps/console/src/pages/Vouchers.tsx' 'apps/console/test/booth-report-lifetime.test.ts' 'apps/console/test/booth-state.test.ts' 'apps/console/test/care-retry.test.ts' 'apps/console/test/operator-switch-picker-markup.test.ts' 'apps/console/test/organisation-markup.test.ts' 'apps/console/test/s216-r6-health.test.ts' 'apps/console/test/staff-lifetime.test.ts' 'apps/console/test/voucher-types.test.ts' 'packages/api-types/src/openapi.ts' 'packages/api-types/test/migration-list.ts' 'packages/db/src/schema/platform.ts' 'packages/db/src/schema/tenancy.ts' 'packages/db/test/s640-operator-switch-migration.test.ts' 'packages/shared/src/permission-words.ts' 'packages/shared/src/permissions.ts' 'packages/shared/test/operator-switch-permission.test.ts'",
+      "passed": true,
+      "receiptSha256": "1c9b4d4e8cc9bbc410f2f1db7d04a72094ac69edcafa66b080639fe587572583"
+    }
+  ],
+  "cleanup": {
+    "ownNativeServer": true,
+    "port": 52995,
+    "databasesBefore": 0,
+    "credentialsPersisted": false,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "staging": false,
+  "passed": true
+}
