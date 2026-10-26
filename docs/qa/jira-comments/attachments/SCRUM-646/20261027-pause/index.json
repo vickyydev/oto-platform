@@ -1,0 +1,182 @@
+{
+  "ticket": "SCRUM-646",
+  "pausedByUser": true,
+  "at": "2026-10-26T19:29:18.997Z",
+  "localSourceSha": "fde93f67353e0a9296a9b76c3b1f3ae1cdc7481b",
+  "publishedFeature": false,
+  "fullRelease": false,
+  "staging": false,
+  "receipts": [
+    {
+      "file": "admin646-paused-source-v1.json",
+      "sha256": "759a47f62f52d69ba41085fb29df42ab79b8ba2c6d92bc3ee14539e3c8b31a44"
+    },
+    {
+      "file": "admin646-console-analytics-red-20261027-v1.json",
+      "sha256": "1a52ec2f0b87cca350fa721782691ef7ab74975b662c4e38db5925d8741f9fdc"
+    },
+    {
+      "file": "admin646-console-analytics-green-20261027-v1.json",
+      "sha256": "834c1caa21deeaca98818944805f9f0d7795b1d15f0677731ec70711a3081e0d"
+    },
+    {
+      "file": "admin646-console-analytics-compiler-20261027-v1.json",
+      "sha256": "ee2ee8e7cfd8f74995a8d1b4c18642482755bc76ad000fe7fe229c6a8354a8a1"
+    },
+    {
+      "file": "admin646-console-analytics-lint-20261027-v1.json",
+      "sha256": "8ceba6083010619bac943e9f463d3ec085880ff4e3836638fdd66f26cb9f8397"
+    },
+    {
+      "file": "admin646-console-analytics-paused-20261027-v1.json",
+      "sha256": "420796737e54989818bccee0b7cd7faa6f691d76b65cc4eb24b807476f5c9407"
+    },
+    {
+      "file": "admin646-configuration-db-red-20261027.json",
+      "sha256": "a31ace0f1d0dee6d5ce0f5a11cd5043a1a7521a3e4706eff53430d64a696ac8c"
+    },
+    {
+      "file": "admin646-configuration-api-red-20261027.json",
+      "sha256": "8ef0435a2d30b9ec348d02a13b43cb9b4c1c06fde0056e33c7b320c2e3e7e0a6"
+    },
+    {
+      "file": "admin646-ui-browser-red.json",
+      "sha256": "e3b2e87fb4a1d359a56fd4bfaf298828fc4ecb1330346aa081efa9319716510e"
+    },
+    {
+      "file": "admin646-progress-v1.json",
+      "sha256": "46c4ac46884de62ca4c9445abf7888bebc21de5e75615995fc4a08d4c6918860"
+    }
+  ],
+  "external": [
+    {
+      "path": "C:/w/admin646-check-planner.mjs",
+      "sha256": "fa9f05d06da98df71b1492c18cb713af17952cdeaf688a986799c57a4d544a81"
+    },
+    {
+      "path": "C:/w/admin646-configuration-api-red-20261027.log",
+      "sha256": "bbfe8b6537af6eb79b1dc20d9ef61398270dde013bb8c64c6e0cde7c9f28246b"
+    },
+    {
+      "path": "C:/w/admin646-configuration-capture-20261027.mjs",
+      "sha256": "08dfc0436756745c56683b662d5bd994de5ac77c788567a082c5b648fa9cb239"
+    },
+    {
+      "path": "C:/w/admin646-configuration-db-red-20261027.log",
+      "sha256": "ce9a4a7e770daac8dcb1d514b2286687d8ef0f84d94a6d8d76c470ef11a530af"
+    },
+    {
+      "path": "C:/w/admin646-configuration-test-before-implementation-20261027.ts",
+      "sha256": "d7436f2d915962af4e8d634a9733fe69e4391dbde958c16a23679822db075fc3"
+    },
+    {
+      "path": "C:/w/admin646-console-analytics-checks-20261027.mjs",
+      "sha256": "f063db2960dc931b3337873c6cacf1ea1b2fa3801f77aaa65b55fc44a431858b"
+    },
+    {
+      "path": "C:/w/admin646-console-analytics-compiler-20261027-v1.log",
+      "sha256": "4b6f4c2da75a5fef215787aa5c90e267c4ca35e355be05e27aac56ce46f6b431"
+    },
+    {
+      "path": "C:/w/admin646-console-analytics-green-20261027-v1.log",
+      "sha256": "fcb02e4812be2567903def79cb837c0fc2c31a80618e85929d45ba3daa754307"
+    },
+    {
+      "path": "C:/w/admin646-console-analytics-lint-20261027-v1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:/w/admin646-console-analytics-native-runner-20261027.mjs",
+      "sha256": "0a0f02773d93b2989b50626971c31b629fef713a3f335ff018a5657152619ce7"
+    },
+    {
+      "path": "C:/w/admin646-console-analytics-red-20261027-v1.log",
+      "sha256": "b5c8a6a88f70757d8bf791638830a05800e6ccbe8d5ec525e321ae5a454a1f97"
+    },
+    {
+      "path": "C:/w/admin646-pickup-v1.mjs",
+      "sha256": "349d4b3cfc43b8ca1e9ab06c4d1f06f45711669f5a3fd2163029f2319284342e"
+    },
+    {
+      "path": "C:/w/admin646-progress-v1.mjs",
+      "sha256": "6da1158deef8bd57d360d9df1e05b4ad483d3e7cbe180a7b54b20d12212663ab"
+    },
+    {
+      "path": "C:/w/admin646-publish-pause.mjs",
+      "sha256": "223f5e3d3f7ba3b9803b80b8002f5c76e84c411a3e4dafe8133c4ba093a0753b"
+    },
+    {
+      "path": "C:/w/admin646-readonly-preparation-20261027.md",
+      "sha256": "d29d2b80146fd8b4fc6d699e19d10360d3c0a34c0424ec9a7409b7bb66c5e46d"
+    },
+    {
+      "path": "C:/w/admin646-registry-test-before-implementation-20261027.ts",
+      "sha256": "1bdaa273431c9dc336bf01137b0d304c6ccbc26236bbdbc9bf7fb59d6ed586ed"
+    },
+    {
+      "path": "C:/w/admin646-root-gates.mjs",
+      "sha256": "2be19d02f71120c2d25c16e0e0b50d5755a09e0b4adefe5905d92ef18cc44367"
+    },
+    {
+      "path": "C:/w/admin646-save-pause-source.mjs",
+      "sha256": "70aedd140c9dce5371843fc4b403448355a647ba124c053ddd9fbde6feada8a8"
+    },
+    {
+      "path": "C:/w/admin646-ui-browser-red.log",
+      "sha256": "f0a4a97e9128cfadddc31a07340ecd516deacb1348339a3ff4fedead715bbf2f"
+    },
+    {
+      "path": "C:/w/admin646-ui-browser.mjs",
+      "sha256": "a9691a247b0d7372a4ea3bea0e988a00aa163913e2521c5b00944460f717e24b"
+    }
+  ],
+  "observedRootChecks": {
+    "capture": "tool output only; no separate raw log",
+    "sharedBaseline": {
+      "failed": 1,
+      "passed": 6
+    },
+    "sharedSuite": {
+      "passed": 776,
+      "files": 51
+    },
+    "sharedTypecheckExit": 0,
+    "sharedThreeFileLintExit": 0
+  },
+  "nativeAnalytics": {
+    "baseline": {
+      "failed": 12,
+      "passed": 5
+    },
+    "implementedAttempt": {
+      "failed": 9,
+      "passed": 8
+    },
+    "reason": "Successful metadata reads return HTTP 500; runtime cause not established before pause"
+  },
+  "configuration": {
+    "dbBaseline": {
+      "failed": 4,
+      "passed": 1
+    },
+    "apiBaseline": {
+      "failed": 5,
+      "nativeControls": 1,
+      "absenceOnly404": 1
+    },
+    "schemaDeclared": true,
+    "migrationGenerated": false,
+    "backendBuilt": false
+  },
+  "ui": {
+    "baselineFailed": 2,
+    "draftValidated": false
+  },
+  "resources": {
+    "allThreeAgentsFrozen": true,
+    "ownedPgAndBrowsersStopped": true,
+    "createdDockerContainers": 0,
+    "sharedContainersPreserved": 10
+  },
+  "saveHelperHistory": "First invocation refused before mutation because trim removed a leading porcelain status space; trimEnd correction saved all 19 explicit files."
+}

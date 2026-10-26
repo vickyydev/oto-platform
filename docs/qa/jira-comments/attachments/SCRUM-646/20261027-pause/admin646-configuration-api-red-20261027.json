@@ -1,0 +1,64 @@
+{
+  "ticket": "SCRUM-646",
+  "phase": "api-red",
+  "startedAt": "2026-10-26T19:21:50.825Z",
+  "completedAt": "2026-10-26T19:22:33.101Z",
+  "exitCode": 1,
+  "signal": null,
+  "errorCode": null,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\w\\admin-analytics-config\\apps\\api\\node_modules\\vitest\\vitest.mjs",
+      "run",
+      "test/console-configuration-review.test.ts",
+      "--maxWorkers=1",
+      "--no-file-parallelism"
+    ],
+    "cwd": "C:\\w\\admin-analytics-config\\apps\\api"
+  },
+  "before": {
+    "packages/db/src/schema/console-configuration.ts": null,
+    "packages/db/src/schema/index.ts": "9b8ef440928d9357ca67c1668f79be1f99255e24d9ce9d8b13f102665cbeaa07",
+    "packages/db/test/console-setting-registry.test.ts": "1bdaa273431c9dc336bf01137b0d304c6ccbc26236bbdbc9bf7fb59d6ed586ed",
+    "apps/api/src/services/console-configuration.ts": null,
+    "apps/api/src/routes/console-configuration.ts": null,
+    "apps/api/test/console-configuration-review.test.ts": "d7436f2d915962af4e8d634a9733fe69e4391dbde958c16a23679822db075fc3",
+    "apps/api/src/routes/console.ts": "9d35ca79d4426b7c63e67b54b38f5b7a313c506669bd7ba40244cf2ca36d07f5",
+    "apps/api/src/app.ts": "e892ef22357769be16b5dee070430f05e2de44db8c6042d93d13ee824f4ac814",
+    "packages/shared/src/permissions.ts": "cfdce815b73234139ab91f5aae8d1ba3689872a21f1e0b1206d471e387f03fe1",
+    "packages/db/src/testing.ts": "9d9e41cd6469cada8ec62ed8b68e9976425938192bac58f855d65c05eed57f30",
+    "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+    "packages/db/package.json": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+    "apps/api/package.json": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3"
+  },
+  "after": {
+    "packages/db/src/schema/console-configuration.ts": null,
+    "packages/db/src/schema/index.ts": "9b8ef440928d9357ca67c1668f79be1f99255e24d9ce9d8b13f102665cbeaa07",
+    "packages/db/test/console-setting-registry.test.ts": "1bdaa273431c9dc336bf01137b0d304c6ccbc26236bbdbc9bf7fb59d6ed586ed",
+    "apps/api/src/services/console-configuration.ts": null,
+    "apps/api/src/routes/console-configuration.ts": null,
+    "apps/api/test/console-configuration-review.test.ts": "d7436f2d915962af4e8d634a9733fe69e4391dbde958c16a23679822db075fc3",
+    "apps/api/src/routes/console.ts": "9d35ca79d4426b7c63e67b54b38f5b7a313c506669bd7ba40244cf2ca36d07f5",
+    "apps/api/src/app.ts": "e892ef22357769be16b5dee070430f05e2de44db8c6042d93d13ee824f4ac814",
+    "packages/shared/src/permissions.ts": "cfdce815b73234139ab91f5aae8d1ba3689872a21f1e0b1206d471e387f03fe1",
+    "packages/db/src/testing.ts": "9d9e41cd6469cada8ec62ed8b68e9976425938192bac58f855d65c05eed57f30",
+    "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+    "packages/db/package.json": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+    "apps/api/package.json": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3"
+  },
+  "scopedInputsUnchanged": true,
+  "logPath": "C:/w/admin646-configuration-api-red-20261027.log",
+  "logSha256": "bbfe8b6537af6eb79b1dc20d9ef61398270dde013bb8c64c6e0cde7c9f28246b",
+  "helperSha256": "08dfc0436756745c56683b662d5bd994de5ac77c788567a082c5b648fa9cb239",
+  "databaseEnvironmentRemoved": true,
+  "privateEmbeddedPostgres": true,
+  "providerActions": false,
+  "staging": false,
+  "limits": [
+    "Scoped whole native test file, not a whole release gate",
+    "No .env file copied or read by capture"
+  ]
+}

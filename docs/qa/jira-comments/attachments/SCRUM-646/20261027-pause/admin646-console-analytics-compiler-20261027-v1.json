@@ -1,0 +1,35 @@
+{
+  "ticket": "SCRUM-646",
+  "kind": "compiler",
+  "startedAt": "2026-10-26T19:23:39.936Z",
+  "completedAt": "2026-10-26T19:24:30.576Z",
+  "exitCode": 0,
+  "signal": null,
+  "before": {
+    "apps/api/src/routes/console-analytics.ts": "94c00881d94b1d5da637e81907edc966d0928a64c381738f5a6db68858e2e5f6",
+    "apps/api/src/services/console-analytics.ts": "a5ace1a73093f423cb817feb4841efcc1e391274b2f2a261d980f20df561ba1e",
+    "apps/api/test/console-analytics-review.test.ts": "eb405697e1d73675eb74ba48bb34d0b137541c7a3b1d112085aee634549b207c"
+  },
+  "after": {
+    "apps/api/src/routes/console-analytics.ts": "94c00881d94b1d5da637e81907edc966d0928a64c381738f5a6db68858e2e5f6",
+    "apps/api/src/services/console-analytics.ts": "a5ace1a73093f423cb817feb4841efcc1e391274b2f2a261d980f20df561ba1e",
+    "apps/api/test/console-analytics-review.test.ts": "eb405697e1d73675eb74ba48bb34d0b137541c7a3b1d112085aee634549b207c"
+  },
+  "inputsUnchanged": true,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:/Users/waqar/AppData/Roaming/npm/node_modules/pnpm/bin/pnpm.cjs",
+      "--filter",
+      "@oto/api",
+      "typecheck"
+    ],
+    "cwd": "C:/w/admin-analytics-config"
+  },
+  "toolSha256": "b276da51dc8ca5b0d3ee3371695b50fc8b3244b281b091c63a3f082a88dadeb9",
+  "runnerSha256": "f063db2960dc931b3337873c6cacf1ea1b2fa3801f77aaa65b55fc44a431858b",
+  "logPath": "C:/w/admin646-console-analytics-compiler-20261027-v1.log",
+  "logSha256": "4b6f4c2da75a5fef215787aa5c90e267c4ca35e355be05e27aac56ce46f6b431",
+  "redactionApplied": false,
+  "staging": false
+}

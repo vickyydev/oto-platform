@@ -1,0 +1,18 @@
+{
+  "phase": "red",
+  "startedAt": "2026-10-26T19:19:21.463Z",
+  "finishedAt": "2026-10-26T19:21:46.957Z",
+  "exitCode": 1,
+  "nativeExitCode": 1,
+  "failure": null,
+  "teardown": {
+    "helperDatabaseDropped": true,
+    "harnessDatabasesAbsent": true,
+    "embeddedServerStopped": true
+  },
+  "databaseCensusUnchanged": true,
+  "logSha256": "f0a4a97e9128cfadddc31a07340ecd516deacb1348339a3ff4fedead715bbf2f",
+  "staging": false,
+  "built": true,
+  "command": "pnpm --filter @oto/console e2e -- analytics-configuration-review.spec.ts"
+}

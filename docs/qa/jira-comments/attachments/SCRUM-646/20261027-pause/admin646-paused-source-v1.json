@@ -1,0 +1,33 @@
+{
+  "ticket": "SCRUM-646",
+  "status": "paused-at-user-request",
+  "root": "C:/w/admin-analytics-config",
+  "branch": "lane/admin-analytics-config",
+  "base": "c6acd2806d71c0788ab0a1ce8d4b6b1647f1f97c",
+  "sha": "fde93f67353e0a9296a9b76c3b1f3ae1cdc7481b",
+  "files": {
+    "apps/api/src/routes/console.ts": "64bfcba8eb167aaf00413223b727a1d3092ae1fdb8d2ca5e89ac1cedbfb03747",
+    "apps/api/src/routes/console-analytics.ts": "94c00881d94b1d5da637e81907edc966d0928a64c381738f5a6db68858e2e5f6",
+    "apps/api/src/services/console-analytics.ts": "a5ace1a73093f423cb817feb4841efcc1e391274b2f2a261d980f20df561ba1e",
+    "apps/api/test/console-analytics-review.test.ts": "eb405697e1d73675eb74ba48bb34d0b137541c7a3b1d112085aee634549b207c",
+    "apps/api/test/console-configuration-review.test.ts": "d7436f2d915962af4e8d634a9733fe69e4391dbde958c16a23679822db075fc3",
+    "apps/api/test/routes-guarded.test.ts": "7730b24453809460709b6d0fccbcb09f716214f0379c2e14d145a219a24f84f6",
+    "apps/console/src/App.tsx": "21ba3b2e0102c9960d776a8496893f8b1f86f6e056aba0fee76e2ad3e0dfc244",
+    "apps/console/src/components/consoleSections.tsx": "3918935947d617727a67732926614c9a11230d5b794076ad0d08f4cfed23ceb5",
+    "apps/console/test/admin-navigation.test.ts": "d2c8ad414af4a2655c431437ba0b69ba89b39cbc9ec3300a80cbfb1c7494ec60",
+    "apps/console/e2e/analytics-configuration-review.spec.ts": "1ea5578776cd503d1aa0cc7796eb7fcf4ee40fa3ede561341c314fcf9c9ff7ba",
+    "apps/console/src/api/consoleConfiguration.ts": "f17d86eb53a833a669c982d88a03d2a36c727c8429cc1c83a4ab9081b3eeb6bf",
+    "apps/console/src/pages/AnalyticsSources.tsx": "c16c37d06bc88dae41bb57278af9f1d2e5cf2526209b69ccf0ab6da37da8de36",
+    "apps/console/src/pages/Configuration.tsx": "5b42dbb39ae8cc6dc867ed394e19f741094fb70d762d5d5728c9db40ae225d8a",
+    "packages/db/src/schema/console-configuration.ts": "be3cb2e062b53b86b407b4c312f5b620c5d8c32b426f281dff70de2bd8415c0d",
+    "packages/db/src/schema/index.ts": "d4cbb23dfa3c43132dcb3857727467dbe245bad0bbbf915d825a1c12e755fae8",
+    "packages/db/test/console-setting-registry.test.ts": "1bdaa273431c9dc336bf01137b0d304c6ccbc26236bbdbc9bf7fb59d6ed586ed",
+    "packages/shared/src/permission-words.ts": "fb711ea418e9218e407411942631e46eb711e133bffe305f750215cc46260679",
+    "packages/shared/src/permissions.ts": "cfdce815b73234139ab91f5aae8d1ba3689872a21f1e0b1206d471e387f03fe1",
+    "packages/shared/test/permission-words.test.ts": "3c9e82abbcef48560d7812320a695b32d43732b4a16e7fa890ad3a42868ec698"
+  },
+  "remotePublished": false,
+  "gateGreen": false,
+  "staging": false,
+  "at": "2026-10-26T19:25:55.738Z"
+}

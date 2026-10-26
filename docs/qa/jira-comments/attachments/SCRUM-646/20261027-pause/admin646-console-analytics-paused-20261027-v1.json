@@ -1,0 +1,114 @@
+{
+    "ticket":  "SCRUM-646",
+    "kind":  "explicit-user-pause-checkpoint",
+    "checkedAt":  "2026-10-26T19:25:43.0476787Z",
+    "root":  "C:/w/admin-analytics-config",
+    "sourceFrozen":  true,
+    "files":  [
+                  {
+                      "path":  "apps/api/src/routes/console-analytics.ts",
+                      "sha256":  "94c00881d94b1d5da637e81907edc966d0928a64c381738f5a6db68858e2e5f6"
+                  },
+                  {
+                      "path":  "apps/api/src/services/console-analytics.ts",
+                      "sha256":  "a5ace1a73093f423cb817feb4841efcc1e391274b2f2a261d980f20df561ba1e"
+                  },
+                  {
+                      "path":  "apps/api/test/console-analytics-review.test.ts",
+                      "sha256":  "eb405697e1d73675eb74ba48bb34d0b137541c7a3b1d112085aee634549b207c"
+                  }
+              ],
+    "receipts":  [
+                     {
+                         "path":  "C:/w/admin646-console-analytics-red-20261027-v1.json",
+                         "sha256":  "1a52ec2f0b87cca350fa721782691ef7ab74975b662c4e38db5925d8741f9fdc",
+                         "startedAt":  "2026-10-26T19:20:00.480Z",
+                         "completedAt":  "2026-10-26T19:21:08.342Z",
+                         "exitCode":  1,
+                         "inputsUnchanged":  true,
+                         "logPath":  "C:/w/admin646-console-analytics-red-20261027-v1.log",
+                         "logSha256":  "b5c8a6a88f70757d8bf791638830a05800e6ccbe8d5ec525e321ae5a454a1f97",
+                         "newEmbeddedDirectoriesRemaining":  [
+
+                                                             ]
+                     },
+                     {
+                         "path":  "C:/w/admin646-console-analytics-green-20261027-v1.json",
+                         "sha256":  "834c1caa21deeaca98818944805f9f0d7795b1d15f0677731ec70711a3081e0d",
+                         "startedAt":  "2026-10-26T19:23:13.364Z",
+                         "completedAt":  "2026-10-26T19:23:38.683Z",
+                         "exitCode":  1,
+                         "inputsUnchanged":  true,
+                         "logPath":  "C:/w/admin646-console-analytics-green-20261027-v1.log",
+                         "logSha256":  "fcb02e4812be2567903def79cb837c0fc2c31a80618e85929d45ba3daa754307",
+                         "newEmbeddedDirectoriesRemaining":  [
+
+                                                             ]
+                     },
+                     {
+                         "path":  "C:/w/admin646-console-analytics-compiler-20261027-v1.json",
+                         "sha256":  "ee2ee8e7cfd8f74995a8d1b4c18642482755bc76ad000fe7fe229c6a8354a8a1",
+                         "startedAt":  "2026-10-26T19:23:39.936Z",
+                         "completedAt":  "2026-10-26T19:24:30.576Z",
+                         "exitCode":  0,
+                         "inputsUnchanged":  true,
+                         "logPath":  "C:/w/admin646-console-analytics-compiler-20261027-v1.log",
+                         "logSha256":  "4b6f4c2da75a5fef215787aa5c90e267c4ca35e355be05e27aac56ce46f6b431",
+                         "newEmbeddedDirectoriesRemaining":  null
+                     },
+                     {
+                         "path":  "C:/w/admin646-console-analytics-lint-20261027-v1.json",
+                         "sha256":  "8ceba6083010619bac943e9f463d3ec085880ff4e3836638fdd66f26cb9f8397",
+                         "startedAt":  "2026-10-26T19:24:30.580Z",
+                         "completedAt":  "2026-10-26T19:24:34.273Z",
+                         "exitCode":  0,
+                         "inputsUnchanged":  true,
+                         "logPath":  "C:/w/admin646-console-analytics-lint-20261027-v1.log",
+                         "logSha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                         "newEmbeddedDirectoriesRemaining":  null
+                     }
+                 ],
+    "nativeRed":  {
+                      "total":  17,
+                      "fourOriginalControlsPassed":  true,
+                      "failed":  12,
+                      "passed":  5
+                  },
+    "firstGreenAttempt":  {
+                              "total":  17,
+                              "failure":  "Expected-success metadata reads return HTTP 500; precise runtime cause not captured in this log.",
+                              "fourOriginalControlsPassed":  true,
+                              "failed":  9,
+                              "passed":  8
+                          },
+    "compiler":  {
+                     "wholeOutputRead":  true,
+                     "exitCode":  0,
+                     "diagnosticCount":  0
+                 },
+    "lint":  {
+                 "wholeOutputRead":  true,
+                 "exitCode":  0,
+                 "diagnosticCount":  0
+             },
+    "remainingOwnedProcesses":  [
+
+                                ],
+    "remainingOwnedEmbeddedDirectories":  [
+
+                                          ],
+    "testsUnchangedFromRed":  true,
+    "noFixAfterPause":  true,
+    "nextSteps":  [
+                      "Diagnose the HTTP 500 from the private native failure without changing assertions.",
+                      "Repair only the owned reader, then rerun the whole 17-case review after resume authorization.",
+                      "Generate contracts and complete integration/broader gates under coordinator ownership."
+                  ],
+    "notClaimed":  [
+                       "native GREEN",
+                       "complete Analytics feature",
+                       "source switch/preview/rerun/unfreeze",
+                       "full release",
+                       "staging acceptance"
+                   ]
+}
