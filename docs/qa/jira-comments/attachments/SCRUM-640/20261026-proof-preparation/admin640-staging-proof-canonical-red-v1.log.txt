@@ -1,0 +1,305 @@
+TAP version 13
+# Subtest: actual verifier accepts the canonical manifest while separately binding both committed auxiliary files
+not ok 1 - actual verifier accepts the canonical manifest while separately binding both committed auxiliary files
+  ---
+  duration_ms: 11.8741
+  type: 'test'
+  location: 'C:\\w\\admin640-staging-proof-canonical-manifest.test.mjs:65:1'
+  failureType: 'testCodeFailure'
+  error: 'SOURCE_RUNTIME_MANIFEST_DIFFERS'
+  code: 'SOURCE_RUNTIME_MANIFEST_DIFFERS'
+  stack: |-
+    need (file:///C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-executor.mjs:26:52)
+    verifyLocalSource (eval at fixture (file:///C:/w/admin640-staging-proof-canonical-manifest.test.mjs:59:18), <anonymous>:15:3)
+    Object.run (file:///C:/w/admin640-staging-proof-canonical-manifest.test.mjs:62:23)
+    TestContext.<anonymous> (file:///C:/w/admin640-staging-proof-canonical-manifest.test.mjs:66:35)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: auxiliary files remain mandatory regular committed blobs: dirty, untracked, missing or symlink inputs refuse
+ok 2 - auxiliary files remain mandatory regular committed blobs: dirty, untracked, missing or symlink inputs refuse
+  ---
+  duration_ms: 2.4434
+  type: 'test'
+  ...
+# Subtest: canonical source changes and untracked source paths still refuse; private paths are never read
+ok 3 - canonical source changes and untracked source paths still refuse; private paths are never read
+  ---
+  duration_ms: 0.7284
+  type: 'test'
+  ...
+# Subtest: pre-auth census accepts verified account eligibility without claiming a future session is unlocked
+ok 4 - pre-auth census accepts verified account eligibility without claiming a future session is unlocked
+  ---
+  duration_ms: 1.7076
+  type: 'test'
+  ...
+# Subtest: post-sign-in actual me still must prove sessionLocked:false
+ok 5 - post-sign-in actual me still must prove sessionLocked:false
+  ---
+  duration_ms: 0.3022
+  type: 'test'
+  ...
+# Subtest: both collector imports are inert; explicit arming precedes metadata/network reads
+ok 6 - both collector imports are inert; explicit arming precedes metadata/network reads
+  ---
+  duration_ms: 1.516
+  type: 'test'
+  ...
+# Subtest: release input refuses old source/extra paths/missing source rows and wrong service order
+ok 7 - release input refuses old source/extra paths/missing source rows and wrong service order
+  ---
+  duration_ms: 1.0241
+  type: 'test'
+  ...
+# Subtest: public closure refuses foreign/traversal/query/unapproved resources without alternative hashes
+ok 8 - public closure refuses foreign/traversal/query/unapproved resources without alternative hashes
+  ---
+  duration_ms: 0.4567
+  type: 'test'
+  ...
+# Subtest: actual AST keeps module/literal assets and ignores catalog import words and computed business API paths
+ok 9 - actual AST keeps module/literal assets and ignores catalog import words and computed business API paths
+  ---
+  duration_ms: 136.4205
+  type: 'test'
+  ...
+# Subtest: fresh preflight is held; explicit approval chooses only an actual censusedB and retains checkedAt
+ok 10 - fresh preflight is held; explicit approval chooses only an actual censusedB and retains checkedAt
+  ---
+  duration_ms: 8.265
+  type: 'test'
+  ...
+# Subtest: preflight refuses a flattened/false switch grant, duplicate candidate, foreign home and invented unlock observation
+ok 11 - preflight refuses a flattened/false switch grant, duplicate candidate, foreign home and invented unlock observation
+  ---
+  duration_ms: 0.4913
+  type: 'test'
+  ...
+# Subtest: preflight parser ignores echoed commands, requires one strict anchored marker and refuses ambiguous/truncated payloads
+ok 12 - preflight parser ignores echoed commands, requires one strict anchored marker and refuses ambiguous/truncated payloads
+  ---
+  duration_ms: 0.5734
+  type: 'test'
+  ...
+# Subtest: built preflight uses same-assignment native grant join, exact active home, native mapping read and read-only image-bound transaction
+ok 13 - built preflight uses same-assignment native grant join, exact active home, native mapping read and read-only image-bound transaction
+  ---
+  duration_ms: 0.488
+  type: 'test'
+  ...
+# Subtest: actual dispatch records durable intent before originalPOST; unknown dispatch is preserved and never retried
+ok 14 - actual dispatch records durable intent before originalPOST; unknown dispatch is preserved and never retried
+  ---
+  duration_ms: 2.2479
+  type: 'test'
+  ...
+# Subtest: actual collection keeps original succeeded terminal truth when logs, source checks or disk persistence fail
+ok 15 - actual collection keeps original succeeded terminal truth when logs, source checks or disk persistence fail
+  ---
+  duration_ms: 14.3137
+  type: 'test'
+  ...
+# Subtest: imports are inert; exactly seven logical mutations and no fake epoch field
+ok 16 - imports are inert; exactly seven logical mutations and no fake epoch field
+  ---
+  duration_ms: 8.537
+  type: 'test'
+  ...
+# Subtest: plan and preflight require final source, exact deployments, real grant and fresh existing demo scope
+ok 17 - plan and preflight require final source, exact deployments, real grant and fresh existing demo scope
+  ---
+  duration_ms: 1.9375
+  type: 'test'
+  ...
+# Subtest: request grammar refuses every unplanned business writer, auth path, duplicate query and foreign resource
+ok 18 - request grammar refuses every unplanned business writer, auth path, duplicate query and foreign resource
+  ---
+  duration_ms: 0.6318
+  type: 'test'
+  ...
+# Subtest: session PUT requires exact armed target/revision; no body-selected account/session fields
+ok 19 - session PUT requires exact armed target/revision; no body-selected account/session fields
+  ---
+  duration_ms: 0.2104
+  type: 'test'
+  ...
+# Subtest: source gate rejects non-main CI, stale or incomplete deploy inventory and missing sixth job
+ok 20 - source gate rejects non-main CI, stale or incomplete deploy inventory and missing sixth job
+  ---
+  duration_ms: 0.5269
+  type: 'test'
+  ...
+# Subtest: explicit execution and frozen helper checks run before any runtime/network/auth
+ok 21 - explicit execution and frozen helper checks run before any runtime/network/auth
+  ---
+  duration_ms: 1.0703
+  type: 'test'
+  ...
+# Subtest: durable intent failure dispatches zero auth/business requests, but cleanup remains independent
+ok 22 - durable intent failure dispatches zero auth/business requests, but cleanup remains independent
+  ---
+  duration_ms: 1.028
+  type: 'test'
+  ...
+# Subtest: unknown auth/500/redirect/unexpected2xx latch uncertainty and stop subsequent selection without retries
+ok 23 - unknown auth/500/redirect/unexpected2xx latch uncertainty and stop subsequent selection without retries
+  ---
+  duration_ms: 0.3961
+  type: 'test'
+  ...
+# Subtest: known Reception403 is acknowledged; an unexpected4xx refuses progression without pretending unknown
+ok 24 - known Reception403 is acknowledged; an unexpected4xx refuses progression without pretending unknown
+  ---
+  duration_ms: 0.3391
+  type: 'test'
+  ...
+# Subtest: both original-cookie cleanup probes run even on logout throw/refusal or failed receipt recording
+ok 25 - both original-cookie cleanup probes run even on logout throw/refusal or failed receipt recording
+  ---
+  duration_ms: 1.6652
+  type: 'test'
+  ...
+# Subtest: the actual finish wrapper revokes the original cookie even when browser context closure throws
+ok 26 - the actual finish wrapper revokes the original cookie even when browser context closure throws
+  ---
+  duration_ms: 0.2866
+  type: 'test'
+  ...
+# Subtest: actual shared matrix uses A-B-A same SID/native selections, then closes ADMIN before Reception auth
+ok 27 - actual shared matrix uses A-B-A same SID/native selections, then closes ADMIN before Reception auth
+  ---
+  duration_ms: 0.6193
+  type: 'test'
+  ...
+# Subtest: failed prior auth cleanup blocks later auth, selections and any business cleanup
+ok 28 - failed prior auth cleanup blocks later auth, selections and any business cleanup
+  ---
+  duration_ms: 0.2452
+  type: 'test'
+  ...
+# Subtest: read-only job intent is durable before one dispatch; unknown job is terminally uncertain and never retried
+ok 29 - read-only job intent is durable before one dispatch; unknown job is terminally uncertain and never retried
+  ---
+  duration_ms: 0.2766
+  type: 'test'
+  ...
+# Subtest: exact audit draft is parameterized, READ ONLY, bounded and has no mutation/provider request
+ok 30 - exact audit draft is parameterized, READ ONLY, bounded and has no mutation/provider request
+  ---
+  duration_ms: 1.3079
+  type: 'test'
+  ...
+# Subtest: audit validates captured A/A then A/B, exact revoked rows and unchanged identities/grants/other sessions
+ok 31 - audit validates captured A/A then A/B, exact revoked rows and unchanged identities/grants/other sessions
+  ---
+  duration_ms: 4.9363
+  type: 'test'
+  ...
+# Subtest: echoed marker text is ignored, one anchored typed result is required; duplicate/truncated logs refuse
+ok 32 - echoed marker text is ignored, one anchored typed result is required; duplicate/truncated logs refuse
+  ---
+  duration_ms: 1.0892
+  type: 'test'
+  ...
+# Subtest: audit refuses incomplete/uncertain/unclean native proof; no finalization without explicit arm
+ok 33 - audit refuses incomplete/uncertain/unclean native proof; no finalization without explicit arm
+  ---
+  duration_ms: 1.2773
+  type: 'test'
+  ...
+# Subtest: audit intake rejects fabricated operation counts, failed native network and stale source observations
+ok 34 - audit intake rejects fabricated operation counts, failed native network and stale source observations
+  ---
+  duration_ms: 1.2169
+  type: 'test'
+  ...
+# Subtest: actual sign-in/request/finally path revokes two distinct observed cookies after cardinality refusal
+ok 35 - actual sign-in/request/finally path revokes two distinct observed cookies after cardinality refusal
+  ---
+  duration_ms: 18.7925
+  type: 'test'
+  ...
+# Subtest: a nonempty cookie followed by a clearing header is retained and revoked, with no empty-cookie cleanup
+ok 36 - a nonempty cookie followed by a clearing header is retained and revoked, with no empty-cookie cleanup
+  ---
+  duration_ms: 1.6338
+  type: 'test'
+  ...
+# Subtest: duplicate same-cookie headers revoke that exact cookie once and remain failed
+ok 37 - duplicate same-cookie headers revoke that exact cookie once and remain failed
+  ---
+  duration_ms: 1.2606
+  type: 'test'
+  ...
+# Subtest: clearing-only ambiguous headers do not invent a cookie/session or issue an unauthenticated cleanup
+ok 38 - clearing-only ambiguous headers do not invent a cookie/session or issue an unauthenticated cleanup
+  ---
+  duration_ms: 0.4485
+  type: 'test'
+  ...
+# Subtest: ordinary single native cookie still follows actual sign-in and original-cookie200/401 cleanup
+ok 39 - ordinary single native cookie still follows actual sign-in and original-cookie200/401 cleanup
+  ---
+  duration_ms: 1.0844
+  type: 'test'
+  ...
+# Subtest: actual native directory check refuses foreign appOnly even when the later directB mapping is clean
+ok 40 - actual native directory check refuses foreign appOnly even when the later directB mapping is clean
+  ---
+  duration_ms: 0.5408
+  type: 'test'
+  ...
+# Subtest: actual native directory check refuses a native/direct mapped-app-ID mismatch
+ok 41 - actual native directory check refuses a native/direct mapped-app-ID mismatch
+  ---
+  duration_ms: 0.3328
+  type: 'test'
+  ...
+# Subtest: actual direct foreign appOnly refusal is preserved and an identical own mapping passes
+ok 42 - actual direct foreign appOnly refusal is preserved and an identical own mapping passes
+  ---
+  duration_ms: 7.7844
+  type: 'test'
+  ...
+# Subtest: observed six-digit Render metadata passes the collector and native plan unchanged
+ok 43 - observed six-digit Render metadata passes the collector and native plan unchanged
+  ---
+  duration_ms: 9.7806
+  type: 'test'
+  ...
+# Subtest: native UTC precision is accepted only on deployment timestamps, without rounding
+ok 44 - native UTC precision is accepted only on deployment timestamps, without rounding
+  ---
+  duration_ms: 0.7142
+  type: 'test'
+  ...
+# Subtest: preflight/proof clock format and the original 120-second freshness limit stay unchanged
+ok 45 - preflight/proof clock format and the original 120-second freshness limit stay unchanged
+  ---
+  duration_ms: 0.9463
+  type: 'test'
+  ...
+# Subtest: live source and timestamp strings must still match exactly, including submilliseconds
+ok 46 - live source and timestamp strings must still match exactly, including submilliseconds
+  ---
+  duration_ms: 0.8849
+  type: 'test'
+  ...
+# Subtest: malformed or unbounded deployment timestamp representations remain refused
+ok 47 - malformed or unbounded deployment timestamp representations remain refused
+  ---
+  duration_ms: 0.4541
+  type: 'test'
+  ...
+1..47
+# tests 47
+# suites 0
+# pass 46
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 253.5008

@@ -1,0 +1,31 @@
+{
+  "ticket": "SCRUM-640",
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "ciRunId": "40351447109",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbfnmhm417fc73dc999g",
+      "finishedAt": "2026-10-26T16:12:51.704436Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbfnmhu417fc73dc9abg",
+      "finishedAt": "2026-10-26T16:10:26.995117Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+    }
+  ],
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+  "routeSha256": "c7e772bf2b88a2e2c867a67f638179a1b7fba085a458fd09d871bcdaf5621b0e",
+  "localRelease": {
+    "path": "docs/qa/jira-comments/attachments/SCRUM-640/local-release.json",
+    "sha256": "c54b71223b981c15744dbe3b86670008b4af0bc3f067c7a030daea81bbb0a78e"
+  },
+  "originalSha256": "9355809e0a6a9db1e17817b921e157967cde894bcbbd3bd99d8296aa3eaaffee",
+  "projectionOnly": true,
+  "observedIn": "Closed failed native attempt v3 source checks; not a fresh live query."
+}

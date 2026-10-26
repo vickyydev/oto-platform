@@ -1,0 +1,15 @@
+# SCRUM-640 staging checkpoint — preparation, not acceptance
+
+**26 October 2026, P4 DEPLOYED - SCRUM-640 AND PARENT SCRUM-635 COMPLETE:** Source f681806046dfcc767542b68681b6f3306889ec4c is on main. CI 40351447109 has all six jobs successful after the single App-only setup retry; attempt 1 remains cancelled history. API was observed live at 2026-10-26T16:12:51.704436Z and Console at 2026-10-26T16:10:26.995117Z.
+
+The final native 640 proof and bounded read-only audit pass: ADMIN enters the second operator and returns home in the same session; Reception is refused; all owned original cookies close with sign-out 200 and /me 401. Four inspected screenshots are attached to SCRUM-640 (12050-12053), named in outcome 12575, with Deployed readback. Parent 635 also has its fresh native Overview at 16:49:29.370 UTC, inspected evidence 12054-12056, outcome 12564 and Deployed readback. [Final 640 evidence](../../SCRUM-640/20261026-staging/index.json); [parent 635 evidence](../../SCRUM-635/20261026-staging/index.json).
+
+Earlier v1/v2/v3 attempts remain failed history. In v3, ADMIN A to B to A succeeded but Reception stopped during denial-screen bootstrap before its PUT; both sessions still closed. The v4 picker fix passes 50 checks; the v5 denial wait passes 53, including all prior 50, and both have independent reviews. The coherent parent helper retains all 11 passing checks. [Failure and helper history](./checkpoint.json). P4 is complete; SCRUM-643 is next. This checkpoint does not move tickets to Done or start later work.
+
+The two PNGs belong to failed v3 and were opened during script preparation; privacy and layout passed. They show actual home/working native directories after the recorded deployments. They do not show Reception refusal or the final audit. No QR, contacts, cookies or tokens are visible.
+
+CI and failed-attempt receipts are safe-field projections, each bound to its external original SHA256. Public offline receipts are serialized as LF JSON; logs retain all case results with only LF/trailing-line-whitespace normalization. Original failed logs and helper versions remain untouched externally. `index.json` lists every exact archive path and both original/archive hashes. Raw CI author/contact metadata and all private authentication inputs are excluded. Prior archive directories are preserved.
+
+The earlier first CI setup attempt remains [separately archived](../20261026-ci-attempt1/index.json). v4 reproduces two timing/selector failures (48/2), then passes 50/0; v5 reproduces the delayed denial failure (52/1), then passes 53/0. The v5 runner preflight shape error happened before any test child and remains explicit history. Parent changes are imports only, with all 11 checks retained.
+
+The final accepted 640 and 635 proof/status indexes are linked separately; the earlier failed attempts remain failed. This script makes no commit, push, Jira, deployment, browser, auth, SQL or network call. The coordinator must inspect its exact docs diff and keep final acceptance separate.

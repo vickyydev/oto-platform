@@ -1,0 +1,44 @@
+{
+  "approved": true,
+  "ticket": "SCRUM-635",
+  "release": {
+    "approved": true,
+    "ticket": "SCRUM-640",
+    "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+    "ciRunId": "40351447109",
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "id": "dep-dbfnmhm417fc73dc999g",
+        "finishedAt": "2026-10-26T16:12:51.704436Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      },
+      {
+        "name": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "id": "dep-dbfnmhu417fc73dc9abg",
+        "finishedAt": "2026-10-26T16:10:26.995117Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      }
+    ],
+    "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+    "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+    "routeSha256": "c7e772bf2b88a2e2c867a67f638179a1b7fba085a458fd09d871bcdaf5621b0e",
+    "localRelease": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/local-release.json",
+      "sha256": "c54b71223b981c15744dbe3b86670008b4af0bc3f067c7a030daea81bbb0a78e"
+    },
+    "helperSha256": "c201a35fc027a7b1633de3aa61aac0a1c6d353bbe385adcb0183aadc6eb2cba7",
+    "auditHelperSha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+    "contractSha256": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+    "collectorSha256": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e"
+  },
+  "assets": {
+    "path": "C:/w/admin640-staging-proof-assets-20261026-v4.json",
+    "sha256": "335dc21b41e4f32f81772cea82ef5883245a6f98e266301a0d24a9ffd143f361"
+  },
+  "helperSha256": "b8fea6ac4f4e1c9966a0c3d40d0e7225c29028687905d2cb7d8e13b36f52c29b",
+  "overviewRouteSha256": "9d35ca79d4426b7c63e67b54b38f5b7a313c506669bd7ba40244cf2ca36d07f5",
+  "outputDirectory": "C:/w/admin635-overview-proof-20261026-v2"
+}

@@ -1,0 +1,49 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T15:40:40.974Z",
+  "passed": true,
+  "scope": "Deployment timestamp representation change and frozen offline evidence only",
+  "versionIndexPath": "C:/w/admin640-staging-proof-native-time-v2/version-index.json",
+  "versionIndexSha256": "b1a447410dc4d4db1e81ab21d532b49e0dc2f037d8c500586b762f061932fb68",
+  "preparationReceiptSha256": "5044e8941aa53926715d9704a1e4b07ede4d866e346fa1ef1e7250ea4e4a2a09",
+  "executorSha256": "b54331225c4f122231cf43e6c76682206e271cb58ce1a8dc424e22023d36b0a6",
+  "releaseCollectorSha256": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e",
+  "all17IndexedInputsVerified": true,
+  "allOriginalFlatHelpersAndTestsUnchanged": true,
+  "old39TestFilesByteIdentical": true,
+  "sourceDelta": "Only deployments.finishedAt uses native UTC zero-to-nine fractional digits; the executor contract/audit hash paths and release-collector executor hash path resolve version siblings. Other helpers are byte-identical.",
+  "isoClocksAnd120SecondFreshnessUnchanged": true,
+  "exactTimestampAndSourceEqualityUnchanged": true,
+  "representationRetainedWithoutRounding": true,
+  "offline": {
+    "red": {
+      "receiptSha256": "d3bbea4cc70ca3af77977b46de9eb72ab14a024669176b7de835740333e6854f",
+      "logSha256": "92da089917bfa0d44cbac1e1142a5b774d468bad94aceaacb5f309c82e56d990",
+      "tests": 44,
+      "pass": 42,
+      "fail": 2,
+      "exitCode": 1
+    },
+    "green": {
+      "receiptSha256": "4c25e92a2bfec497721cd6291685bfaae47c4fcf538da69483d85ad95c7bc667",
+      "logSha256": "b71bd2d725307f5f7c307c7af3b207f89aca610d2b435b5b83027c692f701c1e",
+      "tests": 44,
+      "pass": 44,
+      "fail": 0,
+      "exitCode": 0
+    },
+    "inputsBeforeAfterUnchanged": true,
+    "failuresAreOnlyObservedNativeDeploymentPrecisionPins": true
+  },
+  "findings": [],
+  "approvedForLiveExecution": false,
+  "sourceManifestIntake": {
+    "ready": false,
+    "reason": "Separate confirmed canonical3809 versus v2 selection3811 mismatch; booth_diagnosis owns a preserved versioned correction with explicit auxiliary .env.example/.gitignore blob checks. This timestamp review does not approve that known-broken intake."
+  },
+  "limits": [
+    "No tests or live/auth/browser/jobs/SQL/network actions were executed by this reviewer.",
+    "The44-case receipts/log hashes, failure names and TAP summaries were inspected; the five new native timestamp source pins and exact helper deltas were read.",
+    "This is source/offline preparation evidence; it is not staging acceptance or permission to execute the frozen v2."
+  ]
+}

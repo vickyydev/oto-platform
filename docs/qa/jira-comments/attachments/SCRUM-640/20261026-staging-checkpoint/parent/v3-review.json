@@ -1,0 +1,60 @@
+{
+  "ticket": "SCRUM-635",
+  "passed": true,
+  "reviewedAt": "2026-10-26T16:32:29.521Z",
+  "scope": "Import-only parent compatibility review; source and existing offline evidence",
+  "helperSha256": "47a077d4df058d0fe98cd3935b1ff4068c7599f2b04bd4dcd1d4568ef287cfa4",
+  "testSha256": "8d531a02a12e804e0c72c7c33d4be12c160453d719063ccd38a14d9c4077e0a0",
+  "versionIndexSha256": "d88eaaeb7573494bb203dd643d89ad02c5c081a4b4e0e0d07e474ab4d376a1ba",
+  "previousVersion": {
+    "path": "C:/w/admin635-overview-proof-canonical-v2/version-index.json",
+    "sha256": "4c69084a7e479985eca1624986dcf8818955362f75899b10827c098f6d62f68d",
+    "bytes": 2623
+  },
+  "shared640Version": {
+    "path": "C:/w/admin640-staging-proof-picker-v4/version-index.json",
+    "sha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+    "bytes": 4841
+  },
+  "shared640IndependentReview": {
+    "path": "C:/w/admin640-staging-proof-picker-v4-independent-review.json",
+    "sha256": "0d03f9115eb6ea44f25dce7dadf2285f9ebbdcb144d0fe16b6557bb0d9d263c8",
+    "bytes": 2871
+  },
+  "indexedFilesVerified": 9,
+  "parentLogicAndElevenAssertionsUnchangedAfterImportNormalization": true,
+  "evidence": {
+    "path": "C:/w/admin635-overview-proof-picker-green-v1.json",
+    "sha256": "06b86c633cd5f711f0b1c4c694b6a043fe51a5351cf197d32245994a3aa9dc74",
+    "exitCode": 0,
+    "counts": {
+      "tests": 11,
+      "pass": 11,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "logSha256": "73396e1418a68bd12abf84ffa09cc5ecc57d7d5e15ddaac512010142496a00c5",
+    "inputsUnchanged": true,
+    "compatibility": {
+      "actualReleaseToolsPreludeExtracted": true,
+      "correctV4ExecutorPassedSiblingHashGuard": true,
+      "oldV3ExecutorHashRefused": true,
+      "localBoundaryReached": 1,
+      "privateImportOrCommandReached": false
+    }
+  },
+  "findings": [],
+  "conclusions": [
+    "Parent executor and both test files now import the coherent shared640 picker-v4 set; all three parent shared imports were updated.",
+    "The imported release collector checks its sibling v4 executor against release.helperSha256; a v4-pinned plan is compatible while the old v3 hash refuses.",
+    "Parent native/cookie-header/privacy/authority/request/cleanup/capture logic is otherwise byte-identical after import normalization; all11 prior assertions pass in the recorded offline run."
+  ],
+  "limits": [
+    "Source/offline preparation only; no reviewer tests or live/network/auth/browser/jobs/SQL actions.",
+    "Fresh concrete plan must pin this parent helper and the shared v4 executor, collector, source, runtime, CI/latest deployments and actual asset closure; actual acceptance remains coordinator-owned."
+  ],
+  "approvedForLiveExecution": false,
+  "repositoryEdits": false
+}

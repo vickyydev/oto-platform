@@ -1,0 +1,205 @@
+{
+  "ticket": "SCRUM-640",
+  "actualStaging": true,
+  "localMock": false,
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+  "ciRunId": "40351447109",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbfnmhm417fc73dc999g",
+      "finishedAt": "2026-10-26T16:12:51.704436Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbfnmhu417fc73dc9abg",
+      "finishedAt": "2026-10-26T16:10:26.995117Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+    }
+  ],
+  "helperSha256": "67ec2fffbc1887bbe4d03a4f572283a44ce5fc0da25aa8ee1668ab62c6f3dedd",
+  "planSha256": "30939e277e5b73cd764ecc60bb2c982b887079b0a06edee987809c26cb662cac",
+  "preflightSha256": "70c981f0957a64e48cf136c1f092301ed2e87a81192bb3f53df8f4125c807111",
+  "startedAt": "2026-10-26T16:15:42.118Z",
+  "completedAt": "2026-10-26T16:16:58.639Z",
+  "complete": false,
+  "nativeComplete": false,
+  "awaitingReadOnlyAudit": true,
+  "errorCode": "PRODUCTION_STATIC_BYTES_DIFFER",
+  "pending": 0,
+  "nativePending": 0,
+  "unresolved": 0,
+  "journalHealthy": true,
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "unknownIssuance": 0,
+  "network": {
+    "blocked": 2,
+    "failed": 2,
+    "pageErrors": 0,
+    "consoleErrors": 2,
+    "fontSuppressions": 1,
+    "photoSuppressions": 0
+  },
+  "originalReceipt": {
+    "path": "C:/w/admin640-staging-proof-20261026-v1/result.json",
+    "sha256": "43348cfb1aae0c446e1971103e07bbdc71d27e3f60a38bd545afe72144cce5ee"
+  },
+  "projectionOnly": true,
+  "operations": [
+    {
+      "actor": "ADMIN",
+      "kind": "auth-signin",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sequence": 1,
+      "intentAt": "2026-10-26T16:16:02.726Z",
+      "completedAt": "2026-10-26T16:16:03.326Z",
+      "state": "acknowledged",
+      "terminal": true,
+      "status": 200,
+      "cleanup": false
+    },
+    {
+      "actor": "ADMIN",
+      "kind": "auth-cleanup",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "sequence": 2,
+      "intentAt": "2026-10-26T16:16:45.854Z",
+      "completedAt": "2026-10-26T16:16:49.317Z",
+      "state": "acknowledged",
+      "terminal": true,
+      "status": 200,
+      "cleanup": true
+    }
+  ],
+  "handshakes": [
+    {
+      "actor": "ADMIN",
+      "at": "2026-10-26T16:16:06.254Z",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "homeOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+      "effectiveOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+      "operatorOverride": null,
+      "sessionId": "01a178ff-5cec-79ce-b838-121ca5989c07",
+      "revision": 0,
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "stationId": null,
+      "platform": true,
+      "switchGrant": true,
+      "homeAccountSha256": "a3a44d3475c58179aa73f713c11838f08ba1491b37b5a41d36b75f2a7ef29885",
+      "employeeSha256": "6a4f7182c24b3861da55d4936cb99114a57691de5560da3e6262e6f046589025",
+      "permissionsSha256": "cc15b2e0c985d2c5add07fd8d5ca2520e61b6056b1d66bdcfe3e847c8c1f4b82"
+    }
+  ],
+  "directory": [],
+  "sourceChecks": [
+    {
+      "at": "2026-10-26T16:15:51.131Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+      "ciRunId": "40351447109",
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfnmhm417fc73dc999g",
+          "finishedAt": "2026-10-26T16:12:51.704436Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfnmhu417fc73dc9abg",
+          "finishedAt": "2026-10-26T16:10:26.995117Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        }
+      ],
+      "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+    },
+    {
+      "at": "2026-10-26T16:16:02.719Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+      "ciRunId": "40351447109",
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfnmhm417fc73dc999g",
+          "finishedAt": "2026-10-26T16:12:51.704436Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfnmhu417fc73dc9abg",
+          "finishedAt": "2026-10-26T16:10:26.995117Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        }
+      ],
+      "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+    },
+    {
+      "at": "2026-10-26T16:16:14.998Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+      "ciRunId": "40351447109",
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfnmhm417fc73dc999g",
+          "finishedAt": "2026-10-26T16:12:51.704436Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfnmhu417fc73dc9abg",
+          "finishedAt": "2026-10-26T16:10:26.995117Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        }
+      ],
+      "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+    },
+    {
+      "at": "2026-10-26T16:16:58.634Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+      "ciRunId": "40351447109",
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfnmhm417fc73dc999g",
+          "finishedAt": "2026-10-26T16:12:51.704436Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfnmhu417fc73dc9abg",
+          "finishedAt": "2026-10-26T16:10:26.995117Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        }
+      ],
+      "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+    }
+  ],
+  "authCleanup": [
+    {
+      "actor": "ADMIN",
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true,
+      "logoutOk": true
+    }
+  ],
+  "screenshots": [],
+  "limitations": [
+    "Failed attempt; not final acceptance.",
+    "No read-only audit job or parent Overview proof is claimed here."
+  ]
+}

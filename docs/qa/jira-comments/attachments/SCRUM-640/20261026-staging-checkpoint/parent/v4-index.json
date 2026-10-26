@@ -1,0 +1,69 @@
+{
+  "ticket": "SCRUM-635",
+  "version": "denial-v4-parent",
+  "frozenAt": "2026-10-26T16:40:38.349Z",
+  "approvedForLiveExecution": false,
+  "previousVersion": {
+    "path": "C:/w/admin635-overview-proof-picker-v3/version-index.json",
+    "sha256": "d88eaaeb7573494bb203dd643d89ad02c5c081a4b4e0e0d07e474ab4d376a1ba",
+    "bytes": 3181
+  },
+  "onlyExecutableChanges": "Imports point to coherent640 denial-v5; parent native behavior and all11 prior assertions unchanged.",
+  "sourceAndTestsIdenticalAfterImportNormalization": true,
+  "shared640Version": {
+    "path": "C:/w/admin640-staging-proof-denial-v5/version-index.json",
+    "sha256": "0c4bdb50d94c07f290a282ffa5cca0bb57786ed530d3a098f186aec180779b4d",
+    "bytes": 5195
+  },
+  "green": {
+    "tests": 11,
+    "pass": 11,
+    "fail": 0
+  },
+  "fullGreenOutputRead": true,
+  "allPriorVersionsPreserved": true,
+  "noStagingAuthNetworkBrowserJobsSQL": true,
+  "repositoryEdits": false,
+  "files": [
+    {
+      "path": "C:/w/admin635-overview-proof-denial-v4/admin635-overview-proof-executor.mjs",
+      "sha256": "b8fea6ac4f4e1c9966a0c3d40d0e7225c29028687905d2cb7d8e13b36f52c29b",
+      "bytes": 23912
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-denial-v4/admin635-overview-proof-offline.test.mjs",
+      "sha256": "a779acca8b79775873737f0bd0bf2eac51906b6d3e7be22faf9b47591d3f7128",
+      "bytes": 11371
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-denial-v4/admin635-overview-proof-header-retention.test.mjs",
+      "sha256": "077c12310ab430688fee329f31952623c349e0e012ee534b2add629cf274817c",
+      "bytes": 2627
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-denial-v4/admin635-overview-proof-README.md",
+      "sha256": "6cf796743a0830f14b910de3cf3df0cbe2a2e4f6507133754678330ea3279871",
+      "bytes": 5452
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-denial-v4/preserved-parent-v3-inputs.json",
+      "sha256": "96792c0dfb7ed432942b2bcad64bc84a19b4f0f22983b5d04c4439a72d05680e",
+      "bytes": 2497
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-denial-green-v1.json",
+      "sha256": "efcda345699c7d550db74c60800ef4c6d68caa9c7405aa1d52b4a51943f5c1ff",
+      "bytes": 2497
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-denial-green-v1.log",
+      "sha256": "02ac4082020f3101cc2f6256de2cd47a68230316e53418e1b175a1eda124be74",
+      "bytes": 3234
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/version-index.json",
+      "sha256": "0c4bdb50d94c07f290a282ffa5cca0bb57786ed530d3a098f186aec180779b4d",
+      "bytes": 5195
+    }
+  ]
+}

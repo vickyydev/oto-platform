@@ -1,0 +1,134 @@
+{
+  "ticket": "SCRUM-640",
+  "version": "canonical-v3",
+  "frozenAt": "2026-10-26T15:46:09.562Z",
+  "approvedForLiveExecution": false,
+  "previousVersion": {
+    "index": "C:/w/admin640-staging-proof-native-time-v2/version-index.json",
+    "sha256": "b1a447410dc4d4db1e81ab21d532b49e0dc2f037d8c500586b762f061932fb68",
+    "unchanged": true
+  },
+  "onlyModuleChanged": "admin640-staging-proof-executor.mjs",
+  "canonicalCoveragePreserved": true,
+  "auxiliaryInputsMustBeCommittedAndByteIdentical": true,
+  "extraAuxiliaryPaths": [
+    ".env.example",
+    ".gitignore"
+  ],
+  "timestampFixUnchanged": true,
+  "all44PriorCasesUnchanged": true,
+  "red": {
+    "tests": 47,
+    "pass": 46,
+    "fail": 1
+  },
+  "green": {
+    "tests": 47,
+    "pass": 47,
+    "fail": 0
+  },
+  "noAuthNetworkJobsSQL": true,
+  "repositoryEdits": false,
+  "files": [
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-proof-executor.mjs",
+      "sha256": "67ec2fffbc1887bbe4d03a4f572283a44ce5fc0da25aa8ee1668ab62c6f3dedd",
+      "bytes": 45451
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+      "bytes": 18464
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-proof-release-collector.mjs",
+      "sha256": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e",
+      "bytes": 15304
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-proof-metadata-collector.mjs",
+      "sha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+      "bytes": 19845
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-contract-draft.mjs",
+      "sha256": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+      "bytes": 4272
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-proof-executor.test.mjs",
+      "sha256": "78884ac824dcbf3db6a7e9c3df624914fcb077477c91ab795a1c1b5b20a9921b",
+      "bytes": 19713
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-proof-review.test.mjs",
+      "sha256": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+      "bytes": 7559
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-proof-account-eligibility.test.mjs",
+      "sha256": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4",
+      "bytes": 1822
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/admin640-staging-proof-collectors.test.mjs",
+      "sha256": "7a7c45c261f5a2fb489ae0b64ceefe80125396ee92b281ca9d1a53a3dbe7a329",
+      "bytes": 11586
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/preserved-v2-inputs.json",
+      "sha256": "1446a508179f9ee8824a37edf9a7827adecb552abf010cb0c8b27799bd4bb670",
+      "bytes": 2761
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-v3/README.md",
+      "sha256": "6f576a46e9ab40e741283f8960573a9b7ccc208f5fee4f9f665b818b116a2484",
+      "bytes": 854
+    },
+    {
+      "path": "C:/w/admin640-release-proof-runbook-canonical-v3-20261026.md",
+      "sha256": "46bea02968a6f634e44ab0be7fbe0e4aa0b5d59cf3d2f671f1a47c3bd504a78e",
+      "bytes": 13293
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-manifest.test.mjs",
+      "sha256": "fa7de05e2d9a9e129bf92424378c828cc42bd0ff60c6de9896f4d927fc2b8e61",
+      "bytes": 6790
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-checks.mjs",
+      "sha256": "a573f29d3de329acbaa050563e2937ee533524f5e76374c374f24b6b1c7c5d26",
+      "bytes": 3816
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-native-time.test.mjs",
+      "sha256": "601890139fc69620effea0fdf25db179776d9d0aa93d46fff65a80e96f0b938c",
+      "bytes": 6551
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-manifest-diagnosis-v1.json",
+      "sha256": "7984951eb39d41ecf45ba92ae40a1490f7e1ab6212dd5157b1226820334ad4a2",
+      "bytes": 959
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-red-v1.json",
+      "sha256": "cf06d3fe20198189460e8e1296e9ddbbc8d2b4ef03116ffca93d8c8c77c47339",
+      "bytes": 5097
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-red-v1.log",
+      "sha256": "cbd8424d27abf5f092e88e6030db97c166ca86cb5602ba8bd33073ae72dd07fc",
+      "bytes": 13139
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-green-v1.json",
+      "sha256": "4498ae7486bbeaa3a87902bc1be05052746c71ae88fa049c8a22091e3907b3f1",
+      "bytes": 5055
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-green-v1.log",
+      "sha256": "38ab6025be886e52116f10c7eb79ef3580a72bc829539a811f92ce6f6b639fd7",
+      "bytes": 12272
+    }
+  ]
+}

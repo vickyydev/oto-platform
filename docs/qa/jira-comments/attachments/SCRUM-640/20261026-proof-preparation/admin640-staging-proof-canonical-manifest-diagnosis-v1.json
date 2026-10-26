@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "offline-manifest-intake-diagnosis",
+  "at": "2026-10-26T15:37:20.664Z",
+  "sourceSha": "59ffa3e72d106fda5bb3568edc213288cb25e193",
+  "canonical": {
+    "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q23-release/source-manifest.json",
+    "rawSha256": "8cb11b0e87537a6f191ca29d3ddee4a8c30e8082843499b73a224a4a44ab31ce",
+    "files": 3809,
+    "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+    "workingBytesMatch": true
+  },
+  "v2": {
+    "helperPath": "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-executor.mjs",
+    "helperSha256": "b54331225c4f122231cf43e6c76682206e271cb58ce1a8dc424e22023d36b0a6",
+    "files": 3811,
+    "sourceManifestSha256": "a861adc8e86549fc8c4147ef2bcf43c360f4aa8bf815cc373b6c3decc2c3f766"
+  },
+  "additionalPaths": [
+    ".env.example",
+    ".gitignore"
+  ],
+  "missingPaths": [],
+  "noAuthNetworkJobsSQL": true
+}

@@ -1,0 +1,140 @@
+{
+  "ticket": "SCRUM-640",
+  "version": "denial-v5",
+  "frozenAt": "2026-10-26T16:39:36.995Z",
+  "approvedForLiveExecution": false,
+  "previousVersion": {
+    "path": "C:/w/admin640-staging-proof-picker-v4/version-index.json",
+    "sha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+    "bytes": 4841
+  },
+  "onlyModuleChanged": "admin640-staging-proof-executor.mjs",
+  "onlySemanticChange": "Bounded either-existing-denial visible wait before visibility validation in restricted open.",
+  "all50PriorCasesUnchanged": true,
+  "allOtherModulesByteIdentical": true,
+  "fullRedAndGreenOutputRead": true,
+  "red": {
+    "tests": 53,
+    "pass": 52,
+    "fail": 1
+  },
+  "green": {
+    "tests": 53,
+    "pass": 53,
+    "fail": 0
+  },
+  "noAuthNetworkJobsSQL": true,
+  "repositoryEdits": false,
+  "files": [
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-proof-executor.mjs",
+      "sha256": "c201a35fc027a7b1633de3aa61aac0a1c6d353bbe385adcb0183aadc6eb2cba7",
+      "bytes": 45822
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+      "bytes": 18464
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-proof-release-collector.mjs",
+      "sha256": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e",
+      "bytes": 15304
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-proof-metadata-collector.mjs",
+      "sha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+      "bytes": 19845
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-contract-draft.mjs",
+      "sha256": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+      "bytes": 4272
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-proof-executor.test.mjs",
+      "sha256": "78884ac824dcbf3db6a7e9c3df624914fcb077477c91ab795a1c1b5b20a9921b",
+      "bytes": 19713
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-proof-review.test.mjs",
+      "sha256": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+      "bytes": 7559
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-proof-account-eligibility.test.mjs",
+      "sha256": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4",
+      "bytes": 1822
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/admin640-staging-proof-collectors.test.mjs",
+      "sha256": "7a7c45c261f5a2fb489ae0b64ceefe80125396ee92b281ca9d1a53a3dbe7a329",
+      "bytes": 11586
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/README.md",
+      "sha256": "c72a227d020d9373768d5607e003a8ce131298406e57dcd29275374b21c21de3",
+      "bytes": 1019
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-v5/preserved-v4-inputs.json",
+      "sha256": "2e1bc88458e4cf6bb0246aad2440cce87ca437fd617e9e9c19463aa471dcc86f",
+      "bytes": 4922
+    },
+    {
+      "path": "C:/w/admin640-release-proof-runbook-denial-v5-20261026.md",
+      "sha256": "4d643e410a96b4052863280b7217a7dec8b314e134db2c5d4ac9f0a3316bb0e9",
+      "bytes": 13842
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-readiness.test.mjs",
+      "sha256": "6e7c45a66a25d24aff03275b10d912d8a628d72d44d40f248658be3db22bd727",
+      "bytes": 4901
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-checks.mjs",
+      "sha256": "3f162c718378d9c4fa4a5209f53f172adeaa8710748443994568f943b61d45af",
+      "bytes": 4856
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-native-time.test.mjs",
+      "sha256": "601890139fc69620effea0fdf25db179776d9d0aa93d46fff65a80e96f0b938c",
+      "bytes": 6551
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-manifest.test.mjs",
+      "sha256": "fa7de05e2d9a9e129bf92424378c828cc42bd0ff60c6de9896f4d927fc2b8e61",
+      "bytes": 6790
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-readiness.test.mjs",
+      "sha256": "3b5fdacad0010f7578526253fa32f434230012f775f500ee8db8884802e471b9",
+      "bytes": 6704
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-harness-preflight-failure-v1.json",
+      "sha256": "7cc530faf496fb601c6ad32cee848d75953d4824b2f3a5f823f9a3ed92831b52",
+      "bytes": 473
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-red-v1.json",
+      "sha256": "cbc0515cb2c6b56848985c31d32a4539f2ce89662062879b3cb343c1f7831372",
+      "bytes": 9386
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-red-v1.log",
+      "sha256": "01496534c19975856368f89814b0f77b74ccc1beca5345b0b36a731d51269dc7",
+      "bytes": 14461
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-green-v1.json",
+      "sha256": "d0bf000078d3c3b0518e99bb176a17567827b6e81d5e7f6e11aa804acb14069f",
+      "bytes": 9390
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-denial-green-v1.log",
+      "sha256": "7d8f66348a458d77c25a7e6190d0a1ca9d149e13f259a9dd987372b79eb9bdc6",
+      "bytes": 13814
+    }
+  ]
+}

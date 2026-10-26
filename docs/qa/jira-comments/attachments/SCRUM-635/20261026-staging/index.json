@@ -1,0 +1,49 @@
+{
+  "ticket": "SCRUM-635",
+  "status": "Deployed",
+  "comment": "12564",
+  "verifiedAt": "2026-10-26T16:50:04.772Z",
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "humanImagesInspected": true,
+  "attachments": [
+    {
+      "id": "12054",
+      "filename": "SCRUM-635-01-overview.png"
+    },
+    {
+      "id": "12055",
+      "filename": "SCRUM-640-02-working-operator.png"
+    },
+    {
+      "id": "12056",
+      "filename": "SCRUM-640-04-restored-session-and-audit.png"
+    }
+  ],
+  "files": [
+    {
+      "path": "SCRUM-640-02-working-operator.png",
+      "sha256": "868c4d41212f14e9e3bf57e8640ecabab12d1884d721c3b6a9324c6c25b8d8d0",
+      "bytes": 96216
+    },
+    {
+      "path": "SCRUM-640-04-restored-session-and-audit.png",
+      "sha256": "800dcd96a4a9a916d2e565402c550f2109151b097ff1a7b9de312191c839b573",
+      "bytes": 62992
+    },
+    {
+      "path": "SCRUM-635-01-overview.png",
+      "sha256": "06a2ec65e8911696d779a2fb483b99329f234546613ee80a4a6ab7ebf9e72b5e",
+      "bytes": 309975
+    },
+    {
+      "path": "result.json",
+      "sha256": "489cd916c01ac5d56b43928ac7bc99c78470d10761cf727054edd183d4c2a678",
+      "bytes": 9948
+    },
+    {
+      "path": "plan.json",
+      "sha256": "a8929ca44fe3b2818fefa06d9303893df7ee00245c8cbe06a64c6838a5652696",
+      "bytes": 2003
+    }
+  ]
+}

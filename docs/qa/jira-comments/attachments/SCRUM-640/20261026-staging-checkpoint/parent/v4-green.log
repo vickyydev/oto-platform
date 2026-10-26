@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: actual native handler retains unexpected owned cookie headers before body rejection, oversize or bad status
+ok 1 - actual native handler retains unexpected owned cookie headers before body rejection, oversize or bad status
+  ---
+  duration_ms: 2.1636
+  type: 'test'
+  ...
+# Subtest: import and unarmed execution are inert; no credentials, browser, output or network
+ok 2 - import and unarmed execution are inert; no credentials, browser, output or network
+  ---
+  duration_ms: 4.8032
+  type: 'test'
+  ...
+# Subtest: strict plan binds final640 release, raw native deployment timestamps and exclusive635 output
+ok 3 - strict plan binds final640 release, raw native deployment timestamps and exclusive635 output
+  ---
+  duration_ms: 1.2738
+  type: 'test'
+  ...
+# Subtest: public bytes cannot be substituted from an earlier source, another service or an invalid path
+ok 4 - public bytes cannot be substituted from an earlier source, another service or an invalid path
+  ---
+  duration_ms: 7.2112
+  type: 'test'
+  ...
+# Subtest: only two auth POST families are permitted; no switch/settings/messages/payments/handoff or source action
+ok 5 - only two auth POST families are permitted; no switch/settings/messages/payments/handoff or source action
+  ---
+  duration_ms: 1.0901
+  type: 'test'
+  ...
+# Subtest: native reads allow exact Overview and shell bootstrap only; detail, query, foreign and private resources are refused
+ok 6 - native reads allow exact Overview and shell bootstrap only; detail, query, foreign and private resources are refused
+  ---
+  duration_ms: 0.4991
+  type: 'test'
+  ...
+# Subtest: actual home admin and full fresh authority are required; a working override/lock/foreign identity cannot pass
+ok 7 - actual home admin and full fresh authority are required; a working override/lock/foreign identity cannot pass
+  ---
+  duration_ms: 0.7302
+  type: 'test'
+  ...
+# Subtest: ambiguous observed cookies are privately retained before failure and every known cookie is revoked
+ok 8 - ambiguous observed cookies are privately retained before failure and every known cookie is revoked
+  ---
+  duration_ms: 0.462
+  type: 'test'
+  ...
+# Subtest: actual shared journal blocks a second auth dispatch after unknown issuance; broken persistence still permits original-cookie cleanup
+ok 9 - actual shared journal blocks a second auth dispatch after unknown issuance; broken persistence still permits original-cookie cleanup
+  ---
+  duration_ms: 1.0148
+  type: 'test'
+  ...
+# Subtest: actual capture flow refuses data or authority failure before later reads; normal capture preserves its fingerprint
+ok 10 - actual capture flow refuses data or authority failure before later reads; normal capture preserves its fingerprint
+  ---
+  duration_ms: 0.4284
+  type: 'test'
+  ...
+# Subtest: real released schemas parse the existing native Overview fixture and protect availability/priced data without old637 assumptions
+ok 11 - real released schemas parse the existing native Overview fixture and protect availability/priced data without old637 assumptions
+  ---
+  duration_ms: 2547.0576
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2683.2357

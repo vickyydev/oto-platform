@@ -1,0 +1,68 @@
+{
+  "ticket": "SCRUM-640",
+  "passed": true,
+  "reviewedAt": "2026-10-26T16:40:35.060Z",
+  "helperSha256": "c201a35fc027a7b1633de3aa61aac0a1c6d353bbe385adcb0183aadc6eb2cba7",
+  "versionIndexSha256": "0c4bdb50d94c07f290a282ffa5cca0bb57786ed530d3a098f186aec180779b4d",
+  "previousVersion": {
+    "path": "C:/w/admin640-staging-proof-picker-v4/version-index.json",
+    "sha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+    "bytes": 4841
+  },
+  "indexedFilesVerified": 22,
+  "all50PriorCasesUnchanged": true,
+  "unchangedSharedAndTestFiles": 8,
+  "sourceDeltaAndRelevantRedGreenOutputRead": true,
+  "evidence": {
+    "red": {
+      "path": "C:/w/admin640-staging-proof-denial-red-v1.json",
+      "sha256": "cbc0515cb2c6b56848985c31d32a4539f2ce89662062879b3cb343c1f7831372",
+      "exitCode": 1,
+      "counts": {
+        "tests": 53,
+        "pass": 52,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "logSha256": "01496534c19975856368f89814b0f77b74ccc1beca5345b0b36a731d51269dc7",
+      "inputsUnchanged": true
+    },
+    "green": {
+      "path": "C:/w/admin640-staging-proof-denial-green-v1.json",
+      "sha256": "d0bf000078d3c3b0518e99bb176a17567827b6e81d5e7f6e11aa804acb14069f",
+      "exitCode": 0,
+      "counts": {
+        "tests": 53,
+        "pass": 53,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "logSha256": "7d8f66348a458d77c25a7e6190d0a1ca9d149e13f259a9dd987372b79eb9bdc6",
+      "inputsUnchanged": true
+    }
+  },
+  "conclusions": [
+    "Restricted open now waits up to30000ms for either existing exact native denial locator to become visible, then explicitly confirms one is visible; it no longer chooses an absent alternative by a pre-mount count.",
+    "Tests execute the actual extracted open body with rendered released App/Panel denial elements and delayed synthetic mount; absence/spinner still refuses.",
+    "Only restricted readiness changed; accepted denial texts, native selectors, picker, request/dispatch/source/authority/cleanup/capture/audit guards are unchanged."
+  ],
+  "auditRequestIdCompatibility": {
+    "passed": true,
+    "helperUnchanged": true,
+    "proofOperationRequestIdMayBeNull": true,
+    "nativeAuditRequestIdMayBeNullOrBoundedString": true,
+    "rowSelection": "Exact owned actor/SID/action/time window; validate before/after effective operators and revisions. No equality requirement with missing browser header."
+  },
+  "findings": [],
+  "limits": [
+    "Source and existing offline evidence only; no reviewer runtime, tests, auth, network, browser, SQL or jobs.",
+    "No live acceptance granted. Concrete plan and separately observed native/audit results remain coordinator-owned.",
+    "The recorded runner preflight shape error started zero tests and is preserved separately; it is not functional RED."
+  ],
+  "approvedForLiveExecution": false,
+  "repositoryEdits": false
+}

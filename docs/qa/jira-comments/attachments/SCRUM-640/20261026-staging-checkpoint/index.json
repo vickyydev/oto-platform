@@ -1,0 +1,451 @@
+{
+  "ticket": "SCRUM-640",
+  "checkpointOnly": true,
+  "preparedAt": "2026-10-26T16:53:36.877Z",
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "ciRunId": "40351447109",
+  "preparationScriptSha256": "63cd1ee7af007adc1dad154ad59bb6040566611be345ef1e7f736d58e9520ec3",
+  "originals": [
+    {
+      "from": "C:/w/admin640-ci-green-20261026/run.json",
+      "originalSha256": "651832adc927ff52bdef241eeeca8b4bc68988a8e987039de51c6966a76a4853",
+      "originalBytes": 12642,
+      "archivePath": "ci/run.json",
+      "archivedSha256": "da7aecfdd1a675943551e0657b9864dc0c118ce7417625c02180a9d60fb3cf99",
+      "archivedBytes": 536,
+      "handling": "Explicit safe-field projection; original is not copied."
+    },
+    {
+      "from": "C:/w/admin640-ci-green-20261026/jobs.json",
+      "originalSha256": "95605be0e47f5de960b7a4d3aea6d5514b8eab497602d8a5e262a3524cca2686",
+      "originalBytes": 29925,
+      "archivePath": "ci/jobs.json",
+      "archivedSha256": "97b1d42ccca9f21005b9e81a808f8794cb78e43f3a2b03c8b1def1b8864f57b5",
+      "archivedBytes": 2220,
+      "handling": "Explicit safe-field projection; original is not copied."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-plan-20261026-v3.json",
+      "originalSha256": "9355809e0a6a9db1e17817b921e157967cde894bcbbd3bd99d8296aa3eaaffee",
+      "originalBytes": 3096,
+      "archivePath": "ci/live-release.json",
+      "archivedSha256": "93dee19fbe985d7d975e8e50d41ad8cc7b163cdffcc5c3685ea4dc6361a72d9d",
+      "archivedBytes": 1296,
+      "handling": "Explicit safe-field projection; original is not copied."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-20261026-v1/result.json",
+      "originalSha256": "43348cfb1aae0c446e1971103e07bbdc71d27e3f60a38bd545afe72144cce5ee",
+      "originalBytes": 9481,
+      "archivePath": "failed-v1/result.json",
+      "archivedSha256": "197246acd0cea1a61ea2d2198583d7f079b5f66340a236ddf2d38aae2e600e30",
+      "archivedBytes": 6934,
+      "handling": "Explicit safe-field projection; original is not copied."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-20261026-v2/result.json",
+      "originalSha256": "f21f14dab22eb4aa242d3d79884d238ee78334fafe93bcd016da6af118d58a74",
+      "originalBytes": 9330,
+      "archivePath": "failed-v2/result.json",
+      "archivedSha256": "b9010ea31fae5e65a4174038eedf2a5cad9a474fde28eaccf298dc66ba83db84",
+      "archivedBytes": 6941,
+      "handling": "Explicit safe-field projection; original is not copied."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-20261026-v3/result.json",
+      "originalSha256": "6e04d409185f77123a1bf7b10fa6e9116b2c4cb112ed6e001fca62bc05603313",
+      "originalBytes": 22920,
+      "archivePath": "failed-v3/result.json",
+      "archivedSha256": "b0bd2636c7ff1e57fce098cf03f79669a624ce2ecfdd12db12719a9d0d92fece",
+      "archivedBytes": 17015,
+      "handling": "Explicit safe-field projection; original is not copied."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-20261026-v3/SCRUM-640-01-home-operator.png",
+      "originalSha256": "a2b92e6ab5804d2ee3a64af368ad3fd599ba03b2d5a9c032b135d52724912976",
+      "originalBytes": 136752,
+      "archivePath": "failed-v3/SCRUM-640-01-home-operator.png",
+      "archivedSha256": "a2b92e6ab5804d2ee3a64af368ad3fd599ba03b2d5a9c032b135d52724912976",
+      "archivedBytes": 136752,
+      "handling": "Exact PNG; visually inspected during script authoring, privacy/layout passed; partial failed-attempt evidence only."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-20261026-v3/SCRUM-640-02-working-operator.png",
+      "originalSha256": "64e108408c127413305604a1f178816da67c9c79f79f876ad0fb476bcf184c53",
+      "originalBytes": 96267,
+      "archivePath": "failed-v3/SCRUM-640-02-working-operator.png",
+      "archivedSha256": "64e108408c127413305604a1f178816da67c9c79f79f876ad0fb476bcf184c53",
+      "archivedBytes": 96267,
+      "handling": "Exact PNG; visually inspected during script authoring, privacy/layout passed; partial failed-attempt evidence only."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-picker-v4/version-index.json",
+      "originalSha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+      "originalBytes": 4841,
+      "archivePath": "tools/v4-index.json",
+      "archivedSha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+      "archivedBytes": 4841,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-picker-v4-independent-review.json",
+      "originalSha256": "0d03f9115eb6ea44f25dce7dadf2285f9ebbdcb144d0fe16b6557bb0d9d263c8",
+      "originalBytes": 2871,
+      "archivePath": "tools/v4-review.json",
+      "archivedSha256": "0d03f9115eb6ea44f25dce7dadf2285f9ebbdcb144d0fe16b6557bb0d9d263c8",
+      "archivedBytes": 2871,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-picker-red-v1.json",
+      "originalSha256": "8bd008abbf555e114f72a3e71752d67778ec984389d2f450ad2073013b94acb6",
+      "originalBytes": 8552,
+      "archivePath": "tools/v4-red.json",
+      "archivedSha256": "8bd008abbf555e114f72a3e71752d67778ec984389d2f450ad2073013b94acb6",
+      "archivedBytes": 8552,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-picker-red-v1.log",
+      "originalSha256": "1c4717fea2d11ebeb78479527a9f92e174f3dd5cf9985c2b7423f95605b234a6",
+      "originalBytes": 14418,
+      "archivePath": "tools/v4-red.log",
+      "archivedSha256": "1c4717fea2d11ebeb78479527a9f92e174f3dd5cf9985c2b7423f95605b234a6",
+      "archivedBytes": 14418,
+      "handling": "LF/trailing-line-whitespace normalization only; raw external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-picker-green-v1.json",
+      "originalSha256": "24f0f19004a11e8264d03ee7e99c8540128b79b3801b21a6b79942c84f2a82b8",
+      "originalBytes": 8487,
+      "archivePath": "tools/v4-green.json",
+      "archivedSha256": "24f0f19004a11e8264d03ee7e99c8540128b79b3801b21a6b79942c84f2a82b8",
+      "archivedBytes": 8487,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-picker-green-v1.log",
+      "originalSha256": "caa06a10dbf1ac142f3593b6f4390071068734d54606e334020febe8f17091c4",
+      "originalBytes": 13076,
+      "archivePath": "tools/v4-green.log",
+      "archivedSha256": "caa06a10dbf1ac142f3593b6f4390071068734d54606e334020febe8f17091c4",
+      "archivedBytes": 13076,
+      "handling": "LF/trailing-line-whitespace normalization only; raw external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-denial-v5/version-index.json",
+      "originalSha256": "0c4bdb50d94c07f290a282ffa5cca0bb57786ed530d3a098f186aec180779b4d",
+      "originalBytes": 5195,
+      "archivePath": "tools/v5-index.json",
+      "archivedSha256": "0c4bdb50d94c07f290a282ffa5cca0bb57786ed530d3a098f186aec180779b4d",
+      "archivedBytes": 5195,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-denial-v5-independent-review.json",
+      "originalSha256": "a3d4e5a5d4397c22425c70c4d29f0772584869b955c893a1e0e871f187d249d9",
+      "originalBytes": 2958,
+      "archivePath": "tools/v5-review.json",
+      "archivedSha256": "a3d4e5a5d4397c22425c70c4d29f0772584869b955c893a1e0e871f187d249d9",
+      "archivedBytes": 2958,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-denial-red-v1.json",
+      "originalSha256": "cbc0515cb2c6b56848985c31d32a4539f2ce89662062879b3cb343c1f7831372",
+      "originalBytes": 9386,
+      "archivePath": "tools/v5-red.json",
+      "archivedSha256": "cbc0515cb2c6b56848985c31d32a4539f2ce89662062879b3cb343c1f7831372",
+      "archivedBytes": 9386,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-denial-red-v1.log",
+      "originalSha256": "01496534c19975856368f89814b0f77b74ccc1beca5345b0b36a731d51269dc7",
+      "originalBytes": 14461,
+      "archivePath": "tools/v5-red.log",
+      "archivedSha256": "01496534c19975856368f89814b0f77b74ccc1beca5345b0b36a731d51269dc7",
+      "archivedBytes": 14461,
+      "handling": "LF/trailing-line-whitespace normalization only; raw external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-denial-green-v1.json",
+      "originalSha256": "d0bf000078d3c3b0518e99bb176a17567827b6e81d5e7f6e11aa804acb14069f",
+      "originalBytes": 9390,
+      "archivePath": "tools/v5-green.json",
+      "archivedSha256": "d0bf000078d3c3b0518e99bb176a17567827b6e81d5e7f6e11aa804acb14069f",
+      "archivedBytes": 9390,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-denial-green-v1.log",
+      "originalSha256": "7d8f66348a458d77c25a7e6190d0a1ca9d149e13f259a9dd987372b79eb9bdc6",
+      "originalBytes": 13814,
+      "archivePath": "tools/v5-green.log",
+      "archivedSha256": "7d8f66348a458d77c25a7e6190d0a1ca9d149e13f259a9dd987372b79eb9bdc6",
+      "archivedBytes": 13814,
+      "handling": "LF/trailing-line-whitespace normalization only; raw external hash retained."
+    },
+    {
+      "from": "C:/w/admin640-staging-proof-denial-harness-preflight-failure-v1.json",
+      "originalSha256": "7cc530faf496fb601c6ad32cee848d75953d4824b2f3a5f823f9a3ed92831b52",
+      "originalBytes": 473,
+      "archivePath": "tools/v5-preflight-only-failure.json",
+      "archivedSha256": "7cc530faf496fb601c6ad32cee848d75953d4824b2f3a5f823f9a3ed92831b52",
+      "archivedBytes": 473,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin635-overview-proof-picker-v3/version-index.json",
+      "originalSha256": "d88eaaeb7573494bb203dd643d89ad02c5c081a4b4e0e0d07e474ab4d376a1ba",
+      "originalBytes": 3181,
+      "archivePath": "parent/v3-index.json",
+      "archivedSha256": "d88eaaeb7573494bb203dd643d89ad02c5c081a4b4e0e0d07e474ab4d376a1ba",
+      "archivedBytes": 3181,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin635-overview-proof-picker-v3-independent-review.json",
+      "originalSha256": "ae66b8baf8782eb4fbc10dd9f80826115b1cd3bf5354f0a184793f478beddeb2",
+      "originalBytes": 2785,
+      "archivePath": "parent/v3-review.json",
+      "archivedSha256": "ae66b8baf8782eb4fbc10dd9f80826115b1cd3bf5354f0a184793f478beddeb2",
+      "archivedBytes": 2785,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin635-overview-proof-picker-green-v1.json",
+      "originalSha256": "06b86c633cd5f711f0b1c4c694b6a043fe51a5351cf197d32245994a3aa9dc74",
+      "originalBytes": 2736,
+      "archivePath": "parent/v3-green.json",
+      "archivedSha256": "06b86c633cd5f711f0b1c4c694b6a043fe51a5351cf197d32245994a3aa9dc74",
+      "archivedBytes": 2736,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin635-overview-proof-picker-green-v1.log",
+      "originalSha256": "73396e1418a68bd12abf84ffa09cc5ecc57d7d5e15ddaac512010142496a00c5",
+      "originalBytes": 3232,
+      "archivePath": "parent/v3-green.log",
+      "archivedSha256": "73396e1418a68bd12abf84ffa09cc5ecc57d7d5e15ddaac512010142496a00c5",
+      "archivedBytes": 3232,
+      "handling": "LF/trailing-line-whitespace normalization only; raw external hash retained."
+    },
+    {
+      "from": "C:/w/admin635-overview-proof-denial-v4/version-index.json",
+      "originalSha256": "307ed578d46d54b6d83357f483c2900c8c2856f7e9482dc13fe63e9717a106d1",
+      "originalBytes": 2575,
+      "archivePath": "parent/v4-index.json",
+      "archivedSha256": "307ed578d46d54b6d83357f483c2900c8c2856f7e9482dc13fe63e9717a106d1",
+      "archivedBytes": 2575,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin635-overview-proof-denial-v4-independent-review.json",
+      "originalSha256": "84f308c6e231cbfa23e02c1540d1c7d3fea4048785b3f89ee1ef60495c90e0d3",
+      "originalBytes": 2029,
+      "archivePath": "parent/v4-review.json",
+      "archivedSha256": "84f308c6e231cbfa23e02c1540d1c7d3fea4048785b3f89ee1ef60495c90e0d3",
+      "archivedBytes": 2029,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin635-overview-proof-denial-green-v1.json",
+      "originalSha256": "efcda345699c7d550db74c60800ef4c6d68caa9c7405aa1d52b4a51943f5c1ff",
+      "originalBytes": 2497,
+      "archivePath": "parent/v4-green.json",
+      "archivedSha256": "efcda345699c7d550db74c60800ef4c6d68caa9c7405aa1d52b4a51943f5c1ff",
+      "archivedBytes": 2497,
+      "handling": "Parsed public receipt, serialized as LF JSON; original external hash retained."
+    },
+    {
+      "from": "C:/w/admin635-overview-proof-denial-green-v1.log",
+      "originalSha256": "02ac4082020f3101cc2f6256de2cd47a68230316e53418e1b175a1eda124be74",
+      "originalBytes": 3234,
+      "archivePath": "parent/v4-green.log",
+      "archivedSha256": "02ac4082020f3101cc2f6256de2cd47a68230316e53418e1b175a1eda124be74",
+      "archivedBytes": 3234,
+      "handling": "LF/trailing-line-whitespace normalization only; raw external hash retained."
+    }
+  ],
+  "generated": [
+    {
+      "path": "ci/run.json",
+      "sha256": "da7aecfdd1a675943551e0657b9864dc0c118ce7417625c02180a9d60fb3cf99",
+      "bytes": 536
+    },
+    {
+      "path": "ci/jobs.json",
+      "sha256": "97b1d42ccca9f21005b9e81a808f8794cb78e43f3a2b03c8b1def1b8864f57b5",
+      "bytes": 2220
+    },
+    {
+      "path": "ci/live-release.json",
+      "sha256": "93dee19fbe985d7d975e8e50d41ad8cc7b163cdffcc5c3685ea4dc6361a72d9d",
+      "bytes": 1296
+    },
+    {
+      "path": "failed-v1/result.json",
+      "sha256": "197246acd0cea1a61ea2d2198583d7f079b5f66340a236ddf2d38aae2e600e30",
+      "bytes": 6934
+    },
+    {
+      "path": "failed-v2/result.json",
+      "sha256": "b9010ea31fae5e65a4174038eedf2a5cad9a474fde28eaccf298dc66ba83db84",
+      "bytes": 6941
+    },
+    {
+      "path": "failed-v3/result.json",
+      "sha256": "b0bd2636c7ff1e57fce098cf03f79669a624ce2ecfdd12db12719a9d0d92fece",
+      "bytes": 17015
+    },
+    {
+      "path": "failed-v3/SCRUM-640-01-home-operator.png",
+      "sha256": "a2b92e6ab5804d2ee3a64af368ad3fd599ba03b2d5a9c032b135d52724912976",
+      "bytes": 136752
+    },
+    {
+      "path": "failed-v3/SCRUM-640-02-working-operator.png",
+      "sha256": "64e108408c127413305604a1f178816da67c9c79f79f876ad0fb476bcf184c53",
+      "bytes": 96267
+    },
+    {
+      "path": "tools/v4-index.json",
+      "sha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+      "bytes": 4841
+    },
+    {
+      "path": "tools/v4-review.json",
+      "sha256": "0d03f9115eb6ea44f25dce7dadf2285f9ebbdcb144d0fe16b6557bb0d9d263c8",
+      "bytes": 2871
+    },
+    {
+      "path": "tools/v4-red.json",
+      "sha256": "8bd008abbf555e114f72a3e71752d67778ec984389d2f450ad2073013b94acb6",
+      "bytes": 8552
+    },
+    {
+      "path": "tools/v4-red.log",
+      "sha256": "1c4717fea2d11ebeb78479527a9f92e174f3dd5cf9985c2b7423f95605b234a6",
+      "bytes": 14418
+    },
+    {
+      "path": "tools/v4-green.json",
+      "sha256": "24f0f19004a11e8264d03ee7e99c8540128b79b3801b21a6b79942c84f2a82b8",
+      "bytes": 8487
+    },
+    {
+      "path": "tools/v4-green.log",
+      "sha256": "caa06a10dbf1ac142f3593b6f4390071068734d54606e334020febe8f17091c4",
+      "bytes": 13076
+    },
+    {
+      "path": "tools/v5-index.json",
+      "sha256": "0c4bdb50d94c07f290a282ffa5cca0bb57786ed530d3a098f186aec180779b4d",
+      "bytes": 5195
+    },
+    {
+      "path": "tools/v5-review.json",
+      "sha256": "a3d4e5a5d4397c22425c70c4d29f0772584869b955c893a1e0e871f187d249d9",
+      "bytes": 2958
+    },
+    {
+      "path": "tools/v5-red.json",
+      "sha256": "cbc0515cb2c6b56848985c31d32a4539f2ce89662062879b3cb343c1f7831372",
+      "bytes": 9386
+    },
+    {
+      "path": "tools/v5-red.log",
+      "sha256": "01496534c19975856368f89814b0f77b74ccc1beca5345b0b36a731d51269dc7",
+      "bytes": 14461
+    },
+    {
+      "path": "tools/v5-green.json",
+      "sha256": "d0bf000078d3c3b0518e99bb176a17567827b6e81d5e7f6e11aa804acb14069f",
+      "bytes": 9390
+    },
+    {
+      "path": "tools/v5-green.log",
+      "sha256": "7d8f66348a458d77c25a7e6190d0a1ca9d149e13f259a9dd987372b79eb9bdc6",
+      "bytes": 13814
+    },
+    {
+      "path": "tools/v5-preflight-only-failure.json",
+      "sha256": "7cc530faf496fb601c6ad32cee848d75953d4824b2f3a5f823f9a3ed92831b52",
+      "bytes": 473
+    },
+    {
+      "path": "parent/v3-index.json",
+      "sha256": "d88eaaeb7573494bb203dd643d89ad02c5c081a4b4e0e0d07e474ab4d376a1ba",
+      "bytes": 3181
+    },
+    {
+      "path": "parent/v3-review.json",
+      "sha256": "ae66b8baf8782eb4fbc10dd9f80826115b1cd3bf5354f0a184793f478beddeb2",
+      "bytes": 2785
+    },
+    {
+      "path": "parent/v3-green.json",
+      "sha256": "06b86c633cd5f711f0b1c4c694b6a043fe51a5351cf197d32245994a3aa9dc74",
+      "bytes": 2736
+    },
+    {
+      "path": "parent/v3-green.log",
+      "sha256": "73396e1418a68bd12abf84ffa09cc5ecc57d7d5e15ddaac512010142496a00c5",
+      "bytes": 3232
+    },
+    {
+      "path": "parent/v4-index.json",
+      "sha256": "307ed578d46d54b6d83357f483c2900c8c2856f7e9482dc13fe63e9717a106d1",
+      "bytes": 2575
+    },
+    {
+      "path": "parent/v4-review.json",
+      "sha256": "84f308c6e231cbfa23e02c1540d1c7d3fea4048785b3f89ee1ef60495c90e0d3",
+      "bytes": 2029
+    },
+    {
+      "path": "parent/v4-green.json",
+      "sha256": "efcda345699c7d550db74c60800ef4c6d68caa9c7405aa1d52b4a51943f5c1ff",
+      "bytes": 2497
+    },
+    {
+      "path": "parent/v4-green.log",
+      "sha256": "02ac4082020f3101cc2f6256de2cd47a68230316e53418e1b175a1eda124be74",
+      "bytes": 3234
+    },
+    {
+      "path": "checkpoint.json",
+      "sha256": "de3bb9aafa1bc17107f6a56ade4a15400b0e2cf158d7a0ac984cbab5e317ac18",
+      "bytes": 3035
+    },
+    {
+      "path": "README.md",
+      "sha256": "c198dbff25347a68be19f3cf6cbab14aa4dd90421ddac324cdba8ca507c1efb3",
+      "bytes": 3026
+    }
+  ],
+  "documents": [
+    {
+      "path": "docs/progress/STATUS.md",
+      "beforeSha256": "ae10d8c9cef6aa6fbbc82f830de1c842e4b911e9d6381f2e55fe95a8046da80c",
+      "afterSha256": "f57e60207391c85dbd64f92b8aad289f7dc234cd21b130409ad28a4dc545ccad"
+    },
+    {
+      "path": "docs/handover/CODEX_HANDOVER.md",
+      "beforeSha256": "e0d0dcf1a07384f5b71ec0f376c487e18f15681de13a7c15eaec0c7cf3d97bbc",
+      "afterSha256": "4d6abce712aa958f6345b176fa53f10e4bb299c075b164aa14d6fcec31c9690f"
+    },
+    {
+      "path": "docs/handover/CLOUD_HANDOVER.md",
+      "beforeSha256": "7ee8f1e2c20a4375191ec029d392c58fd5e12f886927666b836267d514c25cb5",
+      "afterSha256": "215ae8ab76163d6f8ef063c1c2659ab314c754d40a34427f8a3b62c5709a7b28"
+    },
+    {
+      "path": "docs/progress/plans/super-admin-console/PLAN.md",
+      "beforeSha256": "55824618cfbd7673139988dc09eaeaee199e42c1b3e98699d8066da0edf31ab3",
+      "afterSha256": "5dcd549e57c282bc8a62943a19d1dafe50348504f7e875b56143736230d56007"
+    }
+  ],
+  "noCommitPushJiraNetworkAuth": true
+}

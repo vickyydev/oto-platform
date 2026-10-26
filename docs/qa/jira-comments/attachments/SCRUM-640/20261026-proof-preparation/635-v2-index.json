@@ -1,0 +1,74 @@
+{
+  "ticket": "SCRUM-635",
+  "version": "canonical-v2-parent",
+  "frozenAt": "2026-10-26T15:50:51.137Z",
+  "approvedForLiveExecution": false,
+  "parentOriginalsPreserved": true,
+  "onlySemanticChange": "Native response cookie headers are retained before body/status/size refusal.",
+  "wiring": "All parent helper/test640 imports point to ../admin640-staging-proof-canonical-v3/.",
+  "oldTenAssertionsUnchanged": true,
+  "sourceReviewReadFullOutputs": true,
+  "red": {
+    "tests": 11,
+    "pass": 10,
+    "fail": 1
+  },
+  "green": {
+    "tests": 11,
+    "pass": 11,
+    "fail": 0
+  },
+  "shared640Version": {
+    "path": "C:/w/admin640-staging-proof-canonical-v3/version-index.json",
+    "sha256": "6bf249cea778868f036e5acec235e7634041f0ae88800d10c95516d677f7e5a4"
+  },
+  "noStagingAuthNetworkBrowserJobsSQL": true,
+  "repositoryEdits": false,
+  "files": [
+    {
+      "path": "C:/w/admin635-overview-proof-canonical-v2/admin635-overview-proof-executor.mjs",
+      "sha256": "b9badcd144dc1569c91831c579c825ce671a1f2192152a0464371fa02a4bd673",
+      "bytes": 23921
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-canonical-v2/admin635-overview-proof-offline.test.mjs",
+      "sha256": "f8c21c1fdf0151ad759c7d3f5ae237a8cb45cbdebea0b8bfe58d9f506792d6c9",
+      "bytes": 11374
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-canonical-v2/admin635-overview-proof-README.md",
+      "sha256": "715039406b30da6d4e04efeaf5c0ef314de8202771f78a658782f81be1bd33fa",
+      "bytes": 4995
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-canonical-v2/preserved-v1-inputs.json",
+      "sha256": "50004bf52945f68bf82ff9b413431b36f8d18980dcbc156af82bf280152440e8",
+      "bytes": 881
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-header-retention.test.mjs",
+      "sha256": "44d23747b09943b6401c8bfe741393c549a21e342f47128a116e09401e129d76",
+      "bytes": 2629
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-header-red-v1.json",
+      "sha256": "e837fe1fae8fbf9967ebbd696793d306c1b3e92414f3d9a235f5f1639c23dd57",
+      "bytes": 1571
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-header-red-v1.log",
+      "sha256": "1399af520b386b6a3ba21b156533cf78570a2b39832999db3d960a13f3243740",
+      "bytes": 3816
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-header-green-v1.json",
+      "sha256": "c89eb8fc01b611deaee3637966a22589be60ee7a6629b67143cb963539550468",
+      "bytes": 1723
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-header-green-v1.log",
+      "sha256": "5d1ca3871eec35a7664a1b9373dec98a14547cce89902c6f0240f2105ebd363a",
+      "bytes": 3234
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "ticket": "SCRUM-640",
+  "originalAttemptPreserved": true,
+  "files": [
+    {
+      "path": "run.json",
+      "sha256": "07e551308b3b235c6e3b51824de9f2e829deeb27552b81e9c020fb028a4763bb",
+      "bytes": 13910
+    },
+    {
+      "path": "jobs.json",
+      "sha256": "046ab8043603846eb7afc61486015a5edde51c7158b49533937d8673f3a750d7",
+      "bytes": 44197
+    },
+    {
+      "path": "receipt.json",
+      "sha256": "27ef526a720053681dbdaec7578a372cf596fcd73b14878668f1c469f0b8637e",
+      "bytes": 1026
+    },
+    {
+      "path": "setup.log.txt",
+      "sha256": "dc6ad66b7c10cbc9145ace59fafa6d9319a48f8cbccaaa93f05b1ab39a5e0cb3",
+      "bytes": 24156
+    }
+  ]
+}

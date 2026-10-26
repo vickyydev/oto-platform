@@ -1,0 +1,23 @@
+{
+  "at": "2026-10-26T15:48:31.368Z",
+  "passed": true,
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "helperSha256": "67ec2fffbc1887bbe4d03a4f572283a44ce5fc0da25aa8ee1668ab62c6f3dedd",
+  "result": {
+    "files": 3809,
+    "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+    "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+    "auxiliaryInputs": [
+      {
+        "path": ".env.example",
+        "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+      },
+      {
+        "path": ".gitignore",
+        "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+      }
+    ]
+  },
+  "network": false,
+  "auth": false
+}

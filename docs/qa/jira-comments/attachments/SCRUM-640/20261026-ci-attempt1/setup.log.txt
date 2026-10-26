@@ -1,0 +1,151 @@
+oto-app	Install PostgreSQL 16 and video evidence tools	﻿2026-10-26T15:42:38.4638883Z ##[group]Run sudo apt-get update
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.4639258Z [36;1msudo apt-get update[0m
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.4639607Z [36;1msudo apt-get install --yes postgresql-client-16 ffmpeg[0m
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.4701835Z shell: /usr/bin/bash -e {0}
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.4702114Z env:
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.4702534Z   DATABASE_URL: ***localhost:5433/otoapp_ci
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.4702863Z   QA_FFMPEG_PATH: /usr/bin/ffmpeg
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.4703134Z ##[endgroup]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.5553196Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.5893030Z Hit:2 [public-package-url] noble InRelease
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.5894497Z Get:6 [public-package-url] noble InRelease [3600 B]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.5899134Z Get:3 [public-package-url] noble-updates InRelease [126 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.5959751Z Get:4 [public-package-url] noble-backports InRelease [126 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.5986387Z Get:5 [public-package-url] noble-security InRelease [126 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.7123682Z Get:7 [public-package-url] noble/main armhf Packages [12.4 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.7217230Z Get:8 [public-package-url] noble/main amd64 Packages [661 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.7307199Z Get:9 [public-package-url] noble/main arm64 Packages [598 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.7636843Z Get:10 [public-package-url] noble-updates/main amd64 Packages [1400 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.7699637Z Get:11 [public-package-url] noble-updates/main Translation-en [310 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.7719503Z Get:12 [public-package-url] noble-updates/universe amd64 Packages [1706 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.8096859Z Get:13 [public-package-url] noble-updates/universe Translation-en [342 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.8119207Z Get:14 [public-package-url] noble-updates/restricted amd64 Packages [1805 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.8238597Z Get:15 [public-package-url] noble-updates/restricted Translation-en [411 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.8736703Z Get:16 [public-package-url] noble-security/main amd64 Packages [1146 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.8806555Z Get:17 [public-package-url] noble-security/main Translation-en [231 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.8815051Z Get:18 [public-package-url] noble-security/universe amd64 Packages [1222 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.8963136Z Get:19 [public-package-url] noble-security/universe Translation-en [246 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.9420918Z Get:20 [public-package-url] noble-security/restricted amd64 Packages [1713 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:38.9692888Z Get:21 [public-package-url] noble-security/restricted Translation-en [392 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:44.7289220Z Fetched 12.6 MB in 1s (9925 kB/s)
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:45.7304194Z Reading package lists...
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:45.7629961Z Reading package lists...
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:45.9896524Z Building dependency tree...
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:45.9903341Z Reading state information...
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1431019Z postgresql-client-16 is already the newest version (16.15-1.pgdg24.04+2).
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1436734Z postgresql-client-16 set to manually installed.
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1437689Z The following additional packages will be installed:
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1438631Z   i965-va-driver intel-media-va-driver libaacs0 libass9 libasyncns0
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1439928Z   libavc1394-0 libavcodec60 libavdevice60 libavfilter9 libavformat60
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1440844Z   libavutil58 libbdplus0 libblas3 libbluray2 libbs2b0 libcaca0
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1441654Z   libcdio-cdda2t64 libcdio-paranoia2t64 libcdio19t64 libchromaprint1 libcjson1
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1442540Z   libcodec2-1.2 libdav1d7 libdc1394-25 libdecor-0-0 libdecor-0-plugin-1-gtk
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1443425Z   libflac12t64 libflite1 libgme0 libgsm1 libhwy1t64 libiec61883-0 libigdgmm12
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1444318Z   libjack-jackd2-0 libjxl0.7 liblapack3 liblilv-0-0 libmbedcrypto7t64
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1446111Z   libmp3lame0 libmpg123-0t64 libmysofa1 libopenal-data libopenal1
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1446891Z   libopenmpt0t64 libopus0 libplacebo338 libpocketsphinx3 libpostproc57
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1447793Z   libpulse0 librav1e0 libraw1394-11 librist4 librsvg2-2 librsvg2-common
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1448558Z   librubberband2 libsamplerate0 libsdl2-2.0-0 libserd-0-0 libshine3
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1449349Z   libsndfile1 libsndio7.0 libsord-0-0 libsoxr0 libspeex1 libsphinxbase3t64
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1449942Z   libsratom-0-0 libsrt1.5-gnutls libssh-gcrypt-4 libsvtav1enc1d1
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1450620Z   libswresample4 libswscale7 libtheora0 libtwolame0 libudfread0 libunibreak5
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1451235Z   libva-drm2 libva-x11-2 libva2 libvdpau1 libvidstab1.1 libvorbisenc2 libvpl2
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1451842Z   libvpx9 libx264-164 libx265-199 libxcb-shape0 libxv1 libxvidcore4 libzimg2
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1452528Z   libzix-0-0 libzvbi-common libzvbi0t64 mesa-va-drivers mesa-vdpau-drivers
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1453132Z   ocl-icd-libopencl1 pocketsphinx-en-us va-driver-all vdpau-driver-all
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1453575Z Suggested packages:
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1453977Z   ffmpeg-doc i965-va-driver-shaders libcuda1 libnvcuvid1 libnvidia-encode1
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1454571Z   libbluray-bdj jackd2 libportaudio2 opus-tools pulseaudio libraw1394-doc
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.1455148Z   librsvg2-bin serdi sndiod sordi speex opencl-icd libvdpau-va-gl1
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2012861Z The following NEW packages will be installed:
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2014021Z   ffmpeg i965-va-driver intel-media-va-driver libaacs0 libass9 libasyncns0
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2015417Z   libavc1394-0 libavcodec60 libavdevice60 libavfilter9 libavformat60
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2016429Z   libavutil58 libbdplus0 libblas3 libbluray2 libbs2b0 libcaca0
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2017683Z   libcdio-cdda2t64 libcdio-paranoia2t64 libcdio19t64 libchromaprint1 libcjson1
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2018989Z   libcodec2-1.2 libdav1d7 libdc1394-25 libdecor-0-0 libdecor-0-plugin-1-gtk
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2020056Z   libflac12t64 libflite1 libgme0 libgsm1 libhwy1t64 libiec61883-0 libigdgmm12
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2021023Z   libjack-jackd2-0 libjxl0.7 liblapack3 liblilv-0-0 libmbedcrypto7t64
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2021779Z   libmp3lame0 libmpg123-0t64 libmysofa1 libopenal-data libopenal1
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2022530Z   libopenmpt0t64 libopus0 libplacebo338 libpocketsphinx3 libpostproc57
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2023476Z   libpulse0 librav1e0 libraw1394-11 librist4 librsvg2-2 librsvg2-common
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2024256Z   librubberband2 libsamplerate0 libsdl2-2.0-0 libserd-0-0 libshine3
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2025046Z   libsndfile1 libsndio7.0 libsord-0-0 libsoxr0 libspeex1 libsphinxbase3t64
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2026240Z   libsratom-0-0 libsrt1.5-gnutls libssh-gcrypt-4 libsvtav1enc1d1
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2027050Z   libswresample4 libswscale7 libtheora0 libtwolame0 libudfread0 libunibreak5
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2027900Z   libva-drm2 libva-x11-2 libva2 libvdpau1 libvidstab1.1 libvorbisenc2 libvpl2
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2028746Z   libvpx9 libx264-164 libx265-199 libxcb-shape0 libxv1 libxvidcore4 libzimg2
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2029557Z   libzix-0-0 libzvbi-common libzvbi0t64 mesa-va-drivers mesa-vdpau-drivers
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2030369Z   ocl-icd-libopencl1 pocketsphinx-en-us va-driver-all vdpau-driver-all
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2231132Z 0 upgraded, 99 newly installed, 0 to remove and 100 not upgraded.
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2231980Z Need to get 94.1 MB of archives.
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2232788Z After this operation, 227 MB of additional disk space will be used.
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.2233726Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:46.8381969Z Get:2 [public-package-url] noble-updates/universe amd64 libva2 amd64 2.20.0-2ubuntu0.2 [66.4 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:48.8429197Z Get:3 [public-package-url] noble-updates/universe amd64 libva-drm2 amd64 2.20.0-2ubuntu0.2 [7124 B]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:49.6198204Z Get:4 [public-package-url] noble-updates/universe amd64 libva-x11-2 amd64 2.20.0-2ubuntu0.2 [12.0 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:50.3123700Z Get:5 [public-package-url] noble/main amd64 libvdpau1 amd64 1.5-2build1 [27.8 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:51.3269385Z Get:6 [public-package-url] noble/universe amd64 libvpl2 amd64 2023.3.0-1build1 [99.8 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:53.7062210Z Get:7 [public-package-url] noble/universe amd64 ocl-icd-libopencl1 amd64 2.3.2-1build1 [38.5 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:42:54.9016903Z Get:8 [public-package-url] noble/universe amd64 libavutil58 amd64 7:6.1.1-3ubuntu5 [401 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:43:03.5099463Z Get:9 [public-package-url] noble/universe amd64 libcodec2-1.2 amd64 1.2.0-2build1 [8998 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:46:00.5773973Z Get:10 [public-package-url] noble/universe amd64 libdav1d7 amd64 1.4.1-1build1 [604 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:46:13.2563348Z Get:11 [public-package-url] noble/universe amd64 libgsm1 amd64 1.0.22-1build1 [27.8 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:46:14.2108593Z Get:12 [public-package-url] noble/universe amd64 libhwy1t64 amd64 1.0.7-8.1build1 [584 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:46:26.4681813Z Get:13 [public-package-url] noble-updates/universe amd64 libjxl0.7 amd64 0.7.0-10.2ubuntu6.1 [1001 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:46:46.8207040Z Get:14 [public-package-url] noble/main amd64 libmp3lame0 amd64 3.100-6build1 [142 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:46:50.2710142Z Get:15 [public-package-url] noble/main amd64 libopus0 amd64 1.4-1build1 [208 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:46:54.7757833Z Get:16 [public-package-url] noble/universe amd64 librav1e0 amd64 0.7.1-2 [1022 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:47:14.8727875Z Get:17 [public-package-url] noble-updates/main amd64 librsvg2-2 amd64 2.58.0+dfsg-1ubuntu0.1 [2141 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:47:55.9824414Z Get:18 [public-package-url] noble/universe amd64 libshine3 amd64 3.1.1-2build1 [23.2 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:47:57.0792173Z Get:19 [public-package-url] noble-updates/main amd64 libspeex1 amd64 1.2.1-2ubuntu2.24.04.1 [59.6 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:47:58.8527366Z Get:20 [public-package-url] noble/universe amd64 libsvtav1enc1d1 amd64 1.7.0+dfsg-2build1 [2425 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:48:44.5456640Z Get:21 [public-package-url] noble/universe amd64 libsoxr0 amd64 0.1.3-4build3 [80.0 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:48:46.4873363Z Get:22 [public-package-url] noble/universe amd64 libswresample4 amd64 7:6.1.1-3ubuntu5 [63.8 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:48:48.2494921Z Get:23 [public-package-url] noble/main amd64 libtheora0 amd64 1.1.1+dfsg.1-16.1build3 [211 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:48:52.6158683Z Get:24 [public-package-url] noble/main amd64 libtwolame0 amd64 0.4.0-2build3 [52.3 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:48:54.1271173Z Get:25 [public-package-url] noble/main amd64 libvorbisenc2 amd64 1.3.7-1build3 [80.8 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:48:55.8637016Z Get:26 [public-package-url] noble-updates/main amd64 libvpx9 amd64 1.14.0-1ubuntu2.3 [1143 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:49:16.5810701Z Get:27 [public-package-url] noble/universe amd64 libx264-164 amd64 2:0.164.3108+git31e19f9-1 [604 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:49:27.6309300Z Get:28 [public-package-url] noble/universe amd64 libx265-199 amd64 3.5-2build1 [1226 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:49:50.1057324Z Get:29 [public-package-url] noble/universe amd64 libxvidcore4 amd64 2:1.3.7-1build1 [219 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:49:54.7421343Z Get:30 [public-package-url] noble/universe amd64 libzvbi-common all 0.2.42-2 [42.4 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:49:56.1878162Z Get:31 [public-package-url] noble/universe amd64 libzvbi0t64 amd64 0.2.42-2 [261 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:50:01.4594562Z Get:32 [public-package-url] noble/universe amd64 libavcodec60 amd64 7:6.1.1-3ubuntu5 [5851 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:51:47.4307618Z Get:33 [public-package-url] noble/main amd64 libraw1394-11 amd64 2.1.2-2build3 [26.2 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:51:48.3160305Z Get:34 [public-package-url] noble/main amd64 libavc1394-0 amd64 0.5.4-5build3 [15.4 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:51:48.9790887Z Get:35 [public-package-url] noble/universe amd64 libunibreak5 amd64 5.1-2build1 [25.0 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:51:49.9684930Z Get:36 [public-package-url] noble/universe amd64 libass9 amd64 1:0.17.1-2build1 [104 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:51:52.4786909Z Get:37 [public-package-url] noble/universe amd64 libudfread0 amd64 1.1.2-1build1 [19.0 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:51:53.1897047Z Get:38 [public-package-url] noble/universe amd64 libbluray2 amd64 1:1.3.4-1build1 [159 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:51:56.4232605Z Get:39 [public-package-url] noble/universe amd64 libchromaprint1 amd64 1.5.1-5 [30.5 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:51:57.4531059Z Get:40 [public-package-url] noble/universe amd64 libgme0 amd64 0.6.3-7build1 [134 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:00.1393595Z Get:41 [public-package-url] noble-updates/main amd64 libmpg123-0t64 amd64 1.32.5-1ubuntu1.1 [169 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:03.5167467Z Get:42 [public-package-url] noble/universe amd64 libopenmpt0t64 amd64 0.7.3-1.1build3 [647 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:15.5081812Z Get:43 [public-package-url] noble/universe amd64 libcjson1 amd64 1.7.17-1 [24.8 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:16.4077285Z Get:44 [public-package-url] noble/universe amd64 libmbedcrypto7t64 amd64 2.28.8-1 [209 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:20.7951323Z Get:45 [public-package-url] noble/universe amd64 librist4 amd64 0.2.10+dfsg-2 [74.9 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:22.5203466Z Get:46 [public-package-url] noble/universe amd64 libsrt1.5-gnutls amd64 1.5.3-1build2 [316 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:28.8538240Z Get:47 [public-package-url] noble-updates/main amd64 libssh-gcrypt-4 amd64 0.10.6-2ubuntu0.5 [226 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:33.8441490Z Get:48 [public-package-url] noble/universe amd64 libavformat60 amd64 7:6.1.1-3ubuntu5 [1153 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:55.7832193Z Get:49 [public-package-url] noble/universe amd64 libbs2b0 amd64 3.1.0+dfsg-7build1 [10.6 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:52:56.6561575Z Get:50 [public-package-url] noble/universe amd64 libflite1 amd64 2.2-6build3 [13.6 MB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:57:33.1000679Z Get:51 [public-package-url] noble/universe amd64 libserd-0-0 amd64 0.32.2-1 [43.6 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:57:34.4067559Z Get:52 [public-package-url] noble/universe amd64 libzix-0-0 amd64 0.4.2-2build1 [23.6 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:57:35.3403088Z Get:53 [public-package-url] noble/universe amd64 libsord-0-0 amd64 0.16.16-2build1 [15.8 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:57:36.3984841Z Get:54 [public-package-url] noble/universe amd64 libsratom-0-0 amd64 0.6.16-1build1 [17.3 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:57:37.7266319Z Get:55 [public-package-url] noble/universe amd64 liblilv-0-0 amd64 0.24.22-1build1 [41.0 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:57:39.2556328Z Get:56 [public-package-url] noble/universe amd64 libmysofa1 amd64 1.3.2+dfsg-2ubuntu2 [1158 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:58:03.0868845Z Get:57 [public-package-url] noble/universe amd64 libplacebo338 amd64 6.338.2-2build1 [2654 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:58:56.3231698Z Get:58 [public-package-url] noble-updates/main amd64 libblas3 amd64 3.12.0-3build1.1 [238 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:59:02.1862962Z Get:59 [public-package-url] noble-updates/main amd64 liblapack3 amd64 3.12.0-3build1.1 [2646 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:59:55.7310470Z Get:60 [public-package-url] noble/main amd64 libasyncns0 amd64 0.8-6build4 [11.3 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T15:59:56.6347650Z Get:61 [public-package-url] noble/main amd64 libflac12t64 amd64 1.4.3+ds-2.1ubuntu2 [197 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:01.0119989Z Get:62 [public-package-url] noble-updates/main amd64 libsndfile1 amd64 1.2.2-1ubuntu5.24.04.1 [209 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:05.8897411Z Get:63 [public-package-url] noble-updates/main amd64 libpulse0 amd64 1:16.1+dfsg1-2ubuntu10.1 [292 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:12.1871729Z Get:64 [public-package-url] noble/universe amd64 libsphinxbase3t64 amd64 0.8+5prealpha+1-17build2 [126 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:15.3565518Z Get:65 [public-package-url] noble/universe amd64 libpocketsphinx3 amd64 0.8.0+real5prealpha+1-15ubuntu5 [133 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:18.5668314Z Get:66 [public-package-url] noble/universe amd64 libpostproc57 amd64 7:6.1.1-3ubuntu5 [49.9 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:20.2621163Z Get:67 [public-package-url] noble/main amd64 libsamplerate0 amd64 0.2.2-4build1 [1344 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:48.7172237Z Get:68 [public-package-url] noble/universe amd64 librubberband2 amd64 3.3.0+dfsg-2build1 [130 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:51.9294452Z Get:69 [public-package-url] noble/universe amd64 libswscale7 amd64 7:6.1.1-3ubuntu5 [193 kB]
+oto-app	Install PostgreSQL 16 and video evidence tools	2026-10-26T16:00:53.8394480Z ##[error]The operation was canceled.

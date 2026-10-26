@@ -1,0 +1,48 @@
+{
+  "ticket": "SCRUM-635",
+  "kind": "import-only-picker-v3-offline",
+  "startedAt": "2026-10-26T16:30:49.799Z",
+  "completedAt": "2026-10-26T16:30:52.902Z",
+  "exitCode": 0,
+  "signal": null,
+  "before": {
+    "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-executor.mjs": "47a077d4df058d0fe98cd3935b1ff4068c7599f2b04bd4dcd1d4568ef287cfa4",
+    "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-offline.test.mjs": "8d531a02a12e804e0c72c7c33d4be12c160453d719063ccd38a14d9c4077e0a0",
+    "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-header-retention.test.mjs": "ad122aabc37367375bd8e09b197f2aa921eed5388e09ab5c21b7cad4144cb160",
+    "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-executor.mjs": "c085a22f2f36acd35b90a7fd5a3c71eec40f91cc0d4f3a8ebff8ee4ddda38865",
+    "C:/w/admin640-staging-proof-picker-v4/admin640-staging-contract-draft.mjs": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+    "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-release-collector.mjs": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e"
+  },
+  "after": {
+    "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-executor.mjs": "47a077d4df058d0fe98cd3935b1ff4068c7599f2b04bd4dcd1d4568ef287cfa4",
+    "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-offline.test.mjs": "8d531a02a12e804e0c72c7c33d4be12c160453d719063ccd38a14d9c4077e0a0",
+    "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-header-retention.test.mjs": "ad122aabc37367375bd8e09b197f2aa921eed5388e09ab5c21b7cad4144cb160",
+    "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-executor.mjs": "c085a22f2f36acd35b90a7fd5a3c71eec40f91cc0d4f3a8ebff8ee4ddda38865",
+    "C:/w/admin640-staging-proof-picker-v4/admin640-staging-contract-draft.mjs": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+    "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-release-collector.mjs": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e"
+  },
+  "inputsUnchanged": true,
+  "counts": {
+    "tests": 11,
+    "pass": 11,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "logPath": "C:/w/admin635-overview-proof-picker-green-v1.log",
+  "logSha256": "73396e1418a68bd12abf84ffa09cc5ecc57d7d5e15ddaac512010142496a00c5",
+  "compatibility": {
+    "actualReleaseToolsPreludeExtracted": true,
+    "correctV4ExecutorPassedSiblingHashGuard": true,
+    "oldV3ExecutorHashRefused": true,
+    "localBoundaryReached": 1,
+    "privateImportOrCommandReached": false
+  },
+  "realNetwork": false,
+  "auth": false,
+  "browser": false,
+  "jobs": false,
+  "SQL": false,
+  "repositoryEdits": false
+}

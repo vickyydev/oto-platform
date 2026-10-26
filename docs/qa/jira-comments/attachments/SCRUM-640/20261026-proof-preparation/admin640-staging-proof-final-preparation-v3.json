@@ -1,0 +1,54 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "canonical-intake-and-parent-header-final-preparation",
+  "at": "2026-10-26T15:50:51.138Z",
+  "approvedForLiveExecution": false,
+  "canonicalV3": {
+    "index": "C:/w/admin640-staging-proof-canonical-v3/version-index.json",
+    "indexSha256": "6bf249cea778868f036e5acec235e7634041f0ae88800d10c95516d677f7e5a4",
+    "helperSha256": "67ec2fffbc1887bbe4d03a4f572283a44ce5fc0da25aa8ee1668ab62c6f3dedd",
+    "offlinePass": 47,
+    "offlineFail": 0,
+    "actualLocalSourceCalibration": {
+      "path": "C:/w/admin640-staging-proof-canonical-local-v1.json",
+      "sha256": "63841090a286cfe8f0dfce1b65ce44a121f782cc886d84e7dd7f87489cba075c",
+      "passed": true
+    },
+    "independentReview": {
+      "path": "C:/w/admin640-staging-proof-canonical-v3-independent-review.json",
+      "sha256": "c4638b92f5f01729b090a45e11cc60f04228e82e0c91db620ded2cacfe1575d7",
+      "passed": true
+    }
+  },
+  "parent635": {
+    "index": "C:/w/admin635-overview-proof-canonical-v2/version-index.json",
+    "indexSha256": "4c69084a7e479985eca1624986dcf8818955362f75899b10827c098f6d62f68d",
+    "helper": {
+      "path": "C:/w/admin635-overview-proof-canonical-v2/admin635-overview-proof-executor.mjs",
+      "sha256": "b9badcd144dc1569c91831c579c825ce671a1f2192152a0464371fa02a4bd673",
+      "bytes": 23921
+    },
+    "tests": {
+      "path": "C:/w/admin635-overview-proof-canonical-v2/admin635-overview-proof-offline.test.mjs",
+      "sha256": "f8c21c1fdf0151ad759c7d3f5ae237a8cb45cbdebea0b8bfe58d9f506792d6c9",
+      "bytes": 11374
+    },
+    "readme": {
+      "path": "C:/w/admin635-overview-proof-canonical-v2/admin635-overview-proof-README.md",
+      "sha256": "715039406b30da6d4e04efeaf5c0ef314de8202771f78a658782f81be1bd33fa",
+      "bytes": 4995
+    },
+    "offlinePass": 11,
+    "offlineFail": 0,
+    "independentFinalDeltaReviewPending": true
+  },
+  "orchestrationHistory": [
+    {
+      "step": "Initial canonical runner construction",
+      "result": "Tool parser refused before shell/files/test execution; then an explicit static runner was written. No check result is claimed for the refused invocation."
+    }
+  ],
+  "allPriorFrozenVersionsUnchanged": true,
+  "noStagingAuthNetworkBrowserJobsSQL": true,
+  "repositoryEdits": false
+}

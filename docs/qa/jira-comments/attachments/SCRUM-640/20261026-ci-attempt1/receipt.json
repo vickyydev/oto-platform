@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T16:01:37.903Z",
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "run": "40351447109",
+  "attempt": 1,
+  "conclusion": "cancelled",
+  "jobId": 121672283471,
+  "fiveOtherJobsGreen": true,
+  "setupStep": {
+    "name": "Install PostgreSQL 16 and video evidence tools",
+    "status": "completed",
+    "conclusion": "cancelled",
+    "number": 12,
+    "started_at": "2026-10-26T15:42:38Z",
+    "completed_at": "2026-10-26T16:00:53Z"
+  },
+  "rawLogSha256": "609c5609dc95794889156ce85629a1592f203fad7181bfdaa743c92f005619ee",
+  "selectedSetupSha256": "53720a63ff941538b1e7e9b2fc45c9a918d549d4e32788e7ece2b707955ed2ca",
+  "safeSetupSha256": "dc6ad66b7c10cbc9145ace59fafa6d9319a48f8cbccaaa93f05b1ab39a5e0cb3",
+  "displayRedaction": "Package URLs replaced; only original setup-step lines archived",
+  "reason": "Prolonged system-package installation; previous successful same step23seconds. Single unchanged-source setup retry.",
+  "applicationFailureInferred": false
+}

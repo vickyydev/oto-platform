@@ -1,0 +1,61 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T15:49:54.224Z",
+  "passed": true,
+  "scope": "Bounded canonical source-intake repair on preserved timestamp-v2",
+  "versionIndexPath": "C:/w/admin640-staging-proof-canonical-v3/version-index.json",
+  "versionIndexSha256": "6bf249cea778868f036e5acec235e7634041f0ae88800d10c95516d677f7e5a4",
+  "helperSha256": "67ec2fffbc1887bbe4d03a4f572283a44ce5fc0da25aa8ee1668ab62c6f3dedd",
+  "all20VersionInputsVerified": true,
+  "previousV2IndexUnchanged": true,
+  "onlyChangedModule": [
+    "admin640-staging-proof-executor.mjs"
+  ],
+  "originalFlatHelpersAndTestsUnchanged": true,
+  "sourceDelta": "Canonical source hash excludes only two separately checked root auxiliaries. Both must exist as regular committed blobs in the exact feature tree and their working bytes must match the native Git blob hash. Their SHA256 values are returned separately; no path coverage or private-env exclusion was weakened.",
+  "timestampAndAllOtherGuardsUnchanged": true,
+  "offline": {
+    "red": {
+      "receiptSha256": "cf06d3fe20198189460e8e1296e9ddbbc8d2b4ef03116ffca93d8c8c77c47339",
+      "logSha256": "cbd8424d27abf5f092e88e6030db97c166ca86cb5602ba8bd33073ae72dd07fc",
+      "tests": 47,
+      "pass": 46,
+      "fail": 1
+    },
+    "green": {
+      "receiptSha256": "4498ae7486bbeaa3a87902bc1be05052746c71ae88fa049c8a22091e3907b3f1",
+      "logSha256": "38ab6025be886e52116f10c7eb79ef3580a72bc829539a811f92ce6f6b639fd7",
+      "tests": 47,
+      "pass": 47,
+      "fail": 0
+    },
+    "all44PriorCasesRetained": true,
+    "actualFullVerifierExtractedForNewThreePins": true
+  },
+  "actualLocalSourcePreflight": {
+    "path": "C:/w/admin640-proof-source-preflight-20261026.json",
+    "sha256": "ad605f8f8c141f09c5cbcd287a490b97401621c40cd83d1cbefa61d5a4011d61",
+    "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+    "helperSha256": "67ec2fffbc1887bbe4d03a4f572283a44ce5fc0da25aa8ee1668ab62c6f3dedd",
+    "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+    "canonicalFiles": 3809,
+    "auxiliaryInputs": [
+      {
+        "path": ".env.example",
+        "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+      },
+      {
+        "path": ".gitignore",
+        "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+      }
+    ],
+    "passed": true
+  },
+  "findings": [],
+  "approvedForLiveExecution": false,
+  "limits": [
+    "No tests or live/auth/network/browser/jobs/SQL calls were executed by this reviewer.",
+    "The root observed actual Git/working-tree source preflight passed on f681; this receipt is verified, not relabelled as a live deployment or proof result.",
+    "A concrete final reviewed plan, exact all-six CI/latest deployment/asset bindings and coordinator execution remain necessary."
+  ]
+}

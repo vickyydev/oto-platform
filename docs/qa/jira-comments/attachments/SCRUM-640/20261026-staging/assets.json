@@ -1,0 +1,157 @@
+{
+  "ticket": "SCRUM-640",
+  "complete": true,
+  "publicOnly": true,
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "ciRunId": "40351447109",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbfnmhm417fc73dc999g",
+      "finishedAt": "2026-10-26T16:12:51.704436Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbfnmhu417fc73dc9abg",
+      "finishedAt": "2026-10-26T16:10:26.995117Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+    }
+  ],
+  "collectorSha256": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e",
+  "startedAt": "2026-10-26T16:42:16.581Z",
+  "completedAt": "2026-10-26T16:42:32.976Z",
+  "before": {
+    "at": "2026-10-26T16:42:16.574Z",
+    "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+    "ciRunId": "40351447109",
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "id": "dep-dbfnmhm417fc73dc999g",
+        "finishedAt": "2026-10-26T16:12:51.704436Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      },
+      {
+        "name": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "id": "dep-dbfnmhu417fc73dc9abg",
+        "finishedAt": "2026-10-26T16:10:26.995117Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      }
+    ],
+    "binding": {
+      "files": 3809,
+      "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+      "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+      "auxiliaryInputs": [
+        {
+          "path": ".env.example",
+          "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+        },
+        {
+          "path": ".gitignore",
+          "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+        }
+      ]
+    },
+    "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+  },
+  "after": {
+    "at": "2026-10-26T16:42:32.965Z",
+    "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+    "ciRunId": "40351447109",
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "id": "dep-dbfnmhm417fc73dc999g",
+        "finishedAt": "2026-10-26T16:12:51.704436Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      },
+      {
+        "name": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "id": "dep-dbfnmhu417fc73dc9abg",
+        "finishedAt": "2026-10-26T16:10:26.995117Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      }
+    ],
+    "binding": {
+      "files": 3809,
+      "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+      "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+      "auxiliaryInputs": [
+        {
+          "path": ".env.example",
+          "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+        },
+        {
+          "path": ".gitignore",
+          "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+        }
+      ]
+    },
+    "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+  },
+  "assets": [
+    {
+      "path": "/",
+      "sha256": "39415fb2c8f63ccf26efcc44ea6b95bdda04bb64e6ebb35c50ddf19080af764e",
+      "contentType": "text/html"
+    },
+    {
+      "path": "/assets/index-CaH3r7Z2.css",
+      "sha256": "a582bf11fce339cde03564290522f1fdfaddc50e2e64d8a38e0a4d756b9af77d",
+      "contentType": "text/css"
+    },
+    {
+      "path": "/assets/index-D776owFY.js",
+      "sha256": "745cdb11a708f16b06107a2fa73c0ae4954732009dbe569e5ec11921e08767cf",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/assets/logo-oto-nNYXf9Wy.png",
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "contentType": "image/webp"
+    },
+    {
+      "path": "/assets/react-C6LhzTnE.js",
+      "sha256": "3e1ae0f3568d5d60a7b94013f5a4e34a84a077d1989357802a1cb51fcdec575e",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor-CM9gH6LV.js",
+      "sha256": "d6add0f45dfa2823d62d6a58806f5781a4ecb036a9adffa2a79687f03f4fce0c",
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "/favicon.svg",
+      "sha256": "8ffbde9092b1fa4de97c9481b76f518b131268c82e7c555041925225b1dab6e0",
+      "contentType": "image/svg+xml"
+    }
+  ],
+  "assetManifestSha256": "78069f72dc66c4d8ad3f4b8dc9d61f62215f7d69cd067856bfe0e6a673d768e5",
+  "parser": {
+    "path": "C:/w/admin-operator-switch/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/typescript.js",
+    "version": "5.9.3",
+    "sha256": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675"
+  },
+  "publicBytesRead": 2058586,
+  "rasterReads": [
+    {
+      "path": "/assets/logo-oto-nNYXf9Wy.png",
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "contentType": "image/webp",
+      "bytes": 109836,
+      "acceptSha256": "54f235f31b3873cee918ef5abfe8cd3aa4ac55eb21d5bbd9fe8ef2e0a8cf0bc7",
+      "cookieSent": false,
+      "authorizationSent": false
+    }
+  ],
+  "representationPolicy": "Actual unauthenticated Chromium image request at1440x1000; exact returned body/MIME only. Other resources omit credentials; no alternative digest acceptance.",
+  "originalResponseBodiesSaved": false
+}

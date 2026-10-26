@@ -1,0 +1,84 @@
+{
+  "ticket": "SCRUM-635",
+  "version": "picker-v3-parent",
+  "frozenAt": "2026-10-26T16:31:24.030Z",
+  "approvedForLiveExecution": false,
+  "previousVersion": {
+    "path": "C:/w/admin635-overview-proof-canonical-v2/version-index.json",
+    "sha256": "4c69084a7e479985eca1624986dcf8818955362f75899b10827c098f6d62f68d",
+    "bytes": 2623
+  },
+  "onlyExecutableChanges": "Shared executor/contract/release-collector import paths now point to coherent640 picker-v4; parent native logic and all11 prior assertions unchanged.",
+  "sourceAndTestsIdenticalAfterImportNormalization": true,
+  "shared640Version": {
+    "path": "C:/w/admin640-staging-proof-picker-v4/version-index.json",
+    "sha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+    "bytes": 4841
+  },
+  "shared640IndependentReview": {
+    "path": "C:/w/admin640-staging-proof-picker-v4-independent-review.json",
+    "sha256": "0d03f9115eb6ea44f25dce7dadf2285f9ebbdcb144d0fe16b6557bb0d9d263c8",
+    "bytes": 2871
+  },
+  "green": {
+    "tests": 11,
+    "pass": 11,
+    "fail": 0
+  },
+  "compatibility": {
+    "actualReleaseToolsPreamble": true,
+    "correctV4SiblingHashPasses": true,
+    "oldV3HelperHashRefused": true,
+    "privateImportsNotReached": true
+  },
+  "fullGreenOutputRead": true,
+  "noStagingAuthNetworkBrowserJobsSQL": true,
+  "repositoryEdits": false,
+  "files": [
+    {
+      "path": "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-executor.mjs",
+      "sha256": "47a077d4df058d0fe98cd3935b1ff4068c7599f2b04bd4dcd1d4568ef287cfa4",
+      "bytes": 23912
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-offline.test.mjs",
+      "sha256": "8d531a02a12e804e0c72c7c33d4be12c160453d719063ccd38a14d9c4077e0a0",
+      "bytes": 11371
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-header-retention.test.mjs",
+      "sha256": "ad122aabc37367375bd8e09b197f2aa921eed5388e09ab5c21b7cad4144cb160",
+      "bytes": 2627
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-picker-v3/admin635-overview-proof-README.md",
+      "sha256": "ae7adc0642c85212ca65185ff29f64f1134265aa3c789c525c8bbda4368dc3d8",
+      "bytes": 5269
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-picker-v3/preserved-parent-v2-inputs.json",
+      "sha256": "4352511fe7f39b7f623436707f352cd6768786da3766e2285c07b15e93521661",
+      "bytes": 2449
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-picker-green-v1.json",
+      "sha256": "06b86c633cd5f711f0b1c4c694b6a043fe51a5351cf197d32245994a3aa9dc74",
+      "bytes": 2736
+    },
+    {
+      "path": "C:/w/admin635-overview-proof-picker-green-v1.log",
+      "sha256": "73396e1418a68bd12abf84ffa09cc5ecc57d7d5e15ddaac512010142496a00c5",
+      "bytes": 3232
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/version-index.json",
+      "sha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+      "bytes": 4841
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4-independent-review.json",
+      "sha256": "0d03f9115eb6ea44f25dce7dadf2285f9ebbdcb144d0fe16b6557bb0d9d263c8",
+      "bytes": 2871
+    }
+  ]
+}

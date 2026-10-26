@@ -1,0 +1,134 @@
+{
+  "ticket": "SCRUM-640",
+  "inputSha256": "cc1360c1eb0a318ca6fdafd0d37b0e7ba893c279c712df3a412c70faaa77f672",
+  "mode": "preflight",
+  "jobId": "job-dbfo62sipgvc73ami49g",
+  "serviceId": "srv-danh2ljtqb8s73bt9en0",
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "ciRunId": "40351447109",
+  "readOnly": true,
+  "terminal": true,
+  "status": "succeeded",
+  "passed": true,
+  "reviewed": false,
+  "programSha256": "e4fe465ede9df7e8d7f0bbc6a0f3bb118c0398a08191024da619ebc46d1415e5",
+  "startCommandSha256": "a8dc5821fdb27f57669827e461558c83dff7dfae3d3592c9cd5fcacdb2735e22",
+  "originalAuditProgramSha256": null,
+  "startedAt": "2026-10-26T16:42:50.627Z",
+  "completedAt": "2026-10-26T16:43:08.903Z",
+  "collectorSha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+  "logResponseSha256": "146f53eeebddd87895aa2ffb042a2f50456895a74b9013b9593bed3ba048b220",
+  "metadata": {
+    "ticket": "SCRUM-640",
+    "approved": false,
+    "complete": true,
+    "readOnly": true,
+    "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+    "ciRunId": "40351447109",
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "id": "dep-dbfnmhm417fc73dc999g",
+        "finishedAt": "2026-10-26T16:12:51.704436Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      },
+      {
+        "name": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "id": "dep-dbfnmhu417fc73dc9abg",
+        "finishedAt": "2026-10-26T16:10:26.995117Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      }
+    ],
+    "checkedAt": "2026-10-26T16:42:58.993Z",
+    "subjects": {
+      "ADMIN": {
+        "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "homeOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "active": true,
+        "accountEligible": true,
+        "mustChangePassword": false,
+        "switchGrant": true,
+        "platform": true,
+        "identitySha256": "b472731aaa8792a62dd90146e48a5ee9bcae323bcc7b4716d59794bdb7317599",
+        "employeeSha256": "65af978e06c87210bb4041c9e44e55c9217ff5f315c7404a22bbc0514219b3ce",
+        "grantsSha256": "05648b9f3e9e808a4707cee62aec1bd5619dee3adc14a95e573810146f821ade",
+        "appIdentitySha256": "020c955ed8a09951f05775b3d06f8b3f3d10410f7ac00c52af40212abe3c979c",
+        "otherSessionsCount": 2357,
+        "otherSessionsSha256": "19ecbee66c1617dc30a9475c645eb6779eb7f834eaf1c00e27c9b1377817ad03"
+      },
+      "RECEPTION": {
+        "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "homeOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "active": true,
+        "accountEligible": true,
+        "mustChangePassword": false,
+        "switchGrant": false,
+        "platform": false,
+        "identitySha256": "3b2a0db32b70e20f4415158d4f1fb19ba1123e03c3f55a19eae513d13f271e88",
+        "employeeSha256": "5eb6fb6ab4e0f2f280d14a72a876414d948816ca2129b5dcd9e7d7ca01397185",
+        "grantsSha256": "cc10d48405e35f834420de4b327c7141d59ba7a0e8105732d25470ea02b113cc",
+        "appIdentitySha256": "11e8949ca9d29ccd5f9d6f3b8cb3d989d169967f85e5bf30fb245633bafe7ea1",
+        "otherSessionsCount": 763,
+        "otherSessionsSha256": "59b28bfe563492e8522608ab6ff2b304a001aab271c092d617bac715bfa861b6"
+      }
+    },
+    "targets": [
+      {
+        "operatorId": "01a0ca2b-9c52-7671-9951-8b93da805b6a",
+        "active": true,
+        "branchIds": [
+          "01a0ca2b-9c54-7217-bf1a-8065091e832c"
+        ],
+        "appBranchIds": []
+      }
+    ],
+    "homeBranchIds": [
+      "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "01a0c9ae-52cf-7aa1-baca-fc55e449148e",
+      "01a113f2-e706-728a-a547-2e1a5d467035"
+    ],
+    "privatePhotoPaths": [
+      "/api/files/01a0c2d5-7115-7098-9157-d780a60531d6",
+      "/api/files/01a0f6e5-7c28-7545-ae69-d72f81c551e6"
+    ]
+  },
+  "after": {
+    "at": "2026-10-26T16:43:19.820Z",
+    "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+    "ciRunId": "40351447109",
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "id": "dep-dbfnmhm417fc73dc999g",
+        "finishedAt": "2026-10-26T16:12:51.704436Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      },
+      {
+        "name": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "id": "dep-dbfnmhu417fc73dc9abg",
+        "finishedAt": "2026-10-26T16:10:26.995117Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      }
+    ],
+    "binding": {
+      "files": 3809,
+      "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+      "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+      "auxiliaryInputs": [
+        {
+          "path": ".env.example",
+          "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+        },
+        {
+          "path": ".gitignore",
+          "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+        }
+      ]
+    },
+    "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": 40351447109,
+  "name": "CI",
+  "head_sha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "head_branch": "main",
+  "event": "push",
+  "status": "completed",
+  "conclusion": "success",
+  "run_attempt": 2,
+  "created_at": "2026-10-26T15:39:20Z",
+  "updated_at": "2026-10-26T16:09:39Z",
+  "run_started_at": "2026-10-26T16:01:47Z",
+  "html_url": "https://github.com/vickyydev/oto-platform/actions/runs/40351447109",
+  "originalSha256": "651832adc927ff52bdef241eeeca8b4bc68988a8e987039de51c6966a76a4853",
+  "projectionOnly": true
+}

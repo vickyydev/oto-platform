@@ -1,0 +1,146 @@
+{
+  "ticket": "SCRUM-640",
+  "inputSha256": "535b44b7fc581afd4f1c50e06b6d609a94fd5058473056549208d34068859c5c",
+  "mode": "audit",
+  "jobId": "job-dbfo7nff3r2c73a7tj50",
+  "serviceId": "srv-danh2ljtqb8s73bt9en0",
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "ciRunId": "40351447109",
+  "readOnly": true,
+  "terminal": true,
+  "status": "succeeded",
+  "passed": true,
+  "reviewed": false,
+  "programSha256": "78cc68d272b1f78b5ec7f45b0ae5d5de4e119cc175040bb964aed916f90867db",
+  "startCommandSha256": "8155ed1a47f8fec4ffbfc3da492caec57e7ad767457c4547f4dbf90ff787e50b",
+  "originalAuditProgramSha256": "91bb652b32cacb81457afbcba65ca5fe4e657cbeaa997c608d6c44d5a7a78bd1",
+  "startedAt": "2026-10-26T16:46:20.856Z",
+  "completedAt": "2026-10-26T16:47:28.710Z",
+  "collectorSha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+  "logResponseSha256": "0d5964e6c7a2963b721dd8a3a399f549c58d8701f42169e9a959c1500e11c0f8",
+  "metadata": {
+    "ticket": "SCRUM-640",
+    "readOnly": true,
+    "at": "2026-10-26T16:47:00.685Z",
+    "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+    "ciRunId": "40351447109",
+    "planSha256": "5de2614b996700bd75e39aed7c742fe70dfd5df9cee365b85435b843c5c56dce",
+    "nativeReceiptSha256": "586b9e2d80f14d681a69f86de963cb68287edcb72def19203c21b0f0da043719",
+    "window": {
+      "from": "2026-10-26T16:43:47.032Z",
+      "to": "2026-10-26T16:45:50.703Z",
+      "adminSid": "01a17919-0b68-7b1c-871e-210a45906196",
+      "receptionSid": "01a1791a-1cef-7008-8374-de8007b995d3",
+      "revision": 0,
+      "target": "01a0ca2b-9c52-7671-9951-8b93da805b6a"
+    },
+    "identities": [
+      {
+        "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "identitySha256": "b472731aaa8792a62dd90146e48a5ee9bcae323bcc7b4716d59794bdb7317599",
+        "employeeSha256": "65af978e06c87210bb4041c9e44e55c9217ff5f315c7404a22bbc0514219b3ce",
+        "grantsSha256": "05648b9f3e9e808a4707cee62aec1bd5619dee3adc14a95e573810146f821ade",
+        "appIdentitySha256": "020c955ed8a09951f05775b3d06f8b3f3d10410f7ac00c52af40212abe3c979c",
+        "otherSessionsCount": 2357,
+        "otherSessionsSha256": "19ecbee66c1617dc30a9475c645eb6779eb7f834eaf1c00e27c9b1377817ad03"
+      },
+      {
+        "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "identitySha256": "3b2a0db32b70e20f4415158d4f1fb19ba1123e03c3f55a19eae513d13f271e88",
+        "employeeSha256": "5eb6fb6ab4e0f2f280d14a72a876414d948816ca2129b5dcd9e7d7ca01397185",
+        "grantsSha256": "cc10d48405e35f834420de4b327c7141d59ba7a0e8105732d25470ea02b113cc",
+        "appIdentitySha256": "11e8949ca9d29ccd5f9d6f3b8cb3d989d169967f85e5bf30fb245633bafe7ea1",
+        "otherSessionsCount": 763,
+        "otherSessionsSha256": "59b28bfe563492e8522608ab6ff2b304a001aab271c092d617bac715bfa861b6"
+      }
+    ],
+    "sessions": [
+      {
+        "id": "01a17919-0b68-7b1c-871e-210a45906196",
+        "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "revoked": true,
+        "operatorOverride": null
+      },
+      {
+        "id": "01a1791a-1cef-7008-8374-de8007b995d3",
+        "accountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "revoked": true,
+        "operatorOverride": null
+      }
+    ],
+    "rows": [
+      {
+        "id": "01a17919-8769-7f51-9740-ff7f3383d747",
+        "action": "session.operator_switch",
+        "ownerOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "homeOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "effectiveOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "branchId": null,
+        "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "entityType": "session",
+        "sessionId": "01a17919-0b68-7b1c-871e-210a45906196",
+        "requestId": "bac17473-a7ba-41e6-b99e-e77975c7947a",
+        "createdAt": "2026-10-26T16:44:38.626Z",
+        "beforeEffective": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "afterEffective": "01a0ca2b-9c52-7671-9951-8b93da805b6a",
+        "beforeRevision": "0",
+        "afterRevision": "1"
+      },
+      {
+        "id": "01a17919-e3ac-775d-8b1b-d55cca1bef15",
+        "action": "session.operator_switch",
+        "ownerOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "homeOperatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "effectiveOperatorId": "01a0ca2b-9c52-7671-9951-8b93da805b6a",
+        "branchId": null,
+        "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "entityType": "session",
+        "sessionId": "01a17919-0b68-7b1c-871e-210a45906196",
+        "requestId": "3882d44d-5f8e-47e8-8ab8-e66dfc1780fb",
+        "createdAt": "2026-10-26T16:45:02.246Z",
+        "beforeEffective": "01a0ca2b-9c52-7671-9951-8b93da805b6a",
+        "afterEffective": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+        "beforeRevision": "1",
+        "afterRevision": "2"
+      }
+    ],
+    "receptionSwitchRows": 0
+  },
+  "after": {
+    "at": "2026-10-26T16:47:37.746Z",
+    "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+    "ciRunId": "40351447109",
+    "deployments": [
+      {
+        "name": "oto-api-staging",
+        "serviceId": "srv-danh2ljtqb8s73bt9en0",
+        "id": "dep-dbfnmhm417fc73dc999g",
+        "finishedAt": "2026-10-26T16:12:51.704436Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      },
+      {
+        "name": "oto-console-staging",
+        "serviceId": "srv-danng2p42hec73f38e3g",
+        "id": "dep-dbfnmhu417fc73dc9abg",
+        "finishedAt": "2026-10-26T16:10:26.995117Z",
+        "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+      }
+    ],
+    "binding": {
+      "files": 3809,
+      "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+      "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+      "auxiliaryInputs": [
+        {
+          "path": ".env.example",
+          "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+        },
+        {
+          "path": ".gitignore",
+          "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+        }
+      ]
+    },
+    "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+  }
+}

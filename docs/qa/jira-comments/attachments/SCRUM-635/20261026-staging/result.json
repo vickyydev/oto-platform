@@ -1,0 +1,281 @@
+{
+  "ticket": "SCRUM-635",
+  "actualStaging": true,
+  "complete": true,
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "ciRunId": "40351447109",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbfnmhm417fc73dc999g",
+      "finishedAt": "2026-10-26T16:12:51.704436Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbfnmhu417fc73dc9abg",
+      "finishedAt": "2026-10-26T16:10:26.995117Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+    }
+  ],
+  "helperSha256": "b8fea6ac4f4e1c9966a0c3d40d0e7225c29028687905d2cb7d8e13b36f52c29b",
+  "planSha256": "d0ac0a39acd386a2468433ab46b9447ac067790aee5b541fbd15db10350044ad",
+  "startedAt": "2026-10-26T16:48:55.483Z",
+  "completedAt": "2026-10-26T16:49:40.596Z",
+  "sourceChecks": [
+    {
+      "at": "2026-10-26T16:49:04.961Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+      "ciRunId": "40351447109",
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfnmhm417fc73dc999g",
+          "finishedAt": "2026-10-26T16:12:51.704436Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfnmhu417fc73dc9abg",
+          "finishedAt": "2026-10-26T16:10:26.995117Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        }
+      ],
+      "binding": {
+        "files": 3809,
+        "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+        "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+        "auxiliaryInputs": [
+          {
+            "path": ".env.example",
+            "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+          },
+          {
+            "path": ".gitignore",
+            "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+          }
+        ]
+      },
+      "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+    },
+    {
+      "at": "2026-10-26T16:49:17.039Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+      "ciRunId": "40351447109",
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfnmhm417fc73dc999g",
+          "finishedAt": "2026-10-26T16:12:51.704436Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfnmhu417fc73dc9abg",
+          "finishedAt": "2026-10-26T16:10:26.995117Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        }
+      ],
+      "binding": {
+        "files": 3809,
+        "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+        "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+        "auxiliaryInputs": [
+          {
+            "path": ".env.example",
+            "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+          },
+          {
+            "path": ".gitignore",
+            "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+          }
+        ]
+      },
+      "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+    },
+    {
+      "at": "2026-10-26T16:49:29.348Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+      "ciRunId": "40351447109",
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfnmhm417fc73dc999g",
+          "finishedAt": "2026-10-26T16:12:51.704436Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfnmhu417fc73dc9abg",
+          "finishedAt": "2026-10-26T16:10:26.995117Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        }
+      ],
+      "binding": {
+        "files": 3809,
+        "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+        "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+        "auxiliaryInputs": [
+          {
+            "path": ".env.example",
+            "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+          },
+          {
+            "path": ".gitignore",
+            "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+          }
+        ]
+      },
+      "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+    },
+    {
+      "at": "2026-10-26T16:49:40.593Z",
+      "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+      "ciRunId": "40351447109",
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfnmhm417fc73dc999g",
+          "finishedAt": "2026-10-26T16:12:51.704436Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfnmhu417fc73dc9abg",
+          "finishedAt": "2026-10-26T16:10:26.995117Z",
+          "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c"
+        }
+      ],
+      "binding": {
+        "files": 3809,
+        "sourceManifestSha256": "752537897dbf8c337f8150171574658d10ca8eadd762d0fb9a38ebbe68bf9a24",
+        "runtimeBindingsSha256": "07e25b9a218effe8fa9240a0b908ffe628650af76a3e22d9f376bf77c39b0e54",
+        "auxiliaryInputs": [
+          {
+            "path": ".env.example",
+            "sha256": "1d5751a89de768439085c3d70e1b0d1b6f8acfab04888b514db3b776d2cd14db"
+          },
+          {
+            "path": ".gitignore",
+            "sha256": "be5d38a83efc12b1a2bdba4c2c8f2a9cc6ed3aa1476afc821954c28996a4d7bf"
+          }
+        ]
+      },
+      "metadataSha256": "530928a2ca47a188d8844ba21fad9eaa052af26890af3cf646e1b36ad9ea4910"
+    }
+  ],
+  "reads": [
+    {
+      "kind": "canonical-authority",
+      "at": "2026-10-26T16:49:07.571Z",
+      "fingerprint": "77ae1d55d299ef9402a24ba69705d588b9505ace8dca940b235f6ab61ba5dcfc",
+      "sessionId": "01a1791d-9c6e-762e-8359-0da59d8814a5"
+    },
+    {
+      "kind": "native-overview",
+      "at": "2026-10-26T16:49:21.370Z",
+      "responseSha256": "f8de8bf0ca098ac9622125543c48f69271c3843e451b3ca2c8e30ce89d776dd1",
+      "generatedAt": "2026-10-26T16:49:21.775Z",
+      "parks": 3,
+      "selectedBranchIdsSha256": "486d5022a1e7a6089bd6e0efb440efbf2cce9b4b15940fcedfdbe8b987d064e8",
+      "totals": {
+        "revenueSatang": 0,
+        "guests": 0,
+        "inParkNow": 0,
+        "bookingsToday": 0,
+        "inboxUnanswered": 13,
+        "openAlerts": 8,
+        "boxesOffline": 6
+      },
+      "aggregatesSha256": "10c31f1798b5d283950e892260d001db5befff57d51acc1652b10e225457a2f8",
+      "decisionsSha256": "742dcb1cb19c7fe81f834c16ff2212b7a708509f193e493731ecfdcf095f319c",
+      "statusSummarySha256": "8af5b3a4d50c7286edac3808162c8e2da5b54930ca271624f032e83815179eb7"
+    },
+    {
+      "kind": "canonical-authority",
+      "at": "2026-10-26T16:49:31.204Z",
+      "fingerprint": "77ae1d55d299ef9402a24ba69705d588b9505ace8dca940b235f6ab61ba5dcfc",
+      "sessionId": "01a1791d-9c6e-762e-8359-0da59d8814a5"
+    }
+  ],
+  "screenshots": [
+    {
+      "filename": "SCRUM-635-01-overview.png",
+      "sha256": "06a2ec65e8911696d779a2fb483b99329f234546613ee80a4a6ab7ebf9e72b5e",
+      "capturedAt": "2026-10-26T16:49:29.370Z",
+      "native": true,
+      "responseSha256": "9429ccd10d037b57a0169a8b2c3f9681329606c6b304248d5bafd0abc519d6d0",
+      "privacyMasks": 1
+    }
+  ],
+  "authCleanup": [
+    {
+      "actor": "ADMIN",
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "confirmed": true,
+      "logoutOk": true
+    }
+  ],
+  "pending": 0,
+  "nativePending": 0,
+  "unresolved": 0,
+  "journalHealthy": true,
+  "unknownIssuance": 0,
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "network": {
+    "blocked": 0,
+    "failed": 0,
+    "pageErrors": 0,
+    "consoleErrors": 0,
+    "fontsSuppressed": 1,
+    "photosSuppressed": 0
+  },
+  "errorCode": null,
+  "limits": [
+    "One native Overview at home operator, seven headlines and current v2 response; no filter/source/Copy/switch action.",
+    "No live provider/billing/digest/message/payment/channel/handoff or business-write claim.",
+    "Parent acceptance also requires separately successful 640 switch/audit evidence and human PNG inspection."
+  ],
+  "operations": [
+    {
+      "actor": "ADMIN",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "sequence": 1,
+      "intentAt": "2026-10-26T16:49:04.967Z",
+      "state": "acknowledged",
+      "terminal": true,
+      "status": 200,
+      "cleanup": false,
+      "completedAt": "2026-10-26T16:49:05.631Z"
+    },
+    {
+      "actor": "ADMIN",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "sequence": 2,
+      "intentAt": "2026-10-26T16:49:31.217Z",
+      "state": "acknowledged",
+      "terminal": true,
+      "status": 200,
+      "cleanup": true,
+      "completedAt": "2026-10-26T16:49:32.088Z"
+    }
+  ],
+  "authority": {
+    "before": "77ae1d55d299ef9402a24ba69705d588b9505ace8dca940b235f6ab61ba5dcfc",
+    "after": "77ae1d55d299ef9402a24ba69705d588b9505ace8dca940b235f6ab61ba5dcfc"
+  }
+}

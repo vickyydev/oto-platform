@@ -1,0 +1,130 @@
+{
+  "ticket": "SCRUM-640",
+  "version": "picker-v4",
+  "frozenAt": "2026-10-26T16:29:20.156Z",
+  "approvedForLiveExecution": false,
+  "previousVersion": {
+    "path": "C:/w/admin640-staging-proof-canonical-v3/version-index.json",
+    "sha256": "6bf249cea778868f036e5acec235e7634041f0ae88800d10c95516d677f7e5a4",
+    "bytes": 4879
+  },
+  "onlyModuleChanged": "admin640-staging-proof-executor.mjs",
+  "onlySemanticChange": "Shared bounded direct-span Operator picker wait before unchanged initial readiness assertion and after acknowledged selection.",
+  "all47PriorCasesUnchanged": true,
+  "canonicalCoveragePreserved": true,
+  "noAuthNetworkJobsSQL": true,
+  "repositoryEdits": false,
+  "red": {
+    "tests": 50,
+    "pass": 48,
+    "fail": 2
+  },
+  "green": {
+    "tests": 50,
+    "pass": 50,
+    "fail": 0
+  },
+  "fullRedAndGreenOutputsRead": true,
+  "files": [
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-executor.mjs",
+      "sha256": "c085a22f2f36acd35b90a7fd5a3c71eec40f91cc0d4f3a8ebff8ee4ddda38865",
+      "bytes": 45694
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+      "bytes": 18464
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-release-collector.mjs",
+      "sha256": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e",
+      "bytes": 15304
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-metadata-collector.mjs",
+      "sha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+      "bytes": 19845
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-contract-draft.mjs",
+      "sha256": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+      "bytes": 4272
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-executor.test.mjs",
+      "sha256": "78884ac824dcbf3db6a7e9c3df624914fcb077477c91ab795a1c1b5b20a9921b",
+      "bytes": 19713
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-review.test.mjs",
+      "sha256": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+      "bytes": 7559
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-account-eligibility.test.mjs",
+      "sha256": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4",
+      "bytes": 1822
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/admin640-staging-proof-collectors.test.mjs",
+      "sha256": "7a7c45c261f5a2fb489ae0b64ceefe80125396ee92b281ca9d1a53a3dbe7a329",
+      "bytes": 11586
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/README.md",
+      "sha256": "5c09aa2d4cdd18c189ac8bc33ca3e1060ebde3623419660982b8e8faf49dcdc5",
+      "bytes": 1034
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-v4/preserved-v3-inputs.json",
+      "sha256": "b05595de9257acd0a2ce9ad5727ab882d7651068de9f623c7b264340464bf5f8",
+      "bytes": 4993
+    },
+    {
+      "path": "C:/w/admin640-release-proof-runbook-picker-v4-20261026.md",
+      "sha256": "5a801d470f14c268a3fab5fceb5fbf651fb10e609a9945ae471926c5b064ea36",
+      "bytes": 13626
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-readiness.test.mjs",
+      "sha256": "3b5fdacad0010f7578526253fa32f434230012f775f500ee8db8884802e471b9",
+      "bytes": 6704
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-checks.mjs",
+      "sha256": "b74d8378118e4a4335f0fed192d2c24c05efb9c297d6b92f064129d354b31d3b",
+      "bytes": 4662
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-native-time.test.mjs",
+      "sha256": "601890139fc69620effea0fdf25db179776d9d0aa93d46fff65a80e96f0b938c",
+      "bytes": 6551
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-canonical-manifest.test.mjs",
+      "sha256": "fa7de05e2d9a9e129bf92424378c828cc42bd0ff60c6de9896f4d927fc2b8e61",
+      "bytes": 6790
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-red-v1.json",
+      "sha256": "8bd008abbf555e114f72a3e71752d67778ec984389d2f450ad2073013b94acb6",
+      "bytes": 8552
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-red-v1.log",
+      "sha256": "1c4717fea2d11ebeb78479527a9f92e174f3dd5cf9985c2b7423f95605b234a6",
+      "bytes": 14418
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-green-v1.json",
+      "sha256": "24f0f19004a11e8264d03ee7e99c8540128b79b3801b21a6b79942c84f2a82b8",
+      "bytes": 8487
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-picker-green-v1.log",
+      "sha256": "caa06a10dbf1ac142f3593b6f4390071068734d54606e334020febe8f17091c4",
+      "bytes": 13076
+    }
+  ]
+}

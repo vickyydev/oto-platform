@@ -1,0 +1,67 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "offline-deployment-timestamp-regression",
+  "mode": "--green",
+  "startedAt": "2026-10-26T15:16:40.526Z",
+  "completedAt": "2026-10-26T15:16:40.881Z",
+  "exitCode": 0,
+  "signal": null,
+  "timedOut": false,
+  "helperRoot": "C:/w/admin640-staging-proof-native-time-v2",
+  "commands": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "arguments": [
+      "--test",
+      "C:\\w\\admin640-staging-proof-native-time-v2\\admin640-staging-proof-executor.test.mjs",
+      "C:\\w\\admin640-staging-proof-native-time-v2\\admin640-staging-proof-review.test.mjs",
+      "C:\\w\\admin640-staging-proof-native-time-v2\\admin640-staging-proof-account-eligibility.test.mjs",
+      "C:\\w\\admin640-staging-proof-native-time-v2\\admin640-staging-proof-collectors.test.mjs",
+      "C:/w/admin640-staging-proof-native-time.test.mjs"
+    ]
+  },
+  "before": {
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-executor.test.mjs": "78884ac824dcbf3db6a7e9c3df624914fcb077477c91ab795a1c1b5b20a9921b",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-review.test.mjs": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-account-eligibility.test.mjs": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-collectors.test.mjs": "7a7c45c261f5a2fb489ae0b64ceefe80125396ee92b281ca9d1a53a3dbe7a329",
+    "C:/w/admin640-staging-proof-native-time.test.mjs": "601890139fc69620effea0fdf25db179776d9d0aa93d46fff65a80e96f0b938c",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-executor.mjs": "b54331225c4f122231cf43e6c76682206e271cb58ce1a8dc424e22023d36b0a6",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-audit-draft.mjs": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-release-collector.mjs": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-metadata-collector.mjs": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-contract-draft.mjs": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+    "C:/w/admin640-staging-proof-native-time-checks.mjs": "dae39b50705d569edbf2ad44a16bd1606053221b8e665beb8c7dcee0c30d7689"
+  },
+  "after": {
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-executor.test.mjs": "78884ac824dcbf3db6a7e9c3df624914fcb077477c91ab795a1c1b5b20a9921b",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-review.test.mjs": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-account-eligibility.test.mjs": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-collectors.test.mjs": "7a7c45c261f5a2fb489ae0b64ceefe80125396ee92b281ca9d1a53a3dbe7a329",
+    "C:/w/admin640-staging-proof-native-time.test.mjs": "601890139fc69620effea0fdf25db179776d9d0aa93d46fff65a80e96f0b938c",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-executor.mjs": "b54331225c4f122231cf43e6c76682206e271cb58ce1a8dc424e22023d36b0a6",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-audit-draft.mjs": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-release-collector.mjs": "bfe5e6c0397d5933c0c1d7fe62809444e65ebb907dcae4b60d23d92455344a7e",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-proof-metadata-collector.mjs": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+    "C:/w/admin640-staging-proof-native-time-v2/admin640-staging-contract-draft.mjs": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+    "C:/w/admin640-staging-proof-native-time-checks.mjs": "dae39b50705d569edbf2ad44a16bd1606053221b8e665beb8c7dcee0c30d7689"
+  },
+  "inputsUnchanged": true,
+  "frozenOriginalsUnchanged": true,
+  "counts": {
+    "tests": 44,
+    "pass": 44,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "logPath": "C:/w/admin640-staging-proof-native-time-green-v1.log",
+  "logSha256": "b71bd2d725307f5f7c307c7af3b207f89aca610d2b435b5b83027c692f701c1e",
+  "redactionApplied": false,
+  "realNetwork": false,
+  "auth": false,
+  "browser": false,
+  "jobs": false,
+  "SQL": false,
+  "repositoryEdits": false
+}

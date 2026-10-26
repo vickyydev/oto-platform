@@ -1,0 +1,49 @@
+{
+  "ticket": "SCRUM-635",
+  "passed": true,
+  "reviewedAt": "2026-10-26T16:41:30.374Z",
+  "helperSha256": "b8fea6ac4f4e1c9966a0c3d40d0e7225c29028687905d2cb7d8e13b36f52c29b",
+  "versionIndexSha256": "307ed578d46d54b6d83357f483c2900c8c2856f7e9482dc13fe63e9717a106d1",
+  "shared640Version": {
+    "path": "C:/w/admin640-staging-proof-denial-v5/version-index.json",
+    "sha256": "0c4bdb50d94c07f290a282ffa5cca0bb57786ed530d3a098f186aec180779b4d",
+    "bytes": 5195
+  },
+  "shared640Review": {
+    "path": "C:/w/admin640-staging-proof-denial-v5-independent-review.json",
+    "sha256": "a3d4e5a5d4397c22425c70c4d29f0772584869b955c893a1e0e871f187d249d9"
+  },
+  "previousVersion": {
+    "path": "C:/w/admin635-overview-proof-picker-v3/version-index.json",
+    "sha256": "d88eaaeb7573494bb203dd643d89ad02c5c081a4b4e0e0d07e474ab4d376a1ba",
+    "bytes": 3181
+  },
+  "indexedFilesVerified": 8,
+  "allThreeExecutableTestFilesIdenticalAfterImportNormalization": true,
+  "evidence": {
+    "path": "C:/w/admin635-overview-proof-denial-green-v1.json",
+    "sha256": "efcda345699c7d550db74c60800ef4c6d68caa9c7405aa1d52b4a51943f5c1ff",
+    "exitCode": 0,
+    "counts": {
+      "tests": 11,
+      "pass": 11,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "logSha256": "02ac4082020f3101cc2f6256de2cd47a68230316e53418e1b175a1eda124be74",
+    "inputsUnchanged": true
+  },
+  "findings": [],
+  "conclusions": [
+    "Only shared imports changed to the coherent640 denial-v5 set; all parent native logic and eleven assertions are unchanged.",
+    "The sibling release-collector/executor hash guard now matches a v5-pinned release plan; prior parent/shared versions remain intact."
+  ],
+  "limits": [
+    "Preparation/source/existing offline evidence review only; no reviewer tests or live/runtime/auth/network/browser/jobs/SQL actions.",
+    "Actual acceptance still requires a fresh concrete reviewed plan and observed native/audit results."
+  ],
+  "approvedForLiveExecution": false,
+  "repositoryEdits": false
+}

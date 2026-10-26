@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "offline-harness-preflight-only",
+  "recordedAt": "2026-10-26T16:38:34.214Z",
+  "testChildStarted": false,
+  "testsRun": 0,
+  "errorCode": "ERR_INVALID_ARG_TYPE",
+  "cause": "Reused index guard expected previousVersion.index; the frozen v4 index uses previousVersion.path. The new runner now accepts that exact saved path shape.",
+  "helperChanged": false,
+  "network": false,
+  "auth": false,
+  "jobs": false,
+  "sourceEdits": false
+}

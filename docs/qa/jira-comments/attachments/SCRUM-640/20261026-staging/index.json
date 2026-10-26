@@ -1,0 +1,93 @@
+{
+  "ticket": "SCRUM-640",
+  "status": "Deployed",
+  "comment": "12575",
+  "verifiedAt": "2026-10-26T16:48:31.206Z",
+  "sourceSha": "f681806046dfcc767542b68681b6f3306889ec4c",
+  "humanImagesInspected": true,
+  "attachments": [
+    {
+      "id": "12050",
+      "filename": "SCRUM-640-01-home-operator.png"
+    },
+    {
+      "id": "12051",
+      "filename": "SCRUM-640-02-working-operator.png"
+    },
+    {
+      "id": "12052",
+      "filename": "SCRUM-640-03-reception-refused.png"
+    },
+    {
+      "id": "12053",
+      "filename": "SCRUM-640-04-restored-session-and-audit.png"
+    }
+  ],
+  "files": [
+    {
+      "path": "SCRUM-640-01-home-operator.png",
+      "sha256": "6042181c4773dc77abb7bab50904c204555ca5203bf530b85341f4a1cf5dfeff",
+      "bytes": 136708
+    },
+    {
+      "path": "SCRUM-640-02-working-operator.png",
+      "sha256": "868c4d41212f14e9e3bf57e8640ecabab12d1884d721c3b6a9324c6c25b8d8d0",
+      "bytes": 96216
+    },
+    {
+      "path": "SCRUM-640-03-reception-refused.png",
+      "sha256": "9884fbce0e5d9ef8a2512b982070771da4742d9f135b9cd5d0848815d7a07f8b",
+      "bytes": 76017
+    },
+    {
+      "path": "SCRUM-640-04-restored-session-and-audit.png",
+      "sha256": "800dcd96a4a9a916d2e565402c550f2109151b097ff1a7b9de312191c839b573",
+      "bytes": 62992
+    },
+    {
+      "path": "native-result.json",
+      "sha256": "586b9e2d80f14d681a69f86de963cb68287edcb72def19203c21b0f0da043719",
+      "bytes": 29472
+    },
+    {
+      "path": "final-result.json",
+      "sha256": "afdb871e997209f7f78d07e652e9d31706f8f6400212153600e0f4a7ba8bf157",
+      "bytes": 31714
+    },
+    {
+      "path": "audit-result.json",
+      "sha256": "a503830083c5a94324706189657ba2abefef1e033ebca768f1276f98d32b9a88",
+      "bytes": 6252
+    },
+    {
+      "path": "audit-approved.json",
+      "sha256": "9d8aa85455188aa4d157bace693b836bb038dc824b3a020fac3eb49dfc9971e1",
+      "bytes": 4237
+    },
+    {
+      "path": "preflight-result.json",
+      "sha256": "c272a83a8c46d68537756d5c9f99bc83adb0d8e57470b2327fbc7e1cc8e6ad68",
+      "bytes": 5245
+    },
+    {
+      "path": "preflight-approved.json",
+      "sha256": "eebfc7eac7660f7061f962458081d4fa0c8be766d4f8c605046d8e4ae3cf4ec8",
+      "bytes": 2815
+    },
+    {
+      "path": "plan.json",
+      "sha256": "532fee98616f65fe05e095332bb5d762071a181630782ea4aa6d75d62c317ef1",
+      "bytes": 3096
+    },
+    {
+      "path": "release.json",
+      "sha256": "a974b4612a373073b68b05daa4c17f0c914f3aa5b9f1171bec86c37e99c99eee",
+      "bytes": 1466
+    },
+    {
+      "path": "assets.json",
+      "sha256": "335dc21b41e4f32f81772cea82ef5883245a6f98e266301a0d24a9ffd143f361",
+      "bytes": 5754
+    }
+  ]
+}

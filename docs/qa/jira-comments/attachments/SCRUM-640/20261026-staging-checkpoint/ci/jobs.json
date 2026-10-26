@@ -1,0 +1,67 @@
+{
+  "total_count": 6,
+  "jobs": [
+    {
+      "id": 121685415431,
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 2,
+      "started_at": "2026-10-26T16:01:52Z",
+      "completed_at": "2026-10-26T16:09:38Z",
+      "html_url": "https://github.com/vickyydev/oto-platform/actions/runs/40351447109/job/121685415431"
+    },
+    {
+      "id": 121685417738,
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 2,
+      "started_at": "2026-10-26T15:39:23Z",
+      "completed_at": "2026-10-26T15:55:58Z",
+      "html_url": "https://github.com/vickyydev/oto-platform/actions/runs/40351447109/job/121685417738"
+    },
+    {
+      "id": 121685418413,
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 2,
+      "started_at": "2026-10-26T15:39:23Z",
+      "completed_at": "2026-10-26T15:52:32Z",
+      "html_url": "https://github.com/vickyydev/oto-platform/actions/runs/40351447109/job/121685418413"
+    },
+    {
+      "id": 121685419442,
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 2,
+      "started_at": "2026-10-26T15:39:23Z",
+      "completed_at": "2026-10-26T15:39:50Z",
+      "html_url": "https://github.com/vickyydev/oto-platform/actions/runs/40351447109/job/121685419442"
+    },
+    {
+      "id": 121685473704,
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 2,
+      "started_at": "2026-10-26T15:39:23Z",
+      "completed_at": "2026-10-26T15:59:06Z",
+      "html_url": "https://github.com/vickyydev/oto-platform/actions/runs/40351447109/job/121685473704"
+    },
+    {
+      "id": 121685513850,
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 2,
+      "started_at": "2026-10-26T15:39:23Z",
+      "completed_at": "2026-10-26T15:58:20Z",
+      "html_url": "https://github.com/vickyydev/oto-platform/actions/runs/40351447109/job/121685513850"
+    }
+  ],
+  "originalSha256": "95605be0e47f5de960b7a4d3aea6d5514b8eab497602d8a5e262a3524cca2686",
+  "projectionOnly": true
+}

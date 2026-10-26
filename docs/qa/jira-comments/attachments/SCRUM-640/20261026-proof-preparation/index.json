@@ -1,0 +1,145 @@
+{
+  "ticket": "SCRUM-640",
+  "createdAt": "2026-10-26T15:56:20.143Z",
+  "preparationOnly": true,
+  "staging": false,
+  "normalization": "UTF-8 LF, trailing display whitespace removed; original bindings retained",
+  "files": [
+    {
+      "source": "C:/w/admin640-staging-proof-final-preparation-v3.json",
+      "path": "admin640-staging-proof-final-preparation-v3.json",
+      "originalSha256": "ecf7a391d1dc88f78229469a36cd5ff5fb5bee3304f282c7f37847bde4c42dff",
+      "archiveSha256": "ecf7a391d1dc88f78229469a36cd5ff5fb5bee3304f282c7f37847bde4c42dff",
+      "originalBytes": 2264,
+      "archiveBytes": 2264
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-native-time-v2-independent-review.json",
+      "path": "admin640-staging-proof-native-time-v2-independent-review.json",
+      "originalSha256": "93ba2fc5423d8e8f01f39ea951f46356f45d7d6602caef134a7f14986320f5f7",
+      "archiveSha256": "93ba2fc5423d8e8f01f39ea951f46356f45d7d6602caef134a7f14986320f5f7",
+      "originalBytes": 2596,
+      "archiveBytes": 2596
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-canonical-v3-independent-review.json",
+      "path": "admin640-staging-proof-canonical-v3-independent-review.json",
+      "originalSha256": "c4638b92f5f01729b090a45e11cc60f04228e82e0c91db620ded2cacfe1575d7",
+      "archiveSha256": "c4638b92f5f01729b090a45e11cc60f04228e82e0c91db620ded2cacfe1575d7",
+      "originalBytes": 2852,
+      "archiveBytes": 2852
+    },
+    {
+      "source": "C:/w/admin635-overview-proof-canonical-v2-independent-review.json",
+      "path": "admin635-overview-proof-canonical-v2-independent-review.json",
+      "originalSha256": "b776baa1986587db9387620ca53f16ce4606eea36fe9963564de954b8a6f42dc",
+      "archiveSha256": "b776baa1986587db9387620ca53f16ce4606eea36fe9963564de954b8a6f42dc",
+      "originalBytes": 3169,
+      "archiveBytes": 3169
+    },
+    {
+      "source": "C:/w/admin640-proof-source-preflight-20261026.json",
+      "path": "admin640-proof-source-preflight-20261026.json",
+      "originalSha256": "ad605f8f8c141f09c5cbcd287a490b97401621c40cd83d1cbefa61d5a4011d61",
+      "archiveSha256": "ad605f8f8c141f09c5cbcd287a490b97401621c40cd83d1cbefa61d5a4011d61",
+      "originalBytes": 766,
+      "archiveBytes": 766
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-canonical-manifest-diagnosis-v1.json",
+      "path": "admin640-staging-proof-canonical-manifest-diagnosis-v1.json",
+      "originalSha256": "7984951eb39d41ecf45ba92ae40a1490f7e1ab6212dd5157b1226820334ad4a2",
+      "archiveSha256": "7984951eb39d41ecf45ba92ae40a1490f7e1ab6212dd5157b1226820334ad4a2",
+      "originalBytes": 959,
+      "archiveBytes": 959
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-canonical-red-v1.json",
+      "path": "admin640-staging-proof-canonical-red-v1.json",
+      "originalSha256": "cf06d3fe20198189460e8e1296e9ddbbc8d2b4ef03116ffca93d8c8c77c47339",
+      "archiveSha256": "cf06d3fe20198189460e8e1296e9ddbbc8d2b4ef03116ffca93d8c8c77c47339",
+      "originalBytes": 5097,
+      "archiveBytes": 5097
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-canonical-red-v1.log",
+      "path": "admin640-staging-proof-canonical-red-v1.log.txt",
+      "originalSha256": "cbd8424d27abf5f092e88e6030db97c166ca86cb5602ba8bd33073ae72dd07fc",
+      "archiveSha256": "cbd8424d27abf5f092e88e6030db97c166ca86cb5602ba8bd33073ae72dd07fc",
+      "originalBytes": 13139,
+      "archiveBytes": 13139
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-canonical-green-v1.json",
+      "path": "admin640-staging-proof-canonical-green-v1.json",
+      "originalSha256": "4498ae7486bbeaa3a87902bc1be05052746c71ae88fa049c8a22091e3907b3f1",
+      "archiveSha256": "4498ae7486bbeaa3a87902bc1be05052746c71ae88fa049c8a22091e3907b3f1",
+      "originalBytes": 5055,
+      "archiveBytes": 5055
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-canonical-green-v1.log",
+      "path": "admin640-staging-proof-canonical-green-v1.log.txt",
+      "originalSha256": "38ab6025be886e52116f10c7eb79ef3580a72bc829539a811f92ce6f6b639fd7",
+      "archiveSha256": "38ab6025be886e52116f10c7eb79ef3580a72bc829539a811f92ce6f6b639fd7",
+      "originalBytes": 12272,
+      "archiveBytes": 12272
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-native-time-red-v1.json",
+      "path": "admin640-staging-proof-native-time-red-v1.json",
+      "originalSha256": "d3bbea4cc70ca3af77977b46de9eb72ab14a024669176b7de835740333e6854f",
+      "archiveSha256": "d3bbea4cc70ca3af77977b46de9eb72ab14a024669176b7de835740333e6854f",
+      "originalBytes": 3895,
+      "archiveBytes": 3895
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-native-time-red-v1.log",
+      "path": "admin640-staging-proof-native-time-red-v1.log.txt",
+      "originalSha256": "92da089917bfa0d44cbac1e1142a5b774d468bad94aceaacb5f309c82e56d990",
+      "archiveSha256": "92da089917bfa0d44cbac1e1142a5b774d468bad94aceaacb5f309c82e56d990",
+      "originalBytes": 12950,
+      "archiveBytes": 12950
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-native-time-green-v1.json",
+      "path": "admin640-staging-proof-native-time-green-v1.json",
+      "originalSha256": "4c25e92a2bfec497721cd6291685bfaae47c4fcf538da69483d85ad95c7bc667",
+      "archiveSha256": "4c25e92a2bfec497721cd6291685bfaae47c4fcf538da69483d85ad95c7bc667",
+      "originalBytes": 4777,
+      "archiveBytes": 4777
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-native-time-green-v1.log",
+      "path": "admin640-staging-proof-native-time-green-v1.log.txt",
+      "originalSha256": "b71bd2d725307f5f7c307c7af3b207f89aca610d2b435b5b83027c692f701c1e",
+      "archiveSha256": "b71bd2d725307f5f7c307c7af3b207f89aca610d2b435b5b83027c692f701c1e",
+      "originalBytes": 11450,
+      "archiveBytes": 11450
+    },
+    {
+      "source": "C:/w/admin640-release-proof-runbook-canonical-v3-20261026.md",
+      "path": "admin640-release-proof-runbook-canonical-v3-20261026.md",
+      "originalSha256": "46bea02968a6f634e44ab0be7fbe0e4aa0b5d59cf3d2f671f1a47c3bd504a78e",
+      "archiveSha256": "46bea02968a6f634e44ab0be7fbe0e4aa0b5d59cf3d2f671f1a47c3bd504a78e",
+      "originalBytes": 13293,
+      "archiveBytes": 13293
+    },
+    {
+      "source": "C:/w/admin640-staging-proof-canonical-v3/version-index.json",
+      "path": "640-v3-index.json",
+      "originalSha256": "6bf249cea778868f036e5acec235e7634041f0ae88800d10c95516d677f7e5a4",
+      "archiveSha256": "6bf249cea778868f036e5acec235e7634041f0ae88800d10c95516d677f7e5a4",
+      "originalBytes": 4879,
+      "archiveBytes": 4879
+    },
+    {
+      "source": "C:/w/admin635-overview-proof-canonical-v2/version-index.json",
+      "path": "635-v2-index.json",
+      "originalSha256": "4c69084a7e479985eca1624986dcf8818955362f75899b10827c098f6d62f68d",
+      "archiveSha256": "4c69084a7e479985eca1624986dcf8818955362f75899b10827c098f6d62f68d",
+      "originalBytes": 2623,
+      "archiveBytes": 2623
+    }
+  ]
+}

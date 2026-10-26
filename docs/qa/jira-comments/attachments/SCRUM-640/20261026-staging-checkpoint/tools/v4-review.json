@@ -1,0 +1,64 @@
+{
+  "ticket": "SCRUM-640",
+  "passed": true,
+  "reviewedAt": "2026-10-26T16:30:19.486Z",
+  "helperSha256": "c085a22f2f36acd35b90a7fd5a3c71eec40f91cc0d4f3a8ebff8ee4ddda38865",
+  "versionIndexSha256": "30d35d1b5b5ad8e5afbfa22b06785409f1cbd1166efc9e292d7d1b87560bce93",
+  "previousVersion": {
+    "path": "C:/w/admin640-staging-proof-canonical-v3/version-index.json",
+    "sha256": "6bf249cea778868f036e5acec235e7634041f0ae88800d10c95516d677f7e5a4",
+    "bytes": 4879
+  },
+  "indexedFilesVerified": 20,
+  "priorIndexFilesVerified": 20,
+  "unchangedSharedAndTestFiles": 8,
+  "prior47CasesUnchanged": true,
+  "wholeDeltaAndRedGreenOutputsRead": true,
+  "evidence": {
+    "red": {
+      "path": "C:/w/admin640-staging-proof-picker-red-v1.json",
+      "sha256": "8bd008abbf555e114f72a3e71752d67778ec984389d2f450ad2073013b94acb6",
+      "exitCode": 1,
+      "counts": {
+        "tests": 50,
+        "pass": 48,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "logPath": "C:/w/admin640-staging-proof-picker-red-v1.log",
+      "logSha256": "1c4717fea2d11ebeb78479527a9f92e174f3dd5cf9985c2b7423f95605b234a6",
+      "inputsUnchanged": true
+    },
+    "green": {
+      "path": "C:/w/admin640-staging-proof-picker-green-v1.json",
+      "sha256": "24f0f19004a11e8264d03ee7e99c8540128b79b3801b21a6b79942c84f2a82b8",
+      "exitCode": 0,
+      "counts": {
+        "tests": 50,
+        "pass": 50,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "logPath": "C:/w/admin640-staging-proof-picker-green-v1.log",
+      "logSha256": "caa06a10dbf1ac142f3593b6f4390071068734d54606e334020febe8f17091c4",
+      "inputsUnchanged": true
+    }
+  },
+  "conclusions": [
+    "Actual open path now waits for the visible native Operator combobox, direct label span, enabled state and exact current canonical value, with an explicit 30000ms timeout; the original readiness assertion is unchanged.",
+    "Acknowledged native selection reuses the same direct-span readiness predicate, replacing whole-label text matching that included option labels.",
+    "Native capture/current-selection assertions, source/authority/dispatch/request/cleanup guards and every other shared module are unchanged."
+  ],
+  "findings": [],
+  "limits": [
+    "Offline regression executes the actual extracted open/select bodies against real released SelectChip SSR markup and jsdom with synthetic timing; this is not live browser or staging acceptance.",
+    "Wrong-value and permanently disabled controls still refuse. No reviewer test, network, auth, SQL, browser or job execution occurred.",
+    "Parent635 canonical-v2 cannot consume a v4-pinned release input via its v3 sibling hash check; a new import-only parent version must bind the coherent v4 set."
+  ],
+  "approvedForLiveExecution": false,
+  "repositoryEdits": false
+}
