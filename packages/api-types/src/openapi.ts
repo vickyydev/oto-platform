@@ -19951,7 +19951,34 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            entries: {
+                                /** Format: uuid */
+                                id: string;
+                                action: string;
+                                entityType: string;
+                                entityId: string;
+                                /** Format: uuid */
+                                actorAccountId: string | null;
+                                actorName: string | null;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                requestId: string | null;
+                                before: ("null" | null) | string | number | boolean | unknown[] | {
+                                    [key: string]: unknown;
+                                };
+                                after: ("null" | null) | string | number | boolean | unknown[] | {
+                                    [key: string]: unknown;
+                                };
+                                /** Format: date-time */
+                                createdAt: string;
+                            }[];
+                            masked: boolean;
+                            nextCursor: string | null;
+                            total?: number;
+                        };
+                    };
                 };
             };
         };

@@ -17,22 +17,15 @@
  *     an action with a record of its own, never a page load.
  */
 import { api, ApiError, qs } from './client';
+import type { ApiResponse } from '@oto/api-types';
 
 // ---------------------------------------------------------------------------
 // Activity — the audit log
 // ---------------------------------------------------------------------------
 
-export interface AuditEntry {
-  id: string;
-  action: string;
-  entityType: string | null;
-  entityId: string | null;
-  actorAccountId: string | null;
-  branchId: string | null;
-  requestId: string | null;
-  before: Record<string, unknown> | null;
-  after: Record<string, unknown> | null;
-  createdAt: string;
+export type AuditPage = ApiResponse<'/audit/', 'get'>;
+
+export type AuditEntry = AuditPage['entries'][number] & {
   /** S2-03 classification columns. Absent on rows written before they landed. */
   category?: string | null;
   app?: string | null;
@@ -45,7 +38,7 @@ export interface AuditEntry {
   occurredAt?: string | null;
   /** True when this row's personal fields were masked on the way out. */
   masked?: boolean;
-}
+};
 
 export interface AuditFilters {
   action?: string;
@@ -69,21 +62,8 @@ export interface AuditFilters {
   category?: string;
 }
 
-export interface AuditPage {
-  entries: AuditEntry[];
-  /** Keyset pagination. Absent or null means this is the last page. */
-  nextCursor?: string | null;
-  /**
-   * Whether the API masked personal fields in these rows. It masks for every
-   * caller without `admin:audit:read_sensitive`; for a caller with it the rows
-   * arrive in the clear and the API records an `audit.read_sensitive` row of
-   * its own against that read.
-   */
-  masked?: boolean;
-}
-
 export const activityApi = {
-  list: (filters: AuditFilters) => api.get<AuditPage>(`/audit${qs({ ...filters })}`),
+  list: (filters: AuditFilters) => api.get<ApiResponse<'/audit/', 'get'>>(`/audit${qs({ ...filters })}`),
 };
 
 // ---------------------------------------------------------------------------
