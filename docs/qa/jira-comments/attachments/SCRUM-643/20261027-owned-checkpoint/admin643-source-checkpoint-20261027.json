@@ -1,0 +1,42 @@
+{
+  "ticket": "SCRUM-643",
+  "at": "2026-10-26T17:53:02.929Z",
+  "originalSha": "804609c707bc4ad89d521dd389b72a04942b3b00",
+  "sha": "b87981acb2ef8fcc361a30be5ecf9e6989dd3941",
+  "base": "9249691df8009a6357a03df74e82a90aa5892bf1",
+  "sourceUnchangedByRebase": true,
+  "files": {
+    "apps/api/src/routes/console.ts": "33e4baccd5477e1c3419fc9d912da6fb803d5c32b703e8544f30e6e7fd73f42d",
+    "apps/api/src/routes/suite-controls.ts": "8f18ab31cb9e2bae79bb66f729901c44b683e88bdc8bf0476e087b41df423a8d",
+    "apps/api/src/services/suite-control-approvals.ts": "bd49406e2e5de3c94a803aa99eb834d696572203f2d5f2ec7d0383393706ccea",
+    "apps/api/src/services/suite-controls.ts": "85a6432bdfdb0fb2e76c7f3f04c3d2f4886018725a94466ac371fd55f1c2cd58",
+    "apps/api/test/route-scope-target.test.ts": "d27c8c71eb2e95497b6dffa9756fdb7d8cabb9627666048123a97e56a0e37ae9",
+    "apps/api/test/suite-control-approvals-review.test.ts": "5dd12eaf2372e0049b57fb0e05c2051fb533422807d351a010f020bc15c0b80d",
+    "apps/api/test/suite-controls-review.test.ts": "6fc91c31e9b511e37801e1bce7c1f2386cba2d3b47b8d7f9c88c94ae3fd0c363",
+    "apps/console/e2e/suite-controls.spec.ts": "2de34ea71a2ecfa2d703a8aac2db322f3d42050fdf2415bfacd53805c83919ab",
+    "apps/console/src/App.tsx": "01ff13c0b1ad1a11ab37792858d07af1257054be64be0bf3d75835ad6c1549b9",
+    "apps/console/src/api/suite-controls.ts": "545299dcb75f96b6682af5ca7ed841ce483429361399dd0b140ee7855fa537f4",
+    "apps/console/src/components/consoleSections.tsx": "d55ba10ae421eb092b4a7fa756813c669d72d052f667c6ca754618b9ca8bcf23",
+    "apps/console/src/pages/SuiteControls.tsx": "b510c2a1eb511fc80fb108a105375cd6bff2fd5c6f9f0390e843ef0dc1d76871",
+    "apps/console/test/suite-controls.test.ts": "a084e7c2f60b261f0ade04f44ff1fe208319da55fe7755d88ee5dd584e88db4e",
+    "packages/api-types/openapi.json": "ad32da64d2edda1fe5c197861d2f318bb3485ea4965a24cbb10c887eee03a96c",
+    "packages/api-types/src/openapi.ts": "7bb47e0d7eb7107c479f3d7f022750af5b74519d213a1a95c8a86b92ce9f7ea4",
+    "packages/db/migrations/0089_suite_controls.sql": "c6ee7eb4f2ac5c53e582ef5460b04cb8dc20528cd578f56880c3c604b1c522af",
+    "packages/db/migrations/meta/0089_snapshot.json": "f1ebc3474473410dfc85726ad243fefb85f52863eb562abaffd32a4581907c94",
+    "packages/db/migrations/meta/_journal.json": "fe6559b7798f194e05dfffac41e064f988879b41e4de348a99b4a54f4ca52de3",
+    "packages/db/src/schema/index.ts": "e56e77f10668194e04c3feb6ee0fc15994c00f6a48f265e7483d06b4875b4934",
+    "packages/db/src/schema/suite-controls.ts": "079684aca575944878eb69a2192d9bda0ff4ca5a1bf434681842129d79f764b0",
+    "packages/db/test/schema-shape.test.ts": "ae19d984c408784568031e826193f3881c7b0eef2502fc7894a21825bd8da9e4",
+    "packages/db/test/suite-controls.test.ts": "68c0984e489f3f97420f710185c37197bcce59f7a9a855052ab464f854da39e6",
+    "packages/shared/src/permission-words.ts": "349f58a406790fd4e741cb420b91d74506dd77be633a0055406890964983c033",
+    "packages/shared/src/permissions.ts": "22b01b1c2084c88f68b917bba2fb68b0ec1fc004fd7e29c1459099601fe82539",
+    "packages/shared/test/operator-switch-permission.test.ts": "17bc8acf4223435d336213727d19cc0a8b185ba5bd5ec01292a456bffac00fbe",
+    "packages/shared/test/permission-words.test.ts": "0a1b694fd9cc6d7e2077df1daad3bf196c3afa06c3266967cfd9e1dc24a5bcb4"
+  },
+  "commits": [
+    "b87981acb2ef8fcc361a30be5ecf9e6989dd3941 feat(console): checkpoint suite reads and approval safeguards"
+  ],
+  "pushed": false,
+  "releaseGreen": false,
+  "staging": false
+}

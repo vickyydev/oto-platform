@@ -1,0 +1,127 @@
+{
+  "ticket": "SCRUM-643",
+  "kind": "approval-foundation-local-verification",
+  "completedAt": "2026-10-26T17:49:22.799Z",
+  "passed": true,
+  "sourceFiles": {
+    "packages/db/src/schema/suite-controls.ts": "079684aca575944878eb69a2192d9bda0ff4ca5a1bf434681842129d79f764b0",
+    "packages/db/test/suite-controls.test.ts": "68c0984e489f3f97420f710185c37197bcce59f7a9a855052ab464f854da39e6",
+    "apps/api/src/services/suite-control-approvals.ts": "bd49406e2e5de3c94a803aa99eb834d696572203f2d5f2ec7d0383393706ccea",
+    "apps/api/test/suite-control-approvals-review.test.ts": "5dd12eaf2372e0049b57fb0e05c2051fb533422807d351a010f020bc15c0b80d"
+  },
+  "nativeBoundFiles": [
+    "packages/db/src/schema/suite-controls.ts",
+    "apps/api/src/services/suite-control-approvals.ts",
+    "apps/api/test/suite-control-approvals-review.test.ts"
+  ],
+  "dbTestExecution": "Coordinator-owned, not executed by the API runner",
+  "inputs": [
+    {
+      "receipt": "C:/w/admin643-approval-audit-payload-red-20261027-v1.json",
+      "sha256": "5549585d70fb80ad7e6c35667bdb5d335d8962907331b615a2f06dcf375d1ab4",
+      "log": "C:/w/admin643-approval-audit-payload-red-20261027-v1.log",
+      "logSha256": "68db88f03eca976caaebe6d3ca5303397b7f909363095d23c9a72a972607ae6b",
+      "exitCode": 1,
+      "startedAt": "2026-10-26T17:42:16.771Z",
+      "completedAt": "2026-10-26T17:42:37.509Z",
+      "inputsUnchanged": true,
+      "ownEmbeddedPgRemoved": true
+    },
+    {
+      "receipt": "C:/w/admin643-approval-audit-payload-green-20261027-v1.json",
+      "sha256": "e6f97dc93192a131683faf15e5c6074841225a6318c87178768860e5ffdef0a5",
+      "log": "C:/w/admin643-approval-audit-payload-green-20261027-v1.log",
+      "logSha256": "0c3208913af0a94b787af4a908b14881639ef6a89ddf4ec50c6a4406bd2109ea",
+      "exitCode": 0,
+      "startedAt": "2026-10-26T17:42:53.094Z",
+      "completedAt": "2026-10-26T17:43:13.453Z",
+      "inputsUnchanged": true,
+      "ownEmbeddedPgRemoved": true
+    },
+    {
+      "receipt": "C:/w/admin643-approval-grant-lock-red-20261027-v1.json",
+      "sha256": "39a26c6c30a4437a9717bc959982a4a32c03686fbfcd39ea5762178cfb14b42a",
+      "log": "C:/w/admin643-approval-grant-lock-red-20261027-v1.log",
+      "logSha256": "b341baa2ccfcd6ee1ded308eb32aedd1cdd2b266a8b457476af2e2ec48d868c8",
+      "exitCode": 1,
+      "startedAt": "2026-10-26T17:45:22.643Z",
+      "completedAt": "2026-10-26T17:45:47.608Z",
+      "inputsUnchanged": true,
+      "ownEmbeddedPgRemoved": true
+    },
+    {
+      "receipt": "C:/w/admin643-approval-grant-lock-green-20261027-v1.json",
+      "sha256": "fb851ef610f3f567c74d03a99b775f3c472be396acbdb3c25d9433153979fb21",
+      "log": "C:/w/admin643-approval-grant-lock-green-20261027-v1.log",
+      "logSha256": "858d600884709746f6a8e78cf590455ade1913f2d72a5b6a1cbf94d0dc301d1d",
+      "exitCode": 0,
+      "startedAt": "2026-10-26T17:46:21.005Z",
+      "completedAt": "2026-10-26T17:46:43.883Z",
+      "inputsUnchanged": true,
+      "ownEmbeddedPgRemoved": true
+    }
+  ],
+  "auditRegression": {
+    "red": {
+      "passed": 13,
+      "failed": 1,
+      "total": 14
+    },
+    "green": {
+      "passed": 14,
+      "failed": 0,
+      "total": 14
+    },
+    "sameTestBytes": true,
+    "fields": [
+      "targetApp",
+      "reason",
+      "requesterAccountId",
+      "approverAccountId"
+    ]
+  },
+  "lockRegression": {
+    "red": {
+      "passed": 14,
+      "failed": 1,
+      "total": 15,
+      "actualPostgresCode": "40P01"
+    },
+    "green": {
+      "passed": 15,
+      "failed": 0,
+      "total": 15
+    },
+    "sameTestBytes": true,
+    "observedDatabaseLockBarrier": true,
+    "nativeDeleteAuditOrder": true,
+    "sourceBoundRoute": "apps/api/src/routes/accounts.ts",
+    "fix": "NO KEY UPDATE account locks preserve flags while allowing audit actor FK checks"
+  },
+  "checks": {
+    "eslint": {
+      "command": "pnpm exec eslint <four sourceFiles>",
+      "exitCode": 0,
+      "diagnosticLines": 0,
+      "wholeOutputRead": true
+    },
+    "apiCompiler": {
+      "command": "pnpm --filter @oto/api typecheck",
+      "exitCode": 0,
+      "diagnosticLines": 0,
+      "wholeOutputRead": true
+    }
+  },
+  "limits": [
+    "Only the durable approval foundation is implemented; no dangerous-action route or real effect consumer.",
+    "The eventual real writer must revalidate catalogue, scope lineage, value type, revision and maximum TTL in the caller transaction.",
+    "Full DB gates, migration generation, source release and Q24 integration remain coordinator-owned."
+  ],
+  "receiptPreparationHistory": [
+    "The first summary validation correctly refused an unbound DB-test path; API-executed source binding is now scoped separately from the declared DB-test hash. No checks were rerun or relabeled."
+  ],
+  "noStaging": true,
+  "noProviderCalls": true,
+  "noDocker": true,
+  "noMigrationsEdited": true
+}

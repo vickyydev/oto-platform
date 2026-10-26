@@ -1,0 +1,169 @@
+{
+  "ticket": "SCRUM-643",
+  "reviewedAt": "2026-10-26T17:51:01.329Z",
+  "passed": true,
+  "scope": "Durable approval foundation only; no dangerous-action route or real effect consumer",
+  "priorReview": {
+    "path": "C:/w/admin643-approval-independent-review-v1.json",
+    "sha256": "57c5403790e4295a9a241164df244250ebec95969caa6dd88dc33e877c8f62d7",
+    "preserved": true
+  },
+  "reviewedVerification": {
+    "path": "C:/w/admin643-approval-final-verification-20261027-v1.json",
+    "sha256": "4fc4c20454e8c98d101841b3a048509ee678826bad95424add2f480a07dce3e4"
+  },
+  "sourceFiles": {
+    "packages/db/src/schema/suite-controls.ts": "079684aca575944878eb69a2192d9bda0ff4ca5a1bf434681842129d79f764b0",
+    "packages/db/test/suite-controls.test.ts": "68c0984e489f3f97420f710185c37197bcce59f7a9a855052ab464f854da39e6",
+    "apps/api/src/services/suite-control-approvals.ts": "bd49406e2e5de3c94a803aa99eb834d696572203f2d5f2ec7d0383393706ccea",
+    "apps/api/test/suite-control-approvals-review.test.ts": "5dd12eaf2372e0049b57fb0e05c2051fb533422807d351a010f020bc15c0b80d"
+  },
+  "nativeBoundCurrentInputs": {
+    "files": 102,
+    "currentMatchesFinalGreen": true,
+    "beforeAfterIdentical": true
+  },
+  "closedFindings": [
+    {
+      "id": "approval-audit-target-reason",
+      "severity": "medium",
+      "actualRed": {
+        "total": 14,
+        "passed": 13,
+        "failed": 1
+      },
+      "actualGreen": {
+        "total": 14,
+        "passed": 14,
+        "failed": 0
+      },
+      "sameTestBytes": true,
+      "closure": "Audit after now derives targetApp and reason from the revalidated immutable stored operation, alongside the unchanged requester/approver IDs. Request/approval audit pair assertions pass."
+    },
+    {
+      "id": "approval-grant-delete-audit-fk-lock-cycle",
+      "severity": "high",
+      "actualRed": {
+        "total": 15,
+        "passed": 14,
+        "failed": 1,
+        "postgresDeadlockObserved": true,
+        "postgresCode": "40P01"
+      },
+      "actualGreen": {
+        "total": 15,
+        "passed": 15,
+        "failed": 0
+      },
+      "sameTestBytes": true,
+      "onlyLockAndExplanatoryCommentChangedAfterAuditFix": true,
+      "closure": "Account FOR NO KEY UPDATE keeps account flags stable and serializes approval holders while allowing the audit actor FK KEY SHARE. The real grant delete commits; approval then sees the withdrawn grant and refuses403; approval stays pending and no effect occurs."
+    }
+  ],
+  "openFindings": [],
+  "invariants": {
+    "freshExactSystemPlatformAdminNullScopeAndExactPermission": true,
+    "customLocalAndBranchRolesRefused": true,
+    "bothActorsRecheckedAndDistinct": true,
+    "deterministicAccountOrder": true,
+    "currentHomeOperatorsLive": true,
+    "grantsAndRolePermissionRowsLocked": true,
+    "canonicalParsedOperationHashCheckedOnEveryUse": true,
+    "requestTenMinuteAndOperationDeadlinesEnforced": true,
+    "deadlineCheckedAgainAfterEffect": true,
+    "singleConsumptionSerialized": true,
+    "callerTransactionOwnsEffectTransitionAndAudit": true,
+    "auditAndEffectFailureRollback": true,
+    "expiryOutcomeCommitsWithoutEffect": true,
+    "eventOwnerPreservedAcrossDifferentAdminHomeOperators": true
+  },
+  "evidence": {
+    "nativeReceipts": [
+      {
+        "receipt": "C:/w/admin643-approval-audit-payload-red-20261027-v1.json",
+        "sha256": "5549585d70fb80ad7e6c35667bdb5d335d8962907331b615a2f06dcf375d1ab4",
+        "log": "C:/w/admin643-approval-audit-payload-red-20261027-v1.log",
+        "logSha256": "68db88f03eca976caaebe6d3ca5303397b7f909363095d23c9a72a972607ae6b",
+        "exitCode": 1,
+        "startedAt": "2026-10-26T17:42:16.771Z",
+        "completedAt": "2026-10-26T17:42:37.509Z",
+        "inputsUnchanged": true,
+        "ownEmbeddedPgRemoved": true,
+        "wholeLogReadIndependently": true
+      },
+      {
+        "receipt": "C:/w/admin643-approval-audit-payload-green-20261027-v1.json",
+        "sha256": "e6f97dc93192a131683faf15e5c6074841225a6318c87178768860e5ffdef0a5",
+        "log": "C:/w/admin643-approval-audit-payload-green-20261027-v1.log",
+        "logSha256": "0c3208913af0a94b787af4a908b14881639ef6a89ddf4ec50c6a4406bd2109ea",
+        "exitCode": 0,
+        "startedAt": "2026-10-26T17:42:53.094Z",
+        "completedAt": "2026-10-26T17:43:13.453Z",
+        "inputsUnchanged": true,
+        "ownEmbeddedPgRemoved": true,
+        "wholeLogReadIndependently": true
+      },
+      {
+        "receipt": "C:/w/admin643-approval-grant-lock-red-20261027-v1.json",
+        "sha256": "39a26c6c30a4437a9717bc959982a4a32c03686fbfcd39ea5762178cfb14b42a",
+        "log": "C:/w/admin643-approval-grant-lock-red-20261027-v1.log",
+        "logSha256": "b341baa2ccfcd6ee1ded308eb32aedd1cdd2b266a8b457476af2e2ec48d868c8",
+        "exitCode": 1,
+        "startedAt": "2026-10-26T17:45:22.643Z",
+        "completedAt": "2026-10-26T17:45:47.608Z",
+        "inputsUnchanged": true,
+        "ownEmbeddedPgRemoved": true,
+        "wholeLogReadIndependently": true
+      },
+      {
+        "receipt": "C:/w/admin643-approval-grant-lock-green-20261027-v1.json",
+        "sha256": "fb851ef610f3f567c74d03a99b775f3c472be396acbdb3c25d9433153979fb21",
+        "log": "C:/w/admin643-approval-grant-lock-green-20261027-v1.log",
+        "logSha256": "858d600884709746f6a8e78cf590455ade1913f2d72a5b6a1cbf94d0dc301d1d",
+        "exitCode": 0,
+        "startedAt": "2026-10-26T17:46:21.005Z",
+        "completedAt": "2026-10-26T17:46:43.883Z",
+        "inputsUnchanged": true,
+        "ownEmbeddedPgRemoved": true,
+        "wholeLogReadIndependently": true
+      }
+    ],
+    "original14CaseBodiesByteIdenticalInAst": true,
+    "case15": "Native DB withTx/access-control/delete/audit critical-section schedule, source-bound to the account route order; actual PostgreSQL grant lock wait observed before audit release. This is not an injected HTTP DELETE test.",
+    "cleanup": {
+      "embeddedDirectoryCensusesUnchanged": true,
+      "newOwnEmbeddedDirectoriesRemaining": 0
+    },
+    "compilerAndLint": {
+      "authorObserved": {
+        "eslint": {
+          "command": "pnpm exec eslint <four sourceFiles>",
+          "exitCode": 0,
+          "diagnosticLines": 0,
+          "wholeOutputRead": true
+        },
+        "apiCompiler": {
+          "command": "pnpm --filter @oto/api typecheck",
+          "exitCode": 0,
+          "diagnosticLines": 0,
+          "wholeOutputRead": true
+        }
+      },
+      "independentCompilerLogRead": false,
+      "reason": "Final verification records terminal outcomes but supplies no separate compiler/lint log paths."
+    }
+  },
+  "limits": [
+    "Current final native coverage is 15 whole-file cases; the earlier14 are repeated, not additional unique cases.",
+    "DB schema hash is bound and API fixture migrations run. Coordinator-owned DB structural gates, regenerated0089 snapshot and broader release checks are not claimed by this review.",
+    "The actual control writer remains responsible for catalogue, owned scope lineage, value type, expected revision and maximum TTL in the same caller transaction. Those Q24 integrations remain separate.",
+    "No public approval route, staging, provider effect, full SCRUM-643 completion or deployment was exercised or approved."
+  ],
+  "reviewerActions": {
+    "repoEdits": false,
+    "testsRun": false,
+    "resourcesStarted": false,
+    "network": false,
+    "staging": false
+  }
+}

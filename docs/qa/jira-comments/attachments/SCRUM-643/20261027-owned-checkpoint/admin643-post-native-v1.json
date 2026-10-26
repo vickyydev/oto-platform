@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-643",
+  "mode": "post-native",
+  "attempt": "v1",
+  "command": "pnpm --filter @oto/api test test/suite-controls-review.test.ts test/suite-control-approvals-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "startedAt": "2026-10-26T17:53:34.733Z",
+  "completedAt": "2026-10-26T17:55:01.933Z",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "bdf449abc01f732c1ae4219aede01a1f81e9759bd18c9c41db45ca95d7509112",
+  "runnerSha256": "d9d8e8b8c77fe59b05637bf0ce74f01cde1ac0c4815c506a7235ba925089e205",
+  "staging": false,
+  "localOnly": true
+}

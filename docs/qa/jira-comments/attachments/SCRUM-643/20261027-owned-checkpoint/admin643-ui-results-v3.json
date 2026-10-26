@@ -1,0 +1,179 @@
+{
+  "ticket": "SCRUM-643",
+  "version": 3,
+  "createdAt": "2026-10-26T17:38:00.265Z",
+  "uiFrozen": true,
+  "sourceLanded": false,
+  "staging": false,
+  "priorReceipt": {
+    "path": "C:/w/admin643-ui-results-v2.json",
+    "sha256": "2aff47140a44198375efbf08567b19d96e43badd75e961a0d95c794262b099aa",
+    "unchanged": true
+  },
+  "ownedFiles": [
+    {
+      "path": "apps/console/src/api/suite-controls.ts",
+      "sha256": "545299dcb75f96b6682af5ca7ed841ce483429361399dd0b140ee7855fa537f4"
+    },
+    {
+      "path": "apps/console/src/pages/SuiteControls.tsx",
+      "sha256": "b510c2a1eb511fc80fb108a105375cd6bff2fd5c6f9f0390e843ef0dc1d76871"
+    },
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "01ff13c0b1ad1a11ab37792858d07af1257054be64be0bf3d75835ad6c1549b9"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "d55ba10ae421eb092b4a7fa756813c669d72d052f667c6ca754618b9ca8bcf23"
+    },
+    {
+      "path": "apps/console/test/suite-controls.test.ts",
+      "sha256": "a084e7c2f60b261f0ade04f44ff1fe208319da55fe7755d88ee5dd584e88db4e"
+    },
+    {
+      "path": "apps/console/e2e/suite-controls.spec.ts",
+      "sha256": "2de34ea71a2ecfa2d703a8aac2db322f3d42050fdf2415bfacd53805c83919ab"
+    }
+  ],
+  "changedFilesSinceV2": [
+    {
+      "path": "apps/console/src/api/suite-controls.ts",
+      "sha256": "545299dcb75f96b6682af5ca7ed841ce483429361399dd0b140ee7855fa537f4"
+    },
+    {
+      "path": "apps/console/src/pages/SuiteControls.tsx",
+      "sha256": "b510c2a1eb511fc80fb108a105375cd6bff2fd5c6f9f0390e843ef0dc1d76871"
+    },
+    {
+      "path": "apps/console/e2e/suite-controls.spec.ts",
+      "sha256": "2de34ea71a2ecfa2d703a8aac2db322f3d42050fdf2415bfacd53805c83919ab"
+    }
+  ],
+  "addition": "Independent read-only Box agent versions under Releases, using the generated DTO and API-owned minimum/version assessment.",
+  "baseline": {
+    "native": {
+      "passed": 1,
+      "failed": 1,
+      "notRun": 7,
+      "log": {
+        "path": "C:/w/admin643-ui-browser-agents-red.log",
+        "exitCode": 1,
+        "sha256": "1f6ccf5178f390181738301eb0d28b1e378805cbb24b9a3beebfa919e8e63fb8"
+      },
+      "receipt": {
+        "phase": "agents-red",
+        "startedAt": "2026-10-26T17:32:27.478Z",
+        "finishedAt": "2026-10-26T17:33:20.609Z",
+        "exitCode": 1,
+        "nativeExitCode": 1,
+        "failure": null,
+        "teardown": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        },
+        "databaseCensusUnchanged": true,
+        "logSha256": "1f6ccf5178f390181738301eb0d28b1e378805cbb24b9a3beebfa919e8e63fb8",
+        "staging": false,
+        "built": true,
+        "command": "pnpm --filter @oto/console e2e -- suite-controls.spec.ts --max-failures=1"
+      },
+      "observed": "Recorded history and its five null facts rendered, but Box agent versions heading was absent.",
+      "artifacts": [
+        {
+          "path": "C:/w/admin643-ui-agents-red-artifacts/error-context.md",
+          "sha256": "42b7cea07a6cefea5fbf9a9fe6fcd25cea79ed3296debb3a7196a476f898bd7b"
+        },
+        {
+          "path": "C:/w/admin643-ui-agents-red-artifacts/test-failed-1.png",
+          "sha256": "86ce1923eb4f4436d04d7c92c5e5cce52db44423f2ffd3eba02d7cd6c104c208"
+        }
+      ]
+    }
+  },
+  "green": {
+    "consoleUnits": {
+      "passed": 366,
+      "todo": 3,
+      "files": 38,
+      "log": {
+        "path": "C:/w/admin643-ui-unit-green-v3.log",
+        "exitCode": 0,
+        "sha256": "3776d5a10b2af763af94248081c5dc38f8fb026331290ea977da296506bfaf42"
+      }
+    },
+    "consoleOwnTypecheck": {
+      "projects": 3,
+      "diagnostics": 0,
+      "log": {
+        "path": "C:/w/admin643-ui-typecheck-v3.log",
+        "exitCode": 0,
+        "sha256": "6d505d7069af392db41ea95aaff6388736dbf5734e8025cc6d327ca580df2f8d"
+      }
+    },
+    "changedFileLint": {
+      "files": 6,
+      "errors": 0,
+      "warnings": 0,
+      "log": {
+        "path": "C:/w/admin643-ui-lint-v3.log",
+        "exitCode": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "apiTypesSeam": {
+      "passed": 10,
+      "log": {
+        "path": "C:/w/admin643-ui-seam-v3.log",
+        "exitCode": 0,
+        "sha256": "20b6c316f5994827637ac84297079e97d9dba6d92ed4206a5fb1a7b13aa07974"
+      }
+    },
+    "builtBrowser": {
+      "passed": 9,
+      "log": {
+        "path": "C:/w/admin643-ui-browser-agents-green.log",
+        "exitCode": 0,
+        "sha256": "4d198c1d288f38f11e7a458ba3cf0e927cf9ce71f637c7b94158238ddbd46ae7"
+      },
+      "receipt": {
+        "phase": "agents-green",
+        "startedAt": "2026-10-26T17:35:33.376Z",
+        "finishedAt": "2026-10-26T17:36:29.201Z",
+        "exitCode": 0,
+        "nativeExitCode": 0,
+        "failure": null,
+        "teardown": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        },
+        "databaseCensusUnchanged": true,
+        "logSha256": "4d198c1d288f38f11e7a458ba3cf0e927cf9ce71f637c7b94158238ddbd46ae7",
+        "staging": false,
+        "built": true,
+        "command": "pnpm --filter @oto/console e2e -- suite-controls.spec.ts"
+      }
+    }
+  },
+  "checks": {
+    "independentHistoryAndAgentReads": true,
+    "refreshBoth": true,
+    "independentPageOffsets": true,
+    "wrongOperatorDtoRefusedBeforeRender": true,
+    "actorAndOperatorAtoBtoAFences": true,
+    "nullableVersionAndHeartbeatHonest": true,
+    "belowMinimumAssessmentServerOwned": true,
+    "historyAndAgentShrunkPageCountsHonest": true,
+    "longBoxSlotParkAt390": true,
+    "mutationControlsAbsent": true
+  },
+  "limits": [
+    "Registry and release history are read-only. No mutation, provider, deployment or consumer integration is presented as working.",
+    "Native browser responses are local intercepted fixtures; no staging/authentication/helper execution or real business mutation occurred.",
+    "Red and green own embedded servers were stopped, helper databases dropped and native database censuses unchanged.",
+    "No Git, docs, Jira, generated client or other owned-lane files were edited. Full coordinator release gates remain separate.",
+    "Agent baseline proves the absent required panel; nullable, foreign/stale operator, independent error and pager behavior are the subsequent native feature checks. No software upgrade, restart, Box mutation or box health verdict is provided."
+  ]
+}

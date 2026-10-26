@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-26T18:01:04.791Z",
+  "sourceSha": "b87981acb2ef8fcc361a30be5ecf9e6989dd3941",
+  "publishedBranch": "lane/admin-suite-controls",
+  "releaseGreen": false,
+  "staging": false,
+  "archives": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-source-checkpoint-20261027.json",
+      "sha256": "233edfacc4ae5031016c394f88077282b52079a4c42037dd045b72f20608c0ba"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-post-native-v1.json",
+      "sha256": "7e56857e8a8cf27121d88a491b29f25fc44c6862114242640637f84717c02016"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-post-workspace-v1.json",
+      "sha256": "34d0b3376cdac9d2b33e9c8291977c7f69e2b8cc479f47ec39d40d7d8701d3e4"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-db-battery-db-full-v1.json",
+      "sha256": "a69dd767c0f4d4796da78e318c241dff78fdb959e7c257417b5c20b70f012795"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-schema-v2.json",
+      "sha256": "7ccf3edbbd07dd5c58f400dc6408b4db6080430857a079549e46dad7d78e110b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-ui-results-v3.json",
+      "sha256": "f236c25d8f467b6e6662a741b20d409b337c27f68706c08f001a79ef8f21586d"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-ui-independent-review-v3.json",
+      "sha256": "598d19a0c0bda037037bee66c9371ce63a296ff25bb12334d4b6c313f98bd96c"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-agents-read-independent-review-v2.json",
+      "sha256": "5e8a9af0f97b3fbea10c462db377f387f4d88ce1d94557942831242b7b79cd86"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-approval-final-verification-20261027-v1.json",
+      "sha256": "4fc4c20454e8c98d101841b3a048509ee678826bad95424add2f480a07dce3e4"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-approval-independent-review-v2.json",
+      "sha256": "d1013d48e0b08e9839353c72e39d6b6fff930aa302fed2065bd57b971f7a7026"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-approval-audit-payload-red-20261027-v1.json",
+      "sha256": "5549585d70fb80ad7e6c35667bdb5d335d8962907331b615a2f06dcf375d1ab4"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-approval-audit-payload-green-20261027-v1.json",
+      "sha256": "e6f97dc93192a131683faf15e5c6074841225a6318c87178768860e5ffdef0a5"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-approval-grant-lock-red-20261027-v1.json",
+      "sha256": "39a26c6c30a4437a9717bc959982a4a32c03686fbfcd39ea5762178cfb14b42a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-643/20261027-owned-checkpoint/admin643-approval-grant-lock-green-20261027-v1.json",
+      "sha256": "fb851ef610f3f567c74d03a99b775f3c472be396acbdb3c25d9433153979fb21"
+    }
+  ]
+}

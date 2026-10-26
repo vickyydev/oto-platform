@@ -1,0 +1,18 @@
+{
+  "phase": "db-full",
+  "startedAt": "2026-10-26T17:43:23.953Z",
+  "finishedAt": "2026-10-26T17:49:33.322Z",
+  "exitCode": 0,
+  "nativeExitCode": 0,
+  "failure": null,
+  "teardown": {
+    "helperDatabaseDropped": true,
+    "harnessDatabasesAbsent": true,
+    "embeddedServerStopped": true
+  },
+  "databaseCensusUnchanged": true,
+  "logSha256": "3d5b58eed1eae76f2b43e073c6653ff0a8586bec0535641f7290586527e28127",
+  "staging": false,
+  "built": false,
+  "command": "pnpm --filter @oto/db test"
+}

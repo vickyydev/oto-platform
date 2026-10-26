@@ -1,0 +1,160 @@
+{
+  "ticket": "SCRUM-643",
+  "reviewedAt": "2026-10-26T17:48:34.704Z",
+  "passed": true,
+  "scope": "Frozen v3 read-only Console registry, release history and Box agent versions; no full-ticket release approval",
+  "reviewedReceipt": {
+    "path": "C:/w/admin643-ui-results-v3.json",
+    "sha256": "f236c25d8f467b6e6662a741b20d409b337c27f68706c08f001a79ef8f21586d"
+  },
+  "sourceFiles": [
+    {
+      "path": "apps/console/src/api/suite-controls.ts",
+      "sha256": "545299dcb75f96b6682af5ca7ed841ce483429361399dd0b140ee7855fa537f4"
+    },
+    {
+      "path": "apps/console/src/pages/SuiteControls.tsx",
+      "sha256": "b510c2a1eb511fc80fb108a105375cd6bff2fd5c6f9f0390e843ef0dc1d76871"
+    },
+    {
+      "path": "apps/console/src/App.tsx",
+      "sha256": "01ff13c0b1ad1a11ab37792858d07af1257054be64be0bf3d75835ad6c1549b9"
+    },
+    {
+      "path": "apps/console/src/components/consoleSections.tsx",
+      "sha256": "d55ba10ae421eb092b4a7fa756813c669d72d052f667c6ca754618b9ca8bcf23"
+    },
+    {
+      "path": "apps/console/test/suite-controls.test.ts",
+      "sha256": "a084e7c2f60b261f0ade04f44ff1fe208319da55fe7755d88ee5dd584e88db4e"
+    },
+    {
+      "path": "apps/console/e2e/suite-controls.spec.ts",
+      "sha256": "2de34ea71a2ecfa2d703a8aac2db322f3d42050fdf2415bfacd53805c83919ab"
+    }
+  ],
+  "deltaFromV2": [
+    "apps/console/src/api/suite-controls.ts",
+    "apps/console/src/pages/SuiteControls.tsx",
+    "apps/console/e2e/suite-controls.spec.ts"
+  ],
+  "priorIndependentReview": {
+    "path": "C:/w/admin643-ui-independent-review.json",
+    "sha256": "db59f40b5a46b74ec283d252dee429675d2c08df5b980f79c949b519c1fb0820",
+    "preserved": true
+  },
+  "findings": [],
+  "checks": {
+    "generatedApiPathAndReadOnlyGrammar": true,
+    "exactOwnOrNullOperatorReadAuthority": true,
+    "exactAgentDtoOperatorMatchBeforeRender": true,
+    "actorAndEffectiveOperatorAbaFences": true,
+    "queryIdentityMasksPreviousPageAndLateAnswers": true,
+    "independentHistoryAndAgentErrorsAndOffsets": true,
+    "refreshAndRetryGuarded": true,
+    "noVersionOrHeartbeatInvented": true,
+    "minimumAssessmentUsesServerBooleanWithoutClientReinterpretation": true,
+    "emptyCurrentPageDoesNotClaimNoHistoryOrBoxes": true,
+    "existingAppAndNavigationBytesUnchangedFromV2": true,
+    "phoneUsesNativeWrappingAndMinWidthRules": true,
+    "noMutationOffers": true
+  },
+  "observedEvidence": {
+    "nativeBaseline": {
+      "passed": 1,
+      "failed": 1,
+      "notRun": 7,
+      "meaning": "Required Box agent versions heading absent",
+      "receiptSha256": "d52cc10c2ec2d3133a22706cc3e307b449251429938197ed3204384212c5bb7d"
+    },
+    "nativeFinal": {
+      "passed": 9,
+      "failed": 0,
+      "workers": 1,
+      "retries": 0,
+      "receiptSha256": "a8c55bc0709f7a2f8ccd5f379a14960768b0740b73a8da91febc4a5823d8f828",
+      "cleanup": {
+        "helperDatabaseDropped": true,
+        "harnessDatabasesAbsent": true,
+        "embeddedServerStopped": true
+      },
+      "databaseCensusUnchanged": true
+    },
+    "unit": {
+      "files": 38,
+      "passed": 366,
+      "todo": 3
+    },
+    "compiler": {
+      "projects": 3,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    "lint": {
+      "files": 6,
+      "errors": 0,
+      "warnings": 0
+    },
+    "apiTypesSeam": {
+      "passed": 10
+    },
+    "logs": [
+      {
+        "path": "C:/w/admin643-ui-browser-agents-red.log",
+        "sha256": "1f6ccf5178f390181738301eb0d28b1e378805cbb24b9a3beebfa919e8e63fb8",
+        "exitCode": 1,
+        "wholeOutputRead": true
+      },
+      {
+        "path": "C:/w/admin643-ui-unit-green-v3.log",
+        "sha256": "3776d5a10b2af763af94248081c5dc38f8fb026331290ea977da296506bfaf42",
+        "exitCode": 0,
+        "wholeOutputRead": true
+      },
+      {
+        "path": "C:/w/admin643-ui-typecheck-v3.log",
+        "sha256": "6d505d7069af392db41ea95aaff6388736dbf5734e8025cc6d327ca580df2f8d",
+        "exitCode": 0,
+        "wholeOutputRead": true
+      },
+      {
+        "path": "C:/w/admin643-ui-lint-v3.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exitCode": 0,
+        "wholeOutputRead": true
+      },
+      {
+        "path": "C:/w/admin643-ui-seam-v3.log",
+        "sha256": "20b6c316f5994827637ac84297079e97d9dba6d92ed4206a5fb1a7b13aa07974",
+        "exitCode": 0,
+        "wholeOutputRead": true
+      },
+      {
+        "path": "C:/w/admin643-ui-browser-agents-green.log",
+        "sha256": "4d198c1d288f38f11e7a458ba3cf0e927cf9ce71f637c7b94158238ddbd46ae7",
+        "exitCode": 0,
+        "wholeOutputRead": true
+      }
+    ]
+  },
+  "testRetention": {
+    "priorEightCaseNamesObservedAgain": true,
+    "currentAssertionsRead": true,
+    "oldEightCompleteByteComparison": false,
+    "reason": "The immutable v2 receipt retains its source hash and whole-eight GREEN log; no complete v2 test source snapshot was preserved. Current source retains the observed access, alias, failure/retry, actor/context ABA, history shrink and phone assertions and adds agent-specific assertions."
+  },
+  "limits": [
+    "Browser API responses are intercepted local fixtures; this does not prove staging authentication, current API SQL execution or live Box state.",
+    "The prior agents API independent review separately covers operator joins and native Health fallback; this UI review does not replace server authorization.",
+    "The agent pager uses the same reviewed query-identity hook; its new case confirms final pagination, empty page and independent errors, without a separately held agent-pagination response.",
+    "The phone case reads long agent fixture data and checks document width; no independent pixel screenshot review was performed here.",
+    "Q24 mutation, flag consumers, approval wiring, provider/deployment actions and complete release gates remain outside this partial read UI review."
+  ],
+  "reviewerActions": {
+    "testsRun": false,
+    "resourcesStarted": false,
+    "repoEdits": false,
+    "network": false,
+    "staging": false
+  }
+}

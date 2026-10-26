@@ -1,0 +1,63 @@
+{
+  "ticket": "SCRUM-643",
+  "passed": true,
+  "reviewedAt": "2026-10-26T17:36:35.467Z",
+  "scope": "Narrow independent source/evidence closure of GET /console/releases/agents read finding",
+  "previousReview": {
+    "path": "C:/w/admin643-agents-read-independent-review-v1.json",
+    "sha256": "1eb6df10898583df5174f790710f6fad6a00bd3a2cf307607e489cc13c419346",
+    "preserved": true
+  },
+  "sourceFilesSha256": {
+    "apps/api/src/routes/suite-controls.ts": "8f18ab31cb9e2bae79bb66f729901c44b683e88bdc8bf0476e087b41df423a8d",
+    "apps/api/src/services/suite-controls.ts": "85a6432bdfdb0fb2e76c7f3f04c3d2f4886018725a94466ac371fd55f1c2cd58",
+    "apps/api/test/suite-controls-review.test.ts": "6fc91c31e9b511e37801e1bce7c1f2386cba2d3b47b8d7f9c88c94ae3fd0c363",
+    "apps/api/test/route-scope-target.test.ts": "d27c8c71eb2e95497b6dffa9756fdb7d8cabb9627666048123a97e56a0e37ae9"
+  },
+  "healthSemanticsSources": {
+    "opsSha256": "43471f25e8e59e8cf59845d5a5234905b5a028333cfaf4ab9645d4025a407148",
+    "boxSha256": "3e6fafc0d145fbcc3b5256fd062d786755f140fb37bd5d8c3f20c324b33598b1"
+  },
+  "closedFindings": [
+    {
+      "id": "R-AGENT-EMPTY-HEARTBEAT-VERSION",
+      "fix": "Only nonempty strings are used from lastStatus.agentVersion; stored agentVersion precedence, whitespace handling, boxSettings minimum and versionBelow remain unchanged.",
+      "regression": "R7 now supplies null stored version with empty heartbeat fallback and requires null agentVersion/belowMinimum/heartbeat.",
+      "red": {
+        "path": "C:/w/admin643-api-red-v3.json",
+        "sha256": "9ff8495cc76647cefeb31ea86fa01d779f29f670cdbab0d2e7492de98d034f3c",
+        "exitCode": 1,
+        "signal": null,
+        "logPath": "C:/w/admin643-api-red-v3.log",
+        "logSha256": "8d41a4de327cd65e02996a5594dbb08c176022b9021181ba41ddbbd0d4666151",
+        "runnerSha256": "5c45063ac468763166c12cb490ea9d93a7df9792f5d11a92d8e4093c22701d8d",
+        "pass": 8,
+        "fail": 1
+      },
+      "green": {
+        "path": "C:/w/admin643-api-green-v3.json",
+        "sha256": "9c9e171949cf64c773585f7fbd55678eec879bec94f6edf89e884da5f074e9e1",
+        "exitCode": 0,
+        "signal": null,
+        "logPath": "C:/w/admin643-api-green-v3.log",
+        "logSha256": "aa87cbf5efd5d8f5be8e43b34c43c6cbe9e02e8e2c2205a793d7202870891254",
+        "runnerSha256": "5c45063ac468763166c12cb490ea9d93a7df9792f5d11a92d8e4093c22701d8d",
+        "pass": 9,
+        "fail": 0
+      }
+    }
+  ],
+  "openFindings": [],
+  "checks": [
+    "Exact operatorOnly permission and trusted auth.operatorId scope; both box and branch owner/live filters retained.",
+    "Explicit safe projection and read-only repeatable-read count/page retained; no box actions or extra metadata.",
+    "Response schema preserves nullable unknowns, bounded pagination and existing Health fallback/comparison.",
+    "GET and automatic HEAD of new route are explicitly included in scope-target guard classification."
+  ],
+  "limits": [
+    "Read-only source and existing terminal receipt/log review; no reviewer tests, runtime, Git or live actions.",
+    "Receipts bind actual command/runner/log outcomes; this review separately binds the four current files and does not invent a full-runtime source manifest.",
+    "Q24/full643 integration and upcoming UI version remain outside this narrow closure."
+  ],
+  "repositoryEdits": false
+}
