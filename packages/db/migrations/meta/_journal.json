@@ -624,6 +624,13 @@
       "when": 1793018039565,
       "tag": "0088_operator_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1793036371660,
+      "tag": "0089_suite_controls",
+      "breakpoints": true
     }
   ]
 }

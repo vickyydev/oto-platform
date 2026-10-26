@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERMISSIONS, PERMISSION_WORDS, type Permission } from '../src/permissions';
+import { PERMISSIONS, PERMISSION_WORDS, ROLE_BUNDLES, type Permission } from '../src/permissions';
 
 describe('plain permission sentences (SCRUM-612)', () => {
   it('covers exactly the declared vocabulary through the public permissions module', () => {
@@ -58,6 +58,45 @@ describe('plain permission sentences (SCRUM-612)', () => {
     ];
     for (const [permission, meaning] of examples) {
       expect(PERMISSION_WORDS[permission], permission).toMatch(meaning);
+    }
+  });
+});
+
+describe('suite controls permission boundaries (SCRUM-643)', () => {
+  const entries = [
+    ['console:app_registry:read', /read.*app.*directory.*maintenance/i],
+    ['console:app_registry:manage', /manage.*app.*maintenance/i],
+    ['console:release:read', /read.*versions.*deployment.*flags.*kill switches/i],
+    ['console:release:flag_manage', /change.*scoped feature flags/i],
+    ['console:release:kill_switch', /emergency.*expiry.*reason.*confirmation/i],
+  ] as const;
+  const writes = new Set<string>([
+    'console:app_registry:manage', 'console:release:flag_manage', 'console:release:kill_switch',
+  ]);
+
+  it.each(entries)('declares %s exactly once with a distinct plain meaning', (permission, meaning) => {
+    expect((PERMISSIONS as readonly string[]).filter(entry => entry === permission)).toEqual([permission]);
+    expect((PERMISSION_WORDS as Readonly<Record<string, string>>)[permission]).toMatch(meaning);
+  });
+
+  it('gives the platform administrator all five controls without losing existing permissions', () => {
+    expect(ROLE_BUNDLES.platform_admin).toEqual(expect.arrayContaining(entries.map(([permission]) => permission)));
+    expect([...ROLE_BUNDLES.platform_admin].sort()).toEqual([...PERMISSIONS].sort());
+  });
+
+  it('gives operator administrators both reads while excluding exactly the three new writes', () => {
+    expect(ROLE_BUNDLES.operator_admin).toEqual(expect.arrayContaining([
+      'console:app_registry:read', 'console:release:read',
+    ]));
+    expect([...ROLE_BUNDLES.operator_admin].sort()).toEqual(PERMISSIONS.filter(permission => !writes.has(permission)).sort());
+    expect(ROLE_BUNDLES.platform_admin.filter(permission => !ROLE_BUNDLES.operator_admin.includes(permission)).sort())
+      .toEqual([...writes].sort());
+  });
+
+  it('adds no suite control to branch manager, reception or staff bundles', () => {
+    const suiteControls = new Set<string>(entries.map(([permission]) => permission));
+    for (const role of ['branch_manager', 'reception', 'staff'] as const) {
+      expect(ROLE_BUNDLES[role].filter(permission => suiteControls.has(permission)), role).toEqual([]);
     }
   });
 });

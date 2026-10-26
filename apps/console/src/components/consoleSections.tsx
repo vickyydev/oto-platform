@@ -37,6 +37,10 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'apps', path: '/organisation/apps', label: 'Apps', icon: Plug,
+    description: 'The recorded suite app registry, origins, tile states and maintenance details.', permission: 'console:app_registry:read' },
+  { id: 'releases', path: '/watch/releases', label: 'Releases', icon: Activity,
+    description: 'Recorded app deployment history, versions, commits and CI outcomes.', permission: 'console:release:read' },
   { id: 'inventory', path: '/catalogue/inventory', label: 'Inventory', icon: Ticket,
     description: 'Stock items, variants, counts and stock locations at a park.' },
   { id: 'members', path: '/catalogue/members', label: 'Members', icon: Users,
@@ -265,8 +269,8 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'organisation', label: 'Organisation', icon: Building2,
-    description: 'Operators, branches, their connection to the OTO App and ticket-pricing holidays.',
-    gate: { any: ['admin:branch:read'] }, sections: pages('operators', 'branches', 'holidays'),
+    description: 'Operators, branches, their connection to the OTO App, ticket-pricing holidays and the suite app registry.',
+    gate: { any: ['admin:branch:read', 'console:app_registry:read'] }, sections: pages('operators', 'branches', 'holidays', 'apps'),
   },
   {
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,
@@ -296,9 +300,9 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'watch', label: 'Watch', icon: Activity,
-    description: 'Health, failures, integrations and the activity log.',
-    gate: { any: ['admin:health:read', 'admin:audit:read'] },
-    sections: pages('health', 'failures', 'integrations', 'activity'),
+    description: 'Health, failures, integrations, the activity log and recorded releases.',
+    gate: { any: ['admin:health:read', 'admin:audit:read', 'console:release:read'] },
+    sections: pages('health', 'failures', 'integrations', 'activity', 'releases'),
   },
   {
     id: 'platform', label: 'Platform', icon: Shield,
