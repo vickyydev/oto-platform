@@ -1,5 +1,8 @@
 # Current status - read this first when resuming
 
+
+**26 October 2026, SCRUM-640 RESUMED WITH BOTH Q23 FIXES:** The planner delivered d3c1c520 on top of the already integrated 287c9d96. Both delivery holds are cleared. The coordinator is integrating the four-file patch into the saved combined candidate, reviewing it independently, then running affected whole-file regressions and final release gates. The existing refusal assertion stays unchanged; the opener now rechecks context before using a refusal. Original failed evidence remains historical. No new owner question is needed. Finish the exact-SHA main CI, automatic API/Console rollout and reviewed native switch/audit proof before SCRUM-640 Deployed; then give parent635 its fresh Overview and attached evidence. P5 stays behind P4 acceptance. Source integration and verification are in progress, not yet a new release pass.
+
 **26 October 2026, Q23 DELIVERED: BOTH PROTECTED FIXES ARE ON THE PLANNER LANE:** lane/planner-640-ask-context now ends at d3c1c520 (on 287c9d96, on the published 95064667). Take both commits into the combined 640 candidate.
 
 Fix 1 — the early-opener path. engine.ts rechecks the ask's pinned operator context immediately after the OTO App opener settles, before branching on a refusal, so a refusal read after a switch is discarded unread and the ask closes TOOL_ERROR with CONTEXT_CHANGED. Regression in assistant-otoapp: an unlinked person's opener is held mid-sign-in by a new test-only fake hook (FakeOtoApp.duringHandoff) while two switch rows (A to B to A) land on that same session; no refusal surfaces, the model never continues, no app session is issued. Red without the fix, green with it.

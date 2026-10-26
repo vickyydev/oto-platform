@@ -34,6 +34,8 @@ Worktrees: Codex works in `C:/w/<lane>` worktrees on `lane/<topic>` branches as 
 
 ### Questions and standing authorizations (owner directive 2026-10-23)
 
+**26 October 2026, SCRUM-640 RESUMED WITH BOTH Q23 FIXES:** The planner delivered d3c1c520 on top of the already integrated 287c9d96. Both delivery holds are cleared. The coordinator is integrating the four-file patch into the saved combined candidate, reviewing it independently, then running affected whole-file regressions and final release gates. The existing refusal assertion stays unchanged; the opener now rechecks context before using a refusal. Original failed evidence remains historical. No new owner question is needed. Finish the exact-SHA main CI, automatic API/Console rollout and reviewed native switch/audit proof before SCRUM-640 Deployed; then give parent635 its fresh Overview and attached evidence. P5 stays behind P4 acceptance. Source integration and verification are in progress, not yet a new release pass.
+
 Validation closure (2026-10-26, SCRUM-640): the complete API census and unchanged ten-file documentation-input closure leave 5,863 distinct passes, one known Q23 failure, two optional-storage skips and five TODOs. All independent checks are complete and their evidence is published; Q23 below remains the protected planner delivery. No feature push, main release or staging acceptance is authorized by this partial result. Parent SCRUM-635 also needs its own post-640 Overview image and named switch/audit evidence; P5 waits.
 
 
