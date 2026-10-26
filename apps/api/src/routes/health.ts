@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import { opsLast } from '@oto/db';
 import type { App } from '../app';
 import { stationChannels } from '../lib/station-channel';
+import { LivenessResponse, NotReadyResponse, ReadyResponse } from './health-integration-schemas';
 
 /**
  * Liveness and readiness (S2-03).
@@ -65,9 +66,9 @@ function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
 }
 
 export async function healthRoutes(app: App): Promise<void> {
-  app.get('/health', { config: { public: true } }, async () => ({ status: 'ok' }));
+  app.get('/health', { config: { public: true }, schema: { response: { 200: LivenessResponse } } }, async () => ({ status: 'ok' }));
 
-  app.get('/ready', { config: { public: true } }, async (_req, reply) => {
+  app.get('/ready', { config: { public: true }, schema: { response: { 200: ReadyResponse, 503: NotReadyResponse } } }, async (_req, reply) => {
     const started = Date.now();
     let databaseOk = false;
     try {

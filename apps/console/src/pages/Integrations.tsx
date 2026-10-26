@@ -29,7 +29,7 @@ import { SettlementImportPanel } from '@/components/integrations/SettlementImpor
 import { CommandBar } from '@/components/redesign/CommandBar';
 import { BarChip, CodeTag, StatusChip, Tag, TitleChip } from '@/components/redesign/chips';
 import { CardShell, FactLine, FactList, PageGrid, StripedList } from '@/components/redesign/layout';
-import { EmptyNote } from '@/components/redesign/StatTile';
+import { EmptyNote, UnreadNote } from '@/components/redesign/StatTile';
 import { useSession } from '@/auth/SessionContext';
 import { formatWhen, timeAgo } from '@/lib/time';
 
@@ -91,7 +91,7 @@ export function Integrations() {
         badges={<TitleChip>whether each is configured, and what it last did</TitleChip>}
         actions={
           <>
-            {snapshot && !missing && (
+            {snapshot && !missing && !error && !loading && (
               <BarChip tone={unset.length === 0 ? 'ok' : requiredUnset > 0 ? 'down' : 'warn'}>
                 {unset.length === 0
                   ? 'Everything provisioned'
@@ -119,6 +119,7 @@ export function Integrations() {
       </p>
 
       {error && <ErrorNote message={error} onRetry={() => void load()} />}
+      {(error || loading) && snapshot && <p className="text-sm text-muted-foreground">Service details below are from the last successful read.</p>}
 
       <PageGrid>
         {missing ? (
@@ -131,6 +132,10 @@ export function Integrations() {
         ) : loading && !snapshot ? (
           <CardShell span={12} icon={Plug} title="Services">
             <Loading what="integrations" />
+          </CardShell>
+        ) : error && !snapshot ? (
+          <CardShell span={12} icon={Plug} title="Services">
+            <UnreadNote what="The integration list" />
           </CardShell>
         ) : providers.length === 0 ? (
           <CardShell span={12} icon={Plug} title="Services">
@@ -169,7 +174,11 @@ export function Integrations() {
             title="Variables to provision"
             note="named from the API's environment schema; anything unset is a service that will not work until someone sets it in Render"
           >
-            {unset.length === 0 ? (
+            {error ? (
+              <UnreadNote what="The variable list" />
+            ) : loading ? (
+              <Loading what="variable presence" />
+            ) : unset.length === 0 ? (
               <EmptyNote
                 good
                 className="py-3"

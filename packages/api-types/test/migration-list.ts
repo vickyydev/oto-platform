@@ -43,7 +43,7 @@ export const HAND_TYPED: Record<string, number> = {
   'apps/console/src/api/analytics.ts': 1,
   'apps/console/src/api/bookings.ts': 1,
   'apps/console/src/api/fleet.ts': 27,
-  'apps/console/src/api/observability.ts': 8,
+  'apps/console/src/api/observability.ts': 7,
   'apps/console/src/api/platform.ts': 9,
   'apps/console/src/api/print.ts': 1,
   'apps/console/src/api/settlements.ts': 2,

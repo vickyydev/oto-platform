@@ -12,7 +12,26 @@
       "get": {
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -21,7 +40,255 @@
       "get": {
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ready",
+                        "degraded"
+                      ]
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "object",
+                          "properties": {
+                            "ok": {
+                              "type": "boolean"
+                            },
+                            "latencyMs": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "ok",
+                            "latencyMs"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "pool": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "number"
+                            },
+                            "idle": {
+                              "type": "number"
+                            },
+                            "waiting": {
+                              "type": "number"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "total",
+                            "idle",
+                            "waiting",
+                            "max"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "jobs": {
+                          "type": "object",
+                          "properties": {
+                            "configured": {
+                              "type": "boolean"
+                            },
+                            "watchdogAgeS": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "staleAfterS": {
+                              "type": "number"
+                            },
+                            "stale": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "configured",
+                            "watchdogAgeS",
+                            "staleAfterS",
+                            "stale"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "stationChannels": {
+                          "type": "object",
+                          "properties": {
+                            "stations": {
+                              "type": "number"
+                            },
+                            "connections": {
+                              "type": "number"
+                            },
+                            "perStation": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "required": [
+                            "stations",
+                            "connections",
+                            "perStation"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "database",
+                        "pool",
+                        "jobs",
+                        "stationChannels"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "checks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "not_ready"
+                      ]
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "object",
+                          "properties": {
+                            "ok": {
+                              "type": "boolean"
+                            },
+                            "latencyMs": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "ok",
+                            "latencyMs"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "pool": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "number"
+                            },
+                            "idle": {
+                              "type": "number"
+                            },
+                            "waiting": {
+                              "type": "number"
+                            },
+                            "max": {
+                              "type": "number",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "total",
+                            "idle",
+                            "waiting",
+                            "max"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "jobs": {
+                          "type": "object",
+                          "properties": {
+                            "configured": {
+                              "type": "boolean"
+                            },
+                            "watchdogAgeS": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "staleAfterS": {
+                              "type": "number"
+                            },
+                            "stale": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "configured",
+                            "watchdogAgeS",
+                            "staleAfterS",
+                            "stale"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "stationChannels": {
+                          "type": "object",
+                          "properties": {
+                            "stations": {
+                              "type": "number"
+                            },
+                            "connections": {
+                              "type": "number"
+                            },
+                            "perStation": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "required": [
+                            "stations",
+                            "connections",
+                            "perStation"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "database",
+                        "pool",
+                        "jobs",
+                        "stationChannels"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "checks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -74297,7 +74564,581 @@
         "description": "Dependency checks, the job register, every box with its devices, and open alerts — read from the database, not from this process",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "warn",
+                        "down",
+                        "unknown"
+                      ]
+                    },
+                    "checks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "warn",
+                              "down",
+                              "unknown"
+                            ]
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "enum": [
+                                  "null"
+                                ],
+                                "nullable": true
+                              }
+                            ]
+                          },
+                          "unit": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "detail": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "label",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "warn",
+                              "down",
+                              "unknown"
+                            ]
+                          },
+                          "lastRunAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastOutcome": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "expectedEverySeconds": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "ageSeconds": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "lastError": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "waitingOn": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status",
+                          "lastRunAt",
+                          "lastOutcome",
+                          "expectedEverySeconds",
+                          "ageSeconds",
+                          "lastError",
+                          "waitingOn"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "boxes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slot": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "warn",
+                              "down",
+                              "unknown"
+                            ]
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchName": {
+                            "type": "string"
+                          },
+                          "openingHours": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "closed",
+                              "not_set"
+                            ]
+                          },
+                          "agentVersion": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "minAgentVersion": {
+                            "type": "string"
+                          },
+                          "agentBelowMinimum": {
+                            "type": "boolean"
+                          },
+                          "lastHeartbeatAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "heartbeatAgeSeconds": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "uptimeSeconds": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "outboxDepth": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "oldestUnackedAgeS": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "quarantineOpen": {
+                            "type": "number"
+                          },
+                          "lastSyncAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "clockOffsetMs": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "tempC": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "currentEpoch": {
+                            "type": "number"
+                          },
+                          "configVersion": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "devices": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "kind": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "reachability": {
+                                  "type": "string"
+                                },
+                                "paperStatus": {
+                                  "type": "string"
+                                },
+                                "lastError": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "lastSeenAt": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "kind",
+                                "label",
+                                "reachability",
+                                "paperStatus",
+                                "lastError",
+                                "lastSeenAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "booths": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "stationId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "codePrefix": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "reported": {
+                                  "type": "object",
+                                  "properties": {
+                                    "configVersion": {
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "printerReachable": {
+                                      "type": "string"
+                                    },
+                                    "paperStatus": {
+                                      "type": "string"
+                                    },
+                                    "vouchersPending": {
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "pendingUnit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "vouchers",
+                                        "events"
+                                      ]
+                                    },
+                                    "lastSpinAt": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "staffSignedIn": {
+                                      "type": "boolean"
+                                    },
+                                    "dailyCapsReached": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "today": {
+                                      "type": "object",
+                                      "properties": {
+                                        "businessDate": {
+                                          "type": "string"
+                                        },
+                                        "spins": {
+                                          "type": "number"
+                                        },
+                                        "vouchers": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "businessDate",
+                                        "spins",
+                                        "vouchers"
+                                      ],
+                                      "additionalProperties": false,
+                                      "nullable": true
+                                    },
+                                    "pointerPresent": {
+                                      "type": "boolean",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": [
+                                    "configVersion",
+                                    "printerReachable",
+                                    "paperStatus",
+                                    "vouchersPending",
+                                    "pendingUnit",
+                                    "lastSpinAt",
+                                    "staffSignedIn",
+                                    "dailyCapsReached",
+                                    "today",
+                                    "pointerPresent"
+                                  ],
+                                  "additionalProperties": false,
+                                  "nullable": true
+                                },
+                                "unattributedToday": {
+                                  "type": "number",
+                                  "nullable": true
+                                },
+                                "businessDate": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "stationId",
+                                "name",
+                                "codePrefix",
+                                "reported",
+                                "unattributedToday",
+                                "businessDate"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "conditions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "detail": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slot",
+                          "role",
+                          "status",
+                          "state",
+                          "branchId",
+                          "branchName",
+                          "openingHours",
+                          "agentVersion",
+                          "minAgentVersion",
+                          "agentBelowMinimum",
+                          "lastHeartbeatAt",
+                          "heartbeatAgeSeconds",
+                          "uptimeSeconds",
+                          "outboxDepth",
+                          "oldestUnackedAgeS",
+                          "quarantineOpen",
+                          "lastSyncAt",
+                          "clockOffsetMs",
+                          "tempC",
+                          "currentEpoch",
+                          "configVersion",
+                          "devices",
+                          "booths",
+                          "conditions",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "alerts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "severity": {
+                            "type": "string",
+                            "enum": [
+                              "info",
+                              "warning",
+                              "critical"
+                            ]
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "detail": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "openedAt": {
+                            "type": "string"
+                          },
+                          "acknowledgedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "resolvedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "severity",
+                          "title",
+                          "detail",
+                          "openedAt",
+                          "acknowledgedAt",
+                          "resolvedAt",
+                          "count"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "watchdogAgeSeconds": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "generatedAt": {
+                      "type": "string"
+                    },
+                    "reach": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "operator",
+                            "branch"
+                          ]
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "scope",
+                        "branches"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "rollups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "today": {
+                            "type": "string"
+                          },
+                          "lastRolledUpAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "boothLastRolledUpAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reportsLastRolledUpAt": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "name",
+                          "today",
+                          "lastRolledUpAt",
+                          "boothLastRolledUpAt",
+                          "reportsLastRolledUpAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "checks",
+                    "jobs",
+                    "boxes",
+                    "alerts",
+                    "watchdogAgeSeconds",
+                    "generatedAt",
+                    "reach",
+                    "rollups"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -74642,7 +75483,113 @@
         "description": "Outside services: a name, a state, what is unset by name, and when each last ran",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "purpose": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "configured",
+                              "missing",
+                              "disabled",
+                              "degraded",
+                              "unknown"
+                            ]
+                          },
+                          "missingVars": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "endpoint": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastDeliveryAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastDeliveryOutcome": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "detail": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "purpose",
+                          "category",
+                          "state"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "variables": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "present": {
+                            "type": "boolean"
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "purpose": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "present",
+                          "required",
+                          "purpose",
+                          "provider"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "providers",
+                    "variables"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

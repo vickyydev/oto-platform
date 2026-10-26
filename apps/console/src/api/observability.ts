@@ -16,16 +16,24 @@
  *     `admin:audit:read_sensitive` and deliberately asks for it. Unmasking is
  *     an action with a record of its own, never a page load.
  */
-import { api, ApiError, idemKey, qs } from './client';
-import type { ApiBody, ApiResponse } from '@oto/api-types';
+import type { ApiResponse, paths } from '@oto/api-types';
+import { api, ApiError, qs } from './client';
 
 // ---------------------------------------------------------------------------
 // Activity — the audit log
 // ---------------------------------------------------------------------------
 
-export type AuditPage = ApiResponse<'/audit/', 'get'>;
-
-export type AuditEntry = AuditPage['entries'][number] & {
+export interface AuditEntry {
+  id: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  actorAccountId: string | null;
+  branchId: string | null;
+  requestId: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  createdAt: string;
   /** S2-03 classification columns. Absent on rows written before they landed. */
   category?: string | null;
   app?: string | null;
@@ -38,7 +46,7 @@ export type AuditEntry = AuditPage['entries'][number] & {
   occurredAt?: string | null;
   /** True when this row's personal fields were masked on the way out. */
   masked?: boolean;
-};
+}
 
 export interface AuditFilters {
   action?: string;
@@ -59,48 +67,24 @@ export interface AuditFilters {
    * rather than showing a filtered-looking list that is not filtered.
    */
   requestId?: string;
-  /** SCRUM-644: `data_access` and `denial` are answered on the server for every row. */
-  category?: 'data_access' | 'denial';
-  /** SCRUM-644: the producer's app label, and the app a Console action reached into. */
-  app?: string;
-  targetApp?: string;
+  category?: string;
 }
 
-/** The filters an export carries: the read's own, without its paging. */
-export type ActivityExportFilters = Omit<AuditFilters, 'limit' | 'cursor' | 'requestId'>;
-
-/** One downloaded export page, and whether the trail holds more past it. */
-export interface ActivityExportFile {
-  blob: Blob;
-  filename: string | null;
-  rows: number | null;
-  masked: boolean | null;
-  /** Set when the page was full: the next page is a second, separately recorded export. */
-  nextCursor: string | null;
+export interface AuditPage {
+  entries: AuditEntry[];
+  /** Keyset pagination. Absent or null means this is the last page. */
+  nextCursor?: string | null;
+  /**
+   * Whether the API masked personal fields in these rows. It masks for every
+   * caller without `admin:audit:read_sensitive`; for a caller with it the rows
+   * arrive in the clear and the API records an `audit.read_sensitive` row of
+   * its own against that read.
+   */
+  masked?: boolean;
 }
 
 export const activityApi = {
-  list: (filters: AuditFilters) => api.get<ApiResponse<'/audit/', 'get'>>(`/audit${qs({ ...filters })}`),
-  /**
-   * SCRUM-644: one bounded page of the trail as CSV or NDJSON, masked exactly
-   * as the list is. Every export is recorded against the person downloading.
-   */
-  exportFile: async (
-    filters: ActivityExportFilters,
-    format: 'csv' | 'ndjson',
-    opts: { limit?: number; cursor?: string } = {},
-  ): Promise<ActivityExportFile> => {
-    const file = await api.getFile(`/audit/export${qs({ ...filters, format, limit: opts.limit, cursor: opts.cursor })}`);
-    const rows = file.headers?.get('x-oto-export-rows');
-    const masked = file.headers?.get('x-oto-export-masked');
-    return {
-      blob: file.blob,
-      filename: file.filename,
-      rows: rows === null || rows === undefined ? null : Number(rows),
-      masked: masked === null || masked === undefined ? null : masked === 'true',
-      nextCursor: file.headers?.get('x-oto-next-cursor') ?? null,
-    };
-  },
+  list: (filters: AuditFilters) => api.get<AuditPage>(`/audit${qs({ ...filters })}`),
 };
 
 // ---------------------------------------------------------------------------
@@ -165,199 +149,43 @@ export const failuresApi = {
 };
 
 // ---------------------------------------------------------------------------
-// Alert mutes and recipients (SCRUM-644, planner ruling Q25)
-// ---------------------------------------------------------------------------
-
-export type AlertMutePage = ApiResponse<'/ops/alert-mutes', 'get'>;
-export type AlertMute = AlertMutePage['mutes'][number];
-export type AlertRecipientPage = ApiResponse<'/ops/alert-recipients', 'get'>;
-export type AlertRecipient = AlertRecipientPage['recipients'][number];
-export type NewAlertRecipient = ApiBody<'/ops/alert-recipients', 'post'>;
-
-export const alertRoutingApi = {
-  /** The mutes in force. The Failures read door (`admin:health:read`). */
-  mutes: () => api.get<ApiResponse<'/ops/alert-mutes', 'get'>>('/ops/alert-mutes'),
-  /** Mute a fingerprint: reason required, at most 24 hours. `console:alert:manage`. */
-  mute: (body: ApiBody<'/ops/alert-mutes', 'post'>) =>
-    api.post<ApiResponse<'/ops/alert-mutes', 'post'>>('/ops/alert-mutes', body, { idempotencyKey: idemKey() }),
-  lift: (muteId: string) =>
-    api.post<ApiResponse<'/ops/alert-mutes/{muteId}/lift', 'post'>>(
-      `/ops/alert-mutes/${encodeURIComponent(muteId)}/lift`, undefined, { idempotencyKey: idemKey() }),
-  recipients: () => api.get<ApiResponse<'/ops/alert-recipients', 'get'>>('/ops/alert-recipients'),
-  addRecipient: (body: NewAlertRecipient) =>
-    api.post<ApiResponse<'/ops/alert-recipients', 'post'>>('/ops/alert-recipients', body, { idempotencyKey: idemKey() }),
-  updateRecipient: (id: string, body: ApiBody<'/ops/alert-recipients/{recipientId}', 'patch'>) =>
-    api.patch<ApiResponse<'/ops/alert-recipients/{recipientId}', 'patch'>>(
-      `/ops/alert-recipients/${encodeURIComponent(id)}`, body, { idempotencyKey: idemKey() }),
-  archiveRecipient: (id: string) =>
-    api.post<ApiResponse<'/ops/alert-recipients/{recipientId}/archive', 'post'>>(
-      `/ops/alert-recipients/${encodeURIComponent(id)}/archive`, undefined, { idempotencyKey: idemKey() }),
-};
-
-// ---------------------------------------------------------------------------
 // Health
 // ---------------------------------------------------------------------------
 
-export type HealthState = 'ok' | 'warn' | 'down' | 'unknown';
+type NativeHealthSnapshot = ApiResponse<'/ops/health', 'get'>;
+export type HealthState = NativeHealthSnapshot['status'];
+type NativeHealthCheck = NativeHealthSnapshot['checks'][number];
+/** Public readiness fallbacks may supply only a key for the displayed label. */
+export type HealthCheck = Omit<NativeHealthCheck, 'label'> & Partial<Pick<NativeHealthCheck, 'label'>>;
+type NativeJobStatus = NativeHealthSnapshot['jobs'][number];
+/** Older deployments omit the newer job outcome and expectation fields. */
+export type JobStatus = Pick<NativeJobStatus, 'name' | 'status' | 'lastRunAt'> &
+  Partial<Omit<NativeJobStatus, 'name' | 'status' | 'lastRunAt'>>;
+/** Retain the existing optional display field; the native read does not supply it. */
+export type AlertRow = NativeHealthSnapshot['alerts'][number] & { acknowledgedBy?: string | null };
+export type HealthBox = NativeHealthSnapshot['boxes'][number];
+export type HealthBoxDevice = HealthBox['devices'][number];
+export type BoothHealth = HealthBox['booths'][number];
+export type BoothReport = NonNullable<BoothHealth['reported']>;
+type NativeRollupFreshness = NativeHealthSnapshot['rollups'][number];
+/** Earlier deployments omit the later booth and Reports rollup timestamps. */
+export type RollupFreshness = Omit<NativeRollupFreshness, 'boothLastRolledUpAt' | 'reportsLastRolledUpAt'> &
+  Partial<Pick<NativeRollupFreshness, 'boothLastRolledUpAt' | 'reportsLastRolledUpAt'>>;
+/** Keep the established older-deployment omissions visible to the screens. */
+export type HealthSnapshot = Omit<NativeHealthSnapshot,
+  'jobs' | 'boxes' | 'watchdogAgeSeconds' | 'generatedAt' | 'rollups'> & {
+    jobs: JobStatus[];
+    rollups?: RollupFreshness[];
+  } & Partial<Pick<NativeHealthSnapshot, 'boxes' | 'watchdogAgeSeconds' | 'generatedAt'>>;
 
-export interface HealthCheck {
-  key: string;
-  label?: string;
-  status: HealthState;
-  /** A number worth showing on the tile — latency, an age, a queue depth. */
-  value?: number | string | null;
-  unit?: string | null;
-  detail?: string | null;
-}
-
-export interface JobStatus {
-  name: string;
-  status: HealthState;
-  lastRunAt: string | null;
-  /** The runner's word, or `refused` when the last run did nothing because every part of it is switched off (SCRUM-594). */
-  lastOutcome?: string | null;
-  /** How often this job is expected to run, from its ops_expectation row. */
-  expectedEverySeconds?: number | null;
-  /** Seconds since it last finished. The watchdog's whole argument. */
-  ageSeconds?: number | null;
-  lastError?: string | null;
-  /**
-   * The environment variables the last run said it is waiting on — one per
-   * part of the job that is built but off until it is set (SCRUM-594). Absent
-   * on an older API; empty when nothing is waiting.
-   */
-  waitingOn?: string[];
-}
-
-export interface AlertRow {
-  id: string;
-  key: string;
-  severity: 'critical' | 'warning' | 'info' | string;
-  title: string;
-  detail?: string | null;
-  openedAt: string;
-  acknowledgedAt?: string | null;
-  acknowledgedBy?: string | null;
-  resolvedAt?: string | null;
-  count?: number | null;
-}
-
-/** What a booth's box measured about itself on its last heartbeat (S2-07a). */
-export interface BoothReport {
-  /** The published wheel it is running. **Null means it has never synced one.** */
-  configVersion: number | null;
-  /** Tri-state: `unknown` is "the box could not ask", which is not "unreachable". */
-  printerReachable: string;
-  paperStatus: string;
-  /** Unsent vouchers on the box; see `pendingUnit` for what an older agent counted. */
-  vouchersPending: number | null;
-  /** `events` from an agent older than SCRUM-419, whose figure was the whole outbox. */
-  pendingUnit?: 'vouchers' | 'events';
-  lastSpinAt: string | null;
-  /** Whether somebody is signed in. Never who. */
-  staffSignedIn: boolean;
-  /** `booth.booth_prize` ids at their cap today — configuration, not people. */
-  dailyCapsReached: string[];
-  /** The trading day so far, as the box counted it (SCRUM-419). */
-  today?: { businessDate: string; spins: number; vouchers: number } | null;
-  /** Whether a mouse or touchpad is plugged in. Null: the box cannot tell. */
-  pointerPresent?: boolean | null;
-}
-
-/** One booth on a box, as `/ops/health` reports it. */
-export interface BoothHealth {
-  stationId: string;
-  name: string;
-  codePrefix: string | null;
-  /** Null where the box has sent no booth block — NOT evidence it runs nothing. */
-  reported: BoothReport | null;
-  /** Vouchers issued today with nobody signed in. **Null means it could not be counted.** */
-  unattributedToday: number | null;
-  businessDate: string;
-}
-
-export interface HealthBoxDevice {
-  id: string;
-  kind: string;
-  label: string;
-  reachability: string;
-  paperStatus: string;
-  lastError: string | null;
-  lastSeenAt: string | null;
-}
-
-/**
- * One box on the Health snapshot.
- *
- * Only the fields the booth section reads are named — the API answers with
- * more, and the Devices pages read those from `@/api/fleet` instead.
- */
-export interface HealthBox {
-  id: string;
-  name: string;
-  slot: string;
-  status: string;
-  state: HealthState;
-  branchName: string;
-  lastHeartbeatAt: string | null;
-  heartbeatAgeSeconds?: number | null;
-  outboxDepth?: number | null;
-  /** The CPU temperature the box last reported (SCRUM-419). Null: not reported, never "cold". */
-  tempC?: number | null;
-  /** Read for its ids, which is how a `device.paper` alert is tied to a box. */
-  devices?: HealthBoxDevice[];
-  /** The alert keys true about this box right now. */
-  conditions: string[];
-  /** Empty on every till; that is what the booth section filters on. */
-  booths?: BoothHealth[];
-}
-
-export interface HealthSnapshot {
-  status: HealthState;
-  checks: HealthCheck[];
-  jobs: JobStatus[];
-  /**
-   * Every box of this operator with what it last reported. Optional because a
-   * deployment older than S2-04 answers without it — and the Devices pages read
-   * the fleet from `@/api/fleet`, so only the booth section reads this.
-   */
-  boxes?: HealthBox[];
-  alerts: AlertRow[];
-  /** Seconds since the watchdog last ran — the check that checks the checks. */
-  watchdogAgeSeconds?: number | null;
-  generatedAt?: string;
-  /**
-   * S2-15b round 3: when the analytics rollup last brought each park in the
-   * caller's reach up to date. Optional: an older API answers without it.
-   */
-  rollups?: RollupFreshness[];
-}
-
-/** One park's line on Health: its business date in progress and its last rollup. */
-export interface RollupFreshness {
-  branchId: string;
-  name: string;
-  today: string;
-  /** ISO, or null when the rollup has never brought this park up to date. */
-  lastRolledUpAt: string | null;
-  /**
-   * S2-15b round 5: when the booth figures (`job:rollup.booth`) were last
-   * brought up to date here. Optional: an older API answers without it.
-   */
-  boothLastRolledUpAt?: string | null;
-  /**
-   * S2-15b round 6: when the Reports panels' rows (written by the daily
-   * rollup with the day) were last brought up to date here. Optional: an older
-   * API answers without it.
-   */
-  reportsLastRolledUpAt?: string | null;
-}
+type ReadyAnswer = ApiResponse<'/ready', 'get'> |
+  paths['/ready']['get']['responses'][503]['content']['application/json'];
 
 /** What `/ready` answers. Public, and the one call that works on every deployment. */
 export interface Readiness {
-  status: string;
+  status: ReadyAnswer['status'];
   ok: boolean;
-  checks?: Record<string, unknown>;
+  checks?: ReadyAnswer['checks'];
   /** How long the round trip took from here, when the API reports nothing itself. */
   roundTripMs: number;
 }
@@ -372,16 +200,20 @@ export const healthApi = {
     const res = await fetch('/api/ready', { credentials: 'same-origin' });
     const roundTripMs = Math.round(performance.now() - started);
     const body = (await res.json().catch(() => null)) as
-      | { status?: string; checks?: Record<string, unknown> }
+      | { status?: unknown; checks?: ReadyAnswer['checks'] }
       | null;
+    if (!body || Array.isArray(body) ||
+      (body.status !== 'ready' && body.status !== 'degraded' && body.status !== 'not_ready')) {
+      throw new Error('The API returned an unreadable readiness response.');
+    }
     return {
-      status: body?.status ?? (res.ok ? 'ready' : 'not_ready'),
+      status: body.status,
       ok: res.ok,
       checks: body?.checks,
       roundTripMs,
     };
   },
-  snapshot: () => api.get<HealthSnapshot>('/ops/health'),
+  snapshot: () => api.get<ApiResponse<'/ops/health', 'get'>>('/ops/health'),
   acknowledgeAlert: (id: string) =>
     api.post<{ ok: true }>(`/ops/alerts/${encodeURIComponent(id)}/acknowledge`),
 };
@@ -390,40 +222,13 @@ export const healthApi = {
 // Integrations — outside services, by name and state only
 // ---------------------------------------------------------------------------
 
-export type IntegrationState = 'configured' | 'missing' | 'disabled' | 'degraded' | 'unknown';
-
-export interface IntegrationProvider {
-  key: string;
-  name: string;
-  /** What it does for us, in the API's own words. */
-  purpose?: string | null;
-  category?: string | null;
-  state: IntegrationState | string;
-  /** Which of its variables are unset. NAMES ONLY — never a value. */
-  missingVars?: string[];
-  /** Where it answers, when that is a public address (a webhook, an endpoint). */
-  endpoint?: string | null;
-  lastDeliveryAt?: string | null;
-  lastDeliveryOutcome?: string | null;
-  detail?: string | null;
-}
-
-export interface EnvVariable {
-  name: string;
-  present: boolean;
-  required?: boolean;
-  purpose?: string | null;
-  provider?: string | null;
-}
-
-export interface IntegrationsSnapshot {
-  providers: IntegrationProvider[];
-  /** Generated from the API's env schema: what still has to be provisioned. */
-  variables: EnvVariable[];
-}
+export type IntegrationsSnapshot = ApiResponse<'/ops/integrations', 'get'>;
+export type IntegrationProvider = IntegrationsSnapshot['providers'][number];
+export type IntegrationState = IntegrationProvider['state'];
+export type EnvVariable = IntegrationsSnapshot['variables'][number];
 
 export const integrationsApi = {
-  snapshot: () => api.get<IntegrationsSnapshot>('/ops/integrations'),
+  snapshot: () => api.get<ApiResponse<'/ops/integrations', 'get'>>('/ops/integrations'),
 };
 
 // ---------------------------------------------------------------------------
