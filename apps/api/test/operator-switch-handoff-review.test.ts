@@ -255,4 +255,50 @@ describe('SCRUM-640 native handoff context house review', () => {
     expect(siblingStillLive.statusCode).toBe(200); expect(siblingStillLive.json().account.id).toBe(f.actor);
   });
 
+  it('R15 [critical] OTO role-sync audit uses the verified exchanger rather than an unrelated incoming cookie; fix: run reconciliation in its locked verified audit context', async () => {
+    const app = await appIdentityFixture('staff'), before = await appSnapshot(app.user);
+    expect(before.users[0]?.role).toBe('staff');
+    const otherActor = newId(), otherSession = newId(), otherToken = randomBytes(32).toString('hex');
+    await ctx.db.insert(account).values({ id: otherActor, operatorId: f.target, status: 'active',
+      phone: `ZZ TEST 640 role audit bystander ${otherActor}` });
+    await ctx.db.insert(session).values({ id: otherSession, accountId: otherActor,
+      tokenHash: hashToken(otherToken), expiresAt: new Date(Date.now() + 3_600_000) });
+    const otherCookie = 'oto_session=' + otherToken;
+    const otherBefore = await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie: otherCookie } });
+    expect(otherBefore.statusCode).toBe(200);
+    expect(otherBefore.json().account.id).toBe(otherActor);
+    expect(otherBefore.json().operatorContext).toMatchObject({ homeOperatorId: f.target, effectiveOperatorId: f.target });
+
+    const issued = await mint('oto_app');
+    const response = await ctx.app.inject({ method: 'POST', url: '/auth/handoff/exchange',
+      headers: { origin: OTO, cookie: otherCookie }, payload: { token: issued.token } });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ accountId: f.actor, audience: 'oto_app', mustChangePassword: false,
+      sessionLocked: false, otoApp: { platformRolesEnabled: true, userId: app.user, operatorId: app.entity,
+        tenantId: app.tenant, role: 'manager', permissions: { 'hr:salary:view': false } } });
+    const after = await appSnapshot(app.user);
+    expect(after.users[0]?.role).toBe('manager');
+    expect(after.identities).toEqual(before.identities); expect(after.placements).toEqual(before.placements);
+    expect(after.home).toEqual(before.home); expect(after.employees).toEqual(before.employees);
+    expect(await spent(issued.claims.jti)).toEqual({ consumed: true, secretErased: true });
+
+    const observed = await ctx.db.execute<{ actor_account_id: string | null; operator_id: string | null;
+      branch_id: string | null; entity_type: string; before: unknown; after: unknown;
+      home_operator_id: string | null; effective_operator_id: string | null }>(sql`
+      select a.actor_account_id, a.operator_id, a.branch_id, a.entity_type, a."before", a."after",
+        to_jsonb(a)->>'home_operator_id' as home_operator_id,
+        to_jsonb(a)->>'effective_operator_id' as effective_operator_id
+      from ${auditLog} a where a.action = 'app_identity.role_sync' and a.entity_id = ${app.user}`);
+    expect(observed.rows).toHaveLength(1);
+    expect(observed.rows[0]).toMatchObject({ actor_account_id: f.actor, operator_id: f.home,
+      branch_id: null, entity_type: 'otoapp.user' });
+    expect(observed.rows[0]?.before).toEqual({ role: 'staff' });
+    expect(observed.rows[0]?.after).toEqual({ role: 'manager', platformAccountId: f.actor,
+      appOperatorId: app.entity, tenantId: app.tenant });
+    expect(observed.rows[0]).toMatchObject({ home_operator_id: f.home, effective_operator_id: f.home });
+    const otherAfter = await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie: otherCookie } });
+    expect(otherAfter.statusCode).toBe(200); expect(otherAfter.json().account.id).toBe(otherActor);
+    expect(otherAfter.json().operatorContext).toMatchObject({ homeOperatorId: f.target, effectiveOperatorId: f.target });
+  });
+
 });

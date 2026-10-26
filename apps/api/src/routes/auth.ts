@@ -5,6 +5,7 @@ import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { BENEFIT_QR_NOT_A_SIGN_IN, hasBenefitCredentialHeader } from '@oto/shared';
 import { clearSessionCookie, setSessionCookie, SESSION_COOKIE } from '../plugins/session';
+import { runWithAuditContext } from '../services/audit-context';
 import {
   codeRefusalForUnknownPhone,
   consumeCode,
@@ -326,7 +327,7 @@ export async function authRoutes(app: App): Promise<void> {
           setSessionCookie(reply, result.sessionToken, remainingHours, app.env.COOKIE_SECURE);
         }
 
-        await audit.record(app.db, {
+        await runWithAuditContext(result.auditAuth, () => audit.record(app.db, {
           actorAccountId: result.accountId,
           operatorId: result.operatorId,
           action: 'auth.handoff_exchange',
@@ -334,7 +335,7 @@ export async function authRoutes(app: App): Promise<void> {
           entityId: result.sessionId,
           after: { jti: result.jti, audience: result.audience, ...(identityOnly ? { identityOnly: true } : {}) },
           requestId: req.id,
-        });
+        }));
 
         return HandoffExchangeResponseSchema.parse({
           accountId: result.accountId,

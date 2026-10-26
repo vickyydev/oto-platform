@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { AsyncResource } from 'node:async_hooks';
 import { and, eq, gt, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import fp from 'fastify-plugin';
@@ -9,8 +10,11 @@ import { AppError, errors } from '../lib/errors';
 import { branchScopeRefusal } from '../services/access-control';
 import { hasPermission, resolveEffectivePermissions, type EffectivePermission, type ScopeTarget } from '../services/permissions';
 import type { Exec } from '../services/tx';
+import { runWithAuditContext } from '../services/audit-context';
 
 export const SESSION_COOKIE = 'oto_session';
+const auditRequestScope = Symbol('verifiedAuditRequestScope');
+type AuditRequest = FastifyRequest & { [auditRequestScope]?: AsyncResource | null };
 
 /**
  * A refusal for a permission the caller does not hold (S2-03).
@@ -251,8 +255,9 @@ function isExempt(req: FastifyRequest): boolean {
 
 export const sessionPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('auth', null);
+  app.decorateRequest(auditRequestScope, null);
 
-  app.addHook('onRequest', async (req: FastifyRequest) => {
+  const initializeRequest = async (req: FastifyRequest) => {
     const token = req.cookies?.[SESSION_COOKIE];
     try { req.auth = token ? await resolveSessionAuth(app.db, token) : null; }
     catch (error) {
@@ -337,5 +342,23 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
       }
       return auth;
     };
+  };
+
+  app.addHook('onRequest', (req, _reply, done) => {
+    void initializeRequest(req).then(() => {
+      runWithAuditContext(req.auth, () => {
+        const scope = new AsyncResource('oto-verified-audit-request');
+        Object.defineProperty(req, auditRequestScope, { value: scope });
+        scope.runInAsyncScope(done, req.raw);
+      });
+    }, done);
+  });
+
+  app.addHook('preValidation', (req, _reply, done) => {
+    // A parsed body resumes through a raw request event. Re-enter the one
+    // captured resource; never read the session again or rebuild its context.
+    const scope = (req as AuditRequest)[auditRequestScope];
+    if (scope) scope.runInAsyncScope(done, req.raw);
+    else runWithAuditContext(null, done);
   });
 });

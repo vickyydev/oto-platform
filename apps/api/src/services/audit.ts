@@ -1,5 +1,6 @@
 import { auditLog } from '@oto/db';
 import { newId } from '@oto/shared';
+import { auditContextForActor } from './audit-context';
 
 /**
  * Audit log service (SCRUM-14, CLAUDE.md §3): one helper, called from every
@@ -42,11 +43,14 @@ interface InsertCapable {
 
 export const audit = {
   async record(tx: unknown, entry: AuditEntry): Promise<void> {
+    const context = auditContextForActor(entry.actorAccountId);
     await (tx as InsertCapable).insert(auditLog).values({
       id: newId(),
       operatorId: entry.operatorId ?? null,
       branchId: entry.branchId ?? null,
       actorAccountId: entry.actorAccountId,
+      homeOperatorId: context?.homeOperatorId ?? null,
+      effectiveOperatorId: context?.effectiveOperatorId ?? null,
       requestId: entry.requestId ?? null,
       actionId: entry.actionId ?? null,
       sourceEventId: entry.sourceEventId ?? null,

@@ -1032,7 +1032,7 @@ export async function signOut(db: Db, sessionId: string, actorAccountId: string,
     async (tx) => {
       await tx
         .update(sessionTable)
-        .set({ revokedAt: new Date(), revokedReason: 'sign_out' })
+        .set({ revokedAt: new Date(), revokedReason: 'sign_out', operatorOverride: null })
         .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.revokedAt)));
       /**
        * And the shift token minted from it (S2-06).
@@ -1068,7 +1068,7 @@ export async function invalidateAllSessions(
 ): Promise<number> {
   const ended = await db
     .update(sessionTable)
-    .set({ revokedAt: new Date(), revokedReason: reason })
+    .set({ revokedAt: new Date(), revokedReason: reason, operatorOverride: null })
     .where(and(eq(sessionTable.accountId, accountId), isNull(sessionTable.revokedAt)))
     .returning({ id: sessionTable.id });
   /**

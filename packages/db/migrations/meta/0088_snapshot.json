@@ -1,5 +1,5 @@
 {
-  "id": "c069061d-a51e-4424-b16a-b5259ee1f804",
+  "id": "88f751eb-2b9e-496a-a64c-19987ae1bb73",
   "prevId": "89c574c6-529b-4586-a121-0c70f2451f5e",
   "version": "7",
   "dialect": "postgresql",
@@ -8060,6 +8060,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "home_operator_id": {
+          "name": "home_operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effective_operator_id": {
+          "name": "effective_operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "request_id": {
           "name": "request_id",
           "type": "text",
@@ -8286,6 +8298,34 @@
           "schemaTo": "core",
           "columnsFrom": [
             "actor_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "audit_log_home_operator_id_operator_id_fk": {
+          "name": "audit_log_home_operator_id_operator_id_fk",
+          "tableFrom": "audit_log",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "home_operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "audit_log_effective_operator_id_operator_id_fk": {
+          "name": "audit_log_effective_operator_id_operator_id_fk",
+          "tableFrom": "audit_log",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "effective_operator_id"
           ],
           "columnsTo": [
             "id"
