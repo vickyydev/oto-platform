@@ -15,7 +15,7 @@ import {
   type ToolCallResult,
   type ToolLoopOutcome,
 } from '@oto/assistant';
-import { account, ask, branch, employee, toolCall, type AssistantStoredLink, type Db } from '@oto/db';
+import { account, ask, auditLog, branch, employee, session as sessionTable, toolCall, type AssistantStoredLink, type Db } from '@oto/db';
 import {
   ASSISTANT_ASK_RETENTION_DAYS,
   ASSISTANT_ERROR_CODE,
@@ -610,6 +610,54 @@ async function recordToolCall(deps: AskDeps, caller: AskCaller, r: ToolRowInput)
 /** The ask's remaining wall time at this instant, from the call's budget. */
 const remainingOf = (deadline: number) => Math.max(0, deadline - Date.now());
 
+/**
+ * SCRUM-640 — ONE ASK, ONE OPERATOR.
+ *
+ * Every tool call re-resolves the asker's session in process, and a platform
+ * admin can select another operator on that session mid-ask. Without a pin,
+ * the later calls of one ask would read the newly selected operator's data
+ * into an ask row, an answer and a trace that belong to the first. So the
+ * context the ask was asked in — the effective operator and the session's
+ * switch revision, both from the verified auth — is checked live before and
+ * after every tool call; the revision counts switches, so A→B→A during a call
+ * is caught too. A mismatch discards that call's answer unread and closes the
+ * ask as TOOL_ERROR, recorded as CONTEXT_CHANGED.
+ */
+export interface AskContextPin {
+  sessionId: string;
+  operatorId: string;
+  revision: number;
+}
+
+export function askContextPin(auth: AuthContext): AskContextPin | null {
+  if (!auth.sessionId || !auth.operatorId) return null;
+  return { sessionId: auth.sessionId, operatorId: auth.operatorId, revision: auth.operatorRevision ?? 0 };
+}
+
+/** The session's operator context right now, read the way the session plugin reads it. Null when it is gone. */
+export async function liveAskContext(db: Exec, sessionId: string): Promise<{ operatorId: string; revision: number } | null> {
+  const [row] = await db
+    .select({
+      operatorId: sql<string>`coalesce(${sessionTable.operatorOverride}, ${account.operatorId})`,
+      revision: sql<string>`(select count(*)::text from ${auditLog}
+        where ${auditLog.action} = 'session.operator_switch'
+          and ${auditLog.entityType} = 'session' and ${auditLog.entityId} = ${sessionTable.id}::text)`,
+    })
+    .from(sessionTable)
+    .innerJoin(account, eq(sessionTable.accountId, account.id))
+    .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.revokedAt), sql`${sessionTable.expiresAt} > now()`))
+    .limit(1);
+  return row ? { operatorId: row.operatorId, revision: Number(row.revision) } : null;
+}
+
+async function askContextHolds(db: Exec, pin: AskContextPin | null): Promise<boolean> {
+  if (!pin) return true;
+  const live = await liveAskContext(db, pin.sessionId);
+  // A session that ended mid-ask is the routes' own 401 to report, not a switch.
+  if (!live) return true;
+  return live.operatorId === pin.operatorId && live.revision === pin.revision;
+}
+
 interface ToolOutcome {
   bodies: unknown[];
   failed: { status: number; body: unknown; bytes: number } | null;
@@ -741,6 +789,13 @@ function executorFor(
     const started = Date.now();
     // The ask's remaining wall time is this call's budget, shared by a tool's parts (§D.1 step 4).
     const deadline = started + call.remainingMs;
+    // SCRUM-640: the call runs only in the operator context the ask was asked in.
+    const pin = askContextPin(caller.auth);
+    const contextChanged = async (): Promise<never> => {
+      await recordNoAnswer(adapter, system, call, args, 'CONTEXT_CHANGED', null, Date.now() - started);
+      throw new ToolServerError();
+    };
+    if (!(await askContextHolds(deps.db, pin))) await contextChanged();
 
     let run: ToolOutcome;
     let otoWho: OtoAppIdentity | null = null;
@@ -796,6 +851,8 @@ function executorFor(
       run = got;
     }
     const latencyMs = Date.now() - started;
+    // Checked again after the call: an answer read under another operator is discarded unread.
+    if (!(await askContextHolds(deps.db, pin))) await contextChanged();
 
     if (run.outOfTime) {
       // The route outlasted the ask. Recorded as a call that got no answer; the loop, whose
