@@ -499,6 +499,38 @@ describe('the hand-off, as the person (§B.3, §F.2)', () => {
     expect(fake.requests.map((r) => r.path)).toEqual(['/api/auth/handoff']);
   });
 
+  it('an operator switch while the app is being opened: its refusal is discarded and the ask closes (SCRUM-640 Q23)', async () => {
+    fake.resetObservations();
+    // A person of its own, linked to no app user: the opener answers with a refusal, the early-return path.
+    const me = await staff(w, 'ZZ Oto Switched While Opening', 'staff', { scopeType: 'branch', scopeId: w.central }, w.central);
+    await grantOtoAppTile(w, me.accountId, w.central);
+    fake.duringHandoff = async () => {
+      // Two switches, A to B and back to A: the operator reads the same, the revision does not.
+      for (let i = 0; i < 2; i += 1) {
+        await w.ctx.db.insert(s.auditLog).values({
+          id: newId(),
+          operatorId: w.oto,
+          actorAccountId: me.accountId,
+          action: 'session.operator_switch',
+          entityType: 'session',
+          entityId: me.sessionId,
+        });
+      }
+    };
+    try {
+      const fakeClient = script(w, tool('oto.my_leave', {}), final('never reached'));
+      const res = await ask(w, me.cookie, 'My leave');
+      expect(res.body).toMatchObject({ state: 'failed', reason: 'TOOL_ERROR', answer: INTERNAL_LINES.failed.en });
+      // No refusal read in the other context is shown, and the model never saw one.
+      expect(res.body.refusals ?? []).toEqual([]);
+      expect((await toolRows(w.ctx.db, res.body.id)).map((r) => [r.status, r.code])).toEqual([[null, 'CONTEXT_CHANGED']]);
+      expect(fakeClient.remaining).toBe(1);
+      expect(fake.sidsIssued).toEqual([]);
+    } finally {
+      fake.duringHandoff = null;
+    }
+  });
+
   it('disabled: the app’s own sentence, verbatim', async () => {
     script(w, tool('oto.my_leave', {}), final('No.'));
     const res = await ask(w, disabled.cookie, 'How much leave do I have?');

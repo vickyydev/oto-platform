@@ -817,6 +817,11 @@ function executorFor(
         }
         throw err;
       }
+      // SCRUM-640 Q23: the opener can answer with a refusal, which returns
+      // before the post-call check below — so the context is checked as soon
+      // as the opener settles, and a refusal read under another operator
+      // never reaches the model either.
+      if (!(await askContextHolds(deps.db, pin))) await contextChanged();
       if (!opened.ok) {
         // §D.4: the refusal that stopped the sign-on, verbatim — the platform's (no tile) or the app's.
         const r = opened.refusal;

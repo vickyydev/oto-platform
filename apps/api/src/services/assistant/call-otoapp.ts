@@ -3,7 +3,8 @@ import type { Db } from '@oto/db';
 import type { FastifyBaseLogger } from 'fastify';
 import type { AuthContext } from '../../plugins/session';
 import { branchScopeRefusal, holdsAtOwnDepartment } from '../access-control';
-import { appAccessPermission, issueHandoffAudited, type HandoffConfig } from '../handoff';
+import { audit } from '../audit';
+import { appAccessPermission, HandoffRejected, issueHandoffAudited, type HandoffConfig } from '../handoff';
 import { hasPermission, type EffectivePermission } from '../permissions';
 import type { OpContext } from '../tx';
 import { matchesRoute, suffixedRequestId, toolRequestId, type GetRouteTemplate } from './call-platform';
@@ -61,6 +62,18 @@ import { matchesRoute, suffixedRequestId, toolRequestId, type GetRouteTemplate }
 
 /** The OTO App's session cookie (`apps/oto-app/server/auth.ts`). */
 export const OTOAPP_SESSION_COOKIE = 'connect.sid';
+
+/**
+ * The OTO App's own words for a hand-off it refuses, by reason, verbatim from
+ * `apps/oto-app/server/lib/platformSession.ts`. Used only when the platform
+ * refuses the mint before the app is contacted, so the person reads the same
+ * sentence the app would have given at its exchange.
+ */
+const OTOAPP_MINT_REFUSALS: Readonly<Record<string, string>> = {
+  revoked: 'The session was signed out before this app opened. Sign in on the launcher again.',
+};
+const OTOAPP_MINT_REFUSAL_FALLBACK =
+  'The launcher could not open the OTO App for you. Open the tile again, and tell an administrator if it keeps happening.';
 
 /** The app's own roles that `hr.view_salary` reaches (`apps/oto-app/shared/hr-salary-permission.ts`: an admin-only action). */
 const SALARY_ROLES: ReadonlySet<OtoAppRole> = new Set<OtoAppRole>(['admin', 'operator_admin', 'global_admin']);
@@ -287,16 +300,43 @@ export async function openOtoAppSession(input: OpenOtoAppSessionInput): Promise<
       },
     };
   }
-  const issued = await issueHandoffAudited(db, input.ctx, input.handoff, {
-    sessionId: auth.sessionId,
-    accountId: auth.accountId,
-    operatorId: auth.operatorId,
-    branchId: auth.branchId,
-    sessionToken: input.token,
-    audience: 'oto_app',
-    requestId: input.requestId,
-    after: { askId: input.askId },
-  });
+  let issued: Awaited<ReturnType<typeof issueHandoffAudited>>;
+  try {
+    issued = await issueHandoffAudited(db, input.ctx, input.handoff, {
+      sessionId: auth.sessionId,
+      accountId: auth.accountId,
+      operatorId: auth.operatorId,
+      branchId: auth.branchId,
+      sessionToken: input.token,
+      audience: 'oto_app',
+      requestId: input.requestId,
+      after: { askId: input.askId },
+    });
+  } catch (err) {
+    if (!(err instanceof HandoffRejected)) throw err;
+    // SCRUM-640 Q23: the mint now re-reads the live session, so a session that
+    // ended mid-ask is refused HERE rather than at the app's exchange. The
+    // person must see the same refusal as before — the app's own sentence for
+    // that reason — and the refusal must leave the same audit row the
+    // exchange route writes. No app call, no retry.
+    await audit.record(db, {
+      actorAccountId: null,
+      action: 'auth.handoff_rejected',
+      entityType: 'handoff',
+      entityId: input.requestId,
+      after: { reason: err.reason, audience: 'oto_app', sessionId: auth.sessionId, accountId: auth.accountId },
+      requestId: input.requestId,
+    });
+    return {
+      ok: false,
+      refusal: {
+        system: 'oto_app',
+        status: 401,
+        code: err.reason,
+        message: (OTOAPP_MINT_REFUSALS[err.reason] ?? OTOAPP_MINT_REFUSAL_FALLBACK).slice(0, 500),
+      },
+    };
+  }
   const origin = issued.origin;
 
   // 2. The exchange, at the origin the token was minted for, with no Origin header (a server's POST).
