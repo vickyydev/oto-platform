@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Eye, EyeOff, Loader2, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import {
   activityApi,
@@ -125,11 +125,18 @@ export function Activity() {
     [filters],
   );
 
+  const scope = useMemo(() => ({ active: false, request: 0 }), [query]);
   const load = useCallback(async () => {
+    if (!scope.active) return;
+    const request = ++scope.request;
+    const current = () => scope.active && scope.request === request;
     setLoading(true);
+    setLoadingMore(false);
+    setCursor(null);
     setError(null);
     try {
       const page = await activityApi.list(query());
+      if (!current()) return;
       const { rows, narrowed, unavailable } = applyUnsupportedFilters(page.entries, filters);
       setEntries(rows);
       setNarrowedHere(narrowed);
@@ -137,28 +144,35 @@ export function Activity() {
       setMasked(page.masked !== false);
       setCursor(page.nextCursor ?? null);
     } catch (err) {
+      if (!current()) return;
       setError(err instanceof Error ? err.message : 'Could not read the activity log');
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [query, filters]);
+  }, [query, filters, scope]);
 
   useEffect(() => {
+    scope.active = true;
     void load();
-  }, [load]);
+    return () => { scope.active = false; scope.request++; };
+  }, [load, scope]);
 
   const loadMore = async () => {
-    if (!cursor || loadingMore) return;
+    if (!scope.active || !cursor || loading || loadingMore) return;
+    const request = scope.request;
+    const current = () => scope.active && scope.request === request;
     setLoadingMore(true);
     try {
       const page = await activityApi.list(query({ cursor }));
+      if (!current()) return;
       const { rows } = applyUnsupportedFilters(page.entries, filters);
       setEntries((prev) => [...prev, ...rows]);
       setCursor(page.nextCursor ?? null);
     } catch (err) {
+      if (!current()) return;
       setError(err instanceof Error ? err.message : 'Could not read the next page');
     } finally {
-      setLoadingMore(false);
+      if (current()) setLoadingMore(false);
     }
   };
 
@@ -467,10 +481,13 @@ function EntryDrawer({
 }) {
   const [tab, setTab] = useState<Tab>('changes');
   const [related, setRelated] = useState<AuditEntry[] | null>(null);
+  const [relatedError, setRelatedError] = useState<string | null>(null);
+  const [relatedTick, setRelatedTick] = useState(0);
 
   useEffect(() => {
     setTab('changes');
     setRelated(null);
+    setRelatedError(null);
   }, [entry]);
 
   // Everything else that happened under the same request id: one action at the
@@ -479,15 +496,21 @@ function EntryDrawer({
   // yet, so the page is narrowed here — see applyUnsupportedFilters.
   useEffect(() => {
     if (tab !== 'related' || related !== null || !entry.requestId) return;
+    let active = true;
+    setRelatedError(null);
     void activityApi
       .list({ requestId: entry.requestId, limit: 200 })
-      .then((page) =>
+      .then((page) => {
+        if (!active) return;
         setRelated(
           page.entries.filter((e) => e.id !== entry.id && e.requestId === entry.requestId),
-        ),
-      )
-      .catch(() => setRelated([]));
-  }, [tab, related, entry.requestId, entry.id]);
+        );
+      })
+      .catch((err: unknown) => {
+        if (active) setRelatedError(err instanceof Error ? err.message : 'Could not read related rows');
+      });
+    return () => { active = false; };
+  }, [tab, related, entry.requestId, entry.id, relatedTick]);
 
   const shown = entry;
   const thisRowIsMasked = masked && entryIsMasked(entry);
@@ -587,6 +610,8 @@ function EntryDrawer({
             title="No request id on this row"
             detail="Rows written outside a request — a job, a sweep — have nothing to be grouped with."
           />
+        ) : relatedError ? (
+          <ErrorNote message={relatedError} onRetry={() => setRelatedTick((n) => n + 1)} />
         ) : related === null ? (
           <Loading what="related rows" />
         ) : related.length === 0 ? (
@@ -664,7 +689,7 @@ function applyUnsupportedFilters(
 function entryIsMasked(entry: AuditEntry): boolean {
   if (entry.masked) return true;
   return [entry.before, entry.after].some(
-    (record) => record && Object.values(record).some(isMaskedValue),
+    (record) => record !== null && typeof record === 'object' && Object.values(record).some(isMaskedValue),
   );
 }
 

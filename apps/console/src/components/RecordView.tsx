@@ -1,6 +1,9 @@
 import { EyeOff } from 'lucide-react';
 
-type Json = Record<string, unknown> | null | undefined;
+/** Objects and arrays keep their existing field/index presentation. */
+function fieldsOf(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' ? value as Record<string, unknown> : null;
+}
 
 /**
  * Does this value look like something the API masked on the way out?
@@ -59,8 +62,28 @@ function label(key: string): string {
  * What changed, field by field. Only the fields that differ, because a record
  * with forty unchanged columns hides the one that moved.
  */
-export function RecordDiff({ before, after }: { before: Json; after: Json }) {
-  const keys = Array.from(new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})])).sort();
+export function RecordDiff({ before, after }: { before: unknown; after: unknown }) {
+  const hasBefore = before !== null && before !== undefined;
+  const hasAfter = after !== null && after !== undefined;
+  const beforeFields = fieldsOf(before);
+  const afterFields = fieldsOf(after);
+
+  if (!hasBefore && !hasAfter) {
+    return <p className="text-sm text-muted-foreground">This action recorded no before or after state.</p>;
+  }
+
+  // A root primitive is a whole recorded value, not an empty object or string indices.
+  if ((hasBefore && !beforeFields) || (hasAfter && !afterFields)) {
+    if (!isMaskedValue(before) && !isMaskedValue(after) && JSON.stringify(before) === JSON.stringify(after)) {
+      return <p className="text-sm text-muted-foreground">Nothing changed in the value you can see.</p>;
+    }
+    return <div className="grid gap-1 sm:grid-cols-2 text-sm">
+      {hasBefore && <div className="min-w-0"><span className="text-xs text-muted-foreground">was </span><Scalar value={before} /></div>}
+      {hasAfter && <div className="min-w-0"><span className="text-xs text-muted-foreground">now </span><Scalar value={after} /></div>}
+    </div>;
+  }
+
+  const keys = Array.from(new Set([...Object.keys(beforeFields ?? {}), ...Object.keys(afterFields ?? {})])).sort();
 
   /**
    * A masked field is the same stand-in on both sides, so it can never look
@@ -68,14 +91,10 @@ export function RecordDiff({ before, after }: { before: Json; after: Json }) {
    * stayed the same when nobody here can know that. Masked fields are pulled
    * out of the comparison and named underneath instead.
    */
-  const hidden = keys.filter((k) => isMaskedValue((before ?? {})[k]) || isMaskedValue((after ?? {})[k]));
+  const hidden = keys.filter((k) => isMaskedValue((beforeFields ?? {})[k]) || isMaskedValue((afterFields ?? {})[k]));
   const changed = keys.filter(
-    (k) => !hidden.includes(k) && JSON.stringify((before ?? {})[k]) !== JSON.stringify((after ?? {})[k]),
+    (k) => !hidden.includes(k) && JSON.stringify((beforeFields ?? {})[k]) !== JSON.stringify((afterFields ?? {})[k]),
   );
-
-  if (!before && !after) {
-    return <p className="text-sm text-muted-foreground">This action recorded no before or after state.</p>;
-  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -91,16 +110,16 @@ export function RecordDiff({ before, after }: { before: Json; after: Json }) {
                 {label(key)}
               </p>
               <div className="mt-1 grid gap-1 sm:grid-cols-2 text-sm">
-                {before && (
+                {hasBefore && (
                   <div className="min-w-0">
                     <span className="text-xs text-muted-foreground">was </span>
-                    <Scalar value={before[key]} />
+                    <Scalar value={beforeFields?.[key]} />
                   </div>
                 )}
-                {after && (
+                {hasAfter && (
                   <div className="min-w-0">
                     <span className="text-xs text-muted-foreground">now </span>
-                    <Scalar value={after[key]} />
+                    <Scalar value={afterFields?.[key]} />
                   </div>
                 )}
               </div>
@@ -126,8 +145,10 @@ export function RecordDiff({ before, after }: { before: Json; after: Json }) {
 }
 
 /** Every field of the record as it arrived — masking included, never undone here. */
-export function RecordFields({ record }: { record: Json }) {
-  const keys = Object.keys(record ?? {});
+export function RecordFields({ record }: { record: unknown }) {
+  const fields = fieldsOf(record);
+  if (record !== null && record !== undefined && !fields) return <Scalar value={record} />;
+  const keys = Object.keys(fields ?? {});
   if (keys.length === 0) {
     return <p className="text-sm text-muted-foreground">No record was stored with this entry.</p>;
   }
@@ -139,7 +160,7 @@ export function RecordFields({ record }: { record: Json }) {
             {label(key)}
           </span>
           <span className="text-sm min-w-0 flex-1">
-            <Scalar value={(record ?? {})[key]} />
+            <Scalar value={fields?.[key]} />
           </span>
         </li>
       ))}

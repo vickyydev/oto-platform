@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Archive, Loader2, RefreshCw, RotateCcw } from 'lucide-react';
 import { isMissingRoute } from '@/api/client';
 import { failuresApi, type FailureGroup, type OpsRun } from '@/api/observability';
@@ -339,17 +339,25 @@ function Problems({
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<FailureGroup | null>(null);
 
+  const scope = useMemo(() => ({ active: false, request: 0 }), [windowHours, kind]);
   const load = useCallback(async () => {
+    if (!scope.active) return;
+    const request = ++scope.request;
+    const current = () => scope.active && scope.request === request;
     setLoading(true);
+    setLoadingMore(false);
+    setCursor(null);
     setError(null);
     try {
       const page = await failuresApi.groups({ windowHours, kind: kind || undefined, limit: 50 });
+      if (!current()) return;
       setGroups(page.groups);
       setCursor(page.nextCursor ?? null);
       onReach(readReach(page));
       onCount({ count: page.groups.length, more: Boolean(page.nextCursor) });
       setMissing(false);
     } catch (err) {
+      if (!current()) return;
       // Either way the chip has nothing true to say about THIS window.
       onCount(null);
       if (isMissingRoute(err)) {
@@ -360,27 +368,33 @@ function Problems({
         setError(err instanceof Error ? err.message : 'Could not read the failure list');
       }
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [windowHours, kind, onReach, onCount]);
+  }, [windowHours, kind, onReach, onCount, scope]);
 
   useEffect(() => {
+    scope.active = true;
     void load();
-  }, [load]);
+    return () => { scope.active = false; scope.request++; };
+  }, [load, scope]);
 
   const loadMore = async () => {
-    if (!cursor || loadingMore) return;
+    if (!scope.active || !cursor || loading || loadingMore) return;
+    const request = scope.request;
+    const current = () => scope.active && scope.request === request;
     setLoadingMore(true);
     try {
       const page = await failuresApi.groups({ windowHours, kind: kind || undefined, cursor, limit: 50 });
+      if (!current()) return;
       setGroups((prev) => [...prev, ...page.groups]);
       setCursor(page.nextCursor ?? null);
       // What is on screen now, and still a floor while another page remains.
       onCount({ count: groups.length + page.groups.length, more: Boolean(page.nextCursor) });
     } catch (err) {
+      if (!current()) return;
       setError(err instanceof Error ? err.message : 'Could not read the next page');
     } finally {
-      setLoadingMore(false);
+      if (current()) setLoadingMore(false);
     }
   };
 
@@ -622,9 +636,14 @@ function GroupDrawer({
 }) {
   const [runs, setRuns] = useState<OpsRun[] | null>(null);
   const [missing, setMissing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [readTick, setReadTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setRuns(null);
+    setMissing(false);
+    setError(null);
     void failuresApi
       .runs(group.fingerprint)
       .then(({ runs: list }) => {
@@ -632,13 +651,13 @@ function GroupDrawer({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setRuns([]);
-        setMissing(isMissingRoute(err));
+        if (isMissingRoute(err)) setMissing(true);
+        else setError(err instanceof Error ? err.message : 'Could not read the run history');
       });
     return () => {
       cancelled = true;
     };
-  }, [group.fingerprint]);
+  }, [group.fingerprint, readTick]);
 
   return (
     <Drawer
@@ -695,6 +714,8 @@ function GroupDrawer({
         <h3 className="text-sm font-bold mb-2">Recent runs</h3>
         {missing ? (
           <RouteUnavailable what="The run history" />
+        ) : error ? (
+          <ErrorNote message={error} onRetry={() => setReadTick((n) => n + 1)} />
         ) : runs === null ? (
           <Loading what="runs" />
         ) : runs.length === 0 ? (

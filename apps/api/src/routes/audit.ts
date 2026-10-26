@@ -94,6 +94,11 @@ function decodeCursor(raw: string): Cursor {
   return { createdAt, id };
 }
 
+/** Audit changes retain any native JSON value, including scalars and arrays. */
+const AuditJsonValue: z.ZodType<unknown> = z.union([
+  z.null(), z.string(), z.number(), z.boolean(), z.array(z.unknown()), z.record(z.unknown()),
+]);
+
 export async function auditRoutes(app: App): Promise<void> {
   app.get(
     '/',
@@ -116,6 +121,26 @@ export async function auditRoutes(app: App): Promise<void> {
           /** `true` also answers `total`: the rows matching the filters, the cursor ignored. */
           count: z.literal('true').optional(),
         }),
+        response: {
+          200: z.object({
+            entries: z.array(z.object({
+              id: z.string().uuid(),
+              action: z.string(),
+              entityType: z.string(),
+              entityId: z.string(),
+              actorAccountId: z.string().uuid().nullable(),
+              actorName: z.string().nullable(),
+              branchId: z.string().uuid().nullable(),
+              requestId: z.string().nullable(),
+              before: AuditJsonValue,
+              after: AuditJsonValue,
+              createdAt: z.string().datetime(),
+            })),
+            masked: z.boolean(),
+            nextCursor: z.string().nullable(),
+            total: z.number().int().nonnegative().optional(),
+          }),
+        },
       },
     },
     async (req) => {
