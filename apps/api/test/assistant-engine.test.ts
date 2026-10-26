@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, InjectOptions } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeToolLoopClient, INTERNAL_LINES } from '@oto/assistant';
 import { schema as s } from '@oto/db';
@@ -41,6 +41,7 @@ import {
   call,
   customRole,
   final,
+  mintSession,
   script,
   staff,
   tool,
@@ -366,6 +367,52 @@ describe('as the person (§B.2, §F.3)', () => {
     expect(view).toMatchObject({ state: 'failed', reason: 'TOOL_ERROR', answer: INTERNAL_LINES.failed.en });
     expect((await toolRows(w.ctx.db, view.id)).map((r) => [r.status, r.code])).toEqual([[500, 'INTERNAL']]);
     expect(fake.remaining).toBe(1);
+  });
+
+  it('an operator switch on the asker’s session during a tool call discards that answer and closes the ask (SCRUM-640)', async () => {
+    const [acc] = await w.ctx.db.select().from(s.account).where(eq(s.account.phone, RECEPTION.phone)).limit(1);
+    // A session of its own: the switch row below is append-only history and must not move other tests' sessions.
+    const fresh = await mintSession(w, acc!.id, w.central);
+    const switching = {
+      inject: async (opts: InjectOptions) => {
+        const res = await w.ctx.app.inject(opts);
+        // The selection changes while the route answers: the answer was read in one context, the ask belongs to another.
+        await w.ctx.db.insert(s.auditLog).values({
+          id: newId(),
+          operatorId: w.oto,
+          actorAccountId: acc!.id,
+          action: 'session.operator_switch',
+          entityType: 'session',
+          entityId: fresh.sessionId,
+        });
+        return res;
+      },
+    } as unknown as FastifyInstance;
+    const fake = new FakeToolLoopClient([tool('me.whoami', {}), final('never reached')]);
+    const runtime = { config: { ...w.ctx.app.internalAi.config }, client: fake };
+    const view = await askAssistant(
+      { app: switching, db: w.ctx.db, runtime },
+      await callerFor(fresh.cookie, RECEPTION.phone),
+      { id: newId(), question: 'Who am I?' },
+    );
+    expect(view).toMatchObject({ state: 'failed', reason: 'TOOL_ERROR', answer: INTERNAL_LINES.failed.en });
+    expect((await toolRows(w.ctx.db, view.id)).map((r) => [r.status, r.code])).toEqual([[null, 'CONTEXT_CHANGED']]);
+    // The model never saw the answer read under the other context.
+    expect(fake.remaining).toBe(1);
+  });
+
+  it('with no switch the same ask on a fresh session answers from its tool (SCRUM-640 control)', async () => {
+    const [acc] = await w.ctx.db.select().from(s.account).where(eq(s.account.phone, RECEPTION.phone)).limit(1);
+    const fresh = await mintSession(w, acc!.id, w.central);
+    const fake = new FakeToolLoopClient([tool('me.whoami', {}), final('You are signed in at reception.')]);
+    const runtime = { config: { ...w.ctx.app.internalAi.config }, client: fake };
+    const view = await askAssistant(
+      { app: w.ctx.app, db: w.ctx.db, runtime },
+      await callerFor(fresh.cookie, RECEPTION.phone),
+      { id: newId(), question: 'Who am I?' },
+    );
+    expect(view.state).toBe('answered');
+    expect((await toolRows(w.ctx.db, view.id)).every((r) => r.code !== 'CONTEXT_CHANGED')).toBe(true);
   });
 
   it('a tool route that stalls past the ask’s remaining wall time closes the ask as WALL_TIME without waiting for it', async () => {
