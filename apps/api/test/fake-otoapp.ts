@@ -297,6 +297,8 @@ export class FakeOtoApp {
   readonly sidsIssued: string[] = [];
   /** Liveness probes made, by platform token (counts only). */
   livenessProbes = 0;
+  /** Runs while a hand-off is being answered: a test's way to change the world mid-sign-in. */
+  duringHandoff: (() => Promise<void>) | null = null;
 
   private constructor(
     private readonly server: Server,
@@ -737,6 +739,7 @@ export class FakeOtoApp {
     }
     if (!token || token.length > 8192) return json(res, 400, { reason: 'no_token', message: OTOAPP_WORDS.refusalFallback });
     this.tokensSeen.push(token);
+    if (this.duringHandoff) await this.duringHandoff();
     if (!this.platform) return json(res, 503, { reason: 'unconfigured', message: 'fake OTO App: no platform to exchange at' });
 
     const exchanged = await this.platform.inject({
