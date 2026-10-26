@@ -13,6 +13,8 @@ import { SessionProvider, useSession, displayName } from '@/auth/SessionContext'
 import { PlatformStatusProvider } from '@/lib/platformStatus';
 import { accountTheme } from '@/lib/theme';
 import { Activity } from '@/pages/Activity';
+import { AnalyticsSources } from '@/pages/AnalyticsSources';
+import { Configuration } from '@/pages/Configuration';
 import { Bookings } from '@/pages/Bookings';
 import { Booths } from '@/pages/Booths';
 import { BoothReport } from '@/pages/BoothReport';
@@ -145,6 +147,8 @@ function NotFound() {
 }
 
 const pageElements: Record<string, ReactElement> = {
+  analytics: <AnalyticsSources />,
+  config: <Configuration />,
   'platform-operators': <Operators sectionId="platform-operators" />,
   'system-roles': <Platform page="system-roles" />,
   'platform-alerts': <Platform page="platform-alerts" />,

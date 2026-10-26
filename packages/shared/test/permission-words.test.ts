@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { PERMISSIONS, PERMISSION_WORDS, type Permission } from '../src/permissions';
+import { PERMISSIONS, PERMISSION_WORDS, ROLE_BUNDLES, type Permission } from '../src/permissions';
 
 describe('plain permission sentences (SCRUM-612)', () => {
+  it('gives analytics and configuration reads to administrators without adding branch-manager authority', () => {
+    for (const key of ['console:analytics:read', 'console:config:read']) {
+      expect(PERMISSIONS).toContain(key);
+      expect(ROLE_BUNDLES.platform_admin).toContain(key);
+      expect(ROLE_BUNDLES.operator_admin).toContain(key);
+      expect(ROLE_BUNDLES.branch_manager).not.toContain(key);
+      const words = PERMISSION_WORDS as Record<string, string>;
+      expect(words[key]).toMatch(/^Read /);
+      expect(words[key]).not.toMatch(/change|rerun|unfreeze|edit/i);
+    }
+  });
+
   it('covers exactly the declared vocabulary through the public permissions module', () => {
     expect(Object.keys(PERMISSION_WORDS).sort()).toEqual([...PERMISSIONS].sort());
     for (const permission of PERMISSIONS) {

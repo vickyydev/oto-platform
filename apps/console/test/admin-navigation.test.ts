@@ -61,6 +61,17 @@ describe('SCRUM-609 Admin navigation', () => {
     expect(visibleNavigation(has('admin:booth:read'), false)).toEqual([]);
   });
 
+  it('offers the settings index without widening native panel gates and keeps both analytics read doors', () => {
+    const configuration = visibleNavigation(has('console:config:read'), false);
+    expect(configuration.map(area => area.id)).toEqual(['organisation']);
+    expect(configuration[0]?.sections.map(page => page.id)).toEqual(['config']);
+    expect(sectionForPath('/config')).toEqual(sectionForPath('/organisation/configuration'));
+    expect(ids(['console:analytics:read'])).toEqual([]);
+    expect(visibleNavigation(has('analytics:read'), false)[0]?.sections.map(page => page.id)).not.toContain('analytics');
+    expect(visibleNavigation(has('analytics:read', 'console:analytics:read'), false)[0]?.sections.map(page => page.id)).toContain('analytics');
+    expect(sectionForPath('/analytics')).toEqual(sectionForPath('/reports/analytics'));
+  });
+
   it('keeps every old page address and permission alongside its new area address', () => {
     const pages: [string, string, Permission][] = [
       ['health', '/watch/health', 'admin:health:read'],

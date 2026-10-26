@@ -34,6 +34,17 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('requires a session for the reach-filtered Analytics and Configuration readers (SCRUM-646)', async () => {
+    for (const url of ['/console/analytics', '/console/configuration']) {
+      const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === url);
+      expect(route, url).toBeDefined();
+      expect(route?.config.dynamicPermission, url).toBe(true);
+      expect(route?.config.public, url).not.toBe(true);
+      expect(route?.config.credential, url).toBeUndefined();
+      expect((await ctx.app.inject({ method: 'GET', url })).statusCode, url).toBe(401);
+    }
+  });
+
   it('requires the operator-wide switch permission for the current native session (SCRUM-640)', async () => {
     const route = ctx.app.routeRegistry.find(r => r.method === 'PUT' && r.url === '/me/session/operator');
     expect(route?.config.permission).toBe('platform:operator:switch');

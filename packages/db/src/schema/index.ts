@@ -7,6 +7,7 @@ export * from './display';
 export * from './staff-token';
 export * from './print';
 export * from './platform';
+export * from './console-configuration';
 export * from './ops';
 export * from './edge';
 export * from './sync';
