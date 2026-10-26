@@ -1,0 +1,87 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T11:51:06.658Z",
+  "passed": true,
+  "base": "590a8e4149f81e188279df70a5e85ff72e7c69a0",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "priorCheckpoint": "1ad1211539fab888d3f0c501e3853f8f806cd787",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceBytesUnchanged": true,
+  "changesSinceCheckpoint": [
+    "docs/handover/CLOUD_HANDOVER.md",
+    "docs/handover/CODEX_HANDOVER.md",
+    "docs/progress/STATUS.md",
+    "docs/progress/plans/super-admin-console/PLAN.md",
+    "docs/progress/plans/super-admin-console/Q18_PROVIDER_RATE_REVIEW.md",
+    "docs/qa/jira-comments/attachments/SCRUM-638/20261026-independent-checkpoint-review.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/README.md",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/REGRESSIONS.md",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/STAGING.md",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/archive.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/fixture-source-and-closure.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/production-file-list.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/production-readiness.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-contract-calibration.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-contract-calibration.log",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-preparation.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/unapplied-code.json",
+    "docs/qa/jira-comments/attachments/SCRUM-661/SCRUM-661-01-colour-rule-inline.png",
+    "docs/qa/jira-comments/attachments/SCRUM-661/SCRUM-661-02-zero-version-accepted.png"
+  ],
+  "preservedCommits": [
+    {
+      "sha": "f60eccf0b6b34d933ea13f2425d02723c4eaf2ab",
+      "subject": "feat(console): add operator assistant settings and usage estimates"
+    },
+    {
+      "sha": "120bb38eb12f3c426d3f89c3faee811287a5c1c5",
+      "subject": "test(console): preserve assistant settings checkpoint evidence"
+    },
+    {
+      "sha": "abc0380a25cfd6b911a3313fa2bcb9041fb33681",
+      "subject": "feat(assistant): read the operator's saved caps, debounce and pacing"
+    },
+    {
+      "sha": "1ac89887764e56bcfb52e56f55c3bc23f294186a",
+      "subject": "test(console): record assistant consumer integration checks"
+    },
+    {
+      "sha": "ba350f1c6b6c6b16e0ca817f6ce498a09081700e",
+      "subject": "test(console): check native clipboard text across Windows line endings"
+    },
+    {
+      "sha": "64c827900558e238923418f762cef44178e03cbb",
+      "subject": "test(console): preserve combined assistant settings checks"
+    }
+  ],
+  "skippedCommits": 0,
+  "docsConflicts": "All four additive conflicts resolved with current main notes above historical own notes; no skip or discarded evidence.",
+  "priorBroadDomainCoverageStillBinds": true,
+  "singleFinalFrameFullBatteryClaimed": false,
+  "postRebaseGatesPending": true,
+  "rateDelivery": {
+    "path": "docs/progress/plans/super-admin-console/Q18_PROVIDER_RATE_REVIEW.md",
+    "sha256": "7296c6174c06a26f5da9334b0e1b6763c9dc251dc52a7f0536b96391557e2689",
+    "version": {
+      "model": "claude-opus-5-5",
+      "effectiveFrom": "2026-10-20T00:00:00.000Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "cacheReadUsdPerMillion": 0.2
+    },
+    "approved": true,
+    "sourceSeedRequired": false,
+    "stagingSaveRequired": true,
+    "stagingSavePerformed": false
+  },
+  "migration": {
+    "mainLastIndex": 86,
+    "candidateIndex": 87,
+    "tag": "0087_assistant_settings",
+    "topOfCurrentMainAvailable": true,
+    "renumberNeededOnCurrentBase": false
+  },
+  "pushed": false,
+  "stagingAcceptance": false
+}

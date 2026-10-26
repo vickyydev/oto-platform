@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "client-tests",
+  "command": "pnpm --filter @oto/api-types test --maxWorkers=1 --fileParallelism=false",
+  "shell": "Git Bash --noprofile --norc; set -eo pipefail",
+  "startedAt": "2026-10-26T12:04:51.391Z",
+  "completedAt": "2026-10-26T12:04:58.878Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "exitCode": 0,
+  "processError": null,
+  "logSha256": "9829af8cd8266ba01c47fee4d52bdab0a447f15613b8e01da454d0982fc803a8",
+  "logBytes": 429,
+  "passed": true
+}

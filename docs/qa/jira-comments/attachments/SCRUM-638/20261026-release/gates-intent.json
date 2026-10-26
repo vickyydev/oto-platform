@@ -1,0 +1,87 @@
+{
+  "ticket": "SCRUM-638",
+  "startedAt": "2026-10-26T11:55:28.633Z",
+  "root": "C:/w/admin-assistant-settings",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "base": "590a8e4149f81e188279df70a5e85ff72e7c69a0",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "helperSha256": "76be8c054bbb98dc934bff85436dc9daa5debfe4f26f2578ad470638152dd2ab",
+  "installed": [
+    {
+      "path": "node_modules/.modules.yaml",
+      "sha256": "57199853b14df075f3a215109b1a406e93716c27ef7a2562f66ef227a71bdfb9"
+    },
+    {
+      "path": "node_modules/.pnpm/lock.yaml",
+      "sha256": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+    },
+    {
+      "path": "node_modules/.pnpm/embedded-postgres@16.14.0-beta.17/node_modules/embedded-postgres/package.json",
+      "sha256": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+    },
+    {
+      "path": "node_modules/.pnpm/pg@8.23.0/node_modules/pg/package.json",
+      "sha256": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28"
+    },
+    {
+      "path": "node_modules/.pnpm/tsx@4.23.13/node_modules/tsx/package.json",
+      "sha256": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426"
+    },
+    {
+      "path": "node_modules/.pnpm/vitest@3.2.7_@types+node@25_31b9f5e9de5ca818bd43df3a46e351ce/node_modules/vitest/package.json",
+      "sha256": "3f3dc1ef7acc6ffac8d0a7f10c4460f98e36026837b57f774426d962d546d740"
+    },
+    {
+      "path": "node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/package.json",
+      "sha256": "822ef7ca6452205657b6288b066481ecf508bfbf43455d715cf7d3ec457561e6"
+    }
+  ],
+  "programs": [
+    [
+      "api-focused",
+      "pnpm --filter @oto/api test --maxWorkers=1 --fileParallelism=false test/assistant-engine.test.ts test/inbox-ai-engine.test.ts test/assistant-settings-review.test.ts test/s638-pricing-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts"
+    ],
+    [
+      "db-tests",
+      "pnpm --filter @oto/db test --maxWorkers=1"
+    ],
+    [
+      "api-typecheck",
+      "pnpm --filter @oto/api typecheck"
+    ],
+    [
+      "db-typecheck",
+      "pnpm --filter @oto/db typecheck"
+    ],
+    [
+      "client-typecheck",
+      "pnpm --filter @oto/api-types typecheck"
+    ],
+    [
+      "console-typecheck",
+      "pnpm --filter @oto/console typecheck"
+    ],
+    [
+      "console-units",
+      "pnpm --filter @oto/console test --maxWorkers=1 --fileParallelism=false"
+    ],
+    [
+      "client-tests",
+      "pnpm --filter @oto/api-types test --maxWorkers=1 --fileParallelism=false"
+    ],
+    [
+      "contracts",
+      "pnpm api-types:check"
+    ],
+    [
+      "verify-schema",
+      "pnpm --filter @oto/db verify-schema"
+    ],
+    [
+      "changed-eslint",
+      "pnpm exec eslint 'apps/api/src/routes/aggregates.ts' 'apps/api/src/routes/assistant-settings.ts' 'apps/api/src/routes/console.ts' 'apps/api/src/services/aggregates-ai.ts' 'apps/api/src/services/assistant-settings.ts' 'apps/api/src/services/assistant/engine.ts' 'apps/api/src/services/inbox/ai-engine.ts' 'apps/api/src/services/inbox/ai-turns.ts' 'apps/api/test/assistant-engine.test.ts' 'apps/api/test/assistant-settings-review.test.ts' 'apps/api/test/id-conformance.test.ts' 'apps/api/test/inbox-ai-engine.test.ts' 'apps/api/test/route-scope-target.test.ts' 'apps/api/test/route-write-conformance.test.ts' 'apps/api/test/routes-guarded.test.ts' 'apps/api/test/s638-pricing-review.test.ts' 'apps/console/e2e/assistant-settings.spec.ts' 'apps/console/e2e/overview.spec.ts' 'apps/console/src/App.tsx' 'apps/console/src/api/assistant-settings.ts' 'apps/console/src/components/ConsoleLayout.tsx' 'apps/console/src/components/consoleSections.tsx' 'apps/console/src/pages/AreaLanding.tsx' 'apps/console/src/pages/AssistantSettings.tsx' 'packages/api-types/src/openapi.ts' 'packages/db/src/schema/platform.ts' 'packages/db/test/assistant-settings.test.ts'"
+    ]
+  ],
+  "freshFullBatteryClaimed": false
+}

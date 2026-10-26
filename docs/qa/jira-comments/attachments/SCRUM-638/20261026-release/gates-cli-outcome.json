@@ -1,0 +1,11 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T12:06:55.755Z",
+  "sessionId": 69202,
+  "outerObservedExitCode": 0,
+  "semanticResultPassed": false,
+  "failedProgram": "api-typecheck",
+  "actualProgramExitCode": 134,
+  "releaseGateUses": "Every native command exit plus semantic result and explicit adequate-heap compiler closure; never the outer process exit alone.",
+  "originalReceiptsPreserved": true
+}

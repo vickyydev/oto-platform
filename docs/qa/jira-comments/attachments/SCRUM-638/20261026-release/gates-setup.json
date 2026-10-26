@@ -1,0 +1,7 @@
+{
+  "ownNativeServer": true,
+  "port": 51296,
+  "databaseCountBefore": 0,
+  "credentialsPersisted": false,
+  "stopped": false
+}

@@ -1,0 +1,164 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T12:07:56.018Z",
+  "passed": true,
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceAndInstalledMetadataUnchanged": true,
+  "requiredGates": 11,
+  "attempts": 12,
+  "originalBatchPassed": false,
+  "originalBatchReceiptSha256": "541529e43876aa25bf2aec03ac3a5f907df545db2e99e046eddd5c3f62f0e28b",
+  "originalResourceFailurePreserved": true,
+  "adequateCompilerClosure": {
+    "path": "api-typecheck-adequate.json",
+    "sha256": "8d409ddfb97405419b206c15732c336b921261c6895ae8677128968f3d05a8c3",
+    "heapMiB": 4096,
+    "exitCode": 0
+  },
+  "gates": [
+    {
+      "name": "api-focused",
+      "receiptSha256": "bdec1b162924dfa2533f10723a93b1a4a3d65de87e6bf66ade54f23ac3b3ae69",
+      "logSha256": "1a21f0ebcf66b88ce50f9448d570da80e4a1dfef78a212717794aae85e2be121",
+      "logBytes": 7634,
+      "originalPassed": true,
+      "coveredBy": "api-focused"
+    },
+    {
+      "name": "db-tests",
+      "receiptSha256": "813c67c90bce11a866242cdaae6df11e48044f2f379e8c91c4c2a43639b11e72",
+      "logSha256": "1b247e97fb9e3b6c8c499367162718202e89ea4389b1d926ca7d6ce68bf4e399",
+      "logBytes": 18807,
+      "originalPassed": true,
+      "coveredBy": "db-tests"
+    },
+    {
+      "name": "api-typecheck",
+      "receiptSha256": "0aa41b9c66192aea95978b1dd03be8115ea413f8084b4c6737c66139ae281824",
+      "logSha256": "204e8a957a3e0e856f81bfe594e5a9a55c1a1cec462061e0bb3ab41009490d98",
+      "logBytes": 1496,
+      "originalPassed": false,
+      "coveredBy": "api-typecheck-adequate"
+    },
+    {
+      "name": "db-typecheck",
+      "receiptSha256": "16d0b0905922078baca9384cec975dc5dbc3a2a2d3948d713959c06fbcd84f8c",
+      "logSha256": "801de2d590594d58a541111bf725618c4fb1f7a99edfe2aebb2fd9de8df3fb91",
+      "logBytes": 93,
+      "originalPassed": true,
+      "coveredBy": "db-typecheck"
+    },
+    {
+      "name": "client-typecheck",
+      "receiptSha256": "0da61c817626b45b4c0db7ce9be77b8958be89a2b5d8c25deed432a5c3f21601",
+      "logSha256": "2df64e9eac617a1700599adb191a115911e4efeb71a0fe33c6a1344f4d6447e8",
+      "logBytes": 107,
+      "originalPassed": true,
+      "coveredBy": "client-typecheck"
+    },
+    {
+      "name": "console-typecheck",
+      "receiptSha256": "e4009ec05bd2a0157d3493b75847afba1dc03e6a4fd0b3c004b0328de9000aa6",
+      "logSha256": "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+      "logBytes": 183,
+      "originalPassed": true,
+      "coveredBy": "console-typecheck"
+    },
+    {
+      "name": "console-units",
+      "receiptSha256": "f7777ab30ba9687fc6dcb2ce1348dd96b9131f80d81d7390966c3c18800dd925",
+      "logSha256": "c3ff0eb558b413098cf46e315cb09ed15bac5e6155c3a763dd42fe8f5faeeac0",
+      "logBytes": 2161,
+      "originalPassed": true,
+      "coveredBy": "console-units"
+    },
+    {
+      "name": "client-tests",
+      "receiptSha256": "5152dcf4341df7b16729e1e8f9be0c6b1dd90ace0528dcf54aa3877e5d98b09a",
+      "logSha256": "9829af8cd8266ba01c47fee4d52bdab0a447f15613b8e01da454d0982fc803a8",
+      "logBytes": 429,
+      "originalPassed": true,
+      "coveredBy": "client-tests"
+    },
+    {
+      "name": "contracts",
+      "receiptSha256": "58537c86bf2b68915fcf235b13f61a0a7d19cd1081b49988488d4f35ce597140",
+      "logSha256": "f08d24172ad09027983940c678014cc68e0c180ef9db2ffdc67608f26ab2fc17",
+      "logBytes": 591,
+      "originalPassed": true,
+      "coveredBy": "contracts"
+    },
+    {
+      "name": "verify-schema",
+      "receiptSha256": "34e466d86b01364215b31241e4b11272e5d95959af9201e6674f8a00a9506a3d",
+      "logSha256": "c920af6d4a23158db366c24dcb33f5cb691949d813357bf457d7c4e2fcff7590",
+      "logBytes": 329,
+      "originalPassed": true,
+      "coveredBy": "verify-schema"
+    },
+    {
+      "name": "changed-eslint",
+      "receiptSha256": "fb3afa9848200427bb7bb21fef7591b47447b61cba6f50db8b939e757f98ce11",
+      "logSha256": "3db5a5e0d70c987b0349c04a018d17321227dea40af7b4280165f0a5b903b790",
+      "logBytes": 272,
+      "originalPassed": true,
+      "coveredBy": "changed-eslint"
+    }
+  ],
+  "compilerOutputs": [
+    {
+      "name": "api-typecheck-adequate",
+      "sha256": "49c95a1bac4f6c861a2952de2857c42a6bcb34a6d81280b1e2de7f5e682de807",
+      "bytes": 91,
+      "lines": 5,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    {
+      "name": "db-typecheck",
+      "sha256": "801de2d590594d58a541111bf725618c4fb1f7a99edfe2aebb2fd9de8df3fb91",
+      "bytes": 93,
+      "lines": 5,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    {
+      "name": "client-typecheck",
+      "sha256": "2df64e9eac617a1700599adb191a115911e4efeb71a0fe33c6a1344f4d6447e8",
+      "bytes": 107,
+      "lines": 5,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    {
+      "name": "console-typecheck",
+      "sha256": "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+      "bytes": 183,
+      "lines": 5,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    }
+  ],
+  "actualCounts": {
+    "api": 255,
+    "database": 324,
+    "console": 290,
+    "consoleTodo": 3,
+    "client": 10,
+    "lintPaths": 27
+  },
+  "cleanup": {
+    "ownNativeServer": true,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "fullFreshBatteryClaimed": false,
+  "limits": [
+    "The original11-command batch is false because the1536MiB API compiler heap was exhausted; its unchanged whole4096MiB follow-up is separately green.",
+    "The outer original runner returned0 despite its false semantic result. All command exits and the semantic receipt are retained and explicitly evaluated; outer exit alone is not a green gate."
+  ]
+}

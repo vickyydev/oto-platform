@@ -1,0 +1,114 @@
+{
+  "ticket": "SCRUM-638",
+  "rawLogsAndHelpersRemainExternal": true,
+  "artifacts": [
+    {
+      "path": "C:/w/admin638-resume-20261026/api-focused.log",
+      "sha256": "1a21f0ebcf66b88ce50f9448d570da80e4a1dfef78a212717794aae85e2be121",
+      "bytes": 7634,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/db-tests.log",
+      "sha256": "1b247e97fb9e3b6c8c499367162718202e89ea4389b1d926ca7d6ce68bf4e399",
+      "bytes": 18807,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/api-typecheck.log",
+      "sha256": "204e8a957a3e0e856f81bfe594e5a9a55c1a1cec462061e0bb3ab41009490d98",
+      "bytes": 1496,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/db-typecheck.log",
+      "sha256": "801de2d590594d58a541111bf725618c4fb1f7a99edfe2aebb2fd9de8df3fb91",
+      "bytes": 93,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/client-typecheck.log",
+      "sha256": "2df64e9eac617a1700599adb191a115911e4efeb71a0fe33c6a1344f4d6447e8",
+      "bytes": 107,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/console-typecheck.log",
+      "sha256": "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+      "bytes": 183,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/console-units.log",
+      "sha256": "c3ff0eb558b413098cf46e315cb09ed15bac5e6155c3a763dd42fe8f5faeeac0",
+      "bytes": 2161,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/client-tests.log",
+      "sha256": "9829af8cd8266ba01c47fee4d52bdab0a447f15613b8e01da454d0982fc803a8",
+      "bytes": 429,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/contracts.log",
+      "sha256": "f08d24172ad09027983940c678014cc68e0c180ef9db2ffdc67608f26ab2fc17",
+      "bytes": 591,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/verify-schema.log",
+      "sha256": "c920af6d4a23158db366c24dcb33f5cb691949d813357bf457d7c4e2fcff7590",
+      "bytes": 329,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/changed-eslint.log",
+      "sha256": "3db5a5e0d70c987b0349c04a018d17321227dea40af7b4280165f0a5b903b790",
+      "bytes": 272,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-20261026/api-typecheck-adequate.log",
+      "sha256": "49c95a1bac4f6c861a2952de2857c42a6bcb34a6d81280b1e2de7f5e682de807",
+      "bytes": 91,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-run.mjs",
+      "sha256": "76be8c054bbb98dc934bff85436dc9daa5debfe4f26f2578ad470638152dd2ab",
+      "bytes": 10268,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-bridge.mjs",
+      "sha256": "5eb85b03df5465235d15b5e94dfaadd9162f58afcdf270dac5804a02cc958b65",
+      "bytes": 3957,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-publish.mjs",
+      "sha256": "c659d29826c2ef876a392603ec6bb89c3f0ec1dc8848644cb070dba1721b4aa1",
+      "bytes": 10443,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-compiler.mjs",
+      "sha256": "a39dfb2cad86877cd6607fb7ce7f986cb4394a05d51a3b5f8bf8a152509cff08",
+      "bytes": 3841,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-review-gates.mjs",
+      "sha256": "9d3a96c2e14f74ba3510edd6caaa110a6300db6197638dc937b2a348f6dc3c93",
+      "bytes": 3749,
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-resume-final-bridge.mjs",
+      "sha256": "2ed727cc15149815661b49ae7b663505a5cd241812c331485da922cfcb984e06",
+      "bytes": 3046,
+      "published": false
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "api-focused",
+  "command": "pnpm --filter @oto/api test --maxWorkers=1 --fileParallelism=false test/assistant-engine.test.ts test/inbox-ai-engine.test.ts test/assistant-settings-review.test.ts test/s638-pricing-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "shell": "Git Bash --noprofile --norc; set -eo pipefail",
+  "startedAt": "2026-10-26T11:55:36.562Z",
+  "completedAt": "2026-10-26T11:56:55.395Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "exitCode": 0,
+  "processError": null,
+  "logSha256": "1a21f0ebcf66b88ce50f9448d570da80e4a1dfef78a212717794aae85e2be121",
+  "logBytes": 7634,
+  "passed": true
+}

@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "contracts",
+  "command": "pnpm api-types:check",
+  "shell": "Git Bash --noprofile --norc; set -eo pipefail",
+  "startedAt": "2026-10-26T12:05:01.511Z",
+  "completedAt": "2026-10-26T12:05:17.639Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "exitCode": 0,
+  "processError": null,
+  "logSha256": "f08d24172ad09027983940c678014cc68e0c180ef9db2ffdc67608f26ab2fc17",
+  "logBytes": 591,
+  "passed": true
+}

@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "console-typecheck",
+  "command": "pnpm --filter @oto/console typecheck",
+  "shell": "Git Bash --noprofile --norc; set -eo pipefail",
+  "startedAt": "2026-10-26T12:04:04.669Z",
+  "completedAt": "2026-10-26T12:04:17.740Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "exitCode": 0,
+  "processError": null,
+  "logSha256": "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+  "logBytes": 183,
+  "passed": true
+}

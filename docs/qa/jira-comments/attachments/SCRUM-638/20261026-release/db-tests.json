@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "db-tests",
+  "command": "pnpm --filter @oto/db test --maxWorkers=1",
+  "shell": "Git Bash --noprofile --norc; set -eo pipefail",
+  "startedAt": "2026-10-26T11:57:00.684Z",
+  "completedAt": "2026-10-26T12:02:37.409Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "exitCode": 0,
+  "processError": null,
+  "logSha256": "1b247e97fb9e3b6c8c499367162718202e89ea4389b1d926ca7d6ce68bf4e399",
+  "logBytes": 18807,
+  "passed": true
+}

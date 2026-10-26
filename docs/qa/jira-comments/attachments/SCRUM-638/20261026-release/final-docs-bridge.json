@@ -1,0 +1,59 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T12:08:32.205Z",
+  "passed": true,
+  "base": "0826f2596c11bcf9cc3144923a0429798dd90a46",
+  "sourceHead": "1783068cdd5e7372b7725568e8d704320817bdb8",
+  "testedHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "changedPaths": [
+    "docs/handover/CLOUD_HANDOVER.md",
+    "docs/handover/CODEX_HANDOVER.md",
+    "docs/progress/STATUS.md",
+    "docs/progress/plans/super-admin-console/PLAN.md",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-revocation-diagnosis/admin640-planner-ask-context-independent-review-20261026.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-revocation-diagnosis/admin640-revocation-diagnosis-native-v1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-revocation-diagnosis/admin640-revocation-diagnosis-review-v1.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-revocation-diagnosis/external-artifacts.json"
+  ],
+  "preservedCommits": [
+    {
+      "sha": "2bdeea9ec1fb64f8447acb406251d1280e9d08be",
+      "subject": "feat(console): add operator assistant settings and usage estimates"
+    },
+    {
+      "sha": "260341e225870fa41a1aa76c61d49234a4fcce6c",
+      "subject": "test(console): preserve assistant settings checkpoint evidence"
+    },
+    {
+      "sha": "e6ca362dcd0cfa1479787ce3c09ab699d8dcbf1f",
+      "subject": "feat(assistant): read the operator's saved caps, debounce and pacing"
+    },
+    {
+      "sha": "54c44298a46889590ef50afdcf0bd7b2b0ab37c4",
+      "subject": "test(console): record assistant consumer integration checks"
+    },
+    {
+      "sha": "91f1f900132a2d86705ae4db232fbfdc3bbd8232",
+      "subject": "test(console): check native clipboard text across Windows line endings"
+    },
+    {
+      "sha": "1783068cdd5e7372b7725568e8d704320817bdb8",
+      "subject": "test(console): preserve combined assistant settings checks"
+    }
+  ],
+  "skippedCommits": 0,
+  "conflicts": 0,
+  "previousDomainCoverageUnchanged": true,
+  "postRebaseGates": "Actual post-rebase checks bind exact same source; final rebase adds documentation only.",
+  "migration": {
+    "mainLastIndex": 86,
+    "candidateIndex": 87,
+    "tag": "0087_assistant_settings",
+    "nextFreeOnRecordedBase": true
+  },
+  "stagingAcceptance": false,
+  "pushed": false
+}

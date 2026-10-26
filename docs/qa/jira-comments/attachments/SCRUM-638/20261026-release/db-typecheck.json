@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "db-typecheck",
+  "command": "pnpm --filter @oto/db typecheck",
+  "shell": "Git Bash --noprofile --norc; set -eo pipefail",
+  "startedAt": "2026-10-26T12:03:29.816Z",
+  "completedAt": "2026-10-26T12:03:48.586Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "exitCode": 0,
+  "processError": null,
+  "logSha256": "801de2d590594d58a541111bf725618c4fb1f7a99edfe2aebb2fd9de8df3fb91",
+  "logBytes": 93,
+  "passed": true
+}

@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "client-typecheck",
+  "command": "pnpm --filter @oto/api-types typecheck",
+  "shell": "Git Bash --noprofile --norc; set -eo pipefail",
+  "startedAt": "2026-10-26T12:03:52.608Z",
+  "completedAt": "2026-10-26T12:04:01.767Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "exitCode": 0,
+  "processError": null,
+  "logSha256": "2df64e9eac617a1700599adb191a115911e4efeb71a0fe33c6a1344f4d6447e8",
+  "logBytes": 107,
+  "passed": true
+}

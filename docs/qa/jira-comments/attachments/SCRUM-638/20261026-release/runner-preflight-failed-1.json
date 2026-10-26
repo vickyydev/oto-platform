@@ -1,0 +1,11 @@
+{
+    "ticket":  "SCRUM-638",
+    "recordedAt":  "2026-10-26T11:55:26.5941052Z",
+    "stage":  "installed metadata preflight before intent/server/gates",
+    "exitCode":  1,
+    "code":  "ERR_PACKAGE_PATH_NOT_EXPORTED",
+    "dependency":  "embedded-postgres/package.json",
+    "testsExecuted":  false,
+    "serverStarted":  false,
+    "sourceChanged":  false
+}

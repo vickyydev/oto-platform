@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "api-typecheck-adequate",
+  "command": "pnpm --filter @oto/api typecheck",
+  "startedAt": "2026-10-26T12:06:20.458Z",
+  "completedAt": "2026-10-26T12:07:17.615Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "exitCode": 0,
+  "heapMiB": 4096,
+  "originalFailure": {
+    "path": "api-typecheck.json",
+    "sha256": "0aa41b9c66192aea95978b1dd03be8115ea413f8084b4c6737c66139ae281824",
+    "exitCode": 134,
+    "reason": "1536MiB wrapper heap exhausted; source unchanged"
+  },
+  "logSha256": "49c95a1bac4f6c861a2952de2857c42a6bcb34a6d81280b1e2de7f5e682de807",
+  "logBytes": 91,
+  "passed": true
+}

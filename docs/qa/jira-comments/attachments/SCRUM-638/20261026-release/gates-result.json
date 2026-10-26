@@ -1,0 +1,76 @@
+{
+  "ticket": "SCRUM-638",
+  "completedAt": "2026-10-26T12:06:00.870Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceInputs": 3790,
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "programs": [
+    {
+      "name": "api-focused",
+      "passed": true,
+      "receiptSha256": "bdec1b162924dfa2533f10723a93b1a4a3d65de87e6bf66ade54f23ac3b3ae69"
+    },
+    {
+      "name": "db-tests",
+      "passed": true,
+      "receiptSha256": "813c67c90bce11a866242cdaae6df11e48044f2f379e8c91c4c2a43639b11e72"
+    },
+    {
+      "name": "api-typecheck",
+      "passed": false,
+      "receiptSha256": "0aa41b9c66192aea95978b1dd03be8115ea413f8084b4c6737c66139ae281824"
+    },
+    {
+      "name": "db-typecheck",
+      "passed": true,
+      "receiptSha256": "16d0b0905922078baca9384cec975dc5dbc3a2a2d3948d713959c06fbcd84f8c"
+    },
+    {
+      "name": "client-typecheck",
+      "passed": true,
+      "receiptSha256": "0da61c817626b45b4c0db7ce9be77b8958be89a2b5d8c25deed432a5c3f21601"
+    },
+    {
+      "name": "console-typecheck",
+      "passed": true,
+      "receiptSha256": "e4009ec05bd2a0157d3493b75847afba1dc03e6a4fd0b3c004b0328de9000aa6"
+    },
+    {
+      "name": "console-units",
+      "passed": true,
+      "receiptSha256": "f7777ab30ba9687fc6dcb2ce1348dd96b9131f80d81d7390966c3c18800dd925"
+    },
+    {
+      "name": "client-tests",
+      "passed": true,
+      "receiptSha256": "5152dcf4341df7b16729e1e8f9be0c6b1dd90ace0528dcf54aa3877e5d98b09a"
+    },
+    {
+      "name": "contracts",
+      "passed": true,
+      "receiptSha256": "58537c86bf2b68915fcf235b13f61a0a7d19cd1081b49988488d4f35ce597140"
+    },
+    {
+      "name": "verify-schema",
+      "passed": true,
+      "receiptSha256": "34e466d86b01364215b31241e4b11272e5d95959af9201e6674f8a00a9506a3d"
+    },
+    {
+      "name": "changed-eslint",
+      "passed": true,
+      "receiptSha256": "fb3afa9848200427bb7bb21fef7591b47447b61cba6f50db8b939e757f98ce11"
+    }
+  ],
+  "fatal": null,
+  "cleanup": {
+    "ownNativeServer": true,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "freshFullBatteryClaimed": false,
+  "passed": false
+}

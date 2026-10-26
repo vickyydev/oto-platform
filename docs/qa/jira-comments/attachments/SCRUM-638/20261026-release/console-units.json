@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "console-units",
+  "command": "pnpm --filter @oto/console test --maxWorkers=1 --fileParallelism=false",
+  "shell": "Git Bash --noprofile --norc; set -eo pipefail",
+  "startedAt": "2026-10-26T12:04:20.807Z",
+  "completedAt": "2026-10-26T12:04:47.612Z",
+  "sourceHead": "64c827900558e238923418f762cef44178e03cbb",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "exitCode": 0,
+  "processError": null,
+  "logSha256": "c3ff0eb558b413098cf46e315cb09ed15bac5e6155c3a763dd42fe8f5faeeac0",
+  "logBytes": 2161,
+  "passed": true
+}
