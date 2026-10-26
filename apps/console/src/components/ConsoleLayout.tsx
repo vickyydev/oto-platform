@@ -226,9 +226,9 @@ function Sidebar({
   /** The rail and the drawer are both mounted on a phone; their ids must differ. */
   idPrefix: string;
 }) {
-  const { state, me, permissions, locked, has, signOut } = useSession();
+  const { state, me, permissions, locked, has, signOut, refreshing } = useSession();
 
-  const settingsOperator = state === 'signed-in' && !locked && me?.account.status === 'active' && !me.account.mustChangePassword ? me.account.operatorId : null;
+  const settingsOperator = state === 'signed-in' && !refreshing && !locked && me?.account.status === 'active' && !me.account.mustChangePassword ? me.operatorContext.effectiveOperatorId : null;
   const platformHealth = usePlatformAuthority('admin:health:read', true);
   const visible = assistantSettingsNavigation(filterPlatformHealthLinks(visibleNavigation(has, me?.isPlatformAdmin ?? false), platformHealth.allowed), settingsOperator, permissions);
 

@@ -3,6 +3,7 @@ import { Plus, RefreshCw, Save } from 'lucide-react';
 import { ApiError, idemKey } from '@/api/client';
 import { assistantSettingsApi, type AssistantRate, type AssistantSettingsRead, type AssistantSettingsWrite } from '@/api/assistant-settings';
 import { useSession } from '@/auth/SessionContext';
+import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { Field, NumberInput, TextInput } from '@/components/Form';
 import { CONTROL } from '@/components/Filters';
 import { ErrorNote, Loading, PermissionRequired } from '@/components/Panel';
@@ -55,22 +56,25 @@ function bodyOf(data: AssistantSettingsRead, draft: Draft): AssistantSettingsWri
 
 /** Monotonic authority lifetime: returning to the same actor cannot revive an earlier editor. */
 export function AssistantSettings() {
-  const { state, me, permissions, locked } = useSession();
-  const allowed = state === 'signed-in' && !locked && me?.account.status === 'active' && !me.account.mustChangePassword
-    && permissions.some(p => p.permission === 'inbox:ai:manage' && p.scopeType === 'operator' && (p.scopeId === null || p.scopeId === me.account.operatorId));
-  const key = JSON.stringify([state, me?.account.id, me?.account.operatorId, me?.account.status, me?.account.mustChangePassword, me?.branch?.id, locked,
+  const working = useWorkingAuthority();
+  const { state, me, permissions, locked, refreshing } = useSession();
+  const operatorId = me?.operatorContext.effectiveOperatorId;
+  const allowed = state === 'signed-in' && !refreshing && !locked && me?.account.status === 'active' && !me.account.mustChangePassword
+    && permissions.some(p => p.permission === 'inbox:ai:manage' && p.scopeType === 'operator' && (p.scopeId === null || p.scopeId === operatorId));
+  const key = JSON.stringify([working.epoch, me?.operatorContext, refreshing, state, me?.account.id, me?.account.operatorId, operatorId, me?.account.status, me?.account.mustChangePassword, me?.branch?.id, locked,
     permissions.map(p => [p.permission, p.scopeType, p.scopeId]).sort()]);
   const owner = useRef({ key, epoch: 0, mounted: true, allowed });
   if (owner.current.key !== key) { owner.current.key = key; owner.current.epoch++; }
   owner.current.allowed = allowed;
   const epoch = owner.current.epoch;
-  const isCurrent = useCallback(() => owner.current.mounted && owner.current.allowed && owner.current.epoch === epoch, [epoch]);
+  const isCurrent = useCallback(() => working.isCurrent() && owner.current.mounted && owner.current.allowed && owner.current.epoch === epoch, [epoch, working.isCurrent]);
   useEffect(() => { const held = owner; held.current.mounted = true; return () => { held.current.mounted = false; held.current.epoch++; }; }, []);
-  if (!allowed || !me) return <><CommandBar sectionId="assistant-settings" /><PermissionRequired permission="inbox:ai:manage" /></>;
-  return <SettingsEditor key={epoch} operatorId={me.account.operatorId} isCurrent={isCurrent} />;
+  if (!allowed || !me || !operatorId) return <><CommandBar sectionId="assistant-settings" /><PermissionRequired permission="inbox:ai:manage" /></>;
+  return <SettingsEditor key={epoch} operatorId={operatorId} isCurrent={isCurrent} />;
 }
 
 function SettingsEditor({ operatorId, isCurrent }: { operatorId: string; isCurrent: () => boolean }) {
+  const working = useWorkingAuthority();
   const [data, setData] = useState<AssistantSettingsRead | null>(null), [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [uncertain, setUncertain] = useState(false);
   const [conflict, setConflict] = useState(false), [error, setError] = useState<string | null>(null), [saved, setSaved] = useState(false);
@@ -83,7 +87,7 @@ function SettingsEditor({ operatorId, isCurrent }: { operatorId: string; isCurre
     const held = ++sequence.current; reading.current = true; version.current++;
     setLoading(true); setDraft(null); setError(null); setConflict(false); conflictRef.current = false;
     try {
-      const answer = await assistantSettingsApi.read();
+      const answer = await working.run(() => assistantSettingsApi.read());
       if (!current() || sequence.current !== held) return;
       if (answer.operatorId !== operatorId) throw new Error('The settings response does not belong to the current operator.');
       canonical.current = answer; setData(answer); setDraft(draftOf(answer)); version.current++;
@@ -92,7 +96,7 @@ function SettingsEditor({ operatorId, isCurrent }: { operatorId: string; isCurre
       setError(failure instanceof Error ? failure.message : 'Assistant settings could not be read.');
       setData(canonical.current); setDraft(canonical.current ? draftOf(canonical.current) : null); version.current++;
     } finally { if (current() && sequence.current === held) { reading.current = false; setLoading(false); } }
-  }, [current, operatorId]);
+  }, [current, operatorId, working.run]);
   useEffect(() => { mounted.current = true; void read(); return () => { mounted.current = false; sequence.current++; version.current++; pending.current = null; canonical.current = null; }; }, [read]);
   const viewVersion = version.current;
   const editable = () => current() && version.current === viewVersion && !reading.current && !inFlight.current && !pending.current && !conflictRef.current;
@@ -108,7 +112,7 @@ function SettingsEditor({ operatorId, isCurrent }: { operatorId: string; isCurre
     pending.current ??= { body: structuredClone(bodyOf(data, draft)), key: idemKey() };
     const held = pending.current; inFlight.current = true; setBusy(true); setError(null);
     try {
-      const answer = await assistantSettingsApi.save(held.body, held.key);
+      const answer = await working.run(() => assistantSettingsApi.save(held.body, held.key));
       if (!current() || pending.current !== held) return;
       if (answer.operatorId !== operatorId) throw new Error('The save could not be confirmed for the current operator.');
       pending.current = null; canonical.current = answer; version.current++;

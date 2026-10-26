@@ -25,9 +25,21 @@ const oldRate: Rate = { model: 'zz-test-model', effectiveFrom: '2026-01-01T00:00
 const pause = () => { let release!: () => void; const promise = new Promise<void>(resolve => { release = resolve; }); return { promise, release }; };
 
 async function fixture(page: Page) {
+  // Model a backend session separately from its immutable account identity.
+  let fixtureSessionActor: string | null = null, fixtureSessionId = '';
+  const fixtureOperatorContext = (actor: string, operatorId: string, branchId: string | null) => {
+    if (fixtureSessionActor !== actor) {
+      fixtureSessionActor = actor;
+      fixtureSessionId = crypto.randomUUID();
+    }
+    return { sessionId: fixtureSessionId, homeOperatorId: operatorId, effectiveOperatorId: control.operatorOverride ?? operatorId,
+      operatorOverride: control.operatorOverride, branchId, stationId: null, revision: control.operatorRevision };
+  };
+
   const documents = new Map([[OPERATOR, initial()], [OTHER_OPERATOR, initial(OTHER_OPERATOR)]]);
-  const control = { actor: ACTOR, operatorId: OPERATOR, branchId: PARK, locked: false, status: 'active', mustChange: false,
-    scope: 'operator' as 'operator' | 'null' | 'branch' | 'foreign' | 'none',
+  const control = { actor: ACTOR, operatorId: OPERATOR, branchId: PARK as string | null, locked: false, status: 'active', mustChange: false,
+    operatorOverride: null as string | null, operatorRevision: 0, platform: false, switchGrant: false,
+    scope: 'operator' as 'operator' | 'null' | 'branch' | 'foreign' | 'home' | 'none',
     extraGrants: [] as string[], getOutcomes: [] as Outcome[], putOutcomes: [] as Outcome[],
     holds: [] as { method: 'GET' | 'PUT'; remaining: number; promise: Promise<void> }[] };
   const calls: { path: string; method: string; actor: string; operatorId: string; rawBody: string | null; body: Body | null; key: string | null }[] = [];
@@ -42,19 +54,24 @@ async function fixture(page: Page) {
       if (method === 'GET') return route.fallback();
       unexpected.push({ path: url.pathname, method }); return route.abort();
     }
-    const path = url.pathname.slice(4), actor = control.actor, operatorId = control.operatorId;
+    const path = url.pathname.slice(4), actor = control.actor, homeOperatorId = control.operatorId, operatorId = control.operatorOverride ?? homeOperatorId;
     const rawBody = request.postData(), body = rawBody ? JSON.parse(rawBody) as Body : null;
     const key = request.headers()['idempotency-key'] ?? null;
     calls.push({ path, method, actor, operatorId, rawBody, body, key });
     if (method === 'GET' && !url.search && path === '/me') return route.fulfill({ json: {
-      account: { id: actor, operatorId, phone: '', status: control.status, mustChangePassword: control.mustChange },
-      employee: { id: actor, name: 'ZZ TEST Settings editor', nickname: null }, branch: { id: control.branchId, name: 'ZZ TEST Settings park', code: 'zz-settings', timezone: 'Asia/Bangkok' },
-      isPlatformAdmin: false, photoFileId: null, sessionLocked: control.locked, preferences: { theme: 'light', language: 'en' },
+      operatorContext: fixtureOperatorContext(actor, homeOperatorId, control.branchId),
+      account: { id: actor, operatorId: homeOperatorId, phone: '', status: control.status, mustChangePassword: control.mustChange },
+      employee: { id: actor, name: 'ZZ TEST Settings editor', nickname: null }, branch: control.branchId === null ? null : { id: control.branchId, name: 'ZZ TEST Settings park', code: 'zz-settings', timezone: 'Asia/Bangkok' },
+      isPlatformAdmin: control.platform, photoFileId: null, sessionLocked: control.locked, preferences: { theme: 'light', language: 'en' },
     } });
     if (method === 'GET' && !url.search && path === '/me/permissions') return route.fulfill({ json: { permissions: [
       ...['app:console:access', ...control.extraGrants].map(permission => ({ permission, scopeType: 'operator', scopeId: operatorId })),
+      ...(control.switchGrant ? [{ permission: 'platform:operator:switch', scopeType: 'operator', scopeId: null }] : []),
       ...(control.scope === 'none' ? [] : [{ permission: 'inbox:ai:manage', scopeType: control.scope === 'branch' ? 'branch' : 'operator',
-        scopeId: control.scope === 'null' ? null : control.scope === 'branch' ? PARK : control.scope === 'foreign' ? OTHER_OPERATOR : operatorId }]),
+        scopeId: control.scope === 'null' ? null : control.scope === 'branch' ? PARK : control.scope === 'foreign' ? OTHER_OPERATOR : control.scope === 'home' ? homeOperatorId : operatorId }]),
+    ] } });
+    if (method === 'GET' && !url.search && path === '/operators' && control.switchGrant) return route.fulfill({ json: { operators: [
+      { id: OPERATOR, name: 'ZZ TEST Home operator' }, { id: OTHER_OPERATOR, name: 'ZZ TEST Working operator' },
     ] } });
     if (method === 'GET' && !url.search && path === '/ready') return route.fulfill({ json: { ok: true } });
     if (path !== '/assistant-settings' || url.search || !['GET', 'PUT'].includes(method)) {
@@ -85,7 +102,7 @@ async function fixture(page: Page) {
     return route.fulfill({ json: answer });
   });
   page.on('pageerror', error => errors.push(error.name));
-  return { control, documents, calls, unexpected, errors };
+  return { control, documents, calls, unexpected, errors, sessionId: () => fixtureSessionId };
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 const writes = (f: Fixture) => f.calls.filter(c => c.path === '/assistant-settings' && c.method === 'PUT');
@@ -99,7 +116,7 @@ async function ready(page: Page) {
   await expect(person(page)).toBeVisible();
 }
 async function refreshSession(page: Page) {
-  const next = page.waitForResponse(r => new URL(r.url()).pathname === '/api/me/permissions');
+  const next = page.waitForResponse(r => new URL(r.url()).pathname === '/api/me');
   await page.evaluate(() => window.dispatchEvent(new Event('oto:session-locked'))); await (await next).finished();
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
 }
@@ -109,6 +126,13 @@ async function finishReply(page: Page, held: ReturnType<typeof pause>, method: s
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
 }
 const clean = (f: Fixture) => { expect(f.unexpected).toEqual([]); expect(f.errors).toEqual([]); };
+
+function workingB(f: Fixture, scope: 'null' | 'operator' = 'null') {
+  f.control.operatorOverride = OTHER_OPERATOR; f.control.operatorRevision = 1; f.control.branchId = null;
+  f.control.platform = true; f.control.switchGrant = true; f.control.scope = scope;
+  const document = f.documents.get(OTHER_OPERATOR)!;
+  document.overrides.internal.personDailyCap = 37; document.effective.internal.personDailyCap = 37;
+}
 
 test('Channels offers the canonical native settings page independently of Inbox entry and keeps Teams routing', async ({ page }) => {
   const f = await fixture(page); f.control.extraGrants.push('inbox:routing:manage'); await page.goto('/channels');
@@ -307,3 +331,89 @@ test('all knobs, rates and save controls remain inside a 390px native phone view
   await person(page).fill('0'); await save(page).scrollIntoViewIfNeeded(); await expect(save(page)).toBeEnabled();
   await page.screenshot({ path: info.outputPath('assistant-settings-phone.png'), fullPage: true }); expect(writes(f)).toEqual([]); clean(f);
 });
+
+test('home A with a confirmed working B reads and saves only B settings under a null-scoped grant', async ({ page }) => {
+  const f = await fixture(page); workingB(f); const homeBefore = structuredClone(f.documents.get(OPERATOR));
+  await page.goto(ADDRESS); await ready(page); await expect(person(page)).toHaveValue('37');
+  await expect(page.getByRole('combobox', { name: 'Operator', exact: true })).toHaveValue(OTHER_OPERATOR);
+  await person(page).fill('38'); await save(page).click(); await expect(page.getByRole('status')).toContainText('Settings saved.');
+  expect(reads(f).map(c => c.operatorId)).toEqual([OTHER_OPERATOR]);
+  expect(writes(f).map(c => ({ actor: c.actor, operatorId: c.operatorId }))).toEqual([{ actor: ACTOR, operatorId: OTHER_OPERATOR }]);
+  expect(f.documents.get(OTHER_OPERATOR)!.overrides.internal.personDailyCap).toBe(38);
+  expect(f.documents.get(OPERATOR)).toEqual(homeBefore); expect(f.control.operatorId).toBe(OPERATOR);
+  expect(f.control.operatorOverride).toBe(OTHER_OPERATOR); expect(f.control.operatorRevision).toBe(1); expect(f.control.scope).toBe('null'); clean(f);
+});
+
+test('B-scoped settings offers use working B; a home-only grant removes both offers and refuses direct reads', async ({ page }) => {
+  const f = await fixture(page); workingB(f, 'operator'); await page.goto('/channels');
+  const tile = page.locator('main').getByRole('link', { name: /Assistant settings/ });
+  const nav = page.locator('aside nav').getByRole('link', { name: 'Assistant settings', exact: true });
+  await expect(tile).toHaveAttribute('href', ADDRESS); await expect(nav).toHaveAttribute('href', ADDRESS);
+  f.control.scope = 'home'; await refreshSession(page); await expect(tile).toHaveCount(0); await expect(nav).toHaveCount(0);
+  expect(reads(f)).toEqual([]); expect(writes(f)).toEqual([]);
+  await page.goto(ADDRESS); await expect(page.getByText('This page is not on your access', { exact: true })).toBeVisible();
+  expect(reads(f)).toEqual([]); expect(writes(f)).toEqual([]); expect(f.control.operatorId).toBe(OPERATOR); clean(f);
+});
+
+test('late A read cannot replace a newer A draft after the same session confirms B then A', async ({ page }) => {
+  const f = await fixture(page); f.control.platform = true; f.control.switchGrant = true; f.control.scope = 'null';
+  const held = pause(); f.control.holds.push({ method: 'GET', remaining: 1, promise: held.promise });
+  await page.goto(ADDRESS); await expect.poll(() => reads(f).length).toBe(1); const sid = f.sessionId();
+  workingB(f); await refreshSession(page); await ready(page); await expect(person(page)).toHaveValue('37'); expect(f.sessionId()).toBe(sid);
+  f.control.operatorOverride = null; f.control.operatorRevision = 2; await refreshSession(page); await ready(page); await person(page).fill('86');
+  await finishReply(page, held, 'GET'); await expect(person(page)).toHaveValue('86'); expect(f.sessionId()).toBe(sid);
+  expect(reads(f).map(c => c.operatorId)).toEqual([OPERATOR, OTHER_OPERATOR, OPERATOR]); expect(writes(f)).toEqual([]);
+  await expect(page.getByRole('alert')).toHaveCount(0); clean(f);
+});
+
+test('an accepted old A save stays committed without publishing into the same-session A-B-A editor', async ({ page }) => {
+  const f = await fixture(page); f.control.platform = true; f.control.switchGrant = true; f.control.scope = 'null';
+  await page.goto(ADDRESS); await ready(page); const sid = f.sessionId(); await person(page).fill('93');
+  const held = pause(); f.control.holds.push({ method: 'PUT', remaining: 1, promise: held.promise });
+  await save(page).click(); await expect.poll(() => writes(f).length).toBe(1); const oldKey = writes(f)[0]!.key;
+  workingB(f); await refreshSession(page); await ready(page); await expect(person(page)).toHaveValue('37');
+  f.control.operatorOverride = null; f.control.operatorRevision = 2; await refreshSession(page); await ready(page); await person(page).fill('82');
+  await finishReply(page, held, 'PUT'); await expect(person(page)).toHaveValue('82');
+  expect(f.documents.get(OPERATOR)!.overrides.internal.personDailyCap).toBe(93);
+  expect(f.documents.get(OTHER_OPERATOR)!.overrides.internal.personDailyCap).toBe(37);
+  expect(writes(f)).toHaveLength(1); expect(writes(f)[0]!.key).toBe(oldKey); expect(f.sessionId()).toBe(sid);
+  await expect(page.getByRole('status')).toHaveCount(0); await expect(page.getByRole('alert')).toHaveCount(0); clean(f);
+});
+
+for (const callback of ['Save', 'numeric edit', 'Add rate'] as const) {
+  test(`retained ${callback} callback is inert at the native pending-me dispatch boundary`, async ({ page }) => {
+    const f = await fixture(page); await page.goto(ADDRESS); await ready(page); await person(page).fill('44');
+    if (callback === 'Add rate') {
+      await page.getByRole('textbox', { name: 'Pricing model', exact: true }).fill('zz-pending-rate');
+      await page.getByLabel('Effective from (UTC)', { exact: true }).fill('2027-01-01T00:00');
+      for (const name of ['Input USD per million', 'Output USD per million', 'Cache-read USD per million'])
+        await page.getByRole('spinbutton', { name, exact: true }).fill('1');
+      await expect(page.getByRole('button', { name: 'Add rate version', exact: true })).toBeEnabled();
+    }
+    const held = pause(); let pending = false;
+    await page.route('**/api/me', async route => { if (!pending) { pending = true; await held.promise; } await route.fallback(); });
+    await page.evaluate(kind => {
+      type Props = { onClick?: () => void; onChange?: (event: { target: { value: string } }) => void };
+      const node = kind === 'numeric edit' ? document.querySelector('main input[type="number"]')
+        : [...document.querySelectorAll('main button')].find(button => button.textContent?.trim() === (kind === 'Save' ? 'Save settings' : 'Add rate version'));
+      if (!node) throw new Error('Native callback target missing');
+      const key = Object.keys(node).find(name => name.startsWith('__reactProps$'));
+      if (!key) throw new Error('Native React callback props missing');
+      const props = (node as unknown as Record<string, Props>)[key]!;
+      const invoke = kind === 'numeric edit' ? () => { if (!props.onChange) throw new Error('Native change callback missing'); props.onChange({ target: { value: '91' } }); }
+        : () => { if (!props.onClick) throw new Error('Native click callback missing'); props.onClick(); };
+      const original = window.fetch.bind(window); let armed = true;
+      window.fetch = (...args) => {
+        const input = args[0], url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (armed && new URL(url, location.href).pathname === '/api/me') { armed = false; invoke(); }
+        return original(...args);
+      };
+      window.dispatchEvent(new Event('oto:session-locked'));
+    }, callback);
+    await expect.poll(() => pending).toBe(true); await expect(person(page)).toHaveCount(0); expect(writes(f)).toEqual([]);
+    held.release(); await ready(page); await expect(person(page)).toHaveValue('');
+    await expect(page.getByRole('textbox', { name: 'Pricing model', exact: true })).toHaveValue('');
+    await expect(page.getByRole('status')).toHaveCount(0); await expect(page.getByRole('alert')).toHaveCount(0);
+    expect(writes(f)).toEqual([]); expect(f.documents.get(OPERATOR)!.rates).toEqual([]); clean(f);
+  });
+}
