@@ -6,6 +6,7 @@ import { schema as s } from '@oto/db';
 import { INBOX_TEMPLATE_BODIES } from '@oto/db/seed';
 import { newId } from '@oto/shared';
 import { AI_LEASE_MS, CIRCUIT_PAUSE_MS, INBOX_AI_JOB, claimAiTurn } from '../src/services/inbox/ai-engine';
+import { scheduleAiTurn } from '../src/services/inbox/ai-turns';
 import { loadEnv } from '../src/env';
 import { buildInboxAiRuntime } from '../src/services/inbox/ai-runtime';
 import { buildDefaultJobs } from '../src/services/jobs';
@@ -558,6 +559,85 @@ describe('the guards (§D.4)', () => {
     } finally {
       cfg.dailyTurnCap = saved.turns;
       cfg.dailyTokenCap = saved.tokens;
+    }
+  });
+
+  it('the operator settings row caps the day and times the bubbles; the global config never changes (SCRUM-638)', async () => {
+    await drain();
+    const [{ n }] = (
+      await w.ctx.db.execute<{ n: number }>(sql`select count(*)::int as n from inbox.ai_turn where latency_ms is not null`)
+    ).rows as [{ n: number }];
+    await w.ctx.db.insert(s.setting).values({
+      operatorId: w.oto,
+      key: 'assistant_settings',
+      value: { schemaVersion: 1, overrides: { internal: {}, inbox: { dailyTurnCap: Number(n) } }, rates: [] },
+    });
+    try {
+      const before = w.fake.remaining;
+      const a = await customer(w, central, nextPhone(), 'hello');
+      await tick(w, later(25_000));
+      expect(w.fake.remaining).toBe(before);
+      expect((await turnsOf(w, a.id))[0]).toMatchObject({ state: 'silent', reason: 'CAP_DAILY' });
+      // The saved cap was read fresh per turn; the process-wide config is untouched.
+      expect(w.ctx.app.inboxAi.config.dailyTurnCap).not.toBe(Number(n));
+
+      // The same row's pacing: a one-second ceiling reaches the queued lines.
+      await w.ctx.db
+        .update(s.setting)
+        .set({ value: { schemaVersion: 1, overrides: { internal: {}, inbox: { firstBubbleMs: 1_000, bubbleGapMs: 1_000 } }, rates: [] } })
+        .where(and(eq(s.setting.operatorId, w.oto), eq(s.setting.key, 'assistant_settings')));
+      const conv = await customer(w, central, nextPhone(), 'quick question, do I need socks?');
+      w.fake.push({
+        kind: 'decision',
+        decision: decision({ intent: 'socks', grounding: ['socks'], bubbles: ['Yes, grip socks please 😊 '.repeat(8), 'You can buy them at reception.', 'See you soon!'] }),
+      });
+      const t0 = later(25_000);
+      expect((await tick(w, t0)).answered).toBe(1);
+      const lines = await aiLines(w, conv.id);
+      expect(lines).toHaveLength(3);
+      const delays = lines.map((l) => l.nextAttemptAt!.getTime() - t0.getTime());
+      // No jitter in this world (random = 0.5): the saved 1 s ceiling, not the native 20 s.
+      expect(delays[0]).toBe(1_000);
+      expect(delays[1]! - delays[0]!).toBeLessThanOrEqual(1_000);
+      expect(delays[2]! - delays[1]!).toBeLessThanOrEqual(1_000);
+    } finally {
+      await w.ctx.db.delete(s.setting).where(and(eq(s.setting.operatorId, w.oto), eq(s.setting.key, 'assistant_settings')));
+    }
+  });
+
+  it('the operator settings row shortens the debounce and the ceiling never drops below it (SCRUM-638)', async () => {
+    await drain();
+    const conv = await customer(w, central, nextPhone(), 'a first word');
+    await tick(w, later(25_000));
+    const [row] = await w.ctx.db.select().from(s.conversation).where(eq(s.conversation.id, conv.id)).limit(1);
+    const [msg] = await w.ctx.db.select().from(s.message).where(eq(s.message.conversationId, conv.id)).limit(1);
+    await w.ctx.db.insert(s.setting).values({
+      operatorId: w.oto,
+      key: 'assistant_settings',
+      // A ceiling below the debounce is clamped up to it, the native rule.
+      value: { schemaVersion: 1, overrides: { internal: {}, inbox: { debounceSeconds: 1, debounceMaxSeconds: 0 } }, rates: [] },
+    });
+    const t0 = new Date();
+    try {
+      const first = await w.ctx.db.transaction(async (tx) =>
+        scheduleAiTurn(tx, { enabled: true, debounceMs: 25_000, debounceMaxMs: 60_000 }, {
+          operatorId: w.oto, branchId: row!.branchId, conversation: row!, triggerMessageId: msg!.id,
+          triggerAt: t0, now: t0, requestId: null,
+        }));
+      expect(first.created).toBe(true);
+      expect(first.dueAt.getTime() - t0.getTime()).toBe(1_000);
+      // A later bubble would push the due time out, but the clamped ceiling holds it.
+      const t1 = new Date(t0.getTime() + 500);
+      const second = await w.ctx.db.transaction(async (tx) =>
+        scheduleAiTurn(tx, { enabled: true, debounceMs: 25_000, debounceMaxMs: 60_000 }, {
+          operatorId: w.oto, branchId: row!.branchId, conversation: row!, triggerMessageId: msg!.id,
+          triggerAt: t1, now: t1, requestId: null,
+        }));
+      expect(second.created).toBe(false);
+      expect(second.dueAt.getTime() - t0.getTime()).toBe(1_000);
+    } finally {
+      await w.ctx.db.delete(s.setting).where(and(eq(s.setting.operatorId, w.oto), eq(s.setting.key, 'assistant_settings')));
+      await w.ctx.db.execute(sql`delete from inbox.ai_turn where conversation_id = ${conv.id} and state = 'pending'`);
     }
   });
 

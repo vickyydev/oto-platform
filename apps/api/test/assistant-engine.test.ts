@@ -502,6 +502,46 @@ describe('switches, caps and the breaker (§E.2)', () => {
     }
   });
 
+  it('the operator settings row caps the person; the global config never changes (SCRUM-638)', async () => {
+    const me = await staff(w, 'ZZ Saved Cap', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    await w.ctx.db.insert(s.setting).values({
+      operatorId: w.oto,
+      key: 'assistant_settings',
+      value: { schemaVersion: 1, overrides: { internal: { personDailyCap: 1 }, inbox: {} }, rates: [] },
+    });
+    try {
+      script(w, final('Hello.'));
+      expect((await ask(w, me.cookie, 'One')).body.state).toBe('answered');
+      const fake = script(w);
+      const second = await ask(w, me.cookie, 'Two');
+      expect(second.body).toMatchObject({ state: 'capped', reason: 'CAP_PERSON', answer: ASSISTANT_GATE_LINES.capPerson.en });
+      expect(fake.calls).toHaveLength(0);
+      // The saved cap was read fresh per gate; the process-wide config is untouched.
+      expect(w.ctx.app.internalAi.config.personDailyCap).toBeGreaterThan(1);
+    } finally {
+      await w.ctx.db.delete(s.setting).where(and(eq(s.setting.operatorId, w.oto), eq(s.setting.key, 'assistant_settings')));
+    }
+  });
+
+  it('an invalid settings document and another operator’s row both leave the native caps (SCRUM-638)', async () => {
+    const me = await staff(w, 'ZZ Native Cap', 'reception', { scopeType: 'branch', scopeId: w.central }, w.central);
+    const otherOperator = newId();
+    await w.ctx.db.insert(s.operator).values({ id: otherOperator, name: 'ZZ Other Park Co' });
+    await w.ctx.db.insert(s.setting).values([
+      // Invalid for this operator: a cap that is not a number must change nothing.
+      { operatorId: w.oto, key: 'assistant_settings', value: { schemaVersion: 1, overrides: { internal: { personDailyCap: 'zero' } }, rates: [] } },
+      // A hard zero for ANOTHER operator must never reach this one.
+      { operatorId: otherOperator, key: 'assistant_settings', value: { schemaVersion: 1, overrides: { internal: { personDailyCap: 0 }, inbox: {} }, rates: [] } },
+    ]);
+    try {
+      script(w, final('Hello.'));
+      expect((await ask(w, me.cookie, 'Native still applies')).body.state).toBe('answered');
+    } finally {
+      await w.ctx.db.delete(s.setting).where(inArray(s.setting.operatorId, [w.oto, otherOperator]));
+      await w.ctx.db.delete(s.operator).where(eq(s.operator.id, otherOperator));
+    }
+  });
+
   it('the operator’s ask and token caps: capped, raised once each', async () => {
     const cfg = w.ctx.app.internalAi.config;
     const before = { asks: cfg.dailyAskCap, tokens: cfg.dailyTokenCap };

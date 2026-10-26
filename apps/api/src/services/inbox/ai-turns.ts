@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { aiTurn, conversation, inboxEvent, message, type AiMode } from '@oto/db';
 import { newId, type InboxAiState } from '@oto/shared';
+import { assistantSettingOverridesOf } from '../assistant-settings';
 import { audit } from '../audit';
 import type { Exec, Tx } from '../tx';
 import type { InboxAiSchedule } from './ai-runtime';
@@ -151,7 +152,17 @@ export interface Scheduled {
  */
 export async function scheduleAiTurn(tx: Tx, schedule: InboxAiSchedule, input: ScheduleInput): Promise<Scheduled> {
   const now = input.now;
-  const due = new Date(now.getTime() + schedule.debounceMs);
+  // SCRUM-638: the operator's saved debounce, read fresh in this transaction.
+  // The document stores seconds, this code works in milliseconds, and the
+  // native rule still holds after fallback: the ceiling is never below the
+  // debounce itself.
+  const saved = (await assistantSettingOverridesOf(tx, input.operatorId)).inbox;
+  const debounceMs = saved.debounceSeconds === undefined ? schedule.debounceMs : saved.debounceSeconds * 1000;
+  const debounceMaxMs = Math.max(
+    debounceMs,
+    saved.debounceMaxSeconds === undefined ? schedule.debounceMaxMs : saved.debounceMaxSeconds * 1000,
+  );
+  const due = new Date(now.getTime() + debounceMs);
   const id = newId();
   const [row] = await tx
     .insert(aiTurn)
@@ -175,7 +186,7 @@ export async function scheduleAiTurn(tx: Tx, schedule: InboxAiSchedule, input: S
           when coalesce((select m.created_at from inbox.message m where m.id = ${aiTurn.triggerMessageId}), '-infinity'::timestamptz)
                <= ${input.triggerAt.toISOString()}::timestamptz
           then excluded.trigger_message_id else ${aiTurn.triggerMessageId} end`,
-        dueAt: sql`least(${aiTurn.firstSeenAt} + ${`${schedule.debounceMaxMs} milliseconds`}::interval, excluded.due_at)`,
+        dueAt: sql`least(${aiTurn.firstSeenAt} + ${`${debounceMaxMs} milliseconds`}::interval, excluded.due_at)`,
         updatedAt: now,
       },
     })
