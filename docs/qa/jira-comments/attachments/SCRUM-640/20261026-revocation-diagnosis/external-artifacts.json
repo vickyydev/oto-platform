@@ -1,0 +1,14 @@
+{
+  "external": [
+    {
+      "path": "C:/w/admin640-revocation-diagnosis-native-v1.inputs.json",
+      "sha256": "9f44d0cd8a5b7a8e2ece83be3d2773559bd127a4d8f214fc507713d25b2b5418"
+    },
+    {
+      "path": "C:/w/admin640-revocation-diagnosis-native-v1.log",
+      "sha256": "a6f34973c2c5ae43ad1951d623e911b70c357cdd202a4586844a4e0cf9e49f36"
+    }
+  ],
+  "staging": false,
+  "sourceChanges": 0
+}

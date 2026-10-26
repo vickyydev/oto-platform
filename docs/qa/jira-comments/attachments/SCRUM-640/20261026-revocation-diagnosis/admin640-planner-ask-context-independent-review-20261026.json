@@ -1,0 +1,59 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T11:48:22.433Z",
+  "kind": "READ_ONLY_PLANNER_ASK_CONTEXT_REVIEW",
+  "sourceCommit": "287c9d9690e5a7a4f9680a56f20a3cd4862933ac",
+  "parentCommit": "950646674fde66333f911401af82f956f58188b0",
+  "latestStatusRead": "590a:docs/progress/STATUS.md",
+  "changedFiles": [
+    "apps/api/src/services/assistant/engine.ts",
+    "apps/api/test/assistant-engine.test.ts"
+  ],
+  "bindings": [
+    {
+      "path": "apps/api/src/services/assistant/engine.ts",
+      "sha256": "160f542ec143b8be148c53fa94ebe05218836809153a8a13d5f2d64d13ebc3a4"
+    },
+    {
+      "path": "apps/api/test/assistant-engine.test.ts",
+      "sha256": "f9b7b0c7592ebbdfb1b242c11048ca80d0245a7cabbe6e11961f558ce4ed0c24"
+    }
+  ],
+  "passed": false,
+  "protectedFixApplied": false,
+  "repoEdits": 0,
+  "testRuns": 0,
+  "runtimeActions": 0,
+  "findings": [
+    {
+      "id": "Q23_OPEN_REFUSAL_POSTCHECK",
+      "severity": "P2",
+      "status": "source-confirmed-awaiting-native-RED",
+      "path": "apps/api/src/services/assistant/engine.ts",
+      "commit": "287c9d9690e5a7a4f9680a56f20a3cd4862933ac",
+      "lines": {
+        "precheck": 792,
+        "openerAwait": 802,
+        "refusalBranch": 814,
+        "refusalReturn": 836,
+        "postcheck": 849
+      },
+      "reason": "The normal post-tool context check is below the OTO opener refusal branch. A switch committed while the opener awaits can return a refusal after the precheck, then record/return it before the postcheck. That response can enter the model loop under the original ask despite the announced any-change CONTEXT_CHANGED/TOOL_ERROR guarantee.",
+      "prescribedPlannerFix": "After native reproduction, the protected owner should recheck the same pin immediately after the opener settles and before the ok/refusal branch. Preserve native refusal behavior when the pin remains current, and leave the coordinator-owned public/carrier seams unchanged.",
+      "nativeRegression": "Hold the actual OTO opener response while a genuine same-session operator switch (and separately A-B-A if bounded) commits, then release a structured refusal. Require failed TOOL_ERROR, one null-status/bytes CONTEXT_CHANGED tool row under the original ask owner, no refusal/model continuation. Use fake provider/OTO transport only, preserving actual auth/session/DB behavior.",
+      "impactLimit": "No private-data leak or runtime failure was reproduced by this read-only review. The defect is a concrete missing post-context fence on a returned refusal."
+    }
+  ],
+  "verifiedBySource": [
+    "The session switch revision query uses the same append-only session.operator_switch count as native session loading and operator-switch service.",
+    "Precheck and ordinary platform/OTO successful-result postcheck compare effective operator and revision, so a committed A-B-A changes revision and is rejected before adapter extraction/model return.",
+    "CONTEXT_CHANGED records no tool result bytes/rows and retains original ask/operator ownership; audit carrier and native tool request session hooks are unchanged.",
+    "The Q21 settings-consumer gate hunk and this executor hunk are disjoint; combine only after638 Deployed and validate the real combined source."
+  ],
+  "limits": [
+    "No source was applied and no native test was run by this review. Planner-reported57/57 is not an independently rerun result.",
+    "The new planner regression increments a switch audit row after a real platform inject; it proves the revision check but not a complete real A-B-A native journey.",
+    "The explicit no-live-session exception leaves ended sessions to route401. Revocation after an already-successful response is not demonstrated by these new tests. The separately reported assistant-otoapp baseline42/1 remains to reproduce, not a newly established cause.",
+    "One new protected-owner finding is queued for native reproduction/planner handling; no unauthorized protected change is prescribed to the coordinator."
+  ]
+}

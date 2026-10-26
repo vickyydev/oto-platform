@@ -1,0 +1,48 @@
+{
+  "ticket": "SCRUM-640",
+  "purpose": "untouched-native-assistant-revocation-diagnosis",
+  "startedAt": "2026-10-26T11:52:35.602Z",
+  "head": "950646674fde66333f911401af82f956f58188b0",
+  "root": "C:/w/admin-operator-switch",
+  "tempRoot": "C:/w/admin640-revocation-diagnosis-native-v1-tmp",
+  "command": "pnpm --filter @oto/api test test/assistant-otoapp.test.ts",
+  "sourceFiles": 1641,
+  "sourceManifestSha256": "96b68b127b128194f901507685df5c67656c1fcc07d04a1ba1f3aaf1d5d6bffc",
+  "helperSha256": "a0a547d139da70b6d8ba58f8af88c29db3b233c16b6de9a848f230146e85ea74",
+  "tools": {
+    "node": "v22.17.1",
+    "pnpmPath": "C:/Users/waqar/AppData/Roaming/npm/node_modules/pnpm/bin/pnpm.cjs",
+    "pnpmSha256": "b276da51dc8ca5b0d3ee3371695b50fc8b3244b281b091c63a3f082a88dadeb9",
+    "postgresPath": "C:\\w\\admin-operator-switch\\node_modules\\.pnpm\\@embedded-postgres+windows-x64@16.14.0-beta.17\\node_modules\\@embedded-postgres\\windows-x64\\native\\bin\\postgres.exe",
+    "postgresSha256": "c4a6839621f230076b3347f443b3dbfb133954d695f82866ea67501290bd90d3",
+    "embeddedVersion": "16.14.0-beta.17"
+  },
+  "inheritedDatabaseSettingsDiscarded": true,
+  "noInstall": true,
+  "noSourceEdits": true,
+  "staging": false,
+  "protectedPatchApplied": false,
+  "completedAt": "2026-10-26T11:53:15.275Z",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "sourceAfterSha256": "96b68b127b128194f901507685df5c67656c1fcc07d04a1ba1f3aaf1d5d6bffc",
+  "sourceUnchanged": true,
+  "headAfter": "950646674fde66333f911401af82f956f58188b0",
+  "logPath": "C:/w/admin640-revocation-diagnosis-native-v1.log",
+  "logSha256": "a6f34973c2c5ae43ad1951d623e911b70c357cdd202a4586844a4e0cf9e49f36",
+  "inputsSha256": "9f44d0cd8a5b7a8e2ece83be3d2773559bd127a4d8f214fc507713d25b2b5418",
+  "resources": [
+    {
+      "directory": "C:\\w\\admin640-revocation-diagnosis-native-v1-tmp\\oto-pg-aPP4TY",
+      "pid": 92432,
+      "port": 54412,
+      "firstObservedAt": "2026-10-26T11:53:00.488Z",
+      "nativeDirectoryRemoved": true
+    }
+  ],
+  "remainingNativeDirectories": [],
+  "ownTempParentRetained": true,
+  "fullUnpipedOutputCaptured": true,
+  "logRedactedBeforeDisk": true
+}

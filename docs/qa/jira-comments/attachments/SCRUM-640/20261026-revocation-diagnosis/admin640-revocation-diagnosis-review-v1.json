@@ -1,0 +1,165 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "independent-native-revocation-diagnosis",
+  "reviewedAt": "2026-10-26T11:55:23.799Z",
+  "status": "BROKEN",
+  "reproductionConfirmed": true,
+  "releaseAccepted": false,
+  "head": "950646674fde66333f911401af82f956f58188b0",
+  "sourceManifestSha256": "96b68b127b128194f901507685df5c67656c1fcc07d04a1ba1f3aaf1d5d6bffc",
+  "sourceFiles": 1641,
+  "sourceUnchanged": true,
+  "native": {
+    "command": "pnpm --filter @oto/api test test/assistant-otoapp.test.ts",
+    "startedAt": "2026-10-26T11:52:35.602Z",
+    "completedAt": "2026-10-26T11:53:15.275Z",
+    "exitCode": 1,
+    "total": 43,
+    "passed": 42,
+    "failed": 1,
+    "skipped": 0,
+    "failure": "assistant-otoapp.test.ts:607: expected the revoked 401 refusal, received an empty refusal list",
+    "fullOutputRead": true,
+    "unpipedOutput": true,
+    "logSha256": "a6f34973c2c5ae43ad1951d623e911b70c357cdd202a4586844a4e0cf9e49f36",
+    "receiptSha256": "c7af6ae8e9f037a0bc275eb7b750df89a3d55027f2cd0b60fc452edc539bc27a",
+    "inputsSha256": "9f44d0cd8a5b7a8e2ece83be3d2773559bd127a4d8f214fc507713d25b2b5418"
+  },
+  "classification": {
+    "appAvailability": false,
+    "fixtureSetupFailure": false,
+    "q22SignOutFailure": false,
+    "protectedPatch287RequiredToReproduce": false,
+    "explanation": "An ended platform session is correctly rejected at the newly hardened mint boundary. The protected assistant adapter does not translate that typed rejection into its existing structured refusal path."
+  },
+  "evidence": [
+    {
+      "path": "apps/api/test/assistant-otoapp.test.ts",
+      "lines": [
+        591,
+        612
+      ],
+      "fact": "The real native suite revokes its exact test session during the fake model step before the first tool runs. It expects the existing 401/revoked sentence and rejection audit."
+    },
+    {
+      "path": "packages/assistant/src/tool-loop-fake.ts",
+      "lines": [
+        183,
+        190
+      ],
+      "fact": "The scripted during callback is awaited before tool execution."
+    },
+    {
+      "path": "apps/api/src/services/handoff.ts",
+      "lines": [
+        339,
+        347
+      ],
+      "fact": "liveHandoffAuth converts an ended session into typed HandoffRejected with reason revoked."
+    },
+    {
+      "path": "apps/api/src/services/handoff.ts",
+      "lines": [
+        379,
+        395
+      ],
+      "fact": "The mint boundary validates the live context before creating the handoff token. The refusal must remain in place."
+    },
+    {
+      "path": "apps/api/src/services/assistant/call-otoapp.ts",
+      "lines": [
+        290,
+        318
+      ],
+      "fact": "The mint call is awaited without typed-refusal handling; structured refusals are handled only after an actual app exchange response."
+    },
+    {
+      "path": "apps/api/src/services/assistant/engine.ts",
+      "lines": [
+        744,
+        780
+      ],
+      "fact": "Opening catches timeout/unavailable only. A typed mint rejection bypasses refusal collection and is rethrown."
+    },
+    {
+      "path": "packages/assistant/src/tool-loop.ts",
+      "lines": [
+        462,
+        472
+      ],
+      "fact": "The outer loop closes executor throws as TOOL_ERROR; this is the source-derived classification of the missing-refusal path."
+    },
+    {
+      "path": "apps/api/src/services/tx.ts",
+      "lines": [
+        113,
+        131
+      ],
+      "fact": "Native withTx records the mint failure as auth.handoff_issue.failed after rollback and rethrows. That differs from the old exchange-level auth.handoff_rejected expectation."
+    }
+  ],
+  "prescribedPlannerRequest": {
+    "scope": "A narrow protected assistant call-otoapp.ts integration fix and native regression coverage, with the existing 43-case suite retained.",
+    "behavior": [
+      "Translate the typed mint-time HandoffRejected/revoked outcome into an honest structured 401 refusal instead of generic TOOL_ERROR or an empty refusal list.",
+      "Preserve the existing user-facing signed-out sentence and no-data behavior. Distinguish a local pre-exchange refusal from a real app HTTP response in records; do not claim an exchange occurred.",
+      "Preserve or explicitly reconcile the existing rejection-audit contract for the known account/session using trusted captured ask context, without fabricated jti or a second mint/exchange attempt.",
+      "Keep live session/context validation, stale-context and foreign-effective OTO refusal, single-use, audience and origin fences unchanged. Unexpected database or transport errors must not become ordinary 401 refusals."
+    ],
+    "validation": "Rerun the entire unchanged assistant-otoapp43 file. Add a narrow typed mint-rejection regression proving no app call/token/session issuance and correct refusal/audit; retain all mid-exchange revocation, ordinary success and no-secret controls.",
+    "forbidden": [
+      "Do not let revoked sessions mint",
+      "Do not skip or loosen the existing case",
+      "Do not classify this as an app-availability skip",
+      "Do not fix this in shared session/handoff eligibility or Q22 signOut"
+    ]
+  },
+  "priorEvidence": [
+    {
+      "path": "C:/w/admin638-full-20261026/integrated-api-shard2.log",
+      "sha256": "439a55e461baa79e0cc46c3c9a43e41816ec3ff64d0aa10ece890e4a7030f8bc",
+      "fact": "The same named suite previously executed all43 and passed on the pre640 source. Its execution did not depend on app npm availability."
+    },
+    {
+      "path": "C:/w/admin640-q22-broad-green-v1.json",
+      "sha256": "8ca7399b7f318b8215f29d053266970db48fa8e48e87fe98240e8410918cf262",
+      "fact": "The prior27-file466-case native run did not execute assistant-otoapp.test.ts; hashing it in the input manifest did not provide runtime coverage."
+    }
+  ],
+  "sourceFilesReviewed": {
+    "apps/api/test/assistant-otoapp.test.ts": "a189c94f1794ed6af2b5485105bf257a9ffc89e3f24dca09e0c5c24a87d17185",
+    "apps/api/test/assistant-support.ts": "d1ec84317b3876b0515ceae1ef014d7a569e9bb1c7ecd81c3a39d42c226aa10a",
+    "apps/api/test/fake-otoapp.ts": "2f07e20450b4da11f41b5717af014c29f7a609b78f75d88bddfa72e1c2d47090",
+    "apps/api/src/services/assistant/call-otoapp.ts": "2f5fc7fc21b61aefa9e08148ee5c96b2aa50561038a4a7e64bb98c84b3cba136",
+    "apps/api/src/services/assistant/engine.ts": "921a98124e880db3c9f13a691f744052f8de1918ae17a86571bd8c14d44c9175",
+    "apps/api/src/services/handoff.ts": "c0dee8eb499d46fb7ecca0fe33fc6dd9cb5ce321ba66cf8cf428dca908695a9d",
+    "apps/api/src/plugins/session.ts": "50907b5a7a3efd68522376ae4de02d217fc1a25406b9c9a5b021b6f94649ad97",
+    "apps/api/src/services/tx.ts": "29a5d9a137a0ad711838ab051ac666a5fe1cf4e7ccea2960adc6663e28f3b015",
+    "packages/assistant/src/tool-loop.ts": "6fb0ffb1545c912ffd060e1db2a403da72ab27c282b5d81f6934295419dc7c5a",
+    "packages/assistant/src/tool-loop-fake.ts": "bb0553cd126e03729477c727c3a19b6b1e81f545d168fe55cde0ba3e1e25fa28"
+  },
+  "resources": {
+    "kind": "native embedded PostgreSQL16.14; no Docker",
+    "exactOwnedCluster": {
+      "directory": "C:\\w\\admin640-revocation-diagnosis-native-v1-tmp\\oto-pg-aPP4TY",
+      "pid": 92432,
+      "port": 54412,
+      "firstObservedAt": "2026-10-26T11:53:00.488Z",
+      "nativeDirectoryRemoved": true
+    },
+    "nativeDirectoryRemoved": true,
+    "noRemainingNativeClusterDirectories": true,
+    "ownTempParentRetained": true,
+    "remainingContents": [
+      "node-compile-cache",
+      "tsx-waqar"
+    ],
+    "sharedResourcesChanged": false
+  },
+  "limitations": [
+    "The failing assertion occurs before the later no-session and rejection-audit assertions, so those two assertions did not execute in the failed case. The pre-token/pre-HTTP ordering is established by source review; no extra instrumentation was added.",
+    "No second run with planner patch287 was performed; the unchanged checkpoint alone reproduces the same reported defect.",
+    "No staging, real model/provider, messages, payments, shared database or protected source changes occurred."
+  ],
+  "safetyNote": "A source-read tool excerpt displayed committed synthetic test literals during diagnosis. No actual environment/staging secret was read; no literal values are included in this report."
+}
