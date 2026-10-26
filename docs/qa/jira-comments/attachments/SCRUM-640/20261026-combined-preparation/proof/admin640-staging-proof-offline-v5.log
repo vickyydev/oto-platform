@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: imports are inert; exactly seven logical mutations and no fake epoch field
+ok 1 - imports are inert; exactly seven logical mutations and no fake epoch field
+  ---
+  duration_ms: 8.1305
+  type: 'test'
+  ...
+# Subtest: plan and preflight require final source, exact deployments, real grant and fresh existing demo scope
+ok 2 - plan and preflight require final source, exact deployments, real grant and fresh existing demo scope
+  ---
+  duration_ms: 1.7835
+  type: 'test'
+  ...
+# Subtest: request grammar refuses every unplanned business writer, auth path, duplicate query and foreign resource
+ok 3 - request grammar refuses every unplanned business writer, auth path, duplicate query and foreign resource
+  ---
+  duration_ms: 0.5912
+  type: 'test'
+  ...
+# Subtest: session PUT requires exact armed target/revision; no body-selected account/session fields
+ok 4 - session PUT requires exact armed target/revision; no body-selected account/session fields
+  ---
+  duration_ms: 0.1926
+  type: 'test'
+  ...
+# Subtest: source gate rejects non-main CI, stale or incomplete deploy inventory and missing sixth job
+ok 5 - source gate rejects non-main CI, stale or incomplete deploy inventory and missing sixth job
+  ---
+  duration_ms: 0.4526
+  type: 'test'
+  ...
+# Subtest: explicit execution and frozen helper checks run before any runtime/network/auth
+ok 6 - explicit execution and frozen helper checks run before any runtime/network/auth
+  ---
+  duration_ms: 0.9442
+  type: 'test'
+  ...
+# Subtest: durable intent failure dispatches zero auth/business requests, but cleanup remains independent
+ok 7 - durable intent failure dispatches zero auth/business requests, but cleanup remains independent
+  ---
+  duration_ms: 0.8838
+  type: 'test'
+  ...
+# Subtest: unknown auth/500/redirect/unexpected2xx latch uncertainty and stop subsequent selection without retries
+ok 8 - unknown auth/500/redirect/unexpected2xx latch uncertainty and stop subsequent selection without retries
+  ---
+  duration_ms: 0.3618
+  type: 'test'
+  ...
+# Subtest: known Reception403 is acknowledged; an unexpected4xx refuses progression without pretending unknown
+ok 9 - known Reception403 is acknowledged; an unexpected4xx refuses progression without pretending unknown
+  ---
+  duration_ms: 0.3029
+  type: 'test'
+  ...
+# Subtest: both original-cookie cleanup probes run even on logout throw/refusal or failed receipt recording
+ok 10 - both original-cookie cleanup probes run even on logout throw/refusal or failed receipt recording
+  ---
+  duration_ms: 1.8367
+  type: 'test'
+  ...
+# Subtest: the actual finish wrapper revokes the original cookie even when browser context closure throws
+ok 11 - the actual finish wrapper revokes the original cookie even when browser context closure throws
+  ---
+  duration_ms: 0.2762
+  type: 'test'
+  ...
+# Subtest: actual shared matrix uses A-B-A same SID/native selections, then closes ADMIN before Reception auth
+ok 12 - actual shared matrix uses A-B-A same SID/native selections, then closes ADMIN before Reception auth
+  ---
+  duration_ms: 0.6296
+  type: 'test'
+  ...
+# Subtest: failed prior auth cleanup blocks later auth, selections and any business cleanup
+ok 13 - failed prior auth cleanup blocks later auth, selections and any business cleanup
+  ---
+  duration_ms: 0.369
+  type: 'test'
+  ...
+# Subtest: read-only job intent is durable before one dispatch; unknown job is terminally uncertain and never retried
+ok 14 - read-only job intent is durable before one dispatch; unknown job is terminally uncertain and never retried
+  ---
+  duration_ms: 0.3033
+  type: 'test'
+  ...
+# Subtest: exact audit draft is parameterized, READ ONLY, bounded and has no mutation/provider request
+ok 15 - exact audit draft is parameterized, READ ONLY, bounded and has no mutation/provider request
+  ---
+  duration_ms: 1.1289
+  type: 'test'
+  ...
+# Subtest: audit validates captured A/A then A/B, exact revoked rows and unchanged identities/grants/other sessions
+ok 16 - audit validates captured A/A then A/B, exact revoked rows and unchanged identities/grants/other sessions
+  ---
+  duration_ms: 4.4007
+  type: 'test'
+  ...
+# Subtest: echoed marker text is ignored, one anchored typed result is required; duplicate/truncated logs refuse
+ok 17 - echoed marker text is ignored, one anchored typed result is required; duplicate/truncated logs refuse
+  ---
+  duration_ms: 1.0333
+  type: 'test'
+  ...
+# Subtest: audit refuses incomplete/uncertain/unclean native proof; no finalization without explicit arm
+ok 18 - audit refuses incomplete/uncertain/unclean native proof; no finalization without explicit arm
+  ---
+  duration_ms: 1.1699
+  type: 'test'
+  ...
+# Subtest: audit intake rejects fabricated operation counts, failed native network and stale source observations
+ok 19 - audit intake rejects fabricated operation counts, failed native network and stale source observations
+  ---
+  duration_ms: 1.1058
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 98.2248

@@ -1,0 +1,17 @@
+
+> @oto/launcher@0.1.0 test C:\w\admin-operator-switch\apps\launcher
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/launcher
+
+ ✓ test/shell.test.ts (11 tests) 8ms
+ ✓ test/ask.test.ts (28 tests) 12ms
+ ✓ test/account-theme.test.tsx (7 tests) 30ms
+ ✓ test/popup.test.tsx (16 tests) 61ms
+ ✓ test/dock-dom.test.tsx (10 tests) 401ms
+
+ Test Files  5 passed (5)
+      Tests  72 passed (72)
+   Start at  20:28:04
+   Duration  14.57s (transform 627ms, setup 0ms, collect 2.09s, tests 512ms, environment 12.56s, prepare 1.99s)

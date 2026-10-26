@@ -1,0 +1,58 @@
+{
+  "ticket": "SCRUM-640",
+  "at": "2026-10-26T13:57:44.902Z",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceManifestSha256": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "documentationCensusSha256": "4928408072b36e455bcdbf6a65500eb29468fd3ebf9f79d7d15621de34428ca0",
+  "originalResultSha256": "2ac8f0465f208117604646206ab2fc7364ab9420f6a0654987027fe1acb5cf74",
+  "originalPassed": false,
+  "addedDocumentationInputs": [
+    {
+      "path": "docs/architecture/ARCHITECTURE.md",
+      "sha256": "3f5597b9c0dbd0d77664481b790c1b848cddab172f5da8206d7bd60af6ec158f",
+      "bytes": 56803
+    },
+    {
+      "path": "docs/ops/COUNTER_VOUCHERS.md",
+      "sha256": "600175b62064e0e3b1f3100ea40fa6f0a0799ae403d0e5991d97a1367239fe2a",
+      "bytes": 9000
+    },
+    {
+      "path": "docs/progress/plans/events-kiosk/PLAN.md",
+      "sha256": "dc19e298e8e1531bae1933835d1229751492ab99d291419cdac9954833e6c42d",
+      "bytes": 35968
+    },
+    {
+      "path": "docs/progress/plans/otoapp-lift/PLAN.md",
+      "sha256": "b460d27706430353d498ed4bd6740745b3c694107d418b5b5e5ce10672f57855",
+      "bytes": 206938
+    }
+  ],
+  "wholeFiles": [
+    "apps/api/test/offline-capability.test.ts",
+    "apps/api/test/s217b-r4a-review.test.ts",
+    "apps/api/test/s217b-r4b-review.test.ts",
+    "apps/api/test/s217b-r5-review.test.ts",
+    "apps/api/test/s217b-r5.test.ts",
+    "apps/api/test/s217b-r6-review.test.ts",
+    "apps/api/test/s217b-r6.test.ts",
+    "apps/api/test/s220-e5-hazards.test.ts",
+    "apps/api/test/s220-e5-review.test.ts",
+    "apps/api/test/vouchers.test.ts"
+  ],
+  "workerId": "decb538415f91417ba392aaacbe496dea32f77ddaca1407621dfbb24d9e52145",
+  "pgId": "5ecc4c7972dbd1b1da7884610145650b062fad54f069f0e357eefe8a9b73b237",
+  "workerSha256": "f091b2faa5100c36c886844a0924117f1f8b6bede966716daaff6f597f8e9305",
+  "reporterSha256": "87c9beae6c8d4be2bca74942e46b9e9561e2db1ab5aa7ea68f5a15ed09a0468d",
+  "linuxAvailableMiB": 10236,
+  "hostAvailableMiB": 1519,
+  "assertionsUnchanged": true,
+  "exitCode": 0,
+  "signal": null,
+  "completedAt": "2026-10-26T14:02:35.931Z",
+  "stderrObserved": false,
+  "spawnFailed": false,
+  "resultSha256": "4820552a6864587efcf80462d9d2ee51dd491cf2df6b509526eca775ffda1046",
+  "sourceUnchanged": true,
+  "passed": true
+}

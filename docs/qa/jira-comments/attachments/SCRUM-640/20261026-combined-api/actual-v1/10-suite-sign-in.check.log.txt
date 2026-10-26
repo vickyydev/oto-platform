@@ -1,0 +1,4 @@
+{"level":"warn","time":"2026-10-26T13:10:39.018Z","service":"oto-app","env":"local","status":409,"code":"ACCOUNT_EXISTS","msg":"the platform refused a suite sign-in"}
+{"level":"warn","time":"2026-10-26T13:10:39.020Z","service":"oto-app","env":"local","status":401,"code":"OTOAPP_PROVISION_UNAUTHORIZED","msg":"the platform refused a suite sign-in"}
+suite-sign-in.check: all checks passed
+{"level":"error","time":"2026-10-26T13:10:39.021Z","service":"oto-app","env":"local","err":"fetch failed","msg":"could not reach the platform to provision a suite sign-in"}

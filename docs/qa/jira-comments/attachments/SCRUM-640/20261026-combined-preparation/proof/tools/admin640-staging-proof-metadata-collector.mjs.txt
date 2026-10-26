@@ -1,0 +1,153 @@
+// Inert. Root alone explicitly dispatches/collects a reviewed read-only original job.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { DEMOS, hash, digest, exact, need, uuid, iso, same, codeOf, validatePlan, validatePreflight } from './admin640-staging-proof-executor.mjs';
+import { IDENTITY_SQL, buildAuditJob, parseAuditLogs } from './admin640-staging-proof-audit-draft.mjs';
+import { validateReleaseInput, releaseTools } from './admin640-staging-proof-release-collector.mjs';
+const MARKER = 'SCRUM640_PREFLIGHT_V1 ', NOW = () => new Date().toISOString(), ACTORS = ['ADMIN', 'RECEPTION'];
+const hex = v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+export function validateInput(p) {
+  need(exact(p, ['approved', 'ticket', 'release', 'collectorSha256', 'mode', 'outputDirectory', 'proofPlan', 'nativeReceipt']) && p.approved === true && p.ticket === 'SCRUM-640'
+    && ['preflight', 'audit'].includes(p.mode) && hex(p.collectorSha256) && new RegExp('^C:/w/admin640-staging-proof-' + p.mode + '-[A-Za-z0-9_-]{1,60}$').test(p.outputDirectory), 'EXACT_METADATA_INPUT_REQUIRED');
+  validateReleaseInput(p.release);
+  if (p.mode === 'preflight') need(p.proofPlan === null && p.nativeReceipt === null, 'NO_PREAUTH_SESSION_CLAIM');
+  else for (const [key, re] of [['proofPlan', /^C:\/w\/admin640-staging-proof-plan-[A-Za-z0-9_-]+\.json$/], ['nativeReceipt', /^C:\/w\/admin640-staging-proof-[A-Za-z0-9_-]+\/result\.json$/]])
+    need(exact(p[key], ['path', 'sha256']) && re.test(p[key].path) && hex(p[key].sha256), 'BOUND_NATIVE_AUDIT_INPUT_REQUIRED');
+  return p;
+}
+const readBound = row => { const bytes = fs.readFileSync(row.path); need(hash(bytes) === row.sha256, 'BOUND_METADATA_INPUT_BYTES_CHANGED'); return JSON.parse(bytes); };
+function auditInputs(p) { const plan = validatePlan(readBound(p.proofPlan)), proof = readBound(p.nativeReceipt), preflight = readBound(plan.preflight);
+  for (const key of ['sourceSha', 'ciRunId', 'deployments', 'sourceManifestSha256', 'runtimeBindingsSha256', 'routeSha256', 'helperSha256', 'auditHelperSha256', 'contractSha256', 'localRelease']) need(same(plan[key], p.release[key]), 'AUDIT_RELEASE_INPUT_MISMATCH');
+  return { plan, proof, preflight };
+}
+export const ELIGIBILITY_SQL = `SELECT a.id::text "accountId",a.operator_id::text "homeOperatorId",(a.status='active' AND o.archived_at IS NULL) active,
+ (a.status='active' AND o.archived_at IS NULL AND NOT a.must_change_password) "accountEligible",a.must_change_password "mustChangePassword",
+ EXISTS(SELECT 1 FROM core.role_assignment ra JOIN core.role r ON r.id=ra.role_id JOIN core.role_permission rp ON rp.role_id=r.id
+ WHERE ra.account_id=a.id AND ra.scope_type='operator' AND ra.scope_id IS NULL AND ra.archived_at IS NULL
+ AND (r.operator_id IS NULL OR r.operator_id=a.operator_id) AND rp.permission='platform:operator:switch') "switchGrant",
+ EXISTS(SELECT 1 FROM core.role_assignment ra JOIN core.role_permission rp ON rp.role_id=ra.role_id
+ WHERE ra.account_id=a.id AND ra.scope_type='operator' AND ra.scope_id IS NULL AND ra.archived_at IS NULL) platform,
+ (SELECT f.id::text FROM core.file_object f WHERE f.owner_entity_type='account' AND f.owner_entity_id=a.id ORDER BY f.created_at DESC LIMIT 1) "photoFileId"
+ FROM core.account a JOIN core.operator o ON o.id=a.operator_id WHERE a.id=ANY($1::uuid[]) ORDER BY a.id`;
+export function buildPreflightJob(release) {
+  validateReleaseInput(release);
+  const binding = { sourceSha: release.sourceSha, ciRunId: String(release.ciRunId), deployments: release.deployments };
+  const program = `const {Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres');
+ const B=${JSON.stringify(binding)},D=${JSON.stringify(DEMOS)},c=new Client({connectionString:process.env.DATABASE_URL,application_name:'oto-scrum640-readonly-preflight',connectionTimeoutMillis:10000});
+ (async()=>{try{if(process.env.RENDER_GIT_COMMIT!==B.sourceSha)throw Error('EXACT_JOB_IMAGE_REQUIRED');const {schema,readAppBranchMapping}=await import('@oto/db');await c.connect();await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');await c.query("SET LOCAL statement_timeout='5s'");
+ const accounts=[D.ADMIN,D.RECEPTION],identities=(await c.query(${JSON.stringify(IDENTITY_SQL)},[accounts,[]])).rows,eligibility=(await c.query(${JSON.stringify(ELIGIBILITY_SQL)},[accounts])).rows;
+ if(identities.length!==2||eligibility.length!==2)throw Error('TWO_EXACT_DEMOS_REQUIRED');
+ const subjects={},photos=[];for(const actor of ['ADMIN','RECEPTION']){const e=eligibility.find(r=>r.accountId===D[actor]),i=identities.find(r=>r.accountId===D[actor]);if(!e||!i)throw Error('EXACT_DEMO_REQUIRED');const {photoFileId,...safe}=e;subjects[actor]={...safe,...i};if(photoFileId)photos.push('/api/files/'+photoFileId);}
+ const home=(await c.query('SELECT id::text FROM core.branch WHERE operator_id=$1::uuid AND archived_at IS NULL ORDER BY id',[D.homeOperatorId])).rows.map(r=>r.id);
+ const operators=(await c.query('SELECT id::text FROM core.operator WHERE id<>$1::uuid AND archived_at IS NULL ORDER BY id LIMIT 51',[D.homeOperatorId])).rows;if(operators.length>=51)throw Error('BOUNDED_CANDIDATE_INVENTORY_REQUIRED');
+ const db=drizzle(c,{schema}),targets=[];for(const op of operators){const branches=(await c.query('SELECT id::text FROM core.branch WHERE operator_id=$1::uuid AND archived_at IS NULL ORDER BY id',[op.id])).rows.map(r=>r.id);const view=await readAppBranchMapping(db,op.id);
+ const appBranchIds=[...new Set([...view.branches.map(r=>r.appBranchId).filter(Boolean),...view.appOnly.map(r=>r.appBranchId)])].sort();targets.push({operatorId:op.id,active:true,branchIds:branches,appBranchIds});}
+ const value={ticket:'SCRUM-640',approved:false,complete:true,readOnly:true,...B,checkedAt:new Date().toISOString(),subjects,targets,homeBranchIds:home,privatePhotoPaths:[...new Set(photos)].sort()};
+ await c.query('ROLLBACK');console.log(${JSON.stringify(MARKER)}+JSON.stringify(value));}catch{console.error('SCRUM640_READONLY_PREFLIGHT_FAILED');process.exitCode=1;}finally{await c.end();}})();`;
+  const startCommand = 'cd apps/api && node --import tsx -e "eval(Buffer.from(\'' + Buffer.from(program).toString('base64') + '\',\'base64\').toString())"';
+  return { readOnly: true, program, programSha256: hash(program), startCommand, startCommandSha256: hash(startCommand) };
+}
+export function validateRawPreflight(value, release, at = Date.now()) {
+  need(exact(value, ['ticket', 'approved', 'complete', 'readOnly', 'sourceSha', 'ciRunId', 'deployments', 'checkedAt', 'subjects', 'targets', 'homeBranchIds', 'privatePhotoPaths'])
+    && value.approved === false && Array.isArray(value.targets) && value.targets.length > 0 && value.targets.length < 51
+    && new Set(value.targets.map(v => v.operatorId)).size === value.targets.length, 'HELD_EXISTING_TARGET_CENSUS_REQUIRED');
+  for (const target of value.targets) {
+    const { targets, ...rest } = value, ready = { ...rest, approved: true, target };
+    // Structural/authority validation uses its original timestamp; collection itself does not pretend the result is approved.
+    validatePreflight(ready, { ...release, privatePhotoPaths: value.privatePhotoPaths }, at);
+    need(new Set(target.appBranchIds).size === target.appBranchIds.length, 'DISTINCT_APP_BRANCH_CATALOGUE_REQUIRED');
+  }
+  return value;
+}
+export function parsePreflightLogs(logs, release, at = Date.now()) {
+  need(Array.isArray(logs?.logs) && logs.logs.length < 100, 'COMPLETE_BOUNDED_PREFLIGHT_LOGS_REQUIRED');
+  const rows = logs.logs.filter(r => typeof r.message === 'string').map(r => r.message.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '')).filter(s => s.startsWith(MARKER));
+  need(rows.length === 1, 'ONE_ANCHORED_PREFLIGHT_MARKER_REQUIRED'); let value; try { value = JSON.parse(rows[0].slice(MARKER.length)); } catch { throw Error('INVALID_PREFLIGHT_MARKER'); }
+  return validateRawPreflight(value, release, at);
+}
+function builtOf(p) { if (p.mode === 'preflight') return buildPreflightJob(p.release); const { plan, proof } = auditInputs(p), b = buildAuditJob(plan, proof, p.nativeReceipt.sha256);
+  const program = b.program.replace('(async()=>{try{await c.connect();', `(async()=>{try{if(process.env.RENDER_GIT_COMMIT!==B.sourceSha)throw Error('EXACT_JOB_IMAGE_REQUIRED');await c.connect();`);
+  // B is the audit builder's existing immutable binding. The added image guard does not alter SQL or metadata.
+  const startCommand = 'cd apps/api && node -e "eval(Buffer.from(\'' + Buffer.from(program).toString('base64') + '\',\'base64\').toString())"';
+  need(program !== b.program, 'EXACT_AUDIT_IMAGE_GUARD_INSERTION_REQUIRED'); return { ...b, program, programSha256: hash(program), startCommand, startCommandSha256: hash(startCommand), originalAuditProgramSha256: b.programSha256 };
+}
+const write = (dir, file, value) => fs.writeFileSync(path.join(dir, file), JSON.stringify(value, null, 2) + '\n', { flag: 'wx', flush: true });
+async function boundedAck(response) {
+  need(response.body, 'READONLY_JOB_ACK_BODY_REQUIRED'); const parts = []; let size = 0;
+  for await (const part of response.body) { size += part.length; need(size <= 200_000, 'JOB_ACK_LIMIT'); parts.push(part); }
+  try { return JSON.parse(Buffer.concat(parts)); } catch { throw Error('INVALID_JOB_ACK'); }
+}
+function frozen(p) { validateInput(p); need(hash(fs.readFileSync(fileURLToPath(import.meta.url))) === p.collectorSha256, 'FROZEN_METADATA_COLLECTOR_REQUIRED'); return builtOf(p); }
+export async function dispatch(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_READONLY_JOB_DISPATCH_REQUIRED'); const p = validateInput(input), built = frozen(p);
+  need(!fs.existsSync(p.outputDirectory), 'EXCLUSIVE_ORIGINAL_JOB_DIRECTORY_REQUIRED'); const tools = await releaseTools(p.release, { explicitExecute: true }), before = await tools.gate();
+  fs.mkdirSync(p.outputDirectory); const intent = { ticket: 'SCRUM-640', mode: p.mode, inputSha256: digest(p), sourceSha: p.release.sourceSha, serviceId: p.release.deployments[0].serviceId,
+    deploymentId: p.release.deployments[0].id, collectorSha256: p.collectorSha256, programSha256: built.programSha256, startCommandSha256: built.startCommandSha256,
+    originalAuditProgramSha256: built.originalAuditProgramSha256 ?? null, startedAt: NOW(), before, readOnly: true, dispatchMayHaveOccurred: true };
+  write(p.outputDirectory, 'intent.json', intent); let jobId = null;
+  try { const response = await fetch('https://api.render.com/v1/services/' + intent.serviceId + '/jobs', { method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(30_000), headers: { authorization: `Bearer ${tools.secret('RENDER_API_KEY')}`, 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify({ startCommand: built.startCommand }) });
+    need([200, 201].includes(response.status), 'ORIGINAL_READONLY_JOB_ACK_REQUIRED'); const job = await boundedAck(response); need(/^job-[a-z0-9]+$/.test(job?.id ?? ''), 'ORIGINAL_READONLY_JOB_ID_REQUIRED'); jobId = job.id;
+    const ack = { ticket: 'SCRUM-640', inputSha256: digest(p), jobId, serviceId: intent.serviceId, programSha256: built.programSha256, acknowledgedAt: NOW(), terminal: false, readOnly: true };
+    write(p.outputDirectory, 'job.json', ack); return ack;
+  } catch { const row = { ticket: 'SCRUM-640', inputSha256: digest(p), jobId, serviceId: intent.serviceId, terminal: false, dispatchUncertain: true, noRetry: true, readOnly: true, errorCode: 'ORIGINAL_READONLY_JOB_UNKNOWN' };
+    try { write(p.outputDirectory, 'dispatch-unknown.json', row); } catch { row.receiptWriteFailed = true; } return row; }
+}
+export async function collect(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_ORIGINAL_JOB_COLLECTION_REQUIRED'); const p = validateInput(input), built = frozen(p);
+  need(!fs.existsSync(path.join(p.outputDirectory, 'result.json')) && !fs.existsSync(path.join(p.outputDirectory, 'dispatch-unknown.json')), 'PRESERVE_ORIGINAL_JOB_STATE');
+  const intent = JSON.parse(fs.readFileSync(path.join(p.outputDirectory, 'intent.json'))), ack = JSON.parse(fs.readFileSync(path.join(p.outputDirectory, 'job.json')));
+  need(intent.inputSha256 === digest(p) && ack.inputSha256 === digest(p) && intent.programSha256 === built.programSha256 && ack.programSha256 === built.programSha256
+    && intent.serviceId === p.release.deployments[0].serviceId && ack.serviceId === intent.serviceId && /^job-[a-z0-9]+$/.test(ack.jobId), 'ORIGINAL_ACKNOWLEDGED_JOB_BINDING_REQUIRED');
+  const tools = await releaseTools(p.release, { explicitExecute: true }), state = await tools.renderGet(`/services/${ack.serviceId}/jobs/${ack.jobId}`);
+  need(state.id === ack.jobId && (!state.startCommand || hash(state.startCommand) === built.startCommandSha256), 'ORIGINAL_JOB_STATE_IDENTITY_REQUIRED');
+  if (!['succeeded', 'failed', 'canceled'].includes(state.status)) return { terminal: false, pending: true, jobId: ack.jobId, status: state.status };
+  const result = { ticket: 'SCRUM-640', inputSha256: digest(p), mode: p.mode, jobId: ack.jobId, serviceId: ack.serviceId, sourceSha: p.release.sourceSha, ciRunId: String(p.release.ciRunId), readOnly: true,
+    terminal: true, status: state.status, passed: false, reviewed: false, programSha256: built.programSha256, startCommandSha256: built.startCommandSha256, originalAuditProgramSha256: built.originalAuditProgramSha256 ?? null,
+    startedAt: intent.startedAt, completedAt: NOW(), collectorSha256: p.collectorSha256 };
+  try {
+    need(state.status === 'succeeded', 'READONLY_JOB_FAILED');
+    const services = await tools.renderGet('/services?limit=50'); need(Array.isArray(services) && services.length < 50, 'COMPLETE_JOB_SERVICE_INVENTORY_REQUIRED');
+    const matches = services.map(v => v.service ?? v).filter(v => v.id === ack.serviceId && v.name === 'oto-api-staging'); need(matches.length === 1 && matches[0].ownerId, 'EXACT_JOB_SERVICE_OWNER_REQUIRED');
+    const query = new URLSearchParams({ ownerId: matches[0].ownerId, resource: ack.jobId, startTime: intent.startedAt, limit: '100', direction: 'forward' }), logs = await tools.renderGet('/logs?' + query);
+    const marker = p.mode === 'preflight' ? MARKER : 'SCRUM640_SESSION_AUDIT_V1 ';
+    if (!(logs.logs ?? []).some(r => typeof r.message === 'string' && r.message.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '').startsWith(marker))) return { terminal: true, status: state.status, metadataPending: true, jobId: ack.jobId, passed: false };
+    result.logResponseSha256 = digest(logs);
+    if (p.mode === 'preflight') result.metadata = parsePreflightLogs(logs, p.release);
+    else { const { plan, proof, preflight } = auditInputs(p); result.metadata = parseAuditLogs(logs, plan, proof, p.nativeReceipt.sha256, preflight); }
+    const at = result.metadata.checkedAt ?? result.metadata.at; need(Date.parse(at) >= Date.parse(intent.startedAt) && Date.parse(at) <= Date.now(), 'ACTUAL_ORIGINAL_JOB_METADATA_TIME_REQUIRED');
+    result.after = await tools.gate(); result.passed = true;
+  } catch (e) { result.errorCode = codeOf(e); }
+  try { write(p.outputDirectory, 'result.json', result); } catch { result.receiptWriteFailed = true; result.passed = false; }
+  return result; // An actual terminal succeeded/failed state is retained even if logs/source/disk checks fail.
+}
+export function approvePreflight(rawResult, release, targetOperatorId, { explicitApproval = false, at = Date.now() } = {}) {
+  need(explicitApproval === true && rawResult.mode === 'preflight' && rawResult.terminal === true && rawResult.status === 'succeeded' && rawResult.passed === true
+    && rawResult.readOnly === true && rawResult.sourceSha === release.sourceSha && String(rawResult.ciRunId) === String(release.ciRunId)
+    && rawResult.serviceId === release.deployments[0].serviceId && !rawResult.receiptWriteFailed && /^job-[a-z0-9]+$/.test(rawResult.jobId), 'REVIEWED_ORIGINAL_PREFLIGHT_RESULT_REQUIRED');
+  const raw = validateRawPreflight(rawResult.metadata, release, at), targets = raw.targets.filter(v => v.operatorId === targetOperatorId); need(targets.length === 1, 'SELECT_ACTUAL_CENSUSED_TARGET_REQUIRED');
+  const { targets: _, ...rest } = raw, approved = { ...rest, approved: true, target: targets[0] };
+  validatePreflight(approved, { ...release, privatePhotoPaths: approved.privatePhotoPaths }, at); return approved;
+}
+export function approveAudit(rawResult, plan, proof, preflight, nativeHash, { explicitApproval = false } = {}) {
+  need(explicitApproval === true && rawResult.mode === 'audit' && rawResult.terminal === true && rawResult.status === 'succeeded' && rawResult.passed === true && !rawResult.receiptWriteFailed
+    && rawResult.sourceSha === plan.sourceSha && String(rawResult.ciRunId) === String(plan.ciRunId) && rawResult.serviceId === plan.deployments[0].serviceId && /^job-[a-z0-9]+$/.test(rawResult.jobId), 'REVIEWED_ORIGINAL_AUDIT_RESULT_REQUIRED');
+  // The finalizer expects the original audit program's hash; the collector separately retains the checked image-guard wrapper hash.
+  const built = buildAuditJob(plan, proof, nativeHash); need(rawResult.originalAuditProgramSha256 === built.programSha256, 'EXACT_COLLECTED_AUDIT_PROGRAM_REQUIRED');
+  parseAuditLogs({ logs: [{ message: 'SCRUM640_SESSION_AUDIT_V1 ' + JSON.stringify(rawResult.metadata) }] }, plan, proof, nativeHash, preflight);
+  return { ticket: 'SCRUM-640', reviewed: true, terminal: true, status: 'succeeded', readOnly: true, jobId: rawResult.jobId, serviceId: rawResult.serviceId, programSha256: built.programSha256, metadata: rawResult.metadata };
+}
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  try {
+    const [mode, inputFile, target, output] = process.argv.slice(2); need(['--dispatch', '--collect', '--approve-preflight'].includes(mode), 'EXPLICIT_METADATA_MODE_REQUIRED');
+    if (mode === '--approve-preflight') { const input = JSON.parse(fs.readFileSync(inputFile)); validateInput(input); need(input.mode === 'preflight' && uuid(target) && /^C:\/w\/admin640-staging-proof-preflight-[A-Za-z0-9_-]+\.json$/.test(output ?? '') && !fs.existsSync(output), 'EXCLUSIVE_PREFLIGHT_APPROVAL_REQUIRED');
+      need(hash(fs.readFileSync(fileURLToPath(import.meta.url))) === input.collectorSha256, 'FROZEN_APPROVAL_COLLECTOR_REQUIRED');
+      const resultPath = path.join(input.outputDirectory, 'result.json'), bytes = fs.readFileSync(resultPath), raw = JSON.parse(bytes); need(raw.inputSha256 === digest(input) && raw.collectorSha256 === input.collectorSha256, 'ORIGINAL_PREFLIGHT_APPROVAL_BINDING_REQUIRED');
+      const approved = approvePreflight(raw, input.release, target, { explicitApproval: true });
+      fs.writeFileSync(output, JSON.stringify(approved, null, 2) + '\n', { flag: 'wx', flush: true });
+      write(input.outputDirectory, 'approval.json', { approvedAt: NOW(), rawResultSha256: hash(bytes), approvedPreflightSha256: hash(fs.readFileSync(output)), checkedAt: approved.checkedAt, targetOperatorId: target });
+      process.stdout.write(JSON.stringify({ output, sha256: hash(fs.readFileSync(output)), checkedAtUnchanged: true }) + '\n');
+    } else { need(process.argv.length === 4, 'EXACT_METADATA_MODE_INPUT_REQUIRED'); const input = JSON.parse(fs.readFileSync(inputFile)), result = await (mode === '--dispatch' ? dispatch(input, { explicitExecute: true }) : collect(input, { explicitExecute: true }));
+      process.stdout.write(JSON.stringify({ jobId: result.jobId, terminal: result.terminal, status: result.status, passed: result.passed, pending: result.pending, metadataPending: result.metadataPending, dispatchUncertain: result.dispatchUncertain, receiptWriteFailed: result.receiptWriteFailed, errorCode: result.errorCode }) + '\n'); }
+  } catch (e) { process.stderr.write(codeOf(e) + '\n'); process.exitCode = 1; }
+}

@@ -1,0 +1,30 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "workspace",
+  "attempt": "v1",
+  "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "completedAt": "2026-10-26T13:25:30.379Z",
+  "fatal": null,
+  "programs": [
+    {
+      "command": "pnpm exec turbo run typecheck build --force --concurrency=1",
+      "passed": true,
+      "receiptSha256": "b03d795ac4880601074f0ea0314d02df80494d943f2e3cddbb8e81fdd90fad93"
+    }
+  ],
+  "cleanup": {
+    "ownNativeServer": true,
+    "port": 51476,
+    "databasesBefore": 0,
+    "credentialsPersisted": false,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "staging": false,
+  "passed": true
+}

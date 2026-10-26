@@ -1,0 +1,39 @@
+settings, per park group, after 0007 — each park group saves its own (H11):
+  ok  0007's shape: tenant_id NOT NULL, and the (tenant_id, key) unique alone
+  ok  the default park group saves a key: one row, the default park group's
+  ok  a second save of the same key updates that row, never a second
+  ok  another park group with no row of its own reads the default park group's value (Q28)
+  ok  another park group saves the same key: its OWN row beside the default's, which is untouched
+  ok  each park group reads its own row for the key; neither reads the other's
+  ok  another park group saves a key nobody holds: its own row; the default park group does not read it
+  ok  five saves of one new key at once by one park group: one row, every answer 200
+  ok  a save of several keys is one transaction: a later key that fails saves none of the earlier ones
+  ok  another park group sets its own Fix department: its own row; the default park group's is untouched
+  ok  no park group can set another park group's department as its Fix department: 404
+  ok  the default park group's Fix department is its own, and never another park group's
+  ok  an admin the app cannot place in one park group: 403 in words, nothing written
+  ok  a row with no park group can no longer be written (NOT NULL, 0007)
+settings, on a database 0007 has not reached (settings_key_unique put back for the length of these checks):
+  ok  another park group saving a key the default holds: 409 in words (settings_key_held), never a 500, nothing written
+  ok  the round 4a review's note: a new key before a refused one is not saved either
+  ok  the default park group's own saves still work on that shape
+the Activity Logbook, per park group:
+  ok  the default park group's admin: its own rows, the branchless ones included, none of B's
+  ok  B's admin: B's rows, its branchless one included, none of the default park group's
+  ok  a reader limited to one branch: that branch's rows only, no branchless row (the app's own rule)
+  ok  another park group's branch named in the filter: 404
+  ok  the summary counts the caller's park group's rows only
+  ok  a row written now about no branch carries the caller's park group, and shows only there
+the directory's HR reads (H12):
+  ok  no key: 401, naming the key to send
+  ok  A's hr:read key reads A's employee, with A's branch, department, role and presence
+  ok  A's key reading B's employee: 404, as one that does not exist
+  ok  a key without hr:read: 403, naming the scope
+  ok  a key this app never issued: 403
+  ok  search: each key finds its own park group's staff only
+  ok  a branch roster: another park group's branch 404, its own lists its own staff
+  ok  roles, departments and branches: the key's park group's only
+  ok  HR_DIRECTORY_API_KEY unset: the shared-key path answers 403 in words
+  ok  HR_DIRECTORY_API_KEY set: the shared key reads the default park group only (Q13)
+  ok  HR_DIRECTORY_API_KEY set: a wrong shared key 403, and a tenant-bound key still answers for its own
+tenant-ownership.check: 34 checks passed

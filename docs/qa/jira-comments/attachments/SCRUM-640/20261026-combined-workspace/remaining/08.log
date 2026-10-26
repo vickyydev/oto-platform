@@ -1,0 +1,20 @@
+
+> @oto/inbox@0.1.0 test C:\w\admin-operator-switch\apps\inbox
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/inbox
+
+ ✓ test/handoff-target.test.ts (10 tests) 16ms
+ ✓ test/view.test.ts (54 tests) 58ms
+ ✓ test/assistant.test.ts (31 tests) 83ms
+ ✓ test/theme.test.ts (12 tests) 54ms
+ ✓ test/ui-round.test.ts (12 tests) 67ms
+ ✓ test/dark-theme.test.ts (7 tests) 74ms
+ ✓ test/testnight.test.ts (26 tests) 351ms
+ ✓ test/url.test.ts (24 tests) 8ms
+
+ Test Files  8 passed (8)
+      Tests  176 passed (176)
+   Start at  20:27:54
+   Duration  2.87s (transform 2.40s, setup 0ms, collect 8.49s, tests 712ms, environment 2ms, prepare 3.36s)

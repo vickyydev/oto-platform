@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-640",
+  "at": "2026-10-26T13:07:41.688Z",
+  "approvedResourcePolicy": "Capped own Linux worker plus measured VM/cgroup headroom; do not equate WSL file cache with active Windows processes",
+  "hostFloorMiB": 2048,
+  "linuxAvailableFloorMiB": 7168,
+  "workerCapMiB": 3072,
+  "pgCapMiB": 512,
+  "sourceChanged": false,
+  "rows": [
+    {
+      "path": "run-install.mjs",
+      "beforeSha256": "87c6a42b16ab8e0a1bb4d19411d48d89f832f8f1e084d51a6fba5702539c26c7",
+      "afterSha256": "adc4227ef65f074426990477f3995abf432857e8ae8e9663a721dd39b099ed47"
+    },
+    {
+      "path": "controller.mjs",
+      "beforeSha256": "fb10b4d0ed2ad37178d7ed11f900fa542ade3cbcdf754dacbe7c24bd8e00f0cb",
+      "afterSha256": "c1637c646d552db8580fb8ce1c2929929e9c6a7092de67987b014a7834f2b048"
+    }
+  ]
+}

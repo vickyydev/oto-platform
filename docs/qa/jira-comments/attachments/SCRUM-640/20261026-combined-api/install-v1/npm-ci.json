@@ -1,0 +1,33 @@
+{
+  "label": "npm-ci",
+  "argv": [
+    "npm",
+    "ci",
+    "--ignore-scripts"
+  ],
+  "cwd": "/workspace/apps/oto-app",
+  "startedAt": "2026-10-26T13:07:45.699Z",
+  "sourceBefore": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "installedBefore": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "timedOut": false,
+  "peakRssKiB": 1246012,
+  "peakCgroupBytes": 3181764608,
+  "sourceAfter": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "completedAt": "2026-10-26T13:08:27.757Z",
+  "logSha256": "b58d2b092babc7e8554d060724b64ec685d0a064225a695d6debe10607b49421",
+  "logBytes": 104,
+  "logRedactedBeforeDisk": true,
+  "passed": true
+}

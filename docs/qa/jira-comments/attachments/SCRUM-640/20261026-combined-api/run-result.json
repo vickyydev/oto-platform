@@ -1,0 +1,13 @@
+{
+  "ticket": "SCRUM-640",
+  "exitCode": 1,
+  "signal": null,
+  "errorCode": null,
+  "completedAt": "2026-10-26T13:56:23.434Z",
+  "processId": 43516,
+  "workerId": "decb538415f91417ba392aaacbe496dea32f77ddaca1407621dfbb24d9e52145",
+  "pgId": "5ecc4c7972dbd1b1da7884610145650b062fad54f069f0e357eefe8a9b73b237",
+  "sourceUnchanged": true,
+  "workerResultSha256": "2ac8f0465f208117604646206ab2fc7364ab9420f6a0654987027fe1acb5cf74",
+  "passed": false
+}

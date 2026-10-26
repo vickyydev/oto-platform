@@ -1,0 +1,32 @@
+{
+  "label": "suite-sign-in.check",
+  "cwd": "/workspace/apps/oto-app",
+  "argv": [
+    "node",
+    "node_modules/tsx/dist/cli.mjs",
+    "tests/suite-sign-in.check.ts"
+  ],
+  "startedAt": "2026-10-26T13:10:38.583Z",
+  "sourceBefore": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "sourceAfter": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "installedBefore": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "timedOut": false,
+  "passed": true,
+  "completedAt": "2026-10-26T13:10:39.195Z",
+  "logSha256": "8c912754dc12ea0eb24ed1448b71d27ce243a3d1d2d3f7a8c22d10a44adc6d71",
+  "logBytes": 561,
+  "logRedactedBeforeDisk": true,
+  "shellGuard": "set -eo pipefail"
+}

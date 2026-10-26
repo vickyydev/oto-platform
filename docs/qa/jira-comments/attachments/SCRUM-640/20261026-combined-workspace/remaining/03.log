@@ -1,0 +1,28 @@
+
+> @oto/admin-screens@0.1.0 test C:\w\admin-operator-switch\packages\admin-screens
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/admin-screens
+
+ ✓ test/menu-write-recovery.test.ts (6 tests) 14ms
+ ✓ test/app-identities-api.test.ts (2 tests) 5ms
+ ✓ test/lifted-runtime.test.ts (2 tests) 12ms
+ ✓ test/wallet-report-ports.test.ts (6 tests) 341ms
+ ✓ test/care-write-recovery.test.ts (10 tests) 37ms
+ ✓ test/lifted-catalogue-api.test.ts (5 tests) 16ms
+ ✓ test/accounts-data.test.ts (3 tests) 33ms
+ ✓ test/money-write-recovery.test.ts (4 tests) 30ms
+ ✓ test/report-ports.test.ts (7 tests) 236ms
+ ✓ test/organisation-ports.test.ts (5 tests) 59ms
+ ✓ test/money-ports.test.ts (15 tests) 403ms
+ ✓ test/care-ports.test.ts (16 tests) 492ms
+ ✓ test/catalogue-ports.test.ts (10 tests) 215ms
+ ✓ test/operations-markup.test.ts (3 tests) 54ms
+ ✓ test/menu-ports.test.ts (13 tests) 308ms
+ ✓ test/benefits-ports.test.ts (13 tests) 383ms
+
+ Test Files  16 passed (16)
+      Tests  120 passed (120)
+   Start at  20:27:05
+   Duration  5.38s (transform 5.78s, setup 0ms, collect 40.05s, tests 2.64s, environment 4ms, prepare 8.19s)

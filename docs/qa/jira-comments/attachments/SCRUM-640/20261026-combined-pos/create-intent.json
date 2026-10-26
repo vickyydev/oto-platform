@@ -1,0 +1,143 @@
+{
+  "ticket": "SCRUM-640",
+  "at": "2026-10-26T13:30:53.260Z",
+  "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+  "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceArchiveSha256": "b9fbdf5dcde38394ec956769129cb8c9dbaf438b1bebddc08711aa2d3f3f9c34",
+  "snapshotHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+  "helperSha256": "c7f9cd588751ea00d840d0b07da640de932505046275c1937c59f2fd5fea9ab4",
+  "originalTemplateSha256": "b6aaa972378cb2b5ed57e30efbf8f120da87d3c39a6dab2b915079224b364f43",
+  "dependencyInputs": [
+    {
+      "path": "apps/api/package.json",
+      "sha256": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3"
+    },
+    {
+      "path": "apps/booth/package.json",
+      "sha256": "f0854eb1eda26b80180ba2e1d03f5b539f15a5b5fe1d074c6292e833385e3933"
+    },
+    {
+      "path": "apps/console/package.json",
+      "sha256": "098e1beba7e035d47fde0ea075f783fc4a8337ac6921d93f10b0b528238ee478"
+    },
+    {
+      "path": "apps/inbox/package.json",
+      "sha256": "1fa305290ceb474703d078bf8bea2b6cb728913917e363cdd20d90bf3685116f"
+    },
+    {
+      "path": "apps/launcher/package.json",
+      "sha256": "8f9e9ed7e89590c90d6377030e7295e1082e7c4bf7f11ef1105c2d0a50a91992"
+    },
+    {
+      "path": "apps/oto-app/package-lock.json",
+      "sha256": "a86c72b7664258ae593f7bc75d452ef19cb4c021c6214895b74028c33a48362e"
+    },
+    {
+      "path": "apps/oto-app/package.json",
+      "sha256": "f06b47d0ea5091e04334e7dbc4ce929c0861137315425071be31eb287346b0be"
+    },
+    {
+      "path": "apps/oto-app/vendor/webreel-core/package-lock.json",
+      "sha256": "c17f0f600c7a18e86b422cfcc43ee60273dacd6dd570963de10bb3845e1aa10d"
+    },
+    {
+      "path": "apps/oto-app/vendor/webreel-core/package.json",
+      "sha256": "68e0f5583329c502125736d9ed6292f222a0083d8b9c72317a7324b3df8028de"
+    },
+    {
+      "path": "apps/oto-app/vendor/webreel/package-lock.json",
+      "sha256": "8abf951ec25d76ce854dd9a861f4fbdd571b0ccde70a11b6226cbeb46af53cf7"
+    },
+    {
+      "path": "apps/oto-app/vendor/webreel/package.json",
+      "sha256": "057ad2e4021a3a306507704ae35a85e3d857c050892292288f5ee526bb9ec984"
+    },
+    {
+      "path": "apps/pos/package.json",
+      "sha256": "cc66419242c98fabfd4b97a340610a7877ffeae88832bb00f90636bb5df6e3a7"
+    },
+    {
+      "path": "apps/radar/package-lock.json",
+      "sha256": "cc7d9a0ba1cc55b12e877c52e97c7832983830daa80a2390e9151f3311a52828"
+    },
+    {
+      "path": "apps/radar/package.json",
+      "sha256": "7a1c34a6244549e75ae790e4d6310102a8e07793251e2497c5f5f6d35f2d8def"
+    },
+    {
+      "path": "package.json",
+      "sha256": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128"
+    },
+    {
+      "path": "packages/admin-screens/package.json",
+      "sha256": "39a30f46678844f93558ffa26304b0916afe44e96250234938dd6df4a4bb9d7f"
+    },
+    {
+      "path": "packages/api-types/package.json",
+      "sha256": "f3978c6f2e6379aab30d26066b1772a64f8f25f88c7a1f7a78fd4273debb7858"
+    },
+    {
+      "path": "packages/assistant/package.json",
+      "sha256": "b7730bd7efae18f6380500cd82dd34fcdd70f3f138d00c6bbe91e7e18029c803"
+    },
+    {
+      "path": "packages/box-agent/package.json",
+      "sha256": "c4c437e7ac8738d60e1a49cd0b7bf809e9a58b42ad58ba1f2afd37b4c7fefcd0"
+    },
+    {
+      "path": "packages/config/package.json",
+      "sha256": "c9b50237084612c85136f56b98b4c39f04f748fe2a14c9e11110983f2d2e2108"
+    },
+    {
+      "path": "packages/db/package.json",
+      "sha256": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd"
+    },
+    {
+      "path": "packages/messaging/package.json",
+      "sha256": "14be0c8b41636a4789b4f8f5bf641df947937763d487b20cfff3db6f10faa902"
+    },
+    {
+      "path": "packages/payments-2c2p/package.json",
+      "sha256": "fe810d0ddaf499c927fc1ed8fd55ae0ce1d14e3792ff6e13504a6150c81e9253"
+    },
+    {
+      "path": "packages/print/package.json",
+      "sha256": "ddda9656f0444de6a45fda6b5c925889ea7a23a58e8bcbe1bdb8f2542845ed18"
+    },
+    {
+      "path": "packages/shared/package.json",
+      "sha256": "26d84d2a72d80f229bae5fc98aa0b4b50c2835a533e3393a444978242fbe1f64"
+    },
+    {
+      "path": "packages/telemetry/package.json",
+      "sha256": "3849856b373ee726f13ee46836785ed4600f6b66d7c423729633f1bf19eed8df"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "sha256": "4ab87d557e9022ffe7a8a898b410efe2c6b696a9c4c4886c2117f8950e287703"
+    }
+  ],
+  "baselineIds": [
+    "2afc9985eaec2abe07eca6aa58aa15d6078c35a9290bcc2a890d5b2d84b051e3",
+    "2b6efe94892891ef608f80f228a9c4c6c3f54d3ee6188267f7131c7205d5db43",
+    "41925d9b0cf1df7647253188f2086c34fbbdcc49b446f2b964e43c6fa3920dbe",
+    "5b5ad70fd3aecf514625c077214d1fb00979067578e885152706ea3b10a49831",
+    "81821fc1f43bc8f540c879c5b0fbc381faaec86309f34eafb8df94b4eff659ba",
+    "83828b463f0b5ae2a64d70878099d5fe299e4b811decc075333f373d981ec01a",
+    "85c6ce32a42aba5581817c6323334afbc808020056311be901039150be47dc13",
+    "cbc3eb441a04b866bec0bd92928ff95dec63bb01a3884e98d8cb588a30d68309",
+    "ceda2dc3b92a3264a97efc0bb5164abc655403f22846438a00b53cb22059f270",
+    "cf854c43dcd283c35919e1c6a581dbbfd3539636832ff3910adc2e3bf5821af0"
+  ],
+  "network": "none",
+  "memoryBytes": 2147483648,
+  "hostPorts": [],
+  "mounts": [],
+  "noLiveCredentials": true
+}

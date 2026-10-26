@@ -1,0 +1,5 @@
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: otoapp is up to date — 31 migration(s) already applied.

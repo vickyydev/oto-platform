@@ -1,0 +1,938 @@
+{
+  "ticket": "SCRUM-640",
+  "createdAt": "2026-10-26T14:11:25.605Z",
+  "archivePath": "C:/w/admin640-api-verification-20261026/publication",
+  "files": 103,
+  "jsonFiles": 72,
+  "safeLogs": 27,
+  "releasePassed": false,
+  "filesManifest": [
+    {
+      "path": "actual-v1/01-pg_dump-version.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/01-pg_dump-version.json",
+      "sourceSha256": "6087cc60ab0e2eb463ddd620c88b49cb2296ee9cec87d8e29df573bd730b166f",
+      "archiveSha256": "6087cc60ab0e2eb463ddd620c88b49cb2296ee9cec87d8e29df573bd730b166f",
+      "bytes": 1360,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/01-pg_dump-version.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/01-pg_dump-version.log",
+      "sourceSha256": "bc4dca300e6d5c60823206896c2f41c6cd04818290e5ff0c36b23508b4133d45",
+      "archiveSha256": "bc4dca300e6d5c60823206896c2f41c6cd04818290e5ff0c36b23508b4133d45",
+      "bytes": 53,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/02-pg_restore-version.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/02-pg_restore-version.json",
+      "sourceSha256": "ad777ce75cc1d201c2acb24d8ef0e35e54cebd3695a1b91f411b2b3709edc251",
+      "archiveSha256": "ad777ce75cc1d201c2acb24d8ef0e35e54cebd3695a1b91f411b2b3709edc251",
+      "bytes": 1366,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/02-pg_restore-version.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/02-pg_restore-version.log",
+      "sourceSha256": "9bb5e97e84aaee99afea0cc5da004153a8a18460c16c1a8fa9e050a9d7235880",
+      "archiveSha256": "9bb5e97e84aaee99afea0cc5da004153a8a18460c16c1a8fa9e050a9d7235880",
+      "bytes": 56,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/03-app-build.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/03-app-build.json",
+      "sourceSha256": "3090e54bd14b751d39aa9ceffb8a70be1d55f76fd4d5ba64f2b9d963a329120e",
+      "archiveSha256": "3090e54bd14b751d39aa9ceffb8a70be1d55f76fd4d5ba64f2b9d963a329120e",
+      "bytes": 1346,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/03-app-build.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/03-app-build.log",
+      "sourceSha256": "e8e22551a8e84c2829051d09a4250bc30f2ae1c837da4643126646e9ae131153",
+      "archiveSha256": "e8e22551a8e84c2829051d09a4250bc30f2ae1c837da4643126646e9ae131153",
+      "bytes": 33137,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/04-restore-replay.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/04-restore-replay.json",
+      "sourceSha256": "259af530ef36e1b22fbc3c7e1dfbd127d2fdcc9789dd8797ecbd66230eb238aa",
+      "archiveSha256": "259af530ef36e1b22fbc3c7e1dfbd127d2fdcc9789dd8797ecbd66230eb238aa",
+      "bytes": 1362,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/04-restore-replay.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/04-restore-replay.log",
+      "sourceSha256": "050ec3826ca15b9193d85be88da760b3081fb13f7d9f929a9d04ac2f504a7669",
+      "archiveSha256": "050ec3826ca15b9193d85be88da760b3081fb13f7d9f929a9d04ac2f504a7669",
+      "bytes": 29328,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/05-platform-migrate.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/05-platform-migrate.json",
+      "sourceSha256": "724ba8f6e4214a3fe87607343714364e1aee7e26aea84f35bcac0606f10fdb15",
+      "archiveSha256": "724ba8f6e4214a3fe87607343714364e1aee7e26aea84f35bcac0606f10fdb15",
+      "bytes": 1382,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/05-platform-migrate.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/05-platform-migrate.log",
+      "sourceSha256": "fe3185cb090418854628357553092756b4b2cd2032ca9e000727966d429bddb7",
+      "archiveSha256": "fe3185cb090418854628357553092756b4b2cd2032ca9e000727966d429bddb7",
+      "bytes": 632,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/06-app-migrate.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/06-app-migrate.json",
+      "sourceSha256": "6cbefcc38a0ebbbccc1fd2b6e0c889065fafdffb17e9530bb997f35649129898",
+      "archiveSha256": "6cbefcc38a0ebbbccc1fd2b6e0c889065fafdffb17e9530bb997f35649129898",
+      "bytes": 1352,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/06-app-migrate.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/06-app-migrate.log",
+      "sourceSha256": "6f7daf41b9540eb84bb3e6835c69f530ca3349c954cab4e9b4262ac5e3544c64",
+      "archiveSha256": "6f7daf41b9540eb84bb3e6835c69f530ca3349c954cab4e9b4262ac5e3544c64",
+      "bytes": 1675,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/07-app-migrate-noop.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/07-app-migrate-noop.json",
+      "sourceSha256": "2d519d97f26c474c203622541ea6b3b03d5f6411396d70fbc914971513cf13b6",
+      "archiveSha256": "2d519d97f26c474c203622541ea6b3b03d5f6411396d70fbc914971513cf13b6",
+      "bytes": 1356,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/07-app-migrate-noop.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/07-app-migrate-noop.log",
+      "sourceSha256": "a227731b4a157fe1e4930b54d5b565b9487053c4d3781423d94e0f8bf657dad4",
+      "archiveSha256": "a227731b4a157fe1e4930b54d5b565b9487053c4d3781423d94e0f8bf657dad4",
+      "bytes": 127,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/08-route-fences.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/08-route-fences.check.json",
+      "sourceSha256": "a1665609ddc96e690e33901457291148e3dc8310cf2fe0e53f25284829c22278",
+      "archiveSha256": "a1665609ddc96e690e33901457291148e3dc8310cf2fe0e53f25284829c22278",
+      "bytes": 1403,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/08-route-fences.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/08-route-fences.check.log",
+      "sourceSha256": "d7f05272a6bd080dc9e22e46818e2a4e87fafe8f4549be09bd7b3bc8a454d121",
+      "archiveSha256": "d7f05272a6bd080dc9e22e46818e2a4e87fafe8f4549be09bd7b3bc8a454d121",
+      "bytes": 3084,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/09-night-jobs.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/09-night-jobs.check.json",
+      "sourceSha256": "0e3498a89fa52e9fd8495f64cb81d4e6eadb82ebbe5b5a2a36e898adabfb59d4",
+      "archiveSha256": "0e3498a89fa52e9fd8495f64cb81d4e6eadb82ebbe5b5a2a36e898adabfb59d4",
+      "bytes": 1399,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/09-night-jobs.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/09-night-jobs.check.log",
+      "sourceSha256": "7a48532107cbc611bde674b654b5cb9b8c822536fed695914f7193998e558d38",
+      "archiveSha256": "7a48532107cbc611bde674b654b5cb9b8c822536fed695914f7193998e558d38",
+      "bytes": 2031,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/10-suite-sign-in.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/10-suite-sign-in.check.json",
+      "sourceSha256": "bfc16773ba290c98d045c4ba0ca7114c1e3651a3cdf5ee268ddfb65c2ad4a0d3",
+      "archiveSha256": "bfc16773ba290c98d045c4ba0ca7114c1e3651a3cdf5ee268ddfb65c2ad4a0d3",
+      "bytes": 1404,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/10-suite-sign-in.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/10-suite-sign-in.check.log",
+      "sourceSha256": "8c912754dc12ea0eb24ed1448b71d27ce243a3d1d2d3f7a8c22d10a44adc6d71",
+      "archiveSha256": "8c912754dc12ea0eb24ed1448b71d27ce243a3d1d2d3f7a8c22d10a44adc6d71",
+      "bytes": 561,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/11-suite-sign-in-routes.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/11-suite-sign-in-routes.check.json",
+      "sourceSha256": "5dbd9ce32f5836c18650ecec2ef5a5c311022fef14f87af5130f5ba5f24788df",
+      "archiveSha256": "5dbd9ce32f5836c18650ecec2ef5a5c311022fef14f87af5130f5ba5f24788df",
+      "bytes": 1419,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/11-suite-sign-in-routes.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/11-suite-sign-in-routes.check.log",
+      "sourceSha256": "e2f48cfb13352a67fd6f28e9875b83cf132a176eca4202fda053024672c626ff",
+      "archiveSha256": "e2f48cfb13352a67fd6f28e9875b83cf132a176eca4202fda053024672c626ff",
+      "bytes": 1655,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/12-handoff-target.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/12-handoff-target.check.json",
+      "sourceSha256": "28510541805fe9365cf88787a79cbc2e24897f46000721e37ccfc6662d226e74",
+      "archiveSha256": "28510541805fe9365cf88787a79cbc2e24897f46000721e37ccfc6662d226e74",
+      "bytes": 1407,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/12-handoff-target.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/12-handoff-target.check.log",
+      "sourceSha256": "577ec0540fd2b3eea29bd2affb3793b73685abea9fd1d5d5e5cdab9c4ef7520f",
+      "archiveSha256": "577ec0540fd2b3eea29bd2affb3793b73685abea9fd1d5d5e5cdab9c4ef7520f",
+      "bytes": 5090,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/13-tenant-ownership.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/13-tenant-ownership.check.json",
+      "sourceSha256": "524f9a7a76ade229e98e1d19f18c303c3e5216e8e67efb915bd26371608c19e5",
+      "archiveSha256": "524f9a7a76ade229e98e1d19f18c303c3e5216e8e67efb915bd26371608c19e5",
+      "bytes": 1411,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/13-tenant-ownership.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/13-tenant-ownership.check.log",
+      "sourceSha256": "945a8aeba45161cfa6d9fd83b8a859109e475a69b77a787855e33a5dc34cf7bd",
+      "archiveSha256": "945a8aeba45161cfa6d9fd83b8a859109e475a69b77a787855e33a5dc34cf7bd",
+      "bytes": 3057,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/14-administration.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/14-administration.check.json",
+      "sourceSha256": "e9e15c2b43d060566d636059f52bd4bce4f8a04bdf0403dcf730044261843015",
+      "archiveSha256": "e9e15c2b43d060566d636059f52bd4bce4f8a04bdf0403dcf730044261843015",
+      "bytes": 1407,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/14-administration.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/14-administration.check.log",
+      "sourceSha256": "cac7f09aaa6595b0ad1f95ac869828416cfc9d05f04b250e69084b8bf5b15265",
+      "archiveSha256": "cac7f09aaa6595b0ad1f95ac869828416cfc9d05f04b250e69084b8bf5b15265",
+      "bytes": 8247,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/15-access-escalation.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/15-access-escalation.check.json",
+      "sourceSha256": "8ada9d36014072e29075743ae326f76f2fa63de6d58b8cf80fc977d66cc6d842",
+      "archiveSha256": "8ada9d36014072e29075743ae326f76f2fa63de6d58b8cf80fc977d66cc6d842",
+      "bytes": 1413,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/15-access-escalation.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/15-access-escalation.check.log",
+      "sourceSha256": "b62bacd9e31ce928e3ee2e1245de2e702bad0744deadd39d9208e838a94cf67c",
+      "archiveSha256": "b62bacd9e31ce928e3ee2e1245de2e702bad0744deadd39d9208e838a94cf67c",
+      "bytes": 1754,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/16-named-rights.check.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/16-named-rights.check.json",
+      "sourceSha256": "cf86a02bf54cd206abfb907111b3fcead7a0efad2711dfcfb1fc0c1fc450187b",
+      "archiveSha256": "cf86a02bf54cd206abfb907111b3fcead7a0efad2711dfcfb1fc0c1fc450187b",
+      "bytes": 1403,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/16-named-rights.check.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/16-named-rights.check.log",
+      "sourceSha256": "300b78d6e03aefa8c9dc4b020c10d4a1e38f9f28f2e63036a511556ff53b874f",
+      "archiveSha256": "300b78d6e03aefa8c9dc4b020c10d4a1e38f9f28f2e63036a511556ff53b874f",
+      "bytes": 1128,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/17-api-shard1.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/17-api-shard1.json",
+      "sourceSha256": "16c6b2bd0d813a399b494072b054d85ad77db9bb725d4011877a24e458c72e17",
+      "archiveSha256": "16c6b2bd0d813a399b494072b054d85ad77db9bb725d4011877a24e458c72e17",
+      "bytes": 1523,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/17-api-shard1.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/17-api-shard1.log",
+      "sourceSha256": "a476a67ef8894c0f4f283a7784ce411af4745aa9383f10ad116770d31ae2220f",
+      "archiveSha256": "a476a67ef8894c0f4f283a7784ce411af4745aa9383f10ad116770d31ae2220f",
+      "bytes": 1013793,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/18-api-shard2.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/18-api-shard2.json",
+      "sourceSha256": "7af94b97a7f91b781e86901ada32873b9c095f2a5890784d6136525985ed709a",
+      "archiveSha256": "7af94b97a7f91b781e86901ada32873b9c095f2a5890784d6136525985ed709a",
+      "bytes": 1522,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/18-api-shard2.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/18-api-shard2.log",
+      "sourceSha256": "ec11820299cba97fc30527765d87f354b82ef72da12962e2e7578ff16ebe9f2d",
+      "archiveSha256": "ec11820299cba97fc30527765d87f354b82ef72da12962e2e7578ff16ebe9f2d",
+      "bytes": 896030,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/19-api-shard3.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/19-api-shard3.json",
+      "sourceSha256": "0272fd9fbfdbbf6e8998fab3505de464141ec194c6dd368cc71ae8071b1b9f28",
+      "archiveSha256": "0272fd9fbfdbbf6e8998fab3505de464141ec194c6dd368cc71ae8071b1b9f28",
+      "bytes": 1523,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/19-api-shard3.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/19-api-shard3.log",
+      "sourceSha256": "f6bd4480e71ed7192138849203bb1aac2e9f36455448bc3a4451e86715f531bd",
+      "archiveSha256": "f6bd4480e71ed7192138849203bb1aac2e9f36455448bc3a4451e86715f531bd",
+      "bytes": 1040180,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/20-offboarding-census.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/20-offboarding-census.json",
+      "sourceSha256": "de8af7c3605c2c01d47c320a097e08381db6726e9924aeda797505f19ff5a514",
+      "archiveSha256": "de8af7c3605c2c01d47c320a097e08381db6726e9924aeda797505f19ff5a514",
+      "bytes": 1366,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/20-offboarding-census.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/20-offboarding-census.log",
+      "sourceSha256": "069f00b7413b75f55b594b3df9e433686e95811e67d287ded4b6dcbb6a791ba1",
+      "archiveSha256": "069f00b7413b75f55b594b3df9e433686e95811e67d287ded4b6dcbb6a791ba1",
+      "bytes": 260,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/21-tenant-readback.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/21-tenant-readback.json",
+      "sourceSha256": "5be3e7ff8fbfa050a96f8a0c15fda601bb944079507fbee1e04f18ee704a989a",
+      "archiveSha256": "5be3e7ff8fbfa050a96f8a0c15fda601bb944079507fbee1e04f18ee704a989a",
+      "bytes": 1361,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/21-tenant-readback.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/21-tenant-readback.log",
+      "sourceSha256": "0abbc0db1478d05ff6ceb2290103eccbce3fd5fb8a2784886808d44264723699",
+      "archiveSha256": "0abbc0db1478d05ff6ceb2290103eccbce3fd5fb8a2784886808d44264723699",
+      "bytes": 3033,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/api-shard1-census.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/api-shard1-census.json",
+      "sourceSha256": "af32ad3108ee0cced6dc6f486ec0be1b0eaaf5b04141be28f5009bf8777451c6",
+      "archiveSha256": "af32ad3108ee0cced6dc6f486ec0be1b0eaaf5b04141be28f5009bf8777451c6",
+      "bytes": 406747,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/api-shard2-census.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/api-shard2-census.json",
+      "sourceSha256": "e2b0a24329bfd482390058085dec20ace9a3d774ccebbd82103fd48f5fc29490",
+      "archiveSha256": "e2b0a24329bfd482390058085dec20ace9a3d774ccebbd82103fd48f5fc29490",
+      "bytes": 417960,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/api-shard3-census.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/api-shard3-census.json",
+      "sourceSha256": "668b75def146210374e1d11765852e577fff556026108315baa4e0990f64fdc4",
+      "archiveSha256": "668b75def146210374e1d11765852e577fff556026108315baa4e0990f64fdc4",
+      "bytes": 373979,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/app-compiler-reuse.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/app-compiler-reuse.json",
+      "sourceSha256": "a63e7c49b67ef85f946808d54e399cb610bbda8fecadf80ea2f5050023c1ea1a",
+      "archiveSha256": "a63e7c49b67ef85f946808d54e399cb610bbda8fecadf80ea2f5050023c1ea1a",
+      "bytes": 596,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/installed.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/installed.json",
+      "sourceSha256": "bfa9829e92a02b947a1ebc212bb7b8121121812a94c979e5a4459affcf8436db",
+      "archiveSha256": "bfa9829e92a02b947a1ebc212bb7b8121121812a94c979e5a4459affcf8436db",
+      "bytes": 481,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/result.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/result.json",
+      "sourceSha256": "2ac8f0465f208117604646206ab2fc7364ab9420f6a0654987027fe1acb5cf74",
+      "archiveSha256": "2ac8f0465f208117604646206ab2fc7364ab9420f6a0654987027fe1acb5cf74",
+      "bytes": 1388566,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "actual-v1/runtime-prerequisites.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/runtime-prerequisites.json",
+      "sourceSha256": "41b8cef5100ec4bbf73f8b3927f593cade62674672eea01bdb266f76e24f444d",
+      "archiveSha256": "41b8cef5100ec4bbf73f8b3927f593cade62674672eea01bdb266f76e24f444d",
+      "bytes": 143,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "api-census-review.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/api-census-review.json",
+      "sourceSha256": "de4c1b6709bb9782f1681f58d482d340df8c86e712e44b1cfb221c54ae75b206",
+      "archiveSha256": "de4c1b6709bb9782f1681f58d482d340df8c86e712e44b1cfb221c54ae75b206",
+      "bytes": 15052,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "app-domain-bridge-preparation.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/app-domain-bridge-preparation.json",
+      "sourceSha256": "95a493a6f92b335887106bfe28191cb6d45eb6b0bc974084878f0732e14123a9",
+      "archiveSha256": "95a493a6f92b335887106bfe28191cb6d45eb6b0bc974084878f0732e14123a9",
+      "bytes": 5027,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "app-domain-reuse-confirmation.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/app-domain-reuse-confirmation.json",
+      "sourceSha256": "887e7ac7d7b22f9f4748555db6fe988fc4116b5ca3dfee5560a2d60d028eea98",
+      "archiveSha256": "887e7ac7d7b22f9f4748555db6fe988fc4116b5ca3dfee5560a2d60d028eea98",
+      "bytes": 27603,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "checkpoint-summary.json",
+      "sourcePath": null,
+      "sourceSha256": null,
+      "archiveSha256": "e82ee6ad3bdf995aacc306026ee10a1e9fc563d52b88b24d580349666e390ef2",
+      "bytes": 1416,
+      "kind": "authored-summary",
+      "byteIdentical": false
+    },
+    {
+      "path": "cleanup-intent.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/cleanup-intent.json",
+      "sourceSha256": "250dda1c849c898b86f9de6afe644d8c517096d119605450c5cb962303d1c590",
+      "archiveSha256": "250dda1c849c898b86f9de6afe644d8c517096d119605450c5cb962303d1c590",
+      "bytes": 13811,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "cleanup-result.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/cleanup-result.json",
+      "sourceSha256": "4c396dcf71faf9df13562d5fe70659e0436704469e09dcca09c3d2d7773c31df",
+      "archiveSha256": "4c396dcf71faf9df13562d5fe70659e0436704469e09dcca09c3d2d7773c31df",
+      "bytes": 1880,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "coverage-composition.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/coverage-composition.json",
+      "sourceSha256": "7aae746e5751ec42060fef313db92bd934010539ea1e323681d29c0676fb0e46",
+      "archiveSha256": "7aae746e5751ec42060fef313db92bd934010539ea1e323681d29c0676fb0e46",
+      "bytes": 3880,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "current-restore-review.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/current-restore-review.json",
+      "sourceSha256": "fba1842dfc248bc6066825b6a117f32146aba6a522d5f7732cdef1eb56ce0d90",
+      "archiveSha256": "fba1842dfc248bc6066825b6a117f32146aba6a522d5f7732cdef1eb56ce0d90",
+      "bytes": 914,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "dependency-inputs.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/dependency-inputs.json",
+      "sourceSha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "archiveSha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "bytes": 3773,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-intent.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-intent.json",
+      "sourceSha256": "eea703ecb18746e02d50bfe920406d6d647e28584f2b67e78c71afb7fad0f2ba",
+      "archiveSha256": "eea703ecb18746e02d50bfe920406d6d647e28584f2b67e78c71afb7fad0f2ba",
+      "bytes": 2035,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-terminal.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-terminal.json",
+      "sourceSha256": "da55b0fa4a37358afa2cf1504d1b02bc17cb8d02297dcdfe0d6273d9b3fc09f4",
+      "archiveSha256": "da55b0fa4a37358afa2cf1504d1b02bc17cb8d02297dcdfe0d6273d9b3fc09f4",
+      "bytes": 2297,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/01-platform-migrate.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/01-platform-migrate.json",
+      "sourceSha256": "61e71a7d63d444894913d514d866e90835d4ee982b7eb29b5f887770774edb4f",
+      "archiveSha256": "61e71a7d63d444894913d514d866e90835d4ee982b7eb29b5f887770774edb4f",
+      "bytes": 1382,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/01-platform-migrate.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/01-platform-migrate.log",
+      "sourceSha256": "10b7090436b64192e2f78df95d95455ef2bb6595b090eb351ca3ef8c342cd879",
+      "archiveSha256": "10b7090436b64192e2f78df95d95455ef2bb6595b090eb351ca3ef8c342cd879",
+      "bytes": 596,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/02-app-migrate.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/02-app-migrate.json",
+      "sourceSha256": "46a1a520d681f7532fa3ab7b8dd094ff18ba391a4c1cd10a5b768cd99d789bc2",
+      "archiveSha256": "46a1a520d681f7532fa3ab7b8dd094ff18ba391a4c1cd10a5b768cd99d789bc2",
+      "bytes": 1352,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/02-app-migrate.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/02-app-migrate.log",
+      "sourceSha256": "6f7daf41b9540eb84bb3e6835c69f530ca3349c954cab4e9b4262ac5e3544c64",
+      "archiveSha256": "6f7daf41b9540eb84bb3e6835c69f530ca3349c954cab4e9b4262ac5e3544c64",
+      "bytes": 1675,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/03-app-migrate-noop.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/03-app-migrate-noop.json",
+      "sourceSha256": "c355633502fd857d05dcd18f9cb1ee99c6a734e84a168613df530b67a16f0949",
+      "archiveSha256": "c355633502fd857d05dcd18f9cb1ee99c6a734e84a168613df530b67a16f0949",
+      "bytes": 1356,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/03-app-migrate-noop.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/03-app-migrate-noop.log",
+      "sourceSha256": "a227731b4a157fe1e4930b54d5b565b9487053c4d3781423d94e0f8bf657dad4",
+      "archiveSha256": "a227731b4a157fe1e4930b54d5b565b9487053c4d3781423d94e0f8bf657dad4",
+      "bytes": 127,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/04-ten-whole-api-files.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/04-ten-whole-api-files.json",
+      "sourceSha256": "f580bc9d4b51dc1f3b9da2b8726457aa8d24580c64bcfc22bed9b6f584dc45a7",
+      "archiveSha256": "f580bc9d4b51dc1f3b9da2b8726457aa8d24580c64bcfc22bed9b6f584dc45a7",
+      "bytes": 1859,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/04-ten-whole-api-files.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/04-ten-whole-api-files.log",
+      "sourceSha256": "656406e16c2059b0e7c3ec71b9ef6701e232457e1fa71b8f1c63ee0d5379ff1a",
+      "archiveSha256": "656406e16c2059b0e7c3ec71b9ef6701e232457e1fa71b8f1c63ee0d5379ff1a",
+      "bytes": 201460,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/api-docs-census.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/api-docs-census.json",
+      "sourceSha256": "a9988383d54e84dcc1ad9ea223ea2b71435d0445f29e4f1550a6ed1efb2faf0f",
+      "archiveSha256": "a9988383d54e84dcc1ad9ea223ea2b71435d0445f29e4f1550a6ed1efb2faf0f",
+      "bytes": 74625,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "docs-followup-v1/result.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/result.json",
+      "sourceSha256": "4820552a6864587efcf80462d9d2ee51dd491cf2df6b509526eca775ffda1046",
+      "archiveSha256": "4820552a6864587efcf80462d9d2ee51dd491cf2df6b509526eca775ffda1046",
+      "bytes": 88505,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "documentation-input-census.json",
+      "sourcePath": "C:/w/admin640-api-omitted-read-inputs-20261026.json",
+      "sourceSha256": "4928408072b36e455bcdbf6a65500eb29468fd3ebf9f79d7d15621de34428ca0",
+      "archiveSha256": "4928408072b36e455bcdbf6a65500eb29468fd3ebf9f79d7d15621de34428ca0",
+      "bytes": 21576,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "external-artifacts.json",
+      "sourcePath": null,
+      "sourceSha256": null,
+      "archiveSha256": "60f6c4762571734fe38a2fd618564d9c383a552f3b554951fac9404bf276d390",
+      "bytes": 2750,
+      "kind": "authored-summary",
+      "byteIdentical": false
+    },
+    {
+      "path": "final-api-source-bridge.json",
+      "sourcePath": "C:/w/admin640-final-api-source-bridge-20261026.json",
+      "sourceSha256": "7875635dedb1f08b8fd3f582c2ddd20a59b9e1ccd2a2e93a1dd2825bec96e9b4",
+      "archiveSha256": "7875635dedb1f08b8fd3f582c2ddd20a59b9e1ccd2a2e93a1dd2825bec96e9b4",
+      "bytes": 1063,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "helpers/documentation-closure-worker.mjs.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/docs-followup-v1/worker.mjs",
+      "sourceSha256": "f091b2faa5100c36c886844a0924117f1f8b6bede966716daaff6f597f8e9305",
+      "archiveSha256": "f091b2faa5100c36c886844a0924117f1f8b6bede966716daaff6f597f8e9305",
+      "bytes": 13575,
+      "kind": "actual-executed-helper",
+      "byteIdentical": true
+    },
+    {
+      "path": "helpers/original-worker.mjs.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/worker.mjs",
+      "sourceSha256": "75d46430a5f391bf4593f0481afb4af5c3ff55e65f6096c9ac4df4d85d8caa2c",
+      "archiveSha256": "75d46430a5f391bf4593f0481afb4af5c3ff55e65f6096c9ac4df4d85d8caa2c",
+      "bytes": 14971,
+      "kind": "actual-executed-helper",
+      "byteIdentical": true
+    },
+    {
+      "path": "helpers/safe-reporter.mjs.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/actual-v1/safe-reporter.mjs",
+      "sourceSha256": "be986a730e97bef0c4e723d0fe9caa351a4ee7ecbb5d0aa28c9b733c8d1d0b0d",
+      "archiveSha256": "be986a730e97bef0c4e723d0fe9caa351a4ee7ecbb5d0aa28c9b733c8d1d0b0d",
+      "bytes": 1790,
+      "kind": "actual-executed-helper",
+      "byteIdentical": true
+    },
+    {
+      "path": "install-intent.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/install-intent.json",
+      "sourceSha256": "2da4253aab9ef6fb4cc67d32685c7e5192bd07cf7b562c8036b4ff4842f70d05",
+      "archiveSha256": "2da4253aab9ef6fb4cc67d32685c7e5192bd07cf7b562c8036b4ff4842f70d05",
+      "bytes": 734,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "install-terminal.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/install-terminal.json",
+      "sourceSha256": "35013beb3a7076f85056ff5087610652c220c096eb1cf8c549e0f575ec8650f6",
+      "archiveSha256": "35013beb3a7076f85056ff5087610652c220c096eb1cf8c549e0f575ec8650f6",
+      "bytes": 1005,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "install-v1/api-closure.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/install-v1/api-closure.json",
+      "sourceSha256": "40ca9cdd5622fc3647370f244acfa4be8707c42c7487f7cb2d6a7d8ee92323fc",
+      "archiveSha256": "40ca9cdd5622fc3647370f244acfa4be8707c42c7487f7cb2d6a7d8ee92323fc",
+      "bytes": 1447,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "install-v1/api-closure.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/install-v1/api-closure.log",
+      "sourceSha256": "b4cf328ecacf42354bf250d24156e04e8c991f4eb9b79ee83dc9e43d8524cbc9",
+      "archiveSha256": "b4cf328ecacf42354bf250d24156e04e8c991f4eb9b79ee83dc9e43d8524cbc9",
+      "bytes": 119,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "install-v1/npm-ci.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/install-v1/npm-ci.json",
+      "sourceSha256": "e232df1ede595bff7f43add2b619c4183bdad0a8af9f7eea9a2906ceb684ed8e",
+      "archiveSha256": "e232df1ede595bff7f43add2b619c4183bdad0a8af9f7eea9a2906ceb684ed8e",
+      "bytes": 1373,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "install-v1/npm-ci.log.txt",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/install-v1/npm-ci.log",
+      "sourceSha256": "b58d2b092babc7e8554d060724b64ec685d0a064225a695d6debe10607b49421",
+      "archiveSha256": "b58d2b092babc7e8554d060724b64ec685d0a064225a695d6debe10607b49421",
+      "bytes": 104,
+      "kind": "sanitized-native-log",
+      "byteIdentical": true
+    },
+    {
+      "path": "install-v1/result.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/install-v1/result.json",
+      "sourceSha256": "db9eafe67b6c4b2884a2a23bff2502c0c2a1c13012508c0b0969addc8ca8c931",
+      "archiveSha256": "db9eafe67b6c4b2884a2a23bff2502c0c2a1c13012508c0b0969addc8ca8c931",
+      "bytes": 4134,
+      "kind": "native-receipt",
+      "byteIdentical": true
+    },
+    {
+      "path": "plan.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/plan.json",
+      "sourceSha256": "f8c49ef7b79fcea4c01e50b9d0dc2e4fdeeef9a8a890b51e15ad2b9445ef3951",
+      "archiveSha256": "f8c49ef7b79fcea4c01e50b9d0dc2e4fdeeef9a8a890b51e15ad2b9445ef3951",
+      "bytes": 27339,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "post-install-resource.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/post-install-resource.json",
+      "sourceSha256": "44e8a7c803ba989c184717984eafdf0fd6e1f583b0cc5d04e32d585f0375b6a9",
+      "archiveSha256": "44e8a7c803ba989c184717984eafdf0fd6e1f583b0cc5d04e32d585f0375b6a9",
+      "bytes": 347,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "privacy-scan.json",
+      "sourcePath": null,
+      "sourceSha256": null,
+      "archiveSha256": "bd7f62b79566de5322b205ebb03f5a6928434a7717d43dfff4c89051eff8081b",
+      "bytes": 788,
+      "kind": "authored-summary",
+      "byteIdentical": false
+    },
+    {
+      "path": "README.md",
+      "sourcePath": null,
+      "sourceSha256": null,
+      "archiveSha256": "207357295a7026ff281fbcf8590537bee3b185ce546377ff18a757ebe35579b5",
+      "bytes": 3893,
+      "kind": "authored-summary",
+      "byteIdentical": false
+    },
+    {
+      "path": "resource-preflight-failed-1.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/resource-preflight-failed-1.json",
+      "sourceSha256": "212b1c8a8a7b5d0f7bbde5cbe76fc3bb9e28e59920b232041087b4efe748c794",
+      "archiveSha256": "212b1c8a8a7b5d0f7bbde5cbe76fc3bb9e28e59920b232041087b4efe748c794",
+      "bytes": 308,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "reuse-binding.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/reuse-binding.json",
+      "sourceSha256": "4dc81868b2a337ba55e3a366c0ceb72a6423242df6c2cae464d728ebb3d26455",
+      "archiveSha256": "4dc81868b2a337ba55e3a366c0ceb72a6423242df6c2cae464d728ebb3d26455",
+      "bytes": 4222,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "reuse/prior-app-scope-review.json",
+      "sourcePath": "C:/w/admin638-app-compat-20261026/final-independent-review.json",
+      "sourceSha256": "4f34ddf2447e4248dbb5640c3814440ed2d86f64f02e41f5d32887cc3a2ea42e",
+      "archiveSha256": "4f34ddf2447e4248dbb5640c3814440ed2d86f64f02e41f5d32887cc3a2ea42e",
+      "bytes": 9630,
+      "kind": "prior-domain-evidence",
+      "byteIdentical": true
+    },
+    {
+      "path": "reuse/prior-whole-compiler-receipt.json",
+      "sourcePath": "C:/w/admin638-app-compat-20261026/ratchet-v3/01-whole-ratchet-4096.json",
+      "sourceSha256": "cd45be82a943aa434ae2ae0ba0986b55f08a17391aeaa55decbdad337c152be3",
+      "archiveSha256": "cd45be82a943aa434ae2ae0ba0986b55f08a17391aeaa55decbdad337c152be3",
+      "bytes": 1364,
+      "kind": "prior-domain-evidence",
+      "byteIdentical": true
+    },
+    {
+      "path": "reuse/prior-whole-compiler-review.json",
+      "sourcePath": "C:/w/admin638-app-compat-20261026/ratchet-v3-independent-review.json",
+      "sourceSha256": "2034bc9f9a0378913a5f159ee4d76eeb6fe4d750f0fea689581a28bda24412b3",
+      "archiveSha256": "2034bc9f9a0378913a5f159ee4d76eeb6fe4d750f0fea689581a28bda24412b3",
+      "bytes": 6314,
+      "kind": "prior-domain-evidence",
+      "byteIdentical": true
+    },
+    {
+      "path": "run-intent.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/run-intent.json",
+      "sourceSha256": "83849a86eb3cdc503c9900eb6a380032a70d00fdd71643988a2721d265c9a6bf",
+      "archiveSha256": "83849a86eb3cdc503c9900eb6a380032a70d00fdd71643988a2721d265c9a6bf",
+      "bytes": 282,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "run-result.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/run-result.json",
+      "sourceSha256": "dfd87fe900fdd4cefa98cd50193476e1d9d81db963d808aaf2f748a279759f02",
+      "archiveSha256": "dfd87fe900fdd4cefa98cd50193476e1d9d81db963d808aaf2f748a279759f02",
+      "bytes": 449,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "run-vm-policy-amendment.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/run-vm-policy-amendment.json",
+      "sourceSha256": "fb8384f7ab8e68cd3e6845998d4bbedab24ce6a3c78b3ce91b5a67289e856158",
+      "archiveSha256": "fb8384f7ab8e68cd3e6845998d4bbedab24ce6a3c78b3ce91b5a67289e856158",
+      "bytes": 517,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "running-resource-1.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/running-resource-1.json",
+      "sourceSha256": "baa7db16960b283f01086e5eb2bf9dff3d1842d65b27a7d8d96eec5e5bc4c0f9",
+      "archiveSha256": "baa7db16960b283f01086e5eb2bf9dff3d1842d65b27a7d8d96eec5e5bc4c0f9",
+      "bytes": 346,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "running-resource-2.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/running-resource-2.json",
+      "sourceSha256": "7c615515c30be09ee0b8fa221f6efbcb6499e33915451f9f10cff2b94547a8df",
+      "archiveSha256": "7c615515c30be09ee0b8fa221f6efbcb6499e33915451f9f10cff2b94547a8df",
+      "bytes": 346,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "running-resource-3.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/running-resource-3.json",
+      "sourceSha256": "b4d2a32306d9ba6608ef2e9c776525899f077324d09c3ce5b7bf80e068ae46b0",
+      "archiveSha256": "b4d2a32306d9ba6608ef2e9c776525899f077324d09c3ce5b7bf80e068ae46b0",
+      "bytes": 349,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "safe-reporter-calibration.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/safe-reporter-calibration.json",
+      "sourceSha256": "d6970e2dd31397baa513da15a360c36acf7cfe670d0d36b01aae94ec05fbcd79",
+      "archiveSha256": "d6970e2dd31397baa513da15a360c36acf7cfe670d0d36b01aae94ec05fbcd79",
+      "bytes": 493,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "setup-intent.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/setup-intent.json",
+      "sourceSha256": "0cd59a0eb6864e6970964a4fff563f0250db7a0f56b22b4e27778768dcfc4386",
+      "archiveSha256": "0cd59a0eb6864e6970964a4fff563f0250db7a0f56b22b4e27778768dcfc4386",
+      "bytes": 12477,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "setup.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/setup.json",
+      "sourceSha256": "2856f3dcfbb462ca08d6922f38caf1dbc6e1dda79de0beb26af5bc2985553b0f",
+      "archiveSha256": "2856f3dcfbb462ca08d6922f38caf1dbc6e1dda79de0beb26af5bc2985553b0f",
+      "bytes": 13255,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "source-manifest.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/source-manifest.json",
+      "sourceSha256": "31ed84b3b69fffe8c27330c3628b734381846e9500e5423adfa31b8dd31f4acf",
+      "archiveSha256": "31ed84b3b69fffe8c27330c3628b734381846e9500e5423adfa31b8dd31f4acf",
+      "bytes": 571347,
+      "kind": "metadata",
+      "byteIdentical": true
+    },
+    {
+      "path": "vm-headroom-amendment.json",
+      "sourcePath": "C:/w/admin640-api-verification-20261026/vm-headroom-amendment.json",
+      "sourceSha256": "f233728a845dd610e48e44df0a927cd03fd5bff1f55d2f54affdb037a1d86b64",
+      "archiveSha256": "f233728a845dd610e48e44df0a927cd03fd5bff1f55d2f54affdb037a1d86b64",
+      "bytes": 802,
+      "kind": "metadata",
+      "byteIdentical": true
+    }
+  ]
+}

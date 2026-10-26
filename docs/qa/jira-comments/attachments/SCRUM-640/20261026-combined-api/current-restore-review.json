@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-640",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "reviewedAt": "2026-10-26T13:22:24.457Z",
+  "passed": true,
+  "currentPlatformMigrations": 89,
+  "currentLastPlatformNumber": "0088",
+  "appMigrations": 31,
+  "baselineTables": 184,
+  "baselineRows": 1108,
+  "originalTableCountsPreserved": true,
+  "replays": 2,
+  "replayCountsExactlyEqual": true,
+  "replayViewsExactlyEqual": true,
+  "replayAppJournalExactlyEqual": true,
+  "readViews": 8,
+  "restoreCleanup": "complete",
+  "logSha256": "050ec3826ca15b9193d85be88da760b3081fb13f7d9f929a9d04ac2f504a7669",
+  "receiptSha256": "259af530ef36e1b22fbc3c7e1dfbd127d2fdcc9789dd8797ecbd66230eb238aa",
+  "fresh": true,
+  "limits": [
+    "Committed synthetic baseline, not a staging backup or real staff data.",
+    "Own overall run still active; final scratch-server census and container cleanup are separate required receipts."
+  ]
+}

@@ -1,0 +1,23 @@
+  ok  a manager cannot grant ADMIN on the access page; the login stays staff
+  ok  a manager cannot grant ADMIN in the login dialog; no login is made
+  ok  a level the dialog does not offer (GLOBAL_ADMIN) is refused, not written as global_admin
+  ok  an operator admin granting ADMIN on the access page writes operator_admin of their own operator
+  ok  an operator admin granting ADMIN in the login dialog makes an operator_admin login of their operator
+  ok  the logins an operator admin made are refused Users, Operators and the data admin
+  ok  a global admin granting ADMIN writes admin, and an unchanged save keeps it
+  ok  an admin login is above an operator admin: not theirs to change
+  ok  an operator admin cannot give an advisor ADMIN (an advisor's ADMIN is read as a legacy admin)
+  ok  a global admin's login is not an operator admin's to change
+  ok  an operator admin saved as ADMIN keeps operator_admin
+  ok  and no door wrote global_admin for anyone made here
+  ok  a manager still makes a MANAGER login in the dialog
+  ok  staff with a settings override are refused by the settings module gate
+  ok  a manager with a settings override is refused too
+  ok  their effective permissions show settings and HR Admin closed
+  ok  an operator admin still passes the settings module gate
+  ok  an operator admin reaching six branches cannot create an all-branches login; no login is made
+  ok  nor give all branches on the access page; the login and its branches are unchanged
+  ok  a subset of their six passes on both doors, with exactly those branches
+  ok  a branch outside their reach is refused on both doors, with nothing written
+  ok  a global admin still gives all branches on the access page
+access-escalation.check: 22 checks passed

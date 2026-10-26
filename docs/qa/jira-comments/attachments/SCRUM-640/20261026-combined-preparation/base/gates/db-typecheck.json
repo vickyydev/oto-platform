@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-640",
+  "name": "db-typecheck",
+  "command": "pnpm --filter @oto/db typecheck",
+  "startedAt": "2026-10-26T12:39:35.199Z",
+  "completedAt": "2026-10-26T12:39:54.974Z",
+  "sourceHead": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "34535c19699ec59a365c974cb5e498ffe285af220bae7adf52df180b091c4cc8",
+  "changedPaths": [],
+  "allowedChanges": true,
+  "exitCode": 0,
+  "dbBefore": 0,
+  "dbAfter": 0,
+  "logSha256": "0c82d14037c392279f4a49540573916b1d24506e07b211c29059319324944ea6",
+  "logBytes": 90,
+  "passed": true
+}

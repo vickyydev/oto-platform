@@ -1,0 +1,141 @@
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
+
+const BASE = '/tmp/admin640-api-verification-docs', ROOT = '/workspace';
+const require = createRequire(ROOT + '/apps/oto-app/package.json');
+const plan = JSON.parse(fs.readFileSync(BASE + '/plan.json'));
+const source = JSON.parse(fs.readFileSync(BASE + '/source-manifest.json'));
+const dependencies = JSON.parse(fs.readFileSync(BASE + '/dependency-inputs.json'));
+const docsCensus = JSON.parse(fs.readFileSync(BASE + '/documentation-inputs.json'));
+const fixtureDocs = docsCensus.requiredAddedInputs;
+const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const sha = filename => hash(fs.readFileSync(filename));
+const need = (ok, code) => { if (!ok) throw new Error(code); };
+const safe = error => /^[A-Z0-9_]+$/.test(error?.message ?? '') ? error.message : 'COMPATIBILITY_OPERATION_FAILED';
+const write = (name, value) => fs.writeFileSync(BASE + '/' + name + '.json', JSON.stringify(value, null, 2) + '\n', { flag: 'wx' });
+const secrets = [];
+const redact = value => {
+  let text = String(value); for (const secret of secrets) text = text.split(secret).join('<runtime secret>');
+  return text.replace(/^(legacy sha256 row brute-forced in \d+ms\s*(?:\u2192|->)\s*)\d{6}([ \t]*)(?=\r?\n|$)/gm, '$1[REDACTED SYNTHETIC AUTH CODE]$2').replace(/postgres(?:ql)?:\/\/[^\s"'`<>]+/gi, '<database URL>')
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '<JWT>')
+    .replace(/\bBearer\s+[^\s"'<>]+/gi, 'Bearer <redacted>')
+    .replace(/\b(?:set-cookie|cookie|authorization)\s*:[^\r\n]+/gi, '<authentication header>')
+    .replace(/\b(?:oto_session|connect\.sid)=[^\s"'<>]+/gi, '<session cookie>')
+    .replace(/\b[a-f0-9]{32,}\b/gi, '<opaque value>')
+    .replace(/(["']?(?:password|passwordHash|sessionToken|token|cookie|claimCode|pin|sessionSecret|sessionPepper)["']?\s*[:=]\s*)["'][^"'\r\n]+["']/gi, '$1"<redacted>"');
+};
+const installed = () => Object.fromEntries(['apps/oto-app/node_modules/.package-lock.json', 'node_modules/.modules.yaml', 'node_modules/.pnpm/lock.yaml']
+  .map(p => [p, fs.existsSync(ROOT + '/' + p) ? sha(ROOT + '/' + p) : null]));
+function verify() {
+  need(hash(JSON.stringify(source)) === plan.sourceManifestSha256 && source.length === plan.sourceFiles
+    && dependencies.length === 28 && hash(JSON.stringify(dependencies)) === plan.dependencyInputsSha256, 'BOUND_MANIFEST_REQUIRED');
+  for (const row of source) need(sha(ROOT + '/' + row.path) === row.sha256, 'SOURCE_CHANGED');
+  for (const row of dependencies) need(sha(ROOT + '/' + row.path) === row.sha256, 'DEPENDENCY_CHANGED');
+  for (const row of fixtureDocs) need(sha(ROOT + '/' + row.path) === row.sha256, 'EXACT_DOCUMENTATION_INPUT_CHANGED');
+  return plan.sourceManifestSha256;
+}
+function environment(kind = 'test') {
+  const env = Object.fromEntries(['PATH', 'HOME', 'LANG', 'LC_ALL', 'TMPDIR'].filter(key => process.env[key]).map(key => [key, process.env[key]]));
+  Object.assign(env, { APP_ENV: 'dev', NODE_ENV: kind, CI: 'true', NO_COLOR: '1', DB_SCHEMA: 'otoapp',
+    OBJECT_STORAGE: 'local', DEPLOY_ENV: 'local', STORAGE_ENV_PREFIX: 'zz-test-640-api-verification',
+    OTOAPP_JOBS: 'platform', LOG_LEVEL: 'warn', TZ: 'UTC', USE_AWS_REKOGNITION: 'false',
+    QA_FFMPEG_PATH: '/tmp/admin638-ffmpeg-tools/bin/ffmpeg', NODE_OPTIONS: '--max-old-space-size=2048',
+    npm_config_offline: 'true', npm_config_audit: 'false', npm_config_fund: 'false' });
+  env.npm_config_userconfig = '/dev/null';
+  for (const key of ['SESSION_SECRET', 'SESSION_PEPPER', 'KIOSK_CODE_PEPPER', 'PIN_FINGERPRINT_SECRET']) {
+    env[key] = crypto.randomBytes(32).toString('hex'); secrets.push(env[key]);
+  }
+  for (const filename of ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser']) {
+    try { fs.accessSync(filename, fs.constants.X_OK); env.PUPPETEER_EXECUTABLE_PATH = filename; break; } catch { /* next exact cached binary */ }
+  }
+  if (!env.PUPPETEER_EXECUTABLE_PATH) {
+    try { const p = createRequire(ROOT + '/apps/pos/package.json')('@playwright/test').chromium.executablePath();
+      fs.accessSync(p, fs.constants.X_OK); env.PUPPETEER_EXECUTABLE_PATH = p; } catch { /* fail preflight rather than download */ }
+  }
+  return env;
+}
+const server = (database = 'postgres') => {
+  const url = new URL('postgresql:' + '//' + 'pg/' + database); url.username = 'oto'; return url.href;
+};
+const result = { ticket: 'SCRUM-640', actualLocal: true, staging: false, sourceSha: plan.sourceSha,
+  sourceManifestSha256: plan.sourceManifestSha256, sourceFiles: source.length, dependencyInputs: dependencies.length,
+  workerSha256: sha(new URL(import.meta.url)), startedAt: new Date().toISOString(), commands: [],
+  passed: false, cleanupConfirmed: false, databasesBefore: null, databasesAfter: null, installedFresh: false };
+let frozenInstalled = null, admin, activeChild, mainCreated = false, mainConnected = false;
+const mainName = 'otoapp_ci'; // Exact native s633/s634 CI-base guard, on this owned fresh server only.
+function killChild() { if (activeChild?.pid) { try { process.kill(-activeChild.pid, 'SIGKILL'); } catch { /* already exited */ } } }
+async function command(label, cwd, argv, env, { timeoutMs = 600_000, installing = false, report } = {}) {
+  const prefix = String(result.commands.length + 1).padStart(2, '0') + '-' + label;
+  const row = { label, cwd, argv, startedAt: new Date().toISOString(), sourceBefore: null, sourceAfter: null,
+    installedBefore: installed(), installedAfter: null, exitCode: null, signal: null, errorCode: null, timedOut: false, passed: false };
+  let raw = '', size = 0, timer;
+  console.log(JSON.stringify({ event: 'begin', command: prefix }));
+  try {
+    row.sourceBefore = verify();
+    if (frozenInstalled && !installing) need(JSON.stringify(row.installedBefore) === JSON.stringify(frozenInstalled), 'INSTALLED_STATE_CHANGED');
+    const child = spawn('bash', ['-c', 'set -eo pipefail\nexec "$@"', 'admin640-api-verification', ...argv],
+      { cwd, env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] }); activeChild = child;
+    const collect = bytes => { size += bytes.length; if (size > 64 * 1024 * 1024) { row.errorCode = 'OUTPUT_LIMIT'; killChild(); }
+      else raw += bytes.toString(); };
+    child.stdout.on('data', collect); child.stderr.on('data', collect);
+    child.on('error', () => { row.errorCode = 'SPAWN_ERROR'; });
+    timer = setTimeout(() => { row.timedOut = true; killChild(); }, timeoutMs);
+    const exit = await new Promise(resolve => child.on('close', (exitCode, signal) => resolve({ exitCode, signal })));
+    Object.assign(row, exit);
+    if (report && row.exitCode === 0) {
+      const data = JSON.parse(fs.readFileSync(ROOT + '/' + report.path));
+      row.report = { path: report.path, sha256: sha(ROOT + '/' + report.path), files: data.testResults?.length,
+        tests: data.numTotalTests, pending: data.numPendingTests, failed: data.numFailedTests };
+      need(row.report.files === report.files && row.report.tests > 0 && row.report.pending === 0 && row.report.failed === 0, 'ACTUAL_COMPLETE_REVIEW_FILES_REQUIRED');
+    }
+  } catch (error) { row.errorCode ??= safe(error); }
+  finally {
+    clearTimeout(timer); killChild(); activeChild = undefined;
+    try { row.sourceAfter = verify(); row.installedAfter = installed();
+      if (frozenInstalled && !installing) need(JSON.stringify(row.installedAfter) === JSON.stringify(frozenInstalled), 'INSTALLED_STATE_CHANGED');
+    } catch (error) { row.errorCode ??= safe(error); }
+    const log = redact(raw); fs.writeFileSync(BASE + '/' + prefix + '.log', log, { flag: 'wx' });
+    Object.assign(row, { completedAt: new Date().toISOString(), logSha256: hash(log), logBytes: Buffer.byteLength(log),
+      logRedactedBeforeDisk: true, shellGuard: 'set -eo pipefail', passed: row.exitCode === 0 && row.signal === null
+        && row.errorCode === null && !row.timedOut && row.sourceBefore === row.sourceAfter });
+    result.commands.push(row); write(prefix, row);
+    console.log(JSON.stringify({ event: 'end', command: prefix, passed: row.passed, exitCode: row.exitCode, errorCode: row.errorCode }));
+  }
+  return row.passed;
+}
+try {
+  need(process.argv.length===3&&process.argv[2]==='--run-reviewed','EXACT_REVIEWED_DOCS_MODE_REQUIRED');
+  need(!fs.existsSync(BASE+'/result.json'),'PRESERVE_DOCS_FOLLOWUP');
+  const originalResult=JSON.parse(fs.readFileSync('/tmp/admin640-api-verification/result.json'));
+  need(Boolean(originalResult.completedAt)&&originalResult.sourceSha===plan.sourceSha&&originalResult.sourceAfter===plan.sourceManifestSha256&&originalResult.cleanupConfirmed,'ORIGINAL_FULL_RUN_TERMINAL_REQUIRED');
+  need(docsCensus.sourceSha===plan.sourceSha&&docsCensus.apiTestFilesInspected===384&&fixtureDocs.length===4&&docsCensus.wholeAffectedFiles.length===10,'EXACT_READ_INPUT_CENSUS_REQUIRED');
+  result.kind='separate-whole-file-documentation-input-closure';result.originalResultSha256=sha('/tmp/admin640-api-verification/result.json');result.originalResultPassed=originalResult.passed;result.documentationInputCensusSha256=sha(BASE+'/documentation-inputs.json');result.documentationInputs=fixtureDocs.map(({path,sha256,bytes})=>({path,sha256,bytes}));result.sourceBefore=verify();
+  const install=JSON.parse(fs.readFileSync('/tmp/admin640-api-verification-install/result.json'));
+  need(install.passed&&install.observedFreshNpmCi&&install.sourceManifestSha256===plan.sourceManifestSha256,'FRESH_INSTALLED_STATE_REQUIRED');frozenInstalled=install.installedAfter;result.installedFresh=true;need(JSON.stringify(installed())===JSON.stringify(frozenInstalled),'UNCHANGED_INSTALLED_STATE_REQUIRED');
+  const env=environment();result.runtimePrerequisites={browserCached:Boolean(env.PUPPETEER_EXECUTABLE_PATH),ffmpegCached:fs.existsSync(env.QA_FFMPEG_PATH)};
+  const {Client}=require('pg');admin=new Client({connectionString:server(),connectionTimeoutMillis:10_000,query_timeout:30_000});await admin.connect();
+  const census=async()=>(await admin.query("select datname from pg_database where not datistemplate and datname <> 'postgres' order by datname")).rows.map(r=>r.datname);
+  result.databasesBefore=await census();need(result.databasesBefore.length===0,'FRESH_OWN_SERVER_FOR_DOCS_CLOSURE_REQUIRED');
+  await admin.query('create database otoapp_ci');mainCreated=true;const dbEnv={...env,DATABASE_URL:server(mainName),TEST_DATABASE_URL:server()};
+  const core=await command('platform-migrate',ROOT+'/packages/db',['node','node_modules/drizzle-kit/bin.cjs','migrate'],dbEnv);
+  const app=await command('app-migrate',ROOT+'/apps/oto-app',['npm','run','db:migrate'],dbEnv);
+  const noop=await command('app-migrate-noop',ROOT+'/apps/oto-app',['npm','run','db:migrate'],dbEnv);
+  need(core&&app&&noop,'CURRENT_SCHEMA_REQUIRED_FOR_DOCS_CLOSURE');
+  const files=docsCensus.wholeAffectedFiles.map(x=>x.file.replace('apps/api/',''));
+  const reportPath=BASE+'/api-docs-census.json';
+  await command('ten-whole-api-files',ROOT,['pnpm','--filter','@oto/api','test','--maxWorkers=1','--fileParallelism=false','--reporter=default','--reporter='+BASE+'/safe-reporter.mjs',...files],{...dbEnv,OTO_VERIFICATION_REPORT:reportPath},{timeoutMs:1_800_000});
+  need(fs.existsSync(reportPath),'ACTUAL_TEN_FILE_CENSUS_REQUIRED');const report=JSON.parse(fs.readFileSync(reportPath));
+  const expectedTodos=originalResult.apiShards.flatMap(s=>s.files).filter(r=>docsCensus.wholeAffectedFiles.some(x=>x.file===r.file)).flatMap(r=>r.tests.filter(t=>t.state==='todo').map(t=>r.file+'|'+t.nameSha256)).sort();
+  const observedTodos=report.files.flatMap(r=>r.tests.filter(t=>t.state==='todo').map(t=>r.file+'|'+t.nameSha256)).sort();
+  result.inheritedTodoIdentities={expected:expectedTodos,observed:observedTodos,unchanged:JSON.stringify(expectedTodos)===JSON.stringify(observedTodos)};
+  result.apiCensus={path:'api-docs-census.json',sha256:sha(reportPath),totals:report.totals,unhandledErrors:report.unhandledErrors,files:report.files};
+  need(report.files.length===10&&report.files.every(r=>docsCensus.wholeAffectedFiles.some(x=>x.file===r.file))&&report.files.every(r=>r.tests.length>0)&&report.totals.fail===0&&report.totals.skip===0&&report.totals.todo===expectedTodos.length&&JSON.stringify(expectedTodos)===JSON.stringify(observedTodos)&&report.totals.other===0&&report.unhandledErrors===0,'ACTUAL_COMPLETE_TEN_WHOLE_FILES_REQUIRED');
+  result.sourceAfter=verify();result.installedAfter=installed();
+}catch(error){result.failureCode=safe(error);}
+finally{
+  killChild();if(admin){try{if(mainCreated)await admin.query('drop database otoapp_ci with (force)');result.databasesAfter=(await admin.query("select datname from pg_database where not datistemplate and datname <> 'postgres' order by datname")).rows.map(r=>r.datname);result.cleanupConfirmed=result.databasesAfter.length===0;}catch{result.cleanupFailure=true;}await admin.end().catch(()=>{result.cleanupFailure=true;});}
+  result.completedAt=new Date().toISOString();result.expectedCommands=4;result.passed=result.commands.length===4&&result.commands.every(x=>x.passed)&&result.cleanupConfirmed&&!result.cleanupFailure&&!result.failureCode&&result.sourceBefore===result.sourceAfter&&result.apiCensus?.totals.fail===0;
+  write('result',result);console.log(JSON.stringify({complete:true,kind:result.kind,passed:result.passed,commands:result.commands.length,cleanupConfirmed:result.cleanupConfirmed,failureCode:result.failureCode??null,totals:result.apiCensus?.totals??null}));process.exitCode=result.passed?0:1;
+}

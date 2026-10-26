@@ -1,0 +1,3 @@
+
+> @oto/api@0.1.0 typecheck C:\w\admin-operator-switch\apps\api
+> tsc -p tsconfig.json

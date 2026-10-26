@@ -1,0 +1,59 @@
+{
+  "ticket": "SCRUM-640",
+  "completedAt": "2026-10-26T12:41:53.667Z",
+  "sourceHead": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "34535c19699ec59a365c974cb5e498ffe285af220bae7adf52df180b091c4cc8",
+  "sourceUnchangedAfterGenerate": true,
+  "programs": [
+    {
+      "name": "api-types-generate",
+      "passed": true,
+      "receiptSha256": "721c2cb1d3fc8ffd0d673e5c3b1043dcbf34992a709813ea5b74b94e66764a31"
+    },
+    {
+      "name": "api-types-check",
+      "passed": true,
+      "receiptSha256": "918dba983aad0fd3b9e2f1ee4b09a12dc4e1bb150624425d6be344f4d5be279e"
+    },
+    {
+      "name": "verify-schema",
+      "passed": true,
+      "receiptSha256": "41d0b3e6f784f9444e39d3b67fb04e813dd4c13cc614f31e65f86189af06f713"
+    },
+    {
+      "name": "migration-tests",
+      "passed": true,
+      "receiptSha256": "c19578a439a97ea32e925437386fcb9b105dd4b299af7725574e18537173323b"
+    },
+    {
+      "name": "db-typecheck",
+      "passed": true,
+      "receiptSha256": "e0ae99f37a447a60f5e98dd587b370587671c641d9acf3464a930ff33e591b5b"
+    },
+    {
+      "name": "api-typecheck",
+      "passed": true,
+      "receiptSha256": "5d9f09011c732aecdd9c1414c8942a72e881c01d457df82f756863d819aa2d26"
+    },
+    {
+      "name": "api-types-typecheck",
+      "passed": true,
+      "receiptSha256": "058c3d636be5aaed5f2143759f546d5f4426d94f7352693bdb58291dedb7e6af"
+    },
+    {
+      "name": "console-typecheck",
+      "passed": true,
+      "receiptSha256": "41506bd6fa93312698a748835ab2843649745d01bdf09ec18d22c0aa5c18ac52"
+    }
+  ],
+  "fatal": null,
+  "cleanup": {
+    "ownNativeServer": true,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null
+  },
+  "completeReleaseClaimed": false,
+  "passed": true
+}

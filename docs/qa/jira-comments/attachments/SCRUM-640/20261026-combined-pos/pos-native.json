@@ -1,0 +1,12 @@
+{
+  "name": "pos-native",
+  "startedAt": "2026-10-26T13:31:05.656Z",
+  "completedAt": "2026-10-26T13:32:58.585Z",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "27c812e55d9b7a3417b587ac4fe70aacd419ceaff1bc087c5dba809b71da3d9e",
+  "logBytes": 6529,
+  "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceInputs": 3809
+}

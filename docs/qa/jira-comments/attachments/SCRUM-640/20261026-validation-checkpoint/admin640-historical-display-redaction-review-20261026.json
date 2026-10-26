@@ -1,0 +1,50 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T14:09:23.186Z",
+  "passed": true,
+  "reviewedHead": "4dbade2a9c8855a017df2f73d284d97869405d24",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "fullReviewPath": "C:/w/admin640-partial-checkpoint-independent-review-v2-20261026.json",
+  "fullReviewSha256": "28c8eb59daf872d55eddc4b6f578588570ded5275f8642e7ce6a2ac824b88aab",
+  "scope": "Separate historical display-only auth-code redaction",
+  "commit": "4dbade2a9c8855a017df2f73d284d97869405d24",
+  "replacements": 3,
+  "originalRawHashesPreserved": true,
+  "rawLogsCopied": false,
+  "indexFilesVerified": 145,
+  "indexFailures": [],
+  "rawChecks": [
+    {
+      "path": "logs/admin640-extra-auth-v1.txt",
+      "originalRawReferenceUnchanged": true,
+      "externalRawPresent": true,
+      "externalRawUnchanged": true,
+      "currentDisplayMatches": true
+    },
+    {
+      "path": "logs/admin640-extra-auth-v2.txt",
+      "originalRawReferenceUnchanged": true,
+      "externalRawPresent": true,
+      "externalRawUnchanged": true,
+      "currentDisplayMatches": true
+    },
+    {
+      "path": "logs/admin640-extra-auth-v4.txt",
+      "originalRawReferenceUnchanged": true,
+      "externalRawPresent": true,
+      "externalRawUnchanged": true,
+      "currentDisplayMatches": true
+    }
+  ],
+  "metadataSha256": "d710a2aba1b312f819245e0a691c7aa20372f7e74fd9955cb1d858fb4af484e8",
+  "testOutcomesAndLineCountsUnchanged": true,
+  "secretCandidateCountAfter": 0,
+  "gitHistoryRewritten": false,
+  "commitFiles": [
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-central-ui/archive.json",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-central-ui/logs/admin640-extra-auth-v1.txt",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-central-ui/logs/admin640-extra-auth-v2.txt",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-central-ui/logs/admin640-extra-auth-v4.txt"
+  ]
+}

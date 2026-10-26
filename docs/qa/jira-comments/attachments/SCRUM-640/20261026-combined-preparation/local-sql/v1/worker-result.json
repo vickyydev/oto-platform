@@ -1,0 +1,34 @@
+{
+  "ticket": "SCRUM-640",
+  "localOnly": true,
+  "actualStaging": false,
+  "localMock": true,
+  "startedAt": "2026-10-26T13:11:51.849Z",
+  "sourceSha": "025c9929e26f3100876905d9b1430ae06722521a",
+  "programs": [],
+  "checks": {},
+  "cleanup": {
+    "clientClosed": true,
+    "databaseDropped": true,
+    "nativeServerStopped": true
+  },
+  "outsideRequests": 0,
+  "tools": {
+    "node": "v22.17.1",
+    "postgresPath": "C:\\w\\admin-operator-switch\\node_modules\\.pnpm\\@embedded-postgres+windows-x64@16.14.0-beta.17\\node_modules\\@embedded-postgres\\windows-x64\\native\\bin\\postgres.exe",
+    "postgresSha256": "c4a6839621f230076b3347f443b3dbfb133954d695f82866ea67501290bd90d3",
+    "tsxApiSha256": "8fb32f8842dff630c0b54aba648a1a49de7bd8769ef4bea6f841fa954041504d"
+  },
+  "resources": {
+    "databaseName": "oto_test_1793020318607_61532_t3am_0",
+    "port": 54677,
+    "nativeTempRoot": "C:/w/admin640-staging-proof-local-sql-v1/tmp"
+  },
+  "completedAt": "2026-10-26T13:12:09.024Z",
+  "failure": {
+    "stage": "native-platform-seed",
+    "code": "LOCAL_CALIBRATION_FAILED"
+  },
+  "passed": false,
+  "modelLimit": "Native SQL/loader calibration against locally seeded fixtures only. No staging journey, live source/CI/deploy or authentication was exercised."
+}

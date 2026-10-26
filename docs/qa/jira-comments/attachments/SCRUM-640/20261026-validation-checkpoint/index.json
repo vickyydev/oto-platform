@@ -1,0 +1,51 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T14:20:21.420Z",
+  "releasePassed": false,
+  "staging": false,
+  "normalization": "LF and display whitespace only; original hashes remain separately bound",
+  "files": [
+    {
+      "source": "C:/w/admin640-proof-main-rebase-20261026.json",
+      "archive": "admin640-proof-main-rebase-20261026.json",
+      "originalSha256": "3fc2648df9d9c17fc517e6db8a7de3fb6c7c82f8452fa715e8e5f88befa34818",
+      "archiveSha256": "3fc2648df9d9c17fc517e6db8a7de3fb6c7c82f8452fa715e8e5f88befa34818"
+    },
+    {
+      "source": "C:/w/admin640-final-api-source-bridge-20261026.json",
+      "archive": "admin640-final-api-source-bridge-20261026.json",
+      "originalSha256": "7875635dedb1f08b8fd3f582c2ddd20a59b9e1ccd2a2e93a1dd2825bec96e9b4",
+      "archiveSha256": "7875635dedb1f08b8fd3f582c2ddd20a59b9e1ccd2a2e93a1dd2825bec96e9b4"
+    },
+    {
+      "source": "C:/w/admin640-curated-checkpoint-independent-review-20261026.json",
+      "archive": "admin640-curated-checkpoint-independent-review-20261026.json",
+      "originalSha256": "6352815bf73ef677cb7b72216f77b0454a3256c79d747460944f26fa4224533f",
+      "archiveSha256": "6352815bf73ef677cb7b72216f77b0454a3256c79d747460944f26fa4224533f"
+    },
+    {
+      "source": "C:/w/admin640-historical-display-redaction-review-20261026.json",
+      "archive": "admin640-historical-display-redaction-review-20261026.json",
+      "originalSha256": "761a88d9a3ac495ba8cb9c2770da3d3ad8dfc0cd41603d0ff028afa2b8c2a704",
+      "archiveSha256": "761a88d9a3ac495ba8cb9c2770da3d3ad8dfc0cd41603d0ff028afa2b8c2a704"
+    },
+    {
+      "source": "C:/w/admin635-parent-acceptance-20261026.json",
+      "archive": "admin635-parent-acceptance-20261026.json",
+      "originalSha256": "170a04bf5bb9099025b2874afffa327174ed954ee5b9a2ff416e07cfe6447b4f",
+      "archiveSha256": "170a04bf5bb9099025b2874afffa327174ed954ee5b9a2ff416e07cfe6447b4f"
+    },
+    {
+      "source": "C:/w/admin640-api-archive-independent-review-20261026.json",
+      "archive": "admin640-api-archive-independent-review-20261026.json",
+      "originalSha256": "e857f338e71ce77c7f974f7ee89d0f07e878928e25e2bee76b5431f76bc4cb62",
+      "archiveSha256": "e857f338e71ce77c7f974f7ee89d0f07e878928e25e2bee76b5431f76bc4cb62"
+    },
+    {
+      "source": "C:/w/admin640-api-archive-independent-review-v2-20261026.json",
+      "archive": "admin640-api-archive-independent-review-v2-20261026.json",
+      "originalSha256": "0cf1a904308c3425ef4d7e2c9ad4af7bc4a42c501d92cdac613c662dd2b6d1d3",
+      "archiveSha256": "0cf1a904308c3425ef4d7e2c9ad4af7bc4a42c501d92cdac613c662dd2b6d1d3"
+    }
+  ]
+}

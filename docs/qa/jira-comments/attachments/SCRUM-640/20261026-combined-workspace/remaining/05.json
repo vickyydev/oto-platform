@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-640",
+  "command": "pnpm --filter @oto/payments-2c2p test",
+  "startedAt": "2026-10-26T13:27:17.026Z",
+  "completedAt": "2026-10-26T13:27:20.542Z",
+  "exitCode": 0,
+  "signal": null,
+  "processError": null,
+  "sourceHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "logSha256": "de5f834ddd441ed88545ed6a53eed14f3aba2a56fcb40f9b211d3cbd91055594",
+  "logBytes": 601,
+  "shell": "Git Bash set -eo pipefail",
+  "logRedactedBeforeDisk": true,
+  "passed": true
+}

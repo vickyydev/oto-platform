@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-640",
+  "name": "migration-tests",
+  "command": "pnpm --filter @oto/db test --maxWorkers=1 test/s640-operator-switch-migration.test.ts test/assistant-settings.test.ts",
+  "startedAt": "2026-10-26T12:39:07.770Z",
+  "completedAt": "2026-10-26T12:39:29.539Z",
+  "sourceHead": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "34535c19699ec59a365c974cb5e498ffe285af220bae7adf52df180b091c4cc8",
+  "changedPaths": [],
+  "allowedChanges": true,
+  "exitCode": 0,
+  "dbBefore": 0,
+  "dbAfter": 0,
+  "logSha256": "ef8e595aab7d76c6843fb8f794759caec61c6c7906794e2b6328999ee2f95e9d",
+  "logBytes": 1087,
+  "passed": true
+}

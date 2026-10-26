@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-640",
+  "command": "pnpm --filter @oto/db test",
+  "startedAt": "2026-10-26T13:11:43.382Z",
+  "completedAt": "2026-10-26T13:18:33.441Z",
+  "exitCode": 0,
+  "signal": null,
+  "processError": null,
+  "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "logSha256": "f6efcbcfc8c50710c2860c6a47bd0c340d01c3d0357aa135ca316f7e35d206eb",
+  "logBytes": 19408,
+  "shell": "Git Bash set -eo pipefail",
+  "logRedactedBeforeDisk": true,
+  "passed": true
+}

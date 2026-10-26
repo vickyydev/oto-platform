@@ -1,0 +1,21 @@
+{
+  "ticket": "SCRUM-640",
+  "checkedAt": "2026-10-26T14:04:19.028Z",
+  "head": "5d3cc3aa46711b343159a1cbd940e9a5046f7caa",
+  "apiSnapshot": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "inputs": 3811,
+  "onlyChangedInputs": [
+    "apps/console/e2e/assistant-settings.spec.ts",
+    "apps/console/src/components/ConsoleLayout.tsx",
+    "apps/console/src/pages/AreaLanding.tsx",
+    "apps/console/src/pages/AssistantSettings.tsx"
+  ],
+  "allApiAppDbSharedDependenciesScriptsAndWorkflowIdentical": true,
+  "consoleChangesCoveredBy": {
+    "path": "C:/w/admin640-settings-integration-20261026/review.json",
+    "sha256": "c513100d11d6c65a722c5d02a8aa541184bb376b35d31f7bd291ae44241b330c"
+  },
+  "releasePassed": false,
+  "note": "Domain byte bridge only. Preserve original API failures and separate documentation-input closure. Q23 remains pending; no staging acceptance.",
+  "checkMethod": "One complete committed Git tree plus native blob hashes; earlier per-file process attempt was stopped for inefficient process spawning, with no receipt or result claimed."
+}

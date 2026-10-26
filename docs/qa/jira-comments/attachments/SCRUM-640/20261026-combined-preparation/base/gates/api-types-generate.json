@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-640",
+  "name": "api-types-generate",
+  "command": "pnpm api-types:generate",
+  "startedAt": "2026-10-26T12:38:21.122Z",
+  "completedAt": "2026-10-26T12:38:36.224Z",
+  "sourceHead": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "34535c19699ec59a365c974cb5e498ffe285af220bae7adf52df180b091c4cc8",
+  "changedPaths": [],
+  "allowedChanges": true,
+  "exitCode": 0,
+  "dbBefore": 0,
+  "dbAfter": 0,
+  "logSha256": "15030248fbed8be59d5ae3725d8ef3e14b812c0ffeb22682256efb1fb81a275b",
+  "logBytes": 611,
+  "passed": true
+}

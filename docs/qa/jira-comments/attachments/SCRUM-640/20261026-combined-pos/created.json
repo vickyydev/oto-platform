@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-26T13:30:53.719Z",
+  "id": "25b220a2721f8fff41082df0556b8648bc87b78469103e2d015c5dc6c4786409",
+  "name": "/oto-admin640-pos-linux-20261026",
+  "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+  "status": "created",
+  "oomKilled": false,
+  "memory": 2147483648,
+  "network": "none",
+  "mounts": [],
+  "ports": {},
+  "ticket": "SCRUM-640",
+  "owner": "gate-audit-pos"
+}

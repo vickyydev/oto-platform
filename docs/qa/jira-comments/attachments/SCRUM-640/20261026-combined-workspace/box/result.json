@@ -1,0 +1,30 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "box",
+  "attempt": "v1",
+  "sourceHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "completedAt": "2026-10-26T13:30:01.550Z",
+  "fatal": null,
+  "programs": [
+    {
+      "command": "pnpm --filter @oto/box-agent test --test-concurrency=1",
+      "passed": true,
+      "receiptSha256": "bc2eb4e94ce4ee0e93c5df3dc76f946f1cd62d377abbc4e530ca98315890edbf"
+    }
+  ],
+  "cleanup": {
+    "ownNativeServer": true,
+    "port": 54863,
+    "databasesBefore": 0,
+    "credentialsPersisted": false,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "staging": false,
+  "passed": true
+}

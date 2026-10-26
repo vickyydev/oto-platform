@@ -1,0 +1,43 @@
+{
+  "ticket": "SCRUM-640",
+  "startedAt": "2026-10-26T13:30:53.403Z",
+  "completedAt": "2026-10-26T13:33:01.882Z",
+  "passed": true,
+  "failure": null,
+  "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "snapshotHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+  "container": {
+    "id": "25b220a2721f8fff41082df0556b8648bc87b78469103e2d015c5dc6c4786409",
+    "name": "/oto-admin640-pos-linux-20261026",
+    "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+    "status": "running",
+    "oomKilled": false,
+    "memory": 2147483648,
+    "network": "none",
+    "mounts": [],
+    "ports": {},
+    "ticket": "SCRUM-640",
+    "owner": "gate-audit-pos"
+  },
+  "baselineIds": [
+    "2afc9985eaec2abe07eca6aa58aa15d6078c35a9290bcc2a890d5b2d84b051e3",
+    "2b6efe94892891ef608f80f228a9c4c6c3f54d3ee6188267f7131c7205d5db43",
+    "41925d9b0cf1df7647253188f2086c34fbbdcc49b446f2b964e43c6fa3920dbe",
+    "5b5ad70fd3aecf514625c077214d1fb00979067578e885152706ea3b10a49831",
+    "81821fc1f43bc8f540c879c5b0fbc381faaec86309f34eafb8df94b4eff659ba",
+    "83828b463f0b5ae2a64d70878099d5fe299e4b811decc075333f373d981ec01a",
+    "85c6ce32a42aba5581817c6323334afbc808020056311be901039150be47dc13",
+    "cbc3eb441a04b866bec0bd92928ff95dec63bb01a3884e98d8cb588a30d68309",
+    "ceda2dc3b92a3264a97efc0bb5164abc655403f22846438a00b53cb22059f270",
+    "cf854c43dcd283c35919e1c6a581dbbfd3539636832ff3910adc2e3bf5821af0"
+  ],
+  "cleanupPending": true,
+  "noNetwork": true,
+  "noHostPorts": true,
+  "noHostMounts": true,
+  "assertionsChanged": false,
+  "timeoutsChanged": false,
+  "localeMonkeypatched": false
+}

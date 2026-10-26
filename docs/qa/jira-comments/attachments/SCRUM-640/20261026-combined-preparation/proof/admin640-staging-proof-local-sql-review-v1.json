@@ -1,0 +1,178 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "actual-local-generated-sql-and-loader-calibration",
+  "reviewedAt": "2026-10-26T13:15:04.157Z",
+  "passed": true,
+  "actualStaging": false,
+  "localOnly": true,
+  "sourceSha": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceFiles": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceAndHelpersUnchanged": true,
+  "programs": [
+    {
+      "label": "preflight",
+      "exitCode": 0,
+      "signal": null,
+      "generatedProgramSha256": "e1beb9350e0afdffec23f8a8e1ae658aef4127245846ac9e1db78543d718b5e7",
+      "actualExecutedSha256": "89c12c2456e499326b5282946176c55f866968b395c54c4cf4d5720e94321982",
+      "programFile": "C:\\w\\admin640-staging-proof-local-sql-v2\\preflight.program.cjs.txt",
+      "stdoutSha256": "7928f6e36748982c097457f9c4754557b8534d33c367eaebdf6ce5b7656fe5a6",
+      "stderrSha256": "9b743e46090824b234ac0b3d57ace686800a738bdf96ce2539566e277f84f264",
+      "loader": "node --import tsx -e actual-program",
+      "readOnlyObserved": true,
+      "sqlStates": [],
+      "markerCount": 1
+    },
+    {
+      "label": "audit",
+      "exitCode": 0,
+      "signal": null,
+      "generatedProgramSha256": "9cabff6e0adb2c3c7e24fc3ff3fb3e362716f3c3376722006b2a80c837cb2e2a",
+      "actualExecutedSha256": "9e2161c83ca552744a856d4b202d80d61167be7d8fc0715f27422b77c501cdd5",
+      "programFile": "C:\\w\\admin640-staging-proof-local-sql-v2\\audit.program.cjs.txt",
+      "stdoutSha256": "5d4bc0c9a33d2ec5d92b95c834913b09b12a5be14007b12638853af65cd22972",
+      "stderrSha256": "9b743e46090824b234ac0b3d57ace686800a738bdf96ce2539566e277f84f264",
+      "loader": "node -e actual-program",
+      "readOnlyObserved": true,
+      "sqlStates": [],
+      "markerCount": 1
+    }
+  ],
+  "checks": {
+    "nativeSeedActorsEligible": true,
+    "actualPreflightParsed": true,
+    "nativeMappingAndArchivedExclusion": true,
+    "actualAuditParsed": true,
+    "capturedTagsAndRetainedSessions": true,
+    "nativeReadOnlyWriteRefused": true
+  },
+  "tools": {
+    "node": "v22.17.1",
+    "postgresPath": "C:\\w\\admin-operator-switch\\node_modules\\.pnpm\\@embedded-postgres+windows-x64@16.14.0-beta.17\\node_modules\\@embedded-postgres\\windows-x64\\native\\bin\\postgres.exe",
+    "postgresSha256": "c4a6839621f230076b3347f443b3dbfb133954d695f82866ea67501290bd90d3",
+    "tsxApiSha256": "8fb32f8842dff630c0b54aba648a1a49de7bd8769ef4bea6f841fa954041504d"
+  },
+  "inputs": [
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v1/intent.json",
+      "sha256": "7b780842640955c2b84525c038f4b8414aa89c86271c6907cc4aa99a96bd15b6"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v1/result.json",
+      "sha256": "01331042440994d5539b94766f05799b05987db2ff7a6ff0c129b733611c7fb8"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v1/worker-result.json",
+      "sha256": "b6d8222e1af92490db080334e1609ea5d1908764e531da3b49a691fd51c02dca"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v1/run.log",
+      "sha256": "62a6e3e52920e5ce67c4d3f941d288fd330af88d750cf33375480d3f0fee652d"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/intent.json",
+      "sha256": "c5b7b8bd0928a427b1a04861667a6a8ce45fbb4dbe0cd7ff790381d936254e27"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/result.json",
+      "sha256": "a2d01f130f970f7eef1cb184fc8d0cab8d1e76f7cac586d3b37cf9aa1d2c327e"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/worker-result.json",
+      "sha256": "1350369011e46ab6e4e0fdc28852689ce13cabd08b7d7e8f4205adefeb8598e5"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/preflight-execution.json",
+      "sha256": "1a1c7a0cb28deae767a8608646743cc346811cee70ae5c26ad98d31b37e0b1ba"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/audit-execution.json",
+      "sha256": "ac2dfe0ca261456ddacbdb1716f96a185355105d47ee0a07aeca09ad25ce847d"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/preflight.program.cjs.txt",
+      "sha256": "e1beb9350e0afdffec23f8a8e1ae658aef4127245846ac9e1db78543d718b5e7"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/audit.program.cjs.txt",
+      "sha256": "9cabff6e0adb2c3c7e24fc3ff3fb3e362716f3c3376722006b2a80c837cb2e2a"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/run.log",
+      "sha256": "8f17d11b551798ea87c97d6d88103c9d7df2afeddb00df4cfb3af721a9577b5f"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-v2/source-bindings.json",
+      "sha256": "8535ce53c6594009ba566d532edc93d87d85433966da2013601392c3fee26377"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-runner.mjs",
+      "sha256": "f3421edf6f41a2a8d84bada44425c0d5578c524c8dad91a13e579567a2822149"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-worker.mjs",
+      "sha256": "2ebc64b885e067cca6fe11b3e2e7f224973172621354d171e0f5e940686a0a9e"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors-green-v2.json",
+      "sha256": "ece512a5cca08df8592c8c17439b42c91913bbee913626ac11057fb4d45172ba"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors-independent-review-v1.json",
+      "sha256": "4377072c3cce4e065691aa9c9d4fa805e1a37ac0965ea2887e6d93d68d32e81f"
+    }
+  ],
+  "firstAttempt": {
+    "path": "C:/w/admin640-staging-proof-local-sql-v1/result.json",
+    "passed": false,
+    "workerPassed": false,
+    "wrapperExitCode": 0,
+    "generatedProgramsRun": 0,
+    "cause": "Local fixture omitted the required otoapp.tenants parent. The worker-result correctly records failure; its initial wrapper exit0 is preserved, not counted as success.",
+    "correction": "Only the external fixture adds its own tenant row; the external runner now requires workerPassed as well as exitCode0. Frozen collectors, executor, audit and regression tests were not edited."
+  },
+  "priorOfflineRegressionEvidence": {
+    "path": "C:/w/admin640-staging-proof-collectors-green-v2.json",
+    "passed": 39,
+    "failed": 0,
+    "rerun": false,
+    "allRecordedInputsCurrentlyByteIdentical": true
+  },
+  "cleanup": {
+    "clientClosed": true,
+    "databaseDropped": true,
+    "nativeServerStopped": true,
+    "resources": [
+      {
+        "directory": "C:\\w\\admin640-staging-proof-local-sql-v2\\tmp\\oto-pg-W5hszw",
+        "pid": 97436,
+        "port": 54982,
+        "directoryRemoved": true
+      }
+    ],
+    "remainingNativeDirectories": [],
+    "observedOwnedPidsNotRunning": [
+      99812,
+      97436,
+      61532,
+      84216
+    ],
+    "noOtherResourcesTouched": true
+  },
+  "findings": [],
+  "limits": [
+    "The actual generated preflight program used node --import tsx, require(pg/drizzle), dynamic import(@oto/db), committed core/app migrations and native platformSync seed on an own PG16 instance.",
+    "The actual audit builder and collector image-guard wrapper executed native SQL and parsed the two expected request-captured tag rows against synthetic local session/audit fixtures.",
+    "Same-client observers confirmed repeatable-read and read-only on both real generated transactions; a separate local UPDATE was refused with SQLSTATE25006.",
+    "Only safe IDs/counts/hashes were retained from generated-program results. No raw contacts, credentials, cookies, private payloads or database URL were persisted.",
+    "This does not prove deployed DB-role privileges, Render job/log API shape, final live source/CI/deploy, existing-demo target choice, native UI or real auth cleanup. Those remain future coordinator staging gates.",
+    "RAM-only acceptance-model fields were used solely to construct the audit program and are not an actual staging proof or image receipt."
+  ],
+  "stagingCalls": 0,
+  "authAttempts": 0,
+  "providerCalls": 0,
+  "repositoryEdits": 0,
+  "frozenHelperEdits": 0,
+  "toolInstalls": 0
+}

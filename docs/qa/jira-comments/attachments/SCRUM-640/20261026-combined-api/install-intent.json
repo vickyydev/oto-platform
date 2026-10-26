@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-640",
+  "startedAt": "2026-10-26T13:07:44.461Z",
+  "freeMemoryMiBBefore": 3054,
+  "linuxAvailableMiB": 10369,
+  "minimumHostFreeMemoryMiB": 2048,
+  "minimumLinuxAvailableMiB": 7168,
+  "rootResourceAmendment": true,
+  "workerMemoryMiB": 3072,
+  "pgMemoryMiB": 512,
+  "workerId": "decb538415f91417ba392aaacbe496dea32f77ddaca1407621dfbb24d9e52145",
+  "pgId": "5ecc4c7972dbd1b1da7884610145650b062fad54f069f0e357eefe8a9b73b237",
+  "memoryMeasurement": "Windows available physical via node os.freemem; no extra CIM process",
+  "helperSha256": "fccd443cafb8aed53adba75e64d8daa5f15842d45ed2af65ca61148620f40407",
+  "setupSha256": "2856f3dcfbb462ca08d6922f38caf1dbc6e1dda79de0beb26af5bc2985553b0f",
+  "processId": 18168
+}

@@ -1,0 +1,187 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T12:42:34.865Z",
+  "passed": true,
+  "clean": true,
+  "head": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "base": "59accc462ceb66ea089eaf0148e62afe8d341851",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "34535c19699ec59a365c974cb5e498ffe285af220bae7adf52df180b091c4cc8",
+  "originalTenCommits": [
+    {
+      "sha": "2da0c251384a97c28ec6fa494a0575a12aa579e3",
+      "subject": "feat(console): prepare isolated session operator switching"
+    },
+    {
+      "sha": "9cdb894c1680cea2887bb1298d9c33a3e31685af",
+      "subject": "docs(console): preserve operator switch groundwork evidence"
+    },
+    {
+      "sha": "fc3857c1bf680492b6865bd7e2c617bb7bda0afe",
+      "subject": "feat(auth): bind operator selection to the verified session"
+    },
+    {
+      "sha": "d0d29b7a8192d0d9d9121e100237e413584508cf",
+      "subject": "feat(console): fence controls by the confirmed working operator"
+    },
+    {
+      "sha": "e843373d75e2158da669626d272f353fac969674",
+      "subject": "docs(console): preserve verified operator integration checkpoints"
+    },
+    {
+      "sha": "7af05a36b1bbd5463c4c5ebae0741542e9744924",
+      "subject": "fix(api): retain verified operator context in audit records"
+    },
+    {
+      "sha": "701ff7b1c9a8b4b2d5bf34ff89a909576c7d5f6f",
+      "subject": "docs(console): preserve the Q22 native audit checkpoint"
+    },
+    {
+      "sha": "9ddbc80741f8aa3960f1da9e362e3b1bbf9ea586",
+      "subject": "docs(console): verify the Q22 checkpoint after rebase"
+    },
+    {
+      "sha": "2251253b640439b3c2c658310efe907dab68d3c4",
+      "subject": "docs(console): record the post-rebase Q22 gate"
+    },
+    {
+      "sha": "950646674fde66333f911401af82f956f58188b0",
+      "subject": "docs(console): correct the rebase preflight note"
+    }
+  ],
+  "preservedTenCommits": [
+    {
+      "sha": "06ffb1de9b60c7e7e16b67002e8f76d7df9a326a",
+      "subject": "feat(console): prepare isolated session operator switching"
+    },
+    {
+      "sha": "147e7f27f1f7c21940bf4e31adfb2a653adfeb13",
+      "subject": "docs(console): preserve operator switch groundwork evidence"
+    },
+    {
+      "sha": "2c93a8914c20a4a04cf572a84ddb1765598519cd",
+      "subject": "feat(auth): bind operator selection to the verified session"
+    },
+    {
+      "sha": "ddafa24b4a7dd496a32dbaca1d1ce756b5809884",
+      "subject": "feat(console): fence controls by the confirmed working operator"
+    },
+    {
+      "sha": "038963a6005342683c5f9260e5c855241ef31bb4",
+      "subject": "docs(console): preserve verified operator integration checkpoints"
+    },
+    {
+      "sha": "80bab66b6deef82f801742d87ddb217d6d9b559d",
+      "subject": "fix(api): retain verified operator context in audit records"
+    },
+    {
+      "sha": "734847aea74c9bb7f3867b1bcd13073b6c244ac8",
+      "subject": "docs(console): preserve the Q22 native audit checkpoint"
+    },
+    {
+      "sha": "6587004d36d15da834d2e3f5f5d06c2882497961",
+      "subject": "docs(console): verify the Q22 checkpoint after rebase"
+    },
+    {
+      "sha": "ba7e947c2bf69ba5d3cb6ccac36d5ec36a8c6a05",
+      "subject": "docs(console): record the post-rebase Q22 gate"
+    },
+    {
+      "sha": "3ea1cc8e875133b39c337de5ea5b58ae721650a5",
+      "subject": "docs(console): correct the rebase preflight note"
+    }
+  ],
+  "skippedCommits": 0,
+  "planner": {
+    "original": "287c9d9690e5a7a4f9680a56f20a3cd4862933ac",
+    "consumedAs": "d17fb664678d01832d2a351ffa0840719da9f69e",
+    "changedLineDeltaSha256": "939ab1e6bead5c9dddc23933a47b7b8a7d0ef56eb8adfcd375ff37ee5618a2e1",
+    "exactChangedLinesPreserved": true,
+    "cleanCherryPick": true,
+    "additionalProtectedEdits": false,
+    "q23FollowupsPending": true
+  },
+  "migration": {
+    "originalPath": "packages/db/migrations/0087_operator_switch.sql",
+    "newPath": "packages/db/migrations/0088_operator_switch.sql",
+    "bytes": 930,
+    "originalSha256": "57302eac8aa840fc318b17726e4cbf23d3344e63c7ceecc486e78690cd51b625",
+    "newSha256": "57302eac8aa840fc318b17726e4cbf23d3344e63c7ceecc486e78690cd51b625",
+    "byteIdentical": true,
+    "immutableMainFiles": [
+      {
+        "path": "packages/db/migrations/0087_assistant_settings.sql",
+        "sha256": "cf6da37360ceca531bc9335dee9125684d2929761e297755d6a520f6ccaa6049",
+        "bytes": 983,
+        "unchanged": true
+      },
+      {
+        "path": "packages/db/migrations/meta/0087_snapshot.json",
+        "sha256": "2a47cc0041a4a796db7e7afb6f1a36c42a54d8fedf0a2d2e252e2e77744fe580",
+        "bytes": 1237690,
+        "unchanged": true
+      }
+    ],
+    "snapshot": "packages/db/migrations/meta/0088_snapshot.json",
+    "snapshotSha256": "9261e2d95b7e1a5f6a41fac4349fb0110c5dadd75be2d9a0039ecce6b1293d4a",
+    "nativeGenerationReceipt": "q22-generate.json",
+    "journalMainEntriesUnchanged": true,
+    "journalNextIndex": 88,
+    "verifySchemaReceipt": "verify-schema.json",
+    "bothNativeMigrationFilesPassed": 23
+  },
+  "nativeGates": {
+    "attempts": 8,
+    "allPassed": true,
+    "sourceUnchanged": true,
+    "generatedClientChanged": false,
+    "gatesResultSha256": "7c72111fb05c5d6705f235a2bf8ef50331bcadabc66130443637f3d5944b19c6",
+    "compilerOutputs": [
+      {
+        "name": "db-typecheck",
+        "sha256": "0c82d14037c392279f4a49540573916b1d24506e07b211c29059319324944ea6",
+        "bytes": 90,
+        "wholeOutputRead": true,
+        "diagnostics": 0
+      },
+      {
+        "name": "api-typecheck",
+        "sha256": "25db70e3529e7c2c85cbb250858890a04f81d642bb326ebbd809591f48735d40",
+        "bytes": 88,
+        "wholeOutputRead": true,
+        "diagnostics": 0
+      },
+      {
+        "name": "api-types-typecheck",
+        "sha256": "45f331604af0a4cd32ac47dbeeb3dc593841400a0886a6b484364ee1245fc1fe",
+        "bytes": 104,
+        "wholeOutputRead": true,
+        "diagnostics": 0
+      },
+      {
+        "name": "console-typecheck",
+        "sha256": "a8026d8bb80dc8018ac6d5c62595a957d071028207ef0f40fd92265ec49dc615",
+        "bytes": 180,
+        "wholeOutputRead": true,
+        "diagnostics": 0
+      }
+    ],
+    "cleanup": {
+      "ownNativeServer": true,
+      "databaseCountAfter": 0,
+      "stopped": true,
+      "cleanupError": null
+    }
+  },
+  "historical640QaFilesPreserved": 248,
+  "optionalUiPatchesApplied": false,
+  "consoleSourceReleasedForIndependentAssignment": true,
+  "fullCombinedBatteryClaimed": false,
+  "pushed": false,
+  "staging": false,
+  "limits": [
+    "Q23 protected follow-ups remain the planner delivery; this is base integration, not a complete release.",
+    "Native generator SQL statement set matches the original. Original SQL bytes, including its final newline and statement order, are retained at0088. The initial receipt field named nativeGeneratedStatementOrderIdentical is a raw byte-equality observation; it is not used as an order assertion.",
+    "Main latest documentation precedes historical lane notes. All ten original commits and their QA bytes remain preserved."
+  ]
+}

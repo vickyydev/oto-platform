@@ -1,0 +1,43 @@
+{
+  "ticket": "SCRUM-640",
+  "startedAt": "2026-10-26T12:38:11.851Z",
+  "sourceHead": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "34535c19699ec59a365c974cb5e498ffe285af220bae7adf52df180b091c4cc8",
+  "programs": [
+    [
+      "api-types-generate",
+      "pnpm api-types:generate"
+    ],
+    [
+      "api-types-check",
+      "pnpm api-types:check"
+    ],
+    [
+      "verify-schema",
+      "pnpm --filter @oto/db verify-schema"
+    ],
+    [
+      "migration-tests",
+      "pnpm --filter @oto/db test --maxWorkers=1 test/s640-operator-switch-migration.test.ts test/assistant-settings.test.ts"
+    ],
+    [
+      "db-typecheck",
+      "pnpm --filter @oto/db typecheck"
+    ],
+    [
+      "api-typecheck",
+      "pnpm --filter @oto/api typecheck"
+    ],
+    [
+      "api-types-typecheck",
+      "pnpm --filter @oto/api-types typecheck"
+    ],
+    [
+      "console-typecheck",
+      "pnpm --filter @oto/console typecheck"
+    ]
+  ],
+  "helperSha256": "2405e7e022278b9e6f3cc84534a974e402d009b1cebc8ba3832214186eb5cd48",
+  "completeReleaseClaimed": false
+}

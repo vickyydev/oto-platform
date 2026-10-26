@@ -1,0 +1,159 @@
+// Inert draft. No Render dispatcher or authentication. Root reviews the exact job before any dispatch.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { DEMOS, PNGS, hash, same, exact, uuid, iso, need, digest, validatePlan, verifyReleasedPlan } from './admin640-staging-proof-executor.mjs';
+import { validateJourney, validateReception } from './admin640-staging-contract-draft.mjs';
+
+export const MARKER = 'SCRUM640_SESSION_AUDIT_V1 ';
+const ACTORS = ['ADMIN', 'RECEPTION'];
+export function proofWindow(plan, proof) {
+  validatePlan(plan);
+  need(proof.ticket === 'SCRUM-640' && proof.actualStaging === true && proof.localMock === false && proof.nativeComplete === true && proof.complete === false
+    && proof.awaitingReadOnlyAudit === true && proof.sourceSha === plan.sourceSha && proof.planSha256 === digest(plan) && String(proof.ciRunId) === String(plan.ciRunId)
+    && same(proof.deployments, plan.deployments) && proof.helperSha256 === plan.helperSha256 && proof.preflightSha256 === plan.preflight.sha256
+    && proof.pending === 0 && proof.nativePending === 0 && proof.unresolved === 0 && proof.journalHealthy === true && proof.unknownIssuance === 0
+    && proof.businessWrites === 0 && proof.fixturesCreated === 0 && proof.errorCode === null, 'SUCCESSFUL_CLOSED_NATIVE_PROOF_REQUIRED');
+  need(iso(proof.startedAt) && iso(proof.completedAt) && Date.parse(proof.completedAt) >= Date.parse(proof.startedAt)
+    && Date.parse(proof.completedAt) - Date.parse(proof.startedAt) <= 600_000
+    && plan.deployments.every(d => Date.parse(proof.startedAt) > Date.parse(d.finishedAt)), 'EXACT_TEN_MINUTE_POSTDEPLOY_WINDOW_REQUIRED');
+  const expected = [
+    ['ADMIN', 'POST', '/api/auth/sign-in', 200], ['ADMIN', 'PUT', '/api/me/session/operator', 200], ['ADMIN', 'PUT', '/api/me/session/operator', 200], ['ADMIN', 'POST', '/api/auth/sign-out', 200],
+    ['RECEPTION', 'POST', '/api/auth/sign-in', 200], ['RECEPTION', 'PUT', '/api/me/session/operator', 403], ['RECEPTION', 'POST', '/api/auth/sign-out', 200],
+  ];
+  need(proof.operations?.length === 7 && proof.operations.every((r, i) => r.terminal === true && r.state === 'acknowledged' && same([r.actor, r.method, r.path, r.status], expected[i]))
+    && proof.authCleanup?.length === 2 && ACTORS.every(actor => proof.authCleanup.some(r => r.actor === actor && r.confirmed === true && r.signOutStatus === 200 && r.meStatus === 401))
+    && proof.screenshots?.length === 3 && proof.screenshots.every((r, i) => r.filename === PNGS[i] && /^[a-f0-9]{64}$/.test(r.sha256) && iso(r.capturedAt)), 'EXACT_OPERATIONS_CLEANUP_AND_NATIVE_IMAGES_REQUIRED');
+  need(exact(proof.network, ['blocked', 'failed', 'pageErrors', 'consoleErrors', 'fontSuppressions', 'photoSuppressions'])
+    && Object.entries(proof.network).every(([key, value]) => Number.isSafeInteger(value) && value >= 0 && (['fontSuppressions', 'photoSuppressions'].includes(key) || value === 0))
+    && proof.sourceChecks?.length >= 2 && proof.sourceChecks.every(r => r.sourceSha === plan.sourceSha && String(r.ciRunId) === String(plan.ciRunId) && same(r.deployments, plan.deployments)), 'CLEAN_NATIVE_NETWORK_AND_SOURCE_CHECKS_REQUIRED');
+  validateJourney({ ...proof.journey, targetOperatorId: proof.journey?.working?.effectiveOperatorId });
+  validateReception({ before: proof.journey.receptionBefore, after: proof.journey.receptionAfter, status: 403, pickerCount: 0 });
+  const adminSid = proof.journey?.before?.sessionId, receptionSid = proof.journey?.receptionBefore?.sessionId;
+  need(uuid(adminSid) && uuid(receptionSid) && adminSid !== receptionSid, 'TWO_EXACT_OWN_SESSION_IDS_REQUIRED');
+  return { from: proof.startedAt, to: proof.completedAt, adminSid, receptionSid, revision: proof.journey.before.revision, target: proof.journey.working.effectiveOperatorId };
+}
+
+// Fingerprint the same safe projection before authentication and after cleanup. No contact, password or cookie column is selected.
+export const IDENTITY_SQL = `WITH actors AS (SELECT unnest($1::uuid[]) account_id), own AS (
+ SELECT a.id,a.operator_id,a.employee_id,a.status,a.must_change_password FROM core.account a JOIN actors x ON x.account_id=a.id
+)
+SELECT a.id::text "accountId",
+ encode(sha256(convert_to(jsonb_build_object('id',a.id,'operatorId',a.operator_id,'employeeId',a.employee_id,'status',a.status,'mustChangePassword',a.must_change_password)::text,'UTF8')),'hex') "identitySha256",
+ encode(sha256(convert_to(coalesce((SELECT jsonb_build_object('id',e.id,'operatorId',e.operator_id,'branchId',e.branch_id,'departmentId',e.department_id,'source',e.source,'externalId',e.external_id,'archivedAt',e.archived_at) FROM core.employee e WHERE e.id=a.employee_id AND e.operator_id=a.operator_id),'null'::jsonb)::text,'UTF8')),'hex') "employeeSha256",
+ encode(sha256(convert_to(coalesce((SELECT jsonb_agg(jsonb_build_object('assignment',to_jsonb(ra),'roleOperatorId',r.operator_id,'permissions',(SELECT coalesce(jsonb_agg(rp.permission ORDER BY rp.permission),'[]'::jsonb) FROM core.role_permission rp WHERE rp.role_id=r.id)) ORDER BY ra.id) FROM core.role_assignment ra JOIN core.role r ON r.id=ra.role_id WHERE ra.account_id=a.id),'[]'::jsonb)::text,'UTF8')),'hex') "grantsSha256",
+ encode(sha256(convert_to(coalesce((SELECT jsonb_agg(to_jsonb(ai) ORDER BY ai.id) FROM core.app_identity ai WHERE ai.account_id=a.id),'[]'::jsonb)::text,'UTF8')),'hex') "appIdentitySha256",
+ (SELECT count(*)::int FROM core.session s WHERE s.account_id=a.id AND NOT(s.id=ANY($2::uuid[]))) "otherSessionsCount",
+ encode(sha256(convert_to(coalesce((SELECT jsonb_agg(jsonb_build_object('id',s.id,'accountId',s.account_id,'createdAt',s.created_at,'expiresAt',s.expires_at,'revokedAt',s.revoked_at,'branchId',s.branch_id,'stationId',s.station_id,'operatorOverride',s.operator_override) ORDER BY s.id) FROM core.session s WHERE s.account_id=a.id AND NOT(s.id=ANY($2::uuid[]))),'[]'::jsonb)::text,'UTF8')),'hex') "otherSessionsSha256"
+FROM own a ORDER BY a.id`;
+
+export const AUDIT_SQL = `SELECT id::text,action,operator_id::text "ownerOperatorId",home_operator_id::text "homeOperatorId",effective_operator_id::text "effectiveOperatorId",branch_id::text "branchId",actor_account_id::text "actorAccountId",entity_type "entityType",entity_id "sessionId",request_id "requestId",created_at "createdAt",
+ "before"->>'effectiveOperatorId' "beforeEffective", "after"->>'effectiveOperatorId' "afterEffective",
+ ("before"->>'revision')::bigint::text "beforeRevision", ("after"->>'revision')::bigint::text "afterRevision"
+ FROM core.audit_log WHERE actor_account_id=$1::uuid AND action='session.operator_switch' AND entity_type='session' AND entity_id=$2
+ AND created_at>=$3::timestamptz AND created_at<=$4::timestamptz ORDER BY created_at,id LIMIT 3`;
+const SESSIONS_SQL = `SELECT id::text,account_id::text "accountId",revoked_at IS NOT NULL revoked,operator_override::text "operatorOverride" FROM core.session
+ WHERE (id=$1::uuid AND account_id=$2::uuid) OR (id=$3::uuid AND account_id=$4::uuid) ORDER BY id`;
+const REFUSED_SQL = `SELECT count(*)::int n FROM core.audit_log WHERE actor_account_id=$1::uuid AND action='session.operator_switch' AND entity_type='session' AND entity_id=$2 AND created_at>=$3::timestamptz AND created_at<=$4::timestamptz`;
+
+export function buildAuditJob(plan, proof, nativeReceiptSha256) {
+  const window = proofWindow(plan, proof); need(/^[a-f0-9]{64}$/.test(nativeReceiptSha256), 'RAW_NATIVE_RECEIPT_HASH_REQUIRED');
+  const binding = { sourceSha: plan.sourceSha, ciRunId: String(plan.ciRunId), planSha256: digest(plan), nativeReceiptSha256, window };
+  const program = `const {Client}=require('pg'); const B=${JSON.stringify(binding)},D=${JSON.stringify(DEMOS)},c=new Client({connectionString:process.env.DATABASE_URL,application_name:'oto-scrum640-readonly-audit',connectionTimeoutMillis:10000});
+ (async()=>{try{await c.connect();await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');await c.query("SET LOCAL statement_timeout='5s'");
+ const identities=(await c.query(${JSON.stringify(IDENTITY_SQL)},[[D.ADMIN,D.RECEPTION],[B.window.adminSid,B.window.receptionSid]])).rows;
+ const rows=(await c.query(${JSON.stringify(AUDIT_SQL)},[D.ADMIN,B.window.adminSid,B.window.from,B.window.to])).rows;
+ const sessions=(await c.query(${JSON.stringify(SESSIONS_SQL)},[B.window.adminSid,D.ADMIN,B.window.receptionSid,D.RECEPTION])).rows;
+ const refused=(await c.query(${JSON.stringify(REFUSED_SQL)},[D.RECEPTION,B.window.receptionSid,B.window.from,B.window.to])).rows;
+ for(const r of rows)r.createdAt=new Date(r.createdAt).toISOString();
+ const value={ticket:'SCRUM-640',readOnly:true,at:new Date().toISOString(),...B,identities,sessions,rows,receptionSwitchRows:refused[0].n};
+ await c.query('ROLLBACK');console.log(${JSON.stringify(MARKER)}+JSON.stringify(value));}
+ catch{console.error('SCRUM640_READONLY_AUDIT_FAILED');process.exitCode=1;}finally{await c.end();}})();`;
+  const startCommand = 'cd apps/api && node -e "eval(Buffer.from(\'' + Buffer.from(program).toString('base64') + '\',\'base64\').toString())"';
+  return { readOnly: true, program, programSha256: hash(program), startCommand, startCommandSha256: hash(startCommand), binding };
+}
+
+export function validateAudit(value, plan, proof, nativeHash, preflight) {
+  const w = proofWindow(plan, proof);
+  need(exact(value, ['ticket', 'readOnly', 'at', 'sourceSha', 'ciRunId', 'planSha256', 'nativeReceiptSha256', 'window', 'identities', 'sessions', 'rows', 'receptionSwitchRows'])
+    && value.ticket === 'SCRUM-640' && value.readOnly === true && iso(value.at) && Date.parse(value.at) >= Date.parse(w.to) && value.sourceSha === plan.sourceSha
+    && value.ciRunId === String(plan.ciRunId) && value.planSha256 === digest(plan) && value.nativeReceiptSha256 === nativeHash && same(value.window, w), 'EXACT_READONLY_AUDIT_BINDING_REQUIRED');
+  need(value.rows?.length === 2 && value.sessions?.length === 2 && value.identities?.length === 2 && value.receptionSwitchRows === 0, 'EXACT_TWO_SWITCH_ROWS_REQUIRED');
+  for (const [i, r] of value.rows.entries()) {
+    need(exact(r, ['id', 'action', 'ownerOperatorId', 'homeOperatorId', 'effectiveOperatorId', 'branchId', 'actorAccountId', 'entityType', 'sessionId', 'requestId', 'createdAt', 'beforeEffective', 'afterEffective', 'beforeRevision', 'afterRevision'])
+      && uuid(r.id) && r.action === 'session.operator_switch' && r.ownerOperatorId === DEMOS.homeOperatorId && r.homeOperatorId === DEMOS.homeOperatorId
+      && r.effectiveOperatorId === (i ? w.target : DEMOS.homeOperatorId) && r.branchId === null && r.actorAccountId === DEMOS.ADMIN && r.entityType === 'session' && r.sessionId === w.adminSid
+      && (r.requestId === null || typeof r.requestId === 'string' && /^[A-Za-z0-9_.:-]{1,150}$/.test(r.requestId))
+      && iso(r.createdAt) && Date.parse(r.createdAt) >= Date.parse(w.from) && Date.parse(r.createdAt) <= Date.parse(w.to)
+      && r.beforeEffective === (i ? w.target : DEMOS.homeOperatorId) && r.afterEffective === (i ? DEMOS.homeOperatorId : w.target)
+      && r.beforeRevision === String(w.revision + i) && r.afterRevision === String(w.revision + i + 1), 'CAPTURED_REQUEST_TIME_AUDIT_TAGS_REQUIRED');
+  }
+  need(value.rows[0].id !== value.rows[1].id, 'DISTINCT_AUDIT_ROWS_REQUIRED');
+  for (const actor of ACTORS) {
+    const sessions = value.sessions.filter(s => s.accountId === DEMOS[actor]);
+    need(sessions.length === 1 && exact(sessions[0], ['id', 'accountId', 'revoked', 'operatorOverride']) && sessions[0].id === (actor === 'ADMIN' ? w.adminSid : w.receptionSid)
+      && sessions[0].revoked === true && sessions[0].operatorOverride === null, 'EXACT_OWN_RETAINED_REVOKED_SESSIONS_REQUIRED');
+    const ids = value.identities.filter(s => s.accountId === DEMOS[actor]);
+    need(ids.length === 1 && exact(ids[0], ['accountId', 'identitySha256', 'employeeSha256', 'grantsSha256', 'appIdentitySha256', 'otherSessionsCount', 'otherSessionsSha256'])
+      && ['identitySha256', 'employeeSha256', 'grantsSha256', 'appIdentitySha256', 'otherSessionsCount', 'otherSessionsSha256'].every(k => ids[0][k] === preflight.subjects[actor][k]), 'UNCHANGED_HOME_IDENTITIES_GRANTS_AND_OTHER_SESSIONS_REQUIRED');
+  }
+  return value;
+}
+export function parseAuditLogs(logs, plan, proof, nativeHash, preflight) {
+  need(Array.isArray(logs?.logs) && logs.logs.length < 100, 'COMPLETE_BOUNDED_JOB_LOGS_REQUIRED');
+  const lines = logs.logs.filter(r => typeof r.message === 'string').map(r => r.message.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '')).filter(line => line.startsWith(MARKER));
+  need(lines.length === 1, 'ONE_ANCHORED_AUDIT_MARKER_REQUIRED'); let row;
+  try { row = JSON.parse(lines[0].slice(MARKER.length)); } catch { throw Error('INVALID_AUDIT_MARKER'); }
+  return validateAudit(row, plan, proof, nativeHash, preflight);
+}
+
+/** Root may adapt this original-job latch to its reviewed Render collector. A lost dispatch is never retried. */
+export class ReadOnlyJobLatch {
+  constructor(persist) { this.persist = persist; this.started = false; this.jobId = null; this.uncertain = false; }
+  async dispatch(built, sourceGate, send) {
+    need(!this.started && !this.uncertain && built.readOnly === true, 'ORIGINAL_JOB_ONCE_ONLY');
+    await sourceGate(); this.persist({ kind: 'readonly-audit-intent', at: new Date().toISOString(), programSha256: built.programSha256, terminal: false });
+    this.started = true;
+    try { const job = await send(built.startCommand); need(/^job-[a-z0-9]+$/.test(job?.id ?? ''), 'ORIGINAL_JOB_ACK_REQUIRED'); this.jobId = job.id;
+      this.persist({ jobId: job.id, programSha256: built.programSha256, terminal: false, acknowledged: true }); return job.id;
+    } catch { this.uncertain = true; throw Error('ORIGINAL_JOB_UNKNOWN_NO_RETRY'); }
+  }
+}
+
+/** Finalization is separate: root supplies an independently reviewed original-job terminal envelope, never an absent-row inference. */
+export async function finalizeWithReviewedAudit(planInput, auditEnvelope, { explicitFinalize = false } = {}) {
+  need(explicitFinalize === true, 'EXPLICIT_FINALIZE_REQUIRED'); const plan = validatePlan(planInput);
+  need(hash(fs.readFileSync(fileURLToPath(import.meta.url))) === plan.auditHelperSha256, 'FROZEN_AUDIT_HELPER_REQUIRED');
+  await verifyReleasedPlan(plan);
+  const resultPath = path.join(plan.outputDirectory, 'result.json'), nativeBytes = fs.readFileSync(resultPath), proof = JSON.parse(nativeBytes), nativeHash = hash(nativeBytes);
+  const preBytes = fs.readFileSync(plan.preflight.path); need(hash(preBytes) === plan.preflight.sha256, 'ORIGINAL_PREFLIGHT_REQUIRED'); const preflight = JSON.parse(preBytes);
+  const built = buildAuditJob(plan, proof, nativeHash);
+  need(exact(auditEnvelope, ['ticket', 'reviewed', 'terminal', 'status', 'readOnly', 'jobId', 'serviceId', 'programSha256', 'metadata'])
+    && auditEnvelope.ticket === 'SCRUM-640' && auditEnvelope.reviewed === true && auditEnvelope.terminal === true && auditEnvelope.status === 'succeeded' && auditEnvelope.readOnly === true
+    && /^job-[a-z0-9]+$/.test(auditEnvelope.jobId) && auditEnvelope.serviceId === plan.deployments[0].serviceId && auditEnvelope.programSha256 === built.programSha256, 'REVIEWED_ORIGINAL_JOB_TERMINAL_ENVELOPE_REQUIRED');
+  const metadata = validateAudit(auditEnvelope.metadata, plan, proof, nativeHash, preflight), finalFile = path.join(plan.outputDirectory, 'final-result.json'), png = path.join(plan.outputDirectory, PNGS[3]);
+  need(!fs.existsSync(finalFile) && !fs.existsSync(png), 'PRESERVE_FINAL_EVIDENCE');
+  for (const image of proof.screenshots) need(hash(fs.readFileSync(path.join(plan.outputDirectory, image.filename))) === image.sha256, 'ACTUAL_NATIVE_PNG_BYTES_REQUIRED');
+  const { launch } = await import(pathToFileURL('C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/evidence.mjs').href);
+  let browser, context, firstError; const capturedAt = new Date().toISOString();
+  try {
+    browser = await launch(); context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' }); const page = await context.newPage();
+    let forbidden = false; await page.route('**/*', route => { forbidden = true; return route.abort(); });
+    await page.setContent('<!doctype html><html><body style="padding:32px;background:#fff;color:#111;font:20px/1.6 system-ui"><h1>SCRUM-640 — actual staging result card</h1><pre style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></body></html>');
+    await page.locator('pre').evaluate((e, text) => { e.textContent = text; }, capturedAt + '\nFull source ' + plan.sourceSha + '\nCI ' + plan.ciRunId + '\n'
+      + 'HomeA → workingB → homeA confirmed on the same owned session.\nHome account, employee, grants and app identities unchanged.\nReception: picker absent; actual API403.\n'
+      + 'Read-only native job ' + auditEnvelope.jobId + ': exactly two switch rows.\nCaptured audit tags A/A then A/B; event owner remains A.\n'
+      + 'Both original-cookie sign-outs200 and /me401.\nExact own session rows retained revoked with null overrides; other sessions unchanged.\n'
+      + 'This is a labelled result card, not an additional native screen.\nNo exposed React epoch claim; no handoff, AI/provider, message, payment, check-in or fixture.');
+    await page.screenshot({ path: png, fullPage: true, animations: 'disabled' }); need(!forbidden, 'CARD_NETWORK_REFUSED');
+  } catch (e) { firstError = e; }
+  finally { try { if (context) await context.close(); } catch (e) { firstError ??= e; } finally { try { if (browser) await browser.close(); } catch (e) { firstError ??= e; } } }
+  if (firstError) throw firstError; await verifyReleasedPlan(plan);
+  const result = { ...proof, complete: true, awaitingReadOnlyAudit: false, nativeReceiptSha256: nativeHash, auditEnvelopeSha256: digest(auditEnvelope), audit: { jobId: auditEnvelope.jobId, at: metadata.at, rows: metadata.rows },
+    screenshots: [...proof.screenshots, { filename: PNGS[3], sha256: hash(fs.readFileSync(png)), capturedAt, actualNative: false, actualStagingResultCard: true }], finalizedAt: new Date().toISOString() };
+  fs.writeFileSync(finalFile, JSON.stringify(result, null, 2) + '\n', { flag: 'wx', flush: true }); return result;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  process.stderr.write('HELD: draft job builder; root must review the exact job and original-job collector. No dispatch mode.\n'); process.exitCode = 2;
+}

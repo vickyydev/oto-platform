@@ -1,0 +1,87 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T13:13:26.915Z",
+  "passed": true,
+  "preparationOnly": true,
+  "approvedForLiveExecution": false,
+  "preparationReceipt": {
+    "path": "C:/w/admin640-staging-proof-collectors-preparation-receipt.json",
+    "sha256": "50ebb4dc0edbdfb8256d09338e3d22a0c8021ebd12559c685a8a49674e738763"
+  },
+  "files": [
+    {
+      "path": "C:/w/admin640-staging-proof-executor.mjs",
+      "sha256": "6cf77d860833aaeb01826c5ea941f6c6dc02dfd2bd442251ad81d02511480c5a",
+      "bytes": 44505
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+      "bytes": 18464
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-release-collector.mjs",
+      "sha256": "1aaea6c1cb79b7d56da1ff47c9ceb121beb3edf3e5aa6976f3276d553294d88d",
+      "bytes": 15266
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-metadata-collector.mjs",
+      "sha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+      "bytes": 19845
+    }
+  ],
+  "findings": [],
+  "reviewed": {
+    "allFourHelperSourcesOrExactDeltaRead": true,
+    "accountEligibilityRenameOnly": true,
+    "actualPostSigninUnlockedRequirementPreserved": true,
+    "previousCookieAndMappingFindingsRemainClosed": true,
+    "localCommittedSourceAndRuntimeBindings": true,
+    "exactSixGreenMainAndLatestTwoDeployments": true,
+    "publicExactBodyMimeHashClosure": true,
+    "noAlternativeRasterDigestAcceptance": true,
+    "readonlyImageBoundRepeatableReadSql": true,
+    "nativeSameAssignmentNullScopeSwitchGrant": true,
+    "identityProjectionReusedBeforeAfter": true,
+    "exactTwoSessionsAndBoundedAuditWindow": true,
+    "auditTagsAAThenAB": true,
+    "noClaimedPublicReactEpoch": true,
+    "unknownJobNoRetryAndDurableIntentBeforePost": true,
+    "observedTerminalStatusRetainedOnLaterFailure": true,
+    "preflightUnapprovedUntilExplicitApproval": true,
+    "originalCheckedAtUnchangedAnd120SecondLimit": true,
+    "originalCookieIndependentCleanupPreserved": true
+  },
+  "evidence": {
+    "actualOfflineReceipt": {
+      "path": "C:/w/admin640-staging-proof-collectors-green-v2.json",
+      "sha256": "ece512a5cca08df8592c8c17439b42c91913bbee913626ac11057fb4d45172ba"
+    },
+    "actualOfflineLog": {
+      "path": "C:/w/admin640-staging-proof-collectors-green-v2.log",
+      "sha256": "9f1dfa476a090aa93786fd70083dd6115a75a7c3682a2e5a95b8c0a621295fcb"
+    },
+    "tests": 39,
+    "passed": 39,
+    "failed": 0,
+    "inputsUnchanged": true,
+    "original27SafetyCasesRetained": true,
+    "accountEligibilityActualRed": {
+      "passed": 1,
+      "failed": 1,
+      "log": {
+        "path": "C:/w/admin640-staging-proof-account-eligibility-red.log",
+        "sha256": "4d968e0d9599c46676f9df2b30f051af085b2860b1d8898b377674c61a4abe9f"
+      }
+    },
+    "all18PreparationAndHistoryReferencesMatch": true,
+    "reviewerRanTests": false
+  },
+  "limits": [
+    "Source/offline-evidence preparation review only. No staging/public-network/auth/browser/Render job/SQL/repository action was performed by this reviewer.",
+    "The owner-supplied final source/local release/six-green CI/latest two deployments, asset closure and freshly reviewed preflight remain mandatory before explicit execution.",
+    "Native generated-program loader/SQL/privilege calibration is being performed separately; this review does not claim it passed.",
+    "A valid public image snapshot can later drift between exact PNG/WebP representations; the guard must continue refusing any mismatch, with fresh explicit recollection rather than alternative hashes.",
+    "Original session proof, read-only audit collection, exact cleanup and human inspection of four real images remain unexecuted acceptance work."
+  ]
+}

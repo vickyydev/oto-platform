@@ -1,0 +1,6 @@
+
+> rest-express@1.0.0 offboarding:census
+> node script/offboarding-census.mjs
+
+Offboarding census — 2 offboarding rows for 2 employees; 0 employees have more than one.
+employee_offboarding_employee_unique: stands (the database refuses a second offboarding).

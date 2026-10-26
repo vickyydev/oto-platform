@@ -1,0 +1,246 @@
+{
+  "ticket": "SCRUM-640",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceManifestSha256": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "planSha256": "f8c49ef7b79fcea4c01e50b9d0dc2e4fdeeef9a8a890b51e15ad2b9445ef3951",
+  "controllerSha256": "fb10b4d0ed2ad37178d7ed11f900fa542ade3cbcdf754dacbe7c24bd8e00f0cb",
+  "workerSha256": "75d46430a5f391bf4593f0481afb4af5c3ff55e65f6096c9ac4df4d85d8caa2c",
+  "at": "2026-10-26T13:01:42.170Z",
+  "freeMemoryMiB": 3682,
+  "linuxAvailableMiB": 10431,
+  "baseline": [
+    {
+      "id": "2afc9985eaec2abe07eca6aa58aa15d6078c35a9290bcc2a890d5b2d84b051e3",
+      "name": "/oto-platform-postgres-1",
+      "image": "sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416",
+      "status": "exited",
+      "labels": {
+        "com.docker.compose.config-hash": "cab458893282d232add7a90c62e0646f1d976c10442d39604d500c677ad9af5c",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "oto-platform",
+        "com.docker.compose.project.config_files": "c:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\oto-platform\\infra\\docker-compose.yml",
+        "com.docker.compose.project.working_dir": "c:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\oto-platform\\infra",
+        "com.docker.compose.service": "postgres",
+        "com.docker.compose.version": "2.38.1"
+      }
+    },
+    {
+      "id": "2b6efe94892891ef608f80f228a9c4c6c3f54d3ee6188267f7131c7205d5db43",
+      "name": "/oto-admin613-tests",
+      "image": "sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416",
+      "status": "running",
+      "labels": {}
+    },
+    {
+      "id": "41925d9b0cf1df7647253188f2086c34fbbdcc49b446f2b964e43c6fa3920dbe",
+      "name": "/n8n-instagram",
+      "image": "sha256:6b396604cc0c802546e3427d9f1115a0abc21b60aeb4abc774aeba57577174ba",
+      "status": "exited",
+      "labels": {
+        "com.docker.compose.config-hash": "ee0ff4191f98e8585bee8ea72b145b6f47ea0bbb209786fea28cf1acdbc9ee63",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:6b396604cc0c802546e3427d9f1115a0abc21b60aeb4abc774aeba57577174ba",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "scraper-ig",
+        "com.docker.compose.project.config_files": "C:\\Users\\waqar\\Desktop\\Projects\\scraper-ig\\docker-compose.yml",
+        "com.docker.compose.project.working_dir": "C:\\Users\\waqar\\Desktop\\Projects\\scraper-ig",
+        "com.docker.compose.service": "n8n",
+        "com.docker.compose.version": "2.38.1",
+        "org.opencontainers.image.description": "Workflow Automation Tool",
+        "org.opencontainers.image.source": "https://github.com/n8n-io/n8n",
+        "org.opencontainers.image.title": "n8n",
+        "org.opencontainers.image.url": "https://n8n.io",
+        "org.opencontainers.image.version": "1.101.2"
+      }
+    },
+    {
+      "id": "5b5ad70fd3aecf514625c077214d1fb00979067578e885152706ea3b10a49831",
+      "name": "/oto-qa3b-pg",
+      "image": "sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416",
+      "status": "running",
+      "labels": {}
+    },
+    {
+      "id": "81821fc1f43bc8f540c879c5b0fbc381faaec86309f34eafb8df94b4eff659ba",
+      "name": "/oto-platform-minio-1",
+      "image": "sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
+      "status": "exited",
+      "labels": {
+        "architecture": "x86_64",
+        "build-date": "2025-08-06T08:12:37",
+        "com.docker.compose.config-hash": "435906e39ecc1f14bab6c31ede7e077f8126991798a90016b82e10f07034f1c1",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "oto-platform",
+        "com.docker.compose.project.config_files": "c:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\oto-platform\\infra\\docker-compose.yml",
+        "com.docker.compose.project.working_dir": "c:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\oto-pos\\oto-platform\\infra",
+        "com.docker.compose.service": "minio",
+        "com.docker.compose.version": "2.38.1",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "description": "MinIO object storage is fundamentally different. Designed for performance and the S3 API, it is 100% open-source. MinIO is ideal for large, private cloud environments with stringent security requirements and delivers mission-critical availability across a diverse range of workloads.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.40.1",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "MinIO Inc <dev@min.io>",
+        "name": "MinIO",
+        "release": "RELEASE.2025-09-07T16-13-09Z",
+        "summary": "MinIO is a High Performance Object Storage, API compatible with Amazon S3 cloud storage service.",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "32d8e5209f029a1fb7235308ab32253bface1001",
+        "vcs-type": "git",
+        "vendor": "MinIO Inc <dev@min.io>",
+        "version": "RELEASE.2025-09-07T16-13-09Z"
+      }
+    },
+    {
+      "id": "83828b463f0b5ae2a64d70878099d5fe299e4b811decc075333f373d981ec01a",
+      "name": "/oto-qa1b-pg",
+      "image": "sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416",
+      "status": "running",
+      "labels": {}
+    },
+    {
+      "id": "85c6ce32a42aba5581817c6323334afbc808020056311be901039150be47dc13",
+      "name": "/tailorsuite-caddy",
+      "image": "sha256:fce4f15aad23222c0ac78a1220adf63bae7b94355d5ea28eee53910624acedfa",
+      "status": "exited",
+      "labels": {
+        "com.docker.compose.config-hash": "8dc5c21c36144ed8bd061865cb1ff386c431121da0f9ab991b3e37bf2e469505",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:fce4f15aad23222c0ac78a1220adf63bae7b94355d5ea28eee53910624acedfa",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "docker",
+        "com.docker.compose.project.config_files": "C:\\Users\\waqar\\OneDrive\\Desktop\\NCD Projects\\tailorsuite\\infrastructure\\docker\\docker-compose.dev.yml",
+        "com.docker.compose.project.working_dir": "C:\\Users\\waqar\\OneDrive\\Desktop\\NCD Projects\\tailorsuite\\infrastructure\\docker",
+        "com.docker.compose.service": "caddy",
+        "com.docker.compose.version": "2.38.1",
+        "org.opencontainers.image.description": "a powerful, enterprise-ready, open source web server with automatic HTTPS written in Go",
+        "org.opencontainers.image.documentation": "https://caddyserver.com/docs",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.source": "https://github.com/caddyserver/caddy-docker",
+        "org.opencontainers.image.title": "Caddy",
+        "org.opencontainers.image.url": "https://caddyserver.com",
+        "org.opencontainers.image.vendor": "Light Code Labs",
+        "org.opencontainers.image.version": "v2.11.2"
+      }
+    },
+    {
+      "id": "cbc3eb441a04b866bec0bd92928ff95dec63bb01a3884e98d8cb588a30d68309",
+      "name": "/redis-local",
+      "image": "sha256:71ae714ea55bbcda5f86bbc935bc857dfd9716230f78dfa13c0a277b0dd2941c",
+      "status": "exited",
+      "labels": {
+        "com.docker.compose.config-hash": "90ea1d2bc5c91fd6ba491f70739fd05904befbbb435b9a451c9ee302b0b7632e",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:71ae714ea55bbcda5f86bbc935bc857dfd9716230f78dfa13c0a277b0dd2941c",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "monorepo",
+        "com.docker.compose.project.config_files": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\monorepo\\docker-compose.yml",
+        "com.docker.compose.project.working_dir": "C:\\Users\\waqar\\OneDrive\\Desktop\\Projects\\monorepo",
+        "com.docker.compose.service": "redis",
+        "com.docker.compose.version": "2.38.1",
+        "org.opencontainers.image.created": "2024-09-30T16:52:33.224Z",
+        "org.opencontainers.image.description": "A modern replacement for Redis and Memcached",
+        "org.opencontainers.image.licenses": "NOASSERTION",
+        "org.opencontainers.image.ref.name": "ubuntu",
+        "org.opencontainers.image.revision": "4785767661c083e20906630d3e5e5decc925184d",
+        "org.opencontainers.image.source": "https://github.com/dragonflydb/dragonfly",
+        "org.opencontainers.image.title": "dragonfly",
+        "org.opencontainers.image.url": "https://github.com/dragonflydb/dragonfly",
+        "org.opencontainers.image.version": "latest"
+      }
+    },
+    {
+      "id": "ceda2dc3b92a3264a97efc0bb5164abc655403f22846438a00b53cb22059f270",
+      "name": "/tailorsuite-postgres",
+      "image": "sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416",
+      "status": "exited",
+      "labels": {
+        "com.docker.compose.config-hash": "eb54057c9fcf77f24548bc7f39618db68f7581e71cad3e110226286bb98f5b98",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "docker",
+        "com.docker.compose.project.config_files": "C:\\Users\\waqar\\OneDrive\\Desktop\\NCD Projects\\tailorsuite\\infrastructure\\docker\\docker-compose.dev.yml",
+        "com.docker.compose.project.working_dir": "C:\\Users\\waqar\\OneDrive\\Desktop\\NCD Projects\\tailorsuite\\infrastructure\\docker",
+        "com.docker.compose.service": "postgres",
+        "com.docker.compose.version": "2.38.1"
+      }
+    },
+    {
+      "id": "cf854c43dcd283c35919e1c6a581dbbfd3539636832ff3910adc2e3bf5821af0",
+      "name": "/tailorsuite-redis",
+      "image": "sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065",
+      "status": "exited",
+      "labels": {
+        "com.docker.compose.config-hash": "6a485e61c22342f1aa370cc755ff1382816e91dc43cb924fbf02325ba1dc9b09",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.depends_on": "",
+        "com.docker.compose.image": "sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "docker",
+        "com.docker.compose.project.config_files": "C:\\Users\\waqar\\OneDrive\\Desktop\\NCD Projects\\tailorsuite\\infrastructure\\docker\\docker-compose.dev.yml",
+        "com.docker.compose.project.working_dir": "C:\\Users\\waqar\\OneDrive\\Desktop\\NCD Projects\\tailorsuite\\infrastructure\\docker",
+        "com.docker.compose.replace": "c70a84dd6891510f646971ffc8b3daa0ba5f7022ee87a7550ada6c551b1d4304",
+        "com.docker.compose.service": "redis",
+        "com.docker.compose.version": "2.38.1"
+      }
+    }
+  ],
+  "images": [
+    {
+      "id": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+      "os": "linux",
+      "architecture": "amd64",
+      "volumes": null
+    },
+    {
+      "id": "sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416",
+      "os": "linux",
+      "architecture": "amd64",
+      "volumes": {
+        "/var/lib/postgresql/data": {}
+      }
+    }
+  ],
+  "names": {
+    "worker": "oto-s640-api-verification-20261026-worker",
+    "pg": "oto-s640-api-verification-20261026-pg",
+    "network": "oto-s640-api-verification-20261026"
+  },
+  "workerMemoryMiB": 3072,
+  "postgresMemoryMiB": 512,
+  "internalNetwork": true,
+  "hostPorts": false,
+  "hostMounts": false,
+  "passed": true,
+  "worker": {
+    "id": "decb538415f91417ba392aaacbe496dea32f77ddaca1407621dfbb24d9e52145",
+    "name": "oto-s640-api-verification-20261026-worker"
+  },
+  "pg": {
+    "id": "5ecc4c7972dbd1b1da7884610145650b062fad54f069f0e357eefe8a9b73b237",
+    "name": "oto-s640-api-verification-20261026-pg"
+  },
+  "network": {
+    "id": "ce86cef869a196c0e3fb26a67f2ab0867a64ac38c72914a0a4bd58e9543dfbb4",
+    "name": "oto-s640-api-verification-20261026"
+  },
+  "nodeVersion": "v22.23.3",
+  "pgDumpVersion": "pg_dump (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2)",
+  "pgRestoreVersion": "pg_restore (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2)",
+  "sourceAfter": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "completedAt": "2026-10-26T13:03:07.043Z"
+}

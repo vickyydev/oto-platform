@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-640",
+  "name": "api-types-typecheck",
+  "command": "pnpm --filter @oto/api-types typecheck",
+  "startedAt": "2026-10-26T12:41:06.434Z",
+  "completedAt": "2026-10-26T12:41:18.697Z",
+  "sourceHead": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "34535c19699ec59a365c974cb5e498ffe285af220bae7adf52df180b091c4cc8",
+  "changedPaths": [],
+  "allowedChanges": true,
+  "exitCode": 0,
+  "dbBefore": 0,
+  "dbAfter": 0,
+  "logSha256": "45f331604af0a4cd32ac47dbeeb3dc593841400a0886a6b484364ee1245fc1fe",
+  "logBytes": 104,
+  "passed": true
+}

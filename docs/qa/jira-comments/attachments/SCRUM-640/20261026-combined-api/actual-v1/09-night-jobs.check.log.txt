@@ -1,0 +1,28 @@
+POST /api/directory/jobs/:name/run — who may ask:
+  ok  no key: 401, and nothing runs
+  ok  a key this app never issued: 403
+  ok  a key without jobs:run (events:write only): 403, naming the scope
+  ok  under OTOAPP_JOBS=inprocess the endpoint refuses in words, and nothing runs
+  ok  round 4b's two Attention batches follow the same switch: refused in words under inprocess
+  ok  a job that is not one of the five: 404
+  ok  park group A's key naming park group B: 404, and neither park group is touched
+  ok  a body it does not take: 400
+the 00:01 batch, for park group A only:
+  ok  the same park group's batch already running: 409, and it is not run a second time
+  ok  it runs: the guest checked out, ONE out at midnight per stale clock-in, the day's task made — A's only
+  ok  a second run: nothing new — still one out per stale clock-in, still one task
+  ok  an error a step swallows is a failed step, in words — and the steps after it still run
+the 03:00 batch and the six-hourly presence check:
+  ok  the escaped error — the availability clean-up, the batch's last step — is a failed step too
+  ok  it runs for A: presence repaired, the leaver Left, their login off, old availability gone — B untouched
+  ok  the presence check runs for B's key, for B only
+  ok  a body with no park group runs the key's own
+the scheduler:
+  ok  under OTOAPP_JOBS=platform it registers no timer at all
+  ok  under OTOAPP_JOBS=inprocess it registers the app's own: 00:01, 03:00, six-hourly presence, and Attention's four (round 4b)
+the two manual job triggers:
+  ok  POST /api/admin/run-departed-deactivation under platform: the platform's 03:00 run and Retry, in words, and nothing runs
+  ok  POST /api/scheduler/transition-left under platform: the platform's 03:00 run and Retry, in words, and nothing runs
+  ok  under inprocess the departed deactivation runs as today, for the caller's park group only
+  ok  under inprocess transition-left runs as today, for the caller's park group only
+night-jobs.check: 22 checks passed

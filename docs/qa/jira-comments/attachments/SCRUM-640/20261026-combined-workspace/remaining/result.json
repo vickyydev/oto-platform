@@ -1,0 +1,75 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "remaining",
+  "attempt": "v1",
+  "sourceHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "completedAt": "2026-10-26T13:28:21.600Z",
+  "fatal": null,
+  "programs": [
+    {
+      "command": "pnpm --filter @oto/telemetry test",
+      "passed": true,
+      "receiptSha256": "f21cd5d0a2b551f818b04832e32925ed76f6a53e5acc95f5a1c6d83db9ec1174"
+    },
+    {
+      "command": "pnpm --filter @oto/api-types test",
+      "passed": true,
+      "receiptSha256": "86a4a9ae1118ed51a89cdd8efda2e6acc9b3ad8d18afba76b66992478547f720"
+    },
+    {
+      "command": "pnpm --filter @oto/admin-screens test",
+      "passed": true,
+      "receiptSha256": "c77e854dc83b2f577f6828260bd5a70fe432b9a74aeffff702c144953db1a2f6"
+    },
+    {
+      "command": "pnpm --filter @oto/messaging test",
+      "passed": true,
+      "receiptSha256": "c0c1ec7da965a252b1e66f1c50e819a0d45f441b2419e4e5d7fa9111860401df"
+    },
+    {
+      "command": "pnpm --filter @oto/payments-2c2p test",
+      "passed": true,
+      "receiptSha256": "5215ee079fea4dfd056360c114d9cb764e29f9cebed79c29fb42660719d38462"
+    },
+    {
+      "command": "pnpm --filter @oto/assistant test",
+      "passed": true,
+      "receiptSha256": "faacfd04d6f531fde1d70f0b015e8a8ae61cc8f1a2e44a3d15d2276b1e493a9d"
+    },
+    {
+      "command": "pnpm --filter @oto/print test",
+      "passed": true,
+      "receiptSha256": "ea246dd4744cbcc536362fab107a616d7d764344b0c119abcb2749982955279a"
+    },
+    {
+      "command": "pnpm --filter @oto/inbox test",
+      "passed": true,
+      "receiptSha256": "b180aa1f289055438e9dbbcc19c8c48fb88c29a2ae7b88c0ca8e970cfbb90e55"
+    },
+    {
+      "command": "pnpm --filter @oto/booth test",
+      "passed": true,
+      "receiptSha256": "f4dbab8b3c4820e9e906e589a17d42a78d9ba6804bfd670c1d061bb17e182a1b"
+    },
+    {
+      "command": "pnpm --filter @oto/launcher test",
+      "passed": true,
+      "receiptSha256": "c3cec346becb75e4881de627f207b5fe5ea5bc7ea331f81b8cf0d06460c4aab3"
+    }
+  ],
+  "cleanup": {
+    "ownNativeServer": true,
+    "port": 49153,
+    "databasesBefore": 0,
+    "credentialsPersisted": false,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "staging": false,
+  "passed": true
+}

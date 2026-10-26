@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-640",
+  "name": "api-types-check",
+  "command": "pnpm api-types:check",
+  "startedAt": "2026-10-26T12:38:41.468Z",
+  "completedAt": "2026-10-26T12:38:51.852Z",
+  "sourceHead": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "34535c19699ec59a365c974cb5e498ffe285af220bae7adf52df180b091c4cc8",
+  "changedPaths": [],
+  "allowedChanges": true,
+  "exitCode": 0,
+  "dbBefore": 0,
+  "dbAfter": 0,
+  "logSha256": "615748274d405e93a3b122b272456293e89976e20b0a69b631ec74edd7d2771b",
+  "logBytes": 585,
+  "passed": true
+}

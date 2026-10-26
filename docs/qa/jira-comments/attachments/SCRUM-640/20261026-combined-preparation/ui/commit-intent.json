@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T13:05:49.206Z",
+  "base": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "files": [
+    {
+      "path": "apps/console/src/pages/AssistantSettings.tsx",
+      "sha256": "eb085095ef2075509940d564646a033f52788248cbf8e1780c17c2286b6123d3"
+    },
+    {
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "sha256": "0c3e2dba34ce2f74cfd702a02d65d68c397834cb1cc83fb5495687c51a567c03"
+    },
+    {
+      "path": "apps/console/src/pages/AreaLanding.tsx",
+      "sha256": "9844d978c2015990124c26dc4bdb654cce76abe46dcacea0fb7abfef4b24b2e5"
+    },
+    {
+      "path": "apps/console/e2e/assistant-settings.spec.ts",
+      "sha256": "0ad093009b0cdf9cc9a7a58f2c334b4efa813e267d1b23544c857177444e818a"
+    }
+  ],
+  "fullBrowserReceiptSha256": "33a433edecba907a19382e4415e0e92734b7be50f0c8f65716ec378eac766c28",
+  "nativeFrameSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+  "localGatesPassed": true,
+  "pushAuthorized": false
+}

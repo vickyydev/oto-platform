@@ -1,0 +1,88 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T12:29:37.150Z",
+  "passed": true,
+  "preparationOnly": true,
+  "approvedForLiveExecution": false,
+  "helperSha256": "42d572906812a820131f13dd69766c81c0988ebcc01f9bffa9fbe88a136a0063",
+  "auditHelperSha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+  "revisionReceiptSha256": "cd9357016cb7aa7c3aee6184e1d8c4e6e3872963f311ee3bff4112271d7dc8c5",
+  "reviewTestSha256": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+  "original19TestSha256": "e535f5a9c5a950b4f484050e97048c9f3f83c2f21fc416d328e37444070ef26c",
+  "review": {
+    "fullDeltaRead": true,
+    "changedBlocksOnly": [
+      "finishOwnedSession observed-cookie cleanup results",
+      "watchCookie retain-before-cardinality-refusal",
+      "checkDirectory native/direct mapping scope and safe projection equality"
+    ],
+    "auditDraftUnchanged": true,
+    "sourceReleaseAndDispatchGuardsUnchanged": true,
+    "noNewEndpointsOrAuthorityRules": true,
+    "unresolvedAuthAndJournalFailureLatchesRetained": true
+  },
+  "findingsClosed": [
+    {
+      "id": "observed-signin-cookie-cleanup",
+      "closed": true,
+      "evidence": "Actual nested watchCookie/request/finally extraction demonstrates two distinct cookies, a cookie plus clearing header, and duplicate same-cookie headers were unrevoked before the fix; now every distinct observed nonempty cookie receives logout and original-cookie probe with a safe recorded outcome. Ambiguous issuance remains failed/unresolved and no later selection dispatches.",
+      "redCases": [
+        20,
+        21,
+        22
+      ],
+      "controls": [
+        23,
+        24
+      ]
+    },
+    {
+      "id": "native-mapping-target-scope",
+      "closed": true,
+      "evidence": "Actual extracted checkDirectory rejected neither foreign native appOnly nor native/direct mapped-app-ID mismatch before the fix. Both native and direct branch/appOnly IDs are now checked against the same preflightB catalog and their safe installed/ID/status projections must match.",
+      "redCases": [
+        25,
+        26
+      ],
+      "controls": [
+        27
+      ]
+    }
+  ],
+  "actualEvidence": {
+    "red": {
+      "receipt": "C:/w/admin640-staging-proof-review-red-v3.json",
+      "receiptSha256": "6c2f49e60db24ac6c4350ba633e32456fd329dd9c070726ff4d227b7e1c42134",
+      "logSha256": "605a9d83c5b3a93918b79297650e9c139c9b6710f488fdb4d1b11ddcc5e2d615",
+      "exitCode": 1,
+      "tests": 27,
+      "passed": 22,
+      "failed": 5,
+      "inputsUnchanged": true,
+      "helperSha256": "2faf7d5800f25bbcaa6af3554f33f23bb4448476a332edff3547f11eee382938"
+    },
+    "green": {
+      "receipt": "C:/w/admin640-staging-proof-review-green-v1.json",
+      "receiptSha256": "74edc881a409048eac626f039268cff2d4bfd9f96965e7f74eb63c2e9e321dfc",
+      "logSha256": "6610f73dc5eec5b0f9b64c17abe2683cace5e39c5d366020bf7bb1257f286be5",
+      "exitCode": 0,
+      "tests": 27,
+      "passed": 27,
+      "failed": 0,
+      "inputsUnchanged": true,
+      "helperSha256": "42d572906812a820131f13dd69766c81c0988ebcc01f9bffa9fbe88a136a0063"
+    },
+    "fullRedAndGreenOutputRead": true,
+    "sameReviewTestsAcrossFunctionalRedGreen": true,
+    "original19TestsByteUnchanged": true,
+    "allRevisionArtifactAndHistoryHashesMatch": true,
+    "earlyVmHarnessFailuresPreserved": true
+  },
+  "remainingFindings": [],
+  "limits": [
+    "Read-only review of external held QA tools only; no tests/auth/network/browser/jobs/repository actions performed by this reviewer.",
+    "Final released640 source, committed local release, exact six-green CI/latest deployments, public assets and fresh preflight are still required before explicit execution.",
+    "Actual released-schema import, native selectors/privacy geometry, read-only SQL and original-job collector remain unexecuted calibration steps.",
+    "Offline synthetic fixtures are not staging acceptance and do not prove public React authority epochs; the helper correctly claims only observed SID/revision and canonical authority."
+  ]
+}

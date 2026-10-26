@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-640",
+  "stage": "initial",
+  "startedAt": "2026-10-26T12:31:45.211Z",
+  "completedAt": "2026-10-26T12:31:51.646Z",
+  "command": "pnpm --filter @oto/db generate --name=operator_switch",
+  "exitCode": 0,
+  "native": true,
+  "databaseConnected": false,
+  "originalSqlSha256": "40940090aae6caa464ceb992782f8381b4261a560ca7df57bbb5a09ff7853e5f",
+  "finalSqlSha256": "40940090aae6caa464ceb992782f8381b4261a560ca7df57bbb5a09ff7853e5f",
+  "sqlByteIdentical": true,
+  "nativeGeneratedSqlSha256": "9f0465e57951e1387f09bf854231d191fabfe95d77b2589da86230e6f3d7a1b8",
+  "nativeGeneratedStatementOrderIdentical": false,
+  "nativeStatementSetIdentical": true,
+  "immutableMain0087Sha256": "2a47cc0041a4a796db7e7afb6f1a36c42a54d8fedf0a2d2e252e2e77744fe580",
+  "snapshotSha256": "619fdc2a997a625451dad96a688e6822284e51e818c285ed233cefec0c56a55e",
+  "snapshotPrevIdMatchesMain": true,
+  "settingAndSwitchPreserved": true,
+  "logSha256": "17378daee49e06e7f7c0723f58879b9e080e58e1ac445f091cde7aa169acc316",
+  "logBytes": 7575
+}

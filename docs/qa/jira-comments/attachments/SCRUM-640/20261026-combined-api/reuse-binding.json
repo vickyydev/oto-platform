@@ -1,0 +1,156 @@
+{
+  "ticket": "SCRUM-640",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "appSourceManifestSha256": "55c12d936b441e1e0b9bc237349a084070077d01529d845b0c29fd5f0dec66f6",
+  "dependencyInputsSha256": "f9cdec0d1c9af87316b7572b06f4d51dd92403ff6abb3e3e223da3b02c47de95",
+  "priorNodeVersion": "v22.23.3",
+  "priorInstalledMetadata": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "priorInstalledReceiptSha256": "e4ada26d528308c8067a79a90d66acb5c88315e8470e872ddf579db1b3650794",
+  "priorCompilerReceipt": {
+    "path": "C:/w/admin638-app-compat-20261026/ratchet-v3/01-whole-ratchet-4096.json",
+    "sha256": "cd45be82a943aa434ae2ae0ba0986b55f08a17391aeaa55decbdad337c152be3",
+    "bytes": 1364
+  },
+  "priorCompilerReview": {
+    "path": "C:/w/admin638-app-compat-20261026/ratchet-v3-independent-review.json",
+    "sha256": "2034bc9f9a0378913a5f159ee4d76eeb6fe4d750f0fea689581a28bda24412b3",
+    "bytes": 6314
+  },
+  "appBuildWillRunFresh": true,
+  "nativeProgramsBridged": [
+    {
+      "path": "apps/oto-app/tests/payroll-golden.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-engine.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/platform-theme.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/fix-module.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/attention.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/attendance.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/attendance-evidence.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/timekeeping-review.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/documents.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/finance.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/finance-access.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/xero-access.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/record-deletion.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/camp-cancelled-days.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/camp-creation-exclusions.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/salary-visibility.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/checklist-media.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/leave-types.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/task-assignees-today.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/checklist-assignees-today.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/checkin-child-card.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/leave-balance-reach.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/kiosk-devices.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/birthdays-sidebar.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-config.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-profile-editor.check.tsx",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-cutover.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-golden.check.ts",
+      "args": [
+        "--http"
+      ]
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-feeds.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-lifecycle.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-documents.check.ts",
+      "args": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-outputs.check.ts",
+      "args": []
+    }
+  ]
+}

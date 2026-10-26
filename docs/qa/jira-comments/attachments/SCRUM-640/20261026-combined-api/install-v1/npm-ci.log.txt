@@ -1,0 +1,3 @@
+npm warn deprecated scmp@2.1.0: Just use Node.js's crypto.timingSafeEqual()
+
+added 1141 packages in 41s

@@ -1,0 +1,106 @@
+{
+  "ticket": "SCRUM-640",
+  "startedAt": "2026-10-26T12:30:18.313Z",
+  "originalHead": "950646674fde66333f911401af82f956f58188b0",
+  "originalBase": "544cd736598640a240faf6c2584c344de1f811ec",
+  "target": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "commits": [
+    {
+      "sha": "2da0c251384a97c28ec6fa494a0575a12aa579e3",
+      "subject": "feat(console): prepare isolated session operator switching"
+    },
+    {
+      "sha": "9cdb894c1680cea2887bb1298d9c33a3e31685af",
+      "subject": "docs(console): preserve operator switch groundwork evidence"
+    },
+    {
+      "sha": "fc3857c1bf680492b6865bd7e2c617bb7bda0afe",
+      "subject": "feat(auth): bind operator selection to the verified session"
+    },
+    {
+      "sha": "d0d29b7a8192d0d9d9121e100237e413584508cf",
+      "subject": "feat(console): fence controls by the confirmed working operator"
+    },
+    {
+      "sha": "e843373d75e2158da669626d272f353fac969674",
+      "subject": "docs(console): preserve verified operator integration checkpoints"
+    },
+    {
+      "sha": "7af05a36b1bbd5463c4c5ebae0741542e9744924",
+      "subject": "fix(api): retain verified operator context in audit records"
+    },
+    {
+      "sha": "701ff7b1c9a8b4b2d5bf34ff89a909576c7d5f6f",
+      "subject": "docs(console): preserve the Q22 native audit checkpoint"
+    },
+    {
+      "sha": "9ddbc80741f8aa3960f1da9e362e3b1bbf9ea586",
+      "subject": "docs(console): verify the Q22 checkpoint after rebase"
+    },
+    {
+      "sha": "2251253b640439b3c2c658310efe907dab68d3c4",
+      "subject": "docs(console): record the post-rebase Q22 gate"
+    },
+    {
+      "sha": "950646674fde66333f911401af82f956f58188b0",
+      "subject": "docs(console): correct the rebase preflight note"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/db/migrations/0087_operator_switch.sql",
+      "backup": "original-0087_operator_switch.sql",
+      "sha256": "57302eac8aa840fc318b17726e4cbf23d3344e63c7ceecc486e78690cd51b625",
+      "bytes": 930
+    },
+    {
+      "path": "packages/db/migrations/meta/0087_snapshot.json",
+      "backup": "original-0087_snapshot.json",
+      "sha256": "57b794604570d43d263bac8f0b4a2f26d281c3248c93360770b7c22ba9a2a7a0",
+      "bytes": 1236452
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "backup": "original-_journal.json",
+      "sha256": "dfe294319fb49cc44c2396a8c1f5b59493cd5afee067b48c3b3b602f014fb09f",
+      "bytes": 12945
+    },
+    {
+      "path": "packages/db/src/schema/tenancy.ts",
+      "backup": "original-tenancy.ts",
+      "sha256": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569",
+      "bytes": 20585
+    },
+    {
+      "path": "packages/db/src/schema/platform.ts",
+      "backup": "original-platform.ts",
+      "sha256": "859d8dbf8052d5a24ef79bae19d059f25dfa5ceb23c9b5b2dd49e71f5703a3b8",
+      "bytes": 9998
+    }
+  ],
+  "immutableMainFiles": [
+    {
+      "path": "packages/db/migrations/0087_assistant_settings.sql",
+      "backup": "main-0087_assistant_settings.sql",
+      "sha256": "cf6da37360ceca531bc9335dee9125684d2929761e297755d6a520f6ccaa6049",
+      "bytes": 983
+    },
+    {
+      "path": "packages/db/migrations/meta/0087_snapshot.json",
+      "backup": "main-0087_snapshot.json",
+      "sha256": "2a47cc0041a4a796db7e7afb6f1a36c42a54d8fedf0a2d2e252e2e77744fe580",
+      "bytes": 1237690
+    },
+    {
+      "path": "packages/db/migrations/meta/_journal.json",
+      "backup": "main-_journal.json",
+      "sha256": "1e7dda0461a01c7a3e72bc381b6085962485040bd0a670387b61430467ba2608",
+      "bytes": 12948
+    }
+  ],
+  "plan": "Preserve all10 commits/no skips; rename unapplied640 migration0087→0088; native snapshots against immutablemain0087; preserve original finalSQL bytes; consume planner287c9 unchanged ifclean; Q23 remains pending.",
+  "protectedProductionAuthored": false,
+  "optionalUiPatchesApplied": false,
+  "push": false,
+  "staging": false
+}

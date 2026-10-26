@@ -1,0 +1,32 @@
+{
+  "label": "platform-migrate",
+  "cwd": "/workspace/packages/db",
+  "argv": [
+    "node",
+    "node_modules/drizzle-kit/bin.cjs",
+    "migrate"
+  ],
+  "startedAt": "2026-10-26T13:57:49.205Z",
+  "sourceBefore": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "sourceAfter": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "installedBefore": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "timedOut": false,
+  "passed": true,
+  "completedAt": "2026-10-26T13:57:51.288Z",
+  "logSha256": "10b7090436b64192e2f78df95d95455ef2bb6595b090eb351ca3ef8c342cd879",
+  "logBytes": 596,
+  "logRedactedBeforeDisk": true,
+  "shellGuard": "set -eo pipefail"
+}

@@ -1,0 +1,86 @@
+{
+  "ticket": "SCRUM-640",
+  "localOnly": true,
+  "actualStaging": false,
+  "localMock": true,
+  "startedAt": "2026-10-26T13:13:17.945Z",
+  "sourceSha": "025c9929e26f3100876905d9b1430ae06722521a",
+  "programs": [
+    {
+      "label": "preflight",
+      "exitCode": 0,
+      "signal": null,
+      "generatedProgramSha256": "e1beb9350e0afdffec23f8a8e1ae658aef4127245846ac9e1db78543d718b5e7",
+      "actualExecutedSha256": "89c12c2456e499326b5282946176c55f866968b395c54c4cf4d5720e94321982",
+      "programFile": "C:\\w\\admin640-staging-proof-local-sql-v2\\preflight.program.cjs.txt",
+      "stdoutSha256": "7928f6e36748982c097457f9c4754557b8534d33c367eaebdf6ce5b7656fe5a6",
+      "stderrSha256": "9b743e46090824b234ac0b3d57ace686800a738bdf96ce2539566e277f84f264",
+      "loader": "node --import tsx -e actual-program",
+      "readOnlyObserved": true,
+      "sqlStates": [],
+      "markerCount": 1
+    },
+    {
+      "label": "audit",
+      "exitCode": 0,
+      "signal": null,
+      "generatedProgramSha256": "9cabff6e0adb2c3c7e24fc3ff3fb3e362716f3c3376722006b2a80c837cb2e2a",
+      "actualExecutedSha256": "9e2161c83ca552744a856d4b202d80d61167be7d8fc0715f27422b77c501cdd5",
+      "programFile": "C:\\w\\admin640-staging-proof-local-sql-v2\\audit.program.cjs.txt",
+      "stdoutSha256": "5d4bc0c9a33d2ec5d92b95c834913b09b12a5be14007b12638853af65cd22972",
+      "stderrSha256": "9b743e46090824b234ac0b3d57ace686800a738bdf96ce2539566e277f84f264",
+      "loader": "node -e actual-program",
+      "readOnlyObserved": true,
+      "sqlStates": [],
+      "markerCount": 1
+    }
+  ],
+  "checks": {
+    "nativeSeedActorsEligible": true,
+    "actualPreflightParsed": true,
+    "nativeMappingAndArchivedExclusion": true,
+    "actualAuditParsed": true,
+    "capturedTagsAndRetainedSessions": true,
+    "nativeReadOnlyWriteRefused": true
+  },
+  "cleanup": {
+    "clientClosed": true,
+    "databaseDropped": true,
+    "nativeServerStopped": true
+  },
+  "outsideRequests": 0,
+  "tools": {
+    "node": "v22.17.1",
+    "postgresPath": "C:\\w\\admin-operator-switch\\node_modules\\.pnpm\\@embedded-postgres+windows-x64@16.14.0-beta.17\\node_modules\\@embedded-postgres\\windows-x64\\native\\bin\\postgres.exe",
+    "postgresSha256": "c4a6839621f230076b3347f443b3dbfb133954d695f82866ea67501290bd90d3",
+    "tsxApiSha256": "8fb32f8842dff630c0b54aba648a1a49de7bd8769ef4bea6f841fa954041504d"
+  },
+  "resources": {
+    "databaseName": "oto_test_1793020403999_84216_i9jx_0",
+    "port": 54982,
+    "nativeTempRoot": "C:/w/admin640-staging-proof-local-sql-v2/tmp"
+  },
+  "safePreflight": {
+    "actors": [
+      "ADMIN",
+      "RECEPTION"
+    ],
+    "targetCount": 1,
+    "targetBranches": 1,
+    "targetAppBranches": 2,
+    "metadataSha256": "8513c9451526588e68c1e5a73bbf028b129e2fcfc3cf24b38af3580cedaa32f3",
+    "checkedAt": "2026-10-26T13:13:33.713Z",
+    "approved": false
+  },
+  "safeAudit": {
+    "metadataSha256": "5c325f5f4cb165c27ba6b51222db29c132debde8307886e463cc318c368d9e49",
+    "rows": 2,
+    "sessions": 2,
+    "otherSessionsPreserved": true,
+    "readOnly": true
+  },
+  "completedAt": "2026-10-26T13:13:35.367Z",
+  "failure": null,
+  "passed": true,
+  "modelLimit": "Native SQL/loader calibration against locally seeded fixtures only. No staging journey, live source/CI/deploy or authentication was exercised."
+}

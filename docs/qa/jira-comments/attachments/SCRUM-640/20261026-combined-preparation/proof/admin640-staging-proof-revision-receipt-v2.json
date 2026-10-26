@@ -1,0 +1,112 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "external-proof-concrete-review-fixes",
+  "frozenAt": "2026-10-26T12:27:44.336Z",
+  "preparationOnly": true,
+  "approvedForLiveExecution": false,
+  "files": [
+    {
+      "path": "C:/w/admin640-staging-proof-executor.mjs",
+      "sha256": "42d572906812a820131f13dd69766c81c0988ebcc01f9bffa9fbe88a136a0063",
+      "bytes": 44491
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+      "bytes": 18464
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-executor.test.mjs",
+      "sha256": "e535f5a9c5a950b4f484050e97048c9f3f83c2f21fc416d328e37444070ef26c",
+      "bytes": 19706
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review.test.mjs",
+      "sha256": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+      "bytes": 7559
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-checks.mjs",
+      "sha256": "c29153893a4d30ab37a4a81786cccaaa7bb467bb476baf965a5d4a6811b92e97",
+      "bytes": 1791
+    }
+  ],
+  "history": [
+    {
+      "path": "C:/w/admin640-staging-proof-preparation-receipt.json",
+      "sha256": "b5b5a47ae7b8f9c78ffe111bf79393143089842fa44e1775f995da60028c79ed"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-executor-before-cookie-and-mapping-review.mjs",
+      "sha256": "2faf7d5800f25bbcaa6af3554f33f23bb4448476a332edff3547f11eee382938"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-before-vm-constant-fix.test.mjs",
+      "sha256": "34fa930691ad82684e685f0917f78fa72b22d5ec546fccaebec47335d09f895f"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-red-v1.json",
+      "sha256": "312f94e4f3ca3a935fd95bf1c284452d48b0da317fa10d40099549b07d54f03c"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-red-v1.log",
+      "sha256": "358f9deefe316543d99285ec1acb3a84eb204235591a0bc9fdb00248dbc3452c"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-red-v2.json",
+      "sha256": "9496429693f86ec1bafb11b3113c8dad909e0ac63061f69d69cb6d4e05af075c"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-red-v2.log",
+      "sha256": "9590877b7670e693dff7f91b97c33f41e1db20d35f05b50013411833716fc383"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-red-v3.json",
+      "sha256": "6c2f49e60db24ac6c4350ba633e32456fd329dd9c070726ff4d227b7e1c42134"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-red-v3.log",
+      "sha256": "605a9d83c5b3a93918b79297650e9c139c9b6710f488fdb4d1b11ddcc5e2d615"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-green-v1.json",
+      "sha256": "74edc881a409048eac626f039268cff2d4bfd9f96965e7f74eb63c2e9e321dfc"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review-green-v1.log",
+      "sha256": "6610f73dc5eec5b0f9b64c17abe2683cace5e39c5d366020bf7bb1257f286be5"
+    }
+  ],
+  "red": {
+    "receipt": "C:/w/admin640-staging-proof-review-red-v3.json",
+    "passed": 22,
+    "failed": 5,
+    "wholeTests": 27,
+    "sourceUnchangedDuringRun": true
+  },
+  "green": {
+    "receipt": "C:/w/admin640-staging-proof-review-green-v1.json",
+    "passed": 27,
+    "failed": 0,
+    "wholeTests": 27,
+    "sourceUnchangedDuringRun": true
+  },
+  "assertionsUnchangedAcrossFunctionalRedGreen": true,
+  "prior19TestsUnchanged": true,
+  "fixes": [
+    "Retain every distinct observed nonempty sign-in cookie privately before rejecting header cardinality. Select the first solely for exact cleanup; never treat the ambiguous sign-in as accepted.",
+    "Independently revoke/probe and safely record every retained additional observed cookie. No empty-cookie cleanup, retry, later selection or uncertainty reset.",
+    "Validate native and direct mapping branch/appOnly IDs against the same preflightB catalogue, then compare their safe installed/branch/appOnly mapping projections."
+  ],
+  "developmentHistory": "The first two new-review runs also exposed missing MAX_JSON/DEMOS constants in the extracted offline VM harness. Both are preserved. Corrected red-v3 has only the five genuine functional failures; ordinary cookie and existing scope controls pass.",
+  "noLiveCalls": true,
+  "noAuth": true,
+  "noBrowser": true,
+  "noJobs": true,
+  "noRepositoryEdits": true,
+  "remaining": [
+    "Independent reviewer re-read of revised helper bytes",
+    "Final source/CI/deploy/asset/preflight plan and root approval",
+    "Actual schema/UI/privacy/SQL calibration and original-job collector review remain unexecuted"
+  ]
+}

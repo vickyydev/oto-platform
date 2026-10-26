@@ -1,0 +1,38 @@
+{
+  "ticket": "SCRUM-640",
+  "purpose": "local-generated-readonly-program-calibration",
+  "startedAt": "2026-10-26T13:13:14.477Z",
+  "sourceSha": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceFiles": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "helpers": [
+    {
+      "path": "C:/w/admin640-staging-proof-executor.mjs",
+      "sha256": "6cf77d860833aaeb01826c5ea941f6c6dc02dfd2bd442251ad81d02511480c5a"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-metadata-collector.mjs",
+      "sha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-release-collector.mjs",
+      "sha256": "1aaea6c1cb79b7d56da1ff47c9ceb121beb3edf3e5aa6976f3276d553294d88d"
+    },
+    {
+      "path": "C:/w/admin640-staging-contract-draft.mjs",
+      "sha256": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-worker.mjs",
+      "sha256": "2ebc64b885e067cca6fe11b3e2e7f224973172621354d171e0f5e940686a0a9e"
+    }
+  ],
+  "ownTempRoot": "C:/w/admin640-staging-proof-local-sql-v2/tmp",
+  "databaseSettingsInherited": false,
+  "staging": false,
+  "resourcePlan": "One native Node worker (768MiB heap), one own embedded PG16, no compiler/browser/Docker. Resource window coordinated with release_review."
+}

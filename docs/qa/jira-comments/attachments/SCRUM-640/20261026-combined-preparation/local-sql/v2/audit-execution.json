@@ -1,0 +1,14 @@
+{
+  "label": "audit",
+  "exitCode": 0,
+  "signal": null,
+  "generatedProgramSha256": "9cabff6e0adb2c3c7e24fc3ff3fb3e362716f3c3376722006b2a80c837cb2e2a",
+  "actualExecutedSha256": "9e2161c83ca552744a856d4b202d80d61167be7d8fc0715f27422b77c501cdd5",
+  "programFile": "C:\\w\\admin640-staging-proof-local-sql-v2\\audit.program.cjs.txt",
+  "stdoutSha256": "5d4bc0c9a33d2ec5d92b95c834913b09b12a5be14007b12638853af65cd22972",
+  "stderrSha256": "9b743e46090824b234ac0b3d57ace686800a738bdf96ce2539566e277f84f264",
+  "loader": "node -e actual-program",
+  "readOnlyObserved": true,
+  "sqlStates": [],
+  "markerCount": 1
+}

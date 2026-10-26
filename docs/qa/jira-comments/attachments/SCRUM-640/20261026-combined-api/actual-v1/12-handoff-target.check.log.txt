@@ -1,0 +1,48 @@
+PASS only absent mapping is legacy and app user identifiers remain legacy strings
+PASS enabled shape, role values, booleans and exact fields are strict
+PASS each approved role is applied without an app-side ordinary-role write
+PASS ordinary raw admin role cannot synthesize all-branch reach
+PASS absent mapping preserves the original loaded user and scope
+PASS advisor marker and selected policy reach survive each mapped effective role
+PASS advisor genuine all-branch policy is retained even with no access rows
+PASS ordinary no-row identity stays empty rather than defaulting to a branch
+PASS only explicit all-branch access can give ordinary users all-branch reach
+PASS account, app user, legal entity and active flag bindings all refuse mismatches
+PASS an inactive legal entity does not invent a new sign-in refusal
+PASS mixed tenant access rows and wrong-tenant policy branches refuse
+PASS same-tenant explicit branches do not choose another legal entity's flag
+PASS ordinary role mismatch refuses rather than writing a new role
+{"passed":true,"checks":14,"database":false,"network":false}
+PASS flagged advisor uses platform effective role while raw marker and branch reach remain
+PASS absent claim retains today's login behavior
+PASS inactive legal entity keeps the existing sign-in rule
+PASS malformed enabled claims and mismatched identity/entity/tenant refuse before login
+PASS deserialization, userWithAccess middleware and api/user share the session effective role
+{"passed":true,"checks":5,"database":false,"network":false}
+PASS actual branch guard /api/time-off
+PASS actual branch guard /api/employees/:employeeId/leave-balance
+PASS actual branch guard /api/leave-balances/employee/:id
+PASS actual branch guard /api/leave-policies
+PASS actual branch guard /api/schedule/assignments/:id/move
+PASS actual shared leave branch rule
+PASS actual leave-type empty-reach guard
+{"passed":true,"checks":7,"database":false,"network":false}
+{"passed":true,"checks":2,"database":false,"network":false}
+{"passed":true,"checks":2,"database":false,"network":false}
+{"passed":true,"checks":5,"database":false,"network":false}
+{"passed":true,"checks":8,"database":false,"network":false}
+PASS flag-off role strings and user objects retain the exact original role matrix
+PASS enabled claim grants salary view independently from manager/staff role and denies admin without view
+PASS present malformed or mismatched mapping never falls back to an admin role
+PASS view-only manager/staff gain no salary-edit or payroll write action
+PASS actual HR response redaction follows the claim without mutating employee data
+PASS actual payroll menu and old redirects use context and keep own payslips
+PASS actual payroll page wrapper admits a view-only user and redirects admin without view
+PASS actual editor payload closure strips pay for view-only users but preserves ordinary fields
+PASS actual terms choices withhold pay mutations from a view-only user
+{"suite":"platform-salary-permission","passed":9,"failed":0,"database":false,"network":false,"clientFunctionsExecuted":true}
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+ADMIN_MANAGED_UI_RESULTS={"staging":false,"database":false,"network":false,"actualNativePages":true,"checks":19,"passed":19,"failed":0,"sourceSha256":{"pages/users-page.tsx":"<opaque value>","pages/permissions-page.tsx":"<opaque value>","pages/operators-page.tsx":"<opaque value>","hooks/use-admin-management.ts":"<opaque value>","components/managed-in-admin-notice.tsx":"<opaque value>","components/suite-sign-in.tsx":"<opaque value>"},"cases":{"F1_operator_sequence_cannot_change_actor":{"passed":true},"F2_late_create_cannot_enter_next_actor_cache":{"passed":true},"F3_fresh_assigned_user_flag_blocks_editor":{"passed":true},"F4_flag_off_empty_eligible_bulk_keeps_native_refusal":{"passed":true},"users_actor_flag_keeps_list_but_removes_all_actions":{"passed":true},"users_mixed_targets_lock_only_exact_managed_row":{"passed":true},"permissions_flagged_actor_keeps_native_values_readonly":{"passed":true},"permissions_mixed_bulk_has_no_silent_subset":{"passed":true},"permissions_flag_off_bulk_keeps_exact_native_body":{"passed":true},"open_permission_dialog_closes_on_target_authority_loss":{"passed":true},"actor_unknown_does_not_default_to_flag_off":{"passed":true},"actor_error_retry_restores_only_confirmed_false":{"passed":true},"operator_target_becoming_managed_stops_later_puts":{"passed":true},"operator_authority_loss_then_recovery_does_not_resume_sequence":{"passed":true},"users_unknown_target_metadata_never_becomes_writable":{"passed":true},"actor_refetch_hides_writes_and_does_not_reopen_old_dialog":{"passed":true},"operator_late_assignment_read_cannot_overwrite_new_editor":{"passed":true},"suite_pending_result_is_hidden_after_authority_loss":{"passed":true},"users_server_409_refreshes_management_without_retry_write":{"passed":true}}}
+{"suite":"platform-role-mapping","programs":9,"passed":true}
+handoff-target: every check passed

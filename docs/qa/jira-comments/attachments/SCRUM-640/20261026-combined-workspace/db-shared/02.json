@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-640",
+  "command": "pnpm --filter @oto/shared test",
+  "startedAt": "2026-10-26T13:18:41.098Z",
+  "completedAt": "2026-10-26T13:18:50.309Z",
+  "exitCode": 0,
+  "signal": null,
+  "processError": null,
+  "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "databasesBefore": 0,
+  "databasesAfter": 0,
+  "logSha256": "f72fd70a52402d19170c592b36c098c55ba766e15a6b58e374cfc95afd296a6d",
+  "logBytes": 3024,
+  "shell": "Git Bash set -eo pipefail",
+  "logRedactedBeforeDisk": true,
+  "passed": true
+}

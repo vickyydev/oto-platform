@@ -1,0 +1,20 @@
+
+> @oto/assistant@0.1.0 test C:\w\admin-operator-switch\packages\assistant
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/assistant
+
+ ✓ test/pacing.test.ts (11 tests) 35ms
+ ✓ test/guards.test.ts (100 tests) 74ms
+ ✓ test/intents.test.ts (29 tests) 65ms
+ ✓ test/gate.test.ts (33 tests) 71ms
+ ✓ test/internal.test.ts (97 tests) 50ms
+ ✓ test/prompt.test.ts (21 tests) 21ms
+ ✓ test/client.test.ts (27 tests) 113ms
+ ✓ test/tool-loop.test.ts (116 tests) 258ms
+
+ Test Files  8 passed (8)
+      Tests  434 passed (434)
+   Start at  20:27:23
+   Duration  2.57s (transform 1.28s, setup 0ms, collect 9.36s, tests 686ms, environment 2ms, prepare 3.37s)

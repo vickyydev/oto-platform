@@ -1,0 +1,125 @@
+{
+  "ticket": "SCRUM-640",
+  "frozenAt": "2026-10-26T12:17:48.562Z",
+  "kind": "held-external-staging-proof-implementation",
+  "importInert": true,
+  "approvedForLiveExecution": false,
+  "files": [
+    {
+      "path": "C:/w/admin640-staging-proof-executor.mjs",
+      "sha256": "2faf7d5800f25bbcaa6af3554f33f23bb4448476a332edff3547f11eee382938",
+      "bytes": 43039
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+      "bytes": 18464
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-executor.test.mjs",
+      "sha256": "e535f5a9c5a950b4f484050e97048c9f3f83c2f21fc416d328e37444070ef26c",
+      "bytes": 19706
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-checks.mjs",
+      "sha256": "0b0d97910e5d326dcb0a475a731c3083142678bdbd6d41eddbc10210a5963d80",
+      "bytes": 1841
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-README.md",
+      "sha256": "5f2f4281c4cc06d97462fad1dd9b5e773ef5398a27c066867d060bfba93fab61",
+      "bytes": 6483
+    },
+    {
+      "path": "C:/w/admin640-staging-contract-draft.mjs",
+      "sha256": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563",
+      "bytes": 4272
+    }
+  ],
+  "history": [
+    {
+      "path": "C:/w/admin640-staging-proof-development-import-failure.json",
+      "sha256": "45742d0dd829af9547f1a263453654fccff0284c13521f867674cc9fa51180a4"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v1.json",
+      "sha256": "fc0fb658962374025ce9b6dc6a4edb8f71d9c44466bb95210758044c295d7ad7"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v1.log",
+      "sha256": "7d7f957fc0ad2d90743fd90fb75b24fb4e9ef93234415126b1a104d3795920bf"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v2.json",
+      "sha256": "05a85805272d8d8dd6d8709e10c6a35548c1dbd2ce600dac624a57b84668fe96"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v2.log",
+      "sha256": "a770b6097259da633e6474042e6e934939454a7616f2b7d709abf3d5ccedcc04"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v3.json",
+      "sha256": "659737bca969ebcbac211c5ae84df6d2e695eb3885df0bdc5aef912be7aaf3c5"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v3.log",
+      "sha256": "f4ad0668fd01fc92f99cf056d86ea143db9882f7e749d341637b8cdd84b08f0a"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v4.json",
+      "sha256": "320c9abc9c6f05b90342f5c448b18c17754b4f01c51fed559cb7b5fc3311a85a"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v4.log",
+      "sha256": "0d2b37b144981248faec8acbe19282f6a033b4f18846c8b7a6655c0614cbd725"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v5.json",
+      "sha256": "df03431014aad98ca6ae7b07d7906934015fb28bd9d3e67112f1343752df2d38"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-offline-v5.log",
+      "sha256": "cc097502e833651ab7f4b2a0cb799a68d4977209c827d87db5879e349c24555f"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-executor-before-context-cleanup-fix.mjs",
+      "sha256": "d0dcb506f90176813716c0aaa59f17391b0123471f6f857b55ebbc3aeab17368"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-executor-before-context-cleanup-fix.test.mjs",
+      "sha256": "49c8e12ce7b2367ff5af5de2ce43a1d8c44f4016e5f9ac9dea9cc11e4dd0ce2f"
+    }
+  ],
+  "offline": {
+    "tests": 19,
+    "passed": 19,
+    "failed": 0,
+    "pending": 0,
+    "receiptPath": "C:/w/admin640-staging-proof-offline-v5.json",
+    "sourceUnchanged": true,
+    "fullOutputRead": true
+  },
+  "mutationModel": {
+    "logicalHttpMutations": 7,
+    "successfulSessionSelections": 2,
+    "refusedReceptionSelection": 1,
+    "signIns": 2,
+    "signOuts": 2,
+    "otherBusinessWrites": 0,
+    "fixtures": 0
+  },
+  "stagingExecutions": 0,
+  "authAttempts": 0,
+  "browserLaunches": 0,
+  "networkCalls": 0,
+  "jobsDispatched": 0,
+  "repositoryEdits": 0,
+  "limits": [
+    "No final release/CI/deploy plan exists in these files.",
+    "Preflight original-job collector remains coordinator reviewed and supplied.",
+    "Audit builder/parser/latch are drafted only; no SQL/job/privilege execution.",
+    "Actual released-schema collection, native UI/selectors, privacy geometry and production raster bytes remain unexecuted.",
+    "Native stage cannot set complete; reviewed audit/final labelled card are a separate explicit step.",
+    "Human pixels/Jira acceptance remain required."
+  ]
+}

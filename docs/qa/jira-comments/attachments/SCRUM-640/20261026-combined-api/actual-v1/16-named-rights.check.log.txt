@@ -1,0 +1,17 @@
+  ok  a face-recognition kiosk's session is refused a check-in key it does not hold
+  ok  a reception kiosk's session holds the check-in keys and passes
+  ok  a face kiosk's session is refused the reception and check-in reads (403)
+  ok  a reception kiosk's session reads them
+  ok  a face kiosk's session is refused a check-in write (403 before the route looks)
+  ok  a signed-in manager still reads check-ins
+  ok  a manager is refused a termination; the employee stays active and nothing is written
+  ok  a manager still records a resignation
+  ok  an operator admin terminates
+  ok  a manager cannot edit a termination; the operator admin can
+  ok  a manager cannot mark an employee terminated on the employee edit
+  ok  an operator admin passes the contract template gate (the body answers, not the gate)
+  ok  a manager cannot set a PIN for an employee of a branch they do not reach
+  ok  a PIN set now is stored salted and clocks in
+  ok  an old unsalted PIN is verified once, re-hashed, and verified again the new way
+  ok  a wrong PIN still fails, and does not touch what is stored
+named-rights.check: 16 checks passed

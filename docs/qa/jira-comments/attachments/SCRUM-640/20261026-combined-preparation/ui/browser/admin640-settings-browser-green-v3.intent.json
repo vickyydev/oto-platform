@@ -1,0 +1,16 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "green",
+  "attempt": "v3",
+  "startedAt": "2026-10-26T12:56:25.110Z",
+  "helperSha256": "2aea5ef979ee59e367be7af9c524327129013eebe47631b7e18f57d5417b94d7",
+  "sourceManifestSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+  "testSha256": "0ad093009b0cdf9cc9a7a58f2c334b4efa813e267d1b23544c857177444e818a",
+  "nativeHarness": "apps/console/e2e/run.mjs",
+  "spec": null,
+  "expectedCases": 286,
+  "allNativeSpecs": true,
+  "builtConsoleAndPos": true,
+  "database": "fresh-embedded-only",
+  "staging": false
+}

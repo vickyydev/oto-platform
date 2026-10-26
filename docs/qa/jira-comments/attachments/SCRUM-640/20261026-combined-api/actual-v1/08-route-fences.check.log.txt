@@ -1,0 +1,38 @@
+staging-shaped (DEPLOY_ENV=staging, OTOAPP_JOBS=platform):
+  ok  POST /api/seed is refused before anything runs
+  ok  GET /api/test-sentry is refused before anything runs
+  ok  POST /api/dev/import-core-legacy-uploads is refused before anything runs
+  ok  GET /api/test-object-storage is refused before anything runs
+  ok  POST /api/admin/prod-sync is refused before anything runs
+  ok  GET /api/admin/prod-sync/status is refused before anything runs
+  ok  the storage test is refused to a signed-in admin as well
+  ok  POST /api/admin/run-departed-deactivation points at the platform's schedule and the Console under OTOAPP_JOBS=platform
+  ok  POST /api/scheduler/transition-left points at the platform's schedule and the Console under OTOAPP_JOBS=platform
+  ok  not one row changed: users counted, both park groups as they were
+local (DEPLOY_ENV=local, OTOAPP_JOBS=inprocess):
+  ok  the Sentry test still throws on a developer's machine (the fence is DEPLOY_ENV's)
+  ok  POST /api/admin/fix-pending-with-signed-contracts refuses an admin the app cannot place in a park group, and changes nobody's rows
+  ok  POST /api/admin/backfill-employee-photos refuses an admin the app cannot place in a park group, and changes nobody's rows
+  ok  POST /api/scheduler/transition-left refuses an admin the app cannot place in a park group, and changes nobody's rows
+  ok  POST /api/admin/run-departed-deactivation refuses an admin the app cannot place in a park group, and changes nobody's rows
+  ok  fix-pending promotes park group A's employee and not B's
+  ok  the photo backfill clears park group A's old path and not B's
+  ok  transition-left moves park group A's leaver and not B's
+  ok  the departed deactivation switches off park group A's login and not B's
+PATCH /api/branches/:id:
+  ok  a branch edit cannot write the platform's join column or its sync record, and the rest still saves
+  ok  an edit carrying only the platform's columns changes nothing and answers the branch
+DELETE /api/users/:id:
+  ok  a user the platform has linked is refused in the app's words, and kept
+  ok  a user the app still references is refused in the same words, not a bare 500, and kept whole
+  ok  a user nothing points at is still deleted, with its branch access
+DELETE /api/people/:id and the employee deletes:
+  ok  the people delete refuses a platform-linked user in the app's words, and keeps the user and the person
+  ok  the people delete refuses a user the app still references, not a bare 500, and keeps both
+  ok  the employee delete refuses an employee whose user the platform has linked, writing nothing
+  ok  the bulk employee delete reports the same refusal for that employee, writing nothing
+  ok  another park group's admin is answered 404 at the employee, bulk and people doors, and nothing changes
+  ok  an admin the app cannot place is refused at those doors, and nothing changes
+  ok  the park group's own admin still deletes that employee, their person and their user
+  ok  the people delete still removes a person and a user nothing points at
+route-fences.check: 32 checks passed

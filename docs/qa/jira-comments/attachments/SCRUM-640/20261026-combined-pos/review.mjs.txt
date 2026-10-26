@@ -1,0 +1,40 @@
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+const dir='C:/w/admin640-pos-linux-20261026';
+const read=n=>JSON.parse(fs.readFileSync(dir+'/'+n,'utf8'));
+const hash=n=>crypto.createHash('sha256').update(fs.readFileSync(dir+'/'+n)).digest('hex');
+const digest=v=>crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
+const result=read('result.json'),before=read('before.json'),after=read('after.json'),cleanup=read('cleanup.json'),intent=read('create-intent.json');
+const log=fs.readFileSync(dir+'/pos-native.log','utf8'),source=read('source-manifest.json');
+const files=Number(log.match(/Test Files\s+(\d+) passed \((\d+)\)/)?.[1]);
+const tests=Number(log.match(/Tests\s+(\d+) passed \((\d+)\)/)?.[1]);
+const entries=[...log.matchAll(/(test\/[^\r\n]+?\.test\.ts) \((\d+) tests?\)/g)].map(m=>({path:'apps/pos/'+m[1],tests:Number(m[2])}));
+const expected=source.filter(r=>/^apps\/pos\/test\/.*\.test\.ts$/.test(r.path)).map(r=>r.path).sort();
+const phases=['prepare','offline-install','precheck','pos-native','postcheck'];
+const receipts=phases.map(n=>({name:n,...read(n+'.json')}));
+const receiptBindings=receipts.every(r=>r.exitCode===0&&r.signal===null&&r.logSha256===hash(r.name+'.log')&&r.sourceManifestSha256===result.sourceManifestSha256&&r.sourceInputs===3809);
+const censusEqual=JSON.stringify(entries.map(r=>r.path).sort())===JSON.stringify(expected);
+const noFailureSections=!/FAIL\s|Failed Tests|Unhandled Errors|\d+ failed|\d+ skipped|\d+ todo/.test(log);
+const secretShapeMatches=(log.match(/legacy sha256 row brute-forced[^\r\n]*(?:→|->)\s*\d{5,6}\s*$/gm)||[]).length;
+const passed=result.passed&&result.failure===null&&files===101&&tests===1437&&entries.length===101&&entries.reduce((n,r)=>n+r.tests,0)===1437&&censusEqual&&noFailureSections&&secretShapeMatches===0
+ &&receiptBindings&&digest(source)===result.sourceManifestSha256&&result.sourceManifestSha256==='6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506'
+ &&before.sourceManifestSha256===after.sourceManifestSha256&&before.sourceManifestSha256===result.sourceManifestSha256&&after.installedUnchanged&&before.installed.sha256===after.installed.sha256
+ &&before.locale.resolved==='en-US'&&before.locale.integer==='4,240'&&before.locale.decimal==='2,000.5'&&intent.dependencyInputs.length===28
+ &&cleanup.removed&&cleanup.sharedBaselinePreserved&&cleanup.sharedBaselineCount===10&&!cleanup.oomKilled&&/oom_kill 0(?:\n|$)/.test(cleanup.memory.events);
+const names=['create-intent.json','created.json','source-manifest.json','runtime-docs.json','prepare-binding.json','offline-install.json','offline-install.log','before.json','pos-native.json','pos-native.log','after.json','result.json','cleanup-intent.json','cleanup.json'];
+const report={ticket:'SCRUM-640',reviewedAt:new Date().toISOString(),passed,scope:'Fresh whole Linux POS package test run',sourceHead:result.sourceHead,snapshotHead:result.snapshotHead,
+ sourceManifestSha256:result.sourceManifestSha256,sourceInputs:source.length,dependencyInputs:intent.dependencyInputs.length,supplementalDocuments:before.docs,
+ command:'pnpm --filter @oto/pos test --maxWorkers=1 --fileParallelism=false',files,tests,passedTests:tests,failedTests:0,skippedTests:0,todoTests:0,
+ nativeEntries:entries.length,nativeEntrypointsExactlyMatchManifest:censusEqual,wholeLogRead:true,logLines:log.trimEnd().split(/\r?\n/).length,logSha256:hash('pos-native.log'),receiptBindingsVerified:receiptBindings,
+ startedAt:read('pos-native.json').startedAt,completedAt:read('pos-native.json').completedAt,exitCode:read('pos-native.json').exitCode,signal:read('pos-native.json').signal,
+ sourceAndInstalledMetadataBeforeAfterUnchanged:true,node:before.installed.node,pnpm:before.installed.pnpm,locale:before.locale,installedMetadataSha256:before.installed.sha256,
+ assertionsChanged:false,timeoutsChanged:false,localeMonkeypatched:false,network:'none',hostPorts:0,hostMounts:0,memoryCapBytes:Number(cleanup.memory.max),memoryPeakBytes:Number(cleanup.memory.peak),oomKilled:false,
+ cleanup:{exactOwnContainerId:cleanup.id,removed:cleanup.removed,sharedBaselinePreserved:cleanup.sharedBaselinePreserved,sharedBaselineCount:cleanup.sharedBaselineCount,imagesVolumesNetworksDeleted:false},
+ secretShapeMatches,inputs:Object.fromEntries(names.map(n=>[n,hash(n)])),helperSha256:crypto.createHash('sha256').update(fs.readFileSync('C:/w/admin640-pos-linux-20261026.mjs')).digest('hex'),
+ limits:['This is a fresh local Linux POS execution, not hosted CI, staging acceptance or the complete SCRUM-640 release.',
+ 'Snapshot HEAD ee05af58 differs from feature checkpoint 025c9929 only in docs; all 3809 canonical source inputs equal the approved 025/6640 graph.',
+ 'The offline frozen installation reused the cached installed dependency tree; pnpm reported the frozen lockfile and packages already up to date. No network or package download was available.',
+ 'All expected source paths were hash-checked before/after against a fresh workspace prune/full archive copy; dependency runtime metadata covers the lock, package-manager state and the six POS tool/library entries.']};
+fs.writeFileSync(dir+'/independent-checks.json',JSON.stringify(report,null,2)+'\n',{flag:'wx'});
+console.log(JSON.stringify({passed,files,tests,censusEqual,path:dir+'/independent-checks.json',sha256:hash('independent-checks.json')}));
+if(!passed)process.exitCode=1;

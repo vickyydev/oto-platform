@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-26T13:33:22.536Z",
+  "id": "25b220a2721f8fff41082df0556b8648bc87b78469103e2d015c5dc6c4786409",
+  "removed": true,
+  "sharedBaselinePreserved": true,
+  "sharedBaselineCount": 10,
+  "oomKilled": false,
+  "memory": {
+    "max": "2147483648",
+    "peak": "1246580736",
+    "events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+  },
+  "volumesDeleted": false,
+  "imagesDeleted": false,
+  "networksDeleted": false,
+  "otherResourcesChanged": false
+}

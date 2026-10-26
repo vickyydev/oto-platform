@@ -1,0 +1,14 @@
+{
+  "label": "preflight",
+  "exitCode": 0,
+  "signal": null,
+  "generatedProgramSha256": "e1beb9350e0afdffec23f8a8e1ae658aef4127245846ac9e1db78543d718b5e7",
+  "actualExecutedSha256": "89c12c2456e499326b5282946176c55f866968b395c54c4cf4d5720e94321982",
+  "programFile": "C:\\w\\admin640-staging-proof-local-sql-v2\\preflight.program.cjs.txt",
+  "stdoutSha256": "7928f6e36748982c097457f9c4754557b8534d33c367eaebdf6ce5b7656fe5a6",
+  "stderrSha256": "9b743e46090824b234ac0b3d57ace686800a738bdf96ce2539566e277f84f264",
+  "loader": "node --import tsx -e actual-program",
+  "readOnlyObserved": true,
+  "sqlStates": [],
+  "markerCount": 1
+}

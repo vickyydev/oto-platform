@@ -1,0 +1,33 @@
+{
+  "ticket": "SCRUM-640",
+  "checkedAt": "2026-10-26T13:41:17.360Z",
+  "oldHead": "989cf0f72e29208daa3d58f1f5b610040bce17f4",
+  "base": "42fe61fc08d23072920848d3e48621faf1d89f98",
+  "head": "5d3cc3aa46711b343159a1cbd940e9a5046f7caa",
+  "commitsPreserved": 15,
+  "subjects": [
+    "feat(console): prepare isolated session operator switching",
+    "docs(console): preserve operator switch groundwork evidence",
+    "feat(auth): bind operator selection to the verified session",
+    "feat(console): fence controls by the confirmed working operator",
+    "docs(console): preserve verified operator integration checkpoints",
+    "fix(api): retain verified operator context in audit records",
+    "docs(console): preserve the Q22 native audit checkpoint",
+    "docs(console): verify the Q22 checkpoint after rebase",
+    "docs(console): record the post-rebase Q22 gate",
+    "docs(console): correct the rebase preflight note",
+    "feat(assistant): pin each ask to the operator context it was asked in",
+    "fix(console): scope assistant settings to working operator",
+    "docs(console): archive combined operator switch preparation",
+    "test(console): preserve combined workspace checks",
+    "docs(qa): archive combined linux POS checks"
+  ],
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "workingAndCommittedSourceUnchanged": true,
+  "mainMigration": "0087_assistant_settings",
+  "provisionalMigration": "0088_operator_switch",
+  "sqlSha256": "57302eac8aa840fc318b17726e4cbf23d3344e63c7ceecc486e78690cd51b625",
+  "clean": true,
+  "notes": "Docs-only main rebase; no commits skipped. Existing source-domain gates remain bound. Q23 follow-ups and API closure still pending; not release or deployed."
+}

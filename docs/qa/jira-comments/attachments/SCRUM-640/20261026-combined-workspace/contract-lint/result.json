@@ -1,0 +1,35 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "contract-lint",
+  "attempt": "v1",
+  "sourceHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "completedAt": "2026-10-26T13:29:53.843Z",
+  "fatal": null,
+  "programs": [
+    {
+      "command": "pnpm api-types:check",
+      "passed": true,
+      "receiptSha256": "bfa971388f74d6927b1b1464698cc70f747f174610e969496fe235f6238771fb"
+    },
+    {
+      "command": "pnpm exec eslint 'apps/api/src/plugins/idempotency.ts' 'apps/api/src/plugins/session.ts' 'apps/api/src/routes/auth.ts' 'apps/api/src/routes/me.ts' 'apps/api/src/services/assistant/engine.ts' 'apps/api/src/services/audit-context.ts' 'apps/api/src/services/audit.ts' 'apps/api/src/services/auth.ts' 'apps/api/src/services/fleet.ts' 'apps/api/src/services/handoff.ts' 'apps/api/src/services/operator-switch.ts' 'apps/api/test/assistant-engine.test.ts' 'apps/api/test/id-conformance.test.ts' 'apps/api/test/operator-switch-audit-context-review.test.ts' 'apps/api/test/operator-switch-handoff-review.test.ts' 'apps/api/test/operator-switch-idempotency-review.test.ts' 'apps/api/test/operator-switch-lifecycle-review.test.ts' 'apps/api/test/operator-switch-request-race-review.test.ts' 'apps/api/test/operator-switch-review.test.ts' 'apps/api/test/operator-switch-route-review.test.ts' 'apps/api/test/operator-switch-seat-review.test.ts' 'apps/api/test/operator-switch-session-review.test.ts' 'apps/api/test/route-scope-target.test.ts' 'apps/api/test/route-write-conformance.test.ts' 'apps/api/test/routes-guarded.test.ts' 'apps/console/e2e/access-review.spec.ts' 'apps/console/e2e/account-theme.spec.ts' 'apps/console/e2e/accounts.spec.ts' 'apps/console/e2e/admin-navigation.spec.ts' 'apps/console/e2e/app-access.spec.ts' 'apps/console/e2e/assistant-settings.spec.ts' 'apps/console/e2e/care-print.spec.ts' 'apps/console/e2e/catalogue.spec.ts' 'apps/console/e2e/departments.spec.ts' 'apps/console/e2e/employees.spec.ts' 'apps/console/e2e/menu.spec.ts' 'apps/console/e2e/money.spec.ts' 'apps/console/e2e/operations.spec.ts' 'apps/console/e2e/operator-switch.spec.ts' 'apps/console/e2e/organisation.spec.ts' 'apps/console/e2e/overview.spec.ts' 'apps/console/e2e/platform.spec.ts' 'apps/console/e2e/reports.spec.ts' 'apps/console/e2e/roles.spec.ts' 'apps/console/e2e/staff.spec.ts' 'apps/console/e2e/teams-routing.spec.ts' 'apps/console/src/App.tsx' 'apps/console/src/api/client.ts' 'apps/console/src/api/platform.ts' 'apps/console/src/auth/SessionContext.tsx' 'apps/console/src/components/ConsoleLayout.tsx' 'apps/console/src/components/OperatorSwitchPicker.tsx' 'apps/console/src/components/booth/BoothSpinsPanel.tsx' 'apps/console/src/components/booth/BoothStaffPanel.tsx' 'apps/console/src/components/booth/TodayStaffPanel.tsx' 'apps/console/src/components/booth/VoucherSlipPanel.tsx' 'apps/console/src/components/devices/BoxDrawer.tsx' 'apps/console/src/components/devices/DisplayDiagnosticsPanel.tsx' 'apps/console/src/components/devices/DisplayPairPanel.tsx' 'apps/console/src/components/devices/DisplaySnapshotPanel.tsx' 'apps/console/src/components/devices/KioskPairPanel.tsx' 'apps/console/src/components/devices/OneTimeCode.tsx' 'apps/console/src/components/devices/PrintPanel.tsx' 'apps/console/src/components/devices/SimulatorPanel.tsx' 'apps/console/src/components/devices/StationDrawer.tsx' 'apps/console/src/components/devices/TerminalSimulatorPanel.tsx' 'apps/console/src/lib/platformAuthority.ts' 'apps/console/src/lib/platformStatus.tsx' 'apps/console/src/lib/workingAuthority.ts' 'apps/console/src/pages/Accounts.tsx' 'apps/console/src/pages/AreaLanding.tsx' 'apps/console/src/pages/AssistantSettings.tsx' 'apps/console/src/pages/BoothReport.tsx' 'apps/console/src/pages/Booths.tsx' 'apps/console/src/pages/Branches.tsx' 'apps/console/src/pages/Care.tsx' 'apps/console/src/pages/Catalogue.tsx' 'apps/console/src/pages/Channels.tsx' 'apps/console/src/pages/Departments.tsx' 'apps/console/src/pages/Devices.tsx' 'apps/console/src/pages/Employees.tsx' 'apps/console/src/pages/MenuCatalogue.tsx' 'apps/console/src/pages/Money.tsx' 'apps/console/src/pages/Operations.tsx' 'apps/console/src/pages/Overview.tsx' 'apps/console/src/pages/Reports.tsx' 'apps/console/src/pages/Roles.tsx' 'apps/console/src/pages/Staff.tsx' 'apps/console/src/pages/StaffBenefits.tsx' 'apps/console/src/pages/TeamsRouting.tsx' 'apps/console/src/pages/VoucherTypes.tsx' 'apps/console/src/pages/Vouchers.tsx' 'apps/console/test/booth-report-lifetime.test.ts' 'apps/console/test/booth-state.test.ts' 'apps/console/test/care-retry.test.ts' 'apps/console/test/operator-switch-picker-markup.test.ts' 'apps/console/test/organisation-markup.test.ts' 'apps/console/test/s216-r6-health.test.ts' 'apps/console/test/staff-lifetime.test.ts' 'apps/console/test/voucher-types.test.ts' 'packages/api-types/src/openapi.ts' 'packages/api-types/test/migration-list.ts' 'packages/db/src/schema/platform.ts' 'packages/db/src/schema/tenancy.ts' 'packages/db/test/s640-operator-switch-migration.test.ts' 'packages/shared/src/permission-words.ts' 'packages/shared/src/permissions.ts' 'packages/shared/test/operator-switch-permission.test.ts'",
+      "passed": true,
+      "receiptSha256": "4e5ec45e5e5c70368a61710a2b403e7915d3e5a2ef7efc301073272a21235a87"
+    }
+  ],
+  "cleanup": {
+    "ownNativeServer": true,
+    "port": 51411,
+    "databasesBefore": 0,
+    "credentialsPersisted": false,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "staging": false,
+  "passed": true
+}

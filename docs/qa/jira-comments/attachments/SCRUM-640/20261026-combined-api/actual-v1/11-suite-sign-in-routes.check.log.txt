@@ -1,0 +1,10 @@
+suite-sign-in-routes.check: all checks passed
+{"stage":"standalone-app-migrate","passed":true,"exitCode":0,"signal":null,"timedOut":false,"failedToSpawn":false,"outputLimited":false,"stdoutSha256":"<opaque value>"}
+{"stage":"s633-employee-suite-sign-in.check.ts","passed":true,"exitCode":0,"signal":null,"timedOut":false,"failedToSpawn":false,"outputLimited":false,"expectedChecks":15,"checksPassed":15,"checksTotal":15,"stdoutSha256":"<opaque value>"}
+{"stage":"s633-employee-wizard.check.ts","passed":true,"exitCode":0,"signal":null,"timedOut":false,"failedToSpawn":false,"outputLimited":false,"expectedChecks":9,"checksPassed":9,"checksTotal":9,"stdoutSha256":"<opaque value>"}
+{"stage":"s633-lifecycle.check.ts","passed":true,"exitCode":0,"signal":null,"timedOut":false,"failedToSpawn":false,"outputLimited":false,"expectedChecks":11,"checksPassed":11,"checksTotal":11,"stdoutSha256":"<opaque value>"}
+{"stage":"s633-lifecycle-privileges.check.ts","passed":true,"exitCode":0,"signal":null,"timedOut":false,"failedToSpawn":false,"outputLimited":false,"expectedChecks":4,"checksPassed":4,"checksTotal":4,"stdoutSha256":"<opaque value>"}
+{"suite":"s633","passed":true,"checks":39,"ownDatabaseRemoved":true}
+{"stage":"standalone-app-migrate","passed":true,"exitCode":0,"timedOut":false,"outputLimited":false,"failedToSpawn":false,"checksPassed":null,"checksTotal":null,"stdoutSha256":"<opaque value>"}
+{"stage":"s634-payroll-status","passed":true,"exitCode":0,"timedOut":false,"outputLimited":false,"failedToSpawn":false,"checksPassed":9,"checksTotal":9,"stdoutSha256":"<opaque value>"}
+{"suite":"s634","passed":true,"checks":9,"ownDatabaseRemoved":true}

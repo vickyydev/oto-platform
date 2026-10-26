@@ -1,0 +1,32 @@
+{
+  "label": "offboarding-census",
+  "cwd": "/workspace/apps/oto-app",
+  "argv": [
+    "npm",
+    "run",
+    "offboarding:census"
+  ],
+  "startedAt": "2026-10-26T13:56:21.472Z",
+  "sourceBefore": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "sourceAfter": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "installedBefore": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "timedOut": false,
+  "passed": true,
+  "completedAt": "2026-10-26T13:56:22.105Z",
+  "logSha256": "069f00b7413b75f55b594b3df9e433686e95811e67d287ded4b6dcbb6a791ba1",
+  "logBytes": 260,
+  "logRedactedBeforeDisk": true,
+  "shellGuard": "set -eo pipefail"
+}

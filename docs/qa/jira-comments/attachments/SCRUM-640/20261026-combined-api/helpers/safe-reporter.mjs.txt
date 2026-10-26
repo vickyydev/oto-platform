@@ -1,0 +1,19 @@
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+const hash=v=>crypto.createHash('sha256').update(String(v)).digest('hex');
+export default class SafeVerificationReporter {
+ onFinished(files=[],errors=[]){
+  const target=process.env.OTO_VERIFICATION_REPORT;
+  if(!/^\/tmp\/admin640-api-verification\/api-shard[123]-census\.json$/.test(target??''))throw Error('EXACT_SAFE_REPORT_PATH_REQUIRED');
+  const result={completedAt:new Date().toISOString(),files:[],unhandledErrors:errors.length,unhandledErrorHashes:errors.map(e=>hash(e?.stack??e?.message??String(e)))};
+  for(const file of files){
+   if(!file.filepath.startsWith('/workspace/apps/api/test/')||!file.filepath.endsWith('.test.ts'))throw Error('EXACT_API_TEST_FILE_REQUIRED');
+   const row={file:file.filepath.slice('/workspace/'.length),state:file.result?.state??file.mode,tests:[]};
+   const walk=(tasks,parents=[],inherited='run')=>{for(const task of tasks??[]){const mode=task.mode==='run'?inherited:task.mode;if(task.type==='suite')walk(task.tasks,[...parents,task.name],mode);else if(task.type==='test'){const state=task.result?.state??mode;row.tests.push({nameSha256:hash([...parents,task.name].join(' > ')),state,mode,errorHashes:(task.result?.errors??[]).map(e=>hash(e?.stack??e?.message??String(e)))})}}};
+   walk(file.tasks,[],file.mode);row.counts={};for(const t of row.tests)row.counts[t.state]=(row.counts[t.state]??0)+1;result.files.push(row);
+  }
+  result.totals={files:result.files.length,tests:result.files.reduce((n,r)=>n+r.tests.length,0),pass:0,fail:0,skip:0,todo:0,other:0};
+  for(const r of result.files)for(const t of r.tests){const k=['pass','fail','skip','todo'].includes(t.state)?t.state:'other';result.totals[k]++}
+  fs.writeFileSync(target,JSON.stringify(result,null,2)+'\n',{flag:'wx'});
+ }
+}

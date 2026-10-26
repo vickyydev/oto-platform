@@ -1,0 +1,50 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "remaining",
+  "attempt": "v1",
+  "sourceHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceInputs": 3809,
+  "installed": [
+    {
+      "path": "node_modules/.modules.yaml",
+      "sha256": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d"
+    },
+    {
+      "path": "node_modules/.pnpm/lock.yaml",
+      "sha256": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+    },
+    {
+      "path": "node_modules/.pnpm/embedded-postgres@16.14.0-beta.17/node_modules/embedded-postgres/package.json",
+      "sha256": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+    },
+    {
+      "path": "node_modules/.pnpm/pg@8.23.0/node_modules/pg/package.json",
+      "sha256": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28"
+    },
+    {
+      "path": "node_modules/.pnpm/vitest@3.2.7_@types+node@25_31b9f5e9de5ca818bd43df3a46e351ce/node_modules/vitest/package.json",
+      "sha256": "3f3dc1ef7acc6ffac8d0a7f10c4460f98e36026837b57f774426d962d546d740"
+    },
+    {
+      "path": "node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/package.json",
+      "sha256": "822ef7ca6452205657b6288b066481ecf508bfbf43455d715cf7d3ec457561e6"
+    }
+  ],
+  "programs": [
+    "pnpm --filter @oto/telemetry test",
+    "pnpm --filter @oto/api-types test",
+    "pnpm --filter @oto/admin-screens test",
+    "pnpm --filter @oto/messaging test",
+    "pnpm --filter @oto/payments-2c2p test",
+    "pnpm --filter @oto/assistant test",
+    "pnpm --filter @oto/print test",
+    "pnpm --filter @oto/inbox test",
+    "pnpm --filter @oto/booth test",
+    "pnpm --filter @oto/launcher test"
+  ],
+  "helperSha256": "594f71057859fc76083bf75622f36b5d306ac72f988953fb67b83658201ce31f",
+  "startedAt": "2026-10-26T13:26:38.149Z",
+  "hostFreeMiB": 3703,
+  "staging": false
+}

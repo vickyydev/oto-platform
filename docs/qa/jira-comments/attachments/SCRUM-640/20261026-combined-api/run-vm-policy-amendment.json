@@ -1,0 +1,13 @@
+{
+  "ticket": "SCRUM-640",
+  "at": "2026-10-26T13:09:43.787Z",
+  "beforeSha256": "c1637c646d552db8580fb8ce1c2929929e9c6a7092de67987b014a7834f2b048",
+  "afterSha256": "ed7b01f9b070cf222449ca0ddcbb98dbc3f2a00cd309fbed21de76023d6e59be",
+  "hostMemory": "Measured and recorded; diagnostic only because WSL file cache is reclaimable",
+  "linuxAvailableFloorMiB": 7168,
+  "workerCapMiB": 3072,
+  "pgCapMiB": 512,
+  "actualEvidence": "post-install-resource.json",
+  "sourceChanged": false,
+  "beforeRuntimeDispatch": true
+}

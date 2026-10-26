@@ -1,0 +1,252 @@
+TAP version 13
+# Subtest: imports are inert; exactly seven logical mutations and no fake epoch field
+ok 1 - imports are inert; exactly seven logical mutations and no fake epoch field
+  ---
+  duration_ms: 7.4005
+  type: 'test'
+  ...
+# Subtest: plan and preflight require final source, exact deployments, real grant and fresh existing demo scope
+ok 2 - plan and preflight require final source, exact deployments, real grant and fresh existing demo scope
+  ---
+  duration_ms: 1.6596
+  type: 'test'
+  ...
+# Subtest: request grammar refuses every unplanned business writer, auth path, duplicate query and foreign resource
+ok 3 - request grammar refuses every unplanned business writer, auth path, duplicate query and foreign resource
+  ---
+  duration_ms: 0.545
+  type: 'test'
+  ...
+# Subtest: session PUT requires exact armed target/revision; no body-selected account/session fields
+ok 4 - session PUT requires exact armed target/revision; no body-selected account/session fields
+  ---
+  duration_ms: 0.1824
+  type: 'test'
+  ...
+# Subtest: source gate rejects non-main CI, stale or incomplete deploy inventory and missing sixth job
+ok 5 - source gate rejects non-main CI, stale or incomplete deploy inventory and missing sixth job
+  ---
+  duration_ms: 0.4293
+  type: 'test'
+  ...
+# Subtest: explicit execution and frozen helper checks run before any runtime/network/auth
+ok 6 - explicit execution and frozen helper checks run before any runtime/network/auth
+  ---
+  duration_ms: 0.9841
+  type: 'test'
+  ...
+# Subtest: durable intent failure dispatches zero auth/business requests, but cleanup remains independent
+ok 7 - durable intent failure dispatches zero auth/business requests, but cleanup remains independent
+  ---
+  duration_ms: 0.9153
+  type: 'test'
+  ...
+# Subtest: unknown auth/500/redirect/unexpected2xx latch uncertainty and stop subsequent selection without retries
+ok 8 - unknown auth/500/redirect/unexpected2xx latch uncertainty and stop subsequent selection without retries
+  ---
+  duration_ms: 0.3417
+  type: 'test'
+  ...
+# Subtest: known Reception403 is acknowledged; an unexpected4xx refuses progression without pretending unknown
+ok 9 - known Reception403 is acknowledged; an unexpected4xx refuses progression without pretending unknown
+  ---
+  duration_ms: 0.2952
+  type: 'test'
+  ...
+# Subtest: both original-cookie cleanup probes run even on logout throw/refusal or failed receipt recording
+ok 10 - both original-cookie cleanup probes run even on logout throw/refusal or failed receipt recording
+  ---
+  duration_ms: 1.4329
+  type: 'test'
+  ...
+# Subtest: the actual finish wrapper revokes the original cookie even when browser context closure throws
+ok 11 - the actual finish wrapper revokes the original cookie even when browser context closure throws
+  ---
+  duration_ms: 0.2754
+  type: 'test'
+  ...
+# Subtest: actual shared matrix uses A-B-A same SID/native selections, then closes ADMIN before Reception auth
+ok 12 - actual shared matrix uses A-B-A same SID/native selections, then closes ADMIN before Reception auth
+  ---
+  duration_ms: 0.5292
+  type: 'test'
+  ...
+# Subtest: failed prior auth cleanup blocks later auth, selections and any business cleanup
+ok 13 - failed prior auth cleanup blocks later auth, selections and any business cleanup
+  ---
+  duration_ms: 0.2113
+  type: 'test'
+  ...
+# Subtest: read-only job intent is durable before one dispatch; unknown job is terminally uncertain and never retried
+ok 14 - read-only job intent is durable before one dispatch; unknown job is terminally uncertain and never retried
+  ---
+  duration_ms: 0.2216
+  type: 'test'
+  ...
+# Subtest: exact audit draft is parameterized, READ ONLY, bounded and has no mutation/provider request
+ok 15 - exact audit draft is parameterized, READ ONLY, bounded and has no mutation/provider request
+  ---
+  duration_ms: 1.01
+  type: 'test'
+  ...
+# Subtest: audit validates captured A/A then A/B, exact revoked rows and unchanged identities/grants/other sessions
+ok 16 - audit validates captured A/A then A/B, exact revoked rows and unchanged identities/grants/other sessions
+  ---
+  duration_ms: 3.8888
+  type: 'test'
+  ...
+# Subtest: echoed marker text is ignored, one anchored typed result is required; duplicate/truncated logs refuse
+ok 17 - echoed marker text is ignored, one anchored typed result is required; duplicate/truncated logs refuse
+  ---
+  duration_ms: 1.0867
+  type: 'test'
+  ...
+# Subtest: audit refuses incomplete/uncertain/unclean native proof; no finalization without explicit arm
+ok 18 - audit refuses incomplete/uncertain/unclean native proof; no finalization without explicit arm
+  ---
+  duration_ms: 1.0673
+  type: 'test'
+  ...
+# Subtest: audit intake rejects fabricated operation counts, failed native network and stale source observations
+ok 19 - audit intake rejects fabricated operation counts, failed native network and stale source observations
+  ---
+  duration_ms: 1.0365
+  type: 'test'
+  ...
+# Subtest: actual sign-in/request/finally path revokes two distinct observed cookies after cardinality refusal
+not ok 20 - actual sign-in/request/finally path revokes two distinct observed cookies after cardinality refusal
+  ---
+  duration_ms: 14.0604
+  type: 'test'
+  location: 'C:\\w\\admin640-staging-proof-review.test.mjs:51:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Every distinct observed nonempty cookie must be revoked
+
+    0 !== 2
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    rejectIssuanceAndClean (file:///C:/w/admin640-staging-proof-review.test.mjs:43:10)
+    async TestContext.<anonymous> (file:///C:/w/admin640-staging-proof-review.test.mjs:52:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: a nonempty cookie followed by a clearing header is retained and revoked, with no empty-cookie cleanup
+not ok 21 - a nonempty cookie followed by a clearing header is retained and revoked, with no empty-cookie cleanup
+  ---
+  duration_ms: 0.864
+  type: 'test'
+  location: 'C:\\w\\admin640-staging-proof-review.test.mjs:54:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Every distinct observed nonempty cookie must be revoked
+
+    0 !== 1
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    rejectIssuanceAndClean (file:///C:/w/admin640-staging-proof-review.test.mjs:43:10)
+    async TestContext.<anonymous> (file:///C:/w/admin640-staging-proof-review.test.mjs:55:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: duplicate same-cookie headers revoke that exact cookie once and remain failed
+not ok 22 - duplicate same-cookie headers revoke that exact cookie once and remain failed
+  ---
+  duration_ms: 0.456
+  type: 'test'
+  location: 'C:\\w\\admin640-staging-proof-review.test.mjs:57:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Every distinct observed nonempty cookie must be revoked
+
+    0 !== 1
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    rejectIssuanceAndClean (file:///C:/w/admin640-staging-proof-review.test.mjs:43:10)
+    async TestContext.<anonymous> (file:///C:/w/admin640-staging-proof-review.test.mjs:58:32)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: clearing-only ambiguous headers do not invent a cookie/session or issue an unauthenticated cleanup
+ok 23 - clearing-only ambiguous headers do not invent a cookie/session or issue an unauthenticated cleanup
+  ---
+  duration_ms: 0.5046
+  type: 'test'
+  ...
+# Subtest: ordinary single native cookie still follows actual sign-in and original-cookie200/401 cleanup
+not ok 24 - ordinary single native cookie still follows actual sign-in and original-cookie200/401 cleanup
+  ---
+  duration_ms: 0.5181
+  type: 'test'
+  location: 'C:\\w\\admin640-staging-proof-review.test.mjs:63:1'
+  failureType: 'testCodeFailure'
+  error: 'MAX_JSON is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    boundedJson (eval at cookieHarness (file:///C:/w/admin640-staging-proof-review.test.mjs:33:19), <anonymous>:11:80)
+    transport (eval at cookieHarness (file:///C:/w/admin640-staging-proof-review.test.mjs:33:19), <anonymous>:26:26)
+    async DispatchLedger.send (file:///C:/w/admin640-staging-proof-executor.mjs:99:24)
+  ...
+# Subtest: actual native directory check refuses foreign appOnly even when the later directB mapping is clean
+not ok 25 - actual native directory check refuses foreign appOnly even when the later directB mapping is clean
+  ---
+  duration_ms: 6.8758
+  type: 'test'
+  location: 'C:\\w\\admin640-staging-proof-review.test.mjs:81:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///C:/w/admin640-staging-proof-review.test.mjs:82:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual native directory check refuses a native/direct mapped-app-ID mismatch
+not ok 26 - actual native directory check refuses a native/direct mapped-app-ID mismatch
+  ---
+  duration_ms: 0.4981
+  type: 'test'
+  location: 'C:\\w\\admin640-staging-proof-review.test.mjs:84:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///C:/w/admin640-staging-proof-review.test.mjs:85:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual direct foreign appOnly refusal is preserved and an identical own mapping passes
+ok 27 - actual direct foreign appOnly refusal is preserved and an identical own mapping passes
+  ---
+  duration_ms: 0.2484
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 21
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 91.1484

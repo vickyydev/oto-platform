@@ -1,0 +1,65 @@
+{
+  "ticket": "SCRUM-640",
+  "artifacts": [
+    {
+      "path": "C:/w/admin640-api-verification-20261026/selected-source.tar",
+      "sha256": "6913f7aa347b61888b8c72e5e053436babd62efa0945e282e42c8da7a7631ea2",
+      "bytes": 160116224,
+      "purpose": "Exact private source input archive, not copied into QA"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/selected-source.z",
+      "sha256": "ea2724df7e0780ef7de4d016bd3658347201db529402c9ab0b566e1b4d9d28bc",
+      "bytes": 171189,
+      "purpose": "External orchestration/runtime provenance"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/controller.mjs.before-vm-headroom",
+      "sha256": "fb10b4d0ed2ad37178d7ed11f900fa542ade3cbcdf754dacbe7c24bd8e00f0cb",
+      "bytes": 12890,
+      "purpose": "Preserved earlier helper preparation; never relabeled as an executed green receipt"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/controller.mjs",
+      "sha256": "ed7b01f9b070cf222449ca0ddcbb98dbc3f2a00cd309fbed21de76023d6e59be",
+      "bytes": 13064,
+      "purpose": "External orchestration/runtime provenance"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/install-worker.mjs",
+      "sha256": "fccd443cafb8aed53adba75e64d8daa5f15842d45ed2af65ca61148620f40407",
+      "bytes": 5179,
+      "purpose": "External orchestration/runtime provenance"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/run-install.mjs",
+      "sha256": "adc4227ef65f074426990477f3995abf432857e8ae8e9663a721dd39b099ed47",
+      "bytes": 3632,
+      "purpose": "External orchestration/runtime provenance"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/run-docs-followup.mjs",
+      "sha256": "157726e2e43f300e3e165fe8b51eeb0396ec6f9b633792dc5f299a0445e4e204",
+      "bytes": 8479,
+      "purpose": "External orchestration/runtime provenance"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/docs-followup-worker.mjs.before-inherited-todo",
+      "sha256": "b02047fdd22972a0e2cc7745731f1d052dad00f24119cf84edccdeb8354c9e2a",
+      "bytes": 12995,
+      "purpose": "Preserved earlier helper preparation; never relabeled as an executed green receipt"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/docs-followup-reporter.mjs",
+      "sha256": "87c9beae6c8d4be2bca74942e46b9e9561e2db1ab5aa7ea68f5a15ed09a0468d",
+      "bytes": 1789,
+      "purpose": "External orchestration/runtime provenance"
+    },
+    {
+      "path": "C:/w/admin640-api-verification-20261026/cleanup-owned.mjs",
+      "sha256": "74e1f0131eceeb90af19a9e4fbd787865b1d0ff7f117aed5671f28fb8d8323e3",
+      "bytes": 5284,
+      "purpose": "External orchestration/runtime provenance"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "base": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "files": [
+    {
+      "path": "apps/console/src/pages/AssistantSettings.tsx",
+      "sha256": "da5a2e9979d960fb33c1836b016537e0a959528ca20fa729169aeb993aae57fd"
+    },
+    {
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "sha256": "7fe291c7b14dfda71f7b1747893b93b31ca79164b6c63fa904244cc687ff7191"
+    },
+    {
+      "path": "apps/console/src/pages/AreaLanding.tsx",
+      "sha256": "bbfc43c30910a0e98092465e39a19f87394a88fb100fb418c549c8ad34ae2188"
+    },
+    {
+      "path": "apps/console/e2e/assistant-settings.spec.ts",
+      "sha256": "57f1554a7d7951ad4c655e373b3201740db0aab53e7ce947f3cefe5509e0c694"
+    }
+  ]
+}

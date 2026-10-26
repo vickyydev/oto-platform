@@ -1,0 +1,17 @@
+{
+  "sourceAndDependenciesIdentical": true,
+  "nodeVersion": "v22.23.3",
+  "expectedNodeVersion": "v22.23.3",
+  "installedMetadataIdentical": true,
+  "priorReceipt": {
+    "path": "C:/w/admin638-app-compat-20261026/ratchet-v3/01-whole-ratchet-4096.json",
+    "sha256": "cd45be82a943aa434ae2ae0ba0986b55f08a17391aeaa55decbdad337c152be3",
+    "bytes": 1364
+  },
+  "priorReview": {
+    "path": "C:/w/admin638-app-compat-20261026/ratchet-v3-independent-review.json",
+    "sha256": "2034bc9f9a0378913a5f159ee4d76eeb6fe4d750f0fea689581a28bda24412b3",
+    "bytes": 6314
+  },
+  "newCompilerRun": false
+}

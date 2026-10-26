@@ -1,0 +1,18 @@
+
+> @oto/payments-2c2p@0.1.0 test C:\w\admin-operator-switch\packages\payments-2c2p
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/payments-2c2p
+
+ ✓ test/envelope.test.ts (12 tests) 9ms
+ ✓ test/simulator.test.ts (15 tests) 10ms
+ ✓ test/twoc2p.test.ts (10 tests) 19ms
+ ✓ test/hosted.test.ts (14 tests) 18ms
+ ✓ test/maintenance.test.ts (9 tests) 38ms
+ ✓ test/wire.test.ts (21 tests) 246ms
+
+ Test Files  6 passed (6)
+      Tests  81 passed (81)
+   Start at  20:27:18
+   Duration  2.17s (transform 1.04s, setup 0ms, collect 2.19s, tests 341ms, environment 1ms, prepare 2.57s)

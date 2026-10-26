@@ -1,0 +1,412 @@
+// HELD. Import is inert. Only a reviewed final release and explicit --execute may authenticate.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { DEMOS, snapshot, validateJourney, validateReception, digest, operationModel } from './admin640-staging-contract-draft.mjs';
+
+export { DEMOS, operationModel, digest };
+export const WORKTREE = 'C:/w/admin-operator-switch';
+export const ORIGIN = 'https://oto-console-staging.onrender.com';
+const PRIVATE_ROOT = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
+const CONTRACT = 'C:/w/admin640-staging-contract-draft.mjs';
+const FONT = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
+const ACTORS = ['ADMIN', 'RECEPTION'], SERVICES = ['oto-api-staging', 'oto-console-staging'];
+const NOW = () => new Date().toISOString(), TIMEOUT = 30_000, MAX_JSON = 2_000_000;
+export const PNGS = ['SCRUM-640-01-home-operator.png', 'SCRUM-640-02-working-operator.png', 'SCRUM-640-03-reception-refused.png', 'SCRUM-640-04-restored-session-and-audit.png'];
+export const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+export const same = (a, b) => digest(a) === digest(b);
+export const exact = (v, keys) => v !== null && typeof v === 'object' && !Array.isArray(v) && same(Object.keys(v).sort(), [...keys].sort());
+export const uuid = v => typeof v === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(v);
+const hex = v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+export const iso = v => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v));
+export class ProofError extends Error { constructor(code) { super(code); this.code = code; } }
+export const need = (ok, code) => { if (!ok) throw new ProofError(code); };
+export const codeOf = error => error instanceof ProofError ? error.code : 'UNCLASSIFIED_PROOF_ERROR';
+export function publicPath(p) { return typeof p === 'string' && !/[\\%?#\x00-\x20]/.test(p) && !p.split('/').includes('..')
+  && (['/', '/favicon.svg'].includes(p) || /^\/assets\/[A-Za-z0-9_.-]{1,180}\.(?:js|css|svg|png|webp|jpe?g|woff2?)$/.test(p)); }
+
+export function validatePlan(p) {
+  need(exact(p, ['approved', 'ticket', 'sourceSha', 'ciRunId', 'deployments', 'sourceManifestSha256', 'runtimeBindingsSha256', 'helperSha256', 'auditHelperSha256', 'contractSha256',
+    'routeSha256', 'localRelease', 'preflight', 'assets', 'assetManifestSha256', 'privatePhotoPaths', 'outputDirectory']), 'EXACT_REVIEWED_PLAN_REQUIRED');
+  need(p.approved === true && p.ticket === 'SCRUM-640' && /^[a-f0-9]{40}$/.test(p.sourceSha ?? '') && !['0'.repeat(40), '950646674fde66333f911401af82f956f58188b0', '7af05a36b1bbd5463c4c5ebae0741542e9744924'].includes(p.sourceSha)
+    && /^[1-9][0-9]*$/.test(String(p.ciRunId)), 'FINAL_FEATURE_SOURCE_REQUIRED');
+  need(['sourceManifestSha256', 'runtimeBindingsSha256', 'helperSha256', 'auditHelperSha256', 'contractSha256', 'routeSha256', 'assetManifestSha256'].every(k => hex(p[k])), 'FROZEN_HASH_BINDINGS_REQUIRED');
+  need(Array.isArray(p.deployments) && p.deployments.length === 2 && p.deployments.every((d, i) => exact(d, ['name', 'serviceId', 'id', 'finishedAt', 'sourceSha'])
+    && d.name === SERVICES[i] && /^srv-[a-z0-9]+$/.test(d.serviceId) && /^dep-[a-z0-9]+$/.test(d.id) && iso(d.finishedAt) && d.sourceSha === p.sourceSha), 'EXACT_FINAL_DEPLOYMENTS_REQUIRED');
+  need(exact(p.localRelease, ['path', 'sha256']) && /^docs\/qa\/jira-comments\/attachments\/SCRUM-640\/[A-Za-z0-9_./-]+\.json$/.test(p.localRelease.path)
+    && !p.localRelease.path.split('/').includes('..') && hex(p.localRelease.sha256), 'COMMITTED_LOCAL_RELEASE_REQUIRED');
+  need(exact(p.preflight, ['path', 'sha256']) && /^C:\/w\/admin640-staging-proof-preflight-[A-Za-z0-9_-]+\.json$/.test(p.preflight.path) && hex(p.preflight.sha256), 'REVIEWED_POSTDEPLOY_PREFLIGHT_REQUIRED');
+  need(Array.isArray(p.assets) && p.assets.length > 1 && p.assets.length <= 3000 && p.assets.some(a => a.path === '/') && new Set(p.assets.map(a => a.path)).size === p.assets.length
+    && p.assets.every(a => exact(a, ['path', 'sha256', 'contentType']) && publicPath(a.path) && hex(a.sha256)
+      && /^(?:text\/(?:html|css|javascript)|application\/javascript|image\/(?:svg\+xml|png|webp|jpeg)|font\/woff2?)$/.test(a.contentType)) && digest(p.assets) === p.assetManifestSha256, 'EXACT_NATIVE_PUBLIC_ASSETS_REQUIRED');
+  need(Array.isArray(p.privatePhotoPaths) && p.privatePhotoPaths.length <= 4 && new Set(p.privatePhotoPaths).size === p.privatePhotoPaths.length
+    && p.privatePhotoPaths.every(v => /^\/api\/files\/[a-f0-9-]{36}$/.test(v) && uuid(v.split('/').at(-1))), 'EXACT_OWN_PHOTO_PATHS_REQUIRED');
+  need(/^C:\/w\/admin640-staging-proof-[A-Za-z0-9_-]{1,70}$/.test(p.outputDirectory ?? ''), 'FRESH_EXCLUSIVE_OUTPUT_REQUIRED');
+  return p;
+}
+
+export function validatePreflight(r, plan, at = Date.now()) {
+  need(exact(r, ['ticket', 'approved', 'complete', 'readOnly', 'sourceSha', 'ciRunId', 'deployments', 'checkedAt', 'subjects', 'target', 'homeBranchIds', 'privatePhotoPaths'])
+    && r.ticket === 'SCRUM-640' && r.approved === true && r.complete === true && r.readOnly === true && r.sourceSha === plan.sourceSha
+    && String(r.ciRunId) === String(plan.ciRunId) && same(r.deployments, plan.deployments) && iso(r.checkedAt)
+    && Date.parse(r.checkedAt) > Math.max(...plan.deployments.map(d => Date.parse(d.finishedAt))) && at >= Date.parse(r.checkedAt) && at - Date.parse(r.checkedAt) <= 120_000, 'FRESH_POSTDEPLOY_PREFLIGHT_REQUIRED');
+  need(exact(r.subjects, ACTORS) && ACTORS.every(actor => {
+    const s = r.subjects[actor]; return exact(s, ['accountId', 'homeOperatorId', 'active', 'accountEligible', 'mustChangePassword', 'switchGrant', 'platform', 'identitySha256', 'employeeSha256', 'grantsSha256', 'appIdentitySha256', 'otherSessionsSha256', 'otherSessionsCount'])
+      && s.accountId === DEMOS[actor] && s.homeOperatorId === DEMOS.homeOperatorId && s.active === true && s.accountEligible === true && s.mustChangePassword === false
+      && s.switchGrant === (actor === 'ADMIN') && s.platform === (actor === 'ADMIN') && Number.isSafeInteger(s.otherSessionsCount) && s.otherSessionsCount >= 0
+      && ['identitySha256', 'employeeSha256', 'grantsSha256', 'appIdentitySha256', 'otherSessionsSha256'].every(k => hex(s[k]));
+  }), 'EXACT_DEMOS_AND_REAL_NULL_SCOPE_GRANT_REQUIRED');
+  const ids = v => Array.isArray(v) && v.length <= 100 && v.every(uuid) && new Set(v).size === v.length;
+  need(exact(r.target, ['operatorId', 'active', 'branchIds', 'appBranchIds']) && uuid(r.target.operatorId) && r.target.operatorId !== DEMOS.homeOperatorId && r.target.active === true
+    && ids(r.target.branchIds) && ids(r.homeBranchIds) && r.target.branchIds.every(id => !r.homeBranchIds.includes(id))
+    && Array.isArray(r.target.appBranchIds) && r.target.appBranchIds.length <= 100 && r.target.appBranchIds.every(v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v))
+    && same(r.privatePhotoPaths, plan.privatePhotoPaths), 'EXACT_EXISTING_TARGET_BRANCHES_REQUIRED');
+  return r;
+}
+
+export function requestAllowed({ url, method, body, auth = false, health = false, arm = null, assets = [], document = false }) {
+  let u; try { u = new URL(url); } catch { return false; }
+  if (u.origin !== ORIGIN || u.username || u.password || u.hash || u.href !== url || /[%\\]/.test(u.pathname)) return false;
+  if (method === 'POST') return auth && !u.search && (u.pathname === '/api/auth/sign-in'
+    ? exact(body, ['phone', 'password']) && ['phone', 'password'].every(k => typeof body[k] === 'string' && body[k].length > 0 && body[k].length < 200)
+    : u.pathname === '/api/auth/sign-out' && body === undefined);
+  if (method === 'PUT') return !u.search && u.pathname === '/api/me/session/operator' && arm !== null && exact(body, ['operatorId', 'expectedRevision'])
+    && uuid(body.operatorId) && Number.isSafeInteger(body.expectedRevision) && body.expectedRevision >= 0 && body.operatorId === arm.operatorId && body.expectedRevision === arm.expectedRevision;
+  if (method !== 'GET' || body !== undefined) return false;
+  if (['/api/me', '/api/me/permissions', '/api/operators', '/api/branches', '/api/branches/oto-app', '/api/ready'].includes(u.pathname)) return !u.search;
+  if (u.pathname === '/api/ops/health') return health && !u.search;
+  if (u.pathname === '/api/ops/failures') return health && u.searchParams.size === 2 && u.searchParams.getAll('windowHours').length === 1
+    && u.searchParams.get('windowHours') === '24' && u.searchParams.getAll('limit').length === 1 && u.searchParams.get('limit') === '50';
+  return !u.search && (document && u.pathname === '/branches' || publicPath(u.pathname) && assets.includes(u.pathname));
+}
+
+/** Acknowledgement requires the expected status and validated body, not a later GET. */
+export class DispatchLedger {
+  constructor(persist, save = () => {}) { this.persist = persist; this.save = save; this.rows = []; this.unresolved = 0; this.pending = 0; this.broken = false; this.failed = null; }
+  fail(code) { this.failed ??= code; }
+  safe() { need(!this.broken && !this.failed && this.unresolved === 0 && this.pending === 0, 'UNSETTLED_PROOF_REFUSED'); }
+  write(row) { try { this.persist(row); this.save(); } catch { this.broken = true; this.fail('RECEIPT_WRITE_FAILED'); throw new ProofError('RECEIPT_WRITE_FAILED'); } }
+  async send(description, transport, validate, { cleanup = false } = {}) {
+    if (!cleanup) this.safe();
+    const row = { ...description, sequence: this.rows.length + 1, intentAt: NOW(), state: 'intent', terminal: false, status: null, cleanup };
+    this.rows.push(row);
+    try { this.write(row); } catch (e) { if (!cleanup) throw e; }
+    // Cleanup always attempts revocation even when the journal has failed.
+    this.pending++; row.state = 'dispatching'; let acknowledged = false;
+    try {
+      const response = await transport(); row.status = response.status;
+      if (response.status >= 400 && response.status < 500) { row.state = 'refused'; row.terminal = true; acknowledged = true; }
+      const accepted = validate(response);
+      need(accepted === true, 'EXPECTED_NATIVE_ACKNOWLEDGEMENT_REQUIRED');
+      row.state = 'acknowledged'; row.terminal = true; acknowledged = true; return response;
+    } catch (e) {
+      if (!acknowledged) { row.state = 'effect_unknown'; row.terminal = false; this.unresolved++; }
+      if (!cleanup) this.fail(codeOf(e)); row.errorCode = codeOf(e); throw e;
+    } finally {
+      row.completedAt = NOW(); this.pending--;
+      try { this.write(row); } catch (e) { if (!cleanup) throw e; }
+    }
+  }
+}
+
+export async function closeAuth(c, request, record) {
+  const row = { actor: c.actor, signOutStatus: null, meStatus: null, confirmed: false };
+  const cookie = c.originalCookie;
+  try { need(typeof cookie === 'string' && cookie.startsWith('oto_session='), 'ORIGINAL_OWN_COOKIE_REQUIRED');
+    try { const r = await request(c, 'POST', '/api/auth/sign-out', { cleanup: true, originalCookie: cookie }); row.signOutStatus = r.status; row.logoutOk = r.status === 200 && r.body?.ok === true; } catch (e) { row.errorCode = codeOf(e); }
+    try { const r = await request(c, 'GET', '/api/me', { cleanup: true, originalCookie: cookie }); row.meStatus = r.status; } catch (e) { row.errorCode ??= codeOf(e); }
+    row.confirmed = row.logoutOk === true && row.meStatus === 401 && !row.errorCode;
+  } catch (e) { row.errorCode = codeOf(e); }
+  c.closed = row.confirmed; c.cookie = ''; if (c.closed) c.originalCookie = '';
+  try { record(row); } catch { /* Revocation already attempted; the caller retains its broken-journal latch. */ }
+  return row.confirmed;
+}
+export async function finishOwnedSession(c, { closeContext, request, record, fail }) {
+  let contextClosed = true;
+  try { await closeContext(c); } catch { contextClosed = false; fail('BROWSER_CONTEXT_CLOSE_FAILED'); }
+  const ok = await closeAuth(c, request, record);
+  let extrasClosed = true;
+  for (const cookie of c.extraCookies) {
+    const closed = await closeAuth({ actor: c.actor, originalCookie: cookie }, request, row => record({ ...row, observedCookie: true }));
+    if (!closed) extrasClosed = false;
+  }
+  if (!ok || !extrasClosed) fail('AUTH_CLEANUP_UNCONFIRMED');
+  return ok && contextClosed && extrasClosed;
+}
+
+export async function performSessionMatrix(d) {
+  const admin = await d.login('ADMIN');
+  const before = await d.handshake(admin); need(before.platform && before.switchGrant, 'REAL_SWITCH_AUTHORITY_BEFORE_OFFER_REQUIRED');
+  await d.open(admin, false); await d.capture(admin, 0);
+  await d.select(admin, d.target, before.revision); const working = await d.handshake(admin);
+  await d.checkDirectory(admin); await d.capture(admin, 1);
+  await d.select(admin, DEMOS.homeOperatorId, working.revision); const restored = await d.handshake(admin);
+  validateJourney({ before, working, restored, targetOperatorId: d.target });
+  need(await d.finish(admin), 'ADMIN_AUTH_NOT_CLOSED'); d.safe();
+  const reception = await d.login('RECEPTION'), rBefore = await d.handshake(reception);
+  await d.open(reception, true); const refused = await d.refuse(reception, rBefore.revision), rAfter = await d.handshake(reception);
+  validateReception({ before: rBefore, after: rAfter, status: refused.status, pickerCount: await d.pickerCount(reception) });
+  await d.capture(reception, 2); need(await d.finish(reception), 'RECEPTION_AUTH_NOT_CLOSED'); d.safe();
+  return { before, working, restored, receptionBefore: rBefore, receptionAfter: rAfter };
+}
+
+const RUNTIME = ['node_modules/.pnpm/lock.yaml', 'node_modules/.modules.yaml', 'apps/api/node_modules/tsx/package.json', 'apps/api/node_modules/tsx/dist/esm/api/index.mjs', 'apps/api/node_modules/zod/package.json'];
+export function runtimeBindingsOf(root = WORKTREE) { return { node: process.version, files: RUNTIME.map(p => ({ path: p, sha256: hash(fs.readFileSync(path.join(root, p))) })) }; }
+export function verifyLocalSource(plan, command) {
+  const git = args => command('git', args, WORKTREE);
+  const selected = p => !/(?:^|\/)(?:node_modules|dist|\.git|\.env)(?:\/|$)/.test(p) && !/^(?:docs|imports|services)\//.test(p)
+    && (/^(?:apps|packages|scripts)\//.test(p) || /^\.github\/workflows\//.test(p) || /^(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|eslint\.config\.mjs|tsconfig[^/]*\.json|render\.yaml|\.npmrc|\.pnpmfile\.cjs|\.env\.example|\.gitignore)$/.test(p))
+    && !/(?:^|\/)\.env(?:\.|$)/.test(p.replace(/^\.env\.example$/, ''));
+  const paths = git(['ls-files', '--cached', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean).filter(selected).sort();
+  const tree = git(['ls-tree', '-r', '-z', '--full-tree', plan.sourceSha]).split('\0').filter(Boolean).map(line => {
+    const m = /^(\d{6}) (blob|commit) ([a-f0-9]{40})\t(.+)$/.exec(line); need(m, 'VALID_FEATURE_TREE_REQUIRED'); return { mode: m[1], type: m[2], blob: m[3], path: m[4] };
+  }).filter(row => selected(row.path)).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  need(same(paths, tree.map(r => r.path)), 'FEATURE_SOURCE_PATHS_DIFFER');
+  const rows = paths.map((p, i) => { need(/^[A-Za-z0-9_./-]+$/.test(p) && !p.split('/').includes('..') && tree[i].type === 'blob' && ['100644', '100755'].includes(tree[i].mode) && fs.lstatSync(path.join(WORKTREE, p)).isFile(), 'REGULAR_SOURCE_REQUIRED');
+    const bytes = fs.readFileSync(path.join(WORKTREE, p)); need(createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex') === tree[i].blob, 'COMMITTED_SOURCE_BYTES_DIFFER'); return { path: p, sha256: hash(bytes) }; });
+  need(hash(JSON.stringify(rows)) === plan.sourceManifestSha256 && digest(runtimeBindingsOf()) === plan.runtimeBindingsSha256, 'SOURCE_RUNTIME_MANIFEST_DIFFERS');
+  need(fs.readFileSync(path.join(WORKTREE, 'pnpm-lock.yaml'), 'utf8').replaceAll('\r\n', '\n').trim() === fs.readFileSync(path.join(WORKTREE, 'node_modules/.pnpm/lock.yaml'), 'utf8').replaceAll('\r\n', '\n').trim(), 'INSTALLED_LOCK_DIFFERS');
+  for (const [p, expected] of [['apps/api/src/routes/me.ts', plan.routeSha256], [plan.localRelease.path, plan.localRelease.sha256]]) need(hash(fs.readFileSync(path.join(WORKTREE, p))) === expected && hash(git(['show', `${plan.sourceSha}:${p}`])) === expected, 'COMMITTED_ROUTE_RELEASE_REQUIRED');
+  const release = JSON.parse(fs.readFileSync(path.join(WORKTREE, plan.localRelease.path)));
+  need(release.ticket === 'SCRUM-640' && release.localReleaseGreen === true && release.sourceManifestSha256 === plan.sourceManifestSha256, 'FINAL_LOCAL_RELEASE_GREEN_REQUIRED');
+  need(hash(fs.readFileSync(CONTRACT)) === plan.contractSha256, 'FROZEN_PURE_CONTRACT_REQUIRED');
+  need(hash(fs.readFileSync('C:/w/admin640-staging-proof-audit-draft.mjs')) === plan.auditHelperSha256, 'FROZEN_AUDIT_DRAFT_REQUIRED');
+  for (const p of ['scripts/agent/env.mjs', 'scripts/agent/evidence.mjs']) need(hash(fs.readFileSync(path.join(PRIVATE_ROOT, p))) === hash(fs.readFileSync(path.join(WORKTREE, p))), 'BOUND_PRIVATE_SUPPORT_REQUIRED');
+  return { files: rows.length, sourceManifestSha256: plan.sourceManifestSha256, runtimeBindingsSha256: plan.runtimeBindingsSha256 };
+}
+
+export function releaseFacts(plan, ci, jobs, services, latest) {
+  need(String(ci.id) === String(plan.ciRunId) && ci.name === 'CI' && ci.head_sha === plan.sourceSha && ci.head_branch === 'main' && ci.event === 'push'
+    && ci.status === 'completed' && ci.conclusion === 'success' && jobs.total_count === 6 && jobs.jobs?.length === 6
+    && new Set(jobs.jobs.map(j => j.name)).size === 6 && jobs.jobs.every(j => j.status === 'completed' && j.conclusion === 'success'), 'EXACT_MAIN_SIX_GREEN_REQUIRED');
+  need(Array.isArray(services) && services.length < 50, 'COMPLETE_SERVICE_INVENTORY_REQUIRED');
+  for (const d of plan.deployments) { const matches = services.map(v => v.service ?? v).filter(v => v.name === d.name), live = latest[d.serviceId]?.[0]?.deploy;
+    need(matches.length === 1 && matches[0].id === d.serviceId && live?.id === d.id && live.status === 'live' && live.commit?.id === plan.sourceSha && live.finishedAt === d.finishedAt, 'LATEST_EXACT_DEPLOY_REQUIRED'); }
+  return true;
+}
+
+async function boundedJson(response) {
+  need(response.body && Number(response.headers.get('content-length') ?? 0) <= MAX_JSON, 'JSON_LIMIT_REQUIRED');
+  const reader = response.body.getReader(), chunks = []; let size = 0;
+  try { for (;;) { const { done, value } = await reader.read(); if (done) break; size += value.length; need(size <= MAX_JSON, 'JSON_LIMIT_REQUIRED'); chunks.push(Buffer.from(value)); }
+    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new ProofError('NATIVE_JSON_REQUIRED'); }
+  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+}
+function metadataCommand(exe, args, cwd) { const r = spawnSync(exe, args, { cwd, encoding: 'utf8', timeout: TIMEOUT, maxBuffer: 5_000_000, stdio: ['ignore', 'pipe', 'pipe'] }); need(r.status === 0 && !r.signal, 'METADATA_COMMAND_FAILED'); return r.stdout; }
+async function releasedSchemas() {
+  const { tsImport } = await import(pathToFileURL(path.join(WORKTREE, 'apps/api/node_modules/tsx/dist/esm/api/index.mjs')).href);
+  const schemas = {};
+  for (const [file, exported, label] of [['me', 'meRoutes', 'me'], ['branches', 'branchRoutes', 'branches'], ['operators', 'operatorRoutes', 'operators']]) {
+    const module = await tsImport(pathToFileURL(path.join(WORKTREE, `apps/api/src/routes/${file}.ts`)).href, { parentURL: import.meta.url, tsconfig: path.join(WORKTREE, 'apps/api/tsconfig.json') });
+    need(typeof module[exported] === 'function', 'RELEASED_ROUTE_EXPORT_REQUIRED');
+    const app = Object.fromEntries(['get', 'post', 'put', 'patch', 'delete'].map(method => [method, (p, options) => {
+      if (method === 'get' && p === '/') schemas[label] = options.schema.response[200];
+      if (label === 'me' && method === 'put' && p === '/session/operator') schemas.selection = options.schema.response[200];
+      if (label === 'branches' && method === 'get' && p === '/oto-app') schemas.mapping = options.schema.response[200];
+    }]));
+    await module[exported](app);
+  }
+  need(['me', 'branches', 'operators', 'selection', 'mapping'].every(k => typeof schemas[k]?.parse === 'function'), 'ACTUAL_RELEASED_SCHEMAS_REQUIRED');
+  return schemas;
+}
+async function dependencies(plan) {
+  const local = () => verifyLocalSource(plan, metadataCommand); local();
+  const { need: secret } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/env.mjs')).href);
+  const render = async endpoint => { const r = await fetch('https://api.render.com/v1' + endpoint, { redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT), headers: { authorization: `Bearer ${secret('RENDER_API_KEY')}`, accept: 'application/json' } }); need(r.status === 200, 'RENDER_METADATA_200_REQUIRED'); return boundedJson(r); };
+  const gate = async () => { const binding = local(), ci = JSON.parse(metadataCommand('gh', ['api', `repos/vickyydev/oto-platform/actions/runs/${plan.ciRunId}`], WORKTREE)), jobs = JSON.parse(metadataCommand('gh', ['api', `repos/vickyydev/oto-platform/actions/runs/${plan.ciRunId}/jobs?per_page=100`], WORKTREE));
+    const services = await render('/services?limit=50'), latest = {}; for (const d of plan.deployments) latest[d.serviceId] = await render(`/services/${d.serviceId}/deploys?limit=1`);
+    releaseFacts(plan, ci, jobs, services, latest); return { at: NOW(), sourceSha: plan.sourceSha, ciRunId: String(plan.ciRunId), deployments: plan.deployments, local: binding, metadataSha256: digest({ ci, jobs, services, latest }) }; };
+  return { local, gate, secret };
+}
+export async function verifyReleasedPlan(input) {
+  const plan = validatePlan(input); need(hash(fs.readFileSync(fileURLToPath(import.meta.url))) === plan.helperSha256, 'FROZEN_EXECUTOR_REQUIRED');
+  const deps = await dependencies(plan); return deps.gate();
+}
+
+export async function executeReviewedPlan(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_EXECUTE_REQUIRED'); const plan = validatePlan(input);
+  need(hash(fs.readFileSync(fileURLToPath(import.meta.url))) === plan.helperSha256 && !fs.existsSync(plan.outputDirectory), 'FROZEN_HELPER_FRESH_OUTPUT_REQUIRED');
+  const deps = await dependencies(plan); await deps.gate(); const schemas = await releasedSchemas();
+  const preBytes = fs.readFileSync(plan.preflight.path); need(hash(preBytes) === plan.preflight.sha256, 'PREFLIGHT_BYTES_CHANGED');
+  const preflight = validatePreflight(JSON.parse(preBytes), plan);
+  fs.mkdirSync(plan.outputDirectory);
+  const receipt = { ticket: 'SCRUM-640', actualStaging: true, localMock: false, complete: false, nativeComplete: false, awaitingReadOnlyAudit: true,
+    sourceSha: plan.sourceSha, sourceManifestSha256: plan.sourceManifestSha256, ciRunId: String(plan.ciRunId), deployments: plan.deployments, helperSha256: plan.helperSha256,
+    planSha256: digest(plan), preflightSha256: plan.preflight.sha256, startedAt: NOW(), completedAt: null, sourceChecks: [], handshakes: [], directory: [], authCleanup: [], screenshots: [],
+    pending: 0, nativePending: 0, unresolved: 0, journalHealthy: true, businessWrites: 0, fixturesCreated: 0, unknownIssuance: 0,
+    network: { blocked: 0, failed: 0, pageErrors: 0, consoleErrors: 0, fontSuppressions: 0, photoSuppressions: 0 }, errorCode: null,
+    limitations: ['No React authorityEpoch is exposed: staging observes native SID/revision and canonical me/permissions/me only.', 'No OTO handoff, identity provisioning, AI, provider, payment, check-in, device or grant action.', 'Three native images precede separate read-only audit verification; complete remains false until that evidence and image4 are finalized.'] };
+  const resultPath = path.join(plan.outputDirectory, 'result.json'), journalPath = path.join(plan.outputDirectory, 'intents.jsonl');
+  fs.writeFileSync(journalPath, '', { flag: 'wx', flush: true });
+  let ledger;
+  const save = () => { if (ledger) Object.assign(receipt, { operations: ledger.rows, pending: ledger.pending, unresolved: ledger.unresolved, journalHealthy: !ledger.broken });
+    try { fs.writeFileSync(resultPath, JSON.stringify(receipt, null, 2) + '\n', { flush: true }); }
+    catch { if (ledger) { ledger.broken = true; ledger.fail('RECEIPT_WRITE_FAILED'); } receipt.journalHealthy = false; throw new ProofError('RECEIPT_WRITE_FAILED'); } };
+  ledger = new DispatchLedger(row => { const fd = fs.openSync(journalPath, 'a'); try { fs.writeSync(fd, JSON.stringify(row) + '\n'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }, save);
+  const saveNative = () => { try { save(); } catch (e) { receipt.errorCode ??= codeOf(e); ledger.fail(codeOf(e)); } };
+  const safe = () => { ledger.safe(); need(receipt.unknownIssuance === 0 && Object.entries(receipt.network).every(([k, v]) => ['fontSuppressions', 'photoSuppressions'].includes(k) || v === 0), 'NATIVE_FAILURE_LATCHED'); };
+  const sourceGate = async () => { const value = await deps.gate(); receipt.sourceChecks.push(value); save(); };
+  const sessions = [], native = new Set(); let browser, failed = false;
+  const watchCookie = (c, headers, signingIn = false, cleanup = false) => {
+    const values = headers.filter(h => h.name.toLowerCase() === 'set-cookie').map(h => /^oto_session=([^;]*)/.exec(h.value)).filter(Boolean);
+    if (signingIn) {
+      // Retain all observed nonempty cookies privately before any refusal; cleanup must not lose an issued session.
+      const observed = [...new Set(values.filter(m => m[1]).map(m => 'oto_session=' + m[1]))];
+      for (const cookie of observed) c.extraCookies.add(cookie);
+      if (!c.originalCookie && observed.length) c.originalCookie = observed[0];
+      if (c.originalCookie) c.extraCookies.delete(c.originalCookie);
+      if (values.length !== 1 || !values[0][1]) { receipt.unknownIssuance++; ledger.fail('AMBIGUOUS_SIGNIN_ISSUANCE'); }
+      need(values.length === 1 && values[0][1], 'ONE_NATIVE_SIGNIN_COOKIE_REQUIRED');
+      c.cookie = c.originalCookie; return;
+    }
+    for (const m of values) if (m[1] && 'oto_session=' + m[1] !== c.originalCookie) { c.extraCookies.add('oto_session=' + m[1]); receipt.unknownIssuance++; ledger.fail('UNEXPECTED_SESSION_ISSUANCE'); }
+    if (!cleanup) need(values.length === 0, 'UNEXPECTED_SESSION_HEADER');
+  };
+  async function request(c, method, pathname, { body, cleanup = false, originalCookie, arm = null } = {}) {
+    need(requestAllowed({ url: ORIGIN + pathname, method, body, auth: true, arm }), 'HTTP_GRAMMAR_REFUSED');
+    need(!cleanup || method === 'POST' && pathname === '/api/auth/sign-out' || method === 'GET' && pathname === '/api/me', 'ONLY_ORIGINAL_AUTH_CLEANUP_ALLOWED');
+    if (!cleanup) safe();
+    const cookie = originalCookie ?? c.originalCookie;
+    const transport = async () => {
+      const r = await fetch(ORIGIN + pathname, { method, redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT), headers: { accept: 'application/json', ...(cookie ? { cookie } : {}), ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(method === 'PUT' ? { 'idempotency-key': randomUUID() } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
+      watchCookie(c, r.headers.getSetCookie().map(value => ({ name: 'set-cookie', value })), pathname === '/api/auth/sign-in', cleanup);
+      const json = await boundedJson(r);
+      if (r.status === 200 && method === 'GET' && pathname === '/api/me') try { schemas.me.parse(json); } catch { throw new ProofError('ACTUAL_ME_SCHEMA_REQUIRED'); }
+      return { status: r.status, body: json, responseAt: r.headers.get('date') };
+    };
+    if (method === 'GET') return transport();
+    return ledger.send({ actor: c.actor, kind: cleanup ? 'auth-cleanup' : pathname.endsWith('sign-in') ? 'auth-signin' : 'refused-session-selection', method, path: pathname }, transport,
+      r => pathname.endsWith('sign-in') ? r.status === 200 && r.body?.accountId === DEMOS[c.actor] && r.body.mustChangePassword === false && !!c.originalCookie
+        : cleanup ? r.status === 200 && r.body?.ok === true : r.status === 403 && typeof r.body?.error?.code === 'string', { cleanup });
+  }
+  async function handshake(c) {
+    const first = await request(c, 'GET', '/api/me'), permissions = await request(c, 'GET', '/api/me/permissions'), last = await request(c, 'GET', '/api/me');
+    need(first.status === 200 && permissions.status === 200 && last.status === 200 && same(first.body, last.body), 'CANONICAL_ME_PERMISSIONS_ME_REQUIRED');
+    const value = snapshot(last.body, permissions.body?.permissions); need(value.accountId === DEMOS[c.actor] && value.homeOperatorId === DEMOS.homeOperatorId, 'EXACT_DEMO_IDENTITY_REQUIRED');
+    need(!c.sessionId || c.sessionId === value.sessionId, 'SAME_OWNED_SESSION_REQUIRED'); c.sessionId = value.sessionId; c.permissions = permissions.body.permissions; c.me = last.body;
+    receipt.handshakes.push({ actor: c.actor, at: NOW(), ...value }); save(); return value;
+  }
+  async function drain() { const until = Date.now() + TIMEOUT; while (native.size) { need(Date.now() < until, 'NATIVE_DRAIN_TIMEOUT'); let timer;
+    try { await Promise.race([Promise.allSettled([...native]), new Promise(resolve => { timer = setTimeout(resolve, Math.max(1, until - Date.now())); })]); } finally { clearTimeout(timer); } }
+    need(receipt.nativePending === 0, 'NATIVE_CALLBACKS_UNSETTLED'); }
+  async function closeBrowserContext(c) {
+    let first;
+    try { await drain(); } catch (e) { first = e; }
+    try { if (c.context) await c.context.close(); } catch (e) { first ??= e; }
+    finally { c.context = null; try { await drain(); } catch (e) { first ??= e; } }
+    if (first) throw first;
+  }
+  async function finish(c) { return finishOwnedSession(c, { closeContext: closeBrowserContext, request,
+    record: row => { receipt.authCleanup.push(row); save(); }, fail: code => ledger.fail(code) }); }
+  async function open(c, restricted) {
+    safe(); await sourceGate(); c.context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' });
+    await c.context.addCookies([{ name: 'oto_session', value: c.originalCookie.slice(12), url: ORIGIN, httpOnly: true, secure: true, sameSite: 'Lax' }]);
+    const page = c.page = await c.context.newPage(); page.setDefaultTimeout(TIMEOUT);
+    page.on('pageerror', () => { receipt.network.pageErrors++; ledger.fail('NATIVE_PAGE_ERROR'); saveNative(); });
+    page.on('console', m => { if (m.type() === 'error') { receipt.network.consoleErrors++; ledger.fail('NATIVE_CONSOLE_ERROR'); saveNative(); } });
+    page.on('requestfailed', () => { receipt.network.failed++; ledger.fail('NATIVE_REQUEST_FAILED'); saveNative(); });
+    await page.routeWebSocket('**/*', ws => { receipt.network.blocked++; ledger.fail('WEBSOCKET_REFUSED'); ws.close(); saveNative(); });
+    await page.route('**/*', async route => {
+      let settle; const work = new Promise(resolve => { settle = resolve; }); native.add(work); receipt.nativePending++; const req = route.request();
+      try {
+        need(!ledger.broken && !ledger.failed && receipt.unknownIssuance === 0, 'NATIVE_FAILURE_LATCHED');
+        const url = new URL(req.url()), main = req.frame() === page.mainFrame();
+        if (req.url() === FONT && req.method() === 'GET' && req.resourceType() === 'stylesheet' && main) { receipt.network.fontSuppressions++; await route.fulfill({ status: 200, contentType: 'text/css', body: '' }); return; }
+        if (main && req.method() === 'GET' && req.resourceType() === 'image' && url.origin === ORIGIN && !url.search && plan.privatePhotoPaths.includes(url.pathname)) { receipt.network.photoSuppressions++; await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>' }); return; }
+        let body; if (req.postData() !== null) { try { body = JSON.parse(req.postData()); } catch { throw new ProofError('NATIVE_JSON_BODY_REQUIRED'); } }
+        need(main && requestAllowed({ url: req.url(), method: req.method(), body, arm: c.arm, health: c.permissions.some(p => p.permission === 'admin:health:read'), assets: plan.assets.map(a => a.path), document: req.resourceType() === 'document' }), 'NATIVE_REQUEST_GRAMMAR_REFUSED');
+        const isPut = req.method() === 'PUT';
+        if (isPut) { need(c.actor === 'ADMIN' && c.arm && !c.arm.used && req.resourceType() === 'fetch' && uuid(req.headers()['idempotency-key']), 'ONE_ARMED_NATIVE_SESSION_PUT_REQUIRED'); c.arm.used = true; }
+        const transport = async () => { const response = await route.fetch({ maxRetries: 0, maxRedirects: 0, timeout: TIMEOUT });
+          watchCookie(c, response.headersArray()); const bytes = await response.body(); need(bytes.length <= (url.pathname.startsWith('/api/') ? MAX_JSON : 8_000_000), 'NATIVE_BODY_LIMIT');
+          let json; if (url.pathname.startsWith('/api/')) { try { json = JSON.parse(bytes.toString()); } catch { throw new ProofError('NATIVE_JSON_REQUIRED'); } }
+          else { const asset = plan.assets.find(a => a.path === (req.resourceType() === 'document' ? '/' : url.pathname)); need(asset && hash(bytes) === asset.sha256 && response.headers()['content-type']?.split(';')[0].trim() === asset.contentType, 'PRODUCTION_STATIC_BYTES_DIFFER'); }
+          return { status: response.status(), body: json, bytes, headers: response.headers() }; };
+        const response = isPut ? await ledger.send({ actor: c.actor, kind: 'native-session-selection', method: 'PUT', path: '/api/me/session/operator', requestId: req.headers()['x-request-id'] ?? null,
+          sessionId: c.sessionId, expectedRevision: c.arm.expectedRevision, operatorId: c.arm.operatorId }, transport,
+          r => r.status === 200 && r.body?.revision === c.arm.expectedRevision + 1 && r.body.effectiveOperatorId === c.arm.operatorId && r.body.homeOperatorId === DEMOS.homeOperatorId && r.body.branchId === null && r.body.stationId === null)
+          : await transport();
+        need(response.status === 200, 'NATIVE_ALLOWED_GET_200_REQUIRED');
+        const schema = ({ '/api/me': schemas.me, '/api/branches': schemas.branches, '/api/branches/oto-app': schemas.mapping, '/api/operators': schemas.operators, '/api/me/session/operator': schemas.selection })[url.pathname];
+        if (schema) try { schema.parse(response.body); } catch { throw new ProofError('ACTUAL_NATIVE_ROUTE_SCHEMA_REQUIRED'); }
+        if (url.pathname === '/api/branches') c.lastDirectory = response.body;
+        if (url.pathname === '/api/branches/oto-app') c.lastMapping = response.body;
+        const headers = { ...response.headers }; for (const h of ['content-encoding', 'content-length', 'transfer-encoding', 'set-cookie']) delete headers[h];
+        await route.fulfill({ status: response.status, headers, body: response.bytes });
+      } catch (e) { receipt.errorCode ??= codeOf(e); ledger.fail(codeOf(e)); receipt.network.blocked++;
+        receipt.lastBlocked = { method: req.method(), resourceType: req.resourceType(), urlSha256: hash(req.url()) }; await route.abort('blockedbyclient').catch(() => {}); }
+      finally { receipt.nativePending--; native.delete(work); settle(); saveNative(); }
+    });
+    await page.goto(ORIGIN + '/branches', { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+    if (!restricted) { await page.getByRole('heading', { name: 'Branches', exact: true }).waitFor(); const picker = page.getByRole('combobox', { name: 'Operator', exact: true }); await picker.waitFor();
+      need(await picker.isEnabled() && await picker.inputValue() === c.me.operatorContext.effectiveOperatorId, 'NATIVE_OPERATOR_PICKER_READY_REQUIRED'); }
+    else { const denied = page.getByRole('heading', { name: 'The console is not on your access', exact: true }); if (await denied.count()) await denied.waitFor(); else await page.getByText('This page is not on your access', { exact: true }).waitFor(); }
+    await drain(); safe();
+  }
+  async function capture(c, index) {
+    await drain(); safe(); await sourceGate(); const page = c.page; const capturedAt = NOW();
+    if (c.actor === 'ADMIN') { const picker = page.getByRole('combobox', { name: 'Operator', exact: true }); need(await picker.isEnabled() && await picker.inputValue() === c.me.operatorContext.effectiveOperatorId, 'ACTUAL_NATIVE_SELECTED_CONTEXT_REQUIRED'); }
+    const masks = [], identity = page.getByRole('button', { name: 'Sign out', exact: true }).locator('..');
+    for (let i = 0; i < await identity.count(); i++) if (await identity.nth(i).isVisible()) masks.push(identity.nth(i));
+    const denied = page.getByRole('heading', { name: 'The console is not on your access', exact: true });
+    if (await denied.count()) masks.push(denied.locator('..').locator(':scope > p').first());
+    await page.evaluate(text => { document.getElementById('zz-640-caption')?.remove(); const host = document.querySelector('main') ?? document.body, caption = document.createElement('div');
+      caption.id = 'zz-640-caption'; caption.textContent = text; caption.style.cssText = 'position:relative;z-index:999999;white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box;width:100%;padding:12px;margin-bottom:16px;background:white;color:#111;border:2px solid #111;font:12px/1.5 monospace'; host.prepend(caption); },
+      'SCRUM-640 | Actual native staging | ' + c.actor + '\n' + capturedAt + '\nSource ' + plan.sourceSha + '\nCI ' + plan.ciRunId + '\n'
+      + (index === 2 ? 'Actual API403; operator picker absent. No successful selection.' : index === 0 ? 'Home account and home working operator; native selector offered.' : 'Same home account; working operatorB; native scoped directory.'));
+    need(await page.evaluate(() => { const e = document.getElementById('zz-640-caption'), b = e.getBoundingClientRect(); return b.x >= 0 && b.right <= innerWidth + 1 && e.scrollWidth <= e.clientWidth + 1; }), 'FULL_SOURCE_CAPTION_REQUIRED');
+    const file = path.join(plan.outputDirectory, PNGS[index]); await page.screenshot({ path: file, fullPage: true, mask: masks, animations: 'disabled' }); await drain(); safe();
+    receipt.screenshots.push({ filename: PNGS[index], sha256: hash(fs.readFileSync(file)), capturedAt, actor: c.actor, actualNative: true, identityMasks: masks.length }); save();
+  }
+  try {
+    save(); await sourceGate(); validatePreflight(preflight, plan);
+    const { launch } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/evidence.mjs')).href); browser = await launch();
+    receipt.journey = await performSessionMatrix({ target: preflight.target.operatorId, safe,
+      login: async actor => { safe(); await sourceGate(); const c = { actor, cookie: '', originalCookie: '', closed: false, extraCookies: new Set() }; sessions.push(c);
+        await request(c, 'POST', '/api/auth/sign-in', { body: { phone: deps.secret('STAGING_' + actor + '_PHONE'), password: deps.secret('STAGING_' + actor + '_PASSWORD') } }); return c; },
+      handshake, open, capture, finish,
+      select: async (c, operatorId, expectedRevision) => { await drain(); safe(); await sourceGate(); c.lastDirectory = null; c.lastMapping = null; c.arm = { operatorId, expectedRevision, used: false };
+        const picker = c.page.getByRole('combobox', { name: 'Operator', exact: true }); const response = c.page.waitForResponse(r => r.request().method() === 'PUT' && r.url() === ORIGIN + '/api/me/session/operator', { timeout: TIMEOUT });
+        const settled = response.then(r => ({ ok: true, status: r.status() }), () => ({ ok: false })); await picker.selectOption(operatorId); const result = await settled;
+        need(result.ok && result.status === 200 && c.arm.used, 'ONE_NATIVE_SELECTION_ACK_REQUIRED'); c.arm = null; await picker.waitFor({ state: 'visible' });
+        await c.page.waitForFunction(id => { const p = [...document.querySelectorAll('select')].find(e => e.closest('label')?.textContent?.trim() === 'Operator'); return p && p.value === id && !p.disabled; }, operatorId, { timeout: TIMEOUT }); await drain(); safe(); },
+      checkDirectory: async c => { const a = await request(c, 'GET', '/api/branches'), b = await request(c, 'GET', '/api/branches/oto-app'), operators = await request(c, 'GET', '/api/operators');
+        try { schemas.branches.parse(a.body); schemas.mapping.parse(b.body); schemas.operators.parse(operators.body); } catch { throw new ProofError('ACTUAL_DIRECTORY_SCHEMAS_REQUIRED'); }
+        const ownMapping = value => value && value.branches.every(v => preflight.target.branchIds.includes(v.branchId)
+          && (v.appBranchId === null || preflight.target.appBranchIds.includes(v.appBranchId)))
+          && value.appOnly.every(v => preflight.target.appBranchIds.includes(v.appBranchId));
+        const mappingProjection = value => ({ installed: value.installed,
+          branches: value.branches.map(v => ({ branchId: v.branchId, appBranchId: v.appBranchId, status: v.status })).sort((x, y) => x.branchId.localeCompare(y.branchId)),
+          appOnly: value.appOnly.map(v => ({ appBranchId: v.appBranchId, status: v.status })).sort((x, y) => x.appBranchId.localeCompare(y.appBranchId)) });
+        need(a.status === 200 && b.status === 200 && operators.status === 200 && same(a.body.branches.map(v => v.id).sort(), [...preflight.target.branchIds].sort())
+          && same(b.body.branches.map(v => v.branchId).sort(), [...preflight.target.branchIds].sort()) && ownMapping(b.body) && ownMapping(c.lastMapping)
+          && same(mappingProjection(b.body), mappingProjection(c.lastMapping))
+          && same(c.lastDirectory?.branches?.map(v => v.id).sort(), [...preflight.target.branchIds].sort()) && same(c.lastMapping?.branches?.map(v => v.branchId).sort(), [...preflight.target.branchIds].sort()), 'ACTUAL_NATIVE_B_ONLY_DIRECTORY_REQUIRED');
+        receipt.directory.push({ at: NOW(), operatorId: preflight.target.operatorId, branchIds: [...preflight.target.branchIds], operatorsReadable: true, nativeAndApiMatch: true, responseSha256: digest({ a: a.body, b: b.body }) }); save(); },
+      refuse: (c, revision) => request(c, 'PUT', '/api/me/session/operator', { body: { operatorId: preflight.target.operatorId, expectedRevision: revision }, arm: { operatorId: preflight.target.operatorId, expectedRevision: revision } }),
+      pickerCount: c => c.page.getByRole('combobox', { name: 'Operator', exact: true }).count(),
+    });
+    receipt.nativeComplete = true;
+  } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+  finally {
+    for (const c of sessions) { try { await closeBrowserContext(c); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+      if (!c.closed && c.originalCookie) try { if (!await finish(c)) failed = true; } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+      c.cookie = ''; c.originalCookie = ''; c.extraCookies.clear(); }
+    try { if (browser) await browser.close(); } catch { failed = true; receipt.errorCode ??= 'BROWSER_CLOSE_FAILED'; }
+    try { await drain(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+    try { await sourceGate(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+    receipt.completedAt = NOW();
+    receipt.nativeComplete = receipt.nativeComplete && !failed && sessions.length === 2 && sessions.every(c => c.closed) && receipt.screenshots.length === 3
+      && ledger.rows.length === 7 && ledger.rows.every(r => r.terminal && r.state === 'acknowledged') && ledger.unresolved === 0 && ledger.pending === 0 && !ledger.broken && !ledger.failed && receipt.unknownIssuance === 0;
+    try { save(); } catch { receipt.nativeComplete = false; }
+  }
+  return receipt;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  if (process.argv.length !== 4 || process.argv[2] !== '--execute') { process.stderr.write('HELD: reviewed final plan and explicit --execute required.\n'); process.exitCode = 2; }
+  else try { const result = await executeReviewedPlan(JSON.parse(fs.readFileSync(process.argv[3])), { explicitExecute: true }); process.stdout.write(JSON.stringify({ nativeComplete: result.nativeComplete, complete: false, awaitingReadOnlyAudit: true, errorCode: result.errorCode }) + '\n'); if (!result.nativeComplete) process.exitCode = 1; }
+  catch (e) { process.stderr.write(codeOf(e) + '\n'); process.exitCode = 1; }
+}

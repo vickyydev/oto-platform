@@ -1,0 +1,38 @@
+
+> rest-express@1.0.0 db:migrate
+> node script/migrate.mjs
+
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: relation "employee_offboarding_employee_unique" already exists, skipping
+migrate: applied 0000_otoapp_baseline
+migrate: applied 0001_platform_user_id
+migrate: applied 0002_core_branch_id_unique
+migrate: applied 0003_events_seam
+migrate: applied 0004_otoapp_v_views
+migrate: applied 0005_otoapp_v_employees
+migrate: applied 0006_tenant_ownership_expand
+migrate: applied 0007_tenant_ownership_contract
+migrate: applied 0008_document_tenant_ownership_expand
+migrate: applied 0009_document_finance_constraints
+migrate: applied 0010_document_tenant_ownership_contract
+migrate: applied 0011_sop_revision_history
+migrate: applied 0012_attendance_evidence
+migrate: applied 0013_presence_notification_delivery
+migrate: applied 0014_camp_family_sms
+migrate: applied 0015_employee_action_receipts
+migrate: applied 0016_qa_reports
+migrate: applied 0018_flexible_leave_types
+migrate: applied 0019_person_birthdays
+migrate: applied 0020_user_preferences
+migrate: applied 0021_payroll_config
+migrate: applied 0022_payroll_profiles
+migrate: applied 0023_payroll_month_inputs_and_rewards
+migrate: applied 0024_payroll_run_inputs_ot_bank_and_leave_valuation
+migrate: applied 0025_payroll_run_lifecycle_and_snapshots
+migrate: applied 0026_payroll_statutory_documents
+migrate: applied 0027_fix_report_urgent_notification
+migrate: applied 0028_checklist_template_assignees
+migrate: applied 0029_platform_roles_enabled
+migrate: applied 0030_department_read_seam
+migrate: applied 0031_login_lifecycle
+migrate: otoapp now at 31 of 31 migration(s).

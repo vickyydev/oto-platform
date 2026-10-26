@@ -1,0 +1,61 @@
+
+> rest-express@1.0.0 tenant:readback
+> node script/tenant-ownership-readback.mjs
+
+Tenant ownership read-back — 16 park groups; default park group: OTO Default [default].
+
+settings: 4 rows, 0 with no park group.
+        4  OTO Default [default]
+
+activity_log: 22 rows, 0 with no park group.
+        6  ZZ TEST b 9d5124 [zz-to-b-9d5124]
+        6  ZZ TEST nr 76b173 [zz-nr-76b173]
+        4  OTO Default [default]
+        3  ZZ TEST a 57beae [zz-539-a-57beae]
+        1  ZZ TEST managed 6cc49c53ce own [zz-managed-own-6cc49c53ce]
+        1  ZZ TEST a 46dd42 [zz-nj-a-46dd42]
+        1  ZZ TEST a f53512 [zz-a-f53512]
+
+attention_items: 11 rows, 0 with no park group.
+        9  ZZ TEST esc 26016c [zz-esc-26016c]
+        2  ZZ TEST a 46dd42 [zz-nj-a-46dd42]
+
+settings uniques: (tenant_id, key) alone (round 4b: every park group saves its own).
+tenant_id NOT NULL (round 4b, 0007): activity_log yes, attention_items yes, settings yes.
+settings keys held twice by one park group: 0.
+activity rows whose park group is not their branch's: 0.
+
+The root-table census (no tenant column of their own):
+  coverage_rules: 0
+  invitation_designs: 0
+  i18n_translations: 1
+          1  ZZ TEST A [zz-administration-Abdbcbbfd]
+  package_line_item_templates: 0
+  people: 32 — 23 placed in one park group by their access policy or employee rows, 9 in none, 0 in more than one.
+  people ownership (0009): 25 anchored, 7 unplaced, 0 with conflicting linked park groups (Q56).
+
+The document tables (round 6, migration 0008):
+  templates: 2 rows, 0 with no park group.
+          1  ZZ TEST a f53512 [zz-a-f53512]
+          1  ZZ TEST b f53512 [zz-b-f53512]
+  policy_documents: 0 rows, 0 with no park group.
+  asset_catalog: 0 rows, 0 with no park group.
+  leave_policies: 0 rows, 0 with no park group.
+  tenant_id NOT NULL (round 7): asset_catalog yes, leave_policies yes, policy_documents yes, templates yes.
+  template assignments on another park group's branch: 0.
+  contracts made from another park group's template: 0.
+  letters made from another park group's template: 0.
+  contracts acknowledging another park group's policy: 0.
+  assigned assets from another park group's catalogue: 0.
+  policies whose park group is not their branch's: 0.
+  leave policies whose park group is not their branch's: 0.
+  offboarding census (H16): 0 employees with more than one offboarding (0 surplus rows); employee_offboarding_employee_unique stands.
+
+Finance key census (round 7, 0009):
+  xero_tracking_categories: 0 duplicate key groups; PRIMARY KEY (tenant_id, tracking_category_id).
+  xero_tracking_options: 0 duplicate key groups; PRIMARY KEY (tenant_id, tracking_option_id).
+  cash_txns: 0 duplicate key groups; PRIMARY KEY (tenant_id, xero_bank_transaction_id).
+  cash_daily: 0 duplicate key groups; PRIMARY KEY (tenant_id, date).
+  pl_facts: report snapshots and repeated labels retained; cell identity waits for Q55.
+
+Every settings, activity and attention row has its park group, and so does every template, policy, catalogue item and leave policy.

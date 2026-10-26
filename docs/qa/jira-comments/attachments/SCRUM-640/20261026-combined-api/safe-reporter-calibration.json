@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-640",
+  "passed": true,
+  "recordedAt": "2026-10-26T13:02:43.126Z",
+  "actualReporterModuleExercised": true,
+  "network": false,
+  "auth": false,
+  "database": false,
+  "checks": [
+    "native pass/fail/skip/todo counts",
+    "inherited skipped suite",
+    "inherited skipped file",
+    "failure/unhandled payload hashed not persisted",
+    "exact external report path refusal"
+  ],
+  "reporterSha256": "be986a730e97bef0c4e723d0fe9caa351a4ee7ecbb5d0aa28c9b733c8d1d0b0d"
+}

@@ -1,0 +1,398 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T13:07:13.887Z",
+  "passed": true,
+  "kind": "owned-console-assistant-settings-integration",
+  "base": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "commit": "025c9929e26f3100876905d9b1430ae06722521a",
+  "clean": true,
+  "files": [
+    {
+      "path": "apps/console/src/pages/AssistantSettings.tsx",
+      "sha256": "eb085095ef2075509940d564646a033f52788248cbf8e1780c17c2286b6123d3"
+    },
+    {
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "sha256": "0c3e2dba34ce2f74cfd702a02d65d68c397834cb1cc83fb5495687c51a567c03"
+    },
+    {
+      "path": "apps/console/src/pages/AreaLanding.tsx",
+      "sha256": "9844d978c2015990124c26dc4bdb654cce76abe46dcacea0fb7abfef4b24b2e5"
+    },
+    {
+      "path": "apps/console/e2e/assistant-settings.spec.ts",
+      "sha256": "0ad093009b0cdf9cc9a7a58f2c334b4efa813e267d1b23544c857177444e818a"
+    }
+  ],
+  "exactFourOwnedFilesOnly": true,
+  "canonicalSourceInputs": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceManifest": {
+    "path": "C:/w/admin640-settings-integration-20261026/final-source-manifest.json",
+    "sha256": "b361d841b41c37d8fe6c72f4b3836b9de91d244df7cd6c18b76ac880f2d25b65"
+  },
+  "onlyFourPathsDifferFromCombinedBase": true,
+  "behavior": {
+    "settingsOwner": "verified operatorContext.effectiveOperatorId",
+    "immutableHomeAccount": true,
+    "settingsOffers": "same existing own/null operator-grant predicate evaluated against effective context",
+    "lifetime": "existing working-authority epoch/isCurrent/run plus original editor version/idempotency guards",
+    "newPublicContract": false,
+    "newActionRule": false
+  },
+  "redGreen": {
+    "dtoOnly": {
+      "passed": 15,
+      "failed": 1,
+      "cause": "Inactive /me stops canonical handshake before permissions; original wait assumed permissions response.",
+      "waitRepair": "Wait for actual /me; active cases keep subsequent original assertions.",
+      "attemptMetadataErratum": {
+        "path": "C:/w/admin640-settings-integration-20261026/attempt1-metadata-erratum.json",
+        "sha256": "f3c232cbb610d5ed5d46b17fbd76e5382b0eeec47a993aa054e8f1a2efa3e0c3"
+      }
+    },
+    "effectiveB": {
+      "redPassed": 16,
+      "redFailed": 2,
+      "greenPassed": 18,
+      "greenFailed": 0,
+      "same18TestSourceAcrossFeatureFix": true,
+      "failures": [
+        "HomeA/effectiveB document ownership prevented B settings rendering",
+        "B-scoped settings offer absent under homeA comparison"
+      ]
+    },
+    "original16TestBodiesByteIdentical": true,
+    "newCases": 7,
+    "pendingAndSameSidAba": {
+      "cases": 5,
+      "greenOnlyControls": true,
+      "noCounterfactualFailureClaim": true,
+      "actualBuiltReactCallbacks": true,
+      "passThroughFetchObserver": true,
+      "sameSessionUuidWithRevision1Then2": true,
+      "acceptedEarlierSaveMayRemainCommitted": true
+    },
+    "history": [
+      {
+        "attempt": "red-v1",
+        "receipt": {
+          "path": "C:/w/admin640-settings-browser-red-v1.json",
+          "sha256": "5aa4d435172bd73fc1e1fcca9a58570a760567eb80d341e17809420767af8b4a"
+        },
+        "logSha256": "3b4ed4f33815ddc5b47b597384b22427d316a1b2d591e55c7e2a8adb2bcd0ed5",
+        "exitCode": 1,
+        "counts": {
+          "passed": 15,
+          "failed": 1,
+          "skipped": 0,
+          "total": 16
+        },
+        "passed": false,
+        "expectedRedObserved": true,
+        "sourceManifestSha256": "59b86b1c42e638bf4907c82f00534b3de3af613b9eb04c4aa62917573ed3ce5a",
+        "inputsUnchanged": true,
+        "installedUnchanged": true,
+        "cleanup": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        }
+      },
+      {
+        "attempt": "red-v2",
+        "receipt": {
+          "path": "C:/w/admin640-settings-browser-red-v2.json",
+          "sha256": "736ea43ee55bd4c0247cd6bbe4d729f7efa929d89979514b93b471fba271a9ad"
+        },
+        "logSha256": "b0a6472cefb6e94d619bfeeae1f1d31a4cc114acc46823e71e3c4db7cfb66c12",
+        "exitCode": 1,
+        "counts": {
+          "passed": 16,
+          "failed": 2,
+          "skipped": 0,
+          "total": 18
+        },
+        "passed": false,
+        "expectedRedObserved": true,
+        "sourceManifestSha256": "26bedfcaa60a66d328252a0536104280d37346389e3a332a86c6032f1c171184",
+        "inputsUnchanged": true,
+        "installedUnchanged": true,
+        "cleanup": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        }
+      },
+      {
+        "attempt": "green-v1",
+        "receipt": {
+          "path": "C:/w/admin640-settings-browser-green-v1.json",
+          "sha256": "462acbe1c1087f783b0dc5151e8c7f94bc27794bd229696f69d1cb409e3ea252"
+        },
+        "logSha256": "d1ba353dfd73c155f21e08659a101d10daf98288a582306cc2c6e3d81044ee54",
+        "exitCode": 0,
+        "counts": {
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0,
+          "total": 18
+        },
+        "passed": true,
+        "expectedRedObserved": false,
+        "sourceManifestSha256": "5da99e7f9d3fb266c5d3ae726265fa91c1321b42757cb3e5887f543be7adcac8",
+        "inputsUnchanged": true,
+        "installedUnchanged": true,
+        "cleanup": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        }
+      },
+      {
+        "attempt": "green-v2",
+        "receipt": {
+          "path": "C:/w/admin640-settings-browser-green-v2.json",
+          "sha256": "061e0619fb96baddaf596e6fa002684c2f056a7b4409ed46692b98e57c0ced8e"
+        },
+        "logSha256": "eb9e0615b60d3e097fa60b5afa38b496546a43fbb4e4e49fe979b6bf9ccb28be",
+        "exitCode": 0,
+        "counts": {
+          "passed": 23,
+          "failed": 0,
+          "skipped": 0,
+          "total": 23
+        },
+        "passed": true,
+        "expectedRedObserved": false,
+        "sourceManifestSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+        "inputsUnchanged": true,
+        "installedUnchanged": true,
+        "cleanup": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        }
+      },
+      {
+        "attempt": "green-v3",
+        "receipt": {
+          "path": "C:/w/admin640-settings-browser-green-v3.json",
+          "sha256": "33a433edecba907a19382e4415e0e92734b7be50f0c8f65716ec378eac766c28"
+        },
+        "logSha256": "870f315d3fb05f3842747051e8cd86d93c81a63c6e28d5a3835a23662012a6a7",
+        "exitCode": 0,
+        "counts": {
+          "passed": 286,
+          "failed": 0,
+          "skipped": 0,
+          "total": 286
+        },
+        "passed": true,
+        "expectedRedObserved": false,
+        "sourceManifestSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+        "inputsUnchanged": true,
+        "installedUnchanged": true,
+        "cleanup": {
+          "helperDatabaseDropped": true,
+          "harnessDatabasesAbsent": true,
+          "embeddedServerStopped": true
+        }
+      }
+    ]
+  },
+  "finalGates": {
+    "fullNativeBrowser": {
+      "passed": 286,
+      "failed": 0,
+      "skipped": 0,
+      "files": 26,
+      "settingsCases": 23,
+      "oneWorker": true,
+      "retries": 0,
+      "consoleAndPosFreshProductionBuilds": true,
+      "actualNativeHarness": "apps/console/e2e/run.mjs",
+      "freshEmbeddedPostgres": true,
+      "allTeardownConfirmed": true,
+      "receipt": {
+        "path": "C:/w/admin640-settings-browser-green-v3.json",
+        "sha256": "33a433edecba907a19382e4415e0e92734b7be50f0c8f65716ec378eac766c28"
+      },
+      "logSha256": "870f315d3fb05f3842747051e8cd86d93c81a63c6e28d5a3835a23662012a6a7"
+    },
+    "consoleUnits": {
+      "files": 37,
+      "passed": 363,
+      "todo": 3
+    },
+    "consoleCompiler": {
+      "configurations": 3,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    "changedLint": {
+      "files": 4,
+      "errors": 0,
+      "warnings": 0
+    },
+    "checks": {
+      "units": {
+        "receipt": {
+          "path": "C:/w/admin640-settings-integration-20261026/units.json",
+          "sha256": "4ab7af02c7d7487024e370d03b99fe241c9aa6b1a6fcdc1c4a5385e22074e600"
+        },
+        "ticket": "SCRUM-640",
+        "name": "units",
+        "command": "pnpm --filter @oto/console test --maxWorkers=1 --fileParallelism=false",
+        "startedAt": "2026-10-26T12:58:37.691Z",
+        "completedAt": "2026-10-26T12:59:04.511Z",
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "sourceManifestSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+        "sourceFiles": 3811,
+        "sourceAfterSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+        "sourceUnchanged": true,
+        "installedBefore": {
+          "node": "v22.17.1",
+          "files": {
+            "node_modules/.modules.yaml": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d",
+            "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+            "packages/db/node_modules/tsx/package.json": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426",
+            "packages/db/node_modules/pg/package.json": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+            "packages/db/node_modules/embedded-postgres/package.json": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+          }
+        },
+        "installedAfter": {
+          "node": "v22.17.1",
+          "files": {
+            "node_modules/.modules.yaml": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d",
+            "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+            "packages/db/node_modules/tsx/package.json": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426",
+            "packages/db/node_modules/pg/package.json": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+            "packages/db/node_modules/embedded-postgres/package.json": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+          }
+        },
+        "installedUnchanged": true,
+        "logSha256": "a9c945489ea395346583efd1e64b10cf5ff80bdcff3758b6b0060522474983b7",
+        "staging": false,
+        "passed": true
+      },
+      "compiler": {
+        "receipt": {
+          "path": "C:/w/admin640-settings-integration-20261026/compiler.json",
+          "sha256": "446060faaadae770cf5371984e7a794ef64ce837b5ee21594bc1c60d80970c3f"
+        },
+        "ticket": "SCRUM-640",
+        "name": "compiler",
+        "command": "pnpm --filter @oto/console typecheck",
+        "startedAt": "2026-10-26T13:00:10.052Z",
+        "completedAt": "2026-10-26T13:00:28.016Z",
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "sourceManifestSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+        "sourceFiles": 3811,
+        "sourceAfterSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+        "sourceUnchanged": true,
+        "installedBefore": {
+          "node": "v22.17.1",
+          "files": {
+            "node_modules/.modules.yaml": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d",
+            "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+            "packages/db/node_modules/tsx/package.json": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426",
+            "packages/db/node_modules/pg/package.json": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+            "packages/db/node_modules/embedded-postgres/package.json": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+          }
+        },
+        "installedAfter": {
+          "node": "v22.17.1",
+          "files": {
+            "node_modules/.modules.yaml": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d",
+            "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+            "packages/db/node_modules/tsx/package.json": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426",
+            "packages/db/node_modules/pg/package.json": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+            "packages/db/node_modules/embedded-postgres/package.json": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+          }
+        },
+        "installedUnchanged": true,
+        "logSha256": "a8026d8bb80dc8018ac6d5c62595a957d071028207ef0f40fd92265ec49dc615",
+        "staging": false,
+        "passed": true
+      },
+      "lint": {
+        "receipt": {
+          "path": "C:/w/admin640-settings-integration-20261026/lint.json",
+          "sha256": "891a79d8120b6c899619e0bc789f79d3fb74152689b3cec1936c82701201ea5d"
+        },
+        "ticket": "SCRUM-640",
+        "name": "lint",
+        "command": "pnpm exec eslint apps/console/src/pages/AssistantSettings.tsx apps/console/src/components/ConsoleLayout.tsx apps/console/src/pages/AreaLanding.tsx apps/console/e2e/assistant-settings.spec.ts",
+        "startedAt": "2026-10-26T13:01:55.265Z",
+        "completedAt": "2026-10-26T13:02:04.568Z",
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "sourceManifestSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+        "sourceFiles": 3811,
+        "sourceAfterSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+        "sourceUnchanged": true,
+        "installedBefore": {
+          "node": "v22.17.1",
+          "files": {
+            "node_modules/.modules.yaml": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d",
+            "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+            "packages/db/node_modules/tsx/package.json": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426",
+            "packages/db/node_modules/pg/package.json": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+            "packages/db/node_modules/embedded-postgres/package.json": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+          }
+        },
+        "installedAfter": {
+          "node": "v22.17.1",
+          "files": {
+            "node_modules/.modules.yaml": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d",
+            "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+            "packages/db/node_modules/tsx/package.json": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426",
+            "packages/db/node_modules/pg/package.json": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+            "packages/db/node_modules/embedded-postgres/package.json": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+          }
+        },
+        "installedUnchanged": true,
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "staging": false,
+        "passed": true
+      }
+    }
+  },
+  "selfReview": {
+    "effectiveOwnerAndOfferScopeVerified": true,
+    "noApiBodyOrKeyChange": true,
+    "originalUnknownAckAndConflictControlsRetained": true,
+    "noStaleReadSavePublicationInNewSameSidCases": true,
+    "sourceAndInstallBindingsUnchangedForEveryRun": true,
+    "allReceiptLogHashesVerified": true,
+    "workingTreeCleanAfterCommit": true
+  },
+  "sourceBindingBoundary": {
+    "nativeFrameFiles": 3811,
+    "nativeFrameSha256": "0f1315175e90f37e6c61156bcf2938bcd03c3d889ea72bd18e9859bec89396eb",
+    "nativeSupplementalPaths": [
+      ".env.example",
+      ".gitignore",
+      "apps/oto-app/.env.example"
+    ],
+    "canonicalOnlyPath": "render.yaml",
+    "canonical3809FilesRehashedAfterGatesAndOnlyOwnedFourDiffer": true,
+    "renderYamlMatchesCombinedBase": true
+  },
+  "warnings": [
+    "Existing Vite chunk-size notices for Console/POS; existing POS static/dynamic import notice; FSTDEP023; NO_COLOR/FORCE_COLOR notices. No compiler/lint diagnostic."
+  ],
+  "limits": [
+    "Actual built-browser integration includes synthetic API fixtures and native seeded local cases; it is not a live two-app session/DB acceptance run.",
+    "The seven new settings cases were run only against the actual combined built Console. Pending/ABA controls have final GREEN evidence and no invented RED claim.",
+    "This is local owned-UI coverage, not the complete640 release; backend/App/DB/protected planner follow-ups and coordinator final gates remain separate.",
+    "No push, Jira change, staging auth/write, real provider/SMS/payment/channel action, shared DB/container mutation or protected-file edit was performed.",
+    "The first runner intent retained an incorrect old spec display label; actual args/hash selected assistant-settings.spec.ts and the separate erratum preserves that distinction."
+  ]
+}

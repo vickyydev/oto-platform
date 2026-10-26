@@ -1,0 +1,288 @@
+Listing tests:
+  access-review.spec.ts:63:1 › Access review shows all six returned lists, wide roles, real sign-in state and flags without write controls or record IDs
+  access-review.spec.ts:94:1 › role-read gates the page while the existing account-read People navigation gate remains unchanged
+  access-review.spec.ts:108:1 › pending or failed review does not invent six empty lists and retry can show genuine empty results
+  access-review.spec.ts:133:1 › a late earlier refresh cannot replace the currently completed review
+  access-review.spec.ts:159:1 › a server refusal is shown as an error without presenting a clean access review
+  access-review.spec.ts:170:1 › six review cards and long account, role, employee and park names fit a390px phone
+  account-theme.spec.ts:60:1 › Console adopts the account dark theme on resume and reload without saving or changing language
+  account-theme.spec.ts:75:1 › System follows the device, the sidebar cycles all three choices, and a save retry keeps its action key and language
+  account-theme.spec.ts:108:1 › sign-out releases write-back and the next account adopts its own preference
+  account-theme.spec.ts:129:1 › a preference-save401 releases the account before its retry or a signed-out toggle can write
+  account-theme.spec.ts:146:1 › a legacy me response without preferences adopts defensively and still allows an explicit theme-only save
+  account-theme.spec.ts:157:1 › a late permissions response cannot adopt or rebind an account after the unauthorized event
+  account-theme.spec.ts:180:1 › an expired handoff keeps its existing explanation after the anonymous me401 and leaves theme writes released
+  accounts.spec.ts:84:1 › Accounts retains search and the scoped invitation form through the injected host transport
+  accounts.spec.ts:113:1 › a temporary password requires confirmation, stays masked until asked for and is cleared on close
+  accounts.spec.ts:141:1 › phone changes and deactivate/reactivate keep their original confirmations and server targets
+  accounts.spec.ts:167:1 › sessions, shift-token ending and sign-out-everywhere retain the approved device controls
+  accounts.spec.ts:187:1 › loading, failed reads and genuine empty searches never conceal a data-source failure
+  accounts.spec.ts:209:1 › a late earlier search cannot replace current results and the Accounts route retains its read guard
+  accounts.spec.ts:232:1 › a delayed account action cannot replace another account’s open session or token details
+  accounts.spec.ts:292:1 › only one temporary password can be issued while a previous rotation is pending
+  admin-navigation.spec.ts:7:1 › Admin opens on Overview, and all ten areas work at desktop and phone width
+  admin-navigation.spec.ts:35:1 › old page addresses open their pages; new navigation keeps the page permissions
+  admin-navigation.spec.ts:49:1 › partial access hides areas and child links; the area gate never replaces an existing page guard
+  app-access.spec.ts:102:1 › Accounts and App access share the approved Apps dialog and one-action OTO App provisioning
+  app-access.spec.ts:129:1 › existing-user linking and branch changes retain the approved choices and exact seam payloads
+  app-access.spec.ts:150:1 › unlinked OTO App users claim an existing staff sign-in without inviting or changing their app role
+  app-access.spec.ts:169:1 › reading apps and changing app access retain separate permission offers
+  app-access.spec.ts:180:1 › late account app and permission reads cannot replace another account’s dialog
+  app-access.spec.ts:198:1 › a delayed mutation refresh cannot replace the next account’s app identity
+  app-access.spec.ts:222:1 › changing an unlinked-user search clears an invisible previous account choice
+  app-access.spec.ts:239:1 › late unlinked-user search results cannot replace the current query
+  app-access.spec.ts:256:1 › a failed unlinked-user search never becomes an empty account match
+  app-access.spec.ts:267:1 › a failed permission read never becomes a fictional app access state
+  app-access.spec.ts:277:1 › unlink confirmation and refreshed role grants explain access that survives the link
+  app-access.spec.ts:293:1 › an account resource 404 keeps its actual reason instead of claiming app linking is undeployed
+  app-access.spec.ts:304:1 › a missing app user keeps the real claim error without marking provisioning unavailable
+  app-access.spec.ts:323:1 › an UNKNOWN 404 still shows the original missing-route fallback
+  assistant-settings.spec.ts:137:1 › Channels offers the canonical native settings page independently of Inbox entry and keeps Teams routing
+  assistant-settings.spec.ts:146:1 › only an own or null operator grant offers Assistant settings in Channels and the sidebar; older Channels links stay unchanged
+  assistant-settings.spec.ts:164:1 › eleven native knobs show units and defaults; blank omits an override while explicit zero is saved
+  assistant-settings.spec.ts:181:1 › native integer bounds are enforced without inventing a maximum cap or rejecting debounce normalization
+  assistant-settings.spec.ts:196:1 › rate history stays immutable and ordinary UTC/model/USD fields add a later version without engine controls
+  assistant-settings.spec.ts:217:1 › unknown/no-rate and invalid-storage states are explicit rather than a price zero or raw JSON editor
+  assistant-settings.spec.ts:224:1 › an operator-only own or null grant works, while branch, foreign and missing grants refuse before GET or PUT
+  assistant-settings.spec.ts:235:1 › loading and a failed read never fabricate editable defaults; retry is GET-only
+  assistant-settings.spec.ts:243:1 › uncertain saves freeze byte-identical body/key through duplicate presses and in-flight retry
+  assistant-settings.spec.ts:257:1 › confirmed PUT response is the canonical readback and a later GET failure does not turn the save into failure
+  assistant-settings.spec.ts:266:1 › revision conflicts demand reload/review and definite refusals permit a corrected new keyed save
+  assistant-settings.spec.ts:279:1 › late read from actor/operator A cannot repopulate an A-to-B-to-A editor or replace its fresh draft
+  assistant-settings.spec.ts:289:1 › a late successful save cannot replace the next actor draft or emit a stale success
+  assistant-settings.spec.ts:297:1 › grant/seat A-to-B-to-A invalidates uncertain intents; lock and inactive/password states mask the editor
+  assistant-settings.spec.ts:313:1 › unmount discards a late save and a fresh visit starts from the canonical document rather than a retained draft
+  assistant-settings.spec.ts:323:1 › all knobs, rates and save controls remain inside a 390px native phone viewport
+  assistant-settings.spec.ts:335:1 › home A with a confirmed working B reads and saves only B settings under a null-scoped grant
+  assistant-settings.spec.ts:347:1 › B-scoped settings offers use working B; a home-only grant removes both offers and refuses direct reads
+  assistant-settings.spec.ts:358:1 › late A read cannot replace a newer A draft after the same session confirms B then A
+  assistant-settings.spec.ts:369:1 › an accepted old A save stays committed without publishing into the same-session A-B-A editor
+  assistant-settings.spec.ts:384:3 › retained Save callback is inert at the native pending-me dispatch boundary
+  assistant-settings.spec.ts:384:3 › retained numeric edit callback is inert at the native pending-me dispatch boundary
+  assistant-settings.spec.ts:384:3 › retained Add rate callback is inert at the native pending-me dispatch boundary
+  booth-setup.spec.ts:74:1 › Booths: changing booth hides the previous slip while the new draft loads
+  booth-setup.spec.ts:104:1 › Voucher types: a 50 THB off type is created, Kids Pizza is linked and worded with no expiry, and a type is archived
+  booth-setup.spec.ts:191:1 › Voucher types: changing what the 100 THB Voucher is worth asks first, “Keep as it is” puts the amount back, and confirming reprices it
+  booth-setup.spec.ts:252:1 › Booths: somebody is added to Booth 1, given a PIN that is never shown again, and taken off
+  booth-setup.spec.ts:294:1 › Booths: the staff session length is saved as 10 hours, is in the review before publishing, and reaches the staff note with the publish
+  booth-setup.spec.ts:365:3 › The Pi booth, set up in the Console › Devices: a booth station is refused without a two-character code prefix, and the api’s own refusal is shown
+  booth-setup.spec.ts:422:3 › The Pi booth, set up in the Console › Booths: the Pi booth’s Screens panel asks for no pairing, while Booth 1 on the virtual box still offers it
+  booth-setup.spec.ts:448:3 › The Pi booth, set up in the Console › Booths: a switched-off prize draws no wedge in the preview, and stays in its list as off the wheel
+  booth-setup.spec.ts:499:3 › The Pi booth, set up in the Console › Booths: an archived prize is found under “Show archived prizes” and restored switched off
+  booth-setup.spec.ts:555:1 › Booths: the prize editor’s pointer to the slip’s words opens its voucher type
+  care-print.spec.ts:95:1 › Care, print and staff benefits open their approved native panels and aliases without writes
+  care-print.spec.ts:106:1 › branch offers retain care and template editing but separate operator benefits and physical-print authority
+  care-print.spec.ts:123:1 › pricing refusal preserves exact fractions and a successful old response preserves a newer draft
+  care-print.spec.ts:135:1 › a policy save cannot dispatch its confirmation continuation after navigation to another native page
+  care-print.spec.ts:146:1 › an old-park pricing response cannot replace the currently selected park
+  care-print.spec.ts:156:1 › template failure retains its draft, and retry saves content without a print command
+  care-print.spec.ts:166:1 › benefit template uncertain retry retains one key and late override A cannot close editor B
+  care-print.spec.ts:182:1 › old employee credential metadata cannot start a QR read or populate a newly opened employee dialog
+  care-print.spec.ts:193:1 › print destination requires an explicit owned station and sends that choice without changing the session
+  care-print.spec.ts:217:1 › a late previous-park station list cannot replace the current park choices or select a station automatically
+  care-print.spec.ts:233:1 › print readers without station-read access retain native previews without listing stations or offering a physical print
+  catalogue.spec.ts:112:1 › Catalogue opens the three native approved pages rather than the old POS placeholder
+  catalogue.spec.ts:128:1 › branch-scoped tier and shared add-on offers preserve the existing operator-wide authority
+  catalogue.spec.ts:153:1 › ticket price edits preserve hidden rules and exact satang through canonical readback and reload
+  catalogue.spec.ts:180:1 › a refused ticket or add-on save keeps its native draft and succeeds only after a confirmed retry
+  catalogue.spec.ts:202:1 › late ticket and add-on saves cannot close or erase a newly reopened native draft
+  catalogue.spec.ts:229:1 › operator tier failures retain a new name while original rename proof and default controls remain native
+  catalogue.spec.ts:250:1 › the native Add-ons phone card fits and inherited stock-on remains a local placeholder
+  catalogue.spec.ts:273:1 › direct Catalogue addresses preserve each existing read gate without catalogue requests
+  catalogue.spec.ts:283:1 › a ticket write from the previous page cannot reload over the current Add-ons catalogue
+  catalogue.spec.ts:306:1 › a confirmed ticket creation with a failed readback offers only a refresh retry
+  catalogue.spec.ts:327:1 › an old failed post-commit read cannot clear a newer successful read after a park round trip
+  console-smoke.spec.ts:12:1 › Integrations: settlement import bounds the file and carries its selected park and day
+  console-smoke.spec.ts:89:1 › Booths: Booth 1 at Central Floresta says how many spins it has had today
+  console-smoke.spec.ts:117:1 › Branches: both parks are listed
+  console-smoke.spec.ts:141:1 › Devices: a box is added by pressing the dialog, and Cancel adds nothing
+  console-smoke.spec.ts:184:1 › Devices: a display code is cleared after refusal and claim, and the paired screen can be revoked
+  console-smoke.spec.ts:295:1 › Devices: a display pairing grant for another branch does not offer this park a claim
+  console-smoke.spec.ts:319:1 › Devices: display snapshots retain recorded history, empty records and privacy across selections
+  console-smoke.spec.ts:486:1 › Devices: a station-read grant for another park does not expose a display snapshot
+  console-smoke.spec.ts:541:1 › Devices: display rule checks keep the live till unchanged and open the separate refusal log
+  console-smoke.spec.ts:670:1 › Devices: a simulated card terminal can be told what to do with the next tender
+  console-smoke.spec.ts:707:1 › a wrong password is refused, and the console stays shut
+  departments.spec.ts:48:1 › Departments shows current core names, park coverage and returned member counts without write controls
+  departments.spec.ts:73:1 › source navigation is explicit, single-flight and retryable without changing the directory
+  departments.spec.ts:109:1 › Departments navigation and direct page keep account-read permission and never read without it
+  departments.spec.ts:118:1 › pending, failed, reachable-empty and search-empty department reads remain separate and retryable
+  departments.spec.ts:144:1 › department search sends the selected query and a late older result cannot replace it
+  departments.spec.ts:175:1 › a server permission refusal remains a visible error and cannot become an empty department count
+  departments.spec.ts:187:1 › long department and park names and returned counts fit a 390px phone
+  employees.spec.ts:62:1 › Employees shows source, park, department, all linked logins and real sign-in timestamps without edit controls
+  employees.spec.ts:92:1 › Employees navigation and direct route retain account-read permission and do not read without it
+  employees.spec.ts:100:1 › a pending or failed directory stays distinct from empty and retry refreshes the real source
+  employees.spec.ts:126:1 › search sends the exact query and an older response cannot replace the selected search
+  employees.spec.ts:159:1 › the source button uses an explicitly requested configured handoff and the existing employee deep target
+  employees.spec.ts:185:1 › source access and a valid mirrored identifier are required before offering an OTO App action
+  employees.spec.ts:201:1 › handoff failures keep the directory visible, suppress duplicate requests and allow a fresh retry
+  employees.spec.ts:226:1 › long real-world employee details and multiple sign-ins fit a 390px phone without hiding source or account state
+  fleet-test-print.spec.ts:27:1 › the test print names the station’s receipt printer, and the box reports it succeeded
+  menu.spec.ts:90:1 › Catalogue opens all four native menu administration pages with no write on entry
+  menu.spec.ts:100:1 › branch readers see native records but operator category, library and inline-group writes stay withheld
+  menu.spec.ts:118:1 › native menu edits accept stored fractional costs and inline deltas while preserving translations and inherited defaults
+  menu.spec.ts:136:1 › refused category and modifier edits retain drafts and hidden translations until an explicit successful retry
+  menu.spec.ts:153:1 › Merch keeps native drafts, stable size identifiers and barcodes without creating stock writes
+  menu.spec.ts:166:1 › an escaped import preview cannot replace a reopened dialog or submit the old file
+  menu.spec.ts:185:1 › confirmed creation with a failed canonical refresh offers read Retry without repeating the write
+  menu.spec.ts:198:1 › native export retains the workbook filename and read gates never offer a cost-bearing download
+  money.spec.ts:88:1 › Money opens six approved native surfaces and keeps the old voucher type address
+  money.spec.ts:96:1 › branch grants withhold operator edits but retain own-park campaign and settings authority
+  money.spec.ts:115:1 › an unresolved free item in another park leaves unrelated discount controls usable
+  money.spec.ts:131:1 › a refused discount rename keeps the draft and never creates its replacement before the old-code step succeeds
+  money.spec.ts:144:1 › tender add and blur-rename refusals retain native fields until a confirmed retry
+  money.spec.ts:155:1 › tax save refusal cannot report Saved and retry preserves fractions plus the hidden stored-value rule
+  money.spec.ts:166:1 › late event save preserves a newer native draft and another park retains its own exact satang
+  money.spec.ts:178:1 › old promotional-rule completion cannot close a different native voucher editor
+  money.spec.ts:189:1 › uncertain campaign retry reuses its key and a late successful mint preserves a newer draft
+  money.spec.ts:205:1 › the isolated server campaign downloads its real CSV through the native browser link
+  operations.spec.ts:130:1 › the four native operations pages, their aliases and phone controls open without the POS runtime
+  operations.spec.ts:157:1 › Inventory keeps native item metadata, exact satang and size identity through a refusal and retry
+  operations.spec.ts:174:1 › native stock places create, rename and retire through their own park routes
+  operations.spec.ts:192:1 › Members creates a native phone profile, patches only entered details and retains an edit refused by the server
+  operations.spec.ts:211:1 › Wallet reactivation keeps one native action key on uncertain retry and sends the trimmed reason
+  operations.spec.ts:223:1 › unavailable catalogue and tier metadata stay truthful and do not invent fallback configuration
+  operations.spec.ts:236:1 › a readable tier list without a default keeps the native first-by-sort-order fallback
+  operations.spec.ts:246:1 › Add and cancel invalidate an older member edit without leaving its spinner or opening its late dialog
+  operations.spec.ts:259:1 › a confirmed stock write with a failed readback stays visibly saved and Refresh does not repeat it
+  operations.spec.ts:271:1 › editing a wallet key masks its old holder immediately and rejects the late reactivation display
+  operations.spec.ts:286:1 › changing park masks old Inventory immediately and a late old-actor create cannot dispatch its profile PATCH
+  operations.spec.ts:303:1 › page guards keep their inherited grants and branch stock readers receive no sibling park choice
+  operator-switch.spec.ts:131:1 › operator choices use canonical current rather than the first row and keep home identity visible after switching
+  operator-switch.spec.ts:146:55 › a missing switch grant offers no operator switch
+  operator-switch.spec.ts:146:55 › a own switch grant offers no operator switch
+  operator-switch.spec.ts:146:55 › a branch switch grant offers no operator switch
+  operator-switch.spec.ts:152:1 › a canonical current operator absent from live choices stays unselected and disabled, without a home fallback
+  operator-switch.spec.ts:159:1 › an operator switch masks old controls at PUT dispatch, before the held acknowledgement
+  operator-switch.spec.ts:171:52 › a held canonical me response cannot leave home data or an optimistic target active
+  operator-switch.spec.ts:171:52 › a held canonical permissions response cannot leave home data or an optimistic target active
+  operator-switch.spec.ts:183:1 › an uncertain committed switch with failed canonical reads stays unavailable until Retry confirms B
+  operator-switch.spec.ts:195:1 › an operator-list error has Retry and never selects the first option or dispatches a write
+  operator-switch.spec.ts:203:1 › an explicit selection refusal preserves its error and cannot claim a confirmed new operator
+  operator-switch.spec.ts:211:1 › a late B acknowledgement cannot replace a newer canonical home context after A-B-A
+  operator-switch.spec.ts:219:65 › a held old switch cannot revive authority after signed out
+  operator-switch.spec.ts:219:65 › a held old switch cannot revive authority after new actor
+  operator-switch.spec.ts:236:82 › fresh locked state cannot retain active operator controls
+  operator-switch.spec.ts:236:82 › fresh temporary password state cannot retain active operator controls
+  operator-switch.spec.ts:236:82 › fresh grant withdrawn state cannot retain active operator controls
+  operator-switch.spec.ts:248:1 › an old readonly response released after switching cannot replace the new operator directory
+  operator-switch.spec.ts:262:1 › a held old export cannot download after the operator context changes
+  operator-switch.spec.ts:276:1 › an old acting-user handoff response cannot navigate after the operator context changes
+  operator-switch.spec.ts:296:1 › home and canonical operator controls fit a 390px phone without horizontal overflow
+  operator-switch.spec.ts:307:3 › a mutation canonical read replaced by same actor, new session cannot publish its old refusal into the replacement
+  operator-switch.spec.ts:307:3 › a mutation canonical read replaced by new actor, new session cannot publish its old refusal into the replacement
+  organisation.spec.ts:75:1 › the platform Organisation page offers the approved operator name edit on the existing native row
+  organisation.spec.ts:88:1 › returning to Stored hours keeps an opaque legacy value unchanged when a branch name is saved
+  organisation.spec.ts:103:1 › an absent older business-day field is left absent during an unrelated name edit
+  organisation.spec.ts:114:1 › a delayed save from the first branch cannot close a newly opened second-branch draft
+  organisation.spec.ts:134:1 › an invitation replay without a delivery field does not claim an SMS succeeded or failed
+  organisation.spec.ts:146:1 › operator archive requires its exact typed name before dispatch and reads back the hidden row
+  organisation.spec.ts:160:1 › branch archive requires the current branch name before dispatch and reloads the branch directory
+  organisation.spec.ts:175:1 › direct Organisation addresses keep platform-only Operators and the Holidays permission without reading refused data
+  organisation.spec.ts:190:1 › Switch here sends one keyed platform UUID and waits for the canonical session before marking the new park active
+  organisation.spec.ts:215:1 › a branch-switch response from the old account cannot re-read or reseat a newly signed-in account
+  organisation.spec.ts:239:1 › Holidays keeps sold dates fixed and reads back the canonical renamed range at its selected park
+  organisation.spec.ts:252:1 › a late holiday save cannot replace the newly selected park with the previous park calendar
+  organisation.spec.ts:272:1 › the native branch editor and Holidays controls fit a 390px phone
+  organisation.spec.ts:289:59 › an accepted branch switch removes stale authority while its canonical me read is pending or fails
+  organisation.spec.ts:289:59 › an accepted branch switch removes stale authority while its canonical permissions read is pending or fails
+  organisation.spec.ts:326:1 › a completed holiday save cannot erase a different range draft opened while it was pending
+  organisation.spec.ts:344:1 › a completed branch creation cannot discard a new form opened after the first form was cancelled
+  organisation.spec.ts:368:1 › an explicit switch refusal keeps its native error, while an uncertain accepted write removes the old branch authority
+  overview.spec.ts:112:1 › Overview displays returned totals, selected parks and source freshness on desktop and phone
+  overview.spec.ts:144:1 › Overview-only permission shows numbers while source offers and other page guards retain their permissions
+  overview.spec.ts:160:1 › a pending or failed summary has no invented figures and can be retried; no parks is a separate empty state
+  overview.spec.ts:188:1 › figure actions use the existing source pages and signed-in cross-app destinations
+  overview.spec.ts:236:1 › Overview v2 renders returned aggregate dates, distinct members and unavailable USD on desktop and phone
+  overview.spec.ts:260:1 › decision rows distinguish a real zero, missing cash close and unbuilt requests without an overdue-person claim
+  overview.spec.ts:272:1 › Copy status summary writes the exact current server text to the native clipboard and makes no business request
+  overview.spec.ts:309:1 › actor/operator A to B to A discards both earlier reads and masks their figures before effect cleanup
+  overview.spec.ts:325:1 › grant narrowing drops an obsolete selected park before reading the current default
+  overview.spec.ts:341:3 › a pending source handoff cannot navigate after actor-ABA
+  overview.spec.ts:341:3 › a pending source handoff cannot navigate after lock
+  platform.spec.ts:148:3 › native Platform pages › Platform navigation offers all six native sections and keeps the old Operators address
+  platform.spec.ts:161:5 › native Platform pages › Operators refuses an ordinary operator administrator before its page request
+  platform.spec.ts:161:5 › native Platform pages › System roles refuses an ordinary operator administrator before its page request
+  platform.spec.ts:161:5 › native Platform pages › Platform alerts refuses an ordinary operator administrator before its page request
+  platform.spec.ts:161:5 › native Platform pages › Platform jobs refuses an ordinary operator administrator before its page request
+  platform.spec.ts:161:5 › native Platform pages › Environment refuses an ordinary operator administrator before its page request
+  platform.spec.ts:161:5 › native Platform pages › Test controls refuses an ordinary operator administrator before its page request
+  platform.spec.ts:170:3 › native Platform pages › a system role is selected by provenance and its catalogue never opens a role editor or holder lookup
+  platform.spec.ts:184:3 › native Platform pages › a platform caller still needs each page’s own permission
+  platform.spec.ts:194:5 › native Platform pages › Platform alerts does not offer a global read on only a branch health grant
+  platform.spec.ts:194:5 › native Platform pages › Platform jobs does not offer a global read on only a branch health grant
+  platform.spec.ts:194:5 › native Platform pages › Environment does not offer a global read on only a branch health grant
+  platform.spec.ts:208:3 › native Platform pages › alerts preserve acknowledged open rows and use server pagination without an action write
+  platform.spec.ts:224:3 › native Platform pages › jobs show the persisted unknown and waiting state without starting or repairing a job
+  platform.spec.ts:234:3 › native Platform pages › environment renders only the names and presence metadata, including on a phone
+  platform.spec.ts:250:3 › native Platform pages › a failed register read stays a failure until a deliberate successful retry
+  platform.spec.ts:262:3 › native Platform pages › test controls require both the server availability offer and the native manage permission
+  platform.spec.ts:271:3 › native Platform pages › the declared local test-control key is sent once and a late result is discarded after authority loss
+  platform.spec.ts:292:5 › native Platform pages › a late read cannot repopulate the page after actor authority changes
+  platform.spec.ts:292:5 › native Platform pages › a late read cannot repopulate the page after operator authority changes
+  platform.spec.ts:292:5 › native Platform pages › a late read cannot repopulate the page after branch authority changes
+  platform.spec.ts:292:5 › native Platform pages › a late read cannot repopulate the page after grant authority changes
+  platform.spec.ts:292:5 › native Platform pages › a late read cannot repopulate the page after platform authority changes
+  platform.spec.ts:292:5 › native Platform pages › a late read cannot repopulate the page after inactive authority changes
+  platform.spec.ts:292:5 › native Platform pages › a late read cannot repopulate the page after locked authority changes
+  platform.spec.ts:292:5 › native Platform pages › a late read cannot repopulate the page after password authority changes
+  platform.spec.ts:335:3 › native Platform pages › an A-to-B-to-A authority round trip still rejects the first A response
+  platform.spec.ts:364:5 › native Platform pages › alerts mask the previous answer before dispatching a new filter query
+  platform.spec.ts:364:5 › native Platform pages › alerts mask the previous answer before dispatching a new page query
+  pos-admin-redirect.spec.ts:55:1 › a bookmarked POS admin address reaches the native Admin page as the same actor and park
+  pos-admin-redirect.spec.ts:74:1 › signed-out POS bookmarks retain sign-in and then open Admin without choosing a station
+  pos-admin-redirect.spec.ts:91:1 › the source withholds automatic issuance when the returned app-access offer is absent
+  pos-admin-redirect.spec.ts:108:1 › a controlled handoff refusal remains readable at phone width and only an explicit retry makes a real arrival
+  pos-admin-redirect.spec.ts:130:1 › a phone bookmark change invalidates the old real issued response before the current request opens Admin
+  pos-admin-redirect.spec.ts:160:1 › the existing print-template kind is carried to its native Admin editor and close removes that query
+  read-failures.spec.ts:31:1 › Health: a failed /ops/health is not drawn as "Nothing needs you right now"
+  read-failures.spec.ts:39:1 › Failures: a failed /ops/failures is not drawn as "Nothing failed in the last 24 hours"
+  read-failures.spec.ts:50:1 › Failures rail: a failed /ops/quarantine is not drawn as "Nothing is waiting on a decision"
+  read-failures.spec.ts:63:1 › Devices: a failed box read is not drawn as "0 boxes · 0 online"
+  read-failures.spec.ts:74:1 › Health: before /ops/health first answers, Alerts says it is loading, not all-clear
+  read-failures.spec.ts:92:1 › Quarantine list: a failed read is not drawn as "Nothing is waiting on a decision"
+  read-failures.spec.ts:105:1 › Devices: an account refused the box read (403) sees no box count, and the station count still comes from its own read
+  read-failures.spec.ts:128:1 › Failures: the command bar counts the groups as a floor while another page remains
+  reports.spec.ts:110:1 › the five native reports and old Booth report address render canonical read-only answers
+  reports.spec.ts:121:1 › native Sales CSV keeps integer-satang figures and its current business-date filename
+  reports.spec.ts:130:1 › pending new-park Sales hides old rows and disables the relabelled export until its own answer arrives
+  reports.spec.ts:142:1 › late Sales data from a previous signed-in actor cannot reappear under the next actor
+  reports.spec.ts:153:1 › Tax grouping and native category/payment narrowing export only matching receipts with formula-safe names
+  reports.spec.ts:163:1 › Discounts does not mix old transaction rows with a new summary and shows the real refused-read error
+  reports.spec.ts:173:1 › Wallet preserves lifetime promo counters, ranged value and separate foregone revenue and exports its full ledger read
+  reports.spec.ts:185:1 › report permissions refuse direct addresses without data reads and branch readers never gain a sibling option
+  reports.spec.ts:197:1 › Radar stays gated on the Reports landing and issues its handoff only after an explicit click
+  reports.spec.ts:205:1 › native report filters and long-name tables remain bounded on a 390px phone
+  reports.spec.ts:217:1 › analytics at the current park does not inherit a branch-directory requirement held only at another park
+  reports.spec.ts:229:1 › an analytics-only reader starts the month on the canonical trading day before a nondefault day start
+  roles.spec.ts:95:1 › the role catalogue speaks in sentences and reverse lookup shows the server’s visible people and scopes
+  roles.spec.ts:114:1 › the full permission catalogue and long park scopes remain usable on a phone
+  roles.spec.ts:148:1 › the lifted branch grant and removal both require canonical previews before writing
+  roles.spec.ts:181:1 › a refused or pending preview cannot save a role change
+  roles.spec.ts:199:1 › an earlier account permission read cannot replace a different account’s drawer
+  roles.spec.ts:218:1 › a canceled earlier preview cannot authorize a new scope choice
+  roles.spec.ts:243:1 › role-read and assignment permissions retain their separate guards and platform scope is explicit
+  roles.spec.ts:259:1 › failed catalogue, reverse lookup and account reads stay visibly failed instead of empty
+  roles.spec.ts:280:1 › the server may report no effective change and a pending save cannot be submitted twice
+  staff.spec.ts:83:1 › Staff opens its four read-only headlines at the existing area address with returned source dates
+  staff.spec.ts:104:1 › both Staff permissions gate the direct page and prevent all summary or handoff requests
+  staff.spec.ts:117:1 › failed summary read is retryable and never presented as a zero or an empty successful source
+  staff.spec.ts:131:1 › zero, forbidden and unavailable are distinct and payroll never borrows another headline authority
+  staff.spec.ts:148:1 › park A to B to A clears old figures and refuses a delayed B response
+  staff.spec.ts:175:1 › Refresh clears the old figures until its fresh canonical answer arrives
+  staff.spec.ts:191:1 › each source button issues a fresh acting-user handoff only to its fixed native destination
+  staff.spec.ts:209:1 › Staff cards, long park/company names and source actions fit at phone width without business controls
+  staff.spec.ts:226:1 › a narrowed authority resets an explicit unreachable park and recovers the remaining reachable park
+  teams-routing.spec.ts:148:1 › canonical team details edit without changing identity or requiring another directory permission
+  teams-routing.spec.ts:164:1 › rule creation preserves signed priority, custom language, nullable wildcard and explicit people
+  teams-routing.spec.ts:186:1 › archiving retains rule history and creates no team deletion or thread reassignment request
+  teams-routing.spec.ts:200:1 › missing canonical identities are the only team creates offered and branch-only routing needs no Channels navigation grant
+  teams-routing.spec.ts:219:1 › read refusal and direct-address denial never become an empty successful editor
+  teams-routing.spec.ts:232:1 › old lists disappear immediately on filter refresh and late A-to-B-to-A responses cannot overwrite current rows
+  teams-routing.spec.ts:261:1 › uncertain saves freeze their payload and key through duplicate presses and an in-flight retry
+  teams-routing.spec.ts:284:1 › a definite save refusal permits correction with a new intent and stale authority save completion cannot close a current editor
+  teams-routing.spec.ts:308:1 › Channels settings respect their own gates and a deliberate duplicate press issues only one acting-user handoff
+  teams-routing.spec.ts:327:1 › a late Inbox handoff cannot navigate after an actor and grant A-to-B-to-A lifetime
+  teams-routing.spec.ts:349:1 › team and rule controls remain bounded on a 390px phone with long native labels
+Total: 286 tests in 26 files

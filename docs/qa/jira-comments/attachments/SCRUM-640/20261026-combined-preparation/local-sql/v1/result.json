@@ -1,0 +1,56 @@
+{
+  "ticket": "SCRUM-640",
+  "startedAt": "2026-10-26T13:11:45.860Z",
+  "completedAt": "2026-10-26T13:12:11.975Z",
+  "exitCode": 0,
+  "signal": null,
+  "sourceSha": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceFiles": 3809,
+  "sourceBeforeSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceAfterSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "helpersUnchanged": true,
+  "helpers": [
+    {
+      "path": "C:/w/admin640-staging-proof-executor.mjs",
+      "sha256": "6cf77d860833aaeb01826c5ea941f6c6dc02dfd2bd442251ad81d02511480c5a"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-metadata-collector.mjs",
+      "sha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-release-collector.mjs",
+      "sha256": "1aaea6c1cb79b7d56da1ff47c9ceb121beb3edf3e5aa6976f3276d553294d88d"
+    },
+    {
+      "path": "C:/w/admin640-staging-contract-draft.mjs",
+      "sha256": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-local-sql-worker.mjs",
+      "sha256": "265a0d735abe75935a4965e58f16be7f6608b1ff6fbc8c6a08802b0ce161e620"
+    }
+  ],
+  "resources": [
+    {
+      "directory": "C:\\w\\admin640-staging-proof-local-sql-v1\\tmp\\oto-pg-FCiCM6",
+      "pid": 99812,
+      "port": 54677,
+      "directoryRemoved": true
+    }
+  ],
+  "remainingNativeDirectories": [],
+  "logSha256": "62a6e3e52920e5ce67c4d3f941d288fd330af88d750cf33375480d3f0fee652d",
+  "fullUnpipedOutputCaptured": true,
+  "logSanitizedBeforeDisk": true,
+  "stagingCalls": 0,
+  "providerCalls": 0,
+  "sourceEdits": 0,
+  "toolInstalls": 0,
+  "preparationObservation": "A scoped seed declaration search surfaced a synthetic credential declaration; no value is retained in these receipts."
+}

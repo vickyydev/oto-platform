@@ -1,0 +1,12 @@
+{
+  "name": "offline-install",
+  "startedAt": "2026-10-26T13:31:02.672Z",
+  "completedAt": "2026-10-26T13:31:04.348Z",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "791d58347dbe13fdb3b339b27d74d8591cf9f638e6ad904767856f94b4e6a5a5",
+  "logBytes": 137,
+  "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceInputs": 3809
+}

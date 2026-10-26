@@ -1,0 +1,384 @@
+{
+  "ticket": "SCRUM-640",
+  "createdAt": "2026-10-26T13:37:26.208Z",
+  "scope": "Fresh combined-source Linux POS test evidence",
+  "passed": true,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceInputs": 3809,
+  "dependencyInputs": 28,
+  "tests": 1437,
+  "files": 101,
+  "sourceReviewSha256": "73fdf44b88eddaedfd5eb27fa2e147940beaa63d942009691e2c5aa6486bc466",
+  "normalizationPolicy": "Display archive only: CRLF to LF, trailing horizontal whitespace removal, extra blank lines at EOF removal, final LF when absent. External originals and their receipt hashes remain unchanged.",
+  "artifacts": [
+    {
+      "filename": "create-intent.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/create-intent.json",
+      "originalSourceSha256": "848a2e752ee8ca4a59e02e4486baf0c18576897130a880b7c3ecd86268709063",
+      "copiedArchiveSha256": "848a2e752ee8ca4a59e02e4486baf0c18576897130a880b7c3ecd86268709063",
+      "originalBytes": 5544,
+      "copiedBytes": 5544,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "created.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/created.json",
+      "originalSourceSha256": "0a5802a0819805d58d70ca206bdebb1b1fbd6cfd8084fe3632055ea0259625ef",
+      "copiedArchiveSha256": "0a5802a0819805d58d70ca206bdebb1b1fbd6cfd8084fe3632055ea0259625ef",
+      "originalBytes": 422,
+      "copiedBytes": 422,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "source-manifest.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/source-manifest.json",
+      "originalSourceSha256": "b361d841b41c37d8fe6c72f4b3836b9de91d244df7cd6c18b76ac880f2d25b65",
+      "copiedArchiveSha256": "b361d841b41c37d8fe6c72f4b3836b9de91d244df7cd6c18b76ac880f2d25b65",
+      "originalBytes": 571113,
+      "copiedBytes": 571113,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "runtime-docs.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/runtime-docs.json",
+      "originalSourceSha256": "ac7b6b5ce4d5feb5a78c87359f5ca04009c7f9a682112658d0d30ee06e643dfb",
+      "copiedArchiveSha256": "ac7b6b5ce4d5feb5a78c87359f5ca04009c7f9a682112658d0d30ee06e643dfb",
+      "originalBytes": 567,
+      "copiedBytes": 567,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "prepare.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/prepare.json",
+      "originalSourceSha256": "a3d2703281facb160697b75188efc22c03fbc4f277a7261e7667ff36b778e4ca",
+      "copiedArchiveSha256": "a3d2703281facb160697b75188efc22c03fbc4f277a7261e7667ff36b778e4ca",
+      "originalBytes": 425,
+      "copiedBytes": 425,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "prepare.log",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/prepare.log",
+      "originalSourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedArchiveSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalBytes": 0,
+      "copiedBytes": 0,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "prepare-binding.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/prepare-binding.json",
+      "originalSourceSha256": "f64750fc5c767bd7229d64924d7c68af6132aff38315e736f1821806326825eb",
+      "copiedArchiveSha256": "3c7f3a3058b8d099bd948e3250869c9252e39b764c19a0160a42f596e787e881",
+      "originalBytes": 2675,
+      "copiedBytes": 2676,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": true,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": false
+    },
+    {
+      "filename": "offline-install.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/offline-install.json",
+      "originalSourceSha256": "16e9540d144c962876bf3beddacb7f312a1932bf142dacebbfc6c0250d87e68b",
+      "copiedArchiveSha256": "16e9540d144c962876bf3beddacb7f312a1932bf142dacebbfc6c0250d87e68b",
+      "originalBytes": 435,
+      "copiedBytes": 435,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "offline-install.log",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/offline-install.log",
+      "originalSourceSha256": "791d58347dbe13fdb3b339b27d74d8591cf9f638e6ad904767856f94b4e6a5a5",
+      "copiedArchiveSha256": "791d58347dbe13fdb3b339b27d74d8591cf9f638e6ad904767856f94b4e6a5a5",
+      "originalBytes": 137,
+      "copiedBytes": 137,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "precheck.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/precheck.json",
+      "originalSourceSha256": "8d9909707166f1d913e9e689c95907c0c7fe2f14d237e4a7f30f873743a86316",
+      "copiedArchiveSha256": "8d9909707166f1d913e9e689c95907c0c7fe2f14d237e4a7f30f873743a86316",
+      "originalBytes": 426,
+      "copiedBytes": 426,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "precheck.log",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/precheck.log",
+      "originalSourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedArchiveSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalBytes": 0,
+      "copiedBytes": 0,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "before.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/before.json",
+      "originalSourceSha256": "343d79ec0d2000f4520f4c294a4cc0d3fda2f674b3e311aed5093acd0fad7174",
+      "copiedArchiveSha256": "21889f28a8f86042e18a869f7c36a94a9de2b38a1b97ac0543f05266c574f833",
+      "originalBytes": 2817,
+      "copiedBytes": 2818,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": true,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": false
+    },
+    {
+      "filename": "pos-native.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/pos-native.json",
+      "originalSourceSha256": "a59dccc8e7f9465b96ec8852ce8dba9c0f24c652b7a9e8ee8f0b03169293fe6c",
+      "copiedArchiveSha256": "a59dccc8e7f9465b96ec8852ce8dba9c0f24c652b7a9e8ee8f0b03169293fe6c",
+      "originalBytes": 431,
+      "copiedBytes": 431,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "pos-native.log",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/pos-native.log",
+      "originalSourceSha256": "27c812e55d9b7a3417b587ac4fe70aacd419ceaff1bc087c5dba809b71da3d9e",
+      "copiedArchiveSha256": "4a15dc83b24fbcac7443505cc52ddf4e75b13f2d43b723f79dcc8638bd00e22d",
+      "originalBytes": 6529,
+      "copiedBytes": 6528,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true,
+        "trailingBlankLinesAtEofRemoved": 1
+      },
+      "byteIdentical": false
+    },
+    {
+      "filename": "postcheck.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/postcheck.json",
+      "originalSourceSha256": "904566cf1ce2f7925651451d842f31ded98ef7f6c2c50048cab586bf0eeebab5",
+      "copiedArchiveSha256": "904566cf1ce2f7925651451d842f31ded98ef7f6c2c50048cab586bf0eeebab5",
+      "originalBytes": 427,
+      "copiedBytes": 427,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "postcheck.log",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/postcheck.log",
+      "originalSourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copiedArchiveSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originalBytes": 0,
+      "copiedBytes": 0,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "after.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/after.json",
+      "originalSourceSha256": "12b8bc7cd386c0b436f3be90ab91ac6acc00aa94d4eb3f8b8373c48df8a8e218",
+      "copiedArchiveSha256": "d8272270561c2af2a8a30905c29bde68cdd0607395504b6c56d8d8992aaf8aec",
+      "originalBytes": 2695,
+      "copiedBytes": 2696,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": true,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": false
+    },
+    {
+      "filename": "result.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/result.json",
+      "originalSourceSha256": "8b3c472026a1a2a03b9c4b0537fbe588d3b2ae050d23af0f4d05daa4dea8cbb8",
+      "copiedArchiveSha256": "8b3c472026a1a2a03b9c4b0537fbe588d3b2ae050d23af0f4d05daa4dea8cbb8",
+      "originalBytes": 1746,
+      "copiedBytes": 1746,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "cleanup-intent.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/cleanup-intent.json",
+      "originalSourceSha256": "3d39fbae0e54c1cc19c32f8a1cdf4729dc60065b76b1d5dc4e6add524cbfc46d",
+      "copiedArchiveSha256": "3d39fbae0e54c1cc19c32f8a1cdf4729dc60065b76b1d5dc4e6add524cbfc46d",
+      "originalBytes": 1166,
+      "copiedBytes": 1166,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "cleanup.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/cleanup.json",
+      "originalSourceSha256": "d8cfc8c7c8ea0254ac97ba904c3bd62d520eef49fa442525a82ac1fa89e7052a",
+      "copiedArchiveSha256": "d8cfc8c7c8ea0254ac97ba904c3bd62d520eef49fa442525a82ac1fa89e7052a",
+      "originalBytes": 479,
+      "copiedBytes": 479,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "independent-checks.json",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026/independent-checks.json",
+      "originalSourceSha256": "73fdf44b88eddaedfd5eb27fa2e147940beaa63d942009691e2c5aa6486bc466",
+      "copiedArchiveSha256": "73fdf44b88eddaedfd5eb27fa2e147940beaa63d942009691e2c5aa6486bc466",
+      "originalBytes": 3886,
+      "copiedBytes": 3886,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "runner.mjs.txt",
+      "sourcePath": "C:/w/admin640-pos-linux-20261026.mjs",
+      "originalSourceSha256": "c7f9cd588751ea00d840d0b07da640de932505046275c1937c59f2fd5fea9ab4",
+      "copiedArchiveSha256": "c7f9cd588751ea00d840d0b07da640de932505046275c1937c59f2fd5fea9ab4",
+      "originalBytes": 12075,
+      "copiedBytes": 12075,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "cleanup.mjs.txt",
+      "sourcePath": "C:/w/admin640-pos-linux-cleanup-20261026.mjs",
+      "originalSourceSha256": "3e908b997e0663c02f44a99766e8446e780d84a7a87e64bcc5500cd9019047a5",
+      "copiedArchiveSha256": "3e908b997e0663c02f44a99766e8446e780d84a7a87e64bcc5500cd9019047a5",
+      "originalBytes": 3141,
+      "copiedBytes": 3141,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "review.mjs.txt",
+      "sourcePath": "C:/w/admin640-review-pos-linux-20261026.mjs",
+      "originalSourceSha256": "0bdf923411fa0ff47d15d765c6feb7a0f5cef6b5d71b8b755a17309218b72000",
+      "copiedArchiveSha256": "0bdf923411fa0ff47d15d765c6feb7a0f5cef6b5d71b8b755a17309218b72000",
+      "originalBytes": 5373,
+      "copiedBytes": 5373,
+      "formattingNormalization": {
+        "crlfToLf": 0,
+        "trailingHorizontalWhitespaceSegmentsRemoved": 0,
+        "finalLfAdded": false,
+        "contentOtherwiseUnchanged": true
+      },
+      "byteIdentical": true
+    },
+    {
+      "filename": "README.md",
+      "authoredForArchive": true,
+      "copiedArchiveSha256": "7ef37939a6b244b8d18184aaf6d806d93b8013185af5191dfec4a6aead473968"
+    }
+  ],
+  "noSourceChanges": true,
+  "noRuntimeRerun": true,
+  "noCiOrStagingClaim": true
+}

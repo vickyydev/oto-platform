@@ -1,0 +1,10 @@
+{
+  "ticket": "SCRUM-640",
+  "at": "2026-10-26T13:07:41.687Z",
+  "passed": false,
+  "dispatched": false,
+  "errorCode": "AMENDED_3584_MIB_INSTALL_FLOOR_REQUIRED",
+  "hostAvailableMiB": 2744,
+  "linuxAvailableMiB": 10325,
+  "reason": "Stale Windows-only floor refused before install; no native command ran"
+}

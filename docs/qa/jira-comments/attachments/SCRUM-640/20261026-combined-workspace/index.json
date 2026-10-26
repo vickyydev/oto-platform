@@ -1,0 +1,458 @@
+{
+  "ticket": "SCRUM-640",
+  "createdAt": "2026-10-26T13:31:56.221Z",
+  "sourceFiles": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceCheckpoint": "025c9929e26f3100876905d9b1430ae06722521a",
+  "docsCheckpoint": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+  "localOnly": true,
+  "releasePassed": false,
+  "batches": [
+    {
+      "mode": "db-shared",
+      "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+      "commands": 3,
+      "completedAt": "2026-10-26T13:19:12.793Z",
+      "cleanup": {
+        "ownNativeServer": true,
+        "port": 57143,
+        "databasesBefore": 0,
+        "credentialsPersisted": false,
+        "databaseCountAfter": 0,
+        "stopped": true,
+        "cleanupError": null,
+        "confirmed": true
+      }
+    },
+    {
+      "mode": "workspace",
+      "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+      "commands": 1,
+      "completedAt": "2026-10-26T13:25:30.379Z",
+      "cleanup": {
+        "ownNativeServer": true,
+        "port": 51476,
+        "databasesBefore": 0,
+        "credentialsPersisted": false,
+        "databaseCountAfter": 0,
+        "stopped": true,
+        "cleanupError": null,
+        "confirmed": true
+      }
+    },
+    {
+      "mode": "remaining",
+      "sourceHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+      "commands": 10,
+      "completedAt": "2026-10-26T13:28:21.600Z",
+      "cleanup": {
+        "ownNativeServer": true,
+        "port": 49153,
+        "databasesBefore": 0,
+        "credentialsPersisted": false,
+        "databaseCountAfter": 0,
+        "stopped": true,
+        "cleanupError": null,
+        "confirmed": true
+      }
+    },
+    {
+      "mode": "box",
+      "sourceHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+      "commands": 1,
+      "completedAt": "2026-10-26T13:30:01.550Z",
+      "cleanup": {
+        "ownNativeServer": true,
+        "port": 54863,
+        "databasesBefore": 0,
+        "credentialsPersisted": false,
+        "databaseCountAfter": 0,
+        "stopped": true,
+        "cleanupError": null,
+        "confirmed": true
+      }
+    },
+    {
+      "mode": "contract-lint",
+      "sourceHead": "ee05af58e6d3851915f39e15d22744e05c0f3994",
+      "commands": 2,
+      "completedAt": "2026-10-26T13:29:53.843Z",
+      "cleanup": {
+        "ownNativeServer": true,
+        "port": 51411,
+        "databasesBefore": 0,
+        "credentialsPersisted": false,
+        "databaseCountAfter": 0,
+        "stopped": true,
+        "cleanupError": null,
+        "confirmed": true
+      }
+    }
+  ],
+  "files": [
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/01.json",
+      "path": "db-shared/01.json",
+      "rawSha256": "8497b9cfa66c773fb6a80b4f931845751ff9abf9d98a3cb6f86dc123ea38d673",
+      "sha256": "8497b9cfa66c773fb6a80b4f931845751ff9abf9d98a3cb6f86dc123ea38d673",
+      "bytes": 671
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/01.log",
+      "path": "db-shared/01.log",
+      "rawSha256": "f6efcbcfc8c50710c2860c6a47bd0c340d01c3d0357aa135ca316f7e35d206eb",
+      "sha256": "aba0606b45c9d3b0cde5fac178535a0884499abfa4989c887317fa55b065ac87",
+      "bytes": 19407,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/02.json",
+      "path": "db-shared/02.json",
+      "rawSha256": "8fec9897da736d7fad24fa9a644d61d420e952f0a08be5420bacab95b86e2266",
+      "sha256": "8fec9897da736d7fad24fa9a644d61d420e952f0a08be5420bacab95b86e2266",
+      "bytes": 674
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/02.log",
+      "path": "db-shared/02.log",
+      "rawSha256": "f72fd70a52402d19170c592b36c098c55ba766e15a6b58e374cfc95afd296a6d",
+      "sha256": "4b8da38d46b2e1c6f77c0c74f6368817925670389445e72006812bb6394a8351",
+      "bytes": 3023,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/03.json",
+      "path": "db-shared/03.json",
+      "rawSha256": "c3ccfa07152e4f9f86192a53048a45b929074fdd5006fb51afe2e9d7eec9326c",
+      "sha256": "c3ccfa07152e4f9f86192a53048a45b929074fdd5006fb51afe2e9d7eec9326c",
+      "bytes": 678
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/03.log",
+      "path": "db-shared/03.log",
+      "rawSha256": "ae531aaabf70a50308599461d031eb68e3ce9a48357a5e4a54103772eac5e228",
+      "sha256": "ae531aaabf70a50308599461d031eb68e3ce9a48357a5e4a54103772eac5e228",
+      "bytes": 326
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/intent.json",
+      "path": "db-shared/intent.json",
+      "rawSha256": "c088b167732de6406edeffd13c41caeb83e8e600cde356b234e6d17aa8cc4072",
+      "sha256": "c088b167732de6406edeffd13c41caeb83e8e600cde356b234e6d17aa8cc4072",
+      "bytes": 1651
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/result.json",
+      "path": "db-shared/result.json",
+      "rawSha256": "4511c4339017730d7d275be9ce936ac8ec1ed6a5f6d3b854664e84f9acb7875a",
+      "sha256": "4511c4339017730d7d275be9ce936ac8ec1ed6a5f6d3b854664e84f9acb7875a",
+      "bytes": 1157
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/setup.json",
+      "path": "db-shared/setup.json",
+      "rawSha256": "ae3abce339866d6df7fcd126fbed5ab7c2ba99ddd59d0d68e6dd815bcab0be72",
+      "sha256": "ae3abce339866d6df7fcd126fbed5ab7c2ba99ddd59d0d68e6dd815bcab0be72",
+      "bytes": 104
+    },
+    {
+      "source": "C:/w/admin640-combined-db-shared-v1/source-manifest.json",
+      "path": "db-shared/source-manifest.json",
+      "rawSha256": "b361d841b41c37d8fe6c72f4b3836b9de91d244df7cd6c18b76ac880f2d25b65",
+      "sha256": "b361d841b41c37d8fe6c72f4b3836b9de91d244df7cd6c18b76ac880f2d25b65",
+      "bytes": 571113
+    },
+    {
+      "source": "C:/w/admin640-combined-workspace-v1/01.json",
+      "path": "workspace/01.json",
+      "rawSha256": "b03d795ac4880601074f0ea0314d02df80494d943f2e3cddbb8e81fdd90fad93",
+      "sha256": "b03d795ac4880601074f0ea0314d02df80494d943f2e3cddbb8e81fdd90fad93",
+      "bytes": 704
+    },
+    {
+      "source": "C:/w/admin640-combined-workspace-v1/01.log",
+      "path": "workspace/01.log",
+      "rawSha256": "e3a6f0a0d86d296734cbbdf1268b64afd66fd0f4594328168ce980ef529ca818",
+      "sha256": "aea174f2b6ea040e53c8400994638b462252a9d16f9cfeb7b7f61d3db860c0cc",
+      "bytes": 12877,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-workspace-v1/intent.json",
+      "path": "workspace/intent.json",
+      "rawSha256": "70347737211d891b95a1acd7f583b13faa13434c8fe54e988a8e965ea8ddd71a",
+      "sha256": "70347737211d891b95a1acd7f583b13faa13434c8fe54e988a8e965ea8ddd71a",
+      "bytes": 1603
+    },
+    {
+      "source": "C:/w/admin640-combined-workspace-v1/result.json",
+      "path": "workspace/result.json",
+      "rawSha256": "2fe5d7369e9c500417c4003273a71a0b973fa4657d4a38e784192c67fb5e539b",
+      "sha256": "2fe5d7369e9c500417c4003273a71a0b973fa4657d4a38e784192c67fb5e539b",
+      "bytes": 833
+    },
+    {
+      "source": "C:/w/admin640-combined-workspace-v1/setup.json",
+      "path": "workspace/setup.json",
+      "rawSha256": "dac17f49bdd5018b24765eb7e61829210b80f530d95d54dfe3da5dc9846ffd80",
+      "sha256": "dac17f49bdd5018b24765eb7e61829210b80f530d95d54dfe3da5dc9846ffd80",
+      "bytes": 104
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/01.json",
+      "path": "remaining/01.json",
+      "rawSha256": "f21cd5d0a2b551f818b04832e32925ed76f6a53e5acc95f5a1c6d83db9ec1174",
+      "sha256": "f21cd5d0a2b551f818b04832e32925ed76f6a53e5acc95f5a1c6d83db9ec1174",
+      "bytes": 676
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/01.log",
+      "path": "remaining/01.log",
+      "rawSha256": "09ed2078bc4ce173eee4267128a2aa625ab0c59a5204052d4616cf552766124c",
+      "sha256": "b923686f797beeda72759312e504c4578520ceeeebd7b853d856fa946ce24839",
+      "bytes": 499,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/02.json",
+      "path": "remaining/02.json",
+      "rawSha256": "86a4a9ae1118ed51a89cdd8efda2e6acc9b3ad8d18afba76b66992478547f720",
+      "sha256": "86a4a9ae1118ed51a89cdd8efda2e6acc9b3ad8d18afba76b66992478547f720",
+      "bytes": 676
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/02.log",
+      "path": "remaining/02.log",
+      "rawSha256": "e088b321d5982f88251ddf47125cdbd34ab84a6872f3a09b0494d734081dce26",
+      "sha256": "cffcf8c5c62d57dcd364b40995c5bbf1b2578b4fc634aa19dd4e558144a18ebc",
+      "bytes": 380,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/03.json",
+      "path": "remaining/03.json",
+      "rawSha256": "c77e854dc83b2f577f6828260bd5a70fe432b9a74aeffff702c144953db1a2f6",
+      "sha256": "c77e854dc83b2f577f6828260bd5a70fe432b9a74aeffff702c144953db1a2f6",
+      "bytes": 681
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/03.log",
+      "path": "remaining/03.log",
+      "rawSha256": "6b6409db97de2f02ef932e8ceaf260ebdcb8034c7e17ca5dcc4f311272c9dce4",
+      "sha256": "02f887aa593f2636bc33793647a6eee033378458c3475f9d25761cd8384e4ee6",
+      "bytes": 1157,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/04.json",
+      "path": "remaining/04.json",
+      "rawSha256": "c0c1ec7da965a252b1e66f1c50e819a0d45f441b2419e4e5d7fa9111860401df",
+      "sha256": "c0c1ec7da965a252b1e66f1c50e819a0d45f441b2419e4e5d7fa9111860401df",
+      "bytes": 676
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/04.log",
+      "path": "remaining/04.log",
+      "rawSha256": "d0b8df7d7c6b18964fc93c154de01897430d725d33f5abe7855ea77bca1509cd",
+      "sha256": "d0baae21a7729424ce2cd42cd9c322e2a7c7ee9e7677366d9ca5adcc180633bc",
+      "bytes": 603,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/05.json",
+      "path": "remaining/05.json",
+      "rawSha256": "5215ee079fea4dfd056360c114d9cb764e29f9cebed79c29fb42660719d38462",
+      "sha256": "5215ee079fea4dfd056360c114d9cb764e29f9cebed79c29fb42660719d38462",
+      "bytes": 680
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/05.log",
+      "path": "remaining/05.log",
+      "rawSha256": "de5f834ddd441ed88545ed6a53eed14f3aba2a56fcb40f9b211d3cbd91055594",
+      "sha256": "357fb06bccf33f1b4fc1fc06da1cbea5173954a70f887668dfe54aba2b06aee4",
+      "bytes": 600,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/06.json",
+      "path": "remaining/06.json",
+      "rawSha256": "faacfd04d6f531fde1d70f0b015e8a8ae61cc8f1a2e44a3d15d2276b1e493a9d",
+      "sha256": "faacfd04d6f531fde1d70f0b015e8a8ae61cc8f1a2e44a3d15d2276b1e493a9d",
+      "bytes": 676
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/06.log",
+      "path": "remaining/06.log",
+      "rawSha256": "c3e9487902f5e38bd16dd9a47eeec4b17422d96d6f1eb2eb5aaa0ceee8f31e77",
+      "sha256": "3e215435fcb0658efe70f63be7828a6d10eaa344c477e6ffea02970b2d0a4ca2",
+      "bytes": 673,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/07.json",
+      "path": "remaining/07.json",
+      "rawSha256": "ea246dd4744cbcc536362fab107a616d7d764344b0c119abcb2749982955279a",
+      "sha256": "ea246dd4744cbcc536362fab107a616d7d764344b0c119abcb2749982955279a",
+      "bytes": 673
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/07.log",
+      "path": "remaining/07.log",
+      "rawSha256": "964b5bc62e1e62fdad7bcca232172b5484adb80c3a1b1e92aa93de9757fbc649",
+      "sha256": "1ecaaa73b7542c8c9a4d983ec6b44a190ebe4b506e2c7f650f96e76361d2fa98",
+      "bytes": 3274,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/08.json",
+      "path": "remaining/08.json",
+      "rawSha256": "b180aa1f289055438e9dbbcc19c8c48fb88c29a2ae7b88c0ca8e970cfbb90e55",
+      "sha256": "b180aa1f289055438e9dbbcc19c8c48fb88c29a2ae7b88c0ca8e970cfbb90e55",
+      "bytes": 672
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/08.log",
+      "path": "remaining/08.log",
+      "rawSha256": "9b42a51ddc38499b38de24d6632d894f7218afa0876daeeb6372b6754a360e27",
+      "sha256": "bbca4291e1063ca2a6e5bf81b867204c328de1fff9b1b2dc0b01ef663e8178b9",
+      "bytes": 658,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/09.json",
+      "path": "remaining/09.json",
+      "rawSha256": "f4dbab8b3c4820e9e906e589a17d42a78d9ba6804bfd670c1d061bb17e182a1b",
+      "sha256": "f4dbab8b3c4820e9e906e589a17d42a78d9ba6804bfd670c1d061bb17e182a1b",
+      "bytes": 673
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/09.log",
+      "path": "remaining/09.log",
+      "rawSha256": "0ba84f95ae3b616bb117e3fe37b7dc6030059f016e17994020de2cb5990be245",
+      "sha256": "0ba84f95ae3b616bb117e3fe37b7dc6030059f016e17994020de2cb5990be245",
+      "bytes": 7232
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/10.json",
+      "path": "remaining/10.json",
+      "rawSha256": "c3cec346becb75e4881de627f207b5fe5ea5bc7ea331f81b8cf0d06460c4aab3",
+      "sha256": "c3cec346becb75e4881de627f207b5fe5ea5bc7ea331f81b8cf0d06460c4aab3",
+      "bytes": 675
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/10.log",
+      "path": "remaining/10.log",
+      "rawSha256": "f6dbb23485d79c853461f42327582728fd5c42b28949dda8af57f1a9176a9c30",
+      "sha256": "886d9817db871a2e98549428eb6b4f6e810923ba2d68ddacdbc2f63a65f23567",
+      "bytes": 539,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/intent.json",
+      "path": "remaining/intent.json",
+      "rawSha256": "5fa0043bd24c1ae95b9df9fc666972ff589d718f0c5fe93c3ae7f05d18506af7",
+      "sha256": "5fa0043bd24c1ae95b9df9fc666972ff589d718f0c5fe93c3ae7f05d18506af7",
+      "bytes": 1941
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/result.json",
+      "path": "remaining/result.json",
+      "rawSha256": "96fdcec94874e44c2f0837b3bae1f5fd142e3e42f08faeb0c293bba376b1b7ff",
+      "sha256": "96fdcec94874e44c2f0837b3bae1f5fd142e3e42f08faeb0c293bba376b1b7ff",
+      "bytes": 2413
+    },
+    {
+      "source": "C:/w/admin640-combined-remaining-v1/setup.json",
+      "path": "remaining/setup.json",
+      "rawSha256": "d04765b907c35ea0fcb67a4e7481755695fefc0d412525e78ca616dab3922302",
+      "sha256": "d04765b907c35ea0fcb67a4e7481755695fefc0d412525e78ca616dab3922302",
+      "bytes": 104
+    },
+    {
+      "source": "C:/w/admin640-combined-box-v1/01.json",
+      "path": "box/01.json",
+      "rawSha256": "bc2eb4e94ce4ee0e93c5df3dc76f946f1cd62d377abbc4e530ca98315890edbf",
+      "sha256": "bc2eb4e94ce4ee0e93c5df3dc76f946f1cd62d377abbc4e530ca98315890edbf",
+      "bytes": 700
+    },
+    {
+      "source": "C:/w/admin640-combined-box-v1/01.log",
+      "path": "box/01.log",
+      "rawSha256": "f9edd88b2144a1a408ba68b2d5eef9565da4dfd5dd5385f6805749e4a9f21394",
+      "sha256": "f9edd88b2144a1a408ba68b2d5eef9565da4dfd5dd5385f6805749e4a9f21394",
+      "bytes": 176946
+    },
+    {
+      "source": "C:/w/admin640-combined-box-v1/intent.json",
+      "path": "box/intent.json",
+      "rawSha256": "8a5a15eb8538304896b9e8ac80610f65f195f74db87d72add6db17183f922522",
+      "sha256": "8a5a15eb8538304896b9e8ac80610f65f195f74db87d72add6db17183f922522",
+      "bytes": 1592
+    },
+    {
+      "source": "C:/w/admin640-combined-box-v1/result.json",
+      "path": "box/result.json",
+      "rawSha256": "fa56451b66bcb9a954f447af496f32cdf4c29fdadae91eca3fec02145b0186a6",
+      "sha256": "fa56451b66bcb9a954f447af496f32cdf4c29fdadae91eca3fec02145b0186a6",
+      "bytes": 822
+    },
+    {
+      "source": "C:/w/admin640-combined-box-v1/setup.json",
+      "path": "box/setup.json",
+      "rawSha256": "2deb959b2b8bcfb9cffc5188a8be97ff86fdce0ed74a641b5754038af850a76d",
+      "sha256": "2deb959b2b8bcfb9cffc5188a8be97ff86fdce0ed74a641b5754038af850a76d",
+      "bytes": 104
+    },
+    {
+      "source": "C:/w/admin640-combined-contract-lint-v1/01.json",
+      "path": "contract-lint/01.json",
+      "rawSha256": "bfa971388f74d6927b1b1464698cc70f747f174610e969496fe235f6238771fb",
+      "sha256": "bfa971388f74d6927b1b1464698cc70f747f174610e969496fe235f6238771fb",
+      "bytes": 663
+    },
+    {
+      "source": "C:/w/admin640-combined-contract-lint-v1/01.log",
+      "path": "contract-lint/01.log",
+      "rawSha256": "13b39e9b45c06b0846ed35421af37d11620d8d205ae7dbc8e78f8549e3e40cba",
+      "sha256": "13b39e9b45c06b0846ed35421af37d11620d8d205ae7dbc8e78f8549e3e40cba",
+      "bytes": 585
+    },
+    {
+      "source": "C:/w/admin640-combined-contract-lint-v1/02.json",
+      "path": "contract-lint/02.json",
+      "rawSha256": "4e5ec45e5e5c70368a61710a2b403e7915d3e5a2ef7efc301073272a21235a87",
+      "sha256": "4e5ec45e5e5c70368a61710a2b403e7915d3e5a2ef7efc301073272a21235a87",
+      "bytes": 5341
+    },
+    {
+      "source": "C:/w/admin640-combined-contract-lint-v1/02.log",
+      "path": "contract-lint/02.log",
+      "rawSha256": "630b2968f76a15456044c7000c8148f8cf3327390bbde07cd2e67701072d7cab",
+      "sha256": "d4374ed25d08457fe104251b4d9980cbee987c33a4883994d09a983538e0f8c9",
+      "bytes": 268,
+      "archiveDisplayWhitespaceNormalized": true
+    },
+    {
+      "source": "C:/w/admin640-combined-contract-lint-v1/intent.json",
+      "path": "contract-lint/intent.json",
+      "rawSha256": "5a38cc79d945082b59ae6810814ea7bd81a2c6de6e57ecc37f64c9721cd69cb3",
+      "sha256": "5a38cc79d945082b59ae6810814ea7bd81a2c6de6e57ecc37f64c9721cd69cb3",
+      "bytes": 6274
+    },
+    {
+      "source": "C:/w/admin640-combined-contract-lint-v1/result.json",
+      "path": "contract-lint/result.json",
+      "rawSha256": "4fe51f507b31dc0f425db103f0a86323bdc8729e5b2a712b20dc5621e4baee90",
+      "sha256": "4fe51f507b31dc0f425db103f0a86323bdc8729e5b2a712b20dc5621e4baee90",
+      "bytes": 5642
+    },
+    {
+      "source": "C:/w/admin640-combined-contract-lint-v1/setup.json",
+      "path": "contract-lint/setup.json",
+      "rawSha256": "cd975ad92c43324a0746fb7f6e75b1fcca65fbce617c6166a44bf423836c3e5b",
+      "sha256": "cd975ad92c43324a0746fb7f6e75b1fcca65fbce617c6166a44bf423836c3e5b",
+      "bytes": 104
+    }
+  ],
+  "archiveTextPolicy": "LF, terminal spaces and blank EOF lines normalized for repository display. Original raw bytes/hashes stay external and unchanged; index sha256 binds each archived representation."
+}

@@ -1,0 +1,49 @@
+
+> @oto/console@0.1.0 test C:\w\admin-operator-switch\apps\console
+> vitest run "--maxWorkers=1" "--fileParallelism=false"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/console
+
+ ✓ test/staff-lifetime.test.ts (12 tests) 359ms
+ ✓ test/booth-report-lifetime.test.ts (61 tests) 351ms
+ ✓ test/voucher-types.test.ts (40 tests | 2 skipped) 160ms
+ ✓ test/overview-markup.test.ts (8 tests) 128ms
+ ✓ test/s216-r6-health.test.ts (7 tests) 113ms
+ ✓ test/booth-state.test.ts (11 tests) 81ms
+ ✓ test/prize-editor-validation.test.ts (6 tests) 54ms
+ ✓ test/care-retry.test.ts (1 test) 53ms
+ ✓ test/odds.test.ts (35 tests | 1 skipped) 45ms
+ ✓ test/access-review-markup.test.ts (4 tests) 47ms
+ ✓ test/employees-markup.test.ts (5 tests) 33ms
+ ✓ test/teams-routing-markup.test.ts (5 tests) 36ms
+ ✓ test/departments-markup.test.ts (5 tests) 28ms
+ ✓ test/operator-switch-picker-markup.test.ts (16 tests) 29ms
+ ✓ test/organisation-markup.test.ts (4 tests) 23ms
+ ✓ test/publish-plan.test.ts (23 tests) 20ms
+ ✓ test/accounts-markup.test.ts (3 tests) 20ms
+ ✓ test/account-theme.test.ts (3 tests) 21ms
+ ✓ test/roles-markup.test.ts (4 tests) 20ms
+ ✓ test/s216-r5-booth-report.test.ts (4 tests) 15ms
+ ✓ test/admin-navigation-markup.test.ts (2 tests) 15ms
+ ✓ test/today-staff.test.ts (3 tests) 14ms
+ ✓ test/app-access-markup.test.ts (2 tests) 15ms
+ ✓ test/inbox-routing-api.test.ts (10 tests) 13ms
+ ✓ test/reports-api.test.ts (7 tests) 14ms
+ ✓ test/operations-api.test.ts (8 tests) 12ms
+ ✓ test/staff-api.test.ts (11 tests) 10ms
+ ✓ test/departments-api.test.ts (6 tests) 8ms
+ ✓ test/admin-navigation.test.ts (21 tests) 7ms
+ ✓ test/voucher-slip.test.ts (9 tests) 7ms
+ ✓ test/handoff-target.test.ts (10 tests) 5ms
+ ✓ test/organisation-api.test.ts (2 tests) 4ms
+ ✓ test/fleet-words.test.ts (7 tests) 4ms
+ ✓ test/stock-r3-words.test.ts (2 tests) 6ms
+ ✓ test/wallet-r4-words.test.ts (2 tests) 4ms
+ ✓ test/suite-screens.test.ts (2 tests) 5ms
+ ✓ test/job-words.test.ts (5 tests) 4ms
+
+ Test Files  37 passed (37)
+      Tests  363 passed | 3 todo (366)
+   Start at  19:58:38
+   Duration  23.65s (transform 1.43s, setup 0ms, collect 12.92s, tests 1.78s, environment 5ms, prepare 3.89s)

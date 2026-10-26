@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-640",
+  "mode": "db-shared",
+  "attempt": "v1",
+  "sourceHead": "025c9929e26f3100876905d9b1430ae06722521a",
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "sourceUnchanged": true,
+  "installedUnchanged": true,
+  "completedAt": "2026-10-26T13:19:12.793Z",
+  "fatal": null,
+  "programs": [
+    {
+      "command": "pnpm --filter @oto/db test",
+      "passed": true,
+      "receiptSha256": "8497b9cfa66c773fb6a80b4f931845751ff9abf9d98a3cb6f86dc123ea38d673"
+    },
+    {
+      "command": "pnpm --filter @oto/shared test",
+      "passed": true,
+      "receiptSha256": "8fec9897da736d7fad24fa9a644d61d420e952f0a08be5420bacab95b86e2266"
+    },
+    {
+      "command": "pnpm --filter @oto/db verify-schema",
+      "passed": true,
+      "receiptSha256": "c3ccfa07152e4f9f86192a53048a45b929074fdd5006fb51afe2e9d7eec9326c"
+    }
+  ],
+  "cleanup": {
+    "ownNativeServer": true,
+    "port": 57143,
+    "databasesBefore": 0,
+    "credentialsPersisted": false,
+    "databaseCountAfter": 0,
+    "stopped": true,
+    "cleanupError": null,
+    "confirmed": true
+  },
+  "staging": false,
+  "passed": true
+}

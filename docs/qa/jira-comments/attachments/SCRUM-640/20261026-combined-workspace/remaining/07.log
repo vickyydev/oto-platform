@@ -1,0 +1,43 @@
+
+> @oto/print@0.1.0 test C:\w\admin-operator-switch\packages\print
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/print
+
+ ✓ test/templates.test.ts (29 tests) 2169ms
+ ✓ test/booth-voucher-slip.test.ts (33 tests) 8648ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: long venue  769ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: no Thai  358ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: explicit defaults  358ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos576: empty header  360ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: plain  360ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: no staff  342ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: reprint  378ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: no terms  319ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: no expiry  326ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: empty footer  308ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: blank footer  311ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: long venue  719ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: no Thai  324ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: explicit defaults  336ms
+   ✓ the booth voucher, untouched, is the pre-471 voucher on every shape (gate differential) > escpos512: empty header  342ms
+ ✓ test/layout.test.ts (17 tests) 1693ms
+   ✓ a receipt is a variable number of lines > grows with the content rather than being clipped  921ms
+   ✓ a forced break is reported, because nothing else can report it > leaves the test page clean on the narrowest band stock  412ms
+ ✓ test/single-renderer.test.ts (7 tests) 52ms
+ ✓ test/emit.test.ts (34 tests) 2735ms
+   ✓ ESC/POS job frame > bands at the device band height so a job stays inside the input buffer  554ms
+ ✓ test/fonts.test.ts (16 tests) 145ms
+ ✓ test/samples.test.ts (14 tests) 1507ms
+   ✓ the named preview scenarios > full renders every printout through the one drawing path  371ms
+   ✓ the named preview scenarios > long_names renders every printout through the one drawing path  891ms
+ ✓ test/fixtures.test.ts (76 tests) 53ms
+ ✓ test/credit-voucher.test.ts (3 tests) 154ms
+ ✓ test/codes.test.ts (31 tests) 43ms
+ ✓ test/money-contract.test.ts (11 tests) 17ms
+
+ Test Files  11 passed (11)
+      Tests  271 passed (271)
+   Start at  20:27:28
+   Duration  23.24s (transform 344ms, setup 0ms, collect 2.89s, tests 17.21s, environment 2ms, prepare 1.14s)

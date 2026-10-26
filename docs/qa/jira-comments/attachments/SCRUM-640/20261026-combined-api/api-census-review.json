@@ -1,0 +1,596 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T13:56:53.403Z",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceManifestSha256": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "wholeFileExecution": true,
+  "expectedFiles": 384,
+  "reports": [
+    {
+      "shard": 1,
+      "path": "C:/w/admin640-api-verification-20261026/actual-v1/api-shard1-census.json",
+      "sha256": "af32ad3108ee0cced6dc6f486ec0be1b0eaaf5b04141be28f5009bf8777451c6",
+      "totals": {
+        "files": 128,
+        "tests": 1997,
+        "pass": 1995,
+        "fail": 2,
+        "skip": 0,
+        "todo": 0,
+        "other": 0
+      },
+      "unhandledErrors": 0
+    },
+    {
+      "shard": 2,
+      "path": "C:/w/admin640-api-verification-20261026/actual-v1/api-shard2-census.json",
+      "sha256": "e2b0a24329bfd482390058085dec20ace9a3d774ccebbd82103fd48f5fc29490",
+      "totals": {
+        "files": 128,
+        "tests": 2051,
+        "pass": 2036,
+        "fail": 11,
+        "skip": 0,
+        "todo": 4,
+        "other": 0
+      },
+      "unhandledErrors": 0
+    },
+    {
+      "shard": 3,
+      "path": "C:/w/admin640-api-verification-20261026/actual-v1/api-shard3-census.json",
+      "sha256": "668b75def146210374e1d11765852e577fff556026108315baa4e0990f64fdc4",
+      "totals": {
+        "files": 128,
+        "tests": 1823,
+        "pass": 1809,
+        "fail": 11,
+        "skip": 2,
+        "todo": 1,
+        "other": 0
+      },
+      "unhandledErrors": 0
+    }
+  ],
+  "totals": {
+    "files": 384,
+    "tests": 5871,
+    "pass": 5840,
+    "fail": 24,
+    "skip": 2,
+    "todo": 5,
+    "other": 0
+  },
+  "missing": [],
+  "unexpected": [],
+  "duplicates": [],
+  "allExpectedFilesCovered": true,
+  "availabilityFiles": 30,
+  "availabilityAllExecuted": true,
+  "availability": [
+    {
+      "file": "apps/api/test/g17-round0-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 32
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r1-review-recheck.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 17
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r1-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 42
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r1.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 31
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r2-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 33
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r2.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 33
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r3-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 44
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r3.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 41
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r4a-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 34,
+        "fail": 3
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r4a.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 28
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r4b-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 25,
+        "fail": 4
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r4b.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 36
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r5-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 26,
+        "fail": 4
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r5.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 17,
+        "fail": 1
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r6-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 61,
+        "fail": 4
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r6.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 35,
+        "fail": 1
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r7-access-cross-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 15
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r7-access-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 18
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r7-finance-access-cross-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 8
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r7-finance-cross-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 4
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r7-finance.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 7
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r7-payroll-cross-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 25
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-r7-readers-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 4
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217b-scheduling-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 32
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217c-camp-sms-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 23
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217c-employee-history-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 28
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217c-fix-preview-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 7
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217c-presence-delivery-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 15
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s217c-sop-history-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 16
+      },
+      "allExecuted": true
+    },
+    {
+      "file": "apps/api/test/s548-qa-reports-review.test.ts",
+      "present": true,
+      "counts": {
+        "pass": 36
+      },
+      "allExecuted": true
+    }
+  ],
+  "failedFiles": [
+    {
+      "file": "apps/api/test/s217b-r6.test.ts",
+      "counts": {
+        "pass": 35,
+        "fail": 1
+      },
+      "failedCases": [
+        {
+          "nameSha256": "bdad6968ec042507990e19d44de313359068b24e9827631f6bd207c8bc07307f",
+          "errorHashes": [
+            "0f84443b33f67596ebb21d01b200c0d993fb642be8a1b703a492be189f1302b8"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/s220-e5-review.test.ts",
+      "counts": {
+        "pass": 21,
+        "fail": 1
+      },
+      "failedCases": [
+        {
+          "nameSha256": "e960311eff03835741da9ef7ce0755246489eb3a20cdcb6770212c2c960fc688",
+          "errorHashes": [
+            "69f872e079794eebb375ed2e821871e415d8ca3e84fac056fc8156774f7fd418"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/assistant-otoapp.test.ts",
+      "counts": {
+        "pass": 42,
+        "fail": 1
+      },
+      "failedCases": [
+        {
+          "nameSha256": "dee57965252e553087a9c839cef81dcf438ea32fc13681d79f8766f5af87c592",
+          "errorHashes": [
+            "0f0fd5aca3ef2b3786762dc13bfad59591771c8bf8bdb1af2104ff43ce54b274"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/s217b-r4a-review.test.ts",
+      "counts": {
+        "pass": 34,
+        "fail": 3
+      },
+      "failedCases": [
+        {
+          "nameSha256": "3007fca83cc44c96b46a3a60e9533dd4aa398145870945faa472c109e10df62c",
+          "errorHashes": [
+            "dbc1e7f299b5976638724a939ee9beab052eb484961a83b7aacb80cf0b99503c"
+          ]
+        },
+        {
+          "nameSha256": "f3d32bb2fe37cb4d71434e14687817dd08354bc147ed9ebf6b4cfcd805e783bb",
+          "errorHashes": [
+            "e435f0d6991e100da719f379ab0b646ea25161f4e7bd8bd7b781cdea6820898c"
+          ]
+        },
+        {
+          "nameSha256": "1f473a88b008f4ff48ccadcbf523f791f645102c59717ea90d249dd45d443975",
+          "errorHashes": [
+            "81cbed955a01b7b009dcdd12c6613b0521161da71d0b1a3801bc6e4cd5963546"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/s217b-r5.test.ts",
+      "counts": {
+        "pass": 17,
+        "fail": 1
+      },
+      "failedCases": [
+        {
+          "nameSha256": "ead99855c2128c697bc0f801b61ae6e9da12664715681e7e1108d6667bf4b677",
+          "errorHashes": [
+            "58f731e52748c0dc93fd974dff9cabc58b75533ee251dadc396fd15b5f773f2e"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/s217b-r6-review.test.ts",
+      "counts": {
+        "pass": 61,
+        "fail": 4
+      },
+      "failedCases": [
+        {
+          "nameSha256": "68c968e3514f7970084f3ba709a31ae11d9a035a31009e6eaeabfb7ee1a5b5ac",
+          "errorHashes": [
+            "9dfd6dfa4618ee3506a36eb16df196d62063abafcbe69a573f55c8082db583a6"
+          ]
+        },
+        {
+          "nameSha256": "6b9481f8c152e4bb8b77da56756e95478d86041dc7d81ebbd94a0eb0d4ac4e0b",
+          "errorHashes": [
+            "fb279860232a1f765b650bc776aedfb086420c239994feed30336d982fc09e42"
+          ]
+        },
+        {
+          "nameSha256": "899fb9e026fe248cc7570d400e2b4d35926dd19ec269389a004f45662608a6ea",
+          "errorHashes": [
+            "08598ac020faca61585ea4a6b3f6b6dbc21a5738d82ef8d282a1ecec6564d5ac"
+          ]
+        },
+        {
+          "nameSha256": "9eae863926e04dcc3956049f68c5949635a75029b8cb3e144a588e19cd0f8fc6",
+          "errorHashes": [
+            "86e5e85d6cd3c582dba19083fe9a29702310f16804d178fa1afdbc59633be415"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/vouchers.test.ts",
+      "counts": {
+        "pass": 105,
+        "fail": 2
+      },
+      "failedCases": [
+        {
+          "nameSha256": "feee4500ce6bf81a99dd6e136cf470d150320dce7c1aa41ac6e0038fa68205e6",
+          "errorHashes": [
+            "e717e85fb1bf15095c2c84b243278b9d8c9849fd0f4075a768942925432d1fcd"
+          ]
+        },
+        {
+          "nameSha256": "b1b4b10467d327571a78788107ccfeabe20d400410ed2af5986478d7ad2ecbcf",
+          "errorHashes": [
+            "b18a8ceac43cbe848dba54f84cceb00c350c41d96158b7cda0d0720a6770dc63"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/offline-capability.test.ts",
+      "counts": {
+        "fail": 2,
+        "todo": 1,
+        "pass": 20
+      },
+      "failedCases": [
+        {
+          "nameSha256": "7c8d090034f1b967d4b76b3dffcb25e56770cb2b2f563c98bbafbec43f5e2423",
+          "errorHashes": [
+            "3c837b228c067fd461b4a1abd2b93a8799092267ced0abd740cef73e52dd6741"
+          ]
+        },
+        {
+          "nameSha256": "3163acc6d7ff584f14021bd0d16966353af632bc185cc61e4c4aaa6f4fd549c2",
+          "errorHashes": [
+            "64701c99313fb36f1caaf5226e8da8edbc939504eff8cb123086f0123982e970"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/s217b-r4b-review.test.ts",
+      "counts": {
+        "pass": 25,
+        "fail": 4
+      },
+      "failedCases": [
+        {
+          "nameSha256": "b1878e3a7728857ecef0160a6a91486245a2bd8bac9d46096bd01eba5357db28",
+          "errorHashes": [
+            "a776b5e83b16926573804066623acc63fdffae304cb93204b428961d12a6abde"
+          ]
+        },
+        {
+          "nameSha256": "cc6c435b5d5f00868aadfbb3b781d82dc4252dc198e67ce0e850a9137b02934a",
+          "errorHashes": [
+            "4c320b012f60357c7dd421a5167eae92f68e4c08622a4a508cf23a3eadcdff30"
+          ]
+        },
+        {
+          "nameSha256": "2273825c3b176ca546815f84e98bfa902d9fe9f4a4a7e87c340e5af028f43f41",
+          "errorHashes": [
+            "44e92bc273be818aad18b1fd3156df15f53ff1953963b50c96d3cbe9007f5d26"
+          ]
+        },
+        {
+          "nameSha256": "37746e2f8002b2d315e351f0f2bbf3d8c0edb5e128844c5661f3dce6f735548a",
+          "errorHashes": [
+            "2856ba201cbfb5902dc917620162499d9864626c250d517cca8a6b4f36de661f"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/s217b-r5-review.test.ts",
+      "counts": {
+        "pass": 26,
+        "fail": 4
+      },
+      "failedCases": [
+        {
+          "nameSha256": "361baab71fcc3668cab4e8a16d466d527a1683ce2ef9825f6e89575bbea9681d",
+          "errorHashes": [
+            "5ac64afe501fd63dfd061f13a4b5e30702fa55858292b7785e5cd5e2e8ee9e8a"
+          ]
+        },
+        {
+          "nameSha256": "9f1f0c9099d1c142038f8c4fb29115d2de38627dba1df9f8d629f4b09d6ca4cf",
+          "errorHashes": [
+            "c12d50cb4455ff8f0af549eddfaf770fe585929e3740cf16380944c0382a88cb"
+          ]
+        },
+        {
+          "nameSha256": "e9b147371b739e1d94a5cd6cac313efe942b38560703bb1406aeee55026d165c",
+          "errorHashes": [
+            "8cd3546bb300f391120359de1989f5b48a0d3cf4f5aeb24dfff93cf5f6071069"
+          ]
+        },
+        {
+          "nameSha256": "91792a7f390477477be871c56db53b287f1e8b51465f350f03c05654cb8e2126",
+          "errorHashes": [
+            "946065abdea1a5971f8cfb6bc8bb1cf84aef2df484294ce5fced3aad8dcd557c"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "apps/api/test/s220-e5-hazards.test.ts",
+      "counts": {
+        "fail": 1,
+        "pass": 9
+      },
+      "failedCases": [
+        {
+          "nameSha256": "eca20567b3faaddb7095aa22ed42a062849c41be311a77541935dac9c1a5a093",
+          "errorHashes": [
+            "eb2088c6a9cbe59c5579a0fde6e03ff001d0d4981a4fad0e71ab1577be599930"
+          ]
+        }
+      ]
+    }
+  ],
+  "skippedFiles": [
+    {
+      "file": "apps/api/test/files.test.ts",
+      "counts": {
+        "pass": 3,
+        "skip": 2
+      }
+    }
+  ],
+  "todoFiles": [
+    {
+      "file": "apps/api/test/s221-r4-closing-audit.test.ts",
+      "counts": {
+        "pass": 33,
+        "todo": 4
+      }
+    },
+    {
+      "file": "apps/api/test/offline-capability.test.ts",
+      "counts": {
+        "fail": 2,
+        "todo": 1,
+        "pass": 20
+      }
+    }
+  ],
+  "limits": [
+    "Actual original d17 frame; known Q23 refusal failure, if present, remains a failed gate.",
+    "Case identity and error stacks are hashed; no private assertion values copied.",
+    "No compiler, workspace package, staging or delivery claim from this review."
+  ],
+  "passed": false
+}

@@ -1,0 +1,183 @@
+{
+  "ticket": "SCRUM-640",
+  "commit": "025c9929e26f3100876905d9b1430ae06722521a",
+  "files": [
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/before.json",
+      "sha256": "b0e3f48c03401c73f0647197ffc57544eb8438440bd8401f2ac50b0f4bedeffa",
+      "bytes": 700
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/attempt1-metadata-erratum.json",
+      "sha256": "f3c232cbb610d5ed5d46b17fbd76e5382b0eeec47a993aa054e8f1a2efa3e0c3",
+      "bytes": 550
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/effective-b-red-ready.json",
+      "sha256": "7fa8f5d2ec9901cb5a9456b31877542c6679123fa22e1a647222c569e3dcde8f",
+      "bytes": 168
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/native-full-case-list.log",
+      "sha256": "f9b0437fc36029499a76ccddd4d9a3196c7495db1d43aa4d2d1f84baefdd0506",
+      "bytes": 35718
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/commit-intent.json",
+      "sha256": "9d2de2ba4450a536853751ed3546f3d4b6fd34947021282dfe6d3c06e317160c",
+      "bytes": 1013
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/final-source-manifest.json",
+      "sha256": "b361d841b41c37d8fe6c72f4b3836b9de91d244df7cd6c18b76ac880f2d25b65",
+      "bytes": 571113
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/review.json",
+      "sha256": "c513100d11d6c65a722c5d02a8aa541184bb376b35d31f7bd291ae44241b330c",
+      "bytes": 17304
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/units.json",
+      "sha256": "4ab7af02c7d7487024e370d03b99fe241c9aa6b1a6fcdc1c4a5385e22074e600",
+      "bytes": 1963
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/units.log",
+      "sha256": "a9c945489ea395346583efd1e64b10cf5ff80bdcff3758b6b0060522474983b7",
+      "bytes": 2223
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/compiler.json",
+      "sha256": "446060faaadae770cf5371984e7a794ef64ce837b5ee21594bc1c60d80970c3f",
+      "bytes": 1932
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/compiler.log",
+      "sha256": "a8026d8bb80dc8018ac6d5c62595a957d071028207ef0f40fd92265ec49dc615",
+      "bytes": 180
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/lint.json",
+      "sha256": "891a79d8120b6c899619e0bc789f79d3fb74152689b3cec1936c82701201ea5d",
+      "bytes": 2082
+    },
+    {
+      "path": "C:/w/admin640-settings-integration-20261026/lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-red-v1.json",
+      "sha256": "5aa4d435172bd73fc1e1fcca9a58570a760567eb80d341e17809420767af8b4a",
+      "bytes": 3278
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-red-v1.intent.json",
+      "sha256": "8015f0a7239122728e9b295781ea347df2129edc338871987ca32a6ef06d416e",
+      "bytes": 543
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-red-v1.sources.json",
+      "sha256": "882707b7fffab62a4e9b4054125a079e7ff47309a7af492041594a16c908a688",
+      "bytes": 533389
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-red-v1.log",
+      "sha256": "3b4ed4f33815ddc5b47b597384b22427d316a1b2d591e55c7e2a8adb2bcd0ed5",
+      "bytes": 13669
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-red-v2.json",
+      "sha256": "736ea43ee55bd4c0247cd6bbe4d729f7efa929d89979514b93b471fba271a9ad",
+      "bytes": 3278
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-red-v2.intent.json",
+      "sha256": "621b37cf9ad5ea5526495d8ea24c01426c8ba354379dad831b04e3ee9238f0f6",
+      "bytes": 596
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-red-v2.sources.json",
+      "sha256": "85cd067b1779a3977762c5503345f5f4b1eff13328303e2726d10fd973874e9c",
+      "bytes": 533389
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-red-v2.log",
+      "sha256": "b0a6472cefb6e94d619bfeeae1f1d31a4cc114acc46823e71e3c4db7cfb66c12",
+      "bytes": 16574
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v1.json",
+      "sha256": "462acbe1c1087f783b0dc5151e8c7f94bc27794bd229696f69d1cb409e3ea252",
+      "bytes": 3282
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v1.intent.json",
+      "sha256": "66f8ca7cb4bfcd7cebd8fdaa1a0a1bcc79e677330798e1f59817412f5cca2c01",
+      "bytes": 598
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v1.sources.json",
+      "sha256": "12a25ab02c2433e18cce9961a7e44c1e13786ed6dc8ffda3ddbcc23aac4bed1d",
+      "bytes": 533389
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v1.log",
+      "sha256": "d1ba353dfd73c155f21e08659a101d10daf98288a582306cc2c6e3d81044ee54",
+      "bytes": 11832
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v2.json",
+      "sha256": "061e0619fb96baddaf596e6fa002684c2f056a7b4409ed46692b98e57c0ced8e",
+      "bytes": 3282
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v2.intent.json",
+      "sha256": "afcc9eed6b0a64e1e7e2ca76d11cce5d01e05aefaeab8b1c4440cffbc1b12bcf",
+      "bytes": 598
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v2.sources.json",
+      "sha256": "61738cc2443be26db1a5b0f5d1673ea2795a07fba9bb1be378189cba3be8366b",
+      "bytes": 533389
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v2.log",
+      "sha256": "eb9e0615b60d3e097fa60b5afa38b496546a43fbb4e4e49fe979b6bf9ccb28be",
+      "bytes": 12584
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v3.json",
+      "sha256": "33a433edecba907a19382e4415e0e92734b7be50f0c8f65716ec378eac766c28",
+      "bytes": 3257
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v3.intent.json",
+      "sha256": "e27479a94e19c5ec4d7e0668cd110408e8cbd00e8a0880eab18b99336ae797d5",
+      "bytes": 574
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v3.sources.json",
+      "sha256": "61738cc2443be26db1a5b0f5d1673ea2795a07fba9bb1be378189cba3be8366b",
+      "bytes": 533389
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-green-v3.log",
+      "sha256": "870f315d3fb05f3842747051e8cd86d93c81a63c6e28d5a3835a23662012a6a7",
+      "bytes": 51413
+    },
+    {
+      "path": "C:/w/admin640-settings-browser-gates-20261026.mjs",
+      "sha256": "2aea5ef979ee59e367be7af9c524327129013eebe47631b7e18f57d5417b94d7",
+      "bytes": 13039
+    },
+    {
+      "path": "C:/w/admin640-settings-console-gates-20261026.mjs",
+      "sha256": "1d9361e45bcf43b659f2209a1447c2a023592abf11afa0809eaf49b4e9d1f0b5",
+      "bytes": 4967
+    }
+  ],
+  "rawExternalOnly": true,
+  "staging": false
+}

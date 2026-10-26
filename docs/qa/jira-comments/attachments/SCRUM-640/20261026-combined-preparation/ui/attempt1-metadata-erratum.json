@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-640",
+  "receipt": "C:/w/admin640-settings-browser-red-v1.json",
+  "actualSpec": "apps/console/e2e/assistant-settings.spec.ts",
+  "actualTestSha256": "bc18f5d827ddbd66c42af1a1d185beed5fb1b1d5ae1e7f0b9fb15da099f82cac",
+  "originalIntentDisplaySpecIncorrect": "operator-switch.spec.ts",
+  "actualDispatchAndSourceBindingCorrect": true,
+  "counts": {
+    "passed": 15,
+    "failed": 1
+  },
+  "cause": "Inactive /me stops canonical handshake before permissions; fixture wait expected permissions.",
+  "rawArtifactsPreserved": true
+}

@@ -1,0 +1,47 @@
+// Preparation only: pure contract checks. No authentication, HTTP, browser or job executor.
+import {createHash} from 'node:crypto';
+export const DEMOS=Object.freeze({homeOperatorId:'01a0bbdc-8c41-7204-bd58-2b92bd7dda75',
+ ADMIN:'01a0bbdc-8c64-7283-aa3b-2af7e79c525d',RECEPTION:'01a0bbdc-8c87-74ca-81c1-61489e34f834'});
+const need=(ok,code)=>{if(!ok)throw Error(code);};
+const uuid=value=>typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(value);
+const canonical=value=>JSON.stringify(value,(_key,item)=>item&&typeof item==='object'&&!Array.isArray(item)
+ ?Object.fromEntries(Object.entries(item).sort(([a],[b])=>a.localeCompare(b))):item);
+export const digest=value=>createHash('sha256').update(canonical(value)).digest('hex');
+export function snapshot(me,permissions){
+ const c=me?.operatorContext;
+ need(me?.account?.status==='active'&&!me.account.mustChangePassword&&!me.sessionLocked,'LIVE_UNLOCKED_ACCOUNT_REQUIRED');
+ need([me.account.id,me.account.operatorId,c?.sessionId,c?.homeOperatorId,c?.effectiveOperatorId].every(uuid)
+  &&(c.operatorOverride===null||uuid(c.operatorOverride))&&Number.isSafeInteger(c.revision)&&c.revision>=0,'CANONICAL_CONTEXT_REQUIRED');
+ need(c.homeOperatorId===me.account.operatorId&&c.effectiveOperatorId===(c.operatorOverride??c.homeOperatorId)
+  &&c.operatorOverride!==c.homeOperatorId&&c.branchId===(me.branch?.id??null),'HOME_WORKING_SEPARATION_REQUIRED');
+ need(Array.isArray(permissions)&&permissions.every(p=>typeof p.permission==='string'&&typeof p.scopeType==='string'
+  &&(p.scopeId===null||uuid(p.scopeId))),'FRESH_PERMISSION_ROWS_REQUIRED');
+ return {accountId:me.account.id,homeOperatorId:c.homeOperatorId,effectiveOperatorId:c.effectiveOperatorId,operatorOverride:c.operatorOverride,
+  sessionId:c.sessionId,revision:c.revision,branchId:c.branchId,stationId:c.stationId,platform:me.isPlatformAdmin===true,
+  switchGrant:permissions.some(p=>p.permission==='platform:operator:switch'&&p.scopeType==='operator'&&p.scopeId===null),
+  homeAccountSha256:digest(me.account),employeeSha256:digest(me.employee),
+  permissionsSha256:digest(permissions.map(canonical).sort())};
+}
+export function validateJourney({before,working,restored,targetOperatorId}){
+ need(uuid(targetOperatorId)&&targetOperatorId!==before.homeOperatorId,'DISTINCT_EXISTING_TARGET_REQUIRED');
+ for(const value of [before,working,restored])need(value.accountId===DEMOS.ADMIN&&value.homeOperatorId===DEMOS.homeOperatorId
+  &&value.sessionId===before.sessionId&&value.homeAccountSha256===before.homeAccountSha256&&value.employeeSha256===before.employeeSha256
+  &&value.permissionsSha256===before.permissionsSha256&&value.platform&&value.switchGrant,'UNCHANGED_REAL_AUTHORITY_REQUIRED');
+ need(before.effectiveOperatorId===before.homeOperatorId&&before.operatorOverride===null,'OWN_HOME_START_REQUIRED');
+ need(working.effectiveOperatorId===targetOperatorId&&working.operatorOverride===targetOperatorId&&working.revision===before.revision+1
+  &&working.branchId===null&&working.stationId===null,'CONFIRMED_WORKING_TARGET_REQUIRED');
+ need(restored.effectiveOperatorId===before.homeOperatorId&&restored.operatorOverride===null&&restored.revision===before.revision+2
+  &&restored.branchId===null&&restored.stationId===null,'CONFIRMED_HOME_RETURN_REQUIRED');
+ return true;
+}
+export function validateReception({before,after,status,pickerCount}){
+ need(before.accountId===DEMOS.RECEPTION&&!before.platform&&!before.switchGrant&&status===403&&pickerCount===0,'RECEPTION_REFUSAL_REQUIRED');
+ need(digest(before)===digest(after),'REFUSAL_MUST_NOT_CHANGE_SESSION_OR_AUTHORITY');return true;
+}
+export const expectedAuditPairs=(home,target)=>[
+ {ownerOperatorId:home,homeOperatorId:home,effectiveOperatorId:home,beforeEffective:home,afterEffective:target},
+ {ownerOperatorId:home,homeOperatorId:home,effectiveOperatorId:target,beforeEffective:target,afterEffective:home},
+];
+export const operationModel=Object.freeze({actors:2,successfulSignIns:2,acceptedOperatorSelections:2,refusedReceptionSelection:1,signOuts:2,
+ logicalMutatingHttpRequests:7,successfulSessionWrites:2,otherBusinessWrites:0,fixtureWrites:0,grantWrites:0,identityWrites:0,
+ originalCookie401Readbacks:2,optionalHandoff:false,readOnlyMetadataJobsProposed:2});

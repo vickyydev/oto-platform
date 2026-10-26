@@ -1,0 +1,16 @@
+
+> @oto/telemetry@0.1.0 test C:\w\admin-operator-switch\packages\telemetry
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/telemetry
+
+ ✓ test/logger.test.ts (7 tests) 11ms
+ ✓ test/scrub.test.ts (6 tests) 6ms
+ ✓ test/redact.test.ts (22 tests) 31ms
+ ✓ test/eslint-rule.test.mjs (1 test) 77ms
+
+ Test Files  4 passed (4)
+      Tests  36 passed (36)
+   Start at  20:26:47
+   Duration  4.99s (transform 428ms, setup 0ms, collect 4.76s, tests 126ms, environment 1ms, prepare 1.48s)

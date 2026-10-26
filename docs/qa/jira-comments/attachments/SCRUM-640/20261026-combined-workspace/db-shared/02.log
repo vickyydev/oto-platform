@@ -1,0 +1,66 @@
+
+> @oto/shared@0.1.0 test C:\w\admin-operator-switch\packages\shared
+> vitest run
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/shared
+
+ ✓ test/payments.test.ts (24 tests) 25ms
+ ✓ test/wallet-tender.test.ts (5 tests) 34ms
+ ✓ test/events.test.ts (11 tests) 11ms
+ ✓ test/permission-words.test.ts (6 tests) 27ms
+ ✓ test/ui-preferences.test.ts (10 tests) 190ms
+ ✓ test/voucher-promo.test.ts (8 tests) 88ms
+ ✓ test/wallet.test.ts (21 tests) 106ms
+ ✓ test/s216-r45-review.test.ts (2 tests) 25ms
+ ✓ test/station-session.test.ts (19 tests) 55ms
+ ✓ test/booth-staff.test.ts (13 tests) 24ms
+ ✓ test/events-e2.test.ts (11 tests) 15ms
+ ✓ test/events-e3.test.ts (13 tests) 22ms
+ ✓ test/booth-duty.test.ts (10 tests) 17ms
+ ✓ test/inbox.test.ts (33 tests) 15ms
+ ✓ test/booth-voucher-slip.test.ts (8 tests) 18ms
+ ✓ test/handoff-target.test.ts (34 tests) 14ms
+ ✓ test/s216-r3-summary.test.ts (4 tests) 19ms
+ ✓ test/stock-r4.test.ts (7 tests) 11ms
+ ✓ test/discount-scopes.test.ts (17 tests) 10ms
+ ✓ test/eod-r1.test.ts (11 tests) 26ms
+ ✓ test/parties.test.ts (8 tests) 25ms
+ ✓ test/item-cart.test.ts (9 tests) 14ms
+ ✓ test/kiosk.test.ts (8 tests) 54ms
+ ✓ test/s496-review-packs.test.ts (38 tests) 18ms
+ ✓ test/display-credit.test.ts (4 tests) 37ms
+ ✓ test/benefits.test.ts (28 tests) 36ms
+ ✓ test/s221-r3-benefit-checkout.test.ts (13 tests) 86ms
+ ✓ test/supervision.test.ts (35 tests) 61ms
+ ✓ test/s221-r4-review-reason.test.ts (9 tests) 55ms
+ ✓ test/booking-qr.test.ts (14 tests) 111ms
+ ✓ test/band-code.test.ts (13 tests) 207ms
+ ✓ test/sale-print.test.ts (7 tests) 233ms
+ ✓ test/assistant-i1b.test.ts (15 tests) 40ms
+ ✓ test/refund.test.ts (11 tests) 52ms
+ ✓ test/s494-food.test.ts (7 tests) 83ms
+ ✓ test/shared.test.ts (25 tests) 155ms
+ ✓ test/cart-totals-line-target.test.ts (5 tests) 22ms
+ ✓ test/operator-switch-permission.test.ts (4 tests) 12ms
+ ✓ test/stock-r1.test.ts (22 tests) 13ms
+ ✓ test/analytics.test.ts (6 tests) 11ms
+ ✓ test/business-date.test.ts (33 tests) 311ms
+ ✓ test/pricing-engine.test.ts (131 tests) 589ms
+   ✓ rounding > apportion holds its invariants over 200,000 generated splits  321ms
+ ✓ test/s221-r4-benefit-report.test.ts (3 tests) 10ms
+ ✓ test/stock-r1-recheck.test.ts (4 tests) 7ms
+ ✓ test/s216-r4-reports.test.ts (8 tests) 10ms
+ ✓ test/release.test.ts (5 tests) 11ms
+ ✓ test/s494-gate.test.ts (3 tests) 4ms
+ ✓ test/benefit-code-shown.test.ts (5 tests) 6ms
+ ✓ test/s494-money-gate.test.ts (2 tests) 4ms
+ ✓ test/s494-money-restock.test.ts (7 tests) 4ms
+ ✓ test/booth-code.test.ts (26 tests) 2397ms
+   ✓ the check character > catches every single-character error, in every position  776ms
+   ✓ the check character > is ISO/IEC 7064 MOD 37-2 exactly: a standard implementation agrees on every code  1386ms
+
+ Test Files  51 passed (51)
+      Tests  775 passed (775)
+   Start at  20:18:42
+   Duration  7.36s (transform 7.86s, setup 0ms, collect 77.87s, tests 5.43s, environment 18ms, prepare 27.55s)

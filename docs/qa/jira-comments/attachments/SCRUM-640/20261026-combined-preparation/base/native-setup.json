@@ -1,0 +1,7 @@
+{
+  "ticket": "SCRUM-640",
+  "ownNativeServer": true,
+  "port": 63818,
+  "databasesBefore": 0,
+  "credentialsPersisted": false
+}

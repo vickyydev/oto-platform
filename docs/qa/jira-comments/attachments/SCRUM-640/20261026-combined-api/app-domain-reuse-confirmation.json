@@ -1,0 +1,659 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T13:18:48.976Z",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceManifestSha256": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "appSourceFiles": 1092,
+  "appSourceManifestSha256": "55c12d936b441e1e0b9bc237349a084070077d01529d845b0c29fd5f0dec66f6",
+  "dependencyInputs": 28,
+  "appSourceBytesIdentical": true,
+  "dependencyBytesIdentical": true,
+  "workflowBytesIdentical": true,
+  "nodeVersion": "v22.23.3",
+  "installedMetadataExactlyEqual": true,
+  "currentFreshInstall": {
+    "path": "C:/w/admin640-api-verification-20261026/install-v1/result.json",
+    "sha256": "db9eafe67b6c4b2884a2a23bff2502c0c2a1c13012508c0b0969addc8ca8c931"
+  },
+  "currentFreshCommands": [
+    {
+      "label": "pg_dump-version",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/01-pg_dump-version.json",
+      "sha256": "6087cc60ab0e2eb463ddd620c88b49cb2296ee9cec87d8e29df573bd730b166f",
+      "passed": true
+    },
+    {
+      "label": "pg_restore-version",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/02-pg_restore-version.json",
+      "sha256": "ad777ce75cc1d201c2acb24d8ef0e35e54cebd3695a1b91f411b2b3709edc251",
+      "passed": true
+    },
+    {
+      "label": "app-build",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/03-app-build.json",
+      "sha256": "3090e54bd14b751d39aa9ceffb8a70be1d55f76fd4d5ba64f2b9d963a329120e",
+      "passed": true
+    },
+    {
+      "label": "restore-replay",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/04-restore-replay.json",
+      "sha256": "259af530ef36e1b22fbc3c7e1dfbd127d2fdcc9789dd8797ecbd66230eb238aa",
+      "passed": true
+    },
+    {
+      "label": "platform-migrate",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/05-platform-migrate.json",
+      "sha256": "724ba8f6e4214a3fe87607343714364e1aee7e26aea84f35bcac0606f10fdb15",
+      "passed": true
+    },
+    {
+      "label": "app-migrate",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/06-app-migrate.json",
+      "sha256": "6cbefcc38a0ebbbccc1fd2b6e0c889065fafdffb17e9530bb997f35649129898",
+      "passed": true
+    },
+    {
+      "label": "app-migrate-noop",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/07-app-migrate-noop.json",
+      "sha256": "2d519d97f26c474c203622541ea6b3b03d5f6411396d70fbc914971513cf13b6",
+      "passed": true
+    },
+    {
+      "label": "route-fences.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/08-route-fences.check.json",
+      "sha256": "a1665609ddc96e690e33901457291148e3dc8310cf2fe0e53f25284829c22278",
+      "passed": true
+    },
+    {
+      "label": "night-jobs.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/09-night-jobs.check.json",
+      "sha256": "0e3498a89fa52e9fd8495f64cb81d4e6eadb82ebbe5b5a2a36e898adabfb59d4",
+      "passed": true
+    },
+    {
+      "label": "suite-sign-in.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/10-suite-sign-in.check.json",
+      "sha256": "bfc16773ba290c98d045c4ba0ca7114c1e3651a3cdf5ee268ddfb65c2ad4a0d3",
+      "passed": true
+    },
+    {
+      "label": "suite-sign-in-routes.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/11-suite-sign-in-routes.check.json",
+      "sha256": "5dbd9ce32f5836c18650ecec2ef5a5c311022fef14f87af5130f5ba5f24788df",
+      "passed": true
+    },
+    {
+      "label": "handoff-target.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/12-handoff-target.check.json",
+      "sha256": "28510541805fe9365cf88787a79cbc2e24897f46000721e37ccfc6662d226e74",
+      "passed": true
+    },
+    {
+      "label": "tenant-ownership.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/13-tenant-ownership.check.json",
+      "sha256": "524f9a7a76ade229e98e1d19f18c303c3e5216e8e67efb915bd26371608c19e5",
+      "passed": true
+    },
+    {
+      "label": "administration.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/14-administration.check.json",
+      "sha256": "e9e15c2b43d060566d636059f52bd4bce4f8a04bdf0403dcf730044261843015",
+      "passed": true
+    },
+    {
+      "label": "access-escalation.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/15-access-escalation.check.json",
+      "sha256": "8ada9d36014072e29075743ae326f76f2fa63de6d58b8cf80fc977d66cc6d842",
+      "passed": true
+    },
+    {
+      "label": "named-rights.check",
+      "path": "C:/w/admin640-api-verification-20261026/completed-preliminary-v1/16-named-rights.check.json",
+      "sha256": "cf86a02bf54cd206abfb907111b3fcead7a0efad2711dfcfb1fc0c1fc450187b",
+      "passed": true
+    }
+  ],
+  "bridgedCompiler": {
+    "actualNewRun": false,
+    "errors": 418,
+    "files": 54,
+    "fileCodeBuckets": 109,
+    "receipt": {
+      "path": "C:/w/admin638-app-compat-20261026/ratchet-v3/01-whole-ratchet-4096.json",
+      "sha256": "cd45be82a943aa434ae2ae0ba0986b55f08a17391aeaa55decbdad337c152be3",
+      "bytes": 1364
+    },
+    "review": {
+      "path": "C:/w/admin638-app-compat-20261026/ratchet-v3-independent-review.json",
+      "sha256": "2034bc9f9a0378913a5f159ee4d76eeb6fe4d750f0fea689581a28bda24412b3",
+      "bytes": 6314
+    }
+  },
+  "bridgedNativePrograms": 32,
+  "programs": [
+    {
+      "path": "apps/oto-app/tests/payroll-golden.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/07-payroll-golden.check.json",
+        "sha256": "752aa157939e5ddd2c447e06cb75e97b1f29f1c7ef4bbe04d0080b63c7dad135"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/07-payroll-golden.check.log",
+        "sha256": "f548810c06a2eee7a65046aabaa559477e9bcfa15247ac770def5b056c4c4b01"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-engine.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/08-payroll-engine.check.json",
+        "sha256": "4a39e6faec542c99ee0164dabd89830b1d12eeef96ff4a16f9d28069ae98720c"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/08-payroll-engine.check.log",
+        "sha256": "54066e651560140a3b1152f2d0ed040e4af45c6b3e4c0ef6e33050dae075a1ed"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/platform-theme.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/09-platform-theme.check.json",
+        "sha256": "4d55c7e25bfa64fe69a67dde8acdcde1699a4844fb8e0a608f6d951101bf22cd"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/09-platform-theme.check.log",
+        "sha256": "784b2f7ad0cdd485407f7946e8395ebeef33d0810c45dd21306b5f9891fb1be2"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/fix-module.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/11-fix-module.check.json",
+        "sha256": "d2f2b2ec8c263930f5ea27d2d2d644d5a730a5eba49f8ad606860638091f6ac9"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/11-fix-module.check.log",
+        "sha256": "adac36180224cce809bad428175026d016cea348d50cd719d197c53d247b3879"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/attention.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/17-attention.check.json",
+        "sha256": "49a9f6bb7658e98f21288fd75334edd51146fdcecbca7ea1a31adfad43951c1a"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/17-attention.check.log",
+        "sha256": "69e1dca813ca35e81b640e7c20ea0c02f2ee122e019dc0391994abbf47648205"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/attendance.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/18-attendance.check.json",
+        "sha256": "ffcd814169569ae0cc38a738b41e0fe743b11c273dcc3c1e5e628cc15aaf25bc"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/18-attendance.check.log",
+        "sha256": "00f729afabc4b8a23ba3162b93b961411412995ed31b95d7f38137364a97f43f"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/attendance-evidence.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/19-attendance-evidence.check.json",
+        "sha256": "8a8579bb3b250973224ed65730a79bae56012242a9c96c93839ccef6ba34c24b"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/19-attendance-evidence.check.log",
+        "sha256": "fd51d5829196d0704efa8087c93ef6eb83275217959e1d42bcf03cc2390cfe95"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/timekeeping-review.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/20-timekeeping-review.check.json",
+        "sha256": "bca1c4027d8e0d5c44ca2ed3ff96528a0109b2eb8dd706408b1b96e4e916f889"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/20-timekeeping-review.check.log",
+        "sha256": "3b0301868a2145a2097e66848da8d8236c31a34127d0a6ae84edeab0a16196a7"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/documents.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/21-documents.check.json",
+        "sha256": "8bd4befb3db372470486af13d5ff5ed9740dbf407aebb6ddf831fef24961d48c"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/21-documents.check.log",
+        "sha256": "17de92e36b4b6076212b6e7ce8b075a818f6ad22ae53784629a8f48797b134a3"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/finance.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/22-finance.check.json",
+        "sha256": "e69ee5db177788fad1adf0fa08aef7c86217bf527070a522c7c569971465f213"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/22-finance.check.log",
+        "sha256": "782edc2fd95a08446ad489e47da27771f581620468ec6c97198f3c9035d9f0cc"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/finance-access.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/23-finance-access.check.json",
+        "sha256": "cc6bb399151ede0f46eb0dbdf7b257954234a4b0ff82856ad777f817fafcff3a"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/23-finance-access.check.log",
+        "sha256": "ad7c0f314970dbdd504cb4f851696fd642ec77f3b9d26024a5ecfd026e086d26"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/xero-access.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/24-xero-access.check.json",
+        "sha256": "21abea79a039307cf0707e7784578af14526671cf22435b2e06a61c909a366be"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/24-xero-access.check.log",
+        "sha256": "3d5f6331b1b33754e41086fe7cd7f75fe2e3e4143c5ffa279bb1bef149a1734f"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/record-deletion.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/26-record-deletion.check.json",
+        "sha256": "e21100dc950950d0557e0255cd9c66817f634160cb4cfc05c5fba041b2371329"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/26-record-deletion.check.log",
+        "sha256": "e9517750af2d82a0e8e42f0447af96619e5d25665113c490edbdb38f2dedc117"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/camp-cancelled-days.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/27-camp-cancelled-days.check.json",
+        "sha256": "58150fe2e99b57ac56bb7f74ec540cf70fcc6acbd4f65469178d8d3f90544b08"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/27-camp-cancelled-days.check.log",
+        "sha256": "5a31b0588b83f3c1dac98c0a02775b933d5e840f9a31e7cd4607b801a5cbeaf5"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/camp-creation-exclusions.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/28-camp-creation-exclusions.check.json",
+        "sha256": "6eee38af24181fe619be04e8e61c7573930b295df099b8e4a06fe6abd669abb4"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/28-camp-creation-exclusions.check.log",
+        "sha256": "b18075ce434b2418a0e50b93da811f2859e77dc20797ffdcd3afe978cdf3ebf4"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/salary-visibility.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/29-salary-visibility.check.json",
+        "sha256": "63290854b9ab978fdf91db5b989cf6f0a2c939a90ae60d03d22bb56964e012bf"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/29-salary-visibility.check.log",
+        "sha256": "ced94b015572b06abc33ba1cd8f837c750f88879f12b51e0844de6b206d64808"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/checklist-media.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/30-checklist-media.check.json",
+        "sha256": "b53790752d530445251a5a6939924c9c31879ad1df03d9d342bfa25bf6ed95ff"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/30-checklist-media.check.log",
+        "sha256": "a0368846a68441936fd88d8626ab129710d5c4c4542ede6a3a9d63cd60891cca"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/leave-types.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/31-leave-types.check.json",
+        "sha256": "fb4a27e767e2dbdbdf74622feb9cdc44cbdef6b63950c244e810423db85a09ad"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/31-leave-types.check.log",
+        "sha256": "d63ab7da9284ddf60e9dc09fd55db5c9c07b3d90bde0e6bfb7e2099f8da33b31"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/task-assignees-today.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/32-task-assignees-today.check.json",
+        "sha256": "191eb094d943271133c86a9c372aab36a5233555a56dbf6de9a280fe8f7c0aa2"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/32-task-assignees-today.check.log",
+        "sha256": "f7a6462c33414ad514b8fa5912f98ee943f47e5194623680c608270613d09a67"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/checklist-assignees-today.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/33-checklist-assignees-today.check.json",
+        "sha256": "eb21ca334c74b18257ad2c436649956b2dbfdbbb48194c73b168f085fa29210a"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/33-checklist-assignees-today.check.log",
+        "sha256": "bfc6033533d23dafd3a0a507a0b1f7a63c0c0fbf0a02deb07e604abf5ed43423"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/checkin-child-card.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/34-checkin-child-card.check.json",
+        "sha256": "1a82422985f446aeae0d7708d4168f2f008e12ecaf5d9af0d3bb5034f38df54e"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/34-checkin-child-card.check.log",
+        "sha256": "d3d98b4040abdeab27e48d84a1d857ac18a3e1e0df79d317fb9a87df85db9de8"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/leave-balance-reach.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/35-leave-balance-reach.check.json",
+        "sha256": "d1433877c80f11bd59ac93d81b11bca34eb55dcfe18505778cedba6c60057860"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/35-leave-balance-reach.check.log",
+        "sha256": "e5197015abddd03bf41513da6f73941448ccae7b6610e4c131324c37608c0f68"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/kiosk-devices.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/38-kiosk-devices.check.json",
+        "sha256": "913388612108b812b020631e84e28553e416f5fa4d877ffbd442b3830c9b7c4b"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/38-kiosk-devices.check.log",
+        "sha256": "0ef2a2b18edb803ac3264608b2d3d7c788eb4d9d5f2dd26adef516bda185cd64"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/birthdays-sidebar.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/39-birthdays-sidebar.check.json",
+        "sha256": "deb28c13d501c3a12fbe315ee6fef4e2f1b89abaa21161e53ab57d2142156392"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/39-birthdays-sidebar.check.log",
+        "sha256": "244ffd43434320b063cd5f03069a514eaebcda3fd5ed5e385db7f27dc1b8bd8f"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-config.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/40-payroll-config.check.json",
+        "sha256": "06832094061932422f2eeb698fbc6db622546631e980d7a745d4b4c711417533"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/40-payroll-config.check.log",
+        "sha256": "4c2603cf3cd478b7fa0ebf416a3376197c2221309659d860e9269db17ae18499"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-profile-editor.check.tsx",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/41-payroll-profile-editor.check.json",
+        "sha256": "b61d1b6a13719777d2b5dc20b464f5e22e35484d3d30ed2a2b2d693b31a4d39f"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/41-payroll-profile-editor.check.log",
+        "sha256": "3f6250e2c1f4acbabbd263f32a7da008244782e7308df9294b815450f477b486"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-cutover.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/42-payroll-cutover.check.json",
+        "sha256": "6dc8d4b7cd3786fa2b9b3a52622ebcff7b399554171106a7595136958f385645"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/42-payroll-cutover.check.log",
+        "sha256": "0c90c062a5cb91ee8f64e52110d2155910988f1ee4e6dd4676bfeb32caf1737d"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-golden.check.ts",
+      "args": [
+        "--http"
+      ],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/43-payroll-golden.check.json",
+        "sha256": "c5e5703996326073b9f0dc59f3753b70334026e6298c2f892637f75424075599"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/43-payroll-golden.check.log",
+        "sha256": "31c7ceaca32a4daf40ac11d5e682a1b30825bb061f0c943b77da5236c8f1bac2"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-feeds.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/44-payroll-feeds.check.json",
+        "sha256": "82c88dd2d4bba0609cd44fa2442b119c862e3eb3300c5c5ccbc63d73b7574480"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/44-payroll-feeds.check.log",
+        "sha256": "a32805eb50dcf4bad1797b4e8ce5af73a0725c04730b4e0cf008806693463ec7"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-lifecycle.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/45-payroll-lifecycle.check.json",
+        "sha256": "ecbfd4a80d9d917407f6a74a00d78950a16ccb3e4dd71989272b98633b41f9bf"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/45-payroll-lifecycle.check.log",
+        "sha256": "16732a80b779f964acf89c192d458bb43c249a868ad1de7d71310ea2ac631553"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-documents.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/46-payroll-documents.check.json",
+        "sha256": "dccae6ee24358ece4c97725ff45c8ad4f239be0c29aeab314e285ec25e11cf1d"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/46-payroll-documents.check.log",
+        "sha256": "dde8a9519e976e21df506c97cb94a60932ae9b5361941c115d8879d6a8205b10"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-outputs.check.ts",
+      "args": [],
+      "originalSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+      "receipt": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/47-payroll-outputs.check.json",
+        "sha256": "091dbd021dd3a9d096babbddf6ca712cde392e27ebed2d743fc84d7fb75cb6f8"
+      },
+      "log": {
+        "path": "C:/w/admin638-app-compat-20261026/remaining-v1/47-payroll-outputs.check.log",
+        "sha256": "4fa56c621aca46e07bc185e10076e890bd67013b551f1d2a9807b5306fbdae17"
+      },
+      "originalExitCode": 0,
+      "originalPassed": true,
+      "newExecution": false
+    }
+  ],
+  "scope": "Reuse unchanged App-only source/runtime domains; current platform0088 restore and nine affected App programs executed separately on combined640 source.",
+  "notMonolithicFreshBattery": true,
+  "releasePassed": false,
+  "apiFullShards": "Still running; excluded from this domain confirmation",
+  "limits": [
+    "Original failed52-command batch and incomplete compiler heap attempts remain preserved in638 history.",
+    "No new whole compiler execution or32-program execution is claimed.",
+    "Core API/session/handoff/assistant changes require the fresh full API suite and planner Q23 refusal closure; they are not accepted through this App-only reuse.",
+    "No staging, provider call, real SMS/payment/channel action or deployment."
+  ]
+}

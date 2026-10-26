@@ -1,0 +1,78 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "red",
+  "attempt": "v2",
+  "startedAt": "2026-10-26T12:49:16.326Z",
+  "completedAt": "2026-10-26T12:50:25.033Z",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "helperSha256": "2aea5ef979ee59e367be7af9c524327129013eebe47631b7e18f57d5417b94d7",
+  "sourceManifestSha256": "26bedfcaa60a66d328252a0536104280d37346389e3a332a86c6032f1c171184",
+  "sourceFiles": 3811,
+  "sourceManifestAfterSha256": "26bedfcaa60a66d328252a0536104280d37346389e3a332a86c6032f1c171184",
+  "inputsUnchanged": true,
+  "testSha256": "89b5254bb7935a35ef724eb1a6b7891bb444c6af9cd0a01ec62f3fe08a3a0b99",
+  "installedBefore": {
+    "node": "v22.17.1",
+    "files": {
+      "node_modules/.modules.yaml": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d",
+      "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+      "packages/db/node_modules/tsx/package.json": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426",
+      "packages/db/node_modules/pg/package.json": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+      "packages/db/node_modules/embedded-postgres/package.json": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+    }
+  },
+  "installedAfter": {
+    "node": "v22.17.1",
+    "files": {
+      "node_modules/.modules.yaml": "6d2a3d021335323b2afb9a39535b23375bb46353f2e41d3e5fb020a9b8e3208d",
+      "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+      "packages/db/node_modules/tsx/package.json": "3ace2493a0acd26fc72a8433a38113ee04d5a1976910a3f40815f9e779d5c426",
+      "packages/db/node_modules/pg/package.json": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+      "packages/db/node_modules/embedded-postgres/package.json": "3272775553cbda308c2869da77b6a0a89655f36101c0b202ab4ad67765cf5d0f"
+    }
+  },
+  "installedUnchanged": true,
+  "command": "node apps/console/e2e/run.mjs assistant-settings.spec.ts",
+  "builtConsoleAndPos": true,
+  "noTestNameFilter": true,
+  "isolatedEmbeddedDatabase": true,
+  "inheritedDatabaseSettingsDiscarded": true,
+  "staging": false,
+  "syntheticApiFixtures": true,
+  "terminal": {
+    "type": "terminal",
+    "nativeExitCode": 1,
+    "nativeSignal": null,
+    "failure": null,
+    "stage": "teardown",
+    "teardown": {
+      "helperDatabaseDropped": true,
+      "harnessDatabasesAbsent": true,
+      "embeddedServerStopped": true
+    },
+    "workerExitCode": 1,
+    "databaseCensus": {
+      "before": 4,
+      "after": 4,
+      "unchanged": true
+    }
+  },
+  "counts": {
+    "passed": 16,
+    "failed": 2,
+    "skipped": 0,
+    "total": 18
+  },
+  "outputOverflow": false,
+  "rawOutputSha256": "169a637eddb75c508319b0e5d012a09a310669e6348403bb93ff471ca8c4de24",
+  "rawOutputBytes": 17536,
+  "capturedOutputSha256": "169a637eddb75c508319b0e5d012a09a310669e6348403bb93ff471ca8c4de24",
+  "logSha256": "b0a6472cefb6e94d619bfeeae1f1d31a4cc114acc46823e71e3c4db7cfb66c12",
+  "logPath": "C:/w/admin640-settings-browser-red-v2.log",
+  "logPolicy": "Seed output omitted; database URLs, session cookies and credential fields redacted before disk or display.",
+  "passed": false,
+  "expectedRedObserved": true,
+  "gateExitCode": 1
+}

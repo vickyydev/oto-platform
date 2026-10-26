@@ -1,0 +1,120 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T14:04:03.216Z",
+  "actualLocal": true,
+  "staging": false,
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceManifestSha256": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "sourceFiles": 3811,
+  "sourceTestsAssertionsAndTimeoutsUnchanged": true,
+  "documentationInputsAddedAfterOriginalTerminal": true,
+  "documentationInputs": [
+    {
+      "path": "docs/architecture/ARCHITECTURE.md",
+      "sha256": "3f5597b9c0dbd0d77664481b790c1b848cddab172f5da8206d7bd60af6ec158f",
+      "bytes": 56803
+    },
+    {
+      "path": "docs/ops/COUNTER_VOUCHERS.md",
+      "sha256": "600175b62064e0e3b1f3100ea40fa6f0a0799ae403d0e5991d97a1367239fe2a",
+      "bytes": 9000
+    },
+    {
+      "path": "docs/progress/plans/events-kiosk/PLAN.md",
+      "sha256": "dc19e298e8e1531bae1933835d1229751492ab99d291419cdac9954833e6c42d",
+      "bytes": 35968
+    },
+    {
+      "path": "docs/progress/plans/otoapp-lift/PLAN.md",
+      "sha256": "b460d27706430353d498ed4bd6740745b3c694107d418b5b5e5ce10672f57855",
+      "bytes": 206938
+    }
+  ],
+  "combinedProductAndDocsInputFiles": 3815,
+  "combinedProductAndDocsInputManifestSha256": "f8aaf64c36a5f9edf0c05e6385373d6e5c6f1999c36d248e56a5f597d2b8d98b",
+  "originalRun": {
+    "path": "actual-v1/result.json",
+    "sha256": "2ac8f0465f208117604646206ab2fc7364ab9420f6a0654987027fe1acb5cf74",
+    "passed": false,
+    "commands": 21,
+    "apiTotals": {
+      "files": 384,
+      "tests": 5871,
+      "pass": 5840,
+      "fail": 24,
+      "skip": 2,
+      "todo": 5,
+      "other": 0
+    }
+  },
+  "documentationClosure": {
+    "path": "docs-followup-v1/result.json",
+    "sha256": "4820552a6864587efcf80462d9d2ee51dd491cf2df6b509526eca775ffda1046",
+    "passed": true,
+    "wholeFiles": 10,
+    "totals": {
+      "files": 10,
+      "tests": 377,
+      "pass": 376,
+      "fail": 0,
+      "skip": 0,
+      "todo": 1,
+      "other": 0
+    },
+    "inheritedTodoIdentitiesUnchanged": true,
+    "sameWholeFileCaseIdentities": true,
+    "closedAssertions": 23,
+    "previouslyPassingRepeatedControls": 353
+  },
+  "uniqueCoverage": {
+    "files": 384,
+    "tests": 5871,
+    "pass": 5863,
+    "fail": 1,
+    "skip": 2,
+    "todo": 5,
+    "other": 0
+  },
+  "appAvailability": {
+    "wholeFiles": 30,
+    "actualExecutedCases": 790,
+    "allPass": true,
+    "noAvailabilitySkips": true,
+    "prior399SkipGapReplacedByActualExecution": true
+  },
+  "failures": [
+    {
+      "file": "apps/api/test/assistant-otoapp.test.ts",
+      "counts": {
+        "pass": 42,
+        "fail": 1
+      },
+      "cases": [
+        {
+          "nameSha256": "dee57965252e553087a9c839cef81dcf438ea32fc13681d79f8766f5af87c592",
+          "errorHashes": [
+            "0f0fd5aca3ef2b3786762dc13bfad59591771c8bf8bdb1af2104ff43ce54b274"
+          ]
+        }
+      ]
+    }
+  ],
+  "releasePassed": false,
+  "blockedBy": "Q23 planner-owned revoked-before-first-OTO-call refusal repair",
+  "refs": {
+    "readInputCensus": {
+      "path": "C:/w/admin640-api-omitted-read-inputs-20261026.json",
+      "sha256": "4928408072b36e455bcdbf6a65500eb29468fd3ebf9f79d7d15621de34428ca0"
+    },
+    "domainReuse": {
+      "path": "app-domain-reuse-confirmation.json",
+      "sha256": "887e7ac7d7b22f9f4748555db6fe988fc4116b5ca3dfee5560a2d60d028eea98"
+    }
+  },
+  "limits": [
+    "No monolithic fresh green three-shard run is claimed; original384-file batch remains false.",
+    "The10-file closure replaces those existing file outcomes; its377 repeated cases are not added to unique totals.",
+    "Whole App418 compiler and32 unchanged native programs are explicitly reused through exact source/dependency/runtime domain bindings, not newly executed.",
+    "No staging authentication/business/provider/SMS/payment/channel action, feature source change, Git commit/push, deployment or Jira transition."
+  ]
+}

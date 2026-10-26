@@ -1,0 +1,51 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T14:11:25.563Z",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "currentSourceBridgeHead": "5d3cc3aa46711b343159a1cbd940e9a5046f7caa",
+  "sourceManifestSha256": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "originalSourceFiles": 3811,
+  "addedExactDocumentationInputs": 4,
+  "uniqueApiCoverage": {
+    "files": 384,
+    "tests": 5871,
+    "pass": 5863,
+    "fail": 1,
+    "skip": 2,
+    "todo": 5,
+    "other": 0
+  },
+  "appAvailability": {
+    "wholeFiles": 30,
+    "actualExecutedCases": 790,
+    "allPass": true,
+    "noAvailabilitySkips": true,
+    "prior399SkipGapReplacedByActualExecution": true
+  },
+  "originalBatchGreen": false,
+  "documentationWholeFileClosureGreen": true,
+  "releasePassed": false,
+  "blockedBy": "Q23 planner-owned revoked-before-first-OTO-call refusal repair",
+  "freshAppPrograms": 9,
+  "bridgedAppPrograms": 32,
+  "freshAppBuild": true,
+  "freshCurrent0088Restore": true,
+  "bridgedWholeAppCompiler": {
+    "errors": 418,
+    "files": 54,
+    "fileCodeBuckets": 109,
+    "newExecution": false
+  },
+  "cleanup": {
+    "removedContainers": 2,
+    "removedPrivateNetworks": 1,
+    "baselinePreserved": 10,
+    "remainingContainers": 10,
+    "imagesRemoved": 0,
+    "volumesRemoved": 0
+  },
+  "privacyPassed": true,
+  "sourceOrTestEdits": false,
+  "gitCommitOrPush": false,
+  "staging": false
+}

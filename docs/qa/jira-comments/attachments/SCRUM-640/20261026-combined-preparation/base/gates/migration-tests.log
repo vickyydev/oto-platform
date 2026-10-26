@@ -1,0 +1,17 @@
+
+> @oto/db@0.1.0 test C:\w\admin-operator-switch\packages\db
+> vitest run --no-file-parallelism "--maxWorkers=1" "test/s640-operator-switch-migration.test.ts" "test/assistant-settings.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/db
+
+ ✓ test/s640-operator-switch-migration.test.ts (12 tests) 9617ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > migrates a real predecessor database without backfilling or altering existing session or audit data  5559ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > replays the complete native migration chain without another ledger row or any session/account/audit change  671ms
+ ✓ test/assistant-settings.test.ts (11 tests) 4189ms
+   ✓ SCRUM-638 expand-only operator settings storage > reapplies the native migration chain without another entry or changing stored data  760ms
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  19:39:08
+   Duration  16.00s (transform 480ms, setup 0ms, collect 1.66s, tests 13.81s, environment 0ms, prepare 192ms)

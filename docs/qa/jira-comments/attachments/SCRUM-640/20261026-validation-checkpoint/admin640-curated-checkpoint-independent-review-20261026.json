@@ -1,0 +1,29 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T14:09:23.186Z",
+  "passed": true,
+  "reviewedHead": "4dbade2a9c8855a017df2f73d284d97869405d24",
+  "sourceInputs": 3809,
+  "sourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "fullReviewPath": "C:/w/admin640-partial-checkpoint-independent-review-v2-20261026.json",
+  "fullReviewSha256": "28c8eb59daf872d55eddc4b6f578588570ded5275f8642e7ce6a2ac824b88aab",
+  "scope": "Only three new combined docs/evidence subtrees",
+  "subtrees": [
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-combined-preparation",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-combined-workspace",
+    "docs/qa/jira-comments/attachments/SCRUM-640/20261026-combined-pos"
+  ],
+  "indexedArchiveHashesVerified": 181,
+  "availableExternalOriginalsVerified": 178,
+  "hashFailures": 0,
+  "secretOrAttributionCandidates": 0,
+  "releaseTrueAssertions": 0,
+  "docsEvidenceOnlyReady": true,
+  "featureLanePushApproved": false,
+  "mainSourcePublishApproved": false,
+  "featureReleaseApproved": false,
+  "limits": [
+    "The new API archive is not included in this review and remains a separate intake.",
+    "Full API/document closures, both planner-owned Q23 fixes, final CI/deploy/staging acceptance remain outside this partial checkpoint."
+  ]
+}

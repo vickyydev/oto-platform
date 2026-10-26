@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "offline-helper-calibration-only",
+  "startedAt": "2026-10-26T12:13:52.913Z",
+  "completedAt": "2026-10-26T12:13:53.053Z",
+  "exitCode": 1,
+  "before": {
+    "C:/w/admin640-staging-proof-executor.mjs": "d0dcb506f90176813716c0aaa59f17391b0123471f6f857b55ebbc3aeab17368",
+    "C:/w/admin640-staging-proof-audit-draft.mjs": "d88965f506093eb4781c481774b88f515a95bf8573089f86482d497643281e38",
+    "C:/w/admin640-staging-proof-executor.test.mjs": "49c8e12ce7b2367ff5af5de2ce43a1d8c44f4016e5f9ac9dea9cc11e4dd0ce2f",
+    "C:/w/admin640-staging-contract-draft.mjs": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563"
+  },
+  "after": {
+    "C:/w/admin640-staging-proof-executor.mjs": "d0dcb506f90176813716c0aaa59f17391b0123471f6f857b55ebbc3aeab17368",
+    "C:/w/admin640-staging-proof-audit-draft.mjs": "d88965f506093eb4781c481774b88f515a95bf8573089f86482d497643281e38",
+    "C:/w/admin640-staging-proof-executor.test.mjs": "49c8e12ce7b2367ff5af5de2ce43a1d8c44f4016e5f9ac9dea9cc11e4dd0ce2f",
+    "C:/w/admin640-staging-contract-draft.mjs": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563"
+  },
+  "sourceUnchanged": true,
+  "logSha256": "a770b6097259da633e6474042e6e934939454a7616f2b7d709abf3d5ccedcc04",
+  "staging": false,
+  "noAppRuntime": true,
+  "noAuth": true,
+  "noNetwork": true
+}

@@ -1,0 +1,157 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "held-external-collectors-and-eligibility-correction",
+  "frozenAt": "2026-10-26T12:46:16.358Z",
+  "approvedForLiveExecution": false,
+  "files": [
+    {
+      "path": "C:/w/admin640-staging-proof-executor.mjs",
+      "sha256": "6cf77d860833aaeb01826c5ea941f6c6dc02dfd2bd442251ad81d02511480c5a",
+      "bytes": 44505
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-audit-draft.mjs",
+      "sha256": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+      "bytes": 18464
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-release-collector.mjs",
+      "sha256": "1aaea6c1cb79b7d56da1ff47c9ceb121beb3edf3e5aa6976f3276d553294d88d",
+      "bytes": 15266
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-metadata-collector.mjs",
+      "sha256": "8ff7f8e7b52396197b702721f2620bdfb2f8b5f246865bb6d6cc69cafca568aa",
+      "bytes": 19845
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-executor.test.mjs",
+      "sha256": "78884ac824dcbf3db6a7e9c3df624914fcb077477c91ab795a1c1b5b20a9921b",
+      "bytes": 19713
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-review.test.mjs",
+      "sha256": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+      "bytes": 7559
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-account-eligibility.test.mjs",
+      "sha256": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4",
+      "bytes": 1822
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors.test.mjs",
+      "sha256": "7a7c45c261f5a2fb489ae0b64ceefe80125396ee92b281ca9d1a53a3dbe7a329",
+      "bytes": 11586
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors-checks.mjs",
+      "sha256": "079ab586e38b6423e3a966efd7a333f186f97a1e0b4f0f0c6ef3f5f1b4b844d5",
+      "bytes": 2369
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors-README.md",
+      "sha256": "0b7aaff92588f0ee164ead385ba5b39e2b73db508192952aaf68c334e1656fa3",
+      "bytes": 6689
+    }
+  ],
+  "history": [
+    {
+      "path": "C:/w/admin640-staging-proof-revision-receipt-v2.json",
+      "sha256": "cd9357016cb7aa7c3aee6184e1d8c4e6e3872963f311ee3bff4112271d7dc8c5"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-executor-before-account-eligibility.mjs",
+      "sha256": "42d572906812a820131f13dd69766c81c0988ebcc01f9bffa9fbe88a136a0063"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-executor-before-account-eligibility.test.mjs",
+      "sha256": "e535f5a9c5a950b4f484050e97048c9f3f83c2f21fc416d328e37444070ef26c"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-account-eligibility-red.log",
+      "sha256": "4d968e0d9599c46676f9df2b30f051af085b2860b1d8898b377674c61a4abe9f"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors-green-v1.json",
+      "sha256": "ced05c86de687a804af9cfa24a67d1644da1feeb214e97ab5a10c93752205239"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors-green-v1.log",
+      "sha256": "da9aa10e3f6099a7f9d225d11960c6f470fefd12c49c68379c12f0731ca11ae7"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors-green-v2.json",
+      "sha256": "ece512a5cca08df8592c8c17439b42c91913bbee913626ac11057fb4d45172ba"
+    },
+    {
+      "path": "C:/w/admin640-staging-proof-collectors-green-v2.log",
+      "sha256": "9f1dfa476a090aa93786fd70083dd6115a75a7c3682a2e5a95b8c0a621295fcb"
+    }
+  ],
+  "observedSourceOnly": [
+    {
+      "path": "apps/api/src/routes/me.ts",
+      "sha256": "c7e772bf2b88a2e2c867a67f638179a1b7fba085a458fd09d871bcdaf5621b0e"
+    },
+    {
+      "path": "apps/api/src/services/permissions.ts",
+      "sha256": "dfc9231f251425ba6592c1453d850e7d1e3e8ccfa9b18a0fe01ab8163c902b7a"
+    },
+    {
+      "path": "apps/api/src/services/operator-switch.ts",
+      "sha256": "fdb8dedac050bf20ff2602c9271136dbbae85a0e3f16d528f9d6ae872cc3f76b"
+    },
+    {
+      "path": "packages/db/src/schema/tenancy.ts",
+      "sha256": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569"
+    },
+    {
+      "path": "packages/db/src/schema/platform.ts",
+      "sha256": "57ef8e44d03cbd8839a8c56b74b5241699d6d24a22a17226c71ee22849ea4113"
+    },
+    {
+      "path": "packages/db/src/schema/otoapp.ts",
+      "sha256": "7c78e76fa2b5b5644089577eab5615c7ae012a4acdcadddb989e9b1a2441c361"
+    },
+    {
+      "path": "packages/db/package.json",
+      "sha256": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd"
+    }
+  ],
+  "offline": {
+    "tests": 39,
+    "passed": 39,
+    "failed": 0,
+    "pending": 0,
+    "receipt": "C:/w/admin640-staging-proof-collectors-green-v2.json",
+    "receiptSha256": "ece512a5cca08df8592c8c17439b42c91913bbee913626ac11057fb4d45172ba",
+    "logSha256": "9f1dfa476a090aa93786fd70083dd6115a75a7c3682a2e5a95b8c0a621295fcb",
+    "parser": {
+      "path": "C:/w/admin-operator-switch/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/typescript.js",
+      "version": "5.9.3",
+      "sha256": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675"
+    }
+  },
+  "narrowChangedFrozenHelper": "Only pre-auth subjects.unlocked renamed accountEligible. Actual me/sessionLocked:false remains mandatory. Original42d572 and old19-test fixture preserved; the fixture field name alone changed.",
+  "accountEligibilityRed": {
+    "passed": 1,
+    "failed": 1,
+    "log": "C:/w/admin640-staging-proof-account-eligibility-red.log",
+    "testSha256Unchanged": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4"
+  },
+  "stagedPlanSupplied": false,
+  "authAttempts": 0,
+  "realNetworkCalls": 0,
+  "browsers": 0,
+  "jobs": 0,
+  "SQLExecutions": 0,
+  "repoEdits": 0,
+  "remaining": [
+    "Independent source review of collectors and narrow eligibility delta",
+    "Final actual source/CI/latest-live binding",
+    "Real read-only job API/loader/SQL/privilege calibration and public closure",
+    "Held preflight human approval with unchanged checkedAt/freshness",
+    "Actual native session proof, read-only audit and all PNG pixel inspections"
+  ]
+}

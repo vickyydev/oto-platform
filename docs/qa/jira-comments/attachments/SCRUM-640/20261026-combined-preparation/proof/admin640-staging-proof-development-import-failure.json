@@ -1,0 +1,12 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "offline-development-calibration-failure",
+  "command": "node --test C:/w/admin640-staging-proof-executor.test.mjs",
+  "exitCode": 1,
+  "errorCode": "MISSING_DIGEST_EXPORT",
+  "functionalTestsExecuted": 0,
+  "featureRedEvidence": false,
+  "rawToolOutputPersisted": false,
+  "correction": "Re-export the already imported pure contract digest. No boundary or assertion change.",
+  "networkOrAuth": false
+}

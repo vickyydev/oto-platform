@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-26T13:20:24.085Z",
+  "hostAvailableMiB": 1750,
+  "linuxAvailableMiB": 9435,
+  "memoryCurrent": 1882566656,
+  "stat": [
+    "anon 779419648",
+    "file 846745600",
+    "kernel 237846528",
+    "inactive_file 203825152",
+    "active_file 642920448"
+  ],
+  "events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+}

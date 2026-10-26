@@ -1,0 +1,617 @@
+{
+  "ticket": "SCRUM-635",
+  "kind": "Read-only P4 acceptance preparation",
+  "checkedAt": "2026-10-26T14:10:27.968Z",
+  "passed": true,
+  "parentAcceptanceComplete": false,
+  "source": {
+    "worktree": "C:/w/admin-console-live-progress-20261026",
+    "head": "c6b6c3190365310bc9dee43a74b07114a00dbfd7",
+    "inputsUnchangedDuringReview": true
+  },
+  "jiraReadAt": "2026-10-26T14:02:29.154Z",
+  "method": {
+    "jiraReadOnlyGets": 12,
+    "helper": "Original scripts/agent/jira.mjs jget; every non-GET blocked.",
+    "stagingAuthActions": 0,
+    "runtimeOrTests": 0,
+    "newPixelInspection": false,
+    "remoteAttachmentDownloads": false
+  },
+  "parent": {
+    "status": "In Progress",
+    "outcomeCommentId": "12564",
+    "currentAttachments": 0,
+    "acceptance": "the owner opens one page and sees the park's day; a second operator can be entered and left, audited.",
+    "plan": "docs/progress/plans/super-admin-console/PLAN.md:383",
+    "proposal": "docs/progress/plans/super-admin-console/PROPOSAL.md:106",
+    "pendingChild": {
+      "key": "SCRUM-640",
+      "status": "In Progress",
+      "stagingAttachments": 0
+    }
+  },
+  "children": [
+    {
+      "key": "SCRUM-636",
+      "status": "Deployed",
+      "parent": "SCRUM-635",
+      "sourceSha": "be94f6c847b2a276167992ce6bcf3c6ec8988f71",
+      "ciRunId": "40170166041",
+      "sixJobsCompletedSuccess": true,
+      "ciRecord": "docs/qa/jira-comments/attachments/SCRUM-636/ci-green.json",
+      "outcomeCommentId": "12565",
+      "outcomeNamesAllImagesAndSource": true,
+      "deployedReadbackAt": "2026-10-25T07:13:28.978Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "id": "dep-dbeqjuijnfac73e2ik30",
+          "finishedAt": "2026-10-25T07:07:46.891936Z"
+        }
+      ],
+      "proof": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-636/staging-proof.json",
+        "startedAt": "2026-10-25T07:08:30.249Z",
+        "completedAt": "2026-10-25T07:08:50.218Z",
+        "actualStaging": true,
+        "complete": true,
+        "sourceChecks": 4,
+        "businessWrites": 0,
+        "fixturesCreated": 0,
+        "authorityUnchanged": true,
+        "originalCookieCleanups": 3,
+        "allSignOut200Me401": true,
+        "pending": 0,
+        "uncertainty": 0
+      },
+      "inspection": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-636/README.md",
+        "at": null,
+        "matchedAllImageHashes": false,
+        "recordedInspected": true,
+        "newPixelInspectionByThisAudit": false
+      },
+      "images": [
+        {
+          "filename": "SCRUM-636-01-aggregate-api-test-run.png",
+          "sha256": "dc71b1df6025f0048a6cdf69bcbcd6361d85d4c4bdfd4168ad8212e365206cd4",
+          "bytes": 101333,
+          "attachmentId": "12031",
+          "capturedAt": "2026-10-25T07:08:47.234Z"
+        }
+      ],
+      "limits": [
+        "API test-run card; no native Overview UI claim (SCRUM-637).",
+        "No payment/detail comparator, private images, OTO App, handoff, station or business write.",
+        "Real populated formulas, foreign-operator records and union-of-all-parks fixtures are locally covered; staging uses unchanged existing demos.",
+        "Unreachable-park staging proof is conditional on a genuine existing outside-reach park; no grants are altered."
+      ]
+    },
+    {
+      "key": "SCRUM-637",
+      "status": "Deployed",
+      "parent": "SCRUM-635",
+      "sourceSha": "3202967eb331c28d450e9a1ba5336aaa0693bab8",
+      "ciRunId": "40229665720",
+      "sixJobsCompletedSuccess": true,
+      "ciRecord": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/ci-final.json",
+      "outcomeCommentId": "12571",
+      "outcomeNamesAllImagesAndSource": true,
+      "deployedReadbackAt": "2026-10-25T21:07:54.073Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "id": "dep-dbf6f0rbc2fs738sk6gg",
+          "finishedAt": "2026-10-25T20:36:09.734844Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "id": "dep-dbf6f0rbc2fs738sk7og",
+          "finishedAt": "2026-10-25T20:33:44.903251Z"
+        }
+      ],
+      "proof": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/result.json",
+        "startedAt": "2026-10-25T21:05:46.604Z",
+        "completedAt": "2026-10-25T21:07:10.354Z",
+        "actualStaging": true,
+        "complete": true,
+        "sourceChecks": 13,
+        "businessWrites": 0,
+        "fixturesCreated": 0,
+        "authorityUnchanged": true,
+        "originalCookieCleanups": 3,
+        "allSignOut200Me401": true,
+        "pending": 0,
+        "uncertainty": 0
+      },
+      "inspection": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/visual-review.json",
+        "at": "2026-10-25T21:07:35.4922229Z",
+        "matchedAllImageHashes": true,
+        "recordedInspected": true,
+        "newPixelInspectionByThisAudit": false
+      },
+      "images": [
+        {
+          "filename": "SCRUM-637-01-overview-desktop.png",
+          "sha256": "b2add6e2b481e78bc3bde5be7371c1044b0c2d2ecddae5e6945799872011b743",
+          "bytes": 308961,
+          "attachmentId": "12039",
+          "capturedAt": "2026-10-25T21:06:11.019Z"
+        },
+        {
+          "filename": "SCRUM-637-02-overview-phone.png",
+          "sha256": "ae698643a43f9a0d2c285c73f22ed1a4548684d953757a690c3dcd9d6c0dc06b",
+          "bytes": 226995,
+          "attachmentId": "12040",
+          "capturedAt": "2026-10-25T21:06:23.471Z"
+        },
+        {
+          "filename": "SCRUM-637-03-overview-manager.png",
+          "sha256": "bf244554636868278145f7f4e3a81d3024617d3b4cd55e20b9fa6135b4f341ee",
+          "bytes": 254148,
+          "attachmentId": "12041",
+          "capturedAt": "2026-10-25T21:06:44.829Z"
+        },
+        {
+          "filename": "SCRUM-637-04-overview-restricted.png",
+          "sha256": "d0b13a142b948600ae826db6b817f5f5f635be3e015da91c632e04256836a05c",
+          "bytes": 77277,
+          "attachmentId": "12042",
+          "capturedAt": "2026-10-25T21:07:03.861Z"
+        }
+      ],
+      "limits": [
+        "Actual Overview and Copy only; no digest/webhook delivery claim. Local fake sender tests remain separate.",
+        "No source-button navigation, detail pages, payment records, OTO App, account creation, grant changes, fixtures or business writes.",
+        "Known external font suppressed; identity masks are deliberate. Production assets are independently collected, not a local build."
+      ]
+    },
+    {
+      "key": "SCRUM-638",
+      "status": "Deployed",
+      "parent": "SCRUM-635",
+      "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+      "ciRunId": "40321640775",
+      "sixJobsCompletedSuccess": true,
+      "ciRecord": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/ci-final.json",
+      "outcomeCommentId": "12573",
+      "outcomeNamesAllImagesAndSource": true,
+      "deployedReadbackAt": "2026-10-26T13:13:09.696Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "id": "dep-dbfkte8473hc73a6v8cg",
+          "finishedAt": "2026-10-26T13:03:14.879365Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "id": "dep-dbfkte8473hc73a6v9hg",
+          "finishedAt": "2026-10-26T13:00:30.145172Z"
+        }
+      ],
+      "proof": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/result.json",
+        "startedAt": "2026-10-26T13:09:56.739Z",
+        "completedAt": "2026-10-26T13:11:48.873Z",
+        "actualStaging": true,
+        "complete": true,
+        "sourceChecks": 12,
+        "businessWrites": 1,
+        "fixturesCreated": 0,
+        "authorityUnchanged": true,
+        "originalCookieCleanups": 2,
+        "allSignOut200Me401": true,
+        "pending": 0,
+        "uncertainty": 0
+      },
+      "inspection": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/visual-review.json",
+        "at": "2026-10-26T13:12:14.8592294Z",
+        "matchedAllImageHashes": true,
+        "recordedInspected": true,
+        "newPixelInspectionByThisAudit": false
+      },
+      "images": [
+        {
+          "filename": "SCRUM-638-01-settings-desktop.png",
+          "sha256": "0b44ae69ae52c4e8f044d5d39ef083a5044dbc24f2ec85ab373669bf71359726",
+          "bytes": 163120,
+          "attachmentId": "12047",
+          "capturedAt": "2026-10-26T13:10:49.617Z"
+        },
+        {
+          "filename": "SCRUM-638-02-settings-phone.png",
+          "sha256": "336128614e57cf532daa92e9279e5145e73f94929eb22feaa8b00447273d1ec2",
+          "bytes": 135819,
+          "attachmentId": "12048",
+          "capturedAt": "2026-10-26T13:11:07.809Z"
+        },
+        {
+          "filename": "SCRUM-638-03-settings-restricted.png",
+          "sha256": "da3ed9750464ad6cd551c6c116bab241a0734af39ec4e5a001ade4abf515091e",
+          "bytes": 77762,
+          "attachmentId": "12049",
+          "capturedAt": "2026-10-26T13:11:37.735Z"
+        }
+      ],
+      "limits": [
+        "One planner-approved initial rate through the native form; caps and pacing unchanged. No live engine-consumption claim.",
+        "No clipboard, AI/model call, message, channel mode, handoff, payment, account creation or fixture.",
+        "Known external font suppressed; identity masks deliberate. Static bytes are actual production closure, not a local VITE build."
+      ],
+      "archiveNormalization": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/archive-byte-bindings.json",
+        "rawAndCommittedHashesVerified": true,
+        "lineEndingOnlyFiles": [
+          "plan.json",
+          "visual-review.json",
+          "ci-final.json",
+          "history/20261026-v1/plan.json"
+        ]
+      }
+    },
+    {
+      "key": "SCRUM-639",
+      "status": "Deployed",
+      "parent": "SCRUM-635",
+      "sourceSha": "78ff5325e3ac1c9cae2ebd3bd92539bba18346ac",
+      "ciRunId": "40186839556",
+      "sixJobsCompletedSuccess": true,
+      "ciRecord": "docs/qa/jira-comments/attachments/SCRUM-639/staging-bindings.json",
+      "outcomeCommentId": "12574",
+      "outcomeNamesAllImagesAndSource": true,
+      "deployedReadbackAt": "2026-10-25T11:52:24.474Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "id": "dep-dbeu9895efls73bcohu0",
+          "finishedAt": "2026-10-25T11:19:10.972953Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "id": "dep-dbeu9895efls73bcoivg",
+          "finishedAt": "2026-10-25T11:15:25.760077Z"
+        }
+      ],
+      "proof": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-639/staging-result.json",
+        "startedAt": "2026-10-25T11:43:38.079Z",
+        "completedAt": "2026-10-25T11:45:42.849Z",
+        "actualStaging": true,
+        "complete": true,
+        "sourceChecks": 18,
+        "businessWrites": 0,
+        "fixturesCreated": 0,
+        "authorityUnchanged": true,
+        "originalCookieCleanups": 2,
+        "allSignOut200Me401": true,
+        "pending": 0,
+        "uncertainty": 0
+      },
+      "inspection": {
+        "record": "docs/qa/jira-comments/attachments/SCRUM-639/staging-inspection.json",
+        "at": "2026-10-25T11:47:44.857Z",
+        "matchedAllImageHashes": true,
+        "recordedInspected": true,
+        "newPixelInspectionByThisAudit": false
+      },
+      "images": [
+        {
+          "filename": "SCRUM-639-01-operators.png",
+          "sha256": "9487ffee3495bc5de31f35cd2c8a35c0a09b7ce1bca8af0065945a18d475ba0d",
+          "bytes": 83192,
+          "attachmentId": "12032",
+          "capturedAt": "2026-10-25T11:44:06.635Z"
+        },
+        {
+          "filename": "SCRUM-639-02-system-roles.png",
+          "sha256": "d93887bfdf0d55e63da72c626aecd3a6f972af359417e1f1ebbb11d81e4b7bfa",
+          "bytes": 63321,
+          "attachmentId": "12033",
+          "capturedAt": "2026-10-25T11:44:19.078Z"
+        },
+        {
+          "filename": "SCRUM-639-03-platform-alerts.png",
+          "sha256": "031d29eaad799446d4a073d4b898467e3bab4480260f2cda674407a1519c101a",
+          "bytes": 66687,
+          "attachmentId": "12034",
+          "capturedAt": "2026-10-25T11:44:31.888Z"
+        },
+        {
+          "filename": "SCRUM-639-04-platform-jobs.png",
+          "sha256": "dd6914678dade16368a3a70f9571877b7f0393ab0975bacdc4d1143edbacb54e",
+          "bytes": 216084,
+          "attachmentId": "12035",
+          "capturedAt": "2026-10-25T11:44:44.424Z"
+        },
+        {
+          "filename": "SCRUM-639-05-environment-phone.png",
+          "sha256": "b2fc84a8cc30d54401b2041150874d0e218be10835c2232423414f696ba7f3fe",
+          "bytes": 141485,
+          "attachmentId": "12036",
+          "capturedAt": "2026-10-25T11:44:57.948Z"
+        },
+        {
+          "filename": "SCRUM-639-06-test-controls.png",
+          "sha256": "c0608388142a64eb0563c3c6b961de6253974a286291939899fd4810a231f714",
+          "bytes": 85889,
+          "attachmentId": "12037",
+          "capturedAt": "2026-10-25T11:45:11.887Z"
+        },
+        {
+          "filename": "SCRUM-639-07-platform-restricted.png",
+          "sha256": "d397d2e1bb98d66b29489a56871591092626b40f0432570382c187260aeb9488",
+          "bytes": 77289,
+          "attachmentId": "12038",
+          "capturedAt": "2026-10-25T11:45:35.275Z"
+        }
+      ],
+      "limits": [
+        "Read-only Platform pages/metadata; no operator, role, job, control, provider, message, grant or settings action.",
+        "Three new platform and two existing schemas are collected from actual routes; legacy controls have strict structural postconditions.",
+        "Operators passive demo-reset availability is allowed; its phrase/payload is not retained and no reset is dispatched.",
+        "External font suppression and identity/error masks are deliberate. Official assets are collected independently of a local build."
+      ]
+    }
+  ],
+  "remainingGates": [
+    {
+      "key": "640-release-and-proof",
+      "state": "pending",
+      "detail": "Complete the protected Q23 repair and all remaining current release closure, exact full-SHA six-green CI/latest rollout, then actual same-session home A to working B to home A, scoped B reads, home/effective audit tags, unchanged home identity/authority and original-cookie logout200/me401. Attach inspected staging evidence and verify SCRUM-640 Deployed. Latest STATUS owns execution detail."
+    },
+    {
+      "key": "fresh-parent-acceptance-after640",
+      "state": "pending",
+      "detail": "After final 640 rollout, capture and inspect a fresh native Overview image. Reuse and attach that fresh image plus the actual 640 operator-switch/audit proof to SCRUM-635. Name the exact files in its outcome, bind source/CI/deploy and recorded facts, then verify parent Deployed. Parent currently has no attachments."
+    },
+    {
+      "key": "honest-history-labels",
+      "state": "required",
+      "detail": "Older 636-639 child images remain historical accepted evidence. They must not be presented as new post-640 screens or as one final combined release."
+    },
+    {
+      "key": "owner-and-phase-order",
+      "state": "standing",
+      "detail": "Leave final Done to the owner. Do not start P5 until P4 parent Deployed."
+    }
+  ],
+  "alreadySatisfiedOrExplicitlyOutside": {
+    "radar": {
+      "state": "Existing Reports offer delivered in SCRUM-625; no additional P4 implementation gap.",
+      "source": "apps/console/src/pages/Reports.tsx:99-119",
+      "permissions": [
+        "analytics:read",
+        "app:radar:access"
+      ],
+      "evidence": "docs/qa/jira-comments/attachments/SCRUM-625/README.md",
+      "image": "SCRUM-625-07-radar-tile.png",
+      "limit": "Offer inspected; actual Radar arrival not claimed."
+    },
+    "digest": "Q19 is default-off; injected local capturing-sender coverage remains separate. No real staging webhook/message is required or claimed.",
+    "assistant": "638 is already accepted/Deployed. Its approved rate save, unchanged caps/pacing and access proof are retained; no live provider call or billing comparison is added by this audit. Q18 cache-write persistence remains the explicitly excluded protected follow-up.",
+    "laterPhase": "P5 controls are outside this parent acceptance. No later implementation was started."
+  },
+  "findings": [],
+  "limits": [
+    "Current Jira statuses and archived successful proof bindings were checked, not live staging behavior repeated.",
+    "Remote Jira attachment IDs/names/byte lengths match the local archived PNGs and closure; remote binary content was not downloaded.",
+    "Archived recorded inspections were checked. 636 has README/outcome inspection evidence rather than separate visual-review JSON.",
+    "The child proofs use their own historical exact sources; this audit does not accept 640 or the P4 parent."
+  ],
+  "inputs": [
+    {
+      "path": "C:/w/admin635-parent-jira-readback-20261026.json",
+      "sha256": "b2cdd6aa1f8e06f339e209e1421c72863a0cceb8f560e597c299f6daa1b0c49a",
+      "bytes": 11219
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/progress/plans/super-admin-console/PLAN.md",
+      "sha256": "c5c8cb482c50a77af5e7d132ed167948776ef338c5a6738f6698679325511b27",
+      "bytes": 98041
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/progress/plans/super-admin-console/PROPOSAL.md",
+      "sha256": "99ff6f99ae880e35988eac3c70e2047aebe0ad26a025c02afcdf354b0e989f81",
+      "bytes": 15817
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/progress/STATUS.md",
+      "sha256": "c6a396653930262e68417e60cc1dee1922c90bb926d306c1447f9ed84ae19af1",
+      "bytes": 1086668
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-636/staging-proof.json",
+      "sha256": "61841f38992a239835c73bcfbfa54c2f0ec6af8a57c129bfc78a1a16f73fd409",
+      "bytes": 57230
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-636/staging-bindings.json",
+      "sha256": "870f8d9c7b03d98ed06c931c719e425d88af697e29f29748a1a6799c09bda760",
+      "bytes": 985
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-636/jira-acceptance.json",
+      "sha256": "f6adddf47ebf2c2790644c8c480f5f97c2c2a31286750c91c36c6c0b89d12e6a",
+      "bytes": 684
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-636/ci-green.json",
+      "sha256": "cfeb5c8859d2ee2201803ee505c009c0fd02c203373a9988c9c800c78f4ac418",
+      "bytes": 21625
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-636/README.md",
+      "sha256": "1262d491b77fc52856b2fc7762eb137d63028ab5aa35f8f6f3f6939ee420dd15",
+      "bytes": 6171
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-636/SCRUM-636-01-aggregate-api-test-run.png",
+      "sha256": "dc71b1df6025f0048a6cdf69bcbcd6361d85d4c4bdfd4168ad8212e365206cd4",
+      "bytes": 101333
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/result.json",
+      "sha256": "2bfefe5a8b8cfdb479394f0802c0ef0530fedd16e6e885a7571d30007582d25c",
+      "bytes": 52628
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/plan.json",
+      "sha256": "d0b7c02fba50646637a07582efe79239fea01aefcd83dd329a6a467d836b3110",
+      "bytes": 2822
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/jira-closure.json",
+      "sha256": "bf29469b97e4d82f57d886f702aacaa5332d08fca5abbd3f88affa9a0ae5fcc6",
+      "bytes": 946
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/ci-final.json",
+      "sha256": "2ebd04355a0e020a5f083a0d7dea06d61b7b90615be1bdb8f85a45096fbf4d3e",
+      "bytes": 39689
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/visual-review.json",
+      "sha256": "3e738406839251e0c93a46c4954758ba439056658aae6f73962f6d85a6e1bdca",
+      "bytes": 1549
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/SCRUM-637-01-overview-desktop.png",
+      "sha256": "b2add6e2b481e78bc3bde5be7371c1044b0c2d2ecddae5e6945799872011b743",
+      "bytes": 308961
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/SCRUM-637-02-overview-phone.png",
+      "sha256": "ae698643a43f9a0d2c285c73f22ed1a4548684d953757a690c3dcd9d6c0dc06b",
+      "bytes": 226995
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/SCRUM-637-03-overview-manager.png",
+      "sha256": "bf244554636868278145f7f4e3a81d3024617d3b4cd55e20b9fa6135b4f341ee",
+      "bytes": 254148
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-637/20261026-staging/SCRUM-637-04-overview-restricted.png",
+      "sha256": "d0b13a142b948600ae826db6b817f5f5f635be3e015da91c632e04256836a05c",
+      "bytes": 77277
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/result.json",
+      "sha256": "d2f4ba0f75928c37d1ae3afe8baec703eaf3bb604c5a80e2463d3411bcd50b14",
+      "bytes": 28575
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/plan.json",
+      "sha256": "44ace8d4dbed64dcdfab9d11953d3c718b261c19ca8ec97fe7316b04e7a81521",
+      "bytes": 3896
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/jira-deployed.json",
+      "sha256": "0dbde5dc53b63abe0373be29d1a602565194a82b6ad79c58ad6564d09482f90b",
+      "bytes": 483
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/ci-final.json",
+      "sha256": "bf257cf5690915ec9b08dd169fc8ce50a24ffe8dad3ad812f746f3a2a12cf310",
+      "bytes": 26332
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/visual-review.json",
+      "sha256": "4d2d453e8a75fcc45b0a29b623a8ae68216f2713b307fa8a805cbaa8dd92ac17",
+      "bytes": 1234
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/SCRUM-638-01-settings-desktop.png",
+      "sha256": "0b44ae69ae52c4e8f044d5d39ef083a5044dbc24f2ec85ab373669bf71359726",
+      "bytes": 163120
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/SCRUM-638-02-settings-phone.png",
+      "sha256": "336128614e57cf532daa92e9279e5145e73f94929eb22feaa8b00447273d1ec2",
+      "bytes": 135819
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/SCRUM-638-03-settings-restricted.png",
+      "sha256": "da3ed9750464ad6cd551c6c116bab241a0734af39ec4e5a001ade4abf515091e",
+      "bytes": 77762
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging/archive-byte-bindings.json",
+      "sha256": "b715a09c9fc191079cce3c53a6b1f6598704b9c72dd0109f2b7247cea6497607",
+      "bytes": 13614
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/staging-result.json",
+      "sha256": "548e31f5eccd2b6a41ba42a15ca7b876f4e0fafa269e14d077cbc8ee4d562473",
+      "bytes": 41395
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/staging-bindings.json",
+      "sha256": "a38e2081ea8e8883fc1aa45323664270faf157400481b1b247d6fa3fa43d494a",
+      "bytes": 2967
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/jira-acceptance.json",
+      "sha256": "ce93e24d39c0d6777708a9d030e38230a21444db255c93cdd186c5faf8965951",
+      "bytes": 2384
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/staging-inspection.json",
+      "sha256": "0892a519266803b239be08af75b988d8a9f19b7b49fcf089ed486ebb14fa040a",
+      "bytes": 2701
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-01-operators.png",
+      "sha256": "9487ffee3495bc5de31f35cd2c8a35c0a09b7ce1bca8af0065945a18d475ba0d",
+      "bytes": 83192
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-02-system-roles.png",
+      "sha256": "d93887bfdf0d55e63da72c626aecd3a6f972af359417e1f1ebbb11d81e4b7bfa",
+      "bytes": 63321
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-03-platform-alerts.png",
+      "sha256": "031d29eaad799446d4a073d4b898467e3bab4480260f2cda674407a1519c101a",
+      "bytes": 66687
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-04-platform-jobs.png",
+      "sha256": "dd6914678dade16368a3a70f9571877b7f0393ab0975bacdc4d1143edbacb54e",
+      "bytes": 216084
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-05-environment-phone.png",
+      "sha256": "b2fc84a8cc30d54401b2041150874d0e218be10835c2232423414f696ba7f3fe",
+      "bytes": 141485
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-06-test-controls.png",
+      "sha256": "c0608388142a64eb0563c3c6b961de6253974a286291939899fd4810a231f714",
+      "bytes": 85889
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-639/SCRUM-639-07-platform-restricted.png",
+      "sha256": "d397d2e1bb98d66b29489a56871591092626b40f0432570382c187260aeb9488",
+      "bytes": 77289
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/apps/console/src/pages/Reports.tsx",
+      "sha256": "6daad0269b08a0edb71278a88f15d19b63b342b45212b279b8f82ac157739918",
+      "bytes": 7271
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-625/README.md",
+      "sha256": "c027d49bc4d8b341706a6fdd0db5bcde64ec89951d739eb6f560ed17dde16b3d",
+      "bytes": 3854
+    },
+    {
+      "path": "C:/w/admin-console-live-progress-20261026/apps/console/e2e/reports.spec.ts",
+      "sha256": "0b73bb722adb499cba20a10c0c051478fdbfa7c1e0c0479954fef3a09d738b83",
+      "bytes": 24093
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-640",
+  "checkedAt": "2026-10-26T14:11:25.382Z",
+  "passed": true,
+  "logFilesScanned": 27,
+  "checks": {
+    "syntheticAuthCodeValues": 0,
+    "jwtValues": 0,
+    "bearerValues": 0,
+    "databaseUrls": 0,
+    "sessionCookieValues": 0,
+    "quotedSecretFieldValues": 0,
+    "redactedSyntheticAuthCodeMarkers": 1
+  },
+  "logPolicy": "The worker sanitized output in RAM before its first disk write. Archive log.txt files are byte-identical to those saved sanitized logs; no unredacted output or raw clipboard/auth/session payload is included.",
+  "syntheticCodeSource": "apps/api/test/auth-codes.test.ts:170",
+  "syntheticCodePattern": "^(legacy sha256 row brute-forced in \\d+ms\\s*(?:\\u2192|->)\\s*)\\d{6}([ \\t]*)(?=\\r?\\n|$)",
+  "candidateValuesPrinted": false
+}

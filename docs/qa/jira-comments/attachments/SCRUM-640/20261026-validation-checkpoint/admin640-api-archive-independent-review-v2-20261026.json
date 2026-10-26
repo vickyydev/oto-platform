@@ -1,0 +1,134 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T14:19:46.408Z",
+  "passed": true,
+  "scope": "Docs/evidence-only publication intake; the feature release remains failed",
+  "archivePath": "C:/w/admin640-api-verification-20261026/publication-normalized",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceManifestSha256": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "sourceInputs": 3811,
+  "canonicalCombinedSourceManifestSha256": "6640afe780d69234f365dd583d25bddef3ca586f0b5c87ab3530c9f7cc7e4506",
+  "currentSourceDifferences": [
+    "apps/console/e2e/assistant-settings.spec.ts",
+    "apps/console/src/components/ConsoleLayout.tsx",
+    "apps/console/src/pages/AreaLanding.tsx",
+    "apps/console/src/pages/AssistantSettings.tsx"
+  ],
+  "uniqueCoverage": {
+    "files": 384,
+    "tests": 5871,
+    "pass": 5863,
+    "fail": 1,
+    "skip": 2,
+    "todo": 5
+  },
+  "indexPath": "C:/w/admin640-api-verification-20261026/publication-normalized-index.json",
+  "indexSha256": "adfe828ba78672c256a6225c90d290d3a572b4e873ba5507e79bbfc3c0c74fcb",
+  "originalIndexSha256": "58eff90029419d962e97fcd482a45fce782cf925a28b10b65ca902f188e263df",
+  "internalOriginalIndexPath": "C:/w/admin640-api-verification-20261026/publication-normalized/original-publication-index.json",
+  "internalByteBindingsPath": "C:/w/admin640-api-verification-20261026/publication-normalized/archive-byte-bindings.json",
+  "internalByteBindingsSha256": "9abf3ab44dddf3dbc364ef31d827228c6374b3ff66bc0b0c0acd57b7bc94f404",
+  "archiveFiles": 105,
+  "nativeJsonFiles": 74,
+  "originalArtifacts": 103,
+  "unchangedArtifacts": 98,
+  "displayLogsWhitespaceNormalized": 4,
+  "readmeDisclosureUpdated": true,
+  "originalRun": {
+    "passed": false,
+    "commands": 21,
+    "outerExitCode": 1,
+    "totals": {
+      "files": 384,
+      "tests": 5871,
+      "pass": 5840,
+      "fail": 24,
+      "skip": 2,
+      "todo": 5,
+      "other": 0
+    },
+    "receiptSha256": "2ac8f0465f208117604646206ab2fc7364ab9420f6a0654987027fe1acb5cf74",
+    "threeCensusesVerified": true
+  },
+  "documentationClosure": {
+    "passed": true,
+    "wholeFiles": 10,
+    "tests": 377,
+    "pass": 376,
+    "todo": 1,
+    "newlyPassing": 23,
+    "previouslyPassingRepeatedControls": 353,
+    "caseIdentitiesExactlyEqual": true,
+    "uniqueCasesAdded": 0
+  },
+  "appAvailability": {
+    "wholeFiles": 30,
+    "tests": 790,
+    "allExecutedAndPassed": true,
+    "originalCounts": {
+      "files": 30,
+      "tests": 790,
+      "pass": 773,
+      "fail": 17,
+      "skip": 0,
+      "todo": 0,
+      "other": 0
+    },
+    "composedCounts": {
+      "files": 30,
+      "tests": 790,
+      "pass": 790,
+      "fail": 0,
+      "skip": 0,
+      "todo": 0,
+      "other": 0
+    }
+  },
+  "reusedAppCoverage": {
+    "sourceFiles": 1092,
+    "dependencyInputs": 28,
+    "compiler": {
+      "errors": 418,
+      "files": 54,
+      "buckets": 109,
+      "newExecution": false
+    },
+    "nativePrograms": 32,
+    "newExecution": false
+  },
+  "cleanup": {
+    "exactOwnContainersRemoved": 2,
+    "ownNetworkRemoved": 1,
+    "baselinePreserved": 10,
+    "privateDatabases": 0,
+    "otherClients": 0,
+    "activeTestOrBrowserProcesses": 0,
+    "imagesRemoved": 0,
+    "volumesRemoved": 0
+  },
+  "hygiene": {
+    "privacyCandidates": [],
+    "formatFailures": [],
+    "releaseTrueAssertions": [],
+    "nativeGitWhitespacePassed": true,
+    "nativeGitExitCode": 1
+  },
+  "failures": [],
+  "releasePassed": false,
+  "featureLanePushApproved": false,
+  "mainSourcePublishApproved": false,
+  "limits": [
+    "No monolithic all-green API run is claimed; the original21-command run remains false and Q23 retains one failing case.",
+    "The377-case whole-file documentation closure replaces matching prior outcomes;353 repeated passing controls and one TODO are not added again.",
+    "App418 compiler and32 programs are inherited unchanged-domain coverage, not fresh executions.",
+    "No tests, source changes, container actions, staging, provider/auth/network calls, push or Jira changes were performed by this intake.",
+    "Approval covers this final105-file normalized documentation archive only; remaining planner Q23 repairs and final release/CI/deployment/staging gates remain outside it."
+  ],
+  "reviewPreparationHistory": {
+    "priorReviewPath": "C:/w/admin640-api-archive-independent-review-20261026.json",
+    "priorReviewSha256": "e857f338e71ce77c7f974f7ee89d0f07e878928e25e2bee76b5431f76bc4cb62",
+    "priorPassed": false,
+    "priorFinding": "ACTUAL_30_FILE_790_APP_AVAILABILITY",
+    "correction": "The first reviewer checked the composed all-pass claim against original-only shard records. Seventeen documented input failures in six of these files are replaced by the exact whole-file closure. Case identities and aggregate arithmetic are unchanged; no archive, source, assertions or runtime results changed."
+  }
+}

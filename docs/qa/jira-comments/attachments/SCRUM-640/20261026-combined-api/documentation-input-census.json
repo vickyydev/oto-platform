@@ -1,0 +1,526 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "read-only-frozen-api-test-input-census",
+  "checkedAt": "2026-10-26T13:35:50.111Z",
+  "sourceSha": "d17fb664678d01832d2a351ffa0840719da9f69e",
+  "sourceWorktree": "C:/w/admin640-api-verification",
+  "apiTestFilesInspected": 384,
+  "apiTestRuntimeAndSupportFilesInspected": 638,
+  "filesystemCallSitesCatalogued": 347,
+  "parser": {
+    "path": "C:\\w\\admin-operator-switch\\node_modules\\.pnpm\\typescript@5.9.3\\node_modules\\typescript\\lib\\typescript.js",
+    "version": "5.9.3",
+    "sha256": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675"
+  },
+  "frozenManifest": {
+    "path": "C:/w/admin640-api-verification-20261026/source-manifest.json",
+    "sha256": "31ed84b3b69fffe8c27330c3628b734381846e9500e5423adfa31b8dd31f4acf",
+    "files": 3811
+  },
+  "requiredAddedInputs": [
+    {
+      "path": "docs/architecture/ARCHITECTURE.md",
+      "sha256": "3f5597b9c0dbd0d77664481b790c1b848cddab172f5da8206d7bd60af6ec158f",
+      "bytes": 56803,
+      "trackedAtSource": true,
+      "matchesExactD17Blob": true,
+      "inFrozenManifest": false,
+      "consumers": [
+        {
+          "file": "apps/api/test/offline-capability.test.ts",
+          "line": 125
+        }
+      ]
+    },
+    {
+      "path": "docs/ops/COUNTER_VOUCHERS.md",
+      "sha256": "600175b62064e0e3b1f3100ea40fa6f0a0799ae403d0e5991d97a1367239fe2a",
+      "bytes": 9000,
+      "trackedAtSource": true,
+      "matchesExactD17Blob": true,
+      "inFrozenManifest": false,
+      "consumers": [
+        {
+          "file": "apps/api/test/vouchers.test.ts",
+          "line": 2276
+        },
+        {
+          "file": "apps/api/test/vouchers.test.ts",
+          "line": 2875
+        }
+      ]
+    },
+    {
+      "path": "docs/progress/plans/events-kiosk/PLAN.md",
+      "sha256": "dc19e298e8e1531bae1933835d1229751492ab99d291419cdac9954833e6c42d",
+      "bytes": 35968,
+      "trackedAtSource": true,
+      "matchesExactD17Blob": true,
+      "inFrozenManifest": false,
+      "consumers": [
+        {
+          "file": "apps/api/test/s220-e5-hazards.test.ts",
+          "line": 98
+        },
+        {
+          "file": "apps/api/test/s220-e5-review.test.ts",
+          "line": 1070
+        }
+      ]
+    },
+    {
+      "path": "docs/progress/plans/otoapp-lift/PLAN.md",
+      "sha256": "b460d27706430353d498ed4bd6740745b3c694107d418b5b5e5ce10672f57855",
+      "bytes": 206938,
+      "trackedAtSource": true,
+      "matchesExactD17Blob": true,
+      "inFrozenManifest": false,
+      "consumers": [
+        {
+          "file": "apps/api/test/s217b-r4a-review.test.ts",
+          "line": 1360
+        },
+        {
+          "file": "apps/api/test/s217b-r4b-review.test.ts",
+          "line": 245
+        },
+        {
+          "file": "apps/api/test/s217b-r5-review.test.ts",
+          "line": 153
+        },
+        {
+          "file": "apps/api/test/s217b-r5.test.ts",
+          "line": 61
+        },
+        {
+          "file": "apps/api/test/s217b-r6-review.test.ts",
+          "line": 398
+        },
+        {
+          "file": "apps/api/test/s217b-r6.test.ts",
+          "line": 188
+        }
+      ]
+    }
+  ],
+  "wholeAffectedFiles": [
+    {
+      "file": "apps/api/test/offline-capability.test.ts",
+      "sha256": "9ec6c8fe90a32b81927296e77fc5a173c29b05ad6737c34e855e71d7a8d62776",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/s217b-r4a-review.test.ts",
+      "sha256": "027439e0ca632919d9e33d8c9c5aa1d00332138acfd11981b2283f34eaf72103",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/s217b-r4b-review.test.ts",
+      "sha256": "41c27e64efb228a83491c2788b91bbe6335838ed30b1397960d14f72ad447f73",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/s217b-r5-review.test.ts",
+      "sha256": "3c0f510b3925f8e3ffbf26347573f02a4bb3863dbc2cd9303aceaf00694de1e5",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/s217b-r5.test.ts",
+      "sha256": "15a31e3e4f11c00cdd6c2e320955530cb6d09494a281180f52c5b4a7fd1029a1",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/s217b-r6-review.test.ts",
+      "sha256": "e0b9218c81587db9ef5c07f507dfb46693c7e85ebbf2cd0252afda25a750cd7b",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/s217b-r6.test.ts",
+      "sha256": "8c2273aa1c390ce99e0de5b1f80fa42d228d6f195fb6cfdc4a2ce7fc422d0c2f",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/s220-e5-hazards.test.ts",
+      "sha256": "93b3b2c8a751b19acd3eed01e36a5f6e3aa45109d5f7a6a3be84b2be0e681f12",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/s220-e5-review.test.ts",
+      "sha256": "c52c5f75c93a48bf1415a8325c5ac04299651a0602d04a873e80069548d016e6",
+      "inFrozenManifest": true
+    },
+    {
+      "file": "apps/api/test/vouchers.test.ts",
+      "sha256": "0ad067abc85856327b4d5242a5003e2aa3ca5d9be2bd863991277c7f6934bc7c",
+      "inFrozenManifest": true
+    }
+  ],
+  "alreadyIncludedFixtureGroups": [
+    {
+      "prefix": "apps/api/test/fixtures/assistant/",
+      "trackedFiles": 11,
+      "allAlreadyFrozen": true,
+      "paths": [
+        {
+          "path": "apps/api/test/fixtures/assistant/Q1.json",
+          "sha256": "cb972c64b158a641b88b47264d257bcb3092fb01e29af43b4f4de448c266791f"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q10.json",
+          "sha256": "86a076a24d66ed2b605fd4f771c5438c36c7ab173ea5850aca52df177e6c39eb"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q2.json",
+          "sha256": "d2c55954e3f2f09b9af887af67987fd5db1b3b7f4df58579fd8cabc4c13324b6"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q3.json",
+          "sha256": "f17656d6e51f160f6abb18e8d515cd7243d284ecab3da2f9d5f0850f9bde7a59"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q4.json",
+          "sha256": "5f8afb14ec6758251ac89f49c8574d415ff3336b81e8a7f8244cfc824cd80dd8"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q5.json",
+          "sha256": "c098cec0cb7544b9ae32a653b08391be6a0738ff17577a2f7f2643adbaec534d"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q6.json",
+          "sha256": "5a9654c1bdc2ffc74611facc20cf764f04f375d014bb5df6409f44f9d88be2a9"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q7.json",
+          "sha256": "3e41cbf1843037d9542552a1e2ccecdee485bb6b4ffc2a29f6c136ca1135b6c1"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q8.json",
+          "sha256": "7b0cce0d6534c3b2734977672440868663b7ad00c94c642449f429bccae6f961"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q9.json",
+          "sha256": "df4f8bc2d2d0a05319d46e1e6ced066fc41c9f1a63f98eb3bc8bc83a0e0cf8f7"
+        },
+        {
+          "path": "apps/api/test/fixtures/assistant/Q9R.json",
+          "sha256": "88d0b2bbafa2b9a1fa4f6caddae11aa7abef1f1088b08d98a7fbfd20f51c471c"
+        }
+      ]
+    },
+    {
+      "prefix": "apps/api/test/fixtures/inbox-ai/",
+      "trackedFiles": 11,
+      "allAlreadyFrozen": true,
+      "paths": [
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G1.json",
+          "sha256": "8250826405446f90505ce63b994202d818dce8b7b104cd867c03baca2aea2c3b"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G17.json",
+          "sha256": "d965f0f6e1b45b97319bb30f380d885a180eb45a869d526b4d04f0caebb88f27"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G18.json",
+          "sha256": "96653a9cc864c865e925a5e37359258b9b7570f266a58c92fba015552d2e3c8e"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G2.json",
+          "sha256": "f64fb063973b1d2d8baa2c9488ad0f6c0886bb6aee8b861d32ace38c56affe81"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G3.json",
+          "sha256": "df2c77dcd9067c46a4c8e4eb0ef9950ee2ab36fbaf6b959d9e98c733003db300"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G4.json",
+          "sha256": "cd26692b151a55d00ea9e63432901fc66887ac72c4a16134dbd30acbad5b41c2"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G5.json",
+          "sha256": "60ce7f5f6d5c9b71e6074e3f11fdccc4585810fe1de11ce70693b57e654c79bd"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G6.json",
+          "sha256": "aebb30778aa125578beca156ba9a55474c3616b544ed185d338defc1c8c808d0"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G7.json",
+          "sha256": "fb62b04a8563bc4b67db55b2eb760698cb6c9f307e2f41b55f00a061ceeeb826"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G8.json",
+          "sha256": "cefc8014bc1824e485704355960fbd65b8d0fe2d9a4582d5d0fca6eebe9ab762"
+        },
+        {
+          "path": "apps/api/test/fixtures/inbox-ai/G9.json",
+          "sha256": "50ce27114bf20b19d2ca174fec4e893285e9b3d5df8e72a8c706b1b698b66749"
+        }
+      ]
+    },
+    {
+      "prefix": "packages/print/test/fixtures/",
+      "trackedFiles": 51,
+      "allAlreadyFrozen": true,
+      "paths": [
+        {
+          "path": "packages/print/test/fixtures/adult-band.tspl200.bin",
+          "sha256": "931cb0e208b888fc28bb60c2425fdd7452906df7bcd6637fddb5d4aaf8e0bf93"
+        },
+        {
+          "path": "packages/print/test/fixtures/adult-band.tspl200.layout.json",
+          "sha256": "f5f9295393672a779199663acca5498ff97d9c29d5e1551f4bc6cdab83236d88"
+        },
+        {
+          "path": "packages/print/test/fixtures/adult-band.tspl200.png",
+          "sha256": "911db3ab843366c09fdf5969bde9cf0685dd986c339c980dab7be4d80aa2cd3b"
+        },
+        {
+          "path": "packages/print/test/fixtures/adult-band.tspl400.bin",
+          "sha256": "a93efb296e6d502c4ccd22af94a572d49284d5191f7c5bc1cad735af2de0a69b"
+        },
+        {
+          "path": "packages/print/test/fixtures/adult-band.tspl400.layout.json",
+          "sha256": "8064573bf2250baffa0a2db10c5eeb3285f0b618c0d6095ac200a8bb1c3002c2"
+        },
+        {
+          "path": "packages/print/test/fixtures/adult-band.tspl400.png",
+          "sha256": "df8926826a9acb6de4e6abe24b2930e35729121045ec4776c55a5ffe2548028b"
+        },
+        {
+          "path": "packages/print/test/fixtures/bar.escpos576.bin",
+          "sha256": "6a7067c006e43a890f3f3309b8c8e117128a1230407ab9168644cfecb07fc24c"
+        },
+        {
+          "path": "packages/print/test/fixtures/bar.escpos576.layout.json",
+          "sha256": "3ba6923c224b6ef08c45eae5a521f6f88c26047b55e79ebcfd76bc760bc35e56"
+        },
+        {
+          "path": "packages/print/test/fixtures/bar.escpos576.png",
+          "sha256": "3b1b791051626182696be3e66d8b779bc2e415d9bc7171566c313e20c26006be"
+        },
+        {
+          "path": "packages/print/test/fixtures/booth-voucher.escpos512.bin",
+          "sha256": "42b44b1b08050f9e62a5f1d5be7669f34b5912f6b8a0e93eae355e99ba55adcf"
+        },
+        {
+          "path": "packages/print/test/fixtures/booth-voucher.escpos512.layout.json",
+          "sha256": "4538ba82f811de289e4f98011273c7cb754ed13f04635ec10c20a7556d6e247d"
+        },
+        {
+          "path": "packages/print/test/fixtures/booth-voucher.escpos512.png",
+          "sha256": "88e5183ab0924107ca030ef5bd7725acf1427fa65d6ff15f94231c490e4bfcec"
+        },
+        {
+          "path": "packages/print/test/fixtures/booth-voucher.escpos576.bin",
+          "sha256": "ae990cebc8106c62037c41e65c3a923ed4641f5146c89c5ddc2bb05aa50ebdfa"
+        },
+        {
+          "path": "packages/print/test/fixtures/booth-voucher.escpos576.layout.json",
+          "sha256": "1aada09b25d1e576169485697da13f1228dad7424a559cbdbf9f717a472c3366"
+        },
+        {
+          "path": "packages/print/test/fixtures/booth-voucher.escpos576.png",
+          "sha256": "e2b483e93c8582885457dc0dffe6db959025314e204c13f6d5a7a505777074e8"
+        },
+        {
+          "path": "packages/print/test/fixtures/credit-voucher.escpos576.bin",
+          "sha256": "1cbfe8d98847332929bded71044774eb67ff0d19bed9a8a63170b3614cfb4f18"
+        },
+        {
+          "path": "packages/print/test/fixtures/credit-voucher.escpos576.layout.json",
+          "sha256": "c7aa5a596de5cf26b4d992d9862dbbba17d056b9098a8126c4338e7c1b5bac52"
+        },
+        {
+          "path": "packages/print/test/fixtures/credit-voucher.escpos576.png",
+          "sha256": "6c04a5a592d969663a705ba25be46d2a29f0cbdae276ac4c37663484632e3fb6"
+        },
+        {
+          "path": "packages/print/test/fixtures/item-voucher.escpos576.bin",
+          "sha256": "44524ab89266d36348aa9bcc39ae5d99c1d62f47ddbbde62e5b8dc3fea844500"
+        },
+        {
+          "path": "packages/print/test/fixtures/item-voucher.escpos576.layout.json",
+          "sha256": "c971b6f813dad119845e780848d1dd30ee29ad7efadb29cd75006b69dc470dcd"
+        },
+        {
+          "path": "packages/print/test/fixtures/item-voucher.escpos576.png",
+          "sha256": "3c585e669bd7b837440fe0d952bb15faa582b2c5bca190e6c9f51683355feb0a"
+        },
+        {
+          "path": "packages/print/test/fixtures/kids-band.tspl200.bin",
+          "sha256": "b89617e051ff9a7915a477f020982d85a0148fca4a1604d3ea14c772be17931c"
+        },
+        {
+          "path": "packages/print/test/fixtures/kids-band.tspl200.layout.json",
+          "sha256": "4c4b548f993acc7552e91bb5cb589edceece83e1c4913405580d8ac44488be33"
+        },
+        {
+          "path": "packages/print/test/fixtures/kids-band.tspl200.png",
+          "sha256": "9324910a34bd2debe70d010190252e9de3e036290c6b28db7721b01c96796307"
+        },
+        {
+          "path": "packages/print/test/fixtures/kids-band.tspl400.bin",
+          "sha256": "916eecb29288424585041a7bf5cd702d2cfa88434f8a3a59fa5db62cd116b829"
+        },
+        {
+          "path": "packages/print/test/fixtures/kids-band.tspl400.layout.json",
+          "sha256": "d2c6951271d3c87cc568bb3aa04042405ad31064f35eddf0a493967939eac6b3"
+        },
+        {
+          "path": "packages/print/test/fixtures/kids-band.tspl400.png",
+          "sha256": "81b6df96bee5a055114b1d589d10e513a263276af87b298477d6cf25266bfe11"
+        },
+        {
+          "path": "packages/print/test/fixtures/kitchen.escpos512.bin",
+          "sha256": "a41daeca78d01ddc2a6c72a3754818e88fbd934bee0599d11562021fedfccfd6"
+        },
+        {
+          "path": "packages/print/test/fixtures/kitchen.escpos512.layout.json",
+          "sha256": "86c40e7cd3285d6c1237bc4fc05bf6ceb2f11073c72faa06a986c29949c0fff2"
+        },
+        {
+          "path": "packages/print/test/fixtures/kitchen.escpos512.png",
+          "sha256": "6b384e535f7fec501f17d5715c9a6e8a48e919c529aa2ca992636a982d4c5f7a"
+        },
+        {
+          "path": "packages/print/test/fixtures/kitchen.escpos576.bin",
+          "sha256": "559f24251d37f7cc31ee7e10d87c8bacc9514ac10c684dec29291664932a6d94"
+        },
+        {
+          "path": "packages/print/test/fixtures/kitchen.escpos576.layout.json",
+          "sha256": "f534a35aaad4926f61d90650a47461cfa7f93a7381ecd4255647542e0276fede"
+        },
+        {
+          "path": "packages/print/test/fixtures/kitchen.escpos576.png",
+          "sha256": "ce517c0018eb8291f5f5c1af4953db6b66c7fdf8fbcac883dc5094aaed6b2148"
+        },
+        {
+          "path": "packages/print/test/fixtures/receipt.escpos512.bin",
+          "sha256": "b2951eb088f68d937ad63578b3678fec5da9583c819b127686851bb421d02b49"
+        },
+        {
+          "path": "packages/print/test/fixtures/receipt.escpos512.layout.json",
+          "sha256": "71448b340236ba92c902c6267a3175c0bd5a675182beadaf94441f6b6bc36cb2"
+        },
+        {
+          "path": "packages/print/test/fixtures/receipt.escpos512.png",
+          "sha256": "579d5a1a5f14a3650634e4b29bbfc956f1fda0eb3c545d9f84392e0321b9cd3a"
+        },
+        {
+          "path": "packages/print/test/fixtures/receipt.escpos576.bin",
+          "sha256": "7b9db39e25d6d92c88f6fe0fddd53cc89d6ed3d0b9753090a93ea292e298edb0"
+        },
+        {
+          "path": "packages/print/test/fixtures/receipt.escpos576.layout.json",
+          "sha256": "fa6864dcf0c95cda80535616005b57e69c8f5d6d5ab3a43d1bf9e4e9dd8eb1a8"
+        },
+        {
+          "path": "packages/print/test/fixtures/receipt.escpos576.png",
+          "sha256": "6e16c3091b53d76c2017a64ff8abff4863389ab0680d77792b5f8a943a8f0a52"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.escpos512.bin",
+          "sha256": "da6428b2e39da7d096bda93392a184316582c7ea1f89dbf657c268d8e5e41213"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.escpos512.layout.json",
+          "sha256": "a55dddeb8d9ce1e0e46bf8196f34a7074a9dff40142e74839b713a5273d92253"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.escpos512.png",
+          "sha256": "73e97b8a332e6299e19f29a31f2af06a62beea933aa98a3a381acff6ffcbc6d1"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.escpos576.bin",
+          "sha256": "01401bc8991aa489fd6d139dab912603dc256ee312bbdd038afa5dcae1e0cf8e"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.escpos576.layout.json",
+          "sha256": "600ecedc2cb666101f5a386016514d0f148239f374ec116fb455cd25ff6d7dbc"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.escpos576.png",
+          "sha256": "b614a5e40ad556f9d27f90e025196123e36df735bcf4b78ab723246649cdfe70"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.tspl200.bin",
+          "sha256": "fcd9ea32283fd865ce8208e6312c94558f377fa9b5e31c711d1b7ecc605289bf"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.tspl200.layout.json",
+          "sha256": "cae0ead6f089a8f12e01d13ca95f4c2b30cafece0204d110346793e03395b511"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.tspl200.png",
+          "sha256": "00fb76098b56a7d58219ea2f0cc7435f40833a97b48e7768700939ade74e74fa"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.tspl400.bin",
+          "sha256": "4999742cddb04f7350d477a1e13e00981df05de572ec4184573853e0ce275346"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.tspl400.layout.json",
+          "sha256": "94063423c962344f00124c6a5d4766fccfd8052f3f2de729863dac5128d1e290"
+        },
+        {
+          "path": "packages/print/test/fixtures/test-page.tspl400.png",
+          "sha256": "2128dc2813c9d0ef41e4860b964ec54e6ead3fff8cd8899016ede60d171cc326"
+        }
+      ]
+    }
+  ],
+  "rootInputsAlreadyIncluded": [
+    ".github/workflows/ci.yml",
+    "render.yaml"
+  ],
+  "noAdditionalTrackedRootOrFixtureOmissionIdentified": true,
+  "dynamicReadAssessment": [
+    {
+      "kind": "recorded golden paths",
+      "consumers": [
+        "apps/api/test/assistant-golden.test.ts:54-58",
+        "apps/api/test/inbox-ai-golden.test.ts:38-43"
+      ],
+      "finding": "The runtime id.json paths resolve under the two tracked fixture directories listed above. All22 existing recordings are already frozen; native existsSync/skip behavior is unchanged."
+    },
+    {
+      "kind": "recursive source scans",
+      "consumers": [
+        "apps/api/test/route-source.ts",
+        "apps/api/test/assistant-engine.test.ts",
+        "apps/api/test/assistant-otoapp.test.ts",
+        "apps/api/test/s216-r6-sweep.test.ts",
+        "apps/api/test/s217b-r1.test.ts",
+        "apps/api/test/s217b-r3-review.test.ts",
+        "apps/api/test/g17-round0-review.test.ts",
+        "apps/api/test/otoapp-events-seam.test.ts"
+      ],
+      "finding": "Inspected roots are apps/, packages/ and their code/test/migration subdirectories, all already selected. No additional omitted root was identified."
+    },
+    {
+      "kind": "generated test programs and scratch files",
+      "finding": "App runtime suites create temporary scripts/files/uploads and read copied committed app migrations. These are generated during the native tests, not tracked inputs to copy from docs or private .env. Application dependencies, browser executables and own database URLs remain separately bound runtime prerequisites."
+    },
+    {
+      "kind": "payment fixture comment",
+      "consumer": "apps/api/test/payments-redaction.test.ts",
+      "finding": "The terminal fixture path appears in commentary; the test uses an inline recorded constant. It does not require a new excluded vendor/ fixture."
+    },
+    {
+      "kind": "Git metadata",
+      "consumer": "apps/api/test/s217b-r1-review.test.ts:1304-1305",
+      "finding": "The CI-path test supplies its own shell git stub. No native .git directory dependency was identified for this closure."
+    }
+  ],
+  "recommendedClosure": "After all original shards are terminal, bind a separate four-file docs input manifest at these exact d17 hashes; stage only those explicit tracked files through the coordinator. Preserve original failed shard receipts and rerun whole affected test files against the unchanged source/test inputs. Do not mutate an active frozen worker or relabel the original run green.",
+  "unresolvedDynamicReads": "Static AST/source review cannot prove arbitrary future filesystem accesses inside generated strings. No unresolved access requiring another excluded tracked root/input was found; actual whole-file follow-up remains the execution evidence.",
+  "actions": {
+    "testExecution": false,
+    "workerMutation": false,
+    "sourceEdits": false,
+    "repoCopies": false,
+    "DockerCalls": false,
+    "networkCalls": false
+  }
+}

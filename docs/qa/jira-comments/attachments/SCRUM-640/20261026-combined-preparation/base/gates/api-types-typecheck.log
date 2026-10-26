@@ -1,0 +1,3 @@
+
+> @oto/api-types@0.1.0 typecheck C:\w\admin-operator-switch\packages\api-types
+> tsc -p tsconfig.json

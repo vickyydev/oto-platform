@@ -1,0 +1,44 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "offline-collector-and-proof-calibration",
+  "startedAt": "2026-10-26T12:42:34.749Z",
+  "completedAt": "2026-10-26T12:42:35.033Z",
+  "exitCode": 0,
+  "before": {
+    "C:/w/admin640-staging-proof-executor.test.mjs": "78884ac824dcbf3db6a7e9c3df624914fcb077477c91ab795a1c1b5b20a9921b",
+    "C:/w/admin640-staging-proof-review.test.mjs": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+    "C:/w/admin640-staging-proof-account-eligibility.test.mjs": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4",
+    "C:/w/admin640-staging-proof-collectors.test.mjs": "575432df2c21ef9144e909ef61da974fcabb4acf4d5a09cdb5d95f9027397667",
+    "C:/w/admin640-staging-proof-executor.mjs": "6cf77d860833aaeb01826c5ea941f6c6dc02dfd2bd442251ad81d02511480c5a",
+    "C:/w/admin640-staging-proof-audit-draft.mjs": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+    "C:/w/admin640-staging-proof-release-collector.mjs": "1aaea6c1cb79b7d56da1ff47c9ceb121beb3edf3e5aa6976f3276d553294d88d",
+    "C:/w/admin640-staging-proof-metadata-collector.mjs": "4ac656cb67c34596c3f5fd1e4449518d82f36df678a3dd04c55e5d58154e144b",
+    "C:/w/admin640-staging-contract-draft.mjs": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563"
+  },
+  "after": {
+    "C:/w/admin640-staging-proof-executor.test.mjs": "78884ac824dcbf3db6a7e9c3df624914fcb077477c91ab795a1c1b5b20a9921b",
+    "C:/w/admin640-staging-proof-review.test.mjs": "93e94ff10977dfcf54f968552eb49e60803b7c12e428d111a1b70fd8bf7fb53f",
+    "C:/w/admin640-staging-proof-account-eligibility.test.mjs": "3c35843d719bb9fa446b9a5f2202815b44cc72fa53cd380d1a84aaaa650440b4",
+    "C:/w/admin640-staging-proof-collectors.test.mjs": "575432df2c21ef9144e909ef61da974fcabb4acf4d5a09cdb5d95f9027397667",
+    "C:/w/admin640-staging-proof-executor.mjs": "6cf77d860833aaeb01826c5ea941f6c6dc02dfd2bd442251ad81d02511480c5a",
+    "C:/w/admin640-staging-proof-audit-draft.mjs": "620834cd98eaca9305a4cfdc94074f8bd54023a9c8e6a3479f7d5955eef75636",
+    "C:/w/admin640-staging-proof-release-collector.mjs": "1aaea6c1cb79b7d56da1ff47c9ceb121beb3edf3e5aa6976f3276d553294d88d",
+    "C:/w/admin640-staging-proof-metadata-collector.mjs": "4ac656cb67c34596c3f5fd1e4449518d82f36df678a3dd04c55e5d58154e144b",
+    "C:/w/admin640-staging-contract-draft.mjs": "f3a0d90a0622c8cc23dafec1888ffb8049526a924e464cc242c41e1b08735563"
+  },
+  "inputsUnchanged": true,
+  "parser": {
+    "path": "C:/w/admin-operator-switch/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/typescript.js",
+    "version": "5.9.3",
+    "sha256": "3ae902c92cc44dace175c0e69e13a4b0899f6983c6121d76b9ab8dd5795e7675"
+  },
+  "parserUnchanged": true,
+  "logSha256": "da9aa10e3f6099a7f9d225d11960c6f470fefd12c49c68379c12f0731ca11ae7",
+  "staging": false,
+  "noAuth": true,
+  "noRealNetwork": true,
+  "noBrowser": true,
+  "noSQL": true,
+  "noJobs": true,
+  "noRepositoryEdits": true
+}

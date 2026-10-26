@@ -1,0 +1,114 @@
+// Inert. Only explicit coordinator collection reads metadata/public bytes; never signs in or writes Render.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { WORKTREE, ORIGIN, hash, digest, exact, need, codeOf, publicPath, verifyLocalSource, releaseFacts } from './admin640-staging-proof-executor.mjs';
+const PRIVATE = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos', TIMEOUT = 30_000, MAX = 8_000_000, TOTAL = 64_000_000;
+const FONT = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
+const hex = v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+export function validateReleaseInput(p) {
+  need(exact(p, ['approved', 'ticket', 'sourceSha', 'ciRunId', 'deployments', 'sourceManifestSha256', 'runtimeBindingsSha256', 'routeSha256', 'localRelease', 'helperSha256', 'auditHelperSha256', 'contractSha256', 'collectorSha256']), 'EXACT_RELEASE_COLLECTION_INPUT_REQUIRED');
+  need(p.approved === true && p.ticket === 'SCRUM-640' && /^[a-f0-9]{40}$/.test(p.sourceSha ?? '') && !['0'.repeat(40), '950646674fde66333f911401af82f956f58188b0', '7af05a36b1bbd5463c4c5ebae0741542e9744924'].includes(p.sourceSha)
+    && /^[1-9][0-9]*$/.test(String(p.ciRunId)) && ['sourceManifestSha256', 'runtimeBindingsSha256', 'routeSha256', 'helperSha256', 'auditHelperSha256', 'contractSha256', 'collectorSha256'].every(k => hex(p[k])), 'FINAL_RELEASE_BINDINGS_REQUIRED');
+  need(Array.isArray(p.deployments) && p.deployments.length === 2 && p.deployments.every((d, i) => exact(d, ['name', 'serviceId', 'id', 'finishedAt', 'sourceSha'])
+    && d.name === ['oto-api-staging', 'oto-console-staging'][i] && /^srv-[a-z0-9]+$/.test(d.serviceId) && /^dep-[a-z0-9]+$/.test(d.id) && Number.isFinite(Date.parse(d.finishedAt)) && d.sourceSha === p.sourceSha), 'EXACT_API_CONSOLE_RELEASE_REQUIRED');
+  need(exact(p.localRelease, ['path', 'sha256']) && /^docs\/qa\/jira-comments\/attachments\/SCRUM-640\/[A-Za-z0-9_./-]+\.json$/.test(p.localRelease.path) && !p.localRelease.path.split('/').includes('..') && hex(p.localRelease.sha256), 'EXACT_COMMITTED_LOCAL_RELEASE_REQUIRED');
+  return p;
+}
+const command = (exe, args, cwd = WORKTREE) => { const r = spawnSync(exe, args, { cwd, encoding: 'utf8', timeout: TIMEOUT, maxBuffer: 5_000_000, stdio: ['ignore', 'pipe', 'pipe'] }); need(r.status === 0 && !r.signal, 'BOUNDED_METADATA_COMMAND_FAILED'); return r.stdout; };
+async function json(response) { need(response.status === 200 && response.body, 'METADATA_200_REQUIRED'); const chunks = []; let n = 0;
+  for await (const part of response.body) { n += part.length; need(n <= 5_000_000, 'METADATA_BYTE_LIMIT'); chunks.push(part); }
+  try { return JSON.parse(Buffer.concat(chunks)); } catch { throw Error('METADATA_JSON_REQUIRED'); }
+}
+export async function releaseTools(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_METADATA_EXECUTE_REQUIRED'); const p = validateReleaseInput(input);
+  need(hash(fs.readFileSync(fileURLToPath(import.meta.url))) === p.collectorSha256 && hash(fs.readFileSync('C:/w/admin640-staging-proof-executor.mjs')) === p.helperSha256, 'FROZEN_RELEASE_HELPERS_REQUIRED');
+  const local = () => verifyLocalSource(p, command); local();
+  const { need: secret } = await import(pathToFileURL(path.join(PRIVATE, 'scripts/agent/env.mjs')).href);
+  const renderGet = async suffix => json(await fetch('https://api.render.com/v1' + suffix, { redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT), headers: { authorization: `Bearer ${secret('RENDER_API_KEY')}`, accept: 'application/json' } }));
+  const gate = async () => { const binding = local(), ci = JSON.parse(command('gh', ['api', `repos/vickyydev/oto-platform/actions/runs/${p.ciRunId}`])), jobs = JSON.parse(command('gh', ['api', `repos/vickyydev/oto-platform/actions/runs/${p.ciRunId}/jobs?per_page=100`])), services = await renderGet('/services?limit=50'), latest = {};
+    for (const d of p.deployments) latest[d.serviceId] = await renderGet(`/services/${d.serviceId}/deploys?limit=1`);
+    releaseFacts(p, ci, jobs, services, latest); return { at: new Date().toISOString(), sourceSha: p.sourceSha, ciRunId: String(p.ciRunId), deployments: p.deployments, binding, metadataSha256: digest({ ci, jobs, services, latest }) }; };
+  return { gate, renderGet, secret, local };
+}
+
+/** Same TypeScript AST rules as the reviewed634/637 collectors: permission strings/API templates are not imports/assets. */
+export function jsReferences(text, ts) {
+  const root = ts.createSourceFile('public.js', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS); need(root.parseDiagnostics.length === 0, 'PUBLIC_JS_PARSE_FAILED'); const refs = [];
+  const literal = n => n && (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n));
+  const visit = n => {
+    if (ts.isImportDeclaration(n) || ts.isExportDeclaration(n) && n.moduleSpecifier) { need(literal(n.moduleSpecifier), 'STATIC_MODULE_LITERAL_REQUIRED'); refs.push({ value: n.moduleSpecifier.text, viteRoot: false }); }
+    if (ts.isCallExpression(n) && n.expression.kind === ts.SyntaxKind.ImportKeyword) { need(n.arguments.length >= 1 && n.arguments.length <= 2 && literal(n.arguments[0]), 'COMPUTED_MODULE_REFUSED'); refs.push({ value: n.arguments[0].text, viteRoot: false }); }
+    if (ts.isNewExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'URL' && n.arguments?.length === 2) {
+      const base = n.arguments[1], meta = ts.isPropertyAccessExpression(base) && base.name.text === 'url' && ts.isMetaProperty(base.expression) && base.expression.keywordToken === ts.SyntaxKind.ImportKeyword;
+      if (meta) { need(literal(n.arguments[0]), 'COMPUTED_ASSET_REFUSED'); refs.push({ value: n.arguments[0].text, viteRoot: false }); }
+    }
+    if (literal(n) && (/^\/?assets\//.test(n.text) || /^(?:\/|\.\.?\/|https?:\/\/)/.test(n.text) && /\.(?:js|css|woff2?|ttf|svg|png|webp|jpe?g|gif|avif|ico|wasm)(?:[?#].*)?$/.test(n.text))) refs.push({ value: n.text, viteRoot: true });
+    if (ts.isTemplateExpression(n) && /^\/?assets\//.test(n.head.text)) need(false, 'COMPUTED_ASSET_REFUSED');
+    ts.forEachChild(n, visit);
+  }; visit(root); return refs;
+}
+export function resolvePublic(raw, base, viteRoot = false) {
+  if (typeof raw === 'string' && (raw.startsWith('data:') || raw.startsWith('#'))) return null;
+  need(typeof raw === 'string' && raw.length > 0 && raw.length < 2048 && !/[\\%\s]/.test(raw) && !raw.split(/[/?#]/).includes('..'), 'PUBLIC_REFERENCE_REFUSED');
+  const u = new URL(viteRoot && raw.startsWith('assets/') ? '/' + raw : raw, ORIGIN + base);
+  need(u.origin === ORIGIN && !u.username && !u.password && !u.search && !u.hash && publicPath(u.pathname) && u.pathname !== '/', 'PUBLIC_REFERENCE_REFUSED'); return u.pathname;
+}
+export async function collectAssets(input, outputFile, { explicitExecute = false } = {}) {
+  need(explicitExecute === true && /^C:\/w\/admin640-staging-proof-assets-[A-Za-z0-9_-]+\.json$/.test(outputFile ?? '') && !fs.existsSync(outputFile), 'EXCLUSIVE_EXPLICIT_ASSET_COLLECTION_REQUIRED');
+  const p = validateReleaseInput(input), tools = await releaseTools(p, { explicitExecute: true }), before = await tools.gate(), startedAt = new Date().toISOString();
+  const require = createRequire(path.join(WORKTREE, 'apps/console/package.json')), parserPath = require.resolve('typescript'), ts = require(parserPath), parser = { path: parserPath.replaceAll('\\', '/'), version: ts.version, sha256: hash(fs.readFileSync(parserPath)) };
+  const { launch } = await import(pathToFileURL(path.join(PRIVATE, 'scripts/agent/evidence.mjs')).href);
+  const queue = [], queued = new Set(), assets = new Map(), rasterReads = []; let total = 0;
+  const enqueue = (raw, base, viteRoot = false) => { const pathname = resolvePublic(raw, base, viteRoot); if (!pathname) return; if (!queued.has(pathname)) { queued.add(pathname); queue.push(pathname); } need(queued.size < 3000, 'PUBLIC_CLOSURE_COUNT_LIMIT'); };
+  async function raster(pathname) {
+    const browser = await launch(); let context, first, bytes, mime, pending = 0, refused = false;
+    try { context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' }); const page = await context.newPage();
+      await page.route('**/*', async route => { pending++; try { const r = route.request(), headers = await r.allHeaders();
+        need(r.url() === ORIGIN + pathname && r.method() === 'GET' && r.resourceType() === 'image' && r.frame() === page.mainFrame() && !headers.cookie && !headers.authorization, 'ONLY_COOKIELESS_PUBLIC_RASTER_REQUIRED');
+        const response = await route.fetch({ maxRetries: 0, maxRedirects: 0, timeout: TIMEOUT }); need(response.status() === 200 && response.url() === r.url() && !response.headers()['set-cookie'], 'PUBLIC_RASTER_200_REQUIRED');
+        bytes = await response.body(); mime = response.headers()['content-type']?.split(';')[0].trim(); need(bytes.length > 0 && bytes.length <= MAX && /^image\/(?:png|webp|jpeg)$/.test(mime), 'PUBLIC_RASTER_BYTES_MIME_REQUIRED');
+        rasterReads.push({ path: pathname, sha256: hash(bytes), contentType: mime, bytes: bytes.length, acceptSha256: hash(headers.accept ?? ''), cookieSent: false, authorizationSent: false });
+        const h = { ...response.headers() }; for (const k of ['content-encoding', 'content-length', 'transfer-encoding']) delete h[k]; await route.fulfill({ status: 200, headers: h, body: bytes });
+      } catch (e) { refused = true; first ??= e; await route.abort('blockedbyclient').catch(() => {}); } finally { pending--; } });
+      await page.setContent('<!doctype html><link rel="icon" href="data:,"><img src="' + ORIGIN + pathname + '">');
+      await page.waitForFunction(() => document.images.length === 1 && document.images[0].complete && document.images[0].naturalWidth > 0, {}, { timeout: TIMEOUT });
+      need(!refused && pending === 0 && bytes, 'PUBLIC_RASTER_UNSETTLED');
+    } catch (e) { first ??= e; }
+    finally { try { await context?.close(); } catch (e) { first ??= e; } finally { try { await browser.close(); } catch (e) { first ??= e; } } }
+    if (first) throw first; return { bytes, contentType: mime };
+  }
+  async function get(pathname) {
+    need(publicPath(pathname) || ['/branches', '/index.html'].includes(pathname), 'PUBLIC_PATH_REFUSED'); let value;
+    if (/\.(?:png|webp|jpe?g)$/.test(pathname)) value = await raster(pathname);
+    else { const r = await fetch(ORIGIN + pathname, { method: 'GET', redirect: 'manual', credentials: 'omit', cache: 'no-store', signal: AbortSignal.timeout(TIMEOUT), headers: { accept: ['/', '/branches', '/index.html'].includes(pathname) ? 'text/html' : '*/*' } });
+      need(r.status === 200 && r.url === ORIGIN + pathname && !r.headers.get('set-cookie') && r.body, 'PUBLIC_EXACT_200_REQUIRED'); const chunks = []; let n = 0;
+      for await (const chunk of r.body) { n += chunk.length; need(n <= MAX && total + n <= TOTAL, 'PUBLIC_BYTE_LIMIT'); chunks.push(chunk); }
+      value = { bytes: Buffer.concat(chunks), contentType: r.headers.get('content-type')?.split(';')[0].trim() }; }
+    total += value.bytes.length; need(total <= TOTAL && value.bytes.length > 0 && /^(?:text\/(?:html|css|javascript)|application\/javascript|image\/(?:svg\+xml|png|webp|jpeg)|font\/woff2?)$/.test(value.contentType), 'PUBLIC_MIME_LIMIT'); return value;
+  }
+  function css(text, base) { const rows = [...text.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi)]; need(rows.length === [...text.matchAll(/url\(/gi)].length, 'UNPARSED_CSS_URL');
+    for (const row of rows) enqueue(row[1] ?? row[2] ?? row[3], base); for (const row of text.matchAll(/@import\s+["']([^"']+)["']/g)) enqueue(row[1], base); }
+  function markup(text, base) { need(!/<base\b|<iframe\b|<object\b|<embed\b|http-equiv\s*=\s*["']?refresh/i.test(text), 'UNKNOWN_PUBLIC_DOCUMENT_RESOURCE');
+    for (const row of text.matchAll(/<(script|link|img|source|image|use)\b([^>]*)>/gi)) { const attrs = Object.fromEntries([...row[2].matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/g)].map(v => [v[1].toLowerCase(), v[3].replaceAll('&amp;', '&')]));
+      need(!attrs.srcset, 'PUBLIC_SRCSET_REFUSED'); const raw = attrs.src ?? attrs.href ?? attrs['xlink:href']; if (!raw) { need(row[1].toLowerCase() !== 'script' && !/\b(?:src|href)\s*=/i.test(row[2]), 'UNPARSED_PUBLIC_RESOURCE'); continue; }
+      if (attrs.rel === 'preconnect') { need(['https://fonts.googleapis.com', 'https://fonts.gstatic.com'].includes(raw), 'FOREIGN_PRECONNECT_REFUSED'); continue; }
+      if (raw === FONT) { need(attrs.rel === 'stylesheet', 'EXACT_FONT_STYLESHEET_REQUIRED'); continue; } enqueue(raw, base); }
+    for (const row of text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) css(row[1], base); }
+  const first = await get('/branches'); need(first.contentType === 'text/html', 'NATIVE_DOCUMENT_HTML_REQUIRED'); assets.set('/', { path: '/', sha256: hash(first.bytes), contentType: first.contentType }); markup(first.bytes.toString(), '/');
+  need(queue.includes('/favicon.svg') && queue.some(p => p.endsWith('.js')) && queue.some(p => p.endsWith('.css')), 'ACTUAL_BUILT_CONSOLE_REQUIRED');
+  for (let i = 0; i < queue.length; i++) { const p = queue[i], r = await get(p); assets.set(p, { path: p, sha256: hash(r.bytes), contentType: r.contentType }); const text = r.bytes.toString();
+    if (p.endsWith('.js')) for (const ref of jsReferences(text, ts)) enqueue(ref.value, p, ref.viteRoot); else if (p.endsWith('.css')) css(text, p); else if (p.endsWith('.svg')) markup(text, p); }
+  need(hash((await get('/index.html')).bytes) === hash(first.bytes) && hash((await get('/branches')).bytes) === hash(first.bytes), 'PUBLIC_DOCUMENT_CHANGED');
+  const after = await tools.gate(); need(hash(fs.readFileSync(parserPath)) === parser.sha256, 'PUBLIC_PARSER_CHANGED'); const rows = [...assets.values()].sort((a, b) => a.path.localeCompare(b.path));
+  const result = { ticket: 'SCRUM-640', complete: true, publicOnly: true, sourceSha: p.sourceSha, ciRunId: String(p.ciRunId), deployments: p.deployments, collectorSha256: p.collectorSha256,
+    startedAt, completedAt: new Date().toISOString(), before, after, assets: rows, assetManifestSha256: digest(rows), parser, publicBytesRead: total, rasterReads,
+    representationPolicy: 'Actual unauthenticated Chromium image request at1440x1000; exact returned body/MIME only. Other resources omit credentials; no alternative digest acceptance.', originalResponseBodiesSaved: false };
+  fs.writeFileSync(outputFile, JSON.stringify(result, null, 2) + '\n', { flag: 'wx', flush: true }); return { outputFile, sha256: hash(fs.readFileSync(outputFile)), assetCount: rows.length };
+}
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  try { need(process.argv.length === 5 && process.argv[2] === '--collect', 'EXPLICIT_COLLECTION_INPUT_OUTPUT_REQUIRED'); const result = await collectAssets(JSON.parse(fs.readFileSync(process.argv[3])), process.argv[4], { explicitExecute: true }); process.stdout.write(JSON.stringify(result) + '\n'); }
+  catch (e) { process.stderr.write(codeOf(e) + '\n'); process.exitCode = 1; }
+}

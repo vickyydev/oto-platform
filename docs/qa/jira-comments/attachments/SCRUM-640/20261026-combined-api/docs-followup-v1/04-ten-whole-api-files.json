@@ -1,0 +1,47 @@
+{
+  "label": "ten-whole-api-files",
+  "cwd": "/workspace",
+  "argv": [
+    "pnpm",
+    "--filter",
+    "@oto/api",
+    "test",
+    "--maxWorkers=1",
+    "--fileParallelism=false",
+    "--reporter=default",
+    "--reporter=/tmp/admin640-api-verification-docs/safe-reporter.mjs",
+    "test/offline-capability.test.ts",
+    "test/s217b-r4a-review.test.ts",
+    "test/s217b-r4b-review.test.ts",
+    "test/s217b-r5-review.test.ts",
+    "test/s217b-r5.test.ts",
+    "test/s217b-r6-review.test.ts",
+    "test/s217b-r6.test.ts",
+    "test/s220-e5-hazards.test.ts",
+    "test/s220-e5-review.test.ts",
+    "test/vouchers.test.ts"
+  ],
+  "startedAt": "2026-10-26T13:57:53.811Z",
+  "sourceBefore": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "sourceAfter": "05c4102c225d512222d4bc3d85583b997d4213d94fd68d161956f8fb0bab728d",
+  "installedBefore": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "timedOut": false,
+  "passed": true,
+  "completedAt": "2026-10-26T14:02:35.374Z",
+  "logSha256": "656406e16c2059b0e7c3ec71b9ef6701e232457e1fa71b8f1c63ee0d5379ff1a",
+  "logBytes": 201460,
+  "logRedactedBeforeDisk": true,
+  "shellGuard": "set -eo pipefail"
+}
