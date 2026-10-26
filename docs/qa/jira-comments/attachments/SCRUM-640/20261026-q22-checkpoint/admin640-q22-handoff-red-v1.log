@@ -1,0 +1,180 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-handoff-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-handoff-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-iVIREP ... ok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+creating subdirectories ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+stdout | test/operator-switch-handoff-review.test.ts
+
+syncing data to disk ...
+
+stdout | test/operator-switch-handoff-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-iVIREP^" -l logfile start
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 14:20:02.911 +07 [88336] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 14:20:02.915 +07 [88336] LOG:  listening on IPv6 address "::1", port 54421
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 14:20:02.915 +07 [88336] LOG:  listening on IPv4 address "127.0.0.1", port 54421
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 14:20:02.963 +07 [93452] LOG:  database system was shut down at 2026-10-26 14:19:59 +07
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 14:20:02.993 +07 [88336] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 14:20:09.666 +07 [55412] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-handoff-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:93108) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 14:20:20.159 +07 [96724] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-handoff-review.test.ts
+2026-10-26 14:20:20.180 +07 [96724] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.005 s, total=0.022 s; sync files=5, longest=0.002 s, average=0.001 s; distance=25843 kB, estimate=25843 kB; lsn=0/2EB4DF0, redo lsn=0/2EB4DB8
+
+
+ ❯ test/operator-switch-handoff-review.test.ts (25 tests | 1 failed) 28390ms
+   ✓ SCRUM-640 native handoff context house review > R1 [critical] a fresh B handoff exchanges as B while the account and employee remain at home A 262ms
+   ✓ SCRUM-640 native handoff context house review > R2 [critical] minting at A then switching to B invalidates the original handoff and permanently consumes its claim 106ms
+   ✓ SCRUM-640 native handoff context house review > R3 [critical] B to A to B cannot revive a handoff from the original B revision 151ms
+   ✓ SCRUM-640 native handoff context house review > R4 [high] the fresh native app cookie sees only B branches while /me still names home account A 144ms
+   ✓ SCRUM-640 native handoff context house review > R5 [critical] rejects B after withdrawn switch permission rather than falling back to home authority 120ms
+   ✓ SCRUM-640 native handoff context house review > R5 [critical] rejects B after archived switch assignment rather than falling back to home authority 123ms
+   ✓ SCRUM-640 native handoff context house review > R5 [critical] rejects B after archived target rather than falling back to home authority 125ms
+   ✓ SCRUM-640 native handoff context house review > R6 [high] retains native revoked liveness refusal after mint 107ms
+   ✓ SCRUM-640 native handoff context house review > R6 [high] retains native expired liveness refusal after mint 120ms
+   ✓ SCRUM-640 native handoff context house review > R6 [high] retains native inactive account liveness refusal after mint 118ms
+   ✓ SCRUM-640 native handoff context house review > R7 [high] preserves existing lock/password exchange flags at override=false; mint and business access still refuse 162ms
+   ✓ SCRUM-640 native handoff context house review > R7 [high] preserves existing lock/password exchange flags at override=true; mint and business access still refuse 161ms
+   ✓ SCRUM-640 native handoff context house review > R8 [high] home single-use/origin/audience controls stay unchanged and no public claims are added 142ms
+   ✓ SCRUM-640 native handoff context house review > R9 [critical] foreign-effective OTO refuses before role/link/provisioning writes, linked=true 138ms
+   ✓ SCRUM-640 native handoff context house review > R9 [critical] foreign-effective OTO refuses before role/link/provisioning writes, linked=false 106ms
+   ✓ SCRUM-640 native handoff context house review > R10 [high] home OTO staff still resolves its actual identity and Q14 raw-role policy 144ms
+   ✓ SCRUM-640 native handoff context house review > R10 [high] home OTO advisor still resolves its actual identity and Q14 raw-role policy 133ms
+   ✓ SCRUM-640 native handoff context house review > R11 [high] opens a pre-version opaque-cookie handoff at unchanged home revision zero 103ms
+   ✓ SCRUM-640 native handoff context house review > R12 [critical] a legacy handoff cannot become valid again after a real B to home A round trip 123ms
+   ✓ SCRUM-640 native handoff context house review > R13 [high] refuses a sealed context with unknown version, consuming its claim without issuing a cookie 110ms
+   ✓ SCRUM-640 native handoff context house review > R13 [high] refuses a sealed context with malformed JSON, consuming its claim without issuing a cookie 107ms
+   ✓ SCRUM-640 native handoff context house review > R13 [high] refuses a sealed context with missing revision, consuming its claim without issuing a cookie 100ms
+   ✓ SCRUM-640 native handoff context house review > R13 [high] refuses a sealed context with unexpected field, consuming its claim without issuing a cookie 121ms
+   ✓ SCRUM-640 native handoff context house review > R14 [critical] refuses a valid sibling session cookie sealed into another session handoff 133ms
+   × SCRUM-640 native handoff context house review > R15 [critical] OTO role-sync audit uses the verified exchanger rather than an unrelated incoming cookie; fix: run reconciliation in its locked verified audit context 170ms
+     → expected { …(8) } to match object { …(2) }
+(11 matching properties omitted from actual)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-handoff-review.test.ts > SCRUM-640 native handoff context house review > R15 [critical] OTO role-sync audit uses the verified exchanger rather than an unrelated incoming cookie; fix: run reconciliation in its locked verified audit context
+AssertionError: expected { …(8) } to match object { …(2) }
+(11 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a17714-e2e6-7fd6-9345-4edd0665e679",
+-   "home_operator_id": "01a17714-e2e6-7fd6-9345-4edd0665e679",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ test/operator-switch-handoff-review.test.ts:298:30
+    296|     expect(observed.rows[0]?.after).toEqual({ role: 'manager', platfor…
+    297|       appOperatorId: app.entity, tenantId: app.tenant });
+    298|     expect(observed.rows[0]).toMatchObject({ home_operator_id: f.home,…
+       |                              ^
+    299|     const otherAfter = await ctx.app.inject({ method: 'GET', url: '/me…
+    300|     expect(otherAfter.statusCode).toBe(200); expect(otherAfter.json().…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 24 passed (25)
+   Start at  14:19:41
+   Duration  42.73s (transform 7.68s, setup 0ms, collect 13.91s, tests 28.39s, environment 0ms, prepare 189ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-handoff-review.test.ts"`
+Exit status 1

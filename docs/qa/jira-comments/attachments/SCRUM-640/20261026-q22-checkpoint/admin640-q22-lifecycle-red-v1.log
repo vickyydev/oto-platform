@@ -1,0 +1,257 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-lifecycle-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-prA9BH ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+ok
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+creating subdirectories ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+ok
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+Asia/Bangkok
+creating configuration files ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+ok
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-prA9BH^" -l logfile start
+
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+2026-10-26 14:03:22.992 +07 [89176] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+2026-10-26 14:03:22.996 +07 [89176] LOG:  listening on IPv6 address "::1", port 54640
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+2026-10-26 14:03:22.996 +07 [89176] LOG:  listening on IPv4 address "127.0.0.1", port 54640
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+2026-10-26 14:03:23.031 +07 [27924] LOG:  database system was shut down at 2026-10-26 14:03:19 +07
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+2026-10-26 14:03:23.053 +07 [89176] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+2026-10-26 14:03:26.787 +07 [78388] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:91688) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-lifecycle-review.test.ts > SCRUM-640 Q22 native lifecycle house review > R3 [critical] a real audit insert failure rolls back revocation, override clear and shift-token changes together
+2026-10-26 14:03:29.511 +07 [92220] ERROR:  ZZ_TEST_640_FORCED_LIFECYCLE_ROLLBACK
+2026-10-26 14:03:29.511 +07 [92220] CONTEXT:  PL/pgSQL function core.zz_test_640_lifecycle_fail() line 2 at RAISE
+2026-10-26 14:03:29.511 +07 [92220] STATEMENT:  insert into "core"."audit_log" ("id", "operator_id", "branch_id", "actor_account_id", "request_id", "action", "entity_type", "entity_id", "before", "after", "action_id", "source_event_id", "created_at") values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, default)
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts > SCRUM-640 Q22 native lifecycle house review > R3 [critical] a real audit commit failure rolls back revocation, override clear and shift-token changes together
+2026-10-26 14:03:29.533 +07 [92220] ERROR:  ZZ_TEST_640_FORCED_LIFECYCLE_ROLLBACK
+2026-10-26 14:03:29.533 +07 [92220] CONTEXT:  PL/pgSQL function core.zz_test_640_lifecycle_fail() line 2 at RAISE
+2026-10-26 14:03:29.533 +07 [92220] STATEMENT:  commit
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts > SCRUM-640 Q22 native lifecycle house review > R3 [critical] a real audit commit failure rolls back revocation, override clear and shift-token changes together
+2026-10-26 14:03:29.533 +07 [92220] WARNING:  there is no transaction in progress
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts > SCRUM-640 Q22 native lifecycle house review > R5 [critical] an actual enclosing audit failure rolls all-session clearing and staff-token revocation back
+2026-10-26 14:03:29.568 +07 [92220] ERROR:  ZZ_TEST_640_FORCED_LIFECYCLE_ROLLBACK
+2026-10-26 14:03:29.568 +07 [92220] CONTEXT:  PL/pgSQL function core.zz_test_640_lifecycle_fail() line 2 at RAISE
+2026-10-26 14:03:29.568 +07 [92220] STATEMENT:  commit
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts > SCRUM-640 Q22 native lifecycle house review > R5 [critical] an actual enclosing audit failure rolls all-session clearing and staff-token revocation back
+2026-10-26 14:03:29.569 +07 [92220] WARNING:  there is no transaction in progress
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+2026-10-26 14:03:29.656 +07 [25144] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-lifecycle-review.test.ts
+2026-10-26 14:03:29.668 +07 [25144] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.003 s, total=0.012 s; sync files=5, longest=0.001 s, average=0.001 s; distance=15675 kB, estimate=15675 kB; lsn=0/24C6FB8, redo lsn=0/24C6F80
+
+
+ ❯ test/operator-switch-lifecycle-review.test.ts (9 tests | 3 failed) 14420ms
+   × SCRUM-640 Q22 native lifecycle house review > R1 [critical] FINDING: native HTTP sign-out revokes and clears exactly its verified session; fix in the same native transaction 131ms
+     → expected { …(12) } to deeply equal { …(12) }
+   ✓ SCRUM-640 Q22 native lifecycle house review > R2 [high] ordinary home sign-out retains the native status, event owner, seat and historical row 20ms
+   ✓ SCRUM-640 Q22 native lifecycle house review > R3 [critical] a real audit insert failure rolls back revocation, override clear and shift-token changes together 26ms
+   ✓ SCRUM-640 Q22 native lifecycle house review > R3 [critical] a real audit commit failure rolls back revocation, override clear and shift-token changes together 19ms
+   × SCRUM-640 Q22 native lifecycle house review > R4 [critical] FINDING: invalidateAllSessions clears only the revoked account rows in its caller transaction, including an unrevoked expired row 13ms
+     → expected { …(12) } to deeply equal { …(12) }
+   ✓ SCRUM-640 Q22 native lifecycle house review > R5 [critical] an actual enclosing audit failure rolls all-session clearing and staff-token revocation back 21ms
+   × SCRUM-640 Q22 native lifecycle house review > R6 [critical] FINDING: a native switch completed before sign-out transaction entry cannot leave the newer override on the revoked row 17ms
+     → expected { …(12) } to deeply equal { …(12) }
+   ✓ SCRUM-640 Q22 native lifecycle house review > R7 [high] revocation wins before a later native switch and the refusal cannot restore its session or add a switch success 16ms
+   ✓ SCRUM-640 Q22 native lifecycle house review > R8 [high] an account with no sessions ends zero and cannot sweep another account or rewrite retained revocation history 11ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-lifecycle-review.test.ts > SCRUM-640 Q22 native lifecycle house review > R1 [critical] FINDING: native HTTP sign-out revokes and clears exactly its verified session; fix in the same native transaction
+AssertionError: expected { …(12) } to deeply equal { …(12) }
+
+- Expected
++ Received
+
+@@ -4,11 +4,11 @@
+    "createdAt": 2026-10-26T07:03:29.351Z,
+    "expiresAt": 2026-10-26T08:03:29.350Z,
+    "id": "01a17705-773f-75e1-8ea1-2ccc3e27d051",
+    "lastSeenAt": 2026-10-26T07:03:29.350Z,
+    "lockedAt": null,
+-   "operatorOverride": null,
++   "operatorOverride": "01a17705-773f-75e1-8ea1-2cc15a30c77c",
+    "revokedAt": Any<Date>,
+    "revokedReason": "sign_out",
+    "sessionClass": "staff",
+    "stationId": null,
+  }
+
+ ❯ test/operator-switch-lifecycle-review.test.ts:149:19
+    147|     expect(response.statusCode).toBe(200); expect(response.json()).toE…
+    148|     const ended = await seat();
+    149|     expect(ended).toEqual({ ...before.find(row => row.id === f.live), …
+       |                   ^
+    150|       revokedAt: expect.any(Date), revokedReason: 'sign_out' });
+    151|     expect((await seats()).filter(row => row.id !== f.live)).toEqual(b…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/operator-switch-lifecycle-review.test.ts > SCRUM-640 Q22 native lifecycle house review > R4 [critical] FINDING: invalidateAllSessions clears only the revoked account rows in its caller transaction, including an unrevoked expired row
+AssertionError: expected { …(12) } to deeply equal { …(12) }
+
+- Expected
++ Received
+
+@@ -4,11 +4,11 @@
+    "createdAt": 2026-10-26T07:03:29.543Z,
+    "expiresAt": 2026-10-26T08:03:29.543Z,
+    "id": "01a17705-7803-74e6-9b98-8ed3fb9fd923",
+    "lastSeenAt": 2026-10-26T07:03:29.543Z,
+    "lockedAt": null,
+-   "operatorOverride": null,
++   "operatorOverride": "01a17705-7803-74e6-9b98-8ec83f63451a",
+    "revokedAt": Any<Date>,
+    "revokedReason": "ZZ TEST account reset",
+    "sessionClass": "staff",
+    "stationId": null,
+  }
+
+ ❯ test/operator-switch-lifecycle-review.test.ts:199:95
+    197|     expect(ended).toBe(3);
+    198|     const after = await seats();
+    199|     for (const id of [f.live, f.sibling, f.expired]) expect(after.find…
+       |                                                                                               ^
+    200|       ...before.find(row => row.id === id), operatorOverride: null, re…
+    201|     for (const id of [f.history, f.otherSession]) expect(after.find(ro…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/operator-switch-lifecycle-review.test.ts > SCRUM-640 Q22 native lifecycle house review > R6 [critical] FINDING: a native switch completed before sign-out transaction entry cannot leave the newer override on the revoked row
+AssertionError: expected { …(12) } to deeply equal { …(12) }
+
+- Expected
++ Received
+
+@@ -4,11 +4,11 @@
+    "createdAt": 2026-10-26T07:03:29.577Z,
+    "expiresAt": 2026-10-26T08:03:29.577Z,
+    "id": "01a17705-7825-764f-bc06-f19d4b4080ef",
+    "lastSeenAt": 2026-10-26T07:03:29.577Z,
+    "lockedAt": null,
+-   "operatorOverride": null,
++   "operatorOverride": "01a17705-7825-764f-bc06-f193597e7ed7",
+    "revokedAt": Any<Date>,
+    "revokedReason": "sign_out",
+    "sessionClass": "staff",
+    "stationId": null,
+  }
+
+ ❯ test/operator-switch-lifecycle-review.test.ts:243:28
+    241|       const rebound = await seat(), otherBefore = (await seats()).filt…
+    242|       resume.resolve(); expect(await signingOut).toBe(true);
+    243|       expect(await seat()).toEqual({ ...rebound, operatorOverride: nul…
+       |                            ^
+    244|       expect((await seats()).filter(row => row.id !== f.live)).toEqual…
+    245|       expect(await events('session.operator_switch')).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 6 passed (9)
+   Start at  14:03:01
+   Duration  29.46s (transform 6.27s, setup 0ms, collect 14.66s, tests 14.42s, environment 0ms, prepare 195ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-lifecycle-review.test.ts"`
+Exit status 1

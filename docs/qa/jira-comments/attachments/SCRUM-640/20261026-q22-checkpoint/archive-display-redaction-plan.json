@@ -1,0 +1,73 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "DECLARATIVE_UNAPPLIED_ARCHIVE_DISPLAY_PATCH",
+  "preparedAt": "2026-10-26T07:52:36.884Z",
+  "applied": false,
+  "constraints": {
+    "worktree": "C:/w/admin-operator-switch",
+    "archiveOnly": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q22-checkpoint",
+    "sourceEdits": 0,
+    "rawExternalLogEdits": 0,
+    "receiptEdits": 0,
+    "testRuns": 0,
+    "originalAuthCodeRecorded": false
+  },
+  "changes": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q22-checkpoint/admin640-q22-broad-green-v1.log",
+      "expectedSha256": "a8484a77cf21c88fc681a093d86420e2830bdcffebcd935917d92384324a47d2",
+      "operation": "regexReplaceExactCount",
+      "pattern": "^(legacy sha256 row brute-forced in \\d+ms\\s*(?:\\u2192|->)\\s*)\\d{6}([ \\t]*)(?=\\n|$)",
+      "flags": "gm",
+      "expectedMatches": 1,
+      "replacement": "$1[REDACTED SYNTHETIC AUTH CODE]$2",
+      "resultSha256": "9cbbf634d5b21b5b964b537861a64772811f69827950824eb4875b3c3f43ae06"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q22-checkpoint/checkpoint.json",
+      "expectedSha256": "53ca7cd3873e67a6b0755b941d0dc54911636687e57ae477f5795f3eaf4a7ea3",
+      "operation": "jsonPatchUtf8NoBomTwoSpaceFinalNewline",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/normalization",
+          "value": "Archived log display only: CRLF to LF, trailing horizontal whitespace and redundant final blank lines. Original raw-log hashes remain in unchanged receipts. The broad display log additionally redacts one known synthetic legacy-auth-code output; source, original raw log and receipts remain unchanged. See displayRedactions."
+        },
+        {
+          "op": "replace",
+          "path": "/attempts/11/archivedLogSha256",
+          "value": "9cbbf634d5b21b5b964b537861a64772811f69827950824eb4875b3c3f43ae06"
+        },
+        {
+          "op": "add",
+          "path": "/displayRedactions",
+          "value": [
+            {
+              "filename": "admin640-q22-broad-green-v1.log",
+              "kind": "synthetic-auth-code-output",
+              "count": 1,
+              "pattern": "^(legacy sha256 row brute-forced in \\d+ms\\s*(?:\\u2192|->)\\s*)\\d{6}([ \\t]*)(?=\\n|$)",
+              "source": "apps/api/test/auth-codes.test.ts:170",
+              "sourceSha256": "89ac2dbe6ccdf1d3219cd3d3e417aea37d6ffb7f223dc855d5ac83590017bfd5",
+              "originalRawLogSha256": "76bb0ceba337972c90518a0636ddb196b82240364000633985fbea273f2d6768",
+              "whitespaceNormalizedBeforeRedactionSha256": "a8484a77cf21c88fc681a093d86420e2830bdcffebcd935917d92384324a47d2",
+              "redactedDisplaySha256": "9cbbf634d5b21b5b964b537861a64772811f69827950824eb4875b3c3f43ae06"
+            }
+          ]
+        }
+      ],
+      "resultSha256": "218d435d556d0b8a530cb471049e07426fefef53589be3346ab40b389fa07225"
+    }
+  ],
+  "calibration": {
+    "syntheticOnly": true,
+    "ordinaryTextUnchanged": true,
+    "matchingSyntheticOutputCount": 1,
+    "replacementContainsNoOriginalCode": true
+  },
+  "preserved": {
+    "originalRawLogSha256": "76bb0ceba337972c90518a0636ddb196b82240364000633985fbea273f2d6768",
+    "receiptSha256": "8ca7399b7f318b8215f29d053266970db48fa8e48e87fe98240e8410918cf262",
+    "inputsSha256": "954d90a4532530bbc051eec6317a4935d5dd09834cfc0d568e98b49bbeec2629"
+  }
+}

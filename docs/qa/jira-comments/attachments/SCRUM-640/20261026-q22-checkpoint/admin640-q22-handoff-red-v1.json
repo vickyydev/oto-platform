@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "handoff-red",
+  "attempt": "v1",
+  "startedAt": "2026-10-26T07:19:26.370Z",
+  "completedAt": "2026-10-26T07:20:25.220Z",
+  "command": "pnpm --filter @oto/api test test/operator-switch-handoff-review.test.ts",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "inputsUnchanged": true,
+  "inputCount": 841,
+  "sourceManifestSha256": "e2fd78cc261a31c535a94c8b6776fb20942499efe59bdf9798b6887c94cdcc32",
+  "inputsSha256": "294d680375bf440592a88eafbbebf65a9370b5e9457b037125eabc8195b1691e",
+  "runnerSha256": "3b1f9dfc951ff50574d3416307fab353143d766ac37e1ac746a0d483a65daa93",
+  "logSha256": "12372e4655c9ee2b680ee3a8c386f4b4d0c3614efa910895fb84f2b602cba74e",
+  "logPath": "C:/w/admin640-q22-handoff-red-v1.log",
+  "isolatedEmbeddedDatabase": true,
+  "inheritedDatabaseSettingsDiscarded": true,
+  "staging": false,
+  "release": false
+}

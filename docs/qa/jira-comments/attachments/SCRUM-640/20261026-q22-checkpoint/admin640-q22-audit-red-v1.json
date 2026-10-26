@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "audit-red",
+  "attempt": "v1",
+  "startedAt": "2026-10-26T07:08:05.972Z",
+  "completedAt": "2026-10-26T07:08:32.823Z",
+  "command": "pnpm --filter @oto/api test test/operator-switch-audit-context-review.test.ts",
+  "exitCode": 1,
+  "signal": null,
+  "launchError": null,
+  "inputsUnchanged": true,
+  "inputCount": 840,
+  "sourceManifestSha256": "afa6a56d1ff80bb1c190077f52c47ebc5f32b0c233fe13ce5c0429125c46dfb7",
+  "inputsSha256": "16d21847991260e869cd13f69cef027aca5e024a696d605012b5038624b6906b",
+  "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4",
+  "logSha256": "4edace8ddc929f73fc7dacccd3b39927b5226a0ca221162e77e42fb64c541eff",
+  "logPath": "C:/w/admin640-q22-audit-red-v1.log",
+  "isolatedEmbeddedDatabase": true,
+  "inheritedDatabaseSettingsDiscarded": true,
+  "staging": false,
+  "release": false
+}

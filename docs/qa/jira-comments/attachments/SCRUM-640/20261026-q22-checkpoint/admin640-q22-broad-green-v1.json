@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "broad-green",
+  "attempt": "v1",
+  "startedAt": "2026-10-26T07:38:07.271Z",
+  "completedAt": "2026-10-26T07:45:16.437Z",
+  "command": "pnpm --filter @oto/api test test/auth.test.ts test/auth-codes.test.ts test/auth-enumeration.test.ts test/permissions.test.ts test/archived-tenancy.test.ts test/session-branch-station.test.ts test/transactions.test.ts test/handoff.test.ts test/handoff-department.test.ts test/auth-handoff-files-tx.test.ts test/s629-handoff-role.test.ts test/s629-role-mapping-review.test.ts test/operator-switch-handoff-review.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts test/platform-review.test.ts test/console-branch-scope.test.ts test/scrum-607-reach.test.ts test/operator-switch-review.test.ts test/operator-switch-seat-review.test.ts test/operator-switch-session-review.test.ts test/operator-switch-idempotency-review.test.ts test/operator-switch-route-review.test.ts test/operator-switch-audit-context-review.test.ts test/operator-switch-lifecycle-review.test.ts",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "inputsUnchanged": true,
+  "inputCount": 841,
+  "sourceManifestSha256": "b5012653dbfed7f531398def76bcca86cff5670c929994d05d9721f23db2b256",
+  "inputsSha256": "954d90a4532530bbc051eec6317a4935d5dd09834cfc0d568e98b49bbeec2629",
+  "runnerSha256": "ae2eeab076cc2bc244314892b3c0cedf830537f681f3f8aebd380cca303a7646",
+  "logSha256": "76bb0ceba337972c90518a0636ddb196b82240364000633985fbea273f2d6768",
+  "logPath": "C:/w/admin640-q22-broad-green-v1.log",
+  "isolatedEmbeddedDatabase": true,
+  "inheritedDatabaseSettingsDiscarded": true,
+  "staging": false,
+  "release": false
+}
