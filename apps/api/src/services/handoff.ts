@@ -20,6 +20,7 @@ import { boothStaffCode, newId, type Permission } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { resolveSessionAuth, type AuthContext } from '../plugins/session';
 import { audit } from './audit';
+import { runWithAuditContext } from './audit-context';
 import { holdsAtOwnDepartment } from './access-control';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
 import { reconcileOtoAppRole, type OtoAppRoleContext } from './oto-app-users';
@@ -498,6 +499,8 @@ export interface ExchangedHandoff {
   branchId: string | null;
   mustChangePassword: boolean;
   sessionLocked: boolean;
+  /** Internal verified snapshot for the success audit; never part of an app response. */
+  auditAuth: Readonly<AuthContext>;
   /** Present only for an OTO App identity whose operator enabled platform roles. */
   otoApp?: OtoAppRoleContext;
 }
@@ -634,14 +637,15 @@ export async function exchangeHandoff(
         throw new HandoffRejected('revoked', 'Open the app from the launcher again', seen);
       }
       requireAppContext(auth, row.audience);
+      const auditAuth = Object.freeze({ ...auth });
 
       const otoApp = row.audience === 'oto_app'
-        ? await reconcileOtoAppRole(tx, {
+        ? await runWithAuditContext(auditAuth, () => reconcileOtoAppRole(tx, {
           operatorId: liveContext.homeOperatorId,
           accountId: auth.accountId,
           actorAccountId: auth.accountId,
           requestId: opts.requestId,
-        })
+        }))
         : null;
 
       return {
@@ -655,6 +659,7 @@ export async function exchangeHandoff(
         branchId: auth.branchId,
         mustChangePassword: auth.mustChangePassword,
         sessionLocked: auth.lockedAt !== null,
+        auditAuth,
         ...(otoApp ? { otoApp } : {}),
       };
     });

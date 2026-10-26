@@ -2247,6 +2247,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "home_operator_id": {
+          "name": "home_operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effective_operator_id": {
+          "name": "effective_operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "request_id": {
           "name": "request_id",
           "type": "text",
@@ -2473,6 +2485,34 @@
           "schemaTo": "core",
           "columnsFrom": [
             "actor_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "audit_log_home_operator_id_operator_id_fk": {
+          "name": "audit_log_home_operator_id_operator_id_fk",
+          "tableFrom": "audit_log",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "home_operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "audit_log_effective_operator_id_operator_id_fk": {
+          "name": "audit_log_effective_operator_id_operator_id_fk",
+          "tableFrom": "audit_log",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "effective_operator_id"
           ],
           "columnsTo": [
             "id"
@@ -43389,6 +43429,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "d2ea432b-48ad-47cb-9c90-02cbe47828f7",
+  "id": "d0726b48-672c-4763-9189-f9395122a053",
   "prevId": "3d8b7c97-c929-41d2-b7d1-4ed9f7fe87da"
 }

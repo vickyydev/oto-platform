@@ -28,6 +28,9 @@ export const auditLog = core.table(
     operatorId: uuid('operator_id').references(() => operator.id),
     branchId: uuid('branch_id').references(() => branch.id),
     actorAccountId: uuid('actor_account_id').references(() => account.id),
+    /** Verified request attribution, separate from the event's owning scope. */
+    homeOperatorId: uuid('home_operator_id').references(() => operator.id),
+    effectiveOperatorId: uuid('effective_operator_id').references(() => operator.id),
     requestId: text('request_id'),
     /** e.g. 'member.create', 'ticket_package.update'. */
     action: text('action').notNull(),
