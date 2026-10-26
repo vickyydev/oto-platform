@@ -1,0 +1,139 @@
+{
+  "ticket": "SCRUM-638",
+  "sourceSha": "92539d7e59a66c5a9da6404dc78176ceffde48f5",
+  "baseMainSha": "0aff040be10fb1622bfcddfeb0343ff8846f541e",
+  "deliveredPlannerSha": "be612ca0c0570df382c56a6dae9963e1e674cbde",
+  "rebasedPreservedCommits": [
+    "2dd1282ff265f6d0128ae85697839d7e93c26008",
+    "5e06a88b80ca746a1e89e97426b7c2d647e30703"
+  ],
+  "deliveredFiveFilesUnchanged": true,
+  "counterfactualSourceDeltaOnly": [
+    "apps/api/src/services/assistant/engine.ts",
+    "apps/api/src/services/inbox/ai-engine.ts",
+    "apps/api/src/services/inbox/ai-turns.ts"
+  ],
+  "inputs": 3789,
+  "integratedManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "red": {
+    "failed": 3,
+    "passed": 100,
+    "setupFailures": 0,
+    "baselineInvalidForeignSettingsCasePassed": true
+  },
+  "green": {
+    "passed": 103,
+    "assistantEngine": 57,
+    "inboxAiEngine": 46,
+    "guardsPassed": 83,
+    "apiCompilerDiagnostics": 0,
+    "lintErrors": 0,
+    "contractsMatch": true
+  },
+  "review": {
+    "concreteFindings": [],
+    "operatorIsolation": "Exact operator/key reader; native Inbox conversation and channel ownership fences retained. Invalid and foreign settings baseline passes.",
+    "zeroValues": "No truthiness fallback: spread or nullish/undefined checks preserve explicit zero; native pacing zero handling and jitter unchanged.",
+    "injectedRuntimes": "Existing clients and numeric fallback runtimes remain in use; copies and local primitives do not mutate process config.",
+    "debounce": "Seconds converted to milliseconds and ceiling clamped after fallback; existing conflict SQL/lease behavior retained.",
+    "pacing": "Fresh own-operator read in commit transaction; same native scheduler/random function and queued-message ordering.",
+    "databaseFailures": "Reader does not catch DB failure; errors retain failure behavior."
+  },
+  "gates": [
+    {
+      "name": "original-consumers-install",
+      "receiptSha256": "04b4dc3fd97f903576f09fc51c10a5f2e19d492971878733d60d5a6db43ed167",
+      "exitCode": 0,
+      "logSha256": "adf6ba923fc0ba50f88c5903cf4618ddec13144327ea21795af7716117242fed",
+      "logBytes": 2592,
+      "wholeOutputRead": true,
+      "postgres": null
+    },
+    {
+      "name": "original-consumers-tests",
+      "receiptSha256": "5177bff190412874726e7a16ce8e53da33fcea1d3bb6f118f9720ec47c676403",
+      "exitCode": 1,
+      "logSha256": "1e496aebe03a7dffdba9a36c5137baabdfe0f63a76f33edf5a1ddd4d1bc241f9",
+      "logBytes": 21350,
+      "wholeOutputRead": true,
+      "postgres": {
+        "ownNativeServer": true,
+        "port": 50376,
+        "databaseCountBefore": 0,
+        "databaseCountAfter": 0,
+        "credentialsPersisted": false,
+        "stopped": true,
+        "cleanupConfirmed": true
+      }
+    },
+    {
+      "name": "integrated-tests",
+      "receiptSha256": "f31c2d7d2b472fa8f6179b88d7e24087a03f6f069a5e81426c636b4094fdb957",
+      "exitCode": 0,
+      "logSha256": "5df4657164a55d511b30b6c0b8027ef2ac4494f53f59533addf948dea97d952d",
+      "logBytes": 3081,
+      "wholeOutputRead": true,
+      "postgres": {
+        "ownNativeServer": true,
+        "port": 63061,
+        "databaseCountBefore": 0,
+        "databaseCountAfter": 0,
+        "credentialsPersisted": false,
+        "stopped": true,
+        "cleanupConfirmed": true
+      }
+    },
+    {
+      "name": "integrated-compiler",
+      "receiptSha256": "79778fbe93f9282c3d4eafff0ecd235d48126f7a8fba192f854f4a09939d1d74",
+      "exitCode": 0,
+      "logSha256": "49c95a1bac4f6c861a2952de2857c42a6bcb34a6d81280b1e2de7f5e682de807",
+      "logBytes": 91,
+      "wholeOutputRead": true,
+      "postgres": null
+    },
+    {
+      "name": "integrated-lint",
+      "receiptSha256": "9e6c1dcf3b8b3097d367a9cc8cc73e84b230ed28c16fd34a11eebed71ec2f210",
+      "exitCode": 0,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logBytes": 0,
+      "wholeOutputRead": true,
+      "postgres": null
+    },
+    {
+      "name": "integrated-contract",
+      "receiptSha256": "629230aefaa733ad73f140a40ec369c30dfbb0b1c8503d280350f13cb166d6c8",
+      "exitCode": 0,
+      "logSha256": "958317724266fc0d088190eb106381214f34b2307c9f138cc2e5081013c397a3",
+      "logBytes": 591,
+      "wholeOutputRead": true,
+      "postgres": null
+    },
+    {
+      "name": "integrated-guards",
+      "receiptSha256": "f220e04259a4bf90ce615281979d1ad1b962b88d421a53c084d4e25e93dbe54a",
+      "exitCode": 0,
+      "logSha256": "6942baab490fedc4f7303f69702d55caac083592f9273eccfe8e7498fc48528a",
+      "logBytes": 3451,
+      "wholeOutputRead": true,
+      "postgres": {
+        "ownNativeServer": true,
+        "port": 63060,
+        "databaseCountBefore": 0,
+        "databaseCountAfter": 0,
+        "credentialsPersisted": false,
+        "stopped": true,
+        "cleanupConfirmed": true
+      }
+    }
+  ],
+  "limits": [
+    "Focused integration only; fresh full combined release battery still required.",
+    "Initial provider-list USD rate numbers remain planner-supplied; no rates invented.",
+    "Migration is provisional0087 and must be checked against main at landing.",
+    "Assistant ask-pinning remains planner-owned under SCRUM-640.",
+    "No branch push, main landing, CI, deploy, staging acceptance or Deployed claim.",
+    "Only docs/progress/STATUS.md remains uncommitted; no additional protected production edits."
+  ]
+}

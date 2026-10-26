@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "original-consumers-install",
+  "root": "C:/w/admin638-consumers-red",
+  "command": "pnpm install --offline --frozen-lockfile --ignore-scripts",
+  "startedAt": "2026-10-26T06:59:05.687Z",
+  "completedAt": "2026-10-26T07:00:01.470Z",
+  "sourceHead": "92539d7e59a66c5a9da6404dc78176ceffde48f5",
+  "inputs": 3789,
+  "sourceManifestSha256": "7b731b83ae75fb48e6fb6f251ff714a1fb38774989738d8094e6bc8d5abadc51",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "logSha256": "adf6ba923fc0ba50f88c5903cf4618ddec13144327ea21795af7716117242fed",
+  "logBytes": 2592
+}

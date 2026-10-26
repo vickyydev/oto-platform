@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-contract",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm api-types:check",
+  "startedAt": "2026-10-26T07:01:28.011Z",
+  "completedAt": "2026-10-26T07:01:38.908Z",
+  "sourceHead": "92539d7e59a66c5a9da6404dc78176ceffde48f5",
+  "inputs": 3789,
+  "sourceManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "logSha256": "958317724266fc0d088190eb106381214f34b2307c9f138cc2e5081013c397a3",
+  "logBytes": 591
+}

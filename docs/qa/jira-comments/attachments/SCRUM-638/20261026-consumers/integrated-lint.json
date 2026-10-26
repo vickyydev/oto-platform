@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-lint",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm exec eslint apps/api/src/services/assistant/engine.ts apps/api/src/services/inbox/ai-engine.ts apps/api/src/services/inbox/ai-turns.ts apps/api/test/assistant-engine.test.ts apps/api/test/inbox-ai-engine.test.ts apps/api/src/routes/console.ts apps/api/test/route-scope-target.test.ts apps/api/test/route-write-conformance.test.ts apps/api/test/routes-guarded.test.ts apps/console/src/components/ConsoleLayout.tsx apps/console/src/pages/AreaLanding.tsx",
+  "startedAt": "2026-10-26T06:59:05.667Z",
+  "completedAt": "2026-10-26T06:59:46.566Z",
+  "sourceHead": "92539d7e59a66c5a9da6404dc78176ceffde48f5",
+  "inputs": 3789,
+  "sourceManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "logBytes": 0
+}

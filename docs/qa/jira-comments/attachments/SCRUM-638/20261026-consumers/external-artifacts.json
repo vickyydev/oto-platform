@@ -1,0 +1,83 @@
+{
+  "ticket": "SCRUM-638",
+  "sourceSha": "92539d7e59a66c5a9da6404dc78176ceffde48f5",
+  "rawLogs": [
+    {
+      "externalPath": "C:\\w\\admin638-consumers-20261026\\integrated-compiler.log",
+      "sha256": "49c95a1bac4f6c861a2952de2857c42a6bcb34a6d81280b1e2de7f5e682de807",
+      "bytes": 91
+    },
+    {
+      "externalPath": "C:\\w\\admin638-consumers-20261026\\integrated-contract.log",
+      "sha256": "958317724266fc0d088190eb106381214f34b2307c9f138cc2e5081013c397a3",
+      "bytes": 591
+    },
+    {
+      "externalPath": "C:\\w\\admin638-consumers-20261026\\integrated-guards.log",
+      "sha256": "6942baab490fedc4f7303f69702d55caac083592f9273eccfe8e7498fc48528a",
+      "bytes": 3451
+    },
+    {
+      "externalPath": "C:\\w\\admin638-consumers-20261026\\integrated-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "externalPath": "C:\\w\\admin638-consumers-20261026\\integrated-tests.log",
+      "sha256": "5df4657164a55d511b30b6c0b8027ef2ac4494f53f59533addf948dea97d952d",
+      "bytes": 3081
+    },
+    {
+      "externalPath": "C:\\w\\admin638-consumers-20261026\\original-consumers-install.log",
+      "sha256": "adf6ba923fc0ba50f88c5903cf4618ddec13144327ea21795af7716117242fed",
+      "bytes": 2592
+    },
+    {
+      "externalPath": "C:\\w\\admin638-consumers-20261026\\original-consumers-tests.log",
+      "sha256": "1e496aebe03a7dffdba9a36c5137baabdfe0f63a76f33edf5a1ddd4d1bc241f9",
+      "bytes": 21350
+    }
+  ],
+  "copies": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/original-consumers-install.json",
+      "sha256": "04b4dc3fd97f903576f09fc51c10a5f2e19d492971878733d60d5a6db43ed167"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/original-consumers-tests.json",
+      "sha256": "5177bff190412874726e7a16ce8e53da33fcea1d3bb6f118f9720ec47c676403"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/integrated-tests.json",
+      "sha256": "f31c2d7d2b472fa8f6179b88d7e24087a03f6f069a5e81426c636b4094fdb957"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/integrated-compiler.json",
+      "sha256": "79778fbe93f9282c3d4eafff0ecd235d48126f7a8fba192f854f4a09939d1d74"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/integrated-lint.json",
+      "sha256": "9e6c1dcf3b8b3097d367a9cc8cc73e84b230ed28c16fd34a11eebed71ec2f210"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/integrated-contract.json",
+      "sha256": "629230aefaa733ad73f140a40ec369c30dfbb0b1c8503d280350f13cb166d6c8"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/integrated-guards.json",
+      "sha256": "f220e04259a4bf90ce615281979d1ad1b962b88d421a53c084d4e25e93dbe54a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/original-consumers-tests-manifest.json",
+      "sha256": "3596df8bc03aa66b10b1d021542be28578441cd7c499ef267589bd76d5af2dcc"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/integrated-tests-manifest.json",
+      "sha256": "571513b032aeb120365c6b0da0c93d47b243907c412db89577e98e9048b4b37e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-consumers/integration-review.json",
+      "sha256": "754d9cca9f7c2eb56b1acb5265ce513b513714e98f36ef4d8ca667ace783db34"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "original-consumers-tests",
+  "root": "C:/w/admin638-consumers-red",
+  "command": "pnpm --filter @oto/api exec vitest run test/assistant-engine.test.ts test/inbox-ai-engine.test.ts",
+  "startedAt": "2026-10-26T07:01:06.461Z",
+  "completedAt": "2026-10-26T07:01:51.160Z",
+  "sourceHead": "92539d7e59a66c5a9da6404dc78176ceffde48f5",
+  "inputs": 3789,
+  "sourceManifestSha256": "7b731b83ae75fb48e6fb6f251ff714a1fb38774989738d8094e6bc8d5abadc51",
+  "sourceUnchanged": true,
+  "exitCode": 1,
+  "failure": null,
+  "postgres": {
+    "ownNativeServer": true,
+    "port": 50376,
+    "databaseCountBefore": 0,
+    "databaseCountAfter": 0,
+    "credentialsPersisted": false,
+    "stopped": true,
+    "cleanupConfirmed": true
+  },
+  "logSha256": "1e496aebe03a7dffdba9a36c5137baabdfe0f63a76f33edf5a1ddd4d1bc241f9",
+  "logBytes": 21350
+}
