@@ -9,11 +9,16 @@ describe('SCRUM-640 session operator selection permission', () => {
     expect((PERMISSIONS as readonly string[]).filter(entry => entry === permission)).toEqual([permission]);
   });
 
-  it('retains both existing ALL bundles without treating bundle membership as platform-wide authority', () => {
+  it('retains selection in both administrator bundles without treating membership as platform-wide authority', () => {
     for (const role of ['platform_admin', 'operator_admin'] as const) {
       expect(ROLE_BUNDLES[role], role).toContain(permission);
-      expect([...ROLE_BUNDLES[role]].sort(), role).toEqual([...PERMISSIONS].sort());
     }
+    expect([...ROLE_BUNDLES.platform_admin].sort()).toEqual([...PERMISSIONS].sort());
+    // SCRUM-643 reserves only these new suite writers for the platform administrator.
+    const platformOnly = new Set<string>([
+      'console:app_registry:manage', 'console:release:flag_manage', 'console:release:kill_switch',
+    ]);
+    expect([...ROLE_BUNDLES.operator_admin].sort()).toEqual(PERMISSIONS.filter(entry => !platformOnly.has(entry)).sort());
     // The session route must separately require a genuine null-scope assignment.
     // This vocabulary test grants no scope and makes no route-authority claim.
   });

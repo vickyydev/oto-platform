@@ -35,6 +35,7 @@ import { Departments } from '@/pages/Departments';
 import { AccessReview } from '@/pages/AccessReview';
 import { Operators } from '@/pages/Operators';
 import { Platform } from '@/pages/Platform';
+import { SuiteControls } from '@/pages/SuiteControls';
 import { Holidays } from '@/pages/Holidays';
 import { Catalogue } from '@/pages/Catalogue';
 import { MenuCatalogue } from '@/pages/MenuCatalogue';
@@ -149,6 +150,8 @@ function NotFound() {
 const pageElements: Record<string, ReactElement> = {
   analytics: <AnalyticsSources />,
   config: <Configuration />,
+  apps: <SuiteControls page="apps" />,
+  releases: <SuiteControls page="releases" />,
   'platform-operators': <Operators sectionId="platform-operators" />,
   'system-roles': <Platform page="system-roles" />,
   'platform-alerts': <Platform page="platform-alerts" />,

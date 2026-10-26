@@ -19,6 +19,12 @@ export const PERMISSIONS = [
   /** Queue our own POS days for recomputation; never a legacy day (SCRUM-646, Q27 Stage 1). */
   'console:analytics:rerun',
   'console:config:read',
+  // Suite controls (SCRUM-643); maintenance and kill switches also require their live safeguards.
+  'console:app_registry:read',
+  'console:app_registry:manage',
+  'console:release:read',
+  'console:release:flag_manage',
+  'console:release:kill_switch',
   /** Read employee pay in the OTO App when its legal entity enables platform access. */
   'hr:salary:view',
   /** Select a session's working operator; enforcement also requires a live platform-wide grant. */
@@ -45,8 +51,8 @@ export const PERMISSIONS = [
    * operator scope (`admin:role:assign`, say) answers a different question and
    * drags every role that happens to carry it along.
    *
-   * Carried by `platform_admin` and `operator_admin` because both take the
-   * whole vocabulary; deliberately absent from `branch_manager` and below. A
+   * Carried by `platform_admin` and `operator_admin`; deliberately absent
+   * from `branch_manager` and below. A
    * custom role may carry it — that is a deliberate grant, which is the point.
    */
   'admin:operator:all',
@@ -381,7 +387,9 @@ export const SYSTEM_ROLES = [
 
 export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
-const ALL = [...PERMISSIONS];
+// Keep every existing operator-admin permission; only the new suite writers are platform-only.
+const ALL = PERMISSIONS.filter(permission => permission !== 'console:app_registry:manage'
+  && permission !== 'console:release:flag_manage' && permission !== 'console:release:kill_switch');
 
 const READ_CATALOG: Permission[] = [
   'catalog:package:read',
@@ -458,7 +466,7 @@ const SELL: Permission[] = [
  * could not staff their own branch.
  */
 export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
-  platform_admin: ALL,
+  platform_admin: [...PERMISSIONS],
   operator_admin: ALL,
   branch_manager: [
     'console:overview:read',

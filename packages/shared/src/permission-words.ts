@@ -8,6 +8,11 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'console:analytics:manage_source': 'Switch which recorded source a park reports from, after a preview, for the parks you can reach.',
   'console:analytics:rerun': "Queue our own POS days to be recomputed from our own records; a legacy system's day can never be rebuilt.",
   'console:config:read': 'Read the settings index and follow the settings pages your existing access allows.',
+  'console:app_registry:read': 'Read the suite app directory, tile states and maintenance messages.',
+  'console:app_registry:manage': 'Manage suite app details and maintenance settings with the required approvals.',
+  'console:release:read': 'Read app versions, deployment history, feature flags and kill switches.',
+  'console:release:flag_manage': 'Change scoped feature flags after reviewing their effect and required safeguards.',
+  'console:release:kill_switch': 'Use approved emergency controls with an expiry, reason and the required confirmation.',
   'hr:salary:view': 'View employee salary and pay details in the OTO App when platform access is enabled.',
 
   'admin:account:create': 'Invite a staff sign-in account with an allowed role and scope.',
