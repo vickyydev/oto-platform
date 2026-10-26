@@ -1,0 +1,42 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "post-rebase-scoped-checkpoint",
+  "completedAt": "2026-10-26T08:39:57.765Z",
+  "sourceHeadSha": "9ddbc80741f8aa3960f1da9e362e3b1bbf9ea586",
+  "mainBase": "544cd736598640a240faf6c2584c344de1f811ec",
+  "observed": {
+    "consoleFilesPassed": 37,
+    "consoleTestsPassed": 363,
+    "consoleTodo": 3,
+    "seamTestsPassed": 10,
+    "packageCompilers": [
+      "@oto/api",
+      "@oto/db",
+      "@oto/api-types",
+      "@oto/console (all three own configurations)"
+    ],
+    "compilerDiagnostics": 0,
+    "generatedClientMatches": true,
+    "lintFiles": 105,
+    "lintErrors": 0,
+    "diffCheckPassed": true
+  },
+  "inputsUnchanged": true,
+  "inputCount": 117,
+  "sourceManifestSha256": "9fe8437c205d4b4cf4151ff3afd7d63315fc6d48d07dcb9c87d3622c3a74384a",
+  "inputsSha256": "faebc0e855e248172569a1db72c9f5af9c8f5ef147a8b0777ded9c021cdedcac",
+  "runnerSha256": "f1d0dc1356a56c22f8b09fdf2191575d5453ecdf25d7d731c153602663fe0ccb",
+  "originalLogSha256": "8750bb17ef08bd99106ba51c20cb55d9323084ac044a0d113f80529a549dad3f",
+  "archivedDisplayLogSha256": "bcc0549bd563c6e150064e3309836d67baa8463dac2ff72af06844565b5fcefa",
+  "normalization": "CRLF to LF, trailing horizontal whitespace and redundant final blank lines only.",
+  "nativeApiEvidence": "../20261026-q22-checkpoint/checkpoint.json",
+  "byteBridge": "../20261026-q22-rebase/admin640-post-rebase-bridge-v2-20261026.json",
+  "release": false,
+  "deployed": false,
+  "staging": false,
+  "remaining": [
+    "Planner-owned protected creation-time assistant ask patch.",
+    "SCRUM-638 complete landing with planner initial rates.",
+    "Renumber 640 on latest main, complete combined release gates, exact-SHA main CI, automatic Render and inspected staging evidence."
+  ]
+}
