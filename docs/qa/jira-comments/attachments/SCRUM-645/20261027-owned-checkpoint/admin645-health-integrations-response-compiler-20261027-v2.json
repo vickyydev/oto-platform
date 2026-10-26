@@ -1,0 +1,37 @@
+{
+  "ticket": "SCRUM-645",
+  "kind": "compiler",
+  "startedAt": "2026-10-26T18:37:42.836Z",
+  "completedAt": "2026-10-26T18:38:55.733Z",
+  "exitCode": 0,
+  "signal": null,
+  "before": {
+    "apps/api/src/routes/health.ts": "7fb7642862595ad62e84a0bf3c4256c919ab778d6435f397ceb7a3dc76604a4d",
+    "apps/api/src/routes/ops.ts": "4f01fccccb9672acceb0b3601ae6db5fffd1a5742679a3fd43ac9f81dceab09e",
+    "apps/api/src/routes/health-integration-schemas.ts": "61d8dc68fb91c1b4797c97e33931327a8cf3fc8092e0a7f4f259bc37da62257b",
+    "apps/api/test/health-integrations-response-review.test.ts": "f455922ff1fecb1370152e7633af5aa65eb8ce65cd3c277e6db7ed4b192c6aea"
+  },
+  "after": {
+    "apps/api/src/routes/health.ts": "7fb7642862595ad62e84a0bf3c4256c919ab778d6435f397ceb7a3dc76604a4d",
+    "apps/api/src/routes/ops.ts": "4f01fccccb9672acceb0b3601ae6db5fffd1a5742679a3fd43ac9f81dceab09e",
+    "apps/api/src/routes/health-integration-schemas.ts": "61d8dc68fb91c1b4797c97e33931327a8cf3fc8092e0a7f4f259bc37da62257b",
+    "apps/api/test/health-integrations-response-review.test.ts": "f455922ff1fecb1370152e7633af5aa65eb8ce65cd3c277e6db7ed4b192c6aea"
+  },
+  "inputsUnchanged": true,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:/Users/waqar/AppData/Roaming/npm/node_modules/pnpm/bin/pnpm.cjs",
+      "--filter",
+      "@oto/api",
+      "typecheck"
+    ],
+    "cwd": "C:/w/admin-health-integrations"
+  },
+  "toolSha256": "b276da51dc8ca5b0d3ee3371695b50fc8b3244b281b091c63a3f082a88dadeb9",
+  "runnerSha256": "1d761a89ae499f9a79323ac9c9e17935f8f8e529f2b793baf9e47707cf56250d",
+  "logPath": "C:/w/admin645-health-integrations-response-compiler-20261027-v2.log",
+  "logSha256": "aa88f9fceb6165fafc8f9ce40f6db5de18053f2ca61e2b0d63bbb3605d2bc225",
+  "redactionApplied": false,
+  "noStaging": true
+}

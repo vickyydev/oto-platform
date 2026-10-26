@@ -1,0 +1,210 @@
+{
+  "ticket": "SCRUM-645",
+  "reviewedAt": "2026-10-26T19:05:04.071Z",
+  "passed": true,
+  "scopedApproved": true,
+  "fullReleaseApproved": false,
+  "scope": "Additive existing Health/Integrations response schemas, generated read adapters and native Console read-reliability checkpoint only",
+  "sourceRoot": "C:/w/admin-health-integrations",
+  "sourceFiles": {
+    "apps/api/src/routes/health.ts": "7fb7642862595ad62e84a0bf3c4256c919ab778d6435f397ceb7a3dc76604a4d",
+    "apps/api/src/routes/ops.ts": "4f01fccccb9672acceb0b3601ae6db5fffd1a5742679a3fd43ac9f81dceab09e",
+    "apps/api/src/routes/health-integration-schemas.ts": "61d8dc68fb91c1b4797c97e33931327a8cf3fc8092e0a7f4f259bc37da62257b",
+    "apps/api/test/health-integrations-response-review.test.ts": "f455922ff1fecb1370152e7633af5aa65eb8ce65cd3c277e6db7ed4b192c6aea",
+    "apps/api/test/health-read-availability-review.test.ts": "9b023de63b72006fbe2e3f3bad5c8c66bddfd3ccf8aed34974c1ee843b0525d1",
+    "apps/console/src/api/observability.ts": "9d40339663cbaaaa6775c07a9c80978fbb7f2650b63d282b5cf70b9c05974b1b",
+    "apps/console/src/components/devices/FleetSummary.tsx": "173fc98c1ef876b91973d86c46a25cddd502d2ccd02df1dc16735715134c7731",
+    "apps/console/src/pages/Health.tsx": "03642e82db3f88e1c7997c05bf759f74f227aaf2ed951fd586fba2ae46dc9f91",
+    "apps/console/src/pages/Integrations.tsx": "7eed4226bb21a8441d37a2c74eb42392d6f666016b99105b3c33abd16e1ede2e",
+    "apps/console/e2e/health-integrations-review.spec.ts": "130413864adec3b7f9756ddcbd955db7296cd4558c07cf7e5aa4317406f3d3d8",
+    "apps/console/test/health-readiness-api.test.ts": "89e9aeb159a07c3529f0eb561e37da0029642d6b8edba364e1f313b8067d9051",
+    "packages/api-types/openapi.json": "75263f9a27a40ef90ccb0d8135919e5eb881634881726a1d82dfa5c8de83b0f3",
+    "packages/api-types/src/openapi.ts": "4c7505504a0f40936f01c3233a6a692d0e1978a397d17bdb583cd10ece09a302",
+    "packages/api-types/test/migration-list.ts": "6f7d61d24cbde7980f6104f26eab21a0d252341b0d6c43d6df340738295a3304"
+  },
+  "sourceFileCount": 14,
+  "verdict": "No remaining blocker in the reviewed 14-file checkpoint; intentional Q26 expected failure and incomplete full-feature work are separate below.",
+  "api": {
+    "schemaOnlyRouteChanges": true,
+    "exactHandlerInputPermissionAndProjectionTextPreserved": true,
+    "schemaDeltaProof": {
+      "path": "C:/w/admin645-health-integrations-schema-delta-20261027-v2.json",
+      "sha256": "4b2a67d6e273109e1f308a13fa20de78ad4e3ac8554f94e73ddc39718a73c102"
+    },
+    "noSchemaCoercionOrTransform": true,
+    "allNativeFleetDeviceBoothReachRollupProviderFieldsPreserved": true,
+    "rawReportedStringsFractionalNumbersAndNullsPreserved": true,
+    "rawLastStatusAndDeviceSettingsRemainNonpublic": true,
+    "databaseOnlyReady503Preserved": true,
+    "degraded200Preserved": true,
+    "branchAndEstateScopesPreserved": true,
+    "nativeCases": {
+      "total": 42,
+      "passing": 42,
+      "newResponseReview": 8,
+      "existingOpsApi": 34
+    },
+    "compilerDiagnostics": 0,
+    "lintErrors": 0,
+    "verification": {
+      "path": "C:/w/admin645-health-integrations-response-final-verification-20261027-v1.json",
+      "sha256": "aae94866e2a117f823a231a149a328c55048e73623da2b0b702e74734323df6e"
+    }
+  },
+  "console": {
+    "generatedReadTypes": true,
+    "directGeneratedPathApiGetCalls": true,
+    "legacyOptionalDisplayFieldsRetained": true,
+    "readinessValidation": "Malformed/missing/unknown readiness status and HTML no longer fabricate ready; native ready/degraded/not_ready and old status-only responses remain supported.",
+    "noNewBackendThresholdOrAdmissionPolicy": true,
+    "noNewPermissionOrRouteOffer": true,
+    "canonicalHealthSnapshotSuppliesFleet": true,
+    "noDirectoryOrAncillaryFleetReadRequired": true,
+    "sessionAndWorkingAuthorityFencesUnchanged": true,
+    "oldActorLate401ControlRetained": true,
+    "resolvedNativeRegressions": [
+      "Canonical refresh updates devices and sync facts",
+      "Health-only readers retain authorized canonical boxes",
+      "Ancillary failed reads cannot erase canonical rows",
+      "Native down box prevents an all-healthy verdict",
+      "Initial Integrations failure is unread, not empty",
+      "Failed and held-retry integration reads do not reassert provisioned",
+      "Failed Health refresh cannot retain a green current headline",
+      "Contract-valid unknown is not green",
+      "Acknowledged matching alert does not erase the current box problem count",
+      "Station totals and each native ID/count are shown once, this API instance only; absent readings are Unknown, not zero"
+    ],
+    "nativeBrowser": {
+      "passed": 20,
+      "failed": 0,
+      "newFileCases": 12,
+      "retainedReadFailureCases": 8,
+      "builtConsoleAndPos": true,
+      "wholeFinalLogRead": true,
+      "receipt": {
+        "path": "C:/w/admin645-ui-browser-station-green.json",
+        "sha256": "f9bdeea41bda5fadb440dc6d31f89f4f185c60a0fbed174240492135074ead2b"
+      },
+      "log": {
+        "path": "C:/w/admin645-ui-browser-station-green.log",
+        "sha256": "311797b6db93399d74ee03cfb6511beff9f89c5f671eefef3c3703731b10e582"
+      },
+      "privateCleanupAndCensusConfirmed": true
+    },
+    "wholeConsoleUnits": {
+      "files": 38,
+      "passed": 374,
+      "todo": 3
+    },
+    "compiler": {
+      "projects": 3,
+      "diagnosticLines": 0,
+      "wholeFinalLogRead": true
+    },
+    "lint": {
+      "authoredUiFiles": 4,
+      "errors": 0
+    },
+    "stationRow": {
+      "informationalUnknownTone": true,
+      "notDeploymentOrFleetTotals": true,
+      "usesNativePerStationMap": true,
+      "noExtraDirectoryRequests": true,
+      "noThresholdInference": true,
+      "native390pxBoundsChecked": true
+    },
+    "verification": {
+      "path": "C:/w/admin645-ui-results-v2.json",
+      "sha256": "85adfc651c8f58e3694f8ac14b134687afd58df4f5445117bbdff91cb5b8fe06"
+    }
+  },
+  "adjacentChecks": {
+    "routeGuards": {
+      "files": 4,
+      "passed": 87
+    },
+    "generatedContractsAndSeam": {
+      "passed": 10,
+      "generatedMatchesApi": true
+    },
+    "rootReadiness": {
+      "passed": 11
+    },
+    "evidence": [
+      {
+        "path": "C:/w/admin645-root-guards-v1.json",
+        "sha256": "3449651ffb8ac89f887b74991418e211aa5042ad357f42f05b9455356098f20d",
+        "log": {
+          "path": "C:/w/admin645-root-guards-v1.log",
+          "sha256": "57e85c0c8d92270ccb17ff96f0a10d9defb97494f256b30d1853a3e010e6d211"
+        },
+        "exitCode": 0
+      },
+      {
+        "path": "C:/w/admin645-root-contracts-v1.json",
+        "sha256": "268812abced4acaedb28da6281c860ae2d441a5176f00af1a4a2210d5e8d142a",
+        "log": {
+          "path": "C:/w/admin645-root-contracts-v1.log",
+          "sha256": "239f3b761bd515f32a7cc8ba6afa2a33bd0e69101ef25361338e298629c7f17c"
+        },
+        "exitCode": 0
+      },
+      {
+        "path": "C:/w/admin645-root-readiness-v4.json",
+        "sha256": "33c5cbd9738a5044f850c5e93feed465dfe7b7504238161ee8dc8aa134c5455b",
+        "log": {
+          "path": "C:/w/admin645-root-readiness-v4.log",
+          "sha256": "f06419509ebc15e38e7f62a9d34565b998e4ee81251f09eefb39412f22afcdb5"
+        },
+        "exitCode": 0
+      }
+    ]
+  },
+  "knownExpectedFinding": {
+    "question": "Q26",
+    "severity": "high",
+    "fixed": false,
+    "expectedFailure": true,
+    "behavior": "A real critical alert reports down when readable; a restricted SQL role can still SELECT 1 but an alert read42501 is caught to empty and native healthSnapshot reports ok.",
+    "nativeRed": {
+      "passingControls": 2,
+      "functionalFailure": 1
+    },
+    "heldCheckpoint": {
+      "passingControls": 2,
+      "expectedFindingFailures": 1
+    },
+    "productionService": {
+      "path": "apps/api/src/services/ops.ts",
+      "sha256": "43471f25e8e59e8cf59845d5a5234905b5a028333cfaf4ab9645d4025a407148",
+      "unchanged": true
+    },
+    "review": {
+      "path": "C:/w/admin645-health-read-availability-review-v1.json",
+      "sha256": "d8790cca7e74ae158c7493db367767d276f6f9b2dc58bce1ff7871eca81f12ee"
+    }
+  },
+  "mixedConditionAssessment": {
+    "newBlocker": false,
+    "rationale": "The estate systemProblems list passes alerts=[] and independently renders each unhealthy box.detail; conditions.some coalesces only headline counting when an unacknowledged alert represents the box. It does not hide that native detail. Branch systemProblems omission predates this change.",
+    "earlierHelperOnlyConcealmentConcernCorrected": true,
+    "noAdditionalChangeRequested": true
+  },
+  "preservedHistory": {
+    "apiMissingSchemas": "38 pass / 4 fail before42GREEN",
+    "initialBrowser": "2 pass / 6 functional fail before8GREEN",
+    "followupBrowser": "7 pass / 4 functional fail before19GREEN",
+    "stationBrowser": "11 pass / 1 functional fail before20GREEN",
+    "rootReadiness": "5 pass / 6 functional fail before11GREEN",
+    "q26": "2 pass / 1 functional fail retained as expected failure",
+    "priorCompilerAndVerificationToolAttemptsRetained": true
+  },
+  "limits": [
+    "Partial local checkpoint only; no whole API/workspace/full-browser release, CI, staging or deployment approval",
+    "Post-rebase 132-native and affected workspace/contract/lint repeats are coordinator-owned and not claimed by this review",
+    "UI native tests intercept local API payloads; native API tests separately cover serializer and scoped projections",
+    "Unknown top-level health status is contract-valid defensive UI coverage; current native overallStatus emits only ok/warn/down",
+    "Q26 failed-read availability remains unresolved; provider round trips/delivery, expiry/protected consumers and unmeasured readiness are not accepted by these tests",
+    "No provider/SMS/webhook/payment action or actual staging data was used; 390px is browser measurement, not an independent pixel review"
+  ]
+}

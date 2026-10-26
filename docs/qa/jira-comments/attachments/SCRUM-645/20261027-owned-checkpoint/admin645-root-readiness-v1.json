@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-645",
+  "mode": "readiness",
+  "attempt": "v1",
+  "command": "pnpm --filter @oto/console test test/health-readiness-api.test.ts",
+  "startedAt": "2026-10-26T18:31:25.337Z",
+  "completedAt": "2026-10-26T18:31:28.357Z",
+  "exitCode": 1,
+  "signal": null,
+  "logSha256": "8486a2f42a771e2252a03b2b0e627906562331d4db57f2c3984fe6f0a69c1da2",
+  "runnerSha256": "9191b40b29dd9f0d3058ae58c642912da5b9b4cd549f9389d862a489794d5711",
+  "staging": false,
+  "localOnly": true
+}

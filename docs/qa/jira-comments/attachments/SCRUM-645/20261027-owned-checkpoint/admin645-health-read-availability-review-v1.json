@@ -1,0 +1,110 @@
+{
+  "ticket": "SCRUM-645",
+  "question": "Q26",
+  "reviewedAt": "2026-10-26T18:39:11.347Z",
+  "diagnosticVerified": true,
+  "productionDefectFixed": false,
+  "expectedFailureRetained": true,
+  "finding": {
+    "severity": "high",
+    "source": "apps/api/src/services/ops.ts:2706-2715",
+    "behavior": "A real own critical alert produces down when readable, but an alert SELECT permission failure is caught into an empty list and healthSnapshot returns ok while SELECT 1 still succeeds.",
+    "prescribedFix": "Preserve evidence-read availability instead of treating a failed alert read as empty healthy evidence; planner-owned Q26 integration remains pending.",
+    "httpReadinessPolicyChanged": false
+  },
+  "test": {
+    "path": "C:/w/admin-health-integrations/apps/api/test/health-read-availability-review.test.ts",
+    "sha256": "9b023de63b72006fbe2e3f3bad5c8c66bddfd3ccf8aed34974c1ee843b0525d1",
+    "originalRedSource": {
+      "path": "C:/w/admin645-health-read-before-held-20261027.test.ts",
+      "sha256": "f91f9b5a24a66fb3c4052a555afd4a4e9c0c17a869814bc2617b9324cd14d6db"
+    },
+    "cases": 3,
+    "passingControls": 2,
+    "expectedFindingFailures": 1,
+    "assertionBodiesUnchanged": true,
+    "compatibilityRefinement": "Removed only the test-side DB environment refusal so the normal CI createTestDatabase path remains supported; this local capture still stripped both database variables."
+  },
+  "productionSource": {
+    "path": "C:/w/admin-health-integrations/apps/api/src/services/ops.ts",
+    "sha256": "43471f25e8e59e8cf59845d5a5234905b5a028333cfaf4ab9645d4025a407148",
+    "unchangedThroughout": true
+  },
+  "evidence": [
+    {
+      "path": "C:/w/admin645-health-read-red-20261027-v1.json",
+      "sha256": "5b4c2231cf023c806d1b7fd055fbec56cabac1ad0bec14e5c931df9845a5ca73",
+      "exitCode": 1,
+      "log": {
+        "path": "C:/w/admin645-health-read-red-20261027-v1.log",
+        "sha256": "bbce9648d18d6b11311b44bfe6f9de10dbd2cae76a510f7bb3b7ae70d18357d9"
+      },
+      "wholeLogRead": true,
+      "scopedInputsUnchanged": true
+    },
+    {
+      "path": "C:/w/admin645-health-read-held-20261027-v1.json",
+      "sha256": "d99d9a5f93213085161a86d2e561d5c68ad9ef2b05f92eafee0ee10107f9065a",
+      "exitCode": 0,
+      "log": {
+        "path": "C:/w/admin645-health-read-held-20261027-v1.log",
+        "sha256": "4e861b2af74ff4de34dc4ea5339a28217c496ebeb0987896307e1e97404d684b"
+      },
+      "wholeLogRead": true,
+      "scopedInputsUnchanged": true
+    },
+    {
+      "path": "C:/w/admin645-health-read-lint-20261027-v1.json",
+      "sha256": "8061429d2b5872f6ee33462ccf3024caafb75bfb08b27251dfc1c4a9d75709b5",
+      "exitCode": 0,
+      "log": {
+        "path": "C:/w/admin645-health-read-lint-20261027-v1.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "wholeLogRead": true,
+      "scopedInputsUnchanged": true
+    },
+    {
+      "path": "C:/w/admin645-health-read-held-20261027-v2.json",
+      "sha256": "4824fc088b02c4de1cb0a7bd8c958afcbdd180b2215e1727b278e92ec286cabd",
+      "exitCode": 0,
+      "log": {
+        "path": "C:/w/admin645-health-read-held-20261027-v2.log",
+        "sha256": "f72ab5e6abd9f60e3996f735ff7f8d080b5ee2023beb89068f786b8751eb6663"
+      },
+      "wholeLogRead": true,
+      "scopedInputsUnchanged": true
+    },
+    {
+      "path": "C:/w/admin645-health-read-lint-20261027-v2.json",
+      "sha256": "ccc1a3aeba3aa03fccec5237e89136e75d70c9f571d351b37add27cb957e1b67",
+      "exitCode": 0,
+      "log": {
+        "path": "C:/w/admin645-health-read-lint-20261027-v2.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "wholeLogRead": true,
+      "scopedInputsUnchanged": true
+    }
+  ],
+  "cleanup": {
+    "path": "C:/w/admin645-health-read-cleanup-20261027-v1.json",
+    "sha256": "c0ba5a1de6698604a4b768904eccc7851f5f44ef0dfbb12b55a0bee21dd0cbd9"
+  },
+  "safety": {
+    "nativePrivatePostgres": true,
+    "databaseVariablesRemovedForCapture": true,
+    "noSeed": true,
+    "noAppServer": true,
+    "noSharedDatabase": true,
+    "noProviders": true,
+    "noStaging": true,
+    "noProductionEdits": true,
+    "noGitOrJiraMutation": true
+  },
+  "limits": [
+    "3-case service diagnostic only; not a whole API or release gate",
+    "The passing it.fails checkpoint intentionally retains the demonstrated unresolved Q26 defect",
+    "Only alert-read availability was reproduced; no new HTTP 503/status or other component failure policy was chosen"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "phase": "red",
+  "startedAt": "2026-10-26T18:33:18.178Z",
+  "finishedAt": "2026-10-26T18:35:15.858Z",
+  "exitCode": 1,
+  "nativeExitCode": 1,
+  "failure": null,
+  "teardown": {
+    "helperDatabaseDropped": true,
+    "harnessDatabasesAbsent": true,
+    "embeddedServerStopped": true
+  },
+  "databaseCensusUnchanged": true,
+  "logSha256": "f5f7d73465b830d02c1cfc645c7ac86478f1b10905ce1e73aaf3c97be3ea2ef9",
+  "staging": false,
+  "built": true,
+  "command": "pnpm --filter @oto/console e2e -- health-integrations-review.spec.ts"
+}

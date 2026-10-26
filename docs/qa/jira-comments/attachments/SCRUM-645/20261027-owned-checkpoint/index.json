@@ -1,0 +1,118 @@
+{
+  "ticket": "SCRUM-645",
+  "at": "2026-10-26T19:09:26.246Z",
+  "sourceSha": "c417341ddd8889aaed5e61f0e15c50d74c3d193b",
+  "publishedBranch": "lane/admin-health-integrations",
+  "fullRelease": false,
+  "staging": false,
+  "archives": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-source-checkpoint-v1.json",
+      "sha256": "b7728f324e0769eb7f0094d22091a2dc18fb55602a05057bee79bc5c46582ba6"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-scoped-independent-review-v1.json",
+      "sha256": "d9636c645af18a883dbb184a07cf2d953f08e0f1435f258ed904b6ae68e9e36b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-final-native-v1.json",
+      "sha256": "f386574b3b3aa829fad61078e192741de935a6c895a2df627c5bb2b5186a0fdd"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-final-workspace-v1.json",
+      "sha256": "bb8ca3f9cb42b669beba7ad50dc436ee66b894bebf3cb1b40b6ad471889a8d9d"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-health-integrations-response-final-verification-20261027-v1.json",
+      "sha256": "aae94866e2a117f823a231a149a328c55048e73623da2b0b702e74734323df6e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-health-integrations-response-red-20261027-v1.json",
+      "sha256": "52795aeaaccd503fd468f0c874892bec51bf92c64ac79402356c58860fa92118"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-health-integrations-response-green-20261027-v2.json",
+      "sha256": "ceae2212ff746072feffd91d573e8a9acf9c900b45019ba3a61ef1a0b8527fdf"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-health-integrations-response-compiler-20261027-v2.json",
+      "sha256": "2e8b7c64064e429cda8a08fa67db8d960dae51632bbd9b0bbd39b0da0e0b346e"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-health-integrations-schema-delta-20261027-v2.json",
+      "sha256": "4b2a67d6e273109e1f308a13fa20de78ad4e3ac8554f94e73ddc39718a73c102"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-health-read-availability-review-v1.json",
+      "sha256": "d8790cca7e74ae158c7493db367767d276f6f9b2dc58bce1ff7871eca81f12ee"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-health-read-red-20261027-v1.json",
+      "sha256": "5b4c2231cf023c806d1b7fd055fbec56cabac1ad0bec14e5c931df9845a5ca73"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-health-read-held-20261027-v2.json",
+      "sha256": "4824fc088b02c4de1cb0a7bd8c958afcbdd180b2215e1727b278e92ec286cabd"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-readiness-proof-v1.json",
+      "sha256": "fa9114dc57a1f6920bf6be63fd95603e7079e32efeb72455b2a45e89d7cf827b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-root-readiness-v1.json",
+      "sha256": "a5ac8bb82d61cbd5eb90b3182113c221fd74efebe67e8ad48f6e481c5c5e04b8"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-root-readiness-v2.json",
+      "sha256": "953d794a4ae83943de3cd65b5f2a9c0233b11b244ee755cf22bc24ba8291d5a9"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-root-readiness-v3.json",
+      "sha256": "00a33b976ca5e310e08114f34bf57f948121905a7e79a1f6783b72629cadbff1"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-root-readiness-v4.json",
+      "sha256": "33c5cbd9738a5044f850c5e93feed465dfe7b7504238161ee8dc8aa134c5455b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-root-contracts-v1.json",
+      "sha256": "268812abced4acaedb28da6281c860ae2d441a5176f00af1a4a2210d5e8d142a"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-root-guards-v1.json",
+      "sha256": "3449651ffb8ac89f887b74991418e211aa5042ad357f42f05b9455356098f20d"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-ui-results-v1.json",
+      "sha256": "a04d97073ae280bc9257e53e6565609726e3bea8589b146fd43b175ff06a8398"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-ui-results-v2.json",
+      "sha256": "85adfc651c8f58e3694f8ac14b134687afd58df4f5445117bbdff91cb5b8fe06"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-ui-browser-red.json",
+      "sha256": "8f36f0d827ed334c5779a32a610198c49cb92599dd596d2d9593e62b68ea1b9c"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-ui-browser-green.json",
+      "sha256": "1d06f267cc2a7bda147c0178e6baf3fc7b6a1a9486f1e3081e7daa816ac54fb8"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-ui-browser-review-red.json",
+      "sha256": "6b1e578c1c3aebb04e9727da20aad6815a34b1a98b1b0edb80922f64cfa1f900"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-ui-browser-review-green.json",
+      "sha256": "acf6e154dc30ee082ea0a2efb9bb4fe076666d30b76dcef9aa02cacfe49fe022"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-ui-browser-station-red.json",
+      "sha256": "7f8dd39d0fb7278dd56e0fc226a9594b95f635f18d0e8851355f26a27d8e641b"
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-645/20261027-owned-checkpoint/admin645-ui-browser-station-green.json",
+      "sha256": "f9bdeea41bda5fadb440dc6d31f89f4f185c60a0fbed174240492135074ead2b"
+    }
+  ]
+}

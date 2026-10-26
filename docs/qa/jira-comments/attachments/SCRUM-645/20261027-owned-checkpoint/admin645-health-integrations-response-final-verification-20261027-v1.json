@@ -1,0 +1,109 @@
+{
+  "ticket": "SCRUM-645",
+  "kind": "existing-health-integrations-additive-schema-verification",
+  "completedAt": "2026-10-26T18:41:47.050Z",
+  "passed": true,
+  "sourceFiles": {
+    "apps/api/src/routes/health.ts": "7fb7642862595ad62e84a0bf3c4256c919ab778d6435f397ceb7a3dc76604a4d",
+    "apps/api/src/routes/ops.ts": "4f01fccccb9672acceb0b3601ae6db5fffd1a5742679a3fd43ac9f81dceab09e",
+    "apps/api/src/routes/health-integration-schemas.ts": "61d8dc68fb91c1b4797c97e33931327a8cf3fc8092e0a7f4f259bc37da62257b",
+    "apps/api/test/health-integrations-response-review.test.ts": "f455922ff1fecb1370152e7633af5aa65eb8ce65cd3c277e6db7ed4b192c6aea"
+  },
+  "existingOpsApiTestSha256": "6ea1136821c27eeced4636cc974cf7c8840b9640e05a811afa004f04482f6b5d",
+  "refs": [
+    {
+      "path": "C:/w/admin645-health-integrations-response-red-20261027-v1.json",
+      "sha256": "52795aeaaccd503fd468f0c874892bec51bf92c64ac79402356c58860fa92118",
+      "logPath": "C:/w/admin645-health-integrations-response-red-20261027-v1.log",
+      "logSha256": "29a78d6fda8e0474d456d184e44dc8c15c150565055f9b4053c9309b203bd591",
+      "exitCode": 1,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:35:15.242Z"
+    },
+    {
+      "path": "C:/w/admin645-health-integrations-response-green-20261027-v2.json",
+      "sha256": "ceae2212ff746072feffd91d573e8a9acf9c900b45019ba3a61ef1a0b8527fdf",
+      "logPath": "C:/w/admin645-health-integrations-response-green-20261027-v2.log",
+      "logSha256": "8840f3f1ed624eccf70f4f6bc98d5f5fdfe931d9f9b85e0709ce80728932b932",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:38:34.447Z"
+    },
+    {
+      "path": "C:/w/admin645-health-integrations-response-compiler-20261027-v2.json",
+      "sha256": "2e8b7c64064e429cda8a08fa67db8d960dae51632bbd9b0bbd39b0da0e0b346e",
+      "logPath": "C:/w/admin645-health-integrations-response-compiler-20261027-v2.log",
+      "logSha256": "aa88f9fceb6165fafc8f9ce40f6db5de18053f2ca61e2b0d63bbb3605d2bc225",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:38:55.733Z"
+    },
+    {
+      "path": "C:/w/admin645-health-integrations-response-lint-20261027-v2.json",
+      "sha256": "9d1b56e1fd92a614f32fa340d0f39bc6b8b72356dd93a4e5a6ab371ba8bb173d",
+      "logPath": "C:/w/admin645-health-integrations-response-lint-20261027-v2.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:38:59.182Z"
+    }
+  ],
+  "cases": {
+    "red": {
+      "passed": 38,
+      "failed": 4,
+      "total": 42
+    },
+    "green": {
+      "passed": 42,
+      "failed": 0,
+      "total": 42
+    },
+    "newReviewCases": 8,
+    "unchangedExistingCases": 34,
+    "sameReviewTestBytes": true,
+    "uniqueCases": 42,
+    "wholeLogsRead": true
+  },
+  "compiler": {
+    "exitCode": 0,
+    "diagnosticLines": 0,
+    "fullOutputRead": true,
+    "logPath": "C:/w/admin645-health-integrations-response-compiler-20261027-v2.log"
+  },
+  "lint": {
+    "exitCode": 0,
+    "fullOutputRead": true,
+    "logPath": "C:/w/admin645-health-integrations-response-lint-20261027-v2.log"
+  },
+  "sourceDelta": {
+    "path": "C:/w/admin645-health-integrations-schema-delta-20261027-v2.json",
+    "sha256": "4b2a67d6e273109e1f308a13fa20de78ad4e3ac8554f94e73ddc39718a73c102",
+    "nativeHandlerInputPermissionAndProjectionTextUnchanged": true
+  },
+  "preserved": {
+    "readyDatabaseOnly503": true,
+    "degraded200": true,
+    "nullableUnknownMeasurements": true,
+    "stationCountRecordKeys": true,
+    "nativeReportedStringsAndFractionalNumbers": true,
+    "branchVersusEstateArrays": true,
+    "allCurrentFleetDeviceBoothFields": true,
+    "allCurrentProviderOptionalMetadata": true,
+    "noNewRawTelemetryExposure": true
+  },
+  "ownedEmbeddedPostgresRemoved": true,
+  "sharedDatabaseEnvironmentRemoved": true,
+  "envFileCopied": false,
+  "noDocker": true,
+  "noStaging": true,
+  "limits": [
+    "This validates only response declarations on existing endpoints; no Health/Integrations behavior extension or Q26 integration is implemented.",
+    "Generated clients/contracts and complete ticket release gates remain coordinator-owned.",
+    "Provider fetches in the new review are captured synthetic responses; no live provider acceptance is claimed."
+  ],
+  "history": [
+    "Original missing-schema RED is retained.",
+    "An AST-printer scope comparison false result is retained; exact controlled text removal proves both route files otherwise unchanged."
+  ]
+}

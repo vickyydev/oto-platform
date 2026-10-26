@@ -1,0 +1,225 @@
+{
+    "ticket":  "SCRUM-645",
+    "phase":  "Final scoped UI freeze including native station readiness display",
+    "createdAt":  "2026-10-26T19:03:54.7435064Z",
+    "passed":  true,
+    "historicalCheckpoint":  {
+                                 "path":  "C:/w/admin645-ui-results-v1.json",
+                                 "sha256":  "a04d97073ae280bc9257e53e6565609726e3bea8589b146fd43b175ff06a8398"
+                             },
+    "ownedFiles":  [
+                       {
+                           "path":  "apps/console/src/pages/Health.tsx",
+                           "sha256":  "03642e82db3f88e1c7997c05bf759f74f227aaf2ed951fd586fba2ae46dc9f91"
+                       },
+                       {
+                           "path":  "apps/console/src/pages/Integrations.tsx",
+                           "sha256":  "7eed4226bb21a8441d37a2c74eb42392d6f666016b99105b3c33abd16e1ede2e"
+                       },
+                       {
+                           "path":  "apps/console/src/components/devices/FleetSummary.tsx",
+                           "sha256":  "173fc98c1ef876b91973d86c46a25cddd502d2ccd02df1dc16735715134c7731"
+                       },
+                       {
+                           "path":  "apps/console/e2e/health-integrations-review.spec.ts",
+                           "sha256":  "130413864adec3b7f9756ddcbd955db7296cd4558c07cf7e5aa4317406f3d3d8"
+                       }
+                   ],
+    "typedAdapterDependency":  {
+                                   "path":  "apps/console/src/api/observability.ts",
+                                   "sha256":  "9d40339663cbaaaa6775c07a9c80978fbb7f2650b63d282b5cf70b9c05974b1b"
+                               },
+    "logs":  [
+                 {
+                     "sha256":  "8f36f0d827ed334c5779a32a610198c49cb92599dd596d2d9593e62b68ea1b9c",
+                     "path":  "C:/w/admin645-ui-browser-red.json"
+                 },
+                 {
+                     "sha256":  "f5f7d73465b830d02c1cfc645c7ac86478f1b10905ce1e73aaf3c97be3ea2ef9",
+                     "path":  "C:/w/admin645-ui-browser-red.log"
+                 },
+                 {
+                     "sha256":  "1d06f267cc2a7bda147c0178e6baf3fc7b6a1a9486f1e3081e7daa816ac54fb8",
+                     "path":  "C:/w/admin645-ui-browser-green.json"
+                 },
+                 {
+                     "sha256":  "5fd480136b7f05963e41a00173b0e69a1d40ce15b70bef39f995879c96071156",
+                     "path":  "C:/w/admin645-ui-browser-green.log"
+                 },
+                 {
+                     "sha256":  "6b1e578c1c3aebb04e9727da20aad6815a34b1a98b1b0edb80922f64cfa1f900",
+                     "path":  "C:/w/admin645-ui-browser-review-red.json"
+                 },
+                 {
+                     "sha256":  "b19738adc54e8d0c96618cf37471ad95a0f28294a2c03688aef873b719a78d48",
+                     "path":  "C:/w/admin645-ui-browser-review-red.log"
+                 },
+                 {
+                     "sha256":  "acf6e154dc30ee082ea0a2efb9bb4fe076666d30b76dcef9aa02cacfe49fe022",
+                     "path":  "C:/w/admin645-ui-browser-review-green.json"
+                 },
+                 {
+                     "sha256":  "faf6bdff08792a449a6eaff902b1c1314483aad06553e444bff3b4ef598c18ce",
+                     "path":  "C:/w/admin645-ui-browser-review-green.log"
+                 },
+                 {
+                     "sha256":  "36103a0d5edbf8b4381cf026035ec0932bcda05c6bcd0c07db8716b3783fb8e8",
+                     "path":  "C:/w/admin645-ui-typecheck-v4.log"
+                 },
+                 {
+                     "sha256":  "7f1e31454c1cd6a5a18aee058b618151606dc1c91724fa0f07a57423d9874052",
+                     "path":  "C:/w/admin645-ui-unit-v1.log"
+                 },
+                 {
+                     "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                     "path":  "C:/w/admin645-ui-eslint-v1.log"
+                 },
+                 {
+                     "path":  "C:/w/admin645-ui-browser-station-red.json",
+                     "sha256":  "7f8dd39d0fb7278dd56e0fc226a9594b95f635f18d0e8851355f26a27d8e641b"
+                 },
+                 {
+                     "path":  "C:/w/admin645-ui-browser-station-red.log",
+                     "sha256":  "eaba19a92a144ee4d28d0e9c7a297d04ae584560349aaeb4c49af66b51d62d07"
+                 },
+                 {
+                     "path":  "C:/w/admin645-ui-browser-station-green.json",
+                     "sha256":  "f9bdeea41bda5fadb440dc6d31f89f4f185c60a0fbed174240492135074ead2b"
+                 },
+                 {
+                     "path":  "C:/w/admin645-ui-browser-station-green.log",
+                     "sha256":  "311797b6db93399d74ee03cfb6511beff9f89c5f671eefef3c3703731b10e582"
+                 },
+                 {
+                     "path":  "C:/w/admin645-ui-typecheck-v5.log",
+                     "sha256":  "7ec7251c12ad94f7d7de5c9e09309509666858f7dd5f92d99eb0c5f810ae4776"
+                 },
+                 {
+                     "path":  "C:/w/admin645-ui-unit-v2.log",
+                     "sha256":  "af3f1a788a0c266c7ff51ed45da7375d63ed6474e47d1bab9bc15898c326eb3a"
+                 },
+                 {
+                     "path":  "C:/w/admin645-ui-eslint-v2.log",
+                     "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                 }
+             ],
+    "initialNative":  {
+                          "firstGreen":  8,
+                          "originalEightTestBytesUnchanged":  true,
+                          "testSha256":  "cfd382092b4efdcc34b321fe476ea700a091b2a60fab6e8d420a2efc3aa47ac3",
+                          "failed":  6,
+                          "passed":  2
+                      },
+    "reviewNative":  {
+                         "finalGreen":  19,
+                         "retainedReadFailureCases":  8,
+                         "newFileCases":  11,
+                         "failed":  4,
+                         "passed":  7
+                     },
+    "stationNative":  {
+                          "red":  {
+                                      "passed":  11,
+                                      "failed":  1,
+                                      "reason":  "Missing station readings in Services when native snapshot checks are present",
+                                      "receipt":  "C:/w/admin645-ui-browser-station-red.json",
+                                      "testBytesUnchangedForGreen":  true
+                                  },
+                          "green":  {
+                                        "passed":  20,
+                                        "failed":  0,
+                                        "newFileCases":  12,
+                                        "retainedReadFailureCases":  8,
+                                        "receipt":  "C:/w/admin645-ui-browser-station-green.json",
+                                        "wholeOutputRead":  true
+                                    },
+                          "checks":  [
+                                         "Native readiness totals and distinct perStation ID/counts, limited to this API instance",
+                                         "Optional stationChannels absence is Unknown and does not reuse counts or invent zero",
+                                         "390px document remains bounded; existing healthy policy is unchanged"
+                                     ]
+                      },
+    "compiler":  {
+                     "exitCode":  0,
+                     "projects":  3,
+                     "diagnostics":  0,
+                     "wholeOutputRead":  true,
+                     "log":  "C:/w/admin645-ui-typecheck-v5.log"
+                 },
+    "units":  {
+                  "exitCode":  0,
+                  "filesPassed":  38,
+                  "passed":  374,
+                  "existingTodo":  3,
+                  "wholeOutputRead":  true,
+                  "log":  "C:/w/admin645-ui-unit-v2.log"
+              },
+    "lint":  {
+                 "exitCode":  0,
+                 "ownedFiles":  4,
+                 "outputLines":  0,
+                 "log":  "C:/w/admin645-ui-eslint-v2.log"
+             },
+    "builds":  {
+                   "console":  0,
+                   "pos":  0,
+                   "via":  "Console native built-browser harness",
+                   "inheritedWarnings":  [
+                                             "Existing large bundle warning",
+                                             "Existing POS platform module mixed dynamic/static import warning"
+                                         ]
+               },
+    "images":  [
+                   {
+                       "path":  "C:\\w\\admin645-ui-final-local-images\\health-current-telemetry-desktop.png",
+                       "sha256":  "08f2d671d8e28879ff022ab12410254996232cc4ca342140cf13da4cf8f652e0",
+                       "inspected":  true,
+                       "staging":  false,
+                       "fixture":  "Built native UI with locally intercepted synthetic API responses",
+                       "testSource":  "apps/console/e2e/health-integrations-review.spec.ts",
+                       "testSourceSha256":  "130413864adec3b7f9756ddcbd955db7296cd4558c07cf7e5aa4317406f3d3d8",
+                       "testSourceLine":  100
+                   },
+                   {
+                       "path":  "C:\\w\\admin645-ui-final-local-images\\health-current-telemetry-phone.png",
+                       "sha256":  "45507a12f63bf03b91c7e063738acc4c0914c2c9c11be357be49607de5e34299",
+                       "inspected":  true,
+                       "staging":  false,
+                       "fixture":  "Built native UI with locally intercepted synthetic API responses",
+                       "testSource":  "apps/console/e2e/health-integrations-review.spec.ts",
+                       "testSourceSha256":  "130413864adec3b7f9756ddcbd955db7296cd4558c07cf7e5aa4317406f3d3d8",
+                       "testSourceLine":  100
+                   },
+                   {
+                       "path":  "C:\\w\\admin645-ui-final-local-images\\integrations-failed-read.png",
+                       "sha256":  "c7e36845a379efe3cef5c0dafed9fbc2963f944e607c39c1635a632f7e26f6fc",
+                       "inspected":  true,
+                       "staging":  false,
+                       "fixture":  "Built native UI with locally intercepted synthetic API responses",
+                       "testSource":  "apps/console/e2e/health-integrations-review.spec.ts",
+                       "testSourceSha256":  "130413864adec3b7f9756ddcbd955db7296cd4558c07cf7e5aa4317406f3d3d8",
+                       "testSourceLine":  165
+                   }
+               ],
+    "imageReview":  {
+                        "inspectedAll3":  true,
+                        "healthDesktop":  "Populated native box detail and informational station counts remain readable",
+                        "healthPhone":  "390px layout stays bounded; existing service label truncation remains, counters and detail wrap",
+                        "integrationsFailure":  "Failed read and retained-success qualification are visible; variable list is unread, no current all-clear",
+                        "sourceFrame":  "Final station-green actual built browser; screenshots from tests at lines100/165",
+                        "localOnly":  true
+                    },
+    "privateResourcesCleaned":  true,
+    "staging":  false,
+    "sourceLanded":  false,
+    "deployed":  false,
+    "limits":  [
+                   "The 12 new native UI cases use locally intercepted APIs; they do not prove server scope or serialization.",
+                   "Unknown aggregate status is schema-valid defensive coverage; current native overallStatus does not emit unknown.",
+                   "Station connections describe only the responding API instance, with no fleet/deployment totals or threshold judgment.",
+                   "Services remains at its existing estate-wide reach gate; no new directory/provider/action consumer.",
+                   "The acknowledged-alert regression fixes the current headline count; estate systemProblems already preserved the box detail independently.",
+                   "Unmeasured readiness, provider delivery/expiry/protected consumer work remains held by Q26; no full-ticket acceptance.",
+                   "No staging authentication, writes, CI or deployment evidence is claimed by this receipt."
+               ]
+}

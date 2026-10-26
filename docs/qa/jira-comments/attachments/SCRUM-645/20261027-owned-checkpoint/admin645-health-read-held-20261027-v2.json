@@ -1,0 +1,74 @@
+{
+  "ticket": "SCRUM-645",
+  "question": "Q26",
+  "phase": "held",
+  "startedAt": "2026-10-26T18:37:58.813Z",
+  "completedAt": "2026-10-26T18:38:23.740Z",
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\w\\admin-health-integrations\\apps\\api\\node_modules\\vitest\\vitest.mjs",
+      "run",
+      "test/health-read-availability-review.test.ts",
+      "--maxWorkers=1"
+    ],
+    "cwd": "C:\\w\\admin-health-integrations\\apps\\api"
+  },
+  "nodeVersion": "v22.17.1",
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "before": {
+    "apps/api/test/health-read-availability-review.test.ts": "9b023de63b72006fbe2e3f3bad5c8c66bddfd3ccf8aed34974c1ee843b0525d1",
+    "apps/api/src/services/ops.ts": "43471f25e8e59e8cf59845d5a5234905b5a028333cfaf4ab9645d4025a407148",
+    "apps/api/src/services/occupancy.ts": "0698e17b551ed84195ee4c5740b5efb2b7c64abccd2ce1560138fb9d5a247495",
+    "apps/api/src/services/box.ts": "3e6fafc0d145fbcc3b5256fd062d786755f140fb37bd5d8c3f20c324b33598b1",
+    "apps/api/src/services/sync.ts": "b5c002df28c3785e048cf235c416365db5b30da8affb70b18b8206332b6c7846",
+    "packages/db/src/testing.ts": "9d9e41cd6469cada8ec62ed8b68e9976425938192bac58f855d65c05eed57f30",
+    "packages/db/src/schema/ops.ts": "053d700328576323ee20ffd0b01e28429c6bb8b59805c8f2616c28fae081b73a",
+    "packages/db/src/schema/tenancy.ts": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569",
+    "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+    "apps/api/package.json": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3",
+    "apps/api/vitest.config.ts": "c46861b6f3d5a4fdf34bd5e90c2b86326ec141610df92c8d9f232c82f521f261",
+    "packages/db/package.json": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+    "packages/shared/package.json": "26d84d2a72d80f229bae5fc98aa0b4b50c2835a533e3393a444978242fbe1f64"
+  },
+  "after": {
+    "apps/api/test/health-read-availability-review.test.ts": "9b023de63b72006fbe2e3f3bad5c8c66bddfd3ccf8aed34974c1ee843b0525d1",
+    "apps/api/src/services/ops.ts": "43471f25e8e59e8cf59845d5a5234905b5a028333cfaf4ab9645d4025a407148",
+    "apps/api/src/services/occupancy.ts": "0698e17b551ed84195ee4c5740b5efb2b7c64abccd2ce1560138fb9d5a247495",
+    "apps/api/src/services/box.ts": "3e6fafc0d145fbcc3b5256fd062d786755f140fb37bd5d8c3f20c324b33598b1",
+    "apps/api/src/services/sync.ts": "b5c002df28c3785e048cf235c416365db5b30da8affb70b18b8206332b6c7846",
+    "packages/db/src/testing.ts": "9d9e41cd6469cada8ec62ed8b68e9976425938192bac58f855d65c05eed57f30",
+    "packages/db/src/schema/ops.ts": "053d700328576323ee20ffd0b01e28429c6bb8b59805c8f2616c28fae081b73a",
+    "packages/db/src/schema/tenancy.ts": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569",
+    "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+    "apps/api/package.json": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3",
+    "apps/api/vitest.config.ts": "c46861b6f3d5a4fdf34bd5e90c2b86326ec141610df92c8d9f232c82f521f261",
+    "packages/db/package.json": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+    "packages/shared/package.json": "26d84d2a72d80f229bae5fc98aa0b4b50c2835a533e3393a444978242fbe1f64"
+  },
+  "scopedInputsUnchanged": true,
+  "logPath": "C:/w/admin645-health-read-held-20261027-v2.log",
+  "logSha256": "f72ab5e6abd9f60e3996f735ff7f8d080b5ee2023beb89068f786b8751eb6663",
+  "helperSha256": "4d13d4ecc287b19c8ae57392838b8a75725b4bbc6521c7b3ee0622ea2667db5f",
+  "databaseEnvironmentRemoved": [
+    "DATABASE_URL",
+    "TEST_DATABASE_URL"
+  ],
+  "runtime": "native embedded PostgreSQL; fresh migrated private database; no seed/server/providers",
+  "noSharedDatabase": true,
+  "productionChanges": false,
+  "staging": false,
+  "providerActions": false,
+  "logRedaction": {
+    "databaseUrls": true,
+    "changed": false
+  },
+  "limits": [
+    "Scoped source/dependency binding, not a whole-workspace gate",
+    "No HTTP readiness policy or staging proof"
+  ]
+}

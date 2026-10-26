@@ -1,0 +1,58 @@
+{
+  "ticket": "SCRUM-645",
+  "base": "a5f3fa4eefb6feb47d22541f5c9a0ee70d9e136b",
+  "baselineSha256": "753b9727e1780c59acade33662569bd41cf2dd0960ef390b64a62d9cc4e3aeff",
+  "testPath": "apps/console/test/health-readiness-api.test.ts",
+  "testHash": "89e9aeb159a07c3529f0eb561e37da0029642d6b8edba364e1f313b8067d9051",
+  "evidence": [
+    {
+      "path": "C:/w/admin645-root-readiness-v1.json",
+      "sha256": "a5ac8bb82d61cbd5eb90b3182113c221fd74efebe67e8ad48f6e481c5c5e04b8",
+      "exitCode": 1,
+      "logSha256": "8486a2f42a771e2252a03b2b0e627906562331d4db57f2c3984fe6f0a69c1da2"
+    },
+    {
+      "path": "C:/w/admin645-root-readiness-v2.json",
+      "sha256": "953d794a4ae83943de3cd65b5f2a9c0233b11b244ee755cf22bc24ba8291d5a9",
+      "exitCode": 1,
+      "logSha256": "f42c850d8bda8366745d9de5a744a2514b025066d74395cd4c296bc8a20ae8f8"
+    },
+    {
+      "path": "C:/w/admin645-root-readiness-v3.json",
+      "sha256": "00a33b976ca5e310e08114f34bf57f948121905a7e79a1f6783b72629cadbff1",
+      "exitCode": 0,
+      "logSha256": "5d9836e0fd92791c18a120fa353997bffce0ea0b300933339ec12bf21fdc965b"
+    },
+    {
+      "path": "C:/w/admin645-root-readiness-v4.json",
+      "sha256": "33c5cbd9738a5044f850c5e93feed465dfe7b7504238161ee8dc8aa134c5455b",
+      "exitCode": 0,
+      "logSha256": "f06419509ebc15e38e7f62a9d34565b998e4ee81251f09eefb39412f22afcdb5"
+    }
+  ],
+  "compilerHistory": [
+    {
+      "path": "C:/w/admin645-ui-typecheck-v1.log",
+      "sha256": "69a6a645ea33c6825064ee5de34ffdf21ae2fae52388101a06ec0878424c1fd2"
+    },
+    {
+      "path": "C:/w/admin645-ui-typecheck-v2.log",
+      "sha256": "d6fc35aed9b07807df8549d5c6e5d0f101d1ffa7c8bc048f0f536829dca81a25"
+    },
+    {
+      "path": "C:/w/admin645-ui-typecheck-v3.log",
+      "sha256": "36103a0d5edbf8b4381cf026035ec0932bcda05c6bcd0c07db8716b3783fb8e8"
+    },
+    {
+      "path": "C:/w/admin645-ui-typecheck-v4.log",
+      "sha256": "36103a0d5edbf8b4381cf026035ec0932bcda05c6bcd0c07db8716b3783fb8e8"
+    },
+    {
+      "path": "C:/w/admin645-ui-typecheck-v5.log",
+      "sha256": "7ec7251c12ad94f7d7de5c9e09309509666858f7dd5f92d99eb0c5f810ae4776"
+    }
+  ],
+  "history": "First v1 fixture shorthand passed an empty array as zero arguments; v2 corrected only the fixture to preserve an explicit body. Correct v2 is six functional failures and five controls. The same eleven test bytes pass in v3 after status validation and v4 after generated-type migration. API admission and old status-only semantics are unchanged. Initial UI typechecks v1/v2 caught existing optional display fields; native-derived compatibility aliases preserve those fields without changing tests or the response.",
+  "staging": false,
+  "fullRelease": false
+}

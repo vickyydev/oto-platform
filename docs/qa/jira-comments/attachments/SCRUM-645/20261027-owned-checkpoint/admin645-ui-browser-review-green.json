@@ -1,0 +1,18 @@
+{
+  "phase": "review-green",
+  "startedAt": "2026-10-26T18:52:36.973Z",
+  "finishedAt": "2026-10-26T18:54:04.532Z",
+  "exitCode": 0,
+  "nativeExitCode": 0,
+  "failure": null,
+  "teardown": {
+    "helperDatabaseDropped": true,
+    "harnessDatabasesAbsent": true,
+    "embeddedServerStopped": true
+  },
+  "databaseCensusUnchanged": true,
+  "logSha256": "faf6bdff08792a449a6eaff902b1c1314483aad06553e444bff3b4ef598c18ce",
+  "staging": false,
+  "built": true,
+  "command": "pnpm --filter @oto/console e2e -- health-integrations-review.spec.ts read-failures.spec.ts"
+}

@@ -1,0 +1,30 @@
+{
+  "ticket": "SCRUM-645",
+  "originalSha": "5432eaeeb45a9b3a6b3ee70908f46a9917e7e87e",
+  "sha": "c417341ddd8889aaed5e61f0e15c50d74c3d193b",
+  "base": "4089b5bf37d75c2b51131e670e748e106e2223c6",
+  "files": {
+    "apps/api/src/routes/health-integration-schemas.ts": "61d8dc68fb91c1b4797c97e33931327a8cf3fc8092e0a7f4f259bc37da62257b",
+    "apps/api/src/routes/health.ts": "7fb7642862595ad62e84a0bf3c4256c919ab778d6435f397ceb7a3dc76604a4d",
+    "apps/api/src/routes/ops.ts": "4f01fccccb9672acceb0b3601ae6db5fffd1a5742679a3fd43ac9f81dceab09e",
+    "apps/api/test/health-integrations-response-review.test.ts": "f455922ff1fecb1370152e7633af5aa65eb8ce65cd3c277e6db7ed4b192c6aea",
+    "apps/api/test/health-read-availability-review.test.ts": "9b023de63b72006fbe2e3f3bad5c8c66bddfd3ccf8aed34974c1ee843b0525d1",
+    "apps/console/e2e/health-integrations-review.spec.ts": "130413864adec3b7f9756ddcbd955db7296cd4558c07cf7e5aa4317406f3d3d8",
+    "apps/console/src/api/observability.ts": "9d40339663cbaaaa6775c07a9c80978fbb7f2650b63d282b5cf70b9c05974b1b",
+    "apps/console/src/components/devices/FleetSummary.tsx": "173fc98c1ef876b91973d86c46a25cddd502d2ccd02df1dc16735715134c7731",
+    "apps/console/src/pages/Health.tsx": "03642e82db3f88e1c7997c05bf759f74f227aaf2ed951fd586fba2ae46dc9f91",
+    "apps/console/src/pages/Integrations.tsx": "7eed4226bb21a8441d37a2c74eb42392d6f666016b99105b3c33abd16e1ede2e",
+    "apps/console/test/health-readiness-api.test.ts": "89e9aeb159a07c3529f0eb561e37da0029642d6b8edba364e1f313b8067d9051",
+    "packages/api-types/openapi.json": "75263f9a27a40ef90ccb0d8135919e5eb881634881726a1d82dfa5c8de83b0f3",
+    "packages/api-types/src/openapi.ts": "4c7505504a0f40936f01c3233a6a692d0e1978a397d17bdb583cd10ece09a302",
+    "packages/api-types/test/migration-list.ts": "6f7d61d24cbde7980f6104f26eab21a0d252341b0d6c43d6df340738295a3304"
+  },
+  "sourceBytesUnchanged": true,
+  "ownCommitSubjects": [
+    "fix(console): show current health and integration readings"
+  ],
+  "at": "2026-10-26T19:05:57.780Z",
+  "pushed": false,
+  "fullRelease": false,
+  "staging": false
+}

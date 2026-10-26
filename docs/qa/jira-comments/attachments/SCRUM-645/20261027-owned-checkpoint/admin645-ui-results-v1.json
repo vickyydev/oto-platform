@@ -1,0 +1,123 @@
+{
+    "ticket":  "SCRUM-645",
+    "phase":  "Pre-station-display frozen local checkpoint",
+    "createdAt":  "2026-10-26T18:54:42.5707258Z",
+    "ownedFiles":  [
+                       {
+                           "sha256":  "86412bbbee82c38195fdbfe9008f4e7d00ce5bf0da8225ccb1616ddb48596da4",
+                           "path":  "apps/console/src/pages/Health.tsx"
+                       },
+                       {
+                           "sha256":  "7eed4226bb21a8441d37a2c74eb42392d6f666016b99105b3c33abd16e1ede2e",
+                           "path":  "apps/console/src/pages/Integrations.tsx"
+                       },
+                       {
+                           "sha256":  "173fc98c1ef876b91973d86c46a25cddd502d2ccd02df1dc16735715134c7731",
+                           "path":  "apps/console/src/components/devices/FleetSummary.tsx"
+                       },
+                       {
+                           "sha256":  "9bf6fa2d485c6584159466953e126a757b0ee82896c8d2494b7ff6f454087e39",
+                           "path":  "apps/console/e2e/health-integrations-review.spec.ts"
+                       }
+                   ],
+    "logs":  [
+                 {
+                     "sha256":  "8f36f0d827ed334c5779a32a610198c49cb92599dd596d2d9593e62b68ea1b9c",
+                     "path":  "C:/w/admin645-ui-browser-red.json"
+                 },
+                 {
+                     "sha256":  "f5f7d73465b830d02c1cfc645c7ac86478f1b10905ce1e73aaf3c97be3ea2ef9",
+                     "path":  "C:/w/admin645-ui-browser-red.log"
+                 },
+                 {
+                     "sha256":  "1d06f267cc2a7bda147c0178e6baf3fc7b6a1a9486f1e3081e7daa816ac54fb8",
+                     "path":  "C:/w/admin645-ui-browser-green.json"
+                 },
+                 {
+                     "sha256":  "5fd480136b7f05963e41a00173b0e69a1d40ce15b70bef39f995879c96071156",
+                     "path":  "C:/w/admin645-ui-browser-green.log"
+                 },
+                 {
+                     "sha256":  "6b1e578c1c3aebb04e9727da20aad6815a34b1a98b1b0edb80922f64cfa1f900",
+                     "path":  "C:/w/admin645-ui-browser-review-red.json"
+                 },
+                 {
+                     "sha256":  "b19738adc54e8d0c96618cf37471ad95a0f28294a2c03688aef873b719a78d48",
+                     "path":  "C:/w/admin645-ui-browser-review-red.log"
+                 },
+                 {
+                     "sha256":  "acf6e154dc30ee082ea0a2efb9bb4fe076666d30b76dcef9aa02cacfe49fe022",
+                     "path":  "C:/w/admin645-ui-browser-review-green.json"
+                 },
+                 {
+                     "sha256":  "faf6bdff08792a449a6eaff902b1c1314483aad06553e444bff3b4ef598c18ce",
+                     "path":  "C:/w/admin645-ui-browser-review-green.log"
+                 },
+                 {
+                     "sha256":  "36103a0d5edbf8b4381cf026035ec0932bcda05c6bcd0c07db8716b3783fb8e8",
+                     "path":  "C:/w/admin645-ui-typecheck-v4.log"
+                 },
+                 {
+                     "sha256":  "7f1e31454c1cd6a5a18aee058b618151606dc1c91724fa0f07a57423d9874052",
+                     "path":  "C:/w/admin645-ui-unit-v1.log"
+                 },
+                 {
+                     "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                     "path":  "C:/w/admin645-ui-eslint-v1.log"
+                 }
+             ],
+    "images":  [
+                   {
+                       "sha256":  "25c656fd6a17ce0df723e2eeb28afe6f21a3dd65e50da46bb123e9e671f61316",
+                       "path":  "C:\\w\\admin645-ui-pre-station\\integrations-failed-read.png"
+                   },
+                   {
+                       "sha256":  "fb1d395fea5c9d3a0cb6016baa0e6eee156f1be043c83e18cfd5e9a3ff68eb7f",
+                       "path":  "C:\\w\\admin645-ui-pre-station\\health-current-telemetry-desktop.png"
+                   },
+                   {
+                       "sha256":  "983c9f90fc4c473f950aefe63c8cd96d2152b1b50eee0976445268c8887cf46a",
+                       "path":  "C:\\w\\admin645-ui-pre-station\\health-current-telemetry-phone.png"
+                   }
+               ],
+    "initialNative":  {
+                          "firstGreen":  8,
+                          "originalEightTestBytesUnchanged":  true,
+                          "testSha256":  "cfd382092b4efdcc34b321fe476ea700a091b2a60fab6e8d420a2efc3aa47ac3",
+                          "failed":  6,
+                          "passed":  2
+                      },
+    "reviewNative":  {
+                         "finalGreen":  19,
+                         "retainedReadFailureCases":  8,
+                         "newFileCases":  11,
+                         "failed":  4,
+                         "passed":  7
+                     },
+    "compiler":  {
+                     "projects":  3,
+                     "diagnostics":  0,
+                     "exitCode":  0,
+                     "wholeOutputRead":  true
+                 },
+    "units":  {
+                  "filesPassed":  38,
+                  "exitCode":  0,
+                  "existingTodo":  3,
+                  "passed":  374
+              },
+    "lint":  {
+                 "exitCode":  0,
+                 "ownedFiles":  4,
+                 "outputLines":  0
+             },
+    "privateResourcesCleaned":  true,
+    "staging":  false,
+    "sourceLanded":  false,
+    "limits":  [
+                   "Native new UI cases intercept local API responses; not server scope/serialization proof",
+                   "Unknown aggregate status is schema-valid defensive coverage, not emitted by the present native overallStatus handler",
+                   "Full unmeasured readiness fields/provider actions/expiry consumers remain Q26; no whole-ticket acceptance",
+                   "Next native stationChannels display not included in this checkpoint"
+               ]
+}
