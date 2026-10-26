@@ -7,7 +7,7 @@
   "mainFeature": false,
   "deployed": false,
   "stagingAcceptance": false,
-  "policy": "Original JSON/log hashes are retained. Text archives use LF; displayed logs remove only trailing horizontal whitespace and redundant final blank lines. No receipt result is changed.",
+  "policy": "Original JSON/log hashes are retained. Text archives use LF; displayed logs remove only trailing horizontal whitespace and redundant final blank lines. No receipt result is changed. Three known synthetic auth-code outputs in the named display logs are replaced with explicit placeholders. Original raw hashes, receipts, line counts and test outcomes remain unchanged; displayRedactions records both archived hashes.",
   "fullBrowser": "The separate full-browser attempt is still running and is not included here.",
   "files": [
     {
@@ -799,8 +799,13 @@
       "archive": "logs/admin640-extra-auth-v1.txt",
       "kind": "log",
       "originalSha256": "a9003baef057cb6dbc5bfdc5e6bdaff4c57149a7917daff59966af1ce890e630",
-      "archiveSha256": "660aab9fc80bacec32451cbd4a4659b88610ceadfb40d73b62e72a03561553e6",
-      "byteIdentical": false
+      "archiveSha256": "47c618316b7396aad3a2c4cdf2deb86e5afcb7bec09cf5446090392e1628ca9f",
+      "byteIdentical": false,
+      "displayRedaction": {
+        "kind": "synthetic-auth-code-placeholder",
+        "count": 1,
+        "preRedactionArchiveSha256": "660aab9fc80bacec32451cbd4a4659b88610ceadfb40d73b62e72a03561553e6"
+      }
     },
     {
       "source": "admin640-extra-auth-v2.inputs.json",
@@ -823,8 +828,13 @@
       "archive": "logs/admin640-extra-auth-v2.txt",
       "kind": "log",
       "originalSha256": "875c53bff988fa07b42d74b9dcd8746ab0190f0b202624911b02c3741ca3ccbe",
-      "archiveSha256": "a7201756cf5a316c962cebd56cccbada7e818c7ef10eceda261bdecfb612a567",
-      "byteIdentical": false
+      "archiveSha256": "f5d48ac71719eb8572744ca7bd9b6404abb3fcb381c310758aef97d92579dd02",
+      "byteIdentical": false,
+      "displayRedaction": {
+        "kind": "synthetic-auth-code-placeholder",
+        "count": 1,
+        "preRedactionArchiveSha256": "a7201756cf5a316c962cebd56cccbada7e818c7ef10eceda261bdecfb612a567"
+      }
     },
     {
       "source": "admin640-extra-auth-v4.inputs.json",
@@ -847,8 +857,13 @@
       "archive": "logs/admin640-extra-auth-v4.txt",
       "kind": "log",
       "originalSha256": "9aa9986cdfa47dbf600fcbbe8bf8b6e7f4d09a3a922d457bad82c6b0372a0f35",
-      "archiveSha256": "e87b443eade27cff2143aa584045ffe80e391ad4c94028823f10a25b416a05b1",
-      "byteIdentical": false
+      "archiveSha256": "00dd987245665aa690d965c94a6242b2d1e9071d76cdd1da474adb65fdf586c8",
+      "byteIdentical": false,
+      "displayRedaction": {
+        "kind": "synthetic-auth-code-placeholder",
+        "count": 1,
+        "preRedactionArchiveSha256": "e87b443eade27cff2143aa584045ffe80e391ad4c94028823f10a25b416a05b1"
+      }
     },
     {
       "source": "admin640-extra-guards-v1.inputs.json",
@@ -1169,6 +1184,53 @@
       "originalSha256": "2e88f3359a641f9bab8e044a392bdc8fb3aef128083159cad5ca404883f50065",
       "archiveSha256": "2e88f3359a641f9bab8e044a392bdc8fb3aef128083159cad5ca404883f50065",
       "byteIdentical": true
+    }
+  ],
+  "displayRedactions": [
+    {
+      "filename": "logs/admin640-extra-auth-v1.txt",
+      "kind": "Known synthetic auth-code output redacted from display archive only",
+      "count": 1,
+      "source": "apps/api/test/auth-codes.test.ts",
+      "sourceSha256": "89ac2dbe6ccdf1d3219cd3d3e417aea37d6ffb7f223dc855d5ac83590017bfd5",
+      "sourceLineNumbers": [
+        170
+      ],
+      "originalRawLogSha256": "a9003baef057cb6dbc5bfdc5e6bdaff4c57149a7917daff59966af1ce890e630",
+      "preRedactionArchiveSha256": "660aab9fc80bacec32451cbd4a4659b88610ceadfb40d73b62e72a03561553e6",
+      "redactedDisplaySha256": "47c618316b7396aad3a2c4cdf2deb86e5afcb7bec09cf5446090392e1628ca9f",
+      "summaryLinesUnchanged": true,
+      "lineCountUnchanged": true
+    },
+    {
+      "filename": "logs/admin640-extra-auth-v2.txt",
+      "kind": "Known synthetic auth-code output redacted from display archive only",
+      "count": 1,
+      "source": "apps/api/test/auth-codes.test.ts",
+      "sourceSha256": "89ac2dbe6ccdf1d3219cd3d3e417aea37d6ffb7f223dc855d5ac83590017bfd5",
+      "sourceLineNumbers": [
+        170
+      ],
+      "originalRawLogSha256": "875c53bff988fa07b42d74b9dcd8746ab0190f0b202624911b02c3741ca3ccbe",
+      "preRedactionArchiveSha256": "a7201756cf5a316c962cebd56cccbada7e818c7ef10eceda261bdecfb612a567",
+      "redactedDisplaySha256": "f5d48ac71719eb8572744ca7bd9b6404abb3fcb381c310758aef97d92579dd02",
+      "summaryLinesUnchanged": true,
+      "lineCountUnchanged": true
+    },
+    {
+      "filename": "logs/admin640-extra-auth-v4.txt",
+      "kind": "Known synthetic auth-code output redacted from display archive only",
+      "count": 1,
+      "source": "apps/api/test/auth-codes.test.ts",
+      "sourceSha256": "89ac2dbe6ccdf1d3219cd3d3e417aea37d6ffb7f223dc855d5ac83590017bfd5",
+      "sourceLineNumbers": [
+        170
+      ],
+      "originalRawLogSha256": "9aa9986cdfa47dbf600fcbbe8bf8b6e7f4d09a3a922d457bad82c6b0372a0f35",
+      "preRedactionArchiveSha256": "e87b443eade27cff2143aa584045ffe80e391ad4c94028823f10a25b416a05b1",
+      "redactedDisplaySha256": "00dd987245665aa690d965c94a6242b2d1e9071d76cdd1da474adb65fdf586c8",
+      "summaryLinesUnchanged": true,
+      "lineCountUnchanged": true
     }
   ]
 }

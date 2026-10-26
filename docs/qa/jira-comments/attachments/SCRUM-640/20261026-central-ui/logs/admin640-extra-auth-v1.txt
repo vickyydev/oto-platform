@@ -648,7 +648,7 @@ Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Pl
 (node:90564) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
 (Use `node --trace-warnings ...` to show where the warning was created)
 stdout | test/auth-codes.test.ts > SCRUM-347 — the defect, and that it is closed > brute-forces a legacy row back to its code in well under a second
-legacy sha256 row brute-forced in 1609ms → 483920
+legacy sha256 row brute-forced in 1609ms → [REDACTED SYNTHETIC AUTH CODE]
 
 stdout | test/auth-codes.test.ts
 2026-10-26 04:46:26.586 +07 [91876] LOG:  checkpoint starting: immediate force wait
