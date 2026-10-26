@@ -1,0 +1,15 @@
+{
+  "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "previousMain": "0826f2596c11bcf9cc3144923a0429798dd90a46",
+  "publishedAt": "2026-10-26T12:19:23.128Z",
+  "jiraStatus": "Testing",
+  "comment": "12573",
+  "priorMainSourceCi": {
+    "conclusion": "success",
+    "databaseId": 40284331501,
+    "headSha": "9611f3e0fc2b388e1423f0fe2a558a4146db39d6",
+    "status": "completed"
+  },
+  "localReleaseSha256": "3ebe3ed885f74bf87cb332c2fd2ce9d8f98e295b98015431a7f6edf4a3a0a4fd",
+  "staging": false
+}

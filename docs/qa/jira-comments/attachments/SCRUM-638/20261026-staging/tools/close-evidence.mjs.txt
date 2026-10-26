@@ -1,0 +1,183 @@
+// Inert evidence packaging only. The coordinator supplies completed evidence and explicitly invokes a mode.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { validatePlan, digest } from './admin638-staging-rate-proof.mjs';
+
+export const SOURCE = '91d98409375fc6c45ae27d48cab8bb5489596a05';
+export const CI = '40321640775';
+export const MANIFEST = '145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e';
+export const TARGET = 'C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging';
+const HELPER = 'C:/w/admin638-staging-rate-proof.mjs';
+const HELPER_SHA = '660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839';
+const RELEASE = 'C:/w/admin-assistant-settings/docs/qa/jira-comments/attachments/SCRUM-638/local-release.json';
+const RELEASE_SHA = '3ebe3ed885f74bf87cb332c2fd2ce9d8f98e295b98015431a7f6edf4a3a0a4fd';
+const RETRY = 'C:/w/admin638-ci-setup-retry-20261026';
+const ACTORS = ['ADMIN', 'RECEPTION'];
+const PNGS = ['SCRUM-638-01-settings-desktop.png', 'SCRUM-638-02-settings-phone.png', 'SCRUM-638-03-settings-restricted.png'];
+const hash = value => createHash('sha256').update(value).digest('hex');
+const equal = (a, b) => digest(a) === digest(b);
+const need = (condition, code) => { if (!condition) throw new Error(code); };
+const time = value => { need(typeof value === 'string' && Number.isFinite(Date.parse(value)), 'VALID_EVIDENCE_TIME_REQUIRED'); return Date.parse(value); };
+const hex = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+function bytes(file) {
+  need(fs.lstatSync(file).isFile(), 'REGULAR_EVIDENCE_FILE_REQUIRED');
+  return fs.readFileSync(file);
+}
+function safe(value) {
+  if (Array.isArray(value)) return value.forEach(safe);
+  if (value && typeof value === 'object') for (const [key, item] of Object.entries(value)) {
+    need(!/^(?:password|token|cookie|set-cookie|authorization|secret|pin|claimCode|database_url|databaseUrl)$/i.test(key), 'PRIVATE_EVIDENCE_FIELD_REFUSED'); safe(item);
+  }
+  if (typeof value === 'string') need(!/oto_session=|postgres(?:ql)?:\/\/|\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/i.test(value), 'PRIVATE_EVIDENCE_VALUE_REFUSED');
+}
+const json = file => { const value = JSON.parse(bytes(file)); safe(value); return value; };
+const journal = file => bytes(file).toString('utf8').trim().split(/\r?\n/).filter(Boolean).map(line => { const row = JSON.parse(line); safe(row); return row; });
+function attemptPaths(attempt) {
+  need(/^20261026-v[1-9][0-9]*$/.test(attempt ?? ''), 'EXPLICIT_TICKET_ATTEMPT_REQUIRED');
+  return { directory: `C:/w/admin638-staging-${attempt}`, plan: `C:/w/admin638-proof-plan-${attempt}-approved.json`,
+    bindings: `C:/w/admin638-staging-bindings-${attempt}.json` };
+}
+
+/** Reads only supplied terminal evidence. Missing future facts throw; no CI, Render, auth or browser call exists here. */
+export function buildCopyManifest(input) {
+  need(input && Object.keys(input).sort().join(',') === 'attempt,ciFile,failedAttempts', 'EXACT_PACKAGING_INPUT_REQUIRED');
+  need(/^C:\/w\/admin638[-/][A-Za-z0-9_./-]+\.json$/.test(input.ciFile ?? '') && !input.ciFile.split('/').includes('..'), 'EXPLICIT_SAFE_FINAL_CI_FILE_REQUIRED');
+  need(Array.isArray(input.failedAttempts) && new Set(input.failedAttempts).size === input.failedAttempts.length
+    && !input.failedAttempts.includes(input.attempt), 'EXPLICIT_PRIOR_FAILED_ATTEMPTS_REQUIRED');
+  const p = attemptPaths(input.attempt), resultFile = path.join(p.directory, 'result.json');
+  const r = json(resultFile), plan = validatePlan(json(p.plan)), bindings = json(p.bindings);
+  need(r.ticket === 'SCRUM-638' && r.actualStaging === true && r.complete === true && r.errorCode === null
+    && r.sourceSha === SOURCE && String(r.ciRunId) === CI && r.sourceManifestSha256 === MANIFEST, 'COMPLETE_EXACT_ACTUAL_PROOF_REQUIRED');
+  need(plan.sourceSha === SOURCE && String(plan.ciRunId) === CI && plan.sourceManifestSha256 === MANIFEST
+    && plan.outputDirectory === p.directory && digest(plan) === r.planSha256 && plan.helperSha256 === HELPER_SHA
+    && hash(bytes(HELPER)) === HELPER_SHA && plan.localReleaseSha256 === RELEASE_SHA, 'EXACT_APPROVED_PLAN_AND_HELPER_REQUIRED');
+  for (const key of ['helperSha256', 'routeModuleSha256', 'localReleaseSha256', 'assetManifestSha256']) need(r[key] === plan[key], 'RESULT_PLAN_BINDING_REQUIRED');
+  const binding = r.initialSourceBinding;
+  need(binding?.files === 3790 && binding.sourceManifestSha256 === MANIFEST
+    && binding.runtimeBindingsSha256 === plan.runtimeBindingsSha256 && equal(bindings.initialSourceBinding, binding)
+    && equal(bindings.finalSourceBinding, binding) && bindings.sourceSha === SOURCE && String(bindings.ciRunId) === CI
+    && bindings.helperSha256 === HELPER_SHA && equal(bindings.deployments, plan.deployments)
+    && equal(bindings.assets, plan.assets) && bindings.assetManifestSha256 === plan.assetManifestSha256
+    && bindings.applicationAuthAttempts === 0 && bindings.nativeProofStarted === false && bindings.businessWrites === 0, 'ACTUAL_PUBLIC_AND_FULL_RUNTIME_BINDINGS_REQUIRED');
+  const ci = json(input.ciFile);
+  need(ci.headSha === SOURCE && String(ci.databaseId ?? ci.id) === CI && Number(ci.attempt) >= 2
+    && ci.status === 'completed' && ci.conclusion === 'success' && ci.jobs?.length === 6
+    && new Set(ci.jobs.map(job => job.name)).size === 6 && ci.jobs.every(job => job.status === 'completed' && job.conclusion === 'success')
+    && ci.jobs.filter(job => job.name === 'oto-app' && String(job.databaseId ?? job.id) === '121580645954').length === 1, 'ACTUAL_SIX_GREEN_RETRY_REQUIRED');
+  const lastDeploy = Math.max(...plan.deployments.map(d => time(d.finishedAt)));
+  need(time(r.startedAt) > lastDeploy && time(r.completedAt) >= time(r.startedAt), 'POSTDEPLOY_FINISHED_PROOF_REQUIRED');
+  need(r.sourceChecks?.length >= 2 && r.sourceChecks.every(check => check.sourceSha === SOURCE && String(check.ciRunId) === CI
+    && check.greenJobs === 6 && equal(check.deployments, plan.deployments) && equal(check.localSourceBinding, binding)), 'LATEST_EXACT_SOURCE_CHECKS_REQUIRED');
+  need(['pending', 'nativePending', 'unresolvedAuth', 'fixturesCreated'].every(key => r[key] === 0) && r.journalHealthy === true
+    && Number.isInteger(r.businessWrites) && r.businessWrites >= 0 && r.businessWrites <= 1 && r.diagnostics?.length === 0
+    && ['blocked', 'failed', 'pageErrors', 'consoleErrors'].every(key => r.network?.[key] === 0), 'SETTLED_BOUNDED_PROOF_REQUIRED');
+  need(r.rateSave?.confirmed === true && (r.rateSave.preexisting === true
+    ? r.businessWrites === 0 && hex(r.rateSave.responseSha256)
+    : r.businessWrites === 1 && r.rateSave.afterRevision === r.rateSave.beforeRevision + 1
+      && hex(r.rateSave.requestSha256) && hex(r.rateSave.beforeSha256) && hex(r.rateSave.afterSha256)
+      && time(r.rateSave.confirmedAt) >= time(r.rateSave.intentAt)), 'APPROVED_RATE_CONFIRMED_REQUIRED');
+  const reads = r.reads?.filter(row => row.actor === 'ADMIN' && row.status === 200);
+  need(reads?.length >= 4 && reads.every(row => equal(row.effective, reads[0].effective) && equal(row.overrides, reads[0].overrides)
+    && row.currency === 'USD' && row.excludesCacheWrites === true && time(row.observedAt) > lastDeploy && time(row.responseAt) > lastDeploy), 'UNCHANGED_CAPS_AND_PACING_REQUIRED');
+  need(r.reads.filter(row => row.actor === 'RECEPTION' && row.status === 403 && time(row.at) > lastDeploy).length === 1, 'ACTUAL_RECEPTION_403_REQUIRED');
+  need(r.authority?.length === 2 && ACTORS.every(actor => r.authority.filter(row => row.actor === actor
+    && hex(row.beforeSha256) && row.beforeSha256 === row.afterSha256).length === 1), 'TWO_UNCHANGED_AUTHORITIES_REQUIRED');
+  need(r.authCleanup?.length === 2 && ACTORS.every(actor => r.authCleanup.filter(row => row.actor === actor && row.confirmed === true
+    && row.noOriginalCookie === false && row.signOutStatus === 200 && row.meStatus === 401).length === 1), 'TWO_EXACT_COOKIE_200_401_CLEANUPS_REQUIRED');
+  const rows = journal(path.join(p.directory, 'intents.jsonl'));
+  need(r.operations?.length > 0 && r.operations.every(row => row.terminal === true && Number.isInteger(row.status)
+    && ACTORS.includes(row.actor) && (row.method === 'GET' && ['/api/me', '/api/me/permissions', '/api/assistant-settings'].includes(row.path)
+      || row.method === 'POST' && ['/api/auth/sign-in', '/api/auth/sign-out'].includes(row.path))
+    && rows.some(item => item.sequence === row.sequence && item.terminal === true && item.status === row.status)), 'SETTLED_DURABLE_AUTH_AND_READS_REQUIRED');
+  need(rows.filter(row => row.kind === 'approved-rate-save').length === r.businessWrites
+    && rows.filter(row => row.kind === 'approved-rate-save-result' && row.confirmed === true).length === r.businessWrites, 'EXACT_ONE_OR_ZERO_DURABLE_RATE_WRITE_REQUIRED');
+  const visualFile = path.join(p.directory, 'visual-review.json'), visual = json(visualFile);
+  need(visual.ticket === r.ticket && visual.attempt === input.attempt && visual.reviewer === 'coordinator'
+    && time(visual.reviewedAt) >= time(r.completedAt) && visual.screenshots?.length === 3, 'ACTUAL_ROOT_IMAGE_REVIEW_REQUIRED');
+  need(r.screenshots?.length === 3 && equal(r.screenshots.map(row => row.filename), PNGS), 'THREE_EXACT_NATIVE_PNGS_REQUIRED');
+  for (const [index, image] of r.screenshots.entries()) {
+    const png = bytes(path.join(p.directory, image.filename));
+    need(hash(png) === image.sha256 && png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+      && image.native === true && image.actor === (index === 2 ? 'RECEPTION' : 'ADMIN') && image.restricted === (index === 2)
+      && time(image.capturedAt) > lastDeploy && time(image.completedAt) >= time(image.capturedAt) && time(image.completedAt) <= time(r.completedAt)
+      && (index === 2 ? image.responseSha256 === null : image.responseSha256 === reads.at(-1).responseSha256), 'ACTUAL_POSTDEPLOY_NATIVE_FRAME_REQUIRED');
+    need(visual.screenshots.filter(row => row.filename === image.filename && row.sha256 === image.sha256
+      && row.privacyPassed === true && row.layoutPassed === true).length === 1, 'EACH_PNG_VISUAL_APPROVAL_REQUIRED');
+  }
+  need(time(r.sourceChecks.at(-1).at) >= time(r.screenshots.at(-1).completedAt) && time(r.sourceChecks.at(-1).at) <= time(r.completedAt), 'FINAL_POSTIMAGE_SOURCE_CHECK_REQUIRED');
+  const release = json(RELEASE), releaseReviewFile = 'C:/w/admin638-resume-release-independent-review.json', releaseReview = json(releaseReviewFile);
+  need(hash(bytes(RELEASE)) === RELEASE_SHA && release.localReleaseGreen === true && release.sourceInputs === 3790
+    && release.sourceManifestSha256 === MANIFEST && releaseReview.passed === true
+    && releaseReview.reviewedLocalReleaseSha256 === RELEASE_SHA && releaseReview.sourceManifestSha256 === MANIFEST, 'REVIEWED_RELEASE_BINDER_REQUIRED');
+  const reviewFile = 'C:/w/admin638-rate-proof-independent-review-v2.json', review = json(reviewFile);
+  need(review.passed === true && review.helperSha256 === HELPER_SHA && review.testSha256 === hash(bytes('C:/w/admin638-staging-rate-proof.test.mjs'))
+    && review.finalGreen?.tests === 29 && review.finalGreen.passed === 29 && review.finalGreen.failed === 0, 'BOUND_29_OFFLINE_REVIEW_REQUIRED');
+  const copies = [];
+  const add = (source, relative) => { const value = bytes(source); copies.push({ source, relative, sha256: hash(value), bytes: value.length }); };
+  for (const filename of PNGS) add(path.join(p.directory, filename), filename);
+  for (const [source, relative] of [[resultFile, 'result.json'], [path.join(p.directory, 'intents.jsonl'), 'intents.jsonl'], [p.plan, 'plan.json'],
+    [p.bindings, 'bindings.json'], [visualFile, 'visual-review.json'], [input.ciFile, 'ci-final.json'], [RELEASE, 'local-release.json'],
+    [releaseReviewFile, 'reviews/local-release-independent-review.json'], [reviewFile, 'reviews/rate-proof-independent-review-v2.json'],
+    ['C:/w/admin638-rate-proof-independent-review-v1.json', 'history/rate-proof-review-v1.json'],
+    ['C:/w/admin638-rate-proof-independent-review-v1-erratum.md', 'history/rate-proof-review-v1-erratum.md'],
+    [HELPER, 'tools/staging-rate-proof.mjs.txt'], ['C:/w/admin638-staging-rate-proof.test.mjs', 'tools/staging-rate-proof.test.mjs.txt'],
+    [fileURLToPath(import.meta.url), 'tools/close-evidence.mjs.txt'],
+    ['C:/w/admin638-create-rate-proof-plan-20261026.mjs', 'tools/create-rate-proof-plan.mjs.txt'],
+    ['C:/w/admin638-staging-rate-proof.md', 'tools/staging-rate-proof.md'], ['C:/w/admin638-release-published-20261026.json', 'history/source-published.json']]) add(source, relative);
+  for (const record of review.actualOfflineEvidence) {
+    const receipt = json(record.path), logFile = record.path.replace(/\.json$/, '.log'), log = bytes(logFile).toString('utf8');
+    need(hash(bytes(record.path)) === record.receiptSha256 && hash(bytes(logFile)) === record.logSha256 && receipt.logSha256 === record.logSha256
+      && receipt.exitCode === record.exitCode && receipt.sourceUnchanged === true && receipt.offline === true
+      && receipt.stagingAuth === 0 && receipt.stagingWrites === 0 && record.summary.every(line => log.includes(line)), 'ACTUAL_OFFLINE_RED_GREEN_LOG_BINDING_REQUIRED');
+    add(record.path, 'history/' + path.basename(record.path)); add(logFile, 'history/' + path.basename(logFile));
+  }
+  need(review.actualRed?.passed === 24 && review.actualRed.failed === 2 && review.sameTestGreen?.passed === 26
+    && review.sameTestGreen.failed === 0 && review.actualOfflineEvidence.length === 3, 'PREDISPATCH_24_2_TO_26_PLUS_3_REQUIRED');
+  const diagnosis = json(RETRY + '/diagnosis-review.json');
+  need(diagnosis.runId === Number(CI) && diagnosis.jobId === 121567773747 && diagnosis.attempt === 1 && diagnosis.sourceSha === SOURCE
+    && diagnosis.originalConclusion === 'cancelled' && diagnosis.firstAttemptPassed === false && diagnosis.evidence.archiveIgnCount === 6
+    && hash(bytes(RETRY + '/diagnosis-attempt1-sanitized.log')) === diagnosis.inputHashes.sanitizedLogSha256, 'CANCELLED_ORIGINAL_CI_HISTORY_REQUIRED');
+  for (const name of ['intent.json', 'cancel-result.json', 'rerun-intent.json', 'rerun-observed.json', 'diagnosis-review.json',
+    'diagnosis-attempt1-metadata.json', 'diagnosis-attempt1-sanitized.log', 'diagnosis-baseline-comparison.json']) add(RETRY + '/' + name, 'history/ci-attempt1/' + name);
+  for (const attempt of input.failedAttempts) {
+    const old = attemptPaths(attempt), prior = json(path.join(old.directory, 'result.json'));
+    need(prior.ticket === r.ticket && prior.sourceSha === SOURCE && prior.complete === false, 'EXPLICIT_FAILED_HISTORY_REQUIRED');
+    for (const [source, relative] of [[path.join(old.directory, 'result.json'), 'result.json'], [path.join(old.directory, 'intents.jsonl'), 'intents.jsonl'],
+      [old.plan, 'plan.json'], [old.bindings, 'bindings.json']]) add(source, `history/${attempt}/${relative}`);
+    need(!prior.screenshots?.length, 'FAILED_SCREENSHOTS_REQUIRE_SEPARATE_ACTUAL_VISUAL_REVIEW');
+  }
+  need(new Set(copies.map(row => row.relative)).size === copies.length && copies.every(row => /^[A-Za-z0-9_./-]+$/.test(row.relative)
+    && !row.relative.split('/').includes('..') && !row.relative.startsWith('/')), 'EXPLICIT_UNIQUE_COPY_LIST_REQUIRED');
+  return { ticket: 'SCRUM-638', attempt: input.attempt, verifiedAt: new Date().toISOString(), actualStaging: true, complete: true,
+    sourceSha: SOURCE, ciRunId: CI, sourceFiles: 3790, sourceManifestSha256: MANIFEST, resultSha256: hash(bytes(resultFile)), target: TARGET,
+    files: copies, packagingHelperSha256: hash(bytes(fileURLToPath(import.meta.url))),
+    facts: { approvedRateConfirmed: true, businessWrites: r.businessWrites, authorityUnchanged: true, capsAndPacingUnchanged: true,
+      originalCookiesClosed200401: 2, nativePostdeployPngs: 3, rootVisualReview: true, sixCiJobsGreen: true, originalCiAttemptCancelled: true },
+    limits: ['Native settings/configuration and refusal evidence only; no live engine/provider-consumption or billing claim.',
+      'Jira attachments, Deployed, docs, Git and current live state are not actions or claims of this packaging helper.'] };
+}
+
+/** No caller may copy on import or implicit invocation. The complete manifest is revalidated before any copy. */
+export function copyEvidence(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_COPY_REQUIRED');
+  const manifest = buildCopyManifest(input); need(!fs.existsSync(TARGET), 'PRESERVE_EXISTING_EVIDENCE');
+  const contents = manifest.files.map(row => { const value = bytes(row.source); need(hash(value) === row.sha256 && value.length === row.bytes, 'EVIDENCE_CHANGED_BEFORE_COPY'); return value; });
+  fs.mkdirSync(TARGET);
+  for (const [index, row] of manifest.files.entries()) {
+    const target = path.join(TARGET, row.relative); fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, contents[index], { flag: 'wx', flush: true }); need(hash(bytes(target)) === row.sha256, 'EVIDENCE_COPY_READBACK_DIFFERS');
+  }
+  fs.writeFileSync(path.join(TARGET, 'copy-manifest.json'), JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx', flush: true });
+  return { target: TARGET, files: manifest.files.length, resultSha256: manifest.resultSha256, sourceSha: SOURCE, ciRunId: CI, jiraOrDocsChanged: false };
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  try {
+    need(process.argv.length === 4 && ['--manifest', '--copy'].includes(process.argv[2]), 'USAGE_MANIFEST_OR_COPY_REVIEWED_INPUT');
+    const input = json(process.argv[3]);
+    const output = process.argv[2] === '--copy' ? copyEvidence(input, { explicitExecute: true }) : buildCopyManifest(input);
+    process.stdout.write(JSON.stringify(output) + '\n');
+  } catch (error) { process.stderr.write(/^[A-Z][A-Z0-9_]+$/.test(error.message ?? '') ? error.message + '\n' : 'EVIDENCE_NOT_READY\n'); process.exitCode = 1; }
+}

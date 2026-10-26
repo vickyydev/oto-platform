@@ -1,0 +1,383 @@
+// Offline only. These tests never execute the live coordinator or import environment/application modules.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { ORIGIN, DEMOS, digest, publicPath, validatePlan, requestAllowed, releaseFacts,
+  settingsAllowed, validateSettings, FIELDS, verifyLocalSource, runtimeBindingsOf, runtimeBindingsSha256Of, closeSession, executeReviewedPlan } from './admin638-staging-rate-proof.mjs';
+import { APPROVED_RATE, approvedRateWrite, validateRateSave } from './admin638-staging-rate-proof.mjs';
+
+test('approved initial rate appends only that version and preserves caps, pacing and earlier history', () => {
+  const before = settings(); before.overrides.internal.personDailyCap = 0;
+  const original = structuredClone(before), write = approvedRateWrite(before);
+  assert.deepEqual(before, original); assert.deepEqual(write, { expectedRevision: 0, schemaVersion: 1, overrides: before.overrides, rates: [APPROVED_RATE] });
+  const after = { ...structuredClone(before), rates: [APPROVED_RATE], revision: 1, source: 'operator', updatedBy: DEMOS.ADMIN, updatedAt: at };
+  assert.equal(validateRateSave(before, after, at), true); assert.equal(approvedRateWrite(after), null);
+  for (const change of [v => v.revision++, v => v.overrides.internal.personDailyCap++, v => v.effective.inbox.bubbleGapMs++,
+    v => v.rates[0].inputUsdPerMillion++, v => v.updatedBy = B, v => v.operatorId = B, v => v.updatedAt = after.updatedAt.replace('2026', '2020')]) {
+    const changed = structuredClone(after); change(changed); assert.throws(() => validateRateSave(before, changed, at));
+  }
+  const foreign = structuredClone(before); foreign.operatorId = B; assert.throws(() => approvedRateWrite(foreign));
+  const conflict = structuredClone(after); conflict.rates[0].inputUsdPerMillion++; assert.throws(() => approvedRateWrite(conflict));
+  const later = structuredClone(after); later.rates[0].effectiveFrom = '2026-10-27T00:00:00.000Z'; assert.throws(() => approvedRateWrite(later));
+});
+
+test('native write requires armed exact body and idempotency key; no cap change or direct write permission', () => {
+  const write = approvedRateWrite(settings());
+  assert.equal(req({ method: 'PUT', body: write, rateWrite: write, idempotencyKey: A }), true);
+  assert.equal(req({ method: 'PUT', body: write, idempotencyKey: A }), false);
+  assert.equal(req({ method: 'PUT', body: write, rateWrite: write }), false);
+  const changed = structuredClone(write); changed.overrides.internal.dailyAskCap = 0;
+  assert.equal(req({ method: 'PUT', body: changed, rateWrite: write, idempotencyKey: A }), false);
+  assert.equal(req({ method: 'PUT', url: ORIGIN + '/api/assistant-settings?operatorId=' + A, body: write, rateWrite: write, idempotencyKey: A }), false);
+});
+
+const h = value => createHash('sha256').update(value).digest('hex');
+const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222';
+const sourceSha = 'a'.repeat(40), at = '2026-10-25T10:10:00.000Z', after = '2026-10-25T10:09:00.000Z';
+const deps = ['oto-api-staging', 'oto-console-staging'].map((name, i) => ({ name, serviceId: 'srv-test' + i, id: 'dep-test' + i, finishedAt: after }));
+function plan() {
+  const assets = [{ path: '/', sha256: '1'.repeat(64), contentType: 'text/html' }, { path: '/assets/index-test.js', sha256: '2'.repeat(64), contentType: 'application/javascript' }];
+  return { approved: true, ticket: 'SCRUM-638', sourceSha, sourceManifestSha256: '3'.repeat(64), ciRunId: '12345', deployments: structuredClone(deps),
+    helperSha256: '4'.repeat(64), routeModuleSha256: '5'.repeat(64), localReleaseSha256: '6'.repeat(64), runtimeBindingsSha256: '7'.repeat(64),
+    actors: Object.fromEntries(['ADMIN', 'RECEPTION'].map(actor => [actor, { accountId: DEMOS[actor], operatorId: DEMOS.operatorId }])),
+    assets, assetManifestSha256: digest(assets), outputDirectory: 'C:/w/admin638-staging-offline-synthetic' };
+}
+const req = overrides => requestAllowed({ url: ORIGIN + '/api/assistant-settings', method: 'GET', ...overrides });
+const throwsCode = (fn, code) => assert.throws(fn, error => error.code === code);
+
+test('inert import and unarmed execute cannot dispatch, read environment or create an attempt', async () => {
+  const original = globalThis.fetch; let calls = 0;
+  globalThis.fetch = async () => { calls++; throw new Error('OFFLINE_FETCH_REFUSED'); };
+  try { await import('./admin638-staging-rate-proof.mjs?offline-inert-probe');
+    await assert.rejects(executeReviewedPlan(plan()), error => error.code === 'EXPLICIT_EXECUTE_REQUIRED'); assert.equal(calls, 0); }
+  finally { globalThis.fetch = original; }
+});
+test('exact reviewed plan binds both services, two fixed actors and public closure; no old-source/foreign substitution', () => {
+  assert.equal(validatePlan(plan()).ticket, 'SCRUM-638');
+  for (const change of [p => { p.approved = false; }, p => { p.sourceSha = '0'.repeat(40); }, p => { p.deployments.reverse(); },
+    p => { p.actors.RECEPTION.accountId = A; }, p => { p.routeModuleSha256 = null; }, p => { p.assets[1].path = '/api/me'; },
+    p => { p.assetManifestSha256 = '0'.repeat(64); }, p => { p.outputDirectory = 'C:/w/admin638-staging-x/../shared'; }, p => { p.extra = true; }]) {
+    const p = plan(); change(p); assert.throws(() => validatePlan(p));
+  }
+});
+test('auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused', () => {
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-in', method: 'POST', auth: true, body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }), true);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-out', method: 'POST', auth: true }), true);
+  for (const pathname of ['/api/assistant-settings', '/api/auth/handoff', '/api/admin/accounts', '/api/users', '/api/payments', '/api/inbox/send', '/api/assistant/ask', '/api/webhook', '/api/me/session/branch'])
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) assert.equal(req({ url: ORIGIN + pathname, method, auth: true, body: {} }), false);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-in', method: 'POST', body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }), false);
+  assert.equal(req({ url: ORIGIN + '/api/auth/sign-out', method: 'POST', auth: true, body: {} }), false);
+});
+test('GET grammar is exact: no foreign origin, fragments, operator/park/date query or aggregate/detail fan-out', () => {
+  assert.equal(req(), true);
+  for (const url of ['https://example.invalid/api/overview', ORIGIN + '/api/assistant-settings#secret', ORIGIN + '/api/assistant-settings?operatorId=' + DEMOS.operatorId,
+    ORIGIN + '/api/assistant-settings?branchId=' + A, ORIGIN + '/api/assistant-settings?branchId=' + B, ORIGIN + '/api/assistant-settings?branchId=' + A + '&branchId=' + A, ORIGIN + '/api/assistant-settings?from=2026-10-25',
+    ORIGIN + '/api/overview', ORIGIN + '/api/aggregates/members', ORIGIN + '/api/payments/detail', ORIGIN + '/api/assistant-settings/extra', ORIGIN + '/api/me?extra=1']) assert.equal(req({ url }), false);
+  assert.equal(req({ body: {} }), false);
+});
+test('native shell bootstrap allows only exact health badge grammar and reviewed static paths', () => {
+  for (const p of ['/api/me', '/api/me/permissions', '/api/ready']) assert.equal(req({ url: ORIGIN + p }), true);
+  assert.equal(req({ url: ORIGIN + '/api/ops/health', health: true }), true);
+  assert.equal(req({ url: ORIGIN + '/api/ops/health' }), false);
+  assert.equal(req({ url: ORIGIN + '/api/ops/failures?windowHours=24&limit=50', health: true }), true);
+  for (const q of ['windowHours=1&limit=50', 'windowHours=24&limit=50&extra=x', 'windowHours=24&limit=50&limit=50', 'from=2026-10-25'])
+    assert.equal(req({ url: ORIGIN + '/api/ops/failures?' + q, health: true }), false);
+  assert.equal(req({ url: ORIGIN + '/channels/assistant-settings', document: true }), true);
+  assert.equal(req({ url: ORIGIN + '/assets/index-test.js', assetPaths: ['/assets/index-test.js'] }), true);
+  for (const p of ['/assets/unknown.js', '/assets/../api/me', '/assets/foo.js?x=1', '/profile-photos/private.png'])
+    assert.equal(req({ url: ORIGIN + p, assetPaths: ['/assets/index-test.js'] }), false);
+  assert.equal(publicPath('/assets/a.js'), true); assert.equal(publicPath('/assets/%2e%2e/a.js'), false);
+});
+test('exact six green CI jobs and latest same-source API+Console are required, including deploy finish times', () => {
+  const p = plan(), ci = { headSha: sourceSha, status: 'completed', conclusion: 'success', jobs: Array.from({ length: 6 }, (_, i) => ({ name: 'job' + i, status: 'completed', conclusion: 'success' })) };
+  const services = deps.map(d => ({ service: { id: d.serviceId, name: d.name } }));
+  const latest = Object.fromEntries(deps.map(d => [d.serviceId, [{ deploy: { id: d.id, status: 'live', commit: { id: sourceSha }, finishedAt: d.finishedAt } }]]));
+  assert.equal(releaseFacts(p, ci, services, latest), true);
+  for (const change of [c => { c.jobs.pop(); }, c => { c.jobs[1].name = c.jobs[0].name; }, c => { c.jobs[1].conclusion = 'failure'; }, c => { c.headSha = 'b'.repeat(40); }]) {
+    const c = structuredClone(ci); change(c); throwsCode(() => releaseFacts(p, c, services, latest), 'SIX_EXACT_GREEN_JOBS_REQUIRED');
+  }
+  for (const field of ['id', 'finishedAt']) { const l = structuredClone(latest); l[deps[1].serviceId][0].deploy[field] = 'wrong';
+    throwsCode(() => releaseFacts(p, ci, services, l), 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED'); }
+  const l = structuredClone(latest); l[deps[1].serviceId][0].deploy.commit.id = 'b'.repeat(40);
+  throwsCode(() => releaseFacts(p, ci, services, l), 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED');
+});
+test('settings reach requires an own or null operator grant; branch, foreign and missing grants never broaden', () => {
+  assert.equal(settingsAllowed([{ permission: 'inbox:ai:manage', scopeType: 'operator', scopeId: DEMOS.operatorId }]), true);
+  assert.equal(settingsAllowed([{ permission: 'inbox:ai:manage', scopeType: 'operator', scopeId: null }]), true);
+  for (const rows of [[], [{ permission: 'inbox:ai:manage', scopeType: 'branch', scopeId: A }],
+    [{ permission: 'inbox:ai:manage', scopeType: 'operator', scopeId: B }], [{ permission: 'inbox:kb:manage', scopeType: 'operator', scopeId: DEMOS.operatorId }]])
+    assert.equal(settingsAllowed(rows), false);
+});
+function settings() {
+  return { operatorId: DEMOS.operatorId, schemaVersion: 1, overrides: { internal: {}, inbox: {} },
+    effective: { internal: { personDailyCap: 21, dailyAskCap: 300, dailyTokenCap: 10000, concurrentPerPerson: 3, concurrentPerOperator: 8 },
+      inbox: { dailyTurnCap: 400, dailyTokenCap: 20000, debounceSeconds: 2, debounceMaxSeconds: 8, firstBubbleMs: 300, bubbleGapMs: 600 } },
+    rates: [], source: 'environment', revision: 0, updatedAt: null, updatedBy: null };
+}
+const timing = { after, responseAt: at, observedAt: at };
+test('fresh native DTO preserves all11 current values and zero/default distinctions without requiring a recently edited row', () => {
+  assert.equal(FIELDS.length, 11); assert.equal(validateSettings(settings(), timing).source, 'environment');
+  const body = settings(); body.source = 'operator'; body.revision = 1; body.updatedAt = '2020-01-01T00:00:00.000Z'; body.updatedBy = DEMOS.ADMIN;
+  body.overrides.internal.personDailyCap = 0; body.effective.internal.personDailyCap = 0;
+  body.overrides.inbox.debounceMaxSeconds = 0; body.overrides.inbox.debounceSeconds = 10;
+  body.effective.inbox.debounceSeconds = 10; body.effective.inbox.debounceMaxSeconds = 10;
+  const safe = validateSettings(body, timing); assert.equal(safe.overrideCount, 3); assert.equal(safe.effective.internal.personDailyCap, 0);
+  assert.equal(safe.currency, 'USD'); assert.equal(safe.excludesCacheWrites, true); assert.equal(safe.rateVersions, 0);
+});
+test('foreign DTO, stale/future response date, unsafe values or mismatched native debounce/override are refused', () => {
+  const foreign = settings(); foreign.operatorId = B; assert.throws(() => validateSettings(foreign, timing));
+  for (const responseAt of [after, '2020-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z', null]) assert.throws(() => validateSettings(settings(), { ...timing, responseAt }));
+  for (const mutate of [b => { b.effective.internal.dailyAskCap = NaN; }, b => { b.effective.internal.dailyTokenCap = -1; },
+    b => { b.effective.inbox.debounceSeconds = 10; b.effective.inbox.debounceMaxSeconds = 2; },
+    b => { b.overrides.internal.personDailyCap = 0; }, b => { b.revision = 1; }]) {
+    const body = settings(); mutate(body); assert.throws(() => validateSettings(body, timing));
+  }
+});
+test('invalid storage is a sanitized default fallback, never raw overrides or rate data', () => {
+  const body = settings(); body.source = 'invalid'; body.revision = 3; body.updatedAt = after; body.updatedBy = null;
+  assert.equal(validateSettings(body, timing).source, 'invalid');
+  body.overrides.internal.personDailyCap = 21; assert.throws(() => validateSettings(body, timing));
+  body.overrides.internal = {}; body.rates = [{ model: 'zz-test-model' }]; assert.throws(() => validateSettings(body, timing));
+});
+
+function sourceFixture() {
+  const root = 'C:/synthetic-no-disk', source = new Map([['apps/api/src/routes/assistant-settings.ts', Buffer.from('ZZ TEST route')], ['apps/api/src/services/assistant-settings.ts', Buffer.from('ZZ TEST dependency')], ['pnpm-lock.yaml', Buffer.from('ZZ TEST lock')]]);
+  const releasePath = 'docs/qa/jira-comments/attachments/SCRUM-638/local-release.json';
+  const sourceManifestSha256 = h(JSON.stringify([...source].sort(([a], [b]) => a.localeCompare(b)).map(([p, b]) => ({ path: p, sha256: h(b) }))));
+  const original = new Map(source), files = new Map(source), p = { ...plan(), sourceManifestSha256 };
+  const local = Buffer.from(JSON.stringify({ ticket: 'SCRUM-638', localReleaseGreen: true, sourceManifestSha256 })); files.set(releasePath, local); original.set(releasePath, local);
+  const normalized = value => value.replaceAll('\\', '/').slice(root.length + 1);
+  const io = { readFileSync: filename => files.get(normalized(filename)) ?? Buffer.from('ZZ TEST metadata'), lstatSync: () => ({ isFile: () => true }) };
+  files.set('node_modules/.pnpm/lock.yaml', files.get('pnpm-lock.yaml'));
+  p.routeModuleSha256 = h(source.get('apps/api/src/routes/assistant-settings.ts')); p.localReleaseSha256 = h(local); p.runtimeBindingsSha256 = runtimeBindingsSha256Of(root, io, 'v22.synthetic');
+  const git = args => {
+    if (args[0] === 'ls-files') return [...source.keys()].join('\0') + '\0';
+    if (args[0] === 'ls-tree') return [...source.keys()].map(filename => { const b = original.get(filename); return `100644 blob ${createHash('sha1').update(Buffer.from(`blob ${b.length}\0`)).update(b).digest('hex')}\t${filename}`; }).join('\0') + '\0';
+    if (args[0] === 'diff') return '';
+    if (args[0] === 'show') return original.get(args[1].slice(sourceSha.length + 1)).toString();
+    throw new Error('UNEXPECTED_SYNTHETIC_GIT_COMMAND');
+  };
+  return { p, files, options: { io, git, root, nodeVersion: 'v22.synthetic' } };
+}
+test('actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged', () => {
+  const f = sourceFixture(); assert.equal(verifyLocalSource(f.p, f.options).files, 3);
+  f.files.set('apps/api/src/services/assistant-settings.ts', Buffer.from('ZZ TEST changed dependency'));
+  throwsCode(() => verifyLocalSource(f.p, f.options), 'FEATURE_SOURCE_BLOB_DIFFERS');
+});
+test('installed lock/runtime binding cannot silently change under a source-bound schema import', () => {
+  const f = sourceFixture(); assert.equal(runtimeBindingsOf(f.options.root, f.options.io, 'v22.synthetic').files.length, 10);
+  f.files.set('node_modules/.pnpm/lock.yaml', Buffer.from('ZZ TEST changed lock'));
+  throwsCode(() => verifyLocalSource(f.p, f.options), 'INSTALLED_LOCK_DIFFERS');
+  const g = sourceFixture(); g.files.set('apps/api/node_modules/tsx/dist/esm/api/index.mjs', Buffer.from('ZZ TEST changed loader'));
+  throwsCode(() => verifyLocalSource(g.p, g.options), 'INSTALLED_RUNTIME_BINDING_DIFFERS');
+});
+test('original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth', async () => {
+  const context = { actor: 'ADMIN', cookie: 'SYNTHETIC_COOKIE' }, calls = [], rows = []; let laterAuth = false, unresolved = 1;
+  const request = async (c, method, pathname) => { calls.push({ method, pathname, original: c.cookie === 'SYNTHETIC_COOKIE' });
+    if (method === 'POST') { c.cookie = ''; throw new Error('SYNTHETIC_TIMEOUT'); } return { status: 401 }; };
+  const confirmed = await closeSession(context, request, r => rows.push(r));
+  if (confirmed) laterAuth = true;
+  assert.equal(confirmed, false); assert.equal(laterAuth, false); assert.equal(unresolved, 1); assert.equal(context.cookie, '');
+  assert.deepEqual(calls, [{ method: 'POST', pathname: '/api/auth/sign-out', original: true }, { method: 'GET', pathname: '/api/me', original: true }]);
+  assert.equal(rows[0].meStatus, 401); assert.equal(rows[0].signOutStatus, null);
+});
+test('all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed', async () => {
+  const rows = [], contexts = ['ADMIN', 'MANAGER', 'RECEPTION'].map(actor => ({ actor, cookie: 'SYNTHETIC_' + actor }));
+  for (const c of contexts) await closeSession(c, async (_c, method) => method === 'POST'
+    ? c.actor === 'ADMIN' ? { status: 500, body: {} } : { status: 200, body: { ok: true } } : { status: 401 }, row => rows.push(row));
+  assert.deepEqual(rows.map(r => r.confirmed), [false, true, true]); assert.equal(contexts.every(c => c.cookie === ''), true);
+});
+test('failed cleanup retains the original privately for a real retry instead of confirming an anonymous session', async () => {
+  const c = { actor: 'ADMIN', cookie: 'SYNTHETIC_ORIGINAL' }, seen = [];
+  assert.equal(await closeSession(c, async (_c, method) => method === 'POST' ? { status: 500, body: {} } : { status: 200 }, () => {}), false);
+  assert.equal(c.cookie, ''); assert.equal(c.originalCookie === 'SYNTHETIC_ORIGINAL', true);
+  assert.equal(await closeSession(c, async (_c, method) => { seen.push(c.cookie === 'SYNTHETIC_ORIGINAL');
+    c.cookie = ''; return method === 'POST' ? { status: 200, body: { ok: true } } : { status: 401 }; }, () => {}), true);
+  assert.deepEqual(seen, [true, true]); assert.equal(c.originalCookie, '');
+});
+test('FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401', async () => {
+  const c = { actor: 'ADMIN', cookie: '', attempted: true }, calls = [], rows = [];
+  const confirmed = await closeSession(c, async (_c, method, pathname, options) => {
+    calls.push({ method, pathname, cleanup: options.cleanup, noCookie: c.cookie === '' });
+    return method === 'POST' ? { status: 200, body: { ok: true } } : { status: 401 };
+  }, row => rows.push(row));
+  assert.deepEqual(calls, [{ method: 'POST', pathname: '/api/auth/sign-out', cleanup: true, noCookie: true },
+    { method: 'GET', pathname: '/api/me', cleanup: true, noCookie: true }]);
+  assert.equal(confirmed, false, 'No observed original cookie means revocation is unproven even when anonymous cleanup returns expected statuses.');
+  assert.equal(c.closed, false); assert.equal(rows.length, 1); assert.equal(rows[0].confirmed, false);
+  assert.equal(rows[0].noOriginalCookie, true); assert.equal(rows[0].signOutStatus, 200); assert.equal(rows[0].meStatus, 401);
+});
+
+// Execute the actual nested request and bounded body reader; inject transport/receipt sinks only.
+// This intentionally avoids reimplementing cookie capture, unknown-issuance accounting or dispatch order.
+function actualRequestHarness(kind) {
+  const source = fs.readFileSync(new URL('./admin638-staging-rate-proof.mjs', import.meta.url), 'utf8');
+  const requestStart = source.indexOf('  async function request(c, method, pathname,');
+  const requestEnd = source.indexOf('\n  async function census(c)', requestStart);
+  const readerStart = source.indexOf('async function boundedJson(response)');
+  const readerEnd = source.indexOf('\n/** Local preflight seam', readerStart);
+  assert.ok(requestStart >= 0 && requestEnd > requestStart && readerStart >= 0 && readerEnd > readerStart);
+  const requestBody = source.slice(requestStart, requestEnd), readerBody = source.slice(readerStart, readerEnd);
+  const receipt = { operations: [], pending: 0, unresolvedAuth: 0 }, events = [], transport = [];
+  const fetch = async (url, options) => {
+    const pathname = new URL(url).pathname;
+    transport.push({ method: options.method, path: pathname, observedCookie: options.headers.cookie === 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE' });
+    assert.equal(events.at(-1), 'intent', 'The actual request must durably record intent before transport.');
+    if (pathname === '/api/auth/sign-in') {
+      const body = kind === 'malformed' ? 'ZZ TEST non-json response' : new ReadableStream({ start(controller) {
+        controller.enqueue(new TextEncoder().encode('{'));
+        const keepAlive = setTimeout(() => {}, 1_000); // AbortSignal.timeout is unref'ed; keep only this synthetic stalled read alive.
+        options.signal.addEventListener('abort', () => { clearTimeout(keepAlive); controller.error(new Error('SYNTHETIC_BODY_TIMEOUT')); }, { once: true });
+      } });
+      return new Response(body, { status: 200, headers: { 'set-cookie': 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE; Path=/; HttpOnly; Secure' } });
+    }
+    if (pathname === '/api/auth/sign-out') return Response.json({ ok: true });
+    if (pathname === '/api/me') return Response.json({ error: { code: 'UNAUTHENTICATED' } }, { status: 401 });
+    throw new Error('UNEXPECTED_SYNTHETIC_TRANSPORT_PATH');
+  };
+  class SyntheticProofError extends Error { constructor(code) { super(code); this.code = code; } }
+  const factory = new Function('requestAllowed', 'ORIGIN', 'TIMEOUT', 'MAX_BODY', 'ProofError', 'need', 'codeOf', 'now', 'receipt', 'persist', 'save', 'safe', 'fetch',
+    `${readerBody}\nreturn ${requestBody.trim()};`);
+  const request = factory(requestAllowed, ORIGIN, 20, 2_000_000, SyntheticProofError,
+    (condition, code) => { if (!condition) throw new SyntheticProofError(code); }, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR',
+    () => new Date().toISOString(), receipt, row => events.push(row.terminal ? 'terminal' : 'intent'), () => {},
+    () => { assert.equal(receipt.pending, 0); assert.equal(receipt.unresolvedAuth, 0); }, fetch);
+  return { request, receipt, transport };
+}
+for (const kind of ['malformed', 'stalled']) test(`actual request captures the observed cookie before ${kind} sign-in body failure and preserves unresolved issuance through cleanup`, async () => {
+  const { request, receipt, transport } = actualRequestHarness(kind), c = { actor: 'ADMIN', cookie: '', branchIds: [] }, rows = [];
+  await assert.rejects(request(c, 'POST', '/api/auth/sign-in', { body: { phone: 'SYNTHETIC', password: 'SYNTHETIC' } }));
+  assert.equal(c.attempted, true); assert.equal(c.cookie === 'oto_session=ZZ_TEST_SYNTHETIC_COOKIE', true);
+  assert.equal(receipt.pending, 0); assert.equal(receipt.unresolvedAuth, 1); assert.equal(receipt.operations[0].terminal, false);
+  assert.equal(await closeSession(c, request, row => rows.push(row)), true);
+  assert.equal(rows[0].noOriginalCookie, false); assert.equal(rows[0].signOutStatus, 200); assert.equal(rows[0].meStatus, 401);
+  assert.equal(receipt.unresolvedAuth, 1, 'Observed-cookie revocation cannot resolve the original incomplete issuance body.');
+  assert.equal(receipt.pending, 0); assert.equal(c.cookie, ''); assert.equal(c.originalCookie, '');
+  assert.deepEqual(transport.map(r => [r.method, r.path, r.observedCookie]), [
+    ['POST', '/api/auth/sign-in', false], ['POST', '/api/auth/sign-out', true], ['GET', '/api/me', true] ]);
+});
+test('actual schema loader uses Windows file URLs and captures the actual route registration without invoking handlers', async () => {
+  const source = fs.readFileSync(new URL('./admin638-staging-rate-proof.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('export async function loadReleasedSettingsSchema()'), end = source.indexOf('\nexport async function executeReviewedPlan', start);
+  assert.ok(start >= 0 && end > start);
+  const actual = source.slice(start, end).replace('export ', '').replace('await import(', 'await importLoader(').replace('import.meta.url', 'parentURL');
+  const root = 'C:/w/admin-assistant-settings', route = 'apps/api/src/routes/assistant-settings.ts', seen = [], expected = { parse: value => value };
+  let handlersCalled = 0;
+  const importLoader = async url => {
+    seen.push('module'); assert.equal(new URL(url).protocol, 'file:');
+    assert.equal(path.resolve(fileURLToPath(url)), path.resolve(root, 'apps/api/node_modules/tsx/dist/esm/api/index.mjs'));
+    return { tsImport: async (url, options) => {
+      seen.push('route'); assert.equal(new URL(url).protocol, 'file:'); assert.equal(path.resolve(fileURLToPath(url)), path.resolve(root, route));
+      assert.equal(options.tsconfig, path.join(root, 'apps/api/tsconfig.json')); assert.equal(options.parentURL, import.meta.url);
+      return { assistantSettingsRoutes: async app => {
+        seen.push('registration');
+        app.get('/assistant-settings', { schema: { response: { 200: expected } } }, () => { handlersCalled++; });
+        app.put('/assistant-settings', { schema: { response: { 200: expected } } }, () => { handlersCalled++; });
+      } };
+    } };
+  };
+  const load = new Function('path', 'pathToFileURL', 'WORKTREE', 'ROUTE', 'need', 'importLoader', 'parentURL', `${actual}\nreturn loadReleasedSettingsSchema;`)(
+    path, pathToFileURL, root, route, condition => assert.equal(condition, true), importLoader, import.meta.url);
+  assert.equal(await load(), expected); assert.deepEqual(seen, ['module', 'route', 'registration']); assert.equal(handlersCalled, 0);
+});
+
+// Execute the actual observe function, native route callback, capture cleanup and final predicate.
+// Only browser/transport/filesystem sinks are inert fakes; no callback/status/tracking logic is duplicated.
+async function nativeHarness(writePlan = null, sourceGate = async () => {}) {
+  const source = fs.readFileSync(new URL('./admin638-staging-rate-proof.mjs', import.meta.url), 'utf8');
+  const observeStart = source.indexOf('  const observe = '), observeEnd = source.indexOf('\n  async function read(c)', observeStart);
+  const routeStart = source.indexOf("    await page.route('**/*', async route => {"), routeEnd = source.indexOf('\n    });\n    try {', routeStart) + '\n    });'.length;
+  const cleanupStart = source.indexOf('    } finally { await context.close();'), cleanupEnd = source.indexOf('\n  }\n  try {', cleanupStart);
+  const completeStart = source.indexOf('    receipt.complete = '), completeEnd = source.indexOf(';\n    save();', completeStart) + 1;
+  assert.ok(observeStart >= 0 && observeEnd > observeStart && routeStart >= 0 && routeEnd > routeStart && cleanupStart >= 0 && cleanupEnd > cleanupStart && completeStart >= 0 && completeEnd > completeStart);
+  const actualObserve = source.slice(observeStart, observeEnd), actualRoute = source.slice(routeStart, routeEnd);
+  const actualCleanup = source.slice(cleanupStart, cleanupEnd).replace(/^\s*\} finally \{/, '').replace(/\}\s*$/, '');
+  const actualComplete = source.slice(completeStart, completeEnd);
+  const receipt = { complete: false, screenshots: [{}, {}, {}], authority: [{ beforeSha256: 'ZZ_TEST_A', afterSha256: 'ZZ_TEST_A' }, { beforeSha256: 'ZZ_TEST_B', afterSha256: 'ZZ_TEST_B' }],
+    pending: 0, unresolvedAuth: 0, journalHealthy: true, businessWrites: 0, reads: [], network: { blocked: 0, failed: 0, pageErrors: 0, consoleErrors: 0, fontSuppressions: 0 } };
+  const frame = {}, c = { actor: 'ADMIN', permissions: [{ permission: 'admin:health:read', scopeType: 'operator', scopeId: DEMOS.operatorId }], browserContexts: [] };
+  let callback; const page = { mainFrame: () => frame, route: async (_pattern, handler) => { callback = handler; } };
+  class SyntheticProofError extends Error { constructor(code) { super(code); this.code = code; } }
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const factory = new AsyncFunction('receipt', 'c', 'page', 'need', 'codeOf', 'requestAllowed', 'observeSchema', 'validateSettings', 'lastDeploy', 'now', 'digest', 'hash',
+    'MAX_BODY', 'TIMEOUT', 'FONT', 'PAGE', 'assets', 'save', 'diagnostic', 'writePlan', 'persist', 'sourceGate', 'validateRateSave',
+    `const SettingsSchema = observeSchema, index = 0; let consumed = null, routeFailure = null, armedRateWrite = writePlan; ${actualObserve}\n${actualRoute}\nreturn { consumed: () => consumed, failure: () => routeFailure };`);
+  const stage = await factory(receipt, c, page, (condition, code) => { if (!condition) throw new SyntheticProofError(code); }, error => error.code ?? 'UNCLASSIFIED_PROOF_ERROR',
+    requestAllowed, { parse: value => value }, validateSettings, after, () => at, digest, h, 2_000_000, 30_000,
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap', '/channels/assistant-settings', new Map(), () => {}, () => {}, writePlan, () => {}, sourceGate, validateRateSave);
+  const cleanup = new AsyncFunction('context', 'c', 'receipt', 'need', actualCleanup);
+  const complete = new Function('receipt', 'sessions', 'failed', `${actualComplete}\nreturn receipt.complete;`);
+  const routeFor = (pathname, transport) => {
+    const effects = { aborted: false, fulfilled: [] };
+    const request = { method: () => 'GET', url: () => ORIGIN + pathname, resourceType: () => 'fetch', frame: () => frame, postData: () => null };
+    return { effects, route: { request: () => request, fetch: transport, abort: async () => { effects.aborted = true; },
+      fulfill: async value => { effects.fulfilled.push(value.status); } } };
+  };
+  c.settings = settings(); c.settingsHash = digest(c.settings);
+  return { receipt, c, frame, stage, callback: route => callback(route), routeFor,
+    cleanup: context => cleanup(context, c, receipt, (condition, code) => { if (!condition) throw new SyntheticProofError(code); }),
+    complete: () => complete(receipt, [{ closed: true }, { closed: true }], false) };
+}
+for (const counter of ['pageErrors', 'blocked']) test(`rate save refuses predispatch when ${counter} is already latched`, async () => {
+  const write = approvedRateWrite(settings()), f = await nativeHarness(write); let fetches = 0;
+  f.receipt.network[counter] = 1;
+  await f.callback({ request: () => ({method:()=> 'PUT',url:()=>ORIGIN+'/api/assistant-settings',resourceType:()=> 'fetch',frame:()=>f.frame,
+    postData:()=>JSON.stringify(write),headers:()=>({'idempotency-key':A})}),
+    fetch: async () => {fetches++; throw Error('SHOULD_NOT_DISPATCH');}, abort:async()=>{},fulfill:async()=>{} });
+  assert.equal(fetches,0); assert.equal(f.receipt.businessWrites,0);
+  assert.equal(f.stage.failure(),'UNSETTLED_RATE_WRITE_REFUSED');
+});
+test('native approved save validates its response and never dispatches a second save', async () => {
+  const before = settings(), write = approvedRateWrite(before), f = await nativeHarness(write); let fetches = 0;
+  const answer = {...structuredClone(before),rates:[APPROVED_RATE],revision:1,source:'operator',updatedBy:DEMOS.ADMIN,updatedAt:at};
+  const route = {request:()=>({method:()=> 'PUT',url:()=>ORIGIN+'/api/assistant-settings',resourceType:()=> 'fetch',frame:()=>f.frame,
+    postData:()=>JSON.stringify(write),headers:()=>({'idempotency-key':A})}),
+    fetch:async()=>{fetches++;return {status:()=>200,headers:()=>({date:at}),body:async()=>Buffer.from(JSON.stringify(answer))};},
+    abort:async()=>{},fulfill:async()=>{}};
+  await f.callback(route); assert.equal(f.stage.failure(),null); assert.equal(f.receipt.rateSave.confirmed,true);
+  assert.equal(f.receipt.businessWrites,1); assert.deepEqual(f.c.settings,answer);
+  await f.callback(route); assert.equal(fetches,1); assert.equal(f.receipt.businessWrites,1);
+});
+test('native approved save stops before dispatch if the exact release gate fails', async () => {
+  const write=approvedRateWrite(settings()), f=await nativeHarness(write,async()=>{throw Object.assign(Error('SOURCE_CHANGED'),{code:'SOURCE_CHANGED'});});
+  let fetches=0;
+  await f.callback({request:()=>({method:()=> 'PUT',url:()=>ORIGIN+'/api/assistant-settings',resourceType:()=> 'fetch',frame:()=>f.frame,
+    postData:()=>JSON.stringify(write),headers:()=>({'idempotency-key':A})}),fetch:async()=>{fetches++;},abort:async()=>{},fulfill:async()=>{}});
+  assert.equal(fetches,0); assert.equal(f.receipt.businessWrites,0); assert.equal(f.stage.failure(),'SOURCE_CHANGED');
+});
+test('unknown native save result remains unconfirmed and is never retried', async () => {
+  const write=approvedRateWrite(settings()), f=await nativeHarness(write); let fetches=0;
+  const route={request:()=>({method:()=> 'PUT',url:()=>ORIGIN+'/api/assistant-settings',resourceType:()=> 'fetch',frame:()=>f.frame,
+    postData:()=>JSON.stringify(write),headers:()=>({'idempotency-key':A})}),fetch:async()=>{fetches++;throw Error('LOST_ACK');},abort:async()=>{},fulfill:async()=>{}};
+  await f.callback(route); await f.callback(route);
+  assert.equal(fetches,1); assert.equal(f.receipt.businessWrites,1); assert.equal(f.receipt.rateSave.confirmed,false);
+  assert.equal(f.complete(),false);
+});
+for (const status of [201, 202]) test(`FINDING high: native GET${status} is refused and cannot be relabelled as an observed200 DTO`, async () => {
+  const f = await nativeHarness(), { route, effects } = f.routeFor('/api/assistant-settings', async () => ({ status: () => status,
+    headers: () => ({ date: at, 'content-type': 'application/json' }), body: async () => Buffer.from(JSON.stringify(settings())) }));
+  await f.callback(route);
+  assert.equal(effects.aborted, true, 'Only actual native GET200 may be recorded as an observed200.');
+  assert.equal(f.receipt.reads.length, 0); assert.deepEqual(effects.fulfilled, []); assert.equal(f.stage.consumed(), null);
+  assert.equal(f.stage.failure(), 'NATIVE_ALLOWED_READ_FAILED');
+});
+test('FINDING high: deferred native health failure during context cleanup cannot precede a terminal complete receipt', async () => {
+  const f = await nativeHarness(); let rejectTransport, closeCalled;
+  const pending = new Promise((_resolve, reject) => { rejectTransport = reject; });
+  const closing = new Promise(resolve => { closeCalled = resolve; });
+  const { route, effects } = f.routeFor('/api/ops/health', () => pending), context = { close: async () => { closeCalled(); } };
+  f.c.browserContexts.push(context);
+  const nativeWork = f.callback(route), trackedWhilePending = Number.isInteger(f.receipt.nativePending) && f.receipt.nativePending > 0;
+  let finalized = false, completedBeforeTerminal = false, cleanupError = null;
+  const cleanupWork = f.cleanup(context).then(() => { finalized = true; completedBeforeTerminal = f.complete(); }, error => { finalized = true; cleanupError = error; });
+  await closing; await new Promise(resolve => setImmediate(resolve));
+  const earlyComplete = finalized && completedBeforeTerminal;
+  rejectTransport(new Error('ZZ_TEST_LATE_NATIVE_FAILURE')); await nativeWork; await cleanupWork;
+  assert.equal(earlyComplete, false, 'Native work remains unproven until every dispatched fetch/body/fulfill settles, including context-close cancellation.');
+  assert.equal(trackedWhilePending, true); assert.equal(f.receipt.nativePending, 0);
+  if (cleanupError) assert.match(cleanupError.code ?? '', /^[A-Z][A-Z0-9_]+$/, 'A missing harness dependency or unclassified exception is not a successful guard.');
+  assert.equal(f.receipt.network.blocked, 1); assert.equal(effects.aborted, true); assert.equal(f.receipt.complete, false);
+});

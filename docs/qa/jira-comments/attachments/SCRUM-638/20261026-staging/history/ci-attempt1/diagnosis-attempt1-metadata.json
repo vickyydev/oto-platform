@@ -1,0 +1,563 @@
+{
+  "ticket": "SCRUM-638",
+  "kind": "read-only-original-ci-setup-diagnosis",
+  "collectedAt": "2026-10-26T12:50:33.991Z",
+  "runId": 40321640775,
+  "jobId": 121567773747,
+  "attempt": 1,
+  "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "run": {
+    "status": "completed",
+    "conclusion": "cancelled",
+    "createdAt": "2026-10-26T12:19:23Z",
+    "startedAt": "2026-10-26T12:19:23Z",
+    "updatedAt": "2026-10-26T12:48:30Z"
+  },
+  "job": {
+    "status": "completed",
+    "conclusion": "cancelled",
+    "startedAt": "2026-10-26T12:19:26Z",
+    "completedAt": "2026-10-26T12:48:30Z",
+    "steps": [
+      {
+        "number": 1,
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:19:27Z",
+        "completedAt": "2026-10-26T12:19:29Z"
+      },
+      {
+        "number": 2,
+        "name": "Initialize containers",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:19:29Z",
+        "completedAt": "2026-10-26T12:19:46Z"
+      },
+      {
+        "number": 3,
+        "name": "Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:19:46Z",
+        "completedAt": "2026-10-26T12:20:07Z"
+      },
+      {
+        "number": 4,
+        "name": "What changed",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:20:07Z",
+        "completedAt": "2026-10-26T12:20:08Z"
+      },
+      {
+        "number": 5,
+        "name": "Run actions/setup-node@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:20:08Z",
+        "completedAt": "2026-10-26T12:20:12Z"
+      },
+      {
+        "number": 6,
+        "name": "Install the OTO App",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:20:12Z",
+        "completedAt": "2026-10-26T12:20:31Z"
+      },
+      {
+        "number": 7,
+        "name": "Build the OTO App",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:20:31Z",
+        "completedAt": "2026-10-26T12:20:48Z"
+      },
+      {
+        "number": 8,
+        "name": "The OTO App's inherited typecheck ceiling",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:20:48Z",
+        "completedAt": "2026-10-26T12:21:40Z"
+      },
+      {
+        "number": 9,
+        "name": "The payroll golden example (engine leg)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:21:40Z",
+        "completedAt": "2026-10-26T12:21:41Z"
+      },
+      {
+        "number": 10,
+        "name": "The payroll engine checks",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:21:41Z",
+        "completedAt": "2026-10-26T12:22:10Z"
+      },
+      {
+        "number": 11,
+        "name": "The suite theme checks",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:22:10Z",
+        "completedAt": "2026-10-26T12:22:11Z"
+      },
+      {
+        "number": 12,
+        "name": "Install PostgreSQL 16 and video evidence tools",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "startedAt": "2026-10-26T12:22:11Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 13,
+        "name": "Rehearse the app restore and replay",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 14,
+        "name": "Keep the restore counts",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 15,
+        "name": "The otoapp schema, as the platform makes it",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 16,
+        "name": "The app's migrations apply cleanly from empty (twice)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 17,
+        "name": "The app's route checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 18,
+        "name": "The app's fix module checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 19,
+        "name": "The app's night-job checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 20,
+        "name": "The app's suite sign-in checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 21,
+        "name": "The app's hand-off target checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 22,
+        "name": "The app's tenant ownership checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 23,
+        "name": "The app's Attention checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 24,
+        "name": "The app's attendance checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 25,
+        "name": "The app's attendance evidence parser checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 26,
+        "name": "The app's attendance reviewer transaction checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 27,
+        "name": "The app's document checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 28,
+        "name": "The app's finance import checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 29,
+        "name": "The app's finance ownership checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 30,
+        "name": "The app's Xero connection ownership checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 31,
+        "name": "The app's administration and payroll checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 32,
+        "name": "The app's record deletion checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 33,
+        "name": "The app's camp cancelled-day checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 34,
+        "name": "The app's camp creation day-exclusion checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 35,
+        "name": "The app's salary visibility checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 36,
+        "name": "The app's checklist media and history checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 37,
+        "name": "The app's leave type checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 38,
+        "name": "The app's task assignees in Today checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 39,
+        "name": "The app's checklist assignees in Today checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 40,
+        "name": "The app's check-in child card checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 41,
+        "name": "The app's leave balance reach checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 42,
+        "name": "The app's access escalation checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 43,
+        "name": "The app's named rights checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 44,
+        "name": "The app's kiosk device checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 45,
+        "name": "The app's birthdays and sidebar checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 46,
+        "name": "The app's payroll configuration checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 47,
+        "name": "The app's payroll profile editor check",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 48,
+        "name": "The app's payroll cutover check",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 49,
+        "name": "The payroll golden example (service and HTTP leg)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 50,
+        "name": "The app's payroll feeds checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 51,
+        "name": "The app's payroll lifecycle checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 52,
+        "name": "The app's payroll statutory documents checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 53,
+        "name": "The app's payroll outputs checks",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 54,
+        "name": "Run pnpm/action-setup@v4",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 55,
+        "name": "Install the focused feature review dependencies",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 56,
+        "name": "The app's feature runtime reviews",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 57,
+        "name": "The app's issue reporting review",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 58,
+        "name": "The app's scheduling park-group review",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 59,
+        "name": "The offboarding census",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 60,
+        "name": "The tenant ownership read-back",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 118,
+        "name": "Post Run actions/setup-node@v4",
+        "status": "completed",
+        "conclusion": "skipped",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 119,
+        "name": "Post Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 120,
+        "name": "Stop containers",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:26Z"
+      },
+      {
+        "number": 121,
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-26T12:48:26Z",
+        "completedAt": "2026-10-26T12:48:27Z"
+      }
+    ]
+  },
+  "installStep": {
+    "number": 12,
+    "name": "Install PostgreSQL 16 and video evidence tools",
+    "status": "completed",
+    "conclusion": "cancelled",
+    "startedAt": "2026-10-26T12:22:11Z",
+    "completedAt": "2026-10-26T12:48:26Z",
+    "durationSeconds": 1575
+  },
+  "log": {
+    "path": "C:\\w\\admin638-ci-setup-retry-20261026\\diagnosis-attempt1-sanitized.log",
+    "downloadedBodySha256": "4e82de21f48985dd64be0b2469cab9fd038f533390eb0a2a195fb9b36246f6ab",
+    "downloadedBytes": 327080,
+    "rawUnpackedSha256": "4e82de21f48985dd64be0b2469cab9fd038f533390eb0a2a195fb9b36246f6ab",
+    "sanitizedSha256": "88a6bed1a9df5ddcbe4d0b2b15123734f97e524a71a07f8ce430706dac4f14a5",
+    "sanitizedBytes": 336490,
+    "sanitizedBeforeDiskAndOutput": true,
+    "replacementCount": 167,
+    "archive": false,
+    "entries": 1
+  },
+  "collectorSha256": "fcab58a01b07649ec225b71814cef4553aaf67abf255db197024ff4bc4c97a16",
+  "noCancelOrRerun": true,
+  "noWorkflowOrSourceEdits": true,
+  "noToolInstall": true,
+  "noLiveAppActions": true,
+  "firstAttemptPassed": false
+}

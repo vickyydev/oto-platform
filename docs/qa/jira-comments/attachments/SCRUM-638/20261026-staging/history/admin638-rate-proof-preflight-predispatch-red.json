@@ -1,0 +1,21 @@
+{
+  "startedAt": "2026-10-26T11:51:26.734Z",
+  "completedAt": "2026-10-26T11:51:26.952Z",
+  "files": [
+    {
+      "path": "C:/w/admin638-staging-rate-proof.mjs",
+      "sha256": "fbaf8f2298d8ec68a811bf9996e6af2f24b5bf19e811e6573611717b230d9d61"
+    },
+    {
+      "path": "C:/w/admin638-staging-rate-proof.test.mjs",
+      "sha256": "4e28a480cf4e88765d0bca8165c77220b16c7a8623e9d7b56f8a72774ba49c04"
+    }
+  ],
+  "exitCode": 1,
+  "signal": null,
+  "sourceUnchanged": true,
+  "logSha256": "77823c013f90bd6babe9233bd51c9f7c140accbd2d531ec1555a08b7d382abaf",
+  "offline": true,
+  "stagingAuth": 0,
+  "stagingWrites": 0
+}

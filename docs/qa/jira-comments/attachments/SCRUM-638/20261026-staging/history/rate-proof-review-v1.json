@@ -1,0 +1,63 @@
+{
+  "ticket": "SCRUM-638",
+  "reviewedAt": "2026-10-26T11:52:06.937Z",
+  "kind": "INDEPENDENT_EXTERNAL_NATIVE_RATE_PROOF_REVIEW",
+  "passed": false,
+  "liveExecutionApproved": false,
+  "bindings": [
+    {
+      "path": "C:/w/admin638-staging-rate-proof.mjs",
+      "sha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839",
+      "lines": 482
+    },
+    {
+      "path": "C:/w/admin638-staging-rate-proof.test.mjs",
+      "sha256": "4e28a480cf4e88765d0bca8165c77220b16c7a8623e9d7b56f8a72774ba49c04"
+    },
+    {
+      "path": "C:/w/admin638-staging-proof.mjs",
+      "sha256": "a0da559d81c17e5c659f6accaecbd30fd471dd4cd48581acae38efdc434381d5"
+    }
+  ],
+  "approvedRuling": "Latest main590a STATUS / Jira12583: one native audited revisioned initial rate save; caps/pacing preserved; no engine/provider send.",
+  "reviewActions": {
+    "sourceEdits": 0,
+    "helperEdits": 0,
+    "testsRun": 0,
+    "authOrNetworkCalls": 0,
+    "runtimeActions": 0
+  },
+  "findings": [
+    {
+      "id": "RATE_WRITE_PREDISPATCH_SAFETY",
+      "severity": "P1-QA-helper",
+      "status": "source-confirmed-awaiting-offline-RED",
+      "lines": {
+        "sharedSafe": 242,
+        "oneWriteGuard": 339,
+        "dispatch": 345,
+        "formReadiness": 376,
+        "arming": 386
+      },
+      "reason": "The one persistent PUT has no mutation-specific check of the already-latched shared journal/network/pending safety or fresh source. The initial native-data check precedes several awaited form edits. A page error or blocked request arriving during those awaits still permits Save and route.fetch, then fails the attempt only after the rate has been written.",
+      "prescribedRegression": "Use the actual extracted armed PUT handler with an otherwise exact body/key. Set a known pageErrors or blocked counter before invoking it; require zero route.fetch calls. Also pin sourceGate refusal before arming/click and durable-intent failure to zero fetch calls. Preserve all existing24 assertions.",
+      "prescribedFix": "After offline RED, drain native work, require safe and refresh sourceGate immediately before arming/clicking Save. In the exact PUT branch add a fail-closed mutation predispatch gate, allowing only its own current nativePending count, before durable intent and route.fetch. No guard relaxation or new framework is needed."
+    }
+  ],
+  "positiveSourceChecks": [
+    "Exact planner-approved model/effective-date/three USD rates only; no invented rates or protected consumer edits.",
+    "approvedRateWrite preserves sparse caps/pacing and prior versions, refuses invalid/foreign/conflicting history, and treats identical preexisting approved rate as a read-only case.",
+    "Only ADMIN desktop/index0 can arm exact-body/key PUT; the sole-write counter increments before original fetch and arming is cleared, so duplicate native requests are refused.",
+    "Durable rate intent is required before dispatch; receipt/journal disk failures throw and latch unhealthy; auth cleanup remains independently attempted.",
+    "Known200 response must parse actual released schema and preserve effective/caps/history exactly while revision increments1 and updatedBy is ADMIN. Later native/direct GET must match its exact response hash.",
+    "Unknown PUT outcome leaves rateSave unconfirmed and network failed/blocked, preventing complete; no automatic retry, inverse write or rate-history deletion exists.",
+    "Original-cookie logout and independent401 probes remain in finally, with ambiguity never cleared by anonymous cleanup.",
+    "Full source/Git/runtime/sixCI/latestAPI+Console gates and real asset-byte guards remain required; old readonly helper is preserved."
+  ],
+  "limits": [
+    "Source-only review; parent-reported24offline passes were not rerun here.",
+    "A new actual failing predispatch extraction pin is required before helper changes.",
+    "An unconfirmed write must never be blindly rerun based on an absent readback; future attempts require explicit reconciliation.",
+    "Even successful native Save/readback does not establish live engine consumption or priced model billing; no real provider call is authorized."
+  ]
+}

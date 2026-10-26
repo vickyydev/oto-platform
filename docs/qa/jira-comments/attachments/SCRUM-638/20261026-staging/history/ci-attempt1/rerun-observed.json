@@ -1,0 +1,18 @@
+{
+  "attempt": 1,
+  "conclusion": "",
+  "headSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "jobs": [
+    {
+      "completedAt": "0001-01-01T00:00:00Z",
+      "conclusion": "",
+      "databaseId": 121580645954,
+      "name": "oto-app",
+      "startedAt": "2026-10-26T12:48:35Z",
+      "status": "queued",
+      "steps": [],
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40321640775/job/121580645954"
+    }
+  ],
+  "status": "queued"
+}

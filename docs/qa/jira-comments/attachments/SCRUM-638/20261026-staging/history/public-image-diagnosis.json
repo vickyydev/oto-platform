@@ -1,0 +1,37 @@
+{
+  "startedAt": "2026-10-26T13:08:37.771Z",
+  "publicOnly": true,
+  "applicationAuthAttempts": 0,
+  "businessWrites": 0,
+  "rows": [
+    {
+      "mode": "set-content",
+      "status": 200,
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "bytes": 109836,
+      "mime": "image/webp",
+      "accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      "referer": null,
+      "acceptSha256": "54f235f31b3873cee918ef5abfe8cd3aa4ac55eb21d5bbd9fe8ef2e0a8cf0bc7",
+      "userAgentSha256": "d72997d1fbd1e2478b6e633c0414d949e3b1378df3b4771bd73c5917cb4a60d7",
+      "vary": "accept, accept-encoding",
+      "etag": "\"0c4a9addda586232011f051905d76a09\"",
+      "contentEncoding": null
+    },
+    {
+      "mode": "same-origin-document",
+      "status": 200,
+      "sha256": "17a3ee3cd02ce9440ecba6ca182c17865c714584d126805d6bd7931e4fbae150",
+      "bytes": 109836,
+      "mime": "image/webp",
+      "accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      "referer": "https://oto-console-staging.onrender.com/channels/assistant-settings",
+      "acceptSha256": "54f235f31b3873cee918ef5abfe8cd3aa4ac55eb21d5bbd9fe8ef2e0a8cf0bc7",
+      "userAgentSha256": "d72997d1fbd1e2478b6e633c0414d949e3b1378df3b4771bd73c5917cb4a60d7",
+      "vary": "accept, accept-encoding",
+      "etag": "\"0c4a9addda586232011f051905d76a09\"",
+      "contentEncoding": null
+    }
+  ],
+  "completedAt": "2026-10-26T13:08:39.615Z"
+}

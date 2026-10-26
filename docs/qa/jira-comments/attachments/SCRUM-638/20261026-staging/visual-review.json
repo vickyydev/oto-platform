@@ -1,0 +1,26 @@
+{
+    "ticket":  "SCRUM-638",
+    "attempt":  "20261026-v2",
+    "reviewer":  "coordinator",
+    "reviewedAt":  "2026-10-26T13:12:14.8592294Z",
+    "screenshots":  [
+                        {
+                            "filename":  "SCRUM-638-01-settings-desktop.png",
+                            "sha256":  "0b44ae69ae52c4e8f044d5d39ef083a5044dbc24f2ec85ab373669bf71359726",
+                            "privacyPassed":  true,
+                            "layoutPassed":  true
+                        },
+                        {
+                            "filename":  "SCRUM-638-02-settings-phone.png",
+                            "sha256":  "336128614e57cf532daa92e9279e5145e73f94929eb22feaa8b00447273d1ec2",
+                            "privacyPassed":  true,
+                            "layoutPassed":  true
+                        },
+                        {
+                            "filename":  "SCRUM-638-03-settings-restricted.png",
+                            "sha256":  "da3ed9750464ad6cd551c6c116bab241a0734af39ec4e5a001ade4abf515091e",
+                            "privacyPassed":  true,
+                            "layoutPassed":  true
+                        }
+                    ]
+}

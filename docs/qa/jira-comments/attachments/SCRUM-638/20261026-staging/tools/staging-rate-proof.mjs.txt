@@ -1,0 +1,481 @@
+// HELD. Import is inert. Only an internally reviewed concrete plan and --execute may start this proof.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+export const WORKTREE = 'C:/w/admin-assistant-settings';
+const PRIVATE_ROOT = 'C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos';
+export const ORIGIN = 'https://oto-console-staging.onrender.com';
+export const DEMOS = Object.freeze({ operatorId: '01a0bbdc-8c41-7204-bd58-2b92bd7dda75',
+  ADMIN: '01a0bbdc-8c64-7283-aa3b-2af7e79c525d', MANAGER: '01a0c9ae-5377-7b34-a9ab-22bf8086f5f7',
+  RECEPTION: '01a0bbdc-8c87-74ca-81c1-61489e34f834' });
+const ACTORS = ['ADMIN', 'RECEPTION'];
+const SERVICES = ['oto-api-staging', 'oto-console-staging'];
+const ROUTE = 'apps/api/src/routes/assistant-settings.ts';
+const RELEASE = 'docs/qa/jira-comments/attachments/SCRUM-638/local-release.json';
+const PAGE = '/channels/assistant-settings';
+const PNGS = ['SCRUM-638-01-settings-desktop.png', 'SCRUM-638-02-settings-phone.png', 'SCRUM-638-03-settings-restricted.png'];
+const FONT = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
+const MAX_BODY = 2_000_000, TIMEOUT = 30_000;
+const now = () => new Date().toISOString();
+const hash = value => createHash('sha256').update(value).digest('hex');
+const canonical = value => JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
+  ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item);
+export const digest = value => hash(canonical(value));
+const same = (a, b) => digest(a) === digest(b);
+const exact = (v, keys) => !!v && typeof v === 'object' && !Array.isArray(v) && same(Object.keys(v).sort(), [...keys].sort());
+const hex = v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+const iso = v => typeof v === 'string' && Number.isFinite(Date.parse(v));
+class ProofError extends Error { constructor(code) { super(code); this.code = code; } }
+const need = (condition, code) => { if (!condition) throw new ProofError(code); };
+const codeOf = error => error instanceof ProofError ? error.code : 'UNCLASSIFIED_PROOF_ERROR';
+
+export function publicPath(p) {
+  return typeof p === 'string' && !/[\\%?#\x00-\x20]/.test(p) && !p.split('/').includes('..')
+    && (['/', '/favicon.svg'].includes(p) || /^\/assets\/[A-Za-z0-9_.-]{1,180}\.(?:js|css|svg|png|webp|woff2?)$/.test(p));
+}
+export function validatePlan(plan) {
+  need(exact(plan, ['approved', 'ticket', 'sourceSha', 'sourceManifestSha256', 'ciRunId', 'deployments', 'helperSha256',
+    'routeModuleSha256', 'localReleaseSha256', 'runtimeBindingsSha256', 'actors', 'assets', 'assetManifestSha256', 'outputDirectory']), 'EXACT_REVIEWED_PLAN_REQUIRED');
+  need(plan.approved === true && plan.ticket === 'SCRUM-638' && /^[a-f0-9]{40}$/.test(plan.sourceSha ?? '')
+    && plan.sourceSha !== '0'.repeat(40) && /^\d+$/.test(String(plan.ciRunId)), 'REVIEWED_EXACT_FEATURE_REQUIRED');
+  need([plan.sourceManifestSha256, plan.helperSha256, plan.routeModuleSha256, plan.localReleaseSha256, plan.runtimeBindingsSha256, plan.assetManifestSha256].every(hex), 'EXACT_BINDING_HASHES_REQUIRED');
+  need(Array.isArray(plan.deployments) && plan.deployments.length === 2 && plan.deployments.every((d, i) =>
+    exact(d, ['name', 'serviceId', 'id', 'finishedAt']) && d.name === SERVICES[i] && /^srv-[A-Za-z0-9]+$/.test(d.serviceId ?? '')
+    && /^dep-[A-Za-z0-9]+$/.test(d.id ?? '') && iso(d.finishedAt)), 'EXACT_API_CONSOLE_DEPLOYMENTS_REQUIRED');
+  need(exact(plan.actors, ACTORS) && ACTORS.every(actor => exact(plan.actors[actor], ['accountId', 'operatorId'])
+    && plan.actors[actor].accountId === DEMOS[actor] && plan.actors[actor].operatorId === DEMOS.operatorId), 'TWO_EXACT_EXISTING_DEMOS_REQUIRED');
+  need(Array.isArray(plan.assets) && plan.assets.length > 1 && plan.assets.length <= 100 && plan.assets.some(a => a.path === '/')
+    && new Set(plan.assets.map(a => a.path)).size === plan.assets.length && plan.assets.every(a => exact(a, ['path', 'sha256', 'contentType'])
+      && publicPath(a.path) && hex(a.sha256) && /^(?:text\/html|text\/css|(?:application|text)\/javascript|image\/(?:svg\+xml|png|webp)|font\/(?:woff|woff2))$/.test(a.contentType)), 'REVIEWED_EXACT_PUBLIC_CLOSURE_REQUIRED');
+  need(digest(plan.assets) === plan.assetManifestSha256, 'ASSET_MANIFEST_HASH_REQUIRED');
+  need(/^C:\/w\/admin638-staging-[A-Za-z0-9_-]{1,70}$/.test(plan.outputDirectory ?? ''), 'EXCLUSIVE_FRESH_ATTEMPT_REQUIRED');
+  return plan;
+}
+
+/** Shared by direct HTTP and browser dispatch; no business write, handoff or aggregate fan-out. */
+export function requestAllowed({ url, method, body, auth = false, health = false, assetPaths = [], document = false, rateWrite, idempotencyKey }) {
+  let u; try { u = new URL(url); } catch { return false; }
+  if (u.origin !== ORIGIN || u.username || u.password || u.hash || u.href !== url || u.href !== u.origin + u.pathname + u.search
+    || u.href.includes('%2f') || u.href.includes('%5c')) return false;
+  const p = u.pathname, q = u.searchParams;
+  if (method === 'PUT') return p === '/api/assistant-settings' && !u.search && !!rateWrite
+    && typeof idempotencyKey === 'string' && /^[0-9a-f-]{36}$/i.test(idempotencyKey) && same(body, rateWrite);
+  if (method === 'POST') return auth && !u.search && (p === '/api/auth/sign-in'
+    ? exact(body, ['phone', 'password']) && ['phone', 'password'].every(k => typeof body[k] === 'string' && body[k].length > 0 && body[k].length < 200)
+    : p === '/api/auth/sign-out' && body === undefined);
+  if (method !== 'GET' || body !== undefined) return false;
+  if (['/api/me', '/api/me/permissions', '/api/ready'].includes(p)) return !u.search;
+  if (p === '/api/assistant-settings') return !u.search;
+  if (p === '/api/ops/health') return health && !u.search;
+  if (p === '/api/ops/failures') return health && q.size === 2 && q.getAll('windowHours').length === 1 && q.get('windowHours') === '24' && q.getAll('limit').length === 1 && q.get('limit') === '50';
+  return !u.search && ((p === PAGE && document) || publicPath(p) && assetPaths.includes(p));
+}
+
+export function releaseFacts(plan, ci, services, latest) {
+  need(ci.headSha === plan.sourceSha && ci.status === 'completed' && ci.conclusion === 'success' && ci.jobs?.length === 6
+    && new Set(ci.jobs.map(j => j.name)).size === 6 && ci.jobs.every(j => j.status === 'completed' && j.conclusion === 'success'), 'SIX_EXACT_GREEN_JOBS_REQUIRED');
+  for (const dep of plan.deployments) {
+    const matches = services.map(s => s.service ?? s).filter(s => s.name === dep.name), live = latest[dep.serviceId]?.[0]?.deploy;
+    need(matches.length === 1 && matches[0].id === dep.serviceId, 'EXACT_RENDER_SERVICE_REQUIRED');
+    need(live?.id === dep.id && live.status === 'live' && live.commit?.id === plan.sourceSha && live.finishedAt === dep.finishedAt, 'LATEST_EXACT_LIVE_DEPLOYMENT_REQUIRED');
+  }
+  return true;
+}
+export function settingsAllowed(permissions) {
+  return permissions.some(p => p.permission === 'inbox:ai:manage' && p.scopeType === 'operator' && (p.scopeId === null || p.scopeId === DEMOS.operatorId));
+}
+export const FIELDS = Object.freeze([
+  ['internal', 'personDailyCap', 'Per-person daily asks'], ['internal', 'dailyAskCap', 'Operator daily asks'],
+  ['internal', 'dailyTokenCap', 'Operator daily tokens'], ['internal', 'concurrentPerPerson', 'Concurrent asks per person'],
+  ['internal', 'concurrentPerOperator', 'Concurrent asks per operator'], ['inbox', 'dailyTurnCap', 'Daily turns'],
+  ['inbox', 'dailyTokenCap', 'Daily tokens'], ['inbox', 'debounceSeconds', 'Debounce (seconds)'],
+  ['inbox', 'debounceMaxSeconds', 'Maximum debounce (seconds)'], ['inbox', 'firstBubbleMs', 'First bubble (milliseconds)'],
+  ['inbox', 'bubbleGapMs', 'Bubble gap (milliseconds)'],
+]);
+export const APPROVED_RATE = Object.freeze({ model: 'claude-opus-5-5', effectiveFrom: '2026-10-20T00:00:00.000Z',
+  inputUsdPerMillion: 4, outputUsdPerMillion: 20, cacheReadUsdPerMillion: 0.2 });
+export function approvedRateWrite(before) {
+  need(before.operatorId === DEMOS.operatorId && before.source !== 'invalid', 'VALID_OWN_SETTINGS_REQUIRED');
+  const existing = before.rates.find(rate => rate.model === APPROVED_RATE.model && rate.effectiveFrom === APPROVED_RATE.effectiveFrom);
+  if (existing) { need(same(existing, APPROVED_RATE), 'APPROVED_RATE_CONFLICT'); return null; }
+  need(!before.rates.some(rate => rate.model === APPROVED_RATE.model && rate.effectiveFrom >= APPROVED_RATE.effectiveFrom), 'APPROVED_RATE_HISTORY_CONFLICT');
+  return { expectedRevision: before.revision, schemaVersion: 1, overrides: structuredClone(before.overrides),
+    rates: [...structuredClone(before.rates), { ...APPROVED_RATE }] };
+}
+export function validateRateSave(before, after, dispatchedAt) {
+  const body = approvedRateWrite(before);
+  need(body && after.operatorId === before.operatorId && after.source === 'operator' && after.revision === before.revision + 1
+    && same(after.overrides, before.overrides) && same(after.effective, before.effective) && same(after.rates, body.rates)
+    && after.updatedBy === DEMOS.ADMIN && iso(after.updatedAt) && Date.parse(after.updatedAt) >= Date.parse(dispatchedAt) - 5000,
+  'EXACT_APPROVED_RATE_SAVE_REQUIRED');
+  return true;
+}
+/** Postconditions AFTER parsing the exact route schema. Existing updatedAt is never relabelled as proof freshness. */
+export function validateSettings(body, { responseAt, observedAt, after }) {
+  need(body.operatorId === DEMOS.operatorId, 'EXACT_OPERATOR_SETTINGS_REQUIRED');
+  const date = Date.parse(responseAt), observed = Date.parse(observedAt);
+  need(iso(responseAt) && iso(observedAt) && date > Date.parse(after) && observed > Date.parse(after)
+    && date >= observed - 5_000 && date <= observed + 5_000, 'FRESH_POSTDEPLOY_READ_REQUIRED');
+  for (const [group, key] of FIELDS) {
+    const value = body.effective[group][key], override = body.overrides[group][key];
+    need(Number.isSafeInteger(value) && value >= 0 && (override === undefined || Number.isSafeInteger(override) && override >= 0), 'NATIVE_SAFE_NUMERIC_SETTINGS_REQUIRED');
+    if (override !== undefined) need(value === (key === 'debounceMaxSeconds' ? Math.max(override, body.effective.inbox.debounceSeconds) : override), 'NATIVE_OVERRIDE_EFFECTIVE_REQUIRED');
+  }
+  need(body.effective.inbox.debounceMaxSeconds >= body.effective.inbox.debounceSeconds, 'NATIVE_DEBOUNCE_NORMALIZATION_REQUIRED');
+  need(body.source !== 'environment' || body.revision === 0 && body.updatedAt === null && body.updatedBy === null && body.rates.length === 0
+    && Object.keys(body.overrides.internal).length === 0 && Object.keys(body.overrides.inbox).length === 0, 'ABSENT_SETTING_METADATA_REQUIRED');
+  need(body.source !== 'invalid' || body.rates.length === 0 && Object.keys(body.overrides.internal).length === 0 && Object.keys(body.overrides.inbox).length === 0, 'SANITIZED_INVALID_SETTINGS_REQUIRED');
+  return { observedAt, responseAt, source: body.source, revision: body.revision, rateVersions: body.rates.length,
+    overrideCount: Object.keys(body.overrides.internal).length + Object.keys(body.overrides.inbox).length,
+    effective: body.effective, overrides: body.overrides, ratesSha256: digest(body.rates), currency: 'USD', excludesCacheWrites: true };
+}
+
+const runtimeFiles = ['node_modules/.pnpm/lock.yaml', 'node_modules/.modules.yaml', 'apps/api/node_modules/tsx/package.json',
+  'apps/api/node_modules/tsx/dist/cli.mjs', 'apps/api/node_modules/tsx/dist/loader.mjs', 'apps/api/node_modules/tsx/dist/preflight.cjs',
+  'apps/api/node_modules/tsx/dist/esm/api/index.mjs', 'apps/api/node_modules/zod/package.json', 'apps/api/node_modules/zod/index.cjs', 'apps/api/node_modules/zod/index.js'];
+export function runtimeBindingsOf(root = WORKTREE, io = fs, nodeVersion = process.version) {
+  return { nodeVersion, files: runtimeFiles.map(p => ({ path: p, sha256: hash(io.readFileSync(path.join(root, p))) })) };
+}
+export const runtimeBindingsSha256Of = (root = WORKTREE, io = fs, nodeVersion = process.version) => digest(runtimeBindingsOf(root, io, nodeVersion));
+export function verifyLocalSource(plan, { io = fs, git, root = WORKTREE, nodeVersion = process.version } = {}) {
+  const selected = p => !/(?:^|\/)(?:node_modules|dist|\.git|\.env)(?:\/|\.|$)/.test(p) && !/^(?:docs|imports|services)\//.test(p)
+    && (/^(?:apps|packages|scripts)\//.test(p) || /^\.github\/workflows\//.test(p)
+      || /^(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|eslint\.config\.mjs|tsconfig[^/]*\.json|render\.yaml|\.npmrc|\.pnpmfile\.cjs)$/.test(p));
+  const paths = git(['ls-files', '--cached', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean).filter(selected).sort();
+  const tree = git(['ls-tree', '-r', '-z', '--full-tree', plan.sourceSha]).split('\0').filter(Boolean).map(line => {
+    const m = /^(\d{6}) (blob|commit) ([a-f0-9]{40})\t(.+)$/.exec(line); need(m, 'FEATURE_TREE_ENTRY_REQUIRED');
+    return { mode: m[1], type: m[2], blobId: m[3], path: m[4] };
+  }).filter(r => selected(r.path)).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  need(same(paths, tree.map(r => r.path)), 'FEATURE_SOURCE_PATHS_DIFFER');
+  const rows = paths.map((p, i) => {
+    need(/^[A-Za-z0-9_./-]+$/.test(p) && !p.split('/').includes('..') && tree[i].type === 'blob' && ['100644', '100755'].includes(tree[i].mode)
+      && io.lstatSync(path.join(root, p)).isFile(), 'REGULAR_SOURCE_REQUIRED');
+    const b = Buffer.from(io.readFileSync(path.join(root, p)));
+    need(createHash('sha1').update(Buffer.from(`blob ${b.length}\0`)).update(b).digest('hex') === tree[i].blobId, 'FEATURE_SOURCE_BLOB_DIFFERS');
+    return { path: p, sha256: hash(b) };
+  });
+  need(hash(JSON.stringify(rows)) === plan.sourceManifestSha256, 'FULL_SOURCE_MANIFEST_DIFFERS');
+  need(git(['diff', '--name-only', '-z', '--no-ext-diff', '--no-textconv', plan.sourceSha, '--', 'apps/', 'packages/', 'scripts/', '.github/workflows/',
+    'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json', 'eslint.config.mjs', ':(glob)tsconfig*.json', 'render.yaml', '.npmrc', '.pnpmfile.cjs'])
+    .split('\0').filter(Boolean).filter(selected).length === 0, 'CURRENT_FEATURE_RUNTIME_DIFFERS');
+  const normalized = b => b.toString().replaceAll('\r\n', '\n').trim();
+  need(normalized(io.readFileSync(path.join(root, 'pnpm-lock.yaml'))) === normalized(io.readFileSync(path.join(root, 'node_modules/.pnpm/lock.yaml'))), 'INSTALLED_LOCK_DIFFERS');
+  need(runtimeBindingsSha256Of(root, io, nodeVersion) === plan.runtimeBindingsSha256, 'INSTALLED_RUNTIME_BINDING_DIFFERS');
+  for (const [p, expected] of [[ROUTE, plan.routeModuleSha256], [RELEASE, plan.localReleaseSha256]])
+    need(hash(io.readFileSync(path.join(root, p))) === expected && hash(git(['show', `${plan.sourceSha}:${p}`])) === expected, 'COMMITTED_ROUTE_RELEASE_REQUIRED');
+  const local = JSON.parse(io.readFileSync(path.join(root, RELEASE)));
+  need(local.ticket === 'SCRUM-638' && local.localReleaseGreen === true && local.sourceManifestSha256 === plan.sourceManifestSha256, 'GREEN_LOCAL_RELEASE_REQUIRED');
+  return { files: rows.length, sourceManifestSha256: plan.sourceManifestSha256, featureTreeSha256: digest(tree), runtimeBindingsSha256: plan.runtimeBindingsSha256 };
+}
+
+/** Always probe the original cookie independently, even after a logout timeout. No uncertainty is cleared here. */
+export async function closeSession(context, request, record) {
+  const original = context.originalCookie || context.cookie, row = { actor: context.actor, signOutStatus: null, meStatus: null,
+    noOriginalCookie: typeof original !== 'string' || original.length === 0, confirmed: false };
+  context.originalCookie = original; context.cookie = original;
+  let logout = false;
+  try { const r = await request(context, 'POST', '/api/auth/sign-out', { cleanup: true }); row.signOutStatus = r.status; logout = r.status === 200 && r.body?.ok === true; }
+  catch (e) { row.errorCode = codeOf(e); }
+  try { context.cookie = original; const r = await request(context, 'GET', '/api/me', { cleanup: true }); row.meStatus = r.status; }
+  catch (e) { row.errorCode ??= codeOf(e); }
+  finally { context.cookie = ''; row.confirmed = !row.noOriginalCookie && logout && row.meStatus === 401 && !row.errorCode; context.closed = row.confirmed;
+    if (row.confirmed) context.originalCookie = ''; record(row); }
+  return row.confirmed;
+}
+async function boundedJson(response) {
+  need(response.body && Number(response.headers.get('content-length') ?? 0) <= MAX_BODY, 'JSON_BODY_LIMIT');
+  const reader = response.body.getReader(), chunks = []; let size = 0;
+  try { for (;;) { const r = await reader.read(); if (r.done) break; size += r.value.byteLength;
+    need(size <= MAX_BODY, 'JSON_BODY_LIMIT'); chunks.push(Buffer.from(r.value)); }
+    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new ProofError('JSON_BODY_REQUIRED'); }
+  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+}
+
+/** Local preflight seam, no auth. The live caller first verifies the full source/runtime binding. */
+export async function loadReleasedSettingsSchema() {
+  const { tsImport } = await import(pathToFileURL(path.join(WORKTREE, 'apps/api/node_modules/tsx/dist/esm/api/index.mjs')).href);
+  const routes = await tsImport(pathToFileURL(path.join(WORKTREE, ROUTE)).href,
+    { parentURL: import.meta.url, tsconfig: path.join(WORKTREE, 'apps/api/tsconfig.json') });
+  let read, write, gets = 0, puts = 0;
+  need(typeof routes.assistantSettingsRoutes === 'function', 'RELEASED_SETTINGS_ROUTES_REQUIRED');
+  // Collect the actual registered response schemas locally; no route handler, auth, DB or transport is called.
+  await routes.assistantSettingsRoutes({
+    get(p, options) { need(p === '/assistant-settings', 'EXACT_READ_ROUTE_REQUIRED'); gets++; read = options.schema.response[200]; },
+    put(p, options) { need(p === '/assistant-settings', 'EXACT_WRITE_ROUTE_REQUIRED'); puts++; write = options.schema.response[200]; },
+  });
+  need(gets === 1 && puts === 1 && read === write && typeof read?.parse === 'function', 'RELEASED_SETTINGS_SCHEMA_REQUIRED');
+  return read;
+}
+
+export async function executeReviewedPlan(input, { explicitExecute = false } = {}) {
+  need(explicitExecute === true, 'EXPLICIT_EXECUTE_REQUIRED');
+  const plan = validatePlan(input), helperSha256 = hash(fs.readFileSync(fileURLToPath(import.meta.url)));
+  need(plan.helperSha256 === helperSha256 && !fs.existsSync(plan.outputDirectory), 'FROZEN_HELPER_FRESH_DIRECTORY_REQUIRED');
+  const command = (exe, args, cwd) => { const r = spawnSync(exe, args, { cwd, encoding: 'utf8', timeout: TIMEOUT, maxBuffer: 3_000_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    need(r.status === 0 && !r.signal, 'BOUNDED_METADATA_COMMAND_FAILED'); return r.stdout; };
+  const local = () => { const binding = verifyLocalSource(plan, { git: args => command('git', args, WORKTREE) });
+    for (const p of ['scripts/agent/env.mjs', 'scripts/agent/evidence.mjs']) need(hash(fs.readFileSync(path.join(PRIVATE_ROOT, p)))
+      === hash(fs.readFileSync(path.join(WORKTREE, p))), 'BOUND_PRIVATE_ROOT_SUPPORT_REQUIRED'); return binding; };
+  const initialSourceBinding = local(); // No env, credential, application or browser import before current full-source validation.
+  const SettingsSchema = await loadReleasedSettingsSchema();
+  const { need: secret } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/env.mjs')).href);
+  fs.mkdirSync(plan.outputDirectory);
+  const resultFile = path.join(plan.outputDirectory, 'result.json'), journal = path.join(plan.outputDirectory, 'intents.jsonl');
+  const receipt = { ticket: 'SCRUM-638', actualStaging: true, complete: false, sourceSha: plan.sourceSha, sourceManifestSha256: plan.sourceManifestSha256,
+    ciRunId: String(plan.ciRunId), deployments: plan.deployments, helperSha256, planSha256: digest(plan), initialSourceBinding,
+    routeModuleSha256: plan.routeModuleSha256, localReleaseSha256: plan.localReleaseSha256, assetManifestSha256: plan.assetManifestSha256,
+    startedAt: now(), completedAt: null, sourceChecks: [], operations: [], reads: [], authority: [], authCleanup: [], screenshots: [],
+    network: { blocked: 0, failed: 0, pageErrors: 0, consoleErrors: 0, fontSuppressions: 0 }, diagnostics: [],
+    pending: 0, nativePending: 0, unresolvedAuth: 0, journalHealthy: true, businessWrites: 0, fixturesCreated: 0, errorCode: null,
+    rateSave: null,
+    limitations: ['One planner-approved initial rate through the native form; caps and pacing unchanged. No live engine-consumption claim.',
+      'No clipboard, AI/model call, message, channel mode, handoff, payment, account creation or fixture.',
+      'Known external font suppressed; identity masks deliberate. Static bytes are actual production closure, not a local VITE build.'] };
+  const save = () => { try { fs.writeFileSync(resultFile, JSON.stringify(receipt, null, 2) + '\n', { flush: true }); }
+    catch { receipt.journalHealthy = false; throw new ProofError('RECEIPT_WRITE_FAILED'); } };
+  fs.writeFileSync(journal, '', { flag: 'wx', flush: true }); save();
+  const persist = row => { let fd; try { fd = fs.openSync(journal, 'a'); fs.writeSync(fd, JSON.stringify(row) + '\n'); fs.fsyncSync(fd); }
+    catch { receipt.journalHealthy = false; throw new ProofError('DURABLE_INTENT_REQUIRED'); } finally { if (fd !== undefined) fs.closeSync(fd); } };
+  const safe = () => need(receipt.journalHealthy && receipt.pending === 0 && receipt.nativePending === 0 && receipt.unresolvedAuth === 0 && Object.entries(receipt.network).every(([k, n]) => k === 'fontSuppressions' || n === 0), 'UNSETTLED_PROOF_REFUSED');
+  const lastDeploy = new Date(Math.max(...plan.deployments.map(d => Date.parse(d.finishedAt)))).toISOString();
+  async function sourceGate() {
+    const binding = local(), ci = JSON.parse(command('gh', ['run', 'view', String(plan.ciRunId), '--repo', 'vickyydev/oto-platform', '--json', 'headSha,status,conclusion,jobs']));
+    const get = async suffix => { const r = await fetch('https://api.render.com/v1' + suffix, { redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT),
+      headers: { authorization: `Bearer ${secret('RENDER_API_KEY')}`, accept: 'application/json' } }); need(r.status === 200, 'RENDER_READ_FAILED'); return boundedJson(r); };
+    const services = await get('/services?limit=50'), latest = {};
+    need(Array.isArray(services), 'RENDER_SERVICES_REQUIRED');
+    for (const d of plan.deployments) latest[d.serviceId] = await get(`/services/${d.serviceId}/deploys?limit=1`);
+    releaseFacts(plan, ci, services, latest);
+    receipt.sourceChecks.push({ at: now(), sourceSha: plan.sourceSha, ciRunId: String(plan.ciRunId), greenJobs: 6, deployments: plan.deployments,
+      localSourceBinding: binding, ciMetadataSha256: digest(ci) }); save();
+  }
+  const sessions = []; let browser, failed = false;
+  async function request(c, method, pathname, { query = '', body, cleanup = false } = {}) {
+    need(requestAllowed({ url: ORIGIN + pathname + (query ? '?' + query : ''), method, body, auth: true }), 'REQUEST_GRAMMAR_REFUSED');
+    need(!cleanup || pathname === '/api/auth/sign-out' && method === 'POST' || pathname === '/api/me' && method === 'GET', 'CLEANUP_GRAMMAR_REFUSED');
+    if (!cleanup) safe();
+    const row = { sequence: receipt.operations.length + 1, actor: c.actor, method, path: pathname, queryKeys: [...new URLSearchParams(query).keys()],
+      cleanup, intentAt: now(), terminal: false, status: null }; receipt.operations.push(row);
+    try { persist(row); save(); } catch (e) { if (!cleanup) throw e; }
+    const auth = method === 'POST'; if (pathname === '/api/auth/sign-in') c.attempted = true;
+    receipt.pending++; if (auth) receipt.unresolvedAuth++;
+    try {
+      const r = await fetch(ORIGIN + pathname + (query ? '?' + query : ''), { method, redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT),
+        headers: { accept: 'application/json', ...(c.cookie ? { cookie: c.cookie } : {}), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+        body: body === undefined ? undefined : JSON.stringify(body) });
+      for (const s of r.headers.getSetCookie()) { const m = /^oto_session=([^;]*)/.exec(s); if (m) c.cookie = m[1] ? `oto_session=${m[1]}` : ''; }
+      row.status = r.status; const json = await boundedJson(r); row.terminal = true; row.completedAt = now(); if (auth) receipt.unresolvedAuth--;
+      return { status: r.status, body: json, responseAt: r.headers.get('date'), observedAt: now() };
+    } catch (e) { row.errorCode = codeOf(e); throw e; }
+    finally { receipt.pending--; try { persist(row); save(); } catch (e) { if (!cleanup) throw e; } }
+  }
+  async function census(c) {
+    const m = await request(c, 'GET', '/api/me'), p = await request(c, 'GET', '/api/me/permissions'), me = m.body, permissions = p.body?.permissions;
+    need(m.status === 200 && p.status === 200 && me?.account?.id === DEMOS[c.actor] && me.account.operatorId === DEMOS.operatorId
+      && me.account.status === 'active' && me.account.mustChangePassword === false && me.sessionLocked === false && Array.isArray(permissions), 'EXACT_ACTIVE_DEMO_REQUIRED');
+    return { hash: digest({ account: { id: me.account.id, operatorId: me.account.operatorId, status: me.account.status, mustChangePassword: me.account.mustChangePassword },
+      branchId: me.branch?.id ?? null, preferences: me.preferences, sessionLocked: me.sessionLocked,
+      permissions: [...permissions].sort((a, b) => canonical(a).localeCompare(canonical(b))) }), permissions, settingsAllowed: settingsAllowed(permissions) };
+  }
+  const observe = (c, raw, responseAt, observedAt) => {
+    let body; try { body = SettingsSchema.parse(raw); } catch { throw new ProofError('RELEASED_SETTINGS_SCHEMA_MISMATCH'); }
+    const counts = validateSettings(body, { responseAt, observedAt, after: lastDeploy });
+    const responseSha256 = digest(raw);
+    need(!c.settingsHash || c.settingsHash === responseSha256, 'SETTINGS_CHANGED_DURING_PROOF');
+    c.settingsHash ??= responseSha256; c.settings = body;
+    receipt.reads.push({ actor: c.actor, status: 200, responseSha256, ...counts }); save(); return body;
+  };
+  async function read(c) {
+    const r = await request(c, 'GET', '/api/assistant-settings');
+    need(r.status === 200, 'SETTINGS_200_REQUIRED'); return observe(c, r.body, r.responseAt, r.observedAt);
+  }
+  async function capture(c, index, { restricted = false, phone = false } = {}) {
+    safe(); await sourceGate();
+    const context = await browser.newContext({ viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, serviceWorkers: 'block' }); c.browserContexts.push(context);
+    await context.addCookies([{ name: 'oto_session', value: c.cookie.slice('oto_session='.length), url: ORIGIN, httpOnly: true, secure: true, sameSite: 'Lax' }]);
+    const page = await context.newPage(); page.setDefaultTimeout(TIMEOUT);
+    const assets = new Map(plan.assets.map(a => [a.path, a])); let consumed = null, routeFailure = null, armedRateWrite = null;
+    const diagnostic = (stage, request) => { receipt.diagnostics.push({ stage, method: request.method(), type: request.resourceType(),
+      mainFrame: request.frame() === page.mainFrame(), urlSha256: hash(request.url()), bodySha256: hash(request.postData() ?? '') }); save(); };
+    page.on('pageerror', () => { receipt.network.pageErrors++; save(); });
+    page.on('console', message => { if (message.type() === 'error') { receipt.network.consoleErrors++; save(); } });
+    page.on('requestfailed', request => { receipt.network.failed++; diagnostic('request-failed', request); });
+    await page.route('**/*', async route => {
+      const request = route.request(); let stage = 'grammar';
+      c.nativeWork ??= new Set();
+      c.drainNative ??= async () => {
+        const deadline = Date.now() + TIMEOUT;
+        while (c.nativeWork.size > 0) {
+          const remaining = deadline - Date.now(); need(remaining > 0, 'NATIVE_DRAIN_TIMEOUT');
+          let timer;
+          try { await Promise.race([Promise.allSettled([...c.nativeWork]), new Promise(resolve => { timer = setTimeout(resolve, remaining); })]); }
+          finally { clearTimeout(timer); }
+          need(c.nativeWork.size === 0 || Date.now() < deadline, 'NATIVE_DRAIN_TIMEOUT');
+        }
+        need(receipt.nativePending === 0 && Object.entries(receipt.network).every(([key, count]) => key === 'fontSuppressions' || count === 0), 'NATIVE_DRAIN_FAILED');
+      };
+      let settled; const work = new Promise(resolve => { settled = resolve; });
+      c.nativeWork.add(work); receipt.nativePending = (receipt.nativePending ?? 0) + 1;
+      try {
+        save();
+        if (request.url() === FONT && request.method() === 'GET' && request.resourceType() === 'stylesheet') {
+          receipt.network.fontSuppressions++; save(); await route.fulfill({ status: 200, contentType: 'text/css', body: '' }); return;
+        }
+        const url = new URL(request.url()), document = request.resourceType() === 'document';
+        const isRateWrite = request.method() === 'PUT', wireBody = request.postData() === null ? undefined
+          : isRateWrite ? JSON.parse(request.postData()) : request.postData();
+        need(request.frame() === page.mainFrame() && requestAllowed({ url: request.url(), method: request.method(),
+          body: wireBody, health: c.permissions.some(p => p.permission === 'admin:health:read'),
+          rateWrite: c.actor === 'ADMIN' && index === 0 ? armedRateWrite : undefined, idempotencyKey: isRateWrite ? request.headers()['idempotency-key'] : undefined,
+          assetPaths: [...assets.keys()], document }), 'BROWSER_REQUEST_REFUSED');
+        if (document) need(url.pathname === PAGE && !url.search, 'ONLY_SETTINGS_DOCUMENT_REQUIRED');
+        if (isRateWrite) {
+          const safeWrite = () => need(receipt.journalHealthy && receipt.pending === 0 && receipt.nativePending === 1 && receipt.unresolvedAuth === 0
+            && !routeFailure && Object.entries(receipt.network).every(([key, count]) => key === 'fontSuppressions' || count === 0), 'UNSETTLED_RATE_WRITE_REFUSED');
+          safeWrite(); await sourceGate(); safeWrite();
+          need(receipt.businessWrites === 0 && armedRateWrite, 'ONE_APPROVED_NATIVE_WRITE_REQUIRED');
+          receipt.rateSave = { intentAt: now(), requestSha256: digest(wireBody), idempotencyKeySha256: hash(request.headers()['idempotency-key']),
+            beforeSha256: c.settingsHash, beforeRevision: c.settings.revision, confirmed: false };
+          persist({ kind: 'approved-rate-save', ...receipt.rateSave }); save();
+          receipt.businessWrites++; armedRateWrite = null;
+        }
+        stage = 'fetch'; const response = await route.fetch({ maxRetries: 0, maxRedirects: 0, timeout: TIMEOUT });
+        stage = 'body'; const bytes = await response.body(); need(bytes.length <= (url.pathname.startsWith('/api/') ? MAX_BODY : 8_000_000), 'NATIVE_BODY_LIMIT');
+        stage = 'status'; need(response.status() === 200, 'NATIVE_ALLOWED_READ_FAILED');
+        if (url.pathname === '/api/assistant-settings') {
+          stage = 'schema'; const raw = JSON.parse(bytes.toString('utf8'));
+          if (isRateWrite) {
+            const parsed = SettingsSchema.parse(raw); validateRateSave(c.settings, parsed, receipt.rateSave.intentAt);
+            c.settingsHash = digest(raw); receipt.rateSave.confirmed = true; receipt.rateSave.afterRevision = parsed.revision;
+            receipt.rateSave.afterSha256 = c.settingsHash; receipt.rateSave.confirmedAt = now(); persist({ kind: 'approved-rate-save-result', ...receipt.rateSave });
+          }
+          consumed = observe(c, raw, response.headers().date, now());
+        } else if (!url.pathname.startsWith('/api/')) {
+          stage = 'static-hash'; const asset = assets.get(document ? '/' : url.pathname);
+          need(asset && hash(bytes) === asset.sha256 && response.headers()['content-type']?.split(';')[0].trim() === asset.contentType, 'PRODUCTION_STATIC_BYTES_DIFFER');
+        }
+        const headers = { ...response.headers() }; for (const h of ['content-encoding', 'content-length', 'transfer-encoding']) delete headers[h];
+        stage = 'fulfill'; await route.fulfill({ status: response.status(), headers, body: bytes });
+      } catch (error) { routeFailure ??= codeOf(error); receipt.network.blocked++; diagnostic(stage, request); await route.abort('blockedbyclient').catch(() => {}); }
+      finally { receipt.nativePending--; c.nativeWork.delete(work); settled(); save(); }
+    });
+    try {
+      await page.goto(ORIGIN + PAGE, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+      if (restricted) {
+        const consoleDenied = !c.permissions.some(p => p.permission === 'app:console:access');
+        if (consoleDenied) await page.getByRole('heading', { name: 'The console is not on your access', exact: true }).waitFor();
+        else await page.getByText('This page is not on your access', { exact: true }).waitFor();
+        need(await page.getByRole('button', { name: 'Save settings', exact: true }).count() === 0 && consumed === null, 'RESTRICTED_SETTINGS_OR_SAVE_LEAK');
+        receipt.restrictionUi = consoleDenied ? 'console-level' : 'page-level';
+      } else {
+        await page.getByRole('heading', { name: 'Assistant settings', exact: true }).waitFor();
+        await page.getByRole('heading', { name: 'Internal assistant', exact: true }).waitFor();
+        need(consumed && !routeFailure, 'ACTUAL_NATIVE_SETTINGS_REQUIRED');
+        if (index === 0) {
+          const write = approvedRateWrite(consumed);
+          if (write) {
+            await page.getByRole('textbox', { name: 'Pricing model', exact: true }).fill(APPROVED_RATE.model);
+            await page.getByLabel('Effective from (UTC)', { exact: true }).fill(APPROVED_RATE.effectiveFrom.slice(0, 16));
+            for (const [label, value] of [['Input USD per million', 4], ['Output USD per million', 20], ['Cache-read USD per million', 0.2]])
+              await page.getByRole('spinbutton', { name: label, exact: true }).fill(String(value));
+            await page.getByRole('button', { name: 'Add rate version', exact: true }).click();
+            await c.drainNative?.(); safe(); await sourceGate(); await c.drainNative?.(); safe();
+            armedRateWrite = write;
+            await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+            await page.getByText('Settings saved.', { exact: true }).waitFor(); await c.drainNative?.();
+            need(receipt.rateSave?.confirmed && !routeFailure, 'NATIVE_RATE_SAVE_CONFIRMATION_REQUIRED');
+          } else {
+            receipt.rateSave = { confirmed: true, preexisting: true, responseSha256: digest(consumed), observedAt: now() }; save();
+          }
+        }
+        for (const [kind, key, label] of FIELDS) {
+          const group = page.locator('section').filter({ has: page.getByRole('heading', { name: kind === 'internal' ? 'Internal assistant' : 'Inbox assistant', exact: true }) });
+          const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const input = group.getByRole('spinbutton', { name: new RegExp('^' + escaped) });
+          need(await input.inputValue() === (consumed.overrides[kind][key] === undefined ? '' : String(consumed.overrides[kind][key])), 'NATIVE_OVERRIDE_VALUE_MISMATCH');
+          const hint = await input.locator('..').innerText(), effective = consumed.effective[kind][key].toLocaleString('en-US');
+          need(hint.includes('Effective: ' + effective) && hint.includes(consumed.overrides[kind][key] === undefined ? 'Deployment default' : 'Current override'), 'NATIVE_DEFAULT_EFFECTIVE_MISMATCH');
+        }
+        const history = page.getByRole('list', { name: 'Saved rate versions', exact: true }), rows = history.getByRole('listitem');
+        need(await rows.count() === consumed.rates.length && await history.locator('input,select,button').count() === 0, 'IMMUTABLE_NATIVE_HISTORY_REQUIRED');
+        for (let i = 0; i < consumed.rates.length; i++) {
+          const rate = consumed.rates[i], text = await rows.nth(i).innerText();
+          need([rate.model, rate.effectiveFrom, String(rate.inputUsdPerMillion), String(rate.outputUsdPerMillion), String(rate.cacheReadUsdPerMillion)].every(v => text.includes(v)), 'NATIVE_RATE_HISTORY_MISMATCH');
+        }
+        need((await page.locator('main').innerText()).includes('excludes unpersisted cache writes'), 'NATIVE_USD_SCOPE_REQUIRED');
+        if (consumed.source === 'invalid') await page.getByText(/Stored settings.*invalid/).waitFor();
+        if (consumed.rates.length === 0) await page.getByText(/No rates configured/).waitFor();
+        need(await page.getByRole('button', { name: 'Save settings', exact: true }).count() === 1, 'ACTUAL_SETTINGS_FORM_REQUIRED');
+      }
+      await c.drainNative?.(); need(!routeFailure, 'NATIVE_ROUTE_FAILED'); safe(); await sourceGate(); await c.drainNative?.(); safe();
+      const masks = [], identities = page.getByRole('button', { name: 'Sign out', exact: true }).locator('..');
+      for (let i = 0; i < await identities.count(); i++) if (await identities.nth(i).isVisible()) masks.push(identities.nth(i));
+      if (restricted && receipt.restrictionUi === 'console-level') masks.push(page.getByRole('heading', { name: 'The console is not on your access', exact: true }).locator('..').locator(':scope > p').first());
+      const capturedAt = now();
+      await page.evaluate(({ text, refusal }) => {
+        const host = document.querySelector('main') ?? (refusal ? document.body : null); if (!host) throw new Error('CAPTION_HOST_REQUIRED');
+        const caption = document.createElement('div'); caption.id = 'zz-638-evidence'; caption.textContent = text;
+        caption.style.cssText = 'position:relative;z-index:999999;pointer-events:auto;white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box;width:100%;padding:12px;margin:0 0 16px;background:#ffffff;color:#111111;border:2px solid #111;font:12px/1.5 monospace;'; host.prepend(caption);
+      }, { text: 'SCRUM-638 · Actual native staging · ' + c.actor + '\n' + capturedAt + '\nSource ' + plan.sourceSha
+        + '\nCI ' + plan.ciRunId + ' · API ' + plan.deployments[0].id + ' · Admin ' + plan.deployments[1].id
+        + '\nApproved initial rate verified · Caps and pacing preserved · No AI call', refusal: restricted && receipt.restrictionUi === 'console-level' });
+      need(await page.evaluate(() => { const c = document.getElementById('zz-638-evidence'), box = c.getBoundingClientRect();
+        return box.width > 0 && box.x >= 0 && box.right <= innerWidth + 1 && c.scrollWidth <= c.clientWidth + 1 && c.scrollHeight <= c.clientHeight + 1; }), 'NATIVE_CAPTION_CLIPPED');
+      need(!phone || await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'PHONE_HORIZONTAL_OVERFLOW');
+      const image = path.join(plan.outputDirectory, PNGS[index]); await page.screenshot({ path: image, fullPage: true, mask: masks, animations: 'disabled' });
+      receipt.screenshots.push({ filename: PNGS[index], sha256: hash(fs.readFileSync(image)), actor: c.actor, capturedAt, completedAt: now(),
+        viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, native: true, restricted, responseSha256: consumed ? digest(consumed) : null, identityMasks: masks.length }); save();
+      await c.drainNative?.();
+    } finally { await context.close(); await c.drainNative?.(); c.browserContexts = c.browserContexts.filter(item => item !== context); }
+  }
+  try {
+    need(Date.parse(receipt.startedAt) > Date.parse(lastDeploy), 'POSTDEPLOY_ATTEMPT_REQUIRED'); await sourceGate();
+    const { launch } = await import(pathToFileURL(path.join(PRIVATE_ROOT, 'scripts/agent/evidence.mjs')).href); browser = await launch();
+    for (const actor of ACTORS) {
+      safe(); await sourceGate(); const c = { actor, cookie: '', attempted: false, closed: false, browserContexts: [] }; sessions.push(c);
+      const signed = await request(c, 'POST', '/api/auth/sign-in', { body: { phone: secret('STAGING_' + actor + '_PHONE'), password: secret('STAGING_' + actor + '_PASSWORD') } });
+      need(signed.status === 200 && signed.body?.accountId === DEMOS[actor] && signed.body.mustChangePassword === false && c.cookie, 'EXACT_DEMO_SIGN_IN_REQUIRED');
+      const before = await census(c); c.permissions = before.permissions;
+      const authority = { actor, beforeSha256: before.hash, afterSha256: null }; receipt.authority.push(authority); save();
+      if (actor === 'ADMIN') {
+        need(before.settingsAllowed, 'ADMIN_OPERATOR_SETTINGS_REQUIRED'); await read(c); await capture(c, 0); await capture(c, 1, { phone: true }); await read(c);
+      } else {
+        need(!before.settingsAllowed, 'RECEPTION_SETTINGS_REFUSAL_REQUIRED');
+        const denied = await request(c, 'GET', '/api/assistant-settings');
+        need(denied.status === 403 && typeof denied.body?.error?.code === 'string', 'RECEPTION_STRUCTURED_403_REQUIRED');
+        need(iso(denied.responseAt) && Date.parse(denied.responseAt) > Date.parse(lastDeploy), 'POSTDEPLOY_REFUSAL_REQUIRED');
+        receipt.reads.push({ actor, status: 403, at: denied.observedAt, responseAt: denied.responseAt, responseSha256: digest(denied.body) }); save();
+        await capture(c, 2, { restricted: true });
+      }
+      authority.afterSha256 = (await census(c)).hash; need(authority.afterSha256 === authority.beforeSha256, 'ACTOR_AUTHORITY_CHANGED'); save();
+      need(await closeSession(c, request, row => { receipt.authCleanup.push(row); save(); }), 'AUTH_CLEANUP_UNCONFIRMED'); safe();
+    }
+  } catch (e) { failed = true; receipt.errorCode = codeOf(e); }
+  finally {
+    for (const c of sessions) {
+      for (const b of c.browserContexts) await b.close().catch(() => { failed = true; });
+      if (c.attempted && !c.closed) try { if (!await closeSession(c, request, row => { receipt.authCleanup.push(row); save(); })) failed = true; } catch { failed = true; }
+      c.cookie = ''; c.originalCookie = '';
+    }
+    if (browser) await browser.close().catch(() => { failed = true; });
+    for (const c of sessions) try { await c.drainNative?.(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+    try { await sourceGate(); } catch (e) { failed = true; receipt.errorCode ??= codeOf(e); }
+    receipt.completedAt = now();
+    receipt.complete = !failed && receipt.screenshots.length === 3 && sessions.length === 2 && sessions.every(c => c.closed && (!c.nativeWork || c.nativeWork.size === 0))
+      && receipt.authority.length === 2 && receipt.authority.every(a => a.beforeSha256 === a.afterSha256) && receipt.pending === 0 && receipt.nativePending === 0 && receipt.unresolvedAuth === 0
+      && receipt.rateSave?.confirmed && receipt.businessWrites <= 1
+      && receipt.journalHealthy && Object.entries(receipt.network).every(([k, n]) => k === 'fontSuppressions' || n === 0);
+    save();
+  }
+  return receipt;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  if (process.argv.length !== 4 || process.argv[2] !== '--execute') { process.stderr.write('HELD: reviewed plan and explicit --execute required.\n'); process.exitCode = 2; }
+  else { try { const r = await executeReviewedPlan(JSON.parse(fs.readFileSync(process.argv[3], 'utf8')), { explicitExecute: true });
+    process.stdout.write(JSON.stringify({ complete: r.complete, errorCode: r.errorCode, screenshots: r.screenshots.length }) + '\n'); if (!r.complete) process.exitCode = 1;
+  } catch (e) { process.stderr.write(codeOf(e) + '\n'); process.exitCode = 1; } }
+}

@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-638",
+  "commentId": "12573",
+  "status": "Deployed",
+  "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "ciRunId": "40321640775",
+  "attachments": [
+    {
+      "id": "12047",
+      "name": "SCRUM-638-01-settings-desktop.png"
+    },
+    {
+      "id": "12048",
+      "name": "SCRUM-638-02-settings-phone.png"
+    },
+    {
+      "id": "12049",
+      "name": "SCRUM-638-03-settings-restricted.png"
+    }
+  ],
+  "verifiedAt": "2026-10-26T13:13:09.696Z"
+}

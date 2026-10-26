@@ -1,0 +1,259 @@
+{
+  "ticket": "SCRUM-638",
+  "attempt": "20261026-v2",
+  "verifiedAt": "2026-10-26T13:12:15.595Z",
+  "actualStaging": true,
+  "complete": true,
+  "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "ciRunId": "40321640775",
+  "sourceFiles": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "resultSha256": "d2f4ba0f75928c37d1ae3afe8baec703eaf3bb604c5a80e2463d3411bcd50b14",
+  "target": "C:/w/admin-console-live-progress-20261026/docs/qa/jira-comments/attachments/SCRUM-638/20261026-staging",
+  "files": [
+    {
+      "source": "C:\\w\\admin638-staging-20261026-v2\\SCRUM-638-01-settings-desktop.png",
+      "relative": "SCRUM-638-01-settings-desktop.png",
+      "sha256": "0b44ae69ae52c4e8f044d5d39ef083a5044dbc24f2ec85ab373669bf71359726",
+      "bytes": 163120
+    },
+    {
+      "source": "C:\\w\\admin638-staging-20261026-v2\\SCRUM-638-02-settings-phone.png",
+      "relative": "SCRUM-638-02-settings-phone.png",
+      "sha256": "336128614e57cf532daa92e9279e5145e73f94929eb22feaa8b00447273d1ec2",
+      "bytes": 135819
+    },
+    {
+      "source": "C:\\w\\admin638-staging-20261026-v2\\SCRUM-638-03-settings-restricted.png",
+      "relative": "SCRUM-638-03-settings-restricted.png",
+      "sha256": "da3ed9750464ad6cd551c6c116bab241a0734af39ec4e5a001ade4abf515091e",
+      "bytes": 77762
+    },
+    {
+      "source": "C:\\w\\admin638-staging-20261026-v2\\result.json",
+      "relative": "result.json",
+      "sha256": "d2f4ba0f75928c37d1ae3afe8baec703eaf3bb604c5a80e2463d3411bcd50b14",
+      "bytes": 28575
+    },
+    {
+      "source": "C:\\w\\admin638-staging-20261026-v2\\intents.jsonl",
+      "relative": "intents.jsonl",
+      "sha256": "a7ce61525adaca09c178febc5650e372d7c0eee40678af7fbb3140f0c632de2f",
+      "bytes": 7427
+    },
+    {
+      "source": "C:/w/admin638-proof-plan-20261026-v2-approved.json",
+      "relative": "plan.json",
+      "sha256": "44ace8d4dbed64dcdfab9d11953d3c718b261c19ca8ec97fe7316b04e7a81521",
+      "bytes": 3896
+    },
+    {
+      "source": "C:/w/admin638-staging-bindings-20261026-v2.json",
+      "relative": "bindings.json",
+      "sha256": "7dfbb6136677e19cca981735cd27bfb10c3b78ff2f729b322cfdd6f372792ae4",
+      "bytes": 3918
+    },
+    {
+      "source": "C:\\w\\admin638-staging-20261026-v2\\visual-review.json",
+      "relative": "visual-review.json",
+      "sha256": "4d2d453e8a75fcc45b0a29b623a8ae68216f2713b307fa8a805cbaa8dd92ac17",
+      "bytes": 1234
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/ci-final.json",
+      "relative": "ci-final.json",
+      "sha256": "bf257cf5690915ec9b08dd169fc8ce50a24ffe8dad3ad812f746f3a2a12cf310",
+      "bytes": 26332
+    },
+    {
+      "source": "C:/w/admin-assistant-settings/docs/qa/jira-comments/attachments/SCRUM-638/local-release.json",
+      "relative": "local-release.json",
+      "sha256": "3ebe3ed885f74bf87cb332c2fd2ce9d8f98e295b98015431a7f6edf4a3a0a4fd",
+      "bytes": 7042
+    },
+    {
+      "source": "C:/w/admin638-resume-release-independent-review.json",
+      "relative": "reviews/local-release-independent-review.json",
+      "sha256": "393e50700c1444b0c65046c0efdcc4cf354b9743178a6c37ee6a2fa0e6dff815",
+      "bytes": 9535
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-independent-review-v2.json",
+      "relative": "reviews/rate-proof-independent-review-v2.json",
+      "sha256": "806555ac21a5ca58bf27a49f3476442a51f28b3a0606623336ef964a68612810",
+      "bytes": 7111
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-independent-review-v1.json",
+      "relative": "history/rate-proof-review-v1.json",
+      "sha256": "54449f416eccebd08b43d5bdc06f5b812d9ab08509df2d87f693ab74ced1ce39",
+      "bytes": 4161
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-independent-review-v1-erratum.md",
+      "relative": "history/rate-proof-review-v1-erratum.md",
+      "sha256": "f05b78e9202ff9b2f3b666e86f73848c082c3c1c0cdab178d85f16d4ba06edd6",
+      "bytes": 692
+    },
+    {
+      "source": "C:/w/admin638-staging-rate-proof.mjs",
+      "relative": "tools/staging-rate-proof.mjs.txt",
+      "sha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839",
+      "bytes": 43812
+    },
+    {
+      "source": "C:/w/admin638-staging-rate-proof.test.mjs",
+      "relative": "tools/staging-rate-proof.test.mjs.txt",
+      "sha256": "ea2d35f7151bcde6c295b226198f76e3c212f0b48524d3649ed289362a56a48f",
+      "bytes": 36092
+    },
+    {
+      "source": "C:\\w\\admin638-close-evidence-20261026.mjs",
+      "relative": "tools/close-evidence.mjs.txt",
+      "sha256": "db27c914142a997151febaf8f5d3a136b3eb520ef4a4d7ab2263dbc9f1208810",
+      "bytes": 18084
+    },
+    {
+      "source": "C:/w/admin638-create-rate-proof-plan-20261026.mjs",
+      "relative": "tools/create-rate-proof-plan.mjs.txt",
+      "sha256": "46d0da759b2ffbb77b85e604d7467ed1a21bb9af80156ab0b9654373f3ab0936",
+      "bytes": 17120
+    },
+    {
+      "source": "C:/w/admin638-staging-rate-proof.md",
+      "relative": "tools/staging-rate-proof.md",
+      "sha256": "baf311ac724044c70eced914d2f0c2e46dd1ea1cb55237b51f114f9adab76c46",
+      "bytes": 2464
+    },
+    {
+      "source": "C:/w/admin638-release-published-20261026.json",
+      "relative": "history/source-published.json",
+      "sha256": "4310e6232109a705bf3c5c1422111d3e0423aef655efed0760fae7d04316fd4b",
+      "bytes": 505
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-preflight-predispatch-red.json",
+      "relative": "history/admin638-rate-proof-preflight-predispatch-red.json",
+      "sha256": "ed1253084c9f7b52117ca706c48311d598babb409a70e9333fca5a4ed061307f",
+      "bytes": 619
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-preflight-predispatch-red.log",
+      "relative": "history/admin638-rate-proof-preflight-predispatch-red.log",
+      "sha256": "77823c013f90bd6babe9233bd51c9f7c140accbd2d531ec1555a08b7d382abaf",
+      "bytes": 8175
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-preflight-predispatch-green.json",
+      "relative": "history/admin638-rate-proof-preflight-predispatch-green.json",
+      "sha256": "e1827b3c522f0576d9db83d7c438392a62b75605012da33f5d3d3661daae71ed",
+      "bytes": 619
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-preflight-predispatch-green.log",
+      "relative": "history/admin638-rate-proof-preflight-predispatch-green.log",
+      "sha256": "1d9809afa4571722789f81b1ef4bd223bd5c7126dbd85a587dfcf4fe64c2e1e8",
+      "bytes": 7150
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-preflight-final-v2.json",
+      "relative": "history/admin638-rate-proof-preflight-final-v2.json",
+      "sha256": "8ce1479a334c7cb26a9bb8fb9e8b339e1313d6b7ba55a3c12619dcf3fc9bf150",
+      "bytes": 619
+    },
+    {
+      "source": "C:/w/admin638-rate-proof-preflight-final-v2.log",
+      "relative": "history/admin638-rate-proof-preflight-final-v2.log",
+      "sha256": "4b491490af6c865f23c4fc1887c35a9cf27632820c16f278279fa70859997973",
+      "bytes": 7799
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/intent.json",
+      "relative": "history/ci-attempt1/intent.json",
+      "sha256": "bf8bf17f95394e1b134f5ba55e407a67003d6937aee4aa25d4bad1945b347855",
+      "bytes": 534
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/cancel-result.json",
+      "relative": "history/ci-attempt1/cancel-result.json",
+      "sha256": "b0ec803053a5441f84333d539904401618d99fb3c5c60d1ef6a5f3e9e5a75e8b",
+      "bytes": 39972
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/rerun-intent.json",
+      "relative": "history/ci-attempt1/rerun-intent.json",
+      "sha256": "e982ca941d074785e3d24b69ebf21dcac8df381f3c146c972212be2eaa39d72b",
+      "bytes": 173
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/rerun-observed.json",
+      "relative": "history/ci-attempt1/rerun-observed.json",
+      "sha256": "0215b57a3bd0872def807dbff3455dba74bbf53a10b2e0387f100d2184ae9af9",
+      "bytes": 462
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/diagnosis-review.json",
+      "relative": "history/ci-attempt1/diagnosis-review.json",
+      "sha256": "d3d6a18f9974b2b75661f3f99435cc561b3a678724c256b2e0975d09efa1c076",
+      "bytes": 6262
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/diagnosis-attempt1-metadata.json",
+      "relative": "history/ci-attempt1/diagnosis-attempt1-metadata.json",
+      "sha256": "bbb0d0654eb1d60c40191d509e0a6d9f11929a56514260fec5063cb4682b74ce",
+      "bytes": 17433
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/diagnosis-attempt1-sanitized.log",
+      "relative": "history/ci-attempt1/diagnosis-attempt1-sanitized.log",
+      "sha256": "88a6bed1a9df5ddcbe4d0b2b15123734f97e524a71a07f8ce430706dac4f14a5",
+      "bytes": 336490
+    },
+    {
+      "source": "C:/w/admin638-ci-setup-retry-20261026/diagnosis-baseline-comparison.json",
+      "relative": "history/ci-attempt1/diagnosis-baseline-comparison.json",
+      "sha256": "fa1ed3024fe3720bf5bced524ec6a40ffeadce3d4f84ca694839004d6e2f8161",
+      "bytes": 505
+    },
+    {
+      "source": "C:\\w\\admin638-staging-20261026-v1\\result.json",
+      "relative": "history/20261026-v1/result.json",
+      "sha256": "421ec495901008ddc78e1f489805e982c6082089f1b49415d0bf252e78c28174",
+      "bytes": 11989
+    },
+    {
+      "source": "C:\\w\\admin638-staging-20261026-v1\\intents.jsonl",
+      "relative": "history/20261026-v1/intents.jsonl",
+      "sha256": "a6310bdd6da3eafcd8aa7878e42c6fe26d37b7771ba798d4eb43f59a8dbdbf0d",
+      "bytes": 2288
+    },
+    {
+      "source": "C:/w/admin638-proof-plan-20261026-v1-approved.json",
+      "relative": "history/20261026-v1/plan.json",
+      "sha256": "e0ada9959e2c735c2c8e10a5b09a39383097709ce8a2b7bfdae788ef13961993",
+      "bytes": 3895
+    },
+    {
+      "source": "C:/w/admin638-staging-bindings-20261026-v1.json",
+      "relative": "history/20261026-v1/bindings.json",
+      "sha256": "0090fda1fd281cb22e4971cfb0874aa3171c3d35ba99f53d10fac723e0712eb2",
+      "bytes": 3916
+    }
+  ],
+  "packagingHelperSha256": "db27c914142a997151febaf8f5d3a136b3eb520ef4a4d7ab2263dbc9f1208810",
+  "facts": {
+    "approvedRateConfirmed": true,
+    "businessWrites": 1,
+    "authorityUnchanged": true,
+    "capsAndPacingUnchanged": true,
+    "originalCookiesClosed200401": 2,
+    "nativePostdeployPngs": 3,
+    "rootVisualReview": true,
+    "sixCiJobsGreen": true,
+    "originalCiAttemptCancelled": true
+  },
+  "limits": [
+    "Native settings/configuration and refusal evidence only; no live engine/provider-consumption or billing claim.",
+    "Jira attachments, Deployed, docs, Git and current live state are not actions or claims of this packaging helper."
+  ]
+}

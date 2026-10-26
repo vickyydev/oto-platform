@@ -1,0 +1,164 @@
+{
+  "ticket": "SCRUM-638",
+  "reviewedAt": "2026-10-26T11:54:29.948Z",
+  "revision": 2,
+  "passed": true,
+  "scope": "External proof source and recorded offline gates only; no armed live plan or staging acceptance approval.",
+  "helperSha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839",
+  "testSha256": "ea2d35f7151bcde6c295b226198f76e3c212f0b48524d3649ed289362a56a48f",
+  "collectorSha256": "46d0da759b2ffbb77b85e604d7467ed1a21bb9af80156ab0b9654373f3ab0936",
+  "bindings": [
+    {
+      "path": "C:/w/admin638-staging-rate-proof.mjs",
+      "sha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839"
+    },
+    {
+      "path": "C:/w/admin638-staging-rate-proof.test.mjs",
+      "sha256": "ea2d35f7151bcde6c295b226198f76e3c212f0b48524d3649ed289362a56a48f"
+    },
+    {
+      "path": "C:/w/admin638-create-rate-proof-plan-20261026.mjs",
+      "sha256": "46d0da759b2ffbb77b85e604d7467ed1a21bb9af80156ab0b9654373f3ab0936"
+    },
+    {
+      "path": "C:/w/admin638-staging-proof.mjs",
+      "sha256": "a0da559d81c17e5c659f6accaecbd30fd471dd4cd48581acae38efdc434381d5"
+    }
+  ],
+  "priorReview": {
+    "path": "C:/w/admin638-rate-proof-independent-review-v1.json",
+    "sha256": "54449f416eccebd08b43d5bdc06f5b812d9ab08509df2d87f693ab74ced1ce39",
+    "preserved": true,
+    "bindingInvalid": true,
+    "erratum": "C:/w/admin638-rate-proof-independent-review-v1-erratum.md",
+    "erratumSha256": "f05b78e9202ff9b2f3b666e86f73848c082c3c1c0cdab178d85f16d4ba06edd6",
+    "reason": "v1 findings described old fbaf helper but raced replacement and recorded660c. Correct closure is bound by actual RED/GREEN evidence below."
+  },
+  "actualOfflineEvidence": [
+    {
+      "path": "C:/w/admin638-rate-proof-preflight-predispatch-red.json",
+      "receiptSha256": "ed1253084c9f7b52117ca706c48311d598babb409a70e9333fca5a4ed061307f",
+      "logSha256": "77823c013f90bd6babe9233bd51c9f7c140accbd2d531ec1555a08b7d382abaf",
+      "files": [
+        {
+          "path": "C:/w/admin638-staging-rate-proof.mjs",
+          "sha256": "fbaf8f2298d8ec68a811bf9996e6af2f24b5bf19e811e6573611717b230d9d61"
+        },
+        {
+          "path": "C:/w/admin638-staging-rate-proof.test.mjs",
+          "sha256": "4e28a480cf4e88765d0bca8165c77220b16c7a8623e9d7b56f8a72774ba49c04"
+        }
+      ],
+      "exitCode": 1,
+      "sourceUnchanged": true,
+      "summary": [
+        "# tests 26",
+        "# pass 24",
+        "# fail 2",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "path": "C:/w/admin638-rate-proof-preflight-predispatch-green.json",
+      "receiptSha256": "e1827b3c522f0576d9db83d7c438392a62b75605012da33f5d3d3661daae71ed",
+      "logSha256": "1d9809afa4571722789f81b1ef4bd223bd5c7126dbd85a587dfcf4fe64c2e1e8",
+      "files": [
+        {
+          "path": "C:/w/admin638-staging-rate-proof.mjs",
+          "sha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839"
+        },
+        {
+          "path": "C:/w/admin638-staging-rate-proof.test.mjs",
+          "sha256": "4e28a480cf4e88765d0bca8165c77220b16c7a8623e9d7b56f8a72774ba49c04"
+        }
+      ],
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "summary": [
+        "# tests 26",
+        "# pass 26",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "path": "C:/w/admin638-rate-proof-preflight-final-v2.json",
+      "receiptSha256": "8ce1479a334c7cb26a9bb8fb9e8b339e1313d6b7ba55a3c12619dcf3fc9bf150",
+      "logSha256": "4b491490af6c865f23c4fc1887c35a9cf27632820c16f278279fa70859997973",
+      "files": [
+        {
+          "path": "C:/w/admin638-staging-rate-proof.mjs",
+          "sha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839"
+        },
+        {
+          "path": "C:/w/admin638-staging-rate-proof.test.mjs",
+          "sha256": "ea2d35f7151bcde6c295b226198f76e3c212f0b48524d3649ed289362a56a48f"
+        }
+      ],
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "summary": [
+        "# tests 29",
+        "# pass 29",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    }
+  ],
+  "actualRed": {
+    "tests": 26,
+    "passed": 24,
+    "failed": 2,
+    "helperSha256": "fbaf8f2298d8ec68a811bf9996e6af2f24b5bf19e811e6573611717b230d9d61"
+  },
+  "sameTestGreen": {
+    "tests": 26,
+    "passed": 26,
+    "failed": 0,
+    "helperSha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839"
+  },
+  "finalGreen": {
+    "tests": 29,
+    "passed": 29,
+    "failed": 0
+  },
+  "wholeLogsRead": [
+    "predispatch-red",
+    "final-v2"
+  ],
+  "closedFinding": {
+    "id": "RATE_WRITE_PREDISPATCH_SAFETY",
+    "status": "resolved",
+    "actualCounterfactual": true,
+    "source": "Native PUT safeWrite before and after exact sourceGate requires journal healthy, no direct pending/auth uncertainty, only its own nativePending1, no route failure and zero unexpected network errors. UI drains and runs safe/sourceGate/drain/safe before arming. Known pageError/blocked or changed source now yields0fetch; exact one-write success and unknown-ack no-retry use the actual extracted handler."
+  },
+  "verifiedGuards": [
+    "Planner-approved rate model/date/threeUSD numbers match latest590a ruling; caps/effective/pacing and prior rate history remain exact.",
+    "Existing exact approved rate is a read-only preexisting case; conflicting immutable history refuses.",
+    "ADMIN desktop-only arming, exact route/body/key, durable intent before sole original dispatch, arming cleared and no retry.",
+    "Native200 must parse current released schema, exactly increment revision1, preserve caps/effective/rates and name ADMIN updater; later actual read hashes must remain identical.",
+    "Lost acknowledgement leaves rateSave unconfirmed/businessWrites1/completefalse; no absent-readback reconciliation, inverse write or deleted history is used.",
+    "Original-cookie auth cleanup remains independent and always attempted in finally; incomplete issuance remains unresolved.",
+    "Full source/Git/runtime/localReleaseGreen/sixCI/latestAPI+Console and exact actual public closure remain mandatory.",
+    "New collector differs from reviewed638draft only in rate-helper import/pin and honest acceptance scope wording; it remains public-only and writes approved:false held plan/bindings."
+  ],
+  "findings": [],
+  "reviewActions": {
+    "helperEdits": 0,
+    "repoEdits": 0,
+    "testsRun": 0,
+    "networkAuthRuntimeCalls": 0
+  },
+  "limits": [
+    "Recorded offline runs are actual coordinator executions, independently inspected here; no tests were rerun by this reviewer.",
+    "No concrete future plan, actual release/CI/deploy, asset manifest or staging response was approved by this source review.",
+    "An unknown save must never trigger a blind new attempt; preserve the incomplete result and reconcile separately.",
+    "Successful native config Save/readback still does not prove live engine consumption or provider billing. No real AI/provider/SMS/message/payment call is authorized."
+  ]
+}

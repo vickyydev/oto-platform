@@ -1,0 +1,18 @@
+{
+  "runId": 40092931105,
+  "jobId": 120869157520,
+  "attempt": 1,
+  "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+  "status": "completed",
+  "conclusion": "success",
+  "installStep": {
+    "name": "Install PostgreSQL 16 and video evidence tools",
+    "startedAt": "2026-10-24T12:14:52Z",
+    "completedAt": "2026-10-24T12:15:12Z",
+    "conclusion": "success",
+    "durationSeconds": 20
+  },
+  "originalAttemptInstallSeconds": 1575,
+  "metadataOnly": true,
+  "baselineLogNotDownloaded": true
+}

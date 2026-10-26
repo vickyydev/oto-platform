@@ -1,0 +1,253 @@
+{
+  "ticket": "SCRUM-638",
+  "reviewedAt": "2026-10-26T12:18:04.209Z",
+  "passed": true,
+  "blockers": [],
+  "reviewedLocalReleaseSha256": "3ebe3ed885f74bf87cb332c2fd2ce9d8f98e295b98015431a7f6edf4a3a0a4fd",
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceInputs": 3790,
+  "sourceCheckpoint": "1783068cdd5e7372b7725568e8d704320817bdb8",
+  "base": "0826f2596c11bcf9cc3144923a0429798dd90a46",
+  "scope": "Independent read-only local release evidence review; no tests, resources, auth, deployment or repository changes performed.",
+  "source": {
+    "allCurrent3790FileHashesMatch": true,
+    "sourceUnchangedThroughDocsOnlyRebases": true,
+    "preservedOwnCommits": 6,
+    "conflicts": 0,
+    "skips": 0,
+    "finalDocsBridge": {
+      "path": "C:/w/admin638-resume-20261026/final-docs-bridge.json",
+      "sha256": "8c48e3519af7a1b4a036c970b06f7fb6f9671d3c3fd4c46db4bc3d6fad9c1030"
+    },
+    "migration": {
+      "candidate": "0087_assistant_settings",
+      "recordedBaseLast": "0086_department_mirror",
+      "nextFreeOnRecordedBase": true,
+      "landingRecheckRequired": true
+    }
+  },
+  "freshPostRebase": {
+    "requiredPrograms": 11,
+    "terminalAttempts": 12,
+    "coveredPrograms": 11,
+    "receipt": {
+      "path": "C:/w/admin638-resume-20261026/post-rebase-checks.json",
+      "sha256": "3efacc8f0211de827c5c34a441bb0ea7a90793a37fda3c5c387e5d83bbf32d69"
+    },
+    "terminalReceiptsAndLogsVerified": true,
+    "sourceAndInstalledMetadataUnchanged": true,
+    "counts": {
+      "apiFiles": 8,
+      "apiPassed": 255,
+      "databaseFiles": 45,
+      "databasePassed": 324,
+      "consoleFiles": 36,
+      "consolePassed": 290,
+      "consoleTodo": 3,
+      "apiTypesFiles": 1,
+      "apiTypesPassed": 10
+    },
+    "fourRouteGuardCases": {
+      "routesGuarded": 21,
+      "writeConformance": 19,
+      "idConformance": 24,
+      "scopeTarget": 19
+    },
+    "compilerWholeOutputRead": true,
+    "successfulCompilerDiagnostics": 0,
+    "consoleCompilerConfigurations": 3,
+    "contractsMatch": true,
+    "schemaVerificationPassed": true,
+    "lint": {
+      "requestedPaths": 27,
+      "errors": 0,
+      "warnings": 1,
+      "warning": "Generated api-types source is ignored by the existing lint pattern."
+    },
+    "cleanup": {
+      "ownNativeServer": true,
+      "databaseCountAfter": 0,
+      "stopped": true,
+      "cleanupError": null,
+      "confirmed": true
+    },
+    "gates": [
+      {
+        "name": "api-focused",
+        "receiptSha256": "bdec1b162924dfa2533f10723a93b1a4a3d65de87e6bf66ade54f23ac3b3ae69",
+        "logSha256": "1a21f0ebcf66b88ce50f9448d570da80e4a1dfef78a212717794aae85e2be121",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "db-tests",
+        "receiptSha256": "813c67c90bce11a866242cdaae6df11e48044f2f379e8c91c4c2a43639b11e72",
+        "logSha256": "1b247e97fb9e3b6c8c499367162718202e89ea4389b1d926ca7d6ce68bf4e399",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "api-typecheck",
+        "receiptSha256": "0aa41b9c66192aea95978b1dd03be8115ea413f8084b4c6737c66139ae281824",
+        "logSha256": "204e8a957a3e0e856f81bfe594e5a9a55c1a1cec462061e0bb3ab41009490d98",
+        "exitCode": 134,
+        "passed": false
+      },
+      {
+        "name": "api-typecheck-adequate",
+        "receiptSha256": "8d409ddfb97405419b206c15732c336b921261c6895ae8677128968f3d05a8c3",
+        "logSha256": "49c95a1bac4f6c861a2952de2857c42a6bcb34a6d81280b1e2de7f5e682de807",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "db-typecheck",
+        "receiptSha256": "16d0b0905922078baca9384cec975dc5dbc3a2a2d3948d713959c06fbcd84f8c",
+        "logSha256": "801de2d590594d58a541111bf725618c4fb1f7a99edfe2aebb2fd9de8df3fb91",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "client-typecheck",
+        "receiptSha256": "0da61c817626b45b4c0db7ce9be77b8958be89a2b5d8c25deed432a5c3f21601",
+        "logSha256": "2df64e9eac617a1700599adb191a115911e4efeb71a0fe33c6a1344f4d6447e8",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "console-typecheck",
+        "receiptSha256": "e4009ec05bd2a0157d3493b75847afba1dc03e6a4fd0b3c004b0328de9000aa6",
+        "logSha256": "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "console-units",
+        "receiptSha256": "f7777ab30ba9687fc6dcb2ce1348dd96b9131f80d81d7390966c3c18800dd925",
+        "logSha256": "c3ff0eb558b413098cf46e315cb09ed15bac5e6155c3a763dd42fe8f5faeeac0",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "client-tests",
+        "receiptSha256": "5152dcf4341df7b16729e1e8f9be0c6b1dd90ace0528dcf54aa3877e5d98b09a",
+        "logSha256": "9829af8cd8266ba01c47fee4d52bdab0a447f15613b8e01da454d0982fc803a8",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "contracts",
+        "receiptSha256": "58537c86bf2b68915fcf235b13f61a0a7d19cd1081b49988488d4f35ce597140",
+        "logSha256": "f08d24172ad09027983940c678014cc68e0c180ef9db2ffdc67608f26ab2fc17",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "verify-schema",
+        "receiptSha256": "34e466d86b01364215b31241e4b11272e5d95959af9201e6674f8a00a9506a3d",
+        "logSha256": "c920af6d4a23158db366c24dcb33f5cb691949d813357bf457d7c4e2fcff7590",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "name": "changed-eslint",
+        "receiptSha256": "fb3afa9848200427bb7bb21fef7591b47447b61cba6f50db8b939e757f98ce11",
+        "logSha256": "3db5a5e0d70c987b0349c04a018d17321227dea40af7b4280165f0a5b903b790",
+        "exitCode": 0,
+        "passed": true
+      }
+    ]
+  },
+  "failureHistory": {
+    "originalBatchPassed": false,
+    "originalBatchReceipt": {
+      "path": "C:/w/admin638-resume-20261026/gates-result.json",
+      "sha256": "541529e43876aa25bf2aec03ac3a5f907df545db2e99e046eddd5c3f62f0e28b"
+    },
+    "originalOuterExitWasZeroDespiteSemanticFailure": true,
+    "originalApiCompilerHeapMiB": 1536,
+    "originalApiCompilerExit": 134,
+    "originalFailureRetained": true,
+    "separateAdequateWholeCompilerHeapMiB": 4096,
+    "separateAdequateCompilerPassed": true,
+    "separateAdequateCompilerDiagnostics": 0,
+    "noFailedReceiptRelabelled": true
+  },
+  "reusedCoverage": {
+    "method": "Previously independently verified unchanged source domains plus fresh post-rebase affected gates; not a single final-frame full battery.",
+    "priorIndependentReview": {
+      "path": "C:/w/admin638-checkpoint-independent-review-20261026.json",
+      "sha256": "3db4fdf69fdf8e8d5ef2d36f39ac1f88f80e6445a67ced7953e49830c1200578"
+    },
+    "uniqueApiPassed": 5677,
+    "apiOptionalStorageSkips": 2,
+    "apiTodo": 5,
+    "apiRepeatCasesExcluded": 391,
+    "consoleBrowserPassed": 256,
+    "posLinuxPassed": 1437,
+    "boxSerialPassed": 749,
+    "workspaceTypecheckTasks": 16,
+    "buildTasks": 5,
+    "otherPackagePassed": 2406,
+    "otoApp": {
+      "errors": 418,
+      "files": 54,
+      "fileCodeBuckets": 109,
+      "nativeCiPrograms": 41,
+      "availabilityFiles": 30,
+      "availabilityCases": 790,
+      "original52CommandRunGreen": false,
+      "separateUnchangedAffectedClosure": true,
+      "restore": {
+        "platformMigrations": 88,
+        "appMigrations": 31,
+        "tables": 184,
+        "rows": 1108,
+        "replays": 2,
+        "preserved": true
+      }
+    },
+    "originalPlatformAndAppFailuresPreserved": true
+  },
+  "archive": {
+    "selectedFiles": 29,
+    "newQaFilesIncludingBinder": 25,
+    "currentDocs": 4,
+    "allSelectedPathHashesAndSizesMatch": true,
+    "jsonFiles": 24,
+    "jsonNativeParseLfNoBom": true,
+    "historicalQaFiles": 186,
+    "historicalQaByteIdenticalToFrozenIndex": true,
+    "historicalIndex": {
+      "path": "C:/w/admin638-final-20261026/checkpoint-final-file-list-v2.json",
+      "sha256": "c212678565f86e31fd1ca4e7bf8c8b1be9c1d6896743d77735e016176e434908"
+    },
+    "publicationList": {
+      "path": "C:/w/admin638-resume-20261026/publication-file-list.json",
+      "sha256": "bcfa58c81e1b525cef6f070aa6efbd360dcf810ec344ede4be313d7f92419c9a"
+    },
+    "commitList": {
+      "path": "C:/w/admin638-resume-20261026/commit-file-list.json",
+      "sha256": "ac1ff6185930b78594805c1ada1ed46a9d928bdcebc0e462f03dedd68c8f2e3d"
+    },
+    "binderAndExternalReferenceHashesVerified": 32
+  },
+  "initialRates": {
+    "plannerApprovalVerified": true,
+    "approvalSha256": "7296c6174c06a26f5da9334b0e1b6763c9dc251dc52a7f0536b96391557e2689",
+    "sourceSeedRequired": false,
+    "stagingNativeSaveRequired": true,
+    "stagingNativeSavePerformed": false
+  },
+  "limits": [
+    "Local evidence readiness only. Hosted exact-SHA CI, Render deployment, native audited initial rate save, and staging acceptance remain pending.",
+    "No live provider, SMS, webhook, payment or AI send was performed or inferred.",
+    "Prior domain evidence is reused only through the verified unchanged source bindings; no monolithic final-frame full-battery claim.",
+    "The first compiler OOM and false original semantic batch remain failures; the separate unchanged 4096MiB whole-compiler pass closes only that compiler requirement.",
+    "Migration0087 availability is verified against recorded base0826 and requires the coordinator landing check."
+  ],
+  "pushed": false,
+  "featureCi": false,
+  "renderDeploy": false,
+  "stagingAcceptance": false
+}

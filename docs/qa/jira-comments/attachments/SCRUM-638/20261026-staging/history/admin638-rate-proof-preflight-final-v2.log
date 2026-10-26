@@ -1,0 +1,184 @@
+TAP version 13
+# Subtest: approved initial rate appends only that version and preserves caps, pacing and earlier history
+ok 1 - approved initial rate appends only that version and preserves caps, pacing and earlier history
+  ---
+  duration_ms: 10.5736
+  type: 'test'
+  ...
+# Subtest: native write requires armed exact body and idempotency key; no cap change or direct write permission
+ok 2 - native write requires armed exact body and idempotency key; no cap change or direct write permission
+  ---
+  duration_ms: 0.5637
+  type: 'test'
+  ...
+# Subtest: inert import and unarmed execute cannot dispatch, read environment or create an attempt
+ok 3 - inert import and unarmed execute cannot dispatch, read environment or create an attempt
+  ---
+  duration_ms: 6.5021
+  type: 'test'
+  ...
+# Subtest: exact reviewed plan binds both services, two fixed actors and public closure; no old-source/foreign substitution
+ok 4 - exact reviewed plan binds both services, two fixed actors and public closure; no old-source/foreign substitution
+  ---
+  duration_ms: 1.3815
+  type: 'test'
+  ...
+# Subtest: auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused
+ok 5 - auth-only writes: provision/invite/handoff/session/payment/webhook/message mutations are always refused
+  ---
+  duration_ms: 0.6377
+  type: 'test'
+  ...
+# Subtest: GET grammar is exact: no foreign origin, fragments, operator/park/date query or aggregate/detail fan-out
+ok 6 - GET grammar is exact: no foreign origin, fragments, operator/park/date query or aggregate/detail fan-out
+  ---
+  duration_ms: 0.2246
+  type: 'test'
+  ...
+# Subtest: native shell bootstrap allows only exact health badge grammar and reviewed static paths
+ok 7 - native shell bootstrap allows only exact health badge grammar and reviewed static paths
+  ---
+  duration_ms: 0.2518
+  type: 'test'
+  ...
+# Subtest: exact six green CI jobs and latest same-source API+Console are required, including deploy finish times
+ok 8 - exact six green CI jobs and latest same-source API+Console are required, including deploy finish times
+  ---
+  duration_ms: 0.4618
+  type: 'test'
+  ...
+# Subtest: settings reach requires an own or null operator grant; branch, foreign and missing grants never broaden
+ok 9 - settings reach requires an own or null operator grant; branch, foreign and missing grants never broaden
+  ---
+  duration_ms: 0.2773
+  type: 'test'
+  ...
+# Subtest: fresh native DTO preserves all11 current values and zero/default distinctions without requiring a recently edited row
+ok 10 - fresh native DTO preserves all11 current values and zero/default distinctions without requiring a recently edited row
+  ---
+  duration_ms: 0.4549
+  type: 'test'
+  ...
+# Subtest: foreign DTO, stale/future response date, unsafe values or mismatched native debounce/override are refused
+ok 11 - foreign DTO, stale/future response date, unsafe values or mismatched native debounce/override are refused
+  ---
+  duration_ms: 0.3619
+  type: 'test'
+  ...
+# Subtest: invalid storage is a sanitized default fallback, never raw overrides or rate data
+ok 12 - invalid storage is a sanitized default fallback, never raw overrides or rate data
+  ---
+  duration_ms: 0.1429
+  type: 'test'
+  ...
+# Subtest: actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged
+ok 13 - actual full-source verifier refuses an uncommitted imported dependency even when route/local-release bytes remain unchanged
+  ---
+  duration_ms: 1.6842
+  type: 'test'
+  ...
+# Subtest: installed lock/runtime binding cannot silently change under a source-bound schema import
+ok 14 - installed lock/runtime binding cannot silently change under a source-bound schema import
+  ---
+  duration_ms: 0.8379
+  type: 'test'
+  ...
+# Subtest: original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth
+ok 15 - original-cookie revocation probe remains independent after logout timeout and blocks later dependent auth
+  ---
+  duration_ms: 0.2637
+  type: 'test'
+  ...
+# Subtest: all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed
+ok 16 - all owned contexts still close after another cleanup fails; only explicit logout200+original401 is confirmed
+  ---
+  duration_ms: 0.1812
+  type: 'test'
+  ...
+# Subtest: failed cleanup retains the original privately for a real retry instead of confirming an anonymous session
+ok 17 - failed cleanup retains the original privately for a real retry instead of confirming an anonymous session
+  ---
+  duration_ms: 0.1386
+  type: 'test'
+  ...
+# Subtest: FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401
+ok 18 - FINDING high: ambiguous sign-in with no observed cookie cannot be confirmed by anonymous logout200 and me401
+  ---
+  duration_ms: 0.1137
+  type: 'test'
+  ...
+# Subtest: actual request captures the observed cookie before malformed sign-in body failure and preserves unresolved issuance through cleanup
+ok 19 - actual request captures the observed cookie before malformed sign-in body failure and preserves unresolved issuance through cleanup
+  ---
+  duration_ms: 15.2968
+  type: 'test'
+  ...
+# Subtest: actual request captures the observed cookie before stalled sign-in body failure and preserves unresolved issuance through cleanup
+ok 20 - actual request captures the observed cookie before stalled sign-in body failure and preserves unresolved issuance through cleanup
+  ---
+  duration_ms: 22.024
+  type: 'test'
+  ...
+# Subtest: actual schema loader uses Windows file URLs and captures the actual route registration without invoking handlers
+ok 21 - actual schema loader uses Windows file URLs and captures the actual route registration without invoking handlers
+  ---
+  duration_ms: 0.8792
+  type: 'test'
+  ...
+# Subtest: rate save refuses predispatch when pageErrors is already latched
+ok 22 - rate save refuses predispatch when pageErrors is already latched
+  ---
+  duration_ms: 1.3087
+  type: 'test'
+  ...
+# Subtest: rate save refuses predispatch when blocked is already latched
+ok 23 - rate save refuses predispatch when blocked is already latched
+  ---
+  duration_ms: 0.9098
+  type: 'test'
+  ...
+# Subtest: native approved save validates its response and never dispatches a second save
+ok 24 - native approved save validates its response and never dispatches a second save
+  ---
+  duration_ms: 0.9553
+  type: 'test'
+  ...
+# Subtest: native approved save stops before dispatch if the exact release gate fails
+ok 25 - native approved save stops before dispatch if the exact release gate fails
+  ---
+  duration_ms: 0.5341
+  type: 'test'
+  ...
+# Subtest: unknown native save result remains unconfirmed and is never retried
+ok 26 - unknown native save result remains unconfirmed and is never retried
+  ---
+  duration_ms: 0.6324
+  type: 'test'
+  ...
+# Subtest: FINDING high: native GET201 is refused and cannot be relabelled as an observed200 DTO
+ok 27 - FINDING high: native GET201 is refused and cannot be relabelled as an observed200 DTO
+  ---
+  duration_ms: 0.5326
+  type: 'test'
+  ...
+# Subtest: FINDING high: native GET202 is refused and cannot be relabelled as an observed200 DTO
+ok 28 - FINDING high: native GET202 is refused and cannot be relabelled as an observed200 DTO
+  ---
+  duration_ms: 0.3722
+  type: 'test'
+  ...
+# Subtest: FINDING high: deferred native health failure during context cleanup cannot precede a terminal complete receipt
+ok 29 - FINDING high: deferred native health failure during context cleanup cannot precede a terminal complete receipt
+  ---
+  duration_ms: 2.3861
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 29
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 140.8139

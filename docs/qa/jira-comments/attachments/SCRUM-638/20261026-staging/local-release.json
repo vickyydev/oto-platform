@@ -1,0 +1,187 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T12:08:57.086Z",
+  "localReleaseGreen": true,
+  "sourceCheckpoint": "1783068cdd5e7372b7725568e8d704320817bdb8",
+  "base": "0826f2596c11bcf9cc3144923a0429798dd90a46",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceManifest": {
+    "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-release/source-manifest.json",
+    "sha256": "0e30d3ae01174cdc1289a04907add2f19ad64e8a6387691d8b52cbad7346e02d",
+    "bytes": 568159
+  },
+  "fullBatteryOnSingleFinalFrame": false,
+  "coverageMethod": "Verified unchanged source domains plus fresh native post-rebase affected-package gates.",
+  "postRebase": {
+    "result": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-release/post-rebase-checks.json",
+      "sha256": "3efacc8f0211de827c5c34a441bb0ea7a90793a37fda3c5c387e5d83bbf32d69",
+      "bytes": 5779
+    },
+    "originalBatch": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-release/gates-result.json",
+      "sha256": "541529e43876aa25bf2aec03ac3a5f907df545db2e99e046eddd5c3f62f0e28b",
+      "bytes": 2259
+    },
+    "originalBatchPassed": false,
+    "originalCompilerFailure": "1536MiB wrapper heap exhausted; unchanged whole compiler passed with established4096MiB heap",
+    "sourceBridge": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-release/final-docs-bridge.json",
+      "sha256": "8c48e3519af7a1b4a036c970b06f7fb6f9671d3c3fd4c46db4bc3d6fad9c1030",
+      "bytes": 2439
+    },
+    "requiredPrograms": 11,
+    "attempts": 12,
+    "apiCases": 255,
+    "databaseCases": 324,
+    "consoleCases": 290,
+    "consoleTodo": 3,
+    "clientCases": 10,
+    "compilers": {
+      "api": 0,
+      "db": 0,
+      "apiTypes": 0,
+      "consoleConfigurations": 3,
+      "consoleDiagnostics": 0
+    },
+    "routeGuards": 4,
+    "contracts": true,
+    "schema": true,
+    "lintFiles": 27,
+    "nativeDatabaseCleanup": {
+      "ownNativeServer": true,
+      "databaseCountAfter": 0,
+      "stopped": true,
+      "cleanupError": null,
+      "confirmed": true
+    }
+  },
+  "priorCoverage": {
+    "api": 5677,
+    "optionalStorageSkipped": 2,
+    "todo": 5,
+    "consoleBrowser": 256,
+    "assistantSettingsBrowser": 16,
+    "linuxPos": 1437,
+    "boxSerial": 749,
+    "workspaceCompilers": 16,
+    "workspaceBuilds": 5,
+    "otherPackages": 2406,
+    "appCompiler": {
+      "diagnostics": 418,
+      "files": 54,
+      "fileCodeBuckets": 109,
+      "baselineUnchanged": true
+    },
+    "appNativeCiPrograms": 41,
+    "appAvailabilityFiles": 30,
+    "appAvailabilityCases": 790,
+    "appRestore": {
+      "platformMigrations": 88,
+      "appMigrations": 31,
+      "sourceTables": 184,
+      "sourceRows": 1108,
+      "replays": 2,
+      "preserved": true
+    },
+    "original52CommandRunGreen": false,
+    "wholeAffectedFileClosure": true,
+    "bindings": [
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-combined/independent-checks.json",
+        "sha256": "9700cd4aea2f3dadc357c2dd652efabd283b169b0a7c7b65719527c861097b2c",
+        "bytes": 4619
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-combined/ordinary-history/source-bridge-to-661.json",
+        "sha256": "e6532251423a7758e4805eb391a20ab1db158d15cdcaaf65a09bf54a75287626",
+        "bytes": 2913
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-combined/current-console/source-bridge-to-docs-main.json",
+        "sha256": "c96da60f4a13aa7a9af98d8d45e9eedbc981bc2470f435b2a0667bcc6fb3db70",
+        "bytes": 1956
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-combined/app-compat/current-scope-bridge-review.json",
+        "sha256": "61e937aef5c45d66a712e0ddf09f91272c8436b61d535f9719e49b0c2315221c",
+        "bytes": 890
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-combined/app-compat/final-independent-review.json",
+        "sha256": "4f34ddf2447e4248dbb5640c3814440ed2d86f64f02e41f5d32887cc3a2ea42e",
+        "bytes": 9630
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-combined/linux-pos/independent-checks.json",
+        "sha256": "fa3706e992cf6c9e316eb825511bd803848b6af36249078deaae19300add3850",
+        "bytes": 2652
+      },
+      {
+        "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-independent-checkpoint-review.json",
+        "sha256": "3db4fdf69fdf8e8d5ef2d36f39ac1f88f80e6445a67ced7953e49830c1200578",
+        "bytes": 4654
+      }
+    ]
+  },
+  "historicalArchive": {
+    "verifiedFiles": 186,
+    "byteIdentical": true,
+    "preservation": {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-release/archive-preservation.json",
+      "sha256": "93768401432e159de762b0a34a2fd37246db3a63a28c0cf03726053baad15b2b",
+      "bytes": 271
+    },
+    "priorFailedHistoryUnchanged": true
+  },
+  "initialRates": {
+    "approved": true,
+    "approval": {
+      "path": "docs/progress/plans/super-admin-console/Q18_PROVIDER_RATE_REVIEW.md",
+      "sha256": "7296c6174c06a26f5da9334b0e1b6763c9dc251dc52a7f0536b96391557e2689",
+      "bytes": 3469
+    },
+    "version": {
+      "model": "claude-opus-5-5",
+      "effectiveFrom": "2026-10-20T00:00:00.000Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "cacheReadUsdPerMillion": 0.2
+    },
+    "sourceSeedRequired": false,
+    "stagingNativeSaveRequired": true,
+    "stagingNativeSavePerformed": false,
+    "currency": "USD",
+    "excludesCacheWrites": true
+  },
+  "migration": {
+    "number": "0087",
+    "tag": "0087_assistant_settings",
+    "mainLastIndex": 86,
+    "candidateIndex": 87,
+    "availableOnBase": "0826f2596c11bcf9cc3144923a0429798dd90a46",
+    "sql": {
+      "path": "packages/db/migrations/0087_assistant_settings.sql",
+      "sha256": "cf6da37360ceca531bc9335dee9125684d2929761e297755d6a520f6ccaa6049",
+      "bytes": 983
+    },
+    "expandOnly": true,
+    "finalLandingRecheckRequired": true
+  },
+  "limits": [
+    "No single-final-frame full battery is claimed; the source-domain bridge and original command receipts define coverage.",
+    "The Windows POS locale and clipboard failures, app heap/setup attempts and original failed52-command app run remain preserved with separate unchanged-check closures.",
+    "Approved initial rates have not yet been saved; the coordinator will save the approved version through the native audited revisioned UI after rollout.",
+    "No hosted feature CI, deployment, staging proof, real provider, SMS, payment, check-in, channel or digest action is claimed."
+  ],
+  "coordinatorGates": [
+    "Main source push and exact-SHA six-job CI",
+    "Automatic API/Console rollout and live source verification",
+    "Native approved initial-rate save and inspected staging screenshot acceptance"
+  ],
+  "pushed": false,
+  "featureCi": false,
+  "renderDeploy": false,
+  "stagingAcceptance": false
+}

@@ -1,0 +1,10 @@
+{
+  "source": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "runId": "40321640775",
+  "jobId": "121567773747",
+  "at": "2026-10-26T12:47:29.707Z",
+  "reason": "Only tool-install step remains in progress for over25minutes; previous full App run40092931105 took20seconds for this step. No application failure is inferred. One exact-job retry; original attempt preserved.",
+  "localReleaseSha256": "3ebe3ed885f74bf87cb332c2fd2ce9d8f98e295b98015431a7f6edf4a3a0a4fd",
+  "successfulOtherJobsPreserved": 5,
+  "testsOrGuardsChanged": false
+}

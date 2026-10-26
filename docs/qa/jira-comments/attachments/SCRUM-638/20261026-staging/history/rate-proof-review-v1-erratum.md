@@ -1,0 +1,3 @@
+The v1 review was written while the coordinator replaced helper fbaf8f2298d8ec68a811bf9996e6af2f24b5bf19e811e6573611717b230d9d61 with fixed helper 660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839. Its finding describes the earlier helper, but its recorded file hash captured the replacement. That source binding is invalid; v1 must not be used to assess the replacement.
+
+The original v1 file remains unchanged. Actual predispatch RED binds fbaf8f22 and the same 26-case test source used for the fixed-helper GREEN. Independent review v2 records the corrected current helper, actual evidence and finding closure. No staging or helper execution was performed by this reviewer.

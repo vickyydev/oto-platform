@@ -1,0 +1,140 @@
+{
+  "ticket": "SCRUM-638",
+  "kind": "original-cancelled-ci-setup-diagnosis",
+  "reviewedAt": "2026-10-26T12:54:52.280Z",
+  "runId": 40321640775,
+  "jobId": 121567773747,
+  "attempt": 1,
+  "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "originalConclusion": "cancelled",
+  "firstAttemptPassed": false,
+  "inputHashes": {
+    "metadataSha256": "bbb0d0654eb1d60c40191d509e0a6d9f11929a56514260fec5063cb4682b74ce",
+    "sanitizedLogSha256": "88a6bed1a9df5ddcbe4d0b2b15123734f97e524a71a07f8ce430706dac4f14a5",
+    "baselineComparisonSha256": "fa1ed3024fe3720bf5bced524ec6a40ffeadce3d4f84ca694839004d6e2f8161",
+    "collectorSha256": "fcab58a01b07649ec225b71814cef4553aaf67abf255db197024ff4bc4c97a16",
+    "diagnosisScriptSha256": "00f23349dfcb2b94c646cc8d49e1b3485ec495b13f36fd99f3198660da74da99"
+  },
+  "logDownloadedRawSha256": "4e82de21f48985dd64be0b2469cab9fd038f533390eb0a2a195fb9b36246f6ab",
+  "rawLogSaved": false,
+  "redactedBeforeDiskAndOutput": true,
+  "installStep": {
+    "number": 12,
+    "name": "Install PostgreSQL 16 and video evidence tools",
+    "status": "completed",
+    "conclusion": "cancelled",
+    "startedAt": "2026-10-26T12:22:11Z",
+    "completedAt": "2026-10-26T12:48:26Z",
+    "durationSeconds": 1575
+  },
+  "installBlock": {
+    "fromLine": 1455,
+    "toLine": 1642,
+    "lineCount": 188,
+    "fullBlockRead": true
+  },
+  "classification": "setup-package-download-slow-and-incomplete-before-voluntary-cancellation",
+  "findings": [
+    "apt-get update completed normally; PostgreSQL client 16 was already current.",
+    "apt requested 99 new packages and 94.1 MB of archives for ffmpeg and its dependencies.",
+    "Ubuntu Azure archive transfers continued for more than 23 minutes and included six Ign archive lines.",
+    "The last package request was pocketsphinx-en-us (27.4 MB) at 12:45:58Z; cancellation occurred at 12:48:26Z.",
+    "No terminal apt connection, timeout, package resolution or application error appears in the install block."
+  ],
+  "evidence": {
+    "aptUpdate": [
+      {
+        "line": 1484,
+        "text": "2026-10-26T12:22:21.6686053Z Fetched 12.6 MB in 3s (3917 kB/s)"
+      }
+    ],
+    "postgresAlreadyInstalled": [
+      {
+        "line": 1489,
+        "text": "2026-10-26T12:22:22.7742175Z postgresql-client-16 is already the newest version (16.15-1.pgdg24.04+2)."
+      }
+    ],
+    "requestedPackages": [
+      {
+        "line": 1533,
+        "text": "2026-10-26T12:22:22.8564187Z 0 upgraded, 99 newly installed, 0 to remove and 100 not upgraded."
+      },
+      {
+        "line": 1534,
+        "text": "2026-10-26T12:22:22.8564751Z Need to get 94.1 MB of archives."
+      }
+    ],
+    "archiveIgnCount": 6,
+    "archiveIgnLines": [
+      {
+        "line": 1545,
+        "text": "2026-10-26T12:23:34.5422919Z Ign:9 [URL host=azure.archive.ubuntu.com sha256=c9f778ff06f34b10cc8eeb7d1e3b308ad101d2ef77e022b9ac66551c3e1ba4f8] noble/universe amd64 libcodec2-1.2 amd64 1.2.0-2build1"
+      },
+      {
+        "line": 1554,
+        "text": "2026-10-26T12:26:16.2781973Z Ign:17 [URL host=azure.archive.ubuntu.com sha256=c9f778ff06f34b10cc8eeb7d1e3b308ad101d2ef77e022b9ac66551c3e1ba4f8] noble-updates/main amd64 librsvg2-2 amd64 2.58.0+dfsg-1ubuntu0.1"
+      },
+      {
+        "line": 1588,
+        "text": "2026-10-26T12:34:19.4606165Z Ign:50 [URL host=azure.archive.ubuntu.com sha256=c9f778ff06f34b10cc8eeb7d1e3b308ad101d2ef77e022b9ac66551c3e1ba4f8] noble/universe amd64 libflite1 amd64 2.2-6build3"
+      },
+      {
+        "line": 1598,
+        "text": "2026-10-26T12:37:49.0760660Z Ign:59 [URL host=azure.archive.ubuntu.com sha256=c9f778ff06f34b10cc8eeb7d1e3b308ad101d2ef77e022b9ac66551c3e1ba4f8] noble-updates/main amd64 liblapack3 amd64 3.12.0-3build1.1"
+      },
+      {
+        "line": 1607,
+        "text": "2026-10-26T12:40:46.5009035Z Ign:67 [URL host=azure.archive.ubuntu.com sha256=c9f778ff06f34b10cc8eeb7d1e3b308ad101d2ef77e022b9ac66551c3e1ba4f8] noble/main amd64 libsamplerate0 amd64 0.2.2-4build1"
+      },
+      {
+        "line": 1613,
+        "text": "2026-10-26T12:42:00.2464990Z Ign:72 [URL host=azure.archive.ubuntu.com sha256=c9f778ff06f34b10cc8eeb7d1e3b308ad101d2ef77e022b9ac66551c3e1ba4f8] noble/universe amd64 libavfilter9 amd64 7:6.1.1-3ubuntu5"
+      }
+    ],
+    "firstArchiveGet": {
+      "line": 1469,
+      "text": "2026-10-26T12:22:13.6301376Z Get:3 [URL host=azure.archive.ubuntu.com sha256=c9f778ff06f34b10cc8eeb7d1e3b308ad101d2ef77e022b9ac66551c3e1ba4f8] noble-updates InRelease [126 kB]"
+    },
+    "lastArchiveGet": {
+      "line": 1641,
+      "text": "2026-10-26T12:45:58.0658755Z Get:100 [URL host=azure.archive.ubuntu.com sha256=c9f778ff06f34b10cc8eeb7d1e3b308ad101d2ef77e022b9ac66551c3e1ba4f8] noble/universe amd64 pocketsphinx-en-us all 0.8.0+real5prealpha+1-15ubuntu5 [27.4 MB]"
+    },
+    "cancellation": {
+      "line": 1642,
+      "text": "2026-10-26T12:48:26.4012852Z ##[error]The operation was canceled."
+    },
+    "explicitAptErrorCount": 0
+  },
+  "baseline": {
+    "runId": 40092931105,
+    "jobId": 120869157520,
+    "attempt": 1,
+    "sourceSha": "1462f5158f236c957523bd81b40355ad67fbfc49",
+    "status": "completed",
+    "conclusion": "success",
+    "installStep": {
+      "name": "Install PostgreSQL 16 and video evidence tools",
+      "startedAt": "2026-10-24T12:14:52Z",
+      "completedAt": "2026-10-24T12:15:12Z",
+      "conclusion": "success",
+      "durationSeconds": 20
+    },
+    "originalAttemptInstallSeconds": 1575,
+    "metadataOnly": true,
+    "baselineLogNotDownloaded": true
+  },
+  "laterRestoreAndIntegrationStepsSkipped": 47,
+  "limitations": [
+    "A specific mirror, network or runner transport defect and its transience cannot be proven from a manually cancelled download.",
+    "No claim is made that the cancelled attempt passed, that later restore/integration tests ran, or that a retry passed.",
+    "This diagnosis does not independently re-audit the earlier compiler baseline.",
+    "Repeated missing default database messages emitted during container teardown are outside the install block and do not explain its package-transfer delay."
+  ],
+  "actions": {
+    "readOnlyGitHubGets": true,
+    "cancelOrRerun": false,
+    "sourceOrWorkflowEdits": false,
+    "toolInstall": false,
+    "liveAppActions": false
+  }
+}

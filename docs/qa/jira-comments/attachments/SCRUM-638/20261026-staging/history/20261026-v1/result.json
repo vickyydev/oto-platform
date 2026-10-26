@@ -1,0 +1,362 @@
+{
+  "ticket": "SCRUM-638",
+  "actualStaging": true,
+  "complete": false,
+  "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "ciRunId": "40321640775",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbfkte8473hc73a6v8cg",
+      "finishedAt": "2026-10-26T13:03:14.879365Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "serviceId": "srv-danng2p42hec73f38e3g",
+      "id": "dep-dbfkte8473hc73a6v9hg",
+      "finishedAt": "2026-10-26T13:00:30.145172Z"
+    }
+  ],
+  "helperSha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839",
+  "planSha256": "7947d865983dbc4aa8ab4907b8475960bbde2ce1bcbde3aa2da9dfceb5b57e62",
+  "initialSourceBinding": {
+    "files": 3790,
+    "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+    "featureTreeSha256": "82ce743157af023c6b6e13980897aa18085219d05ce536df86db296fec5eae76",
+    "runtimeBindingsSha256": "ddc88de22c2de094e1de1fe76fee0930cf43bb96a4b7774a02daad5ef9d7928a"
+  },
+  "routeModuleSha256": "62a63c0433a2fec3b8ca668da4c5e29d6bc4921bf45cbd1273ee39ad3dae8b93",
+  "localReleaseSha256": "3ebe3ed885f74bf87cb332c2fd2ce9d8f98e295b98015431a7f6edf4a3a0a4fd",
+  "assetManifestSha256": "d3db94fc213368598bff9d9a3ac1d082e3f981fe5ab65a11f8d18b86860d419d",
+  "startedAt": "2026-10-26T13:06:31.210Z",
+  "completedAt": "2026-10-26T13:07:20.144Z",
+  "sourceChecks": [
+    {
+      "at": "2026-10-26T13:06:43.144Z",
+      "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+      "ciRunId": "40321640775",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfkte8473hc73a6v8cg",
+          "finishedAt": "2026-10-26T13:03:14.879365Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfkte8473hc73a6v9hg",
+          "finishedAt": "2026-10-26T13:00:30.145172Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3790,
+        "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+        "featureTreeSha256": "82ce743157af023c6b6e13980897aa18085219d05ce536df86db296fec5eae76",
+        "runtimeBindingsSha256": "ddc88de22c2de094e1de1fe76fee0930cf43bb96a4b7774a02daad5ef9d7928a"
+      },
+      "ciMetadataSha256": "8f6236044b0213cea7e6c6414f4ec87d39180ac9148aa367db48a102528968db"
+    },
+    {
+      "at": "2026-10-26T13:06:55.019Z",
+      "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+      "ciRunId": "40321640775",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfkte8473hc73a6v8cg",
+          "finishedAt": "2026-10-26T13:03:14.879365Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfkte8473hc73a6v9hg",
+          "finishedAt": "2026-10-26T13:00:30.145172Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3790,
+        "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+        "featureTreeSha256": "82ce743157af023c6b6e13980897aa18085219d05ce536df86db296fec5eae76",
+        "runtimeBindingsSha256": "ddc88de22c2de094e1de1fe76fee0930cf43bb96a4b7774a02daad5ef9d7928a"
+      },
+      "ciMetadataSha256": "8f6236044b0213cea7e6c6414f4ec87d39180ac9148aa367db48a102528968db"
+    },
+    {
+      "at": "2026-10-26T13:07:06.044Z",
+      "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+      "ciRunId": "40321640775",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfkte8473hc73a6v8cg",
+          "finishedAt": "2026-10-26T13:03:14.879365Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfkte8473hc73a6v9hg",
+          "finishedAt": "2026-10-26T13:00:30.145172Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3790,
+        "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+        "featureTreeSha256": "82ce743157af023c6b6e13980897aa18085219d05ce536df86db296fec5eae76",
+        "runtimeBindingsSha256": "ddc88de22c2de094e1de1fe76fee0930cf43bb96a4b7774a02daad5ef9d7928a"
+      },
+      "ciMetadataSha256": "8f6236044b0213cea7e6c6414f4ec87d39180ac9148aa367db48a102528968db"
+    },
+    {
+      "at": "2026-10-26T13:07:20.141Z",
+      "sourceSha": "91d98409375fc6c45ae27d48cab8bb5489596a05",
+      "ciRunId": "40321640775",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbfkte8473hc73a6v8cg",
+          "finishedAt": "2026-10-26T13:03:14.879365Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "id": "dep-dbfkte8473hc73a6v9hg",
+          "finishedAt": "2026-10-26T13:00:30.145172Z"
+        }
+      ],
+      "localSourceBinding": {
+        "files": 3790,
+        "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+        "featureTreeSha256": "82ce743157af023c6b6e13980897aa18085219d05ce536df86db296fec5eae76",
+        "runtimeBindingsSha256": "ddc88de22c2de094e1de1fe76fee0930cf43bb96a4b7774a02daad5ef9d7928a"
+      },
+      "ciMetadataSha256": "8f6236044b0213cea7e6c6414f4ec87d39180ac9148aa367db48a102528968db"
+    }
+  ],
+  "operations": [
+    {
+      "sequence": 1,
+      "actor": "ADMIN",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-26T13:06:55.022Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-26T13:06:56.077Z"
+    },
+    {
+      "sequence": 2,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/me",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-26T13:06:56.079Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-26T13:06:56.603Z"
+    },
+    {
+      "sequence": 3,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/me/permissions",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-26T13:06:56.606Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-26T13:06:57.493Z"
+    },
+    {
+      "sequence": 4,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/assistant-settings",
+      "queryKeys": [],
+      "cleanup": false,
+      "intentAt": "2026-10-26T13:06:57.515Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-26T13:06:58.075Z"
+    },
+    {
+      "sequence": 5,
+      "actor": "ADMIN",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "queryKeys": [],
+      "cleanup": true,
+      "intentAt": "2026-10-26T13:07:09.655Z",
+      "terminal": true,
+      "status": 200,
+      "completedAt": "2026-10-26T13:07:10.170Z"
+    },
+    {
+      "sequence": 6,
+      "actor": "ADMIN",
+      "method": "GET",
+      "path": "/api/me",
+      "queryKeys": [],
+      "cleanup": true,
+      "intentAt": "2026-10-26T13:07:10.175Z",
+      "terminal": true,
+      "status": 401,
+      "completedAt": "2026-10-26T13:07:10.664Z"
+    }
+  ],
+  "reads": [
+    {
+      "actor": "ADMIN",
+      "status": 200,
+      "responseSha256": "ab6a85c86654e7244223359fae78d1eab09223a313e487f52ca1afaaa81bf863",
+      "observedAt": "2026-10-26T13:06:58.075Z",
+      "responseAt": "Mon, 26 Oct 2026 13:06:58 GMT",
+      "source": "environment",
+      "revision": 0,
+      "rateVersions": 0,
+      "overrideCount": 0,
+      "effective": {
+        "internal": {
+          "personDailyCap": 40,
+          "dailyAskCap": 600,
+          "dailyTokenCap": 15000000,
+          "concurrentPerPerson": 2,
+          "concurrentPerOperator": 20
+        },
+        "inbox": {
+          "dailyTurnCap": 1500,
+          "dailyTokenCap": 30000000,
+          "debounceSeconds": 20,
+          "debounceMaxSeconds": 60,
+          "firstBubbleMs": 20000,
+          "bubbleGapMs": 6000
+        }
+      },
+      "overrides": {
+        "internal": {},
+        "inbox": {}
+      },
+      "ratesSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "currency": "USD",
+      "excludesCacheWrites": true
+    },
+    {
+      "actor": "ADMIN",
+      "status": 200,
+      "responseSha256": "ab6a85c86654e7244223359fae78d1eab09223a313e487f52ca1afaaa81bf863",
+      "observedAt": "2026-10-26T13:07:09.546Z",
+      "responseAt": "Mon, 26 Oct 2026 13:07:10 GMT",
+      "source": "environment",
+      "revision": 0,
+      "rateVersions": 0,
+      "overrideCount": 0,
+      "effective": {
+        "internal": {
+          "personDailyCap": 40,
+          "dailyAskCap": 600,
+          "dailyTokenCap": 15000000,
+          "concurrentPerPerson": 2,
+          "concurrentPerOperator": 20
+        },
+        "inbox": {
+          "dailyTurnCap": 1500,
+          "dailyTokenCap": 30000000,
+          "debounceSeconds": 20,
+          "debounceMaxSeconds": 60,
+          "firstBubbleMs": 20000,
+          "bubbleGapMs": 6000
+        }
+      },
+      "overrides": {
+        "internal": {},
+        "inbox": {}
+      },
+      "ratesSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "currency": "USD",
+      "excludesCacheWrites": true
+    }
+  ],
+  "authority": [
+    {
+      "actor": "ADMIN",
+      "beforeSha256": "69a6d62453aeba57d16ebd46f34eed046928d23859b8d6853a663983c5688209",
+      "afterSha256": null
+    }
+  ],
+  "authCleanup": [
+    {
+      "actor": "ADMIN",
+      "signOutStatus": 200,
+      "meStatus": 401,
+      "noOriginalCookie": false,
+      "confirmed": true
+    }
+  ],
+  "screenshots": [],
+  "network": {
+    "blocked": 3,
+    "failed": 1,
+    "pageErrors": 0,
+    "consoleErrors": 1,
+    "fontSuppressions": 1
+  },
+  "diagnostics": [
+    {
+      "stage": "static-hash",
+      "method": "GET",
+      "type": "image",
+      "mainFrame": true,
+      "urlSha256": "0024fa9f8d0517c641fd7c449fd65df29670af27451d5c48f10dc543e06e565c",
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "stage": "request-failed",
+      "method": "GET",
+      "type": "image",
+      "mainFrame": true,
+      "urlSha256": "0024fa9f8d0517c641fd7c449fd65df29670af27451d5c48f10dc543e06e565c",
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "stage": "body",
+      "method": "GET",
+      "type": "fetch",
+      "mainFrame": true,
+      "urlSha256": "9e68f5d67c088f08a617804aa9979adced0450174af510fd5f92dccac921f360",
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "stage": "fetch",
+      "method": "GET",
+      "type": "fetch",
+      "mainFrame": true,
+      "urlSha256": "7c897f7507f8b9f46da612e3a95bf7a1e06484c5e50e33efdb45bf25563ff309",
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "pending": 0,
+  "nativePending": 0,
+  "unresolvedAuth": 0,
+  "journalHealthy": true,
+  "businessWrites": 0,
+  "fixturesCreated": 0,
+  "errorCode": "NATIVE_DRAIN_FAILED",
+  "rateSave": null,
+  "limitations": [
+    "One planner-approved initial rate through the native form; caps and pacing unchanged. No live engine-consumption claim.",
+    "No clipboard, AI/model call, message, channel mode, handoff, payment, account creation or fixture.",
+    "Known external font suppressed; identity masks deliberate. Static bytes are actual production closure, not a local VITE build."
+  ]
+}

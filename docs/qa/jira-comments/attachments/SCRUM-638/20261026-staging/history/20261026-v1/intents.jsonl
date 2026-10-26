@@ -1,0 +1,12 @@
+{"sequence":1,"actor":"ADMIN","method":"POST","path":"/api/auth/sign-in","queryKeys":[],"cleanup":false,"intentAt":"2026-10-26T13:06:55.022Z","terminal":false,"status":null}
+{"sequence":1,"actor":"ADMIN","method":"POST","path":"/api/auth/sign-in","queryKeys":[],"cleanup":false,"intentAt":"2026-10-26T13:06:55.022Z","terminal":true,"status":200,"completedAt":"2026-10-26T13:06:56.077Z"}
+{"sequence":2,"actor":"ADMIN","method":"GET","path":"/api/me","queryKeys":[],"cleanup":false,"intentAt":"2026-10-26T13:06:56.079Z","terminal":false,"status":null}
+{"sequence":2,"actor":"ADMIN","method":"GET","path":"/api/me","queryKeys":[],"cleanup":false,"intentAt":"2026-10-26T13:06:56.079Z","terminal":true,"status":200,"completedAt":"2026-10-26T13:06:56.603Z"}
+{"sequence":3,"actor":"ADMIN","method":"GET","path":"/api/me/permissions","queryKeys":[],"cleanup":false,"intentAt":"2026-10-26T13:06:56.606Z","terminal":false,"status":null}
+{"sequence":3,"actor":"ADMIN","method":"GET","path":"/api/me/permissions","queryKeys":[],"cleanup":false,"intentAt":"2026-10-26T13:06:56.606Z","terminal":true,"status":200,"completedAt":"2026-10-26T13:06:57.493Z"}
+{"sequence":4,"actor":"ADMIN","method":"GET","path":"/api/assistant-settings","queryKeys":[],"cleanup":false,"intentAt":"2026-10-26T13:06:57.515Z","terminal":false,"status":null}
+{"sequence":4,"actor":"ADMIN","method":"GET","path":"/api/assistant-settings","queryKeys":[],"cleanup":false,"intentAt":"2026-10-26T13:06:57.515Z","terminal":true,"status":200,"completedAt":"2026-10-26T13:06:58.075Z"}
+{"sequence":5,"actor":"ADMIN","method":"POST","path":"/api/auth/sign-out","queryKeys":[],"cleanup":true,"intentAt":"2026-10-26T13:07:09.655Z","terminal":false,"status":null}
+{"sequence":5,"actor":"ADMIN","method":"POST","path":"/api/auth/sign-out","queryKeys":[],"cleanup":true,"intentAt":"2026-10-26T13:07:09.655Z","terminal":true,"status":200,"completedAt":"2026-10-26T13:07:10.170Z"}
+{"sequence":6,"actor":"ADMIN","method":"GET","path":"/api/me","queryKeys":[],"cleanup":true,"intentAt":"2026-10-26T13:07:10.175Z","terminal":false,"status":null}
+{"sequence":6,"actor":"ADMIN","method":"GET","path":"/api/me","queryKeys":[],"cleanup":true,"intentAt":"2026-10-26T13:07:10.175Z","terminal":true,"status":401,"completedAt":"2026-10-26T13:07:10.664Z"}
