@@ -1,0 +1,26 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-26T08:52:03.375Z",
+  "passed": true,
+  "testedSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "currentSourceSha": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "bridgeSha256": "e6532251423a7758e4805eb391a20ab1db158d15cdcaaf65a09bf54a75287626",
+  "scopes": [
+    "apps/api",
+    "apps/oto-app",
+    "packages/db",
+    "all28dependency-inputs"
+  ],
+  "selectedSourceFiles": 2028,
+  "uniqueComparedFiles": 2048,
+  "changedPaths": [],
+  "laterConsoleOnlyPaths": [
+    "apps/console/e2e/overview.spec.ts",
+    "apps/console/src/components/booth/PrizeEditor.tsx",
+    "apps/console/src/components/booth/readState.ts",
+    "apps/console/test/prize-editor-validation.test.ts"
+  ],
+  "wholeCurrentFrameRetested": false,
+  "stagingAcceptance": false
+}

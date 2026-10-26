@@ -1,0 +1,319 @@
+{
+  "ticket": "SCRUM-638",
+  "passed": true,
+  "actualLocal": true,
+  "staging": false,
+  "reviewedAt": "2026-10-26T08:55:03.060Z",
+  "testedSourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "currentScopeSourceSha": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceFiles": 3791,
+  "dependencyInputs": 28,
+  "observedFreshNpmCi": true,
+  "buildPassed": true,
+  "compiler": {
+    "errors": 418,
+    "files": 54,
+    "fileCodeBuckets": 109,
+    "increased": [],
+    "reduced": [],
+    "logSha256": "6aff0c71fabd4cec690e12d35434b1380c4c5b46db212070be7cfd45b7709db8"
+  },
+  "nativeCiPrograms": 41,
+  "nestedPrograms": {
+    "s633Checks": 39,
+    "s634Checks": 9,
+    "platformRoleMappingChildren": 9
+  },
+  "focusedCiApiFiles": 7,
+  "focusedCiApiCases": 157,
+  "restore": {
+    "passed": true,
+    "platformMigrations": 88,
+    "appMigrations": 31,
+    "originalSourceTables": 184,
+    "originalSourceRows": 1108,
+    "replays": 2,
+    "preserved": true
+  },
+  "gap": {
+    "files": 30,
+    "cases": 790,
+    "passed": 790,
+    "pending": 0,
+    "failed": 0,
+    "originalReporterSha256": "5a8e5b34adc2cc6337e6a5c7f19d5b663e677e347130d70397d9f973e469b2e9",
+    "perFile": [
+      {
+        "file": "test/g17-round0-review.test.ts",
+        "cases": 32,
+        "passed": 32,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r1-review-recheck.test.ts",
+        "cases": 17,
+        "passed": 17,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r1-review.test.ts",
+        "cases": 42,
+        "passed": 42,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r1.test.ts",
+        "cases": 31,
+        "passed": 31,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r2-review.test.ts",
+        "cases": 33,
+        "passed": 33,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r2.test.ts",
+        "cases": 33,
+        "passed": 33,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r3-review.test.ts",
+        "cases": 44,
+        "passed": 44,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r3.test.ts",
+        "cases": 41,
+        "passed": 41,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r4a-review.test.ts",
+        "cases": 37,
+        "passed": 37,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r4a.test.ts",
+        "cases": 28,
+        "passed": 28,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r4b-review.test.ts",
+        "cases": 29,
+        "passed": 29,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r4b.test.ts",
+        "cases": 36,
+        "passed": 36,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r5-review.test.ts",
+        "cases": 30,
+        "passed": 30,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r5.test.ts",
+        "cases": 18,
+        "passed": 18,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r6-review.test.ts",
+        "cases": 65,
+        "passed": 65,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r6.test.ts",
+        "cases": 36,
+        "passed": 36,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r7-access-cross-review.test.ts",
+        "cases": 15,
+        "passed": 15,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r7-access-review.test.ts",
+        "cases": 18,
+        "passed": 18,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r7-finance-access-cross-review.test.ts",
+        "cases": 8,
+        "passed": 8,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r7-finance-cross-review.test.ts",
+        "cases": 4,
+        "passed": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r7-finance.test.ts",
+        "cases": 7,
+        "passed": 7,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r7-payroll-cross-review.test.ts",
+        "cases": 25,
+        "passed": 25,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-r7-readers-review.test.ts",
+        "cases": 4,
+        "passed": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217b-scheduling-review.test.ts",
+        "cases": 32,
+        "passed": 32,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217c-camp-sms-review.test.ts",
+        "cases": 23,
+        "passed": 23,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217c-employee-history-review.test.ts",
+        "cases": 28,
+        "passed": 28,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217c-fix-preview-review.test.ts",
+        "cases": 7,
+        "passed": 7,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217c-presence-delivery-review.test.ts",
+        "cases": 15,
+        "passed": 15,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s217c-sop-history-review.test.ts",
+        "cases": 16,
+        "passed": 16,
+        "pending": 0,
+        "failed": 0
+      },
+      {
+        "file": "test/s548-qa-reports-review.test.ts",
+        "cases": 36,
+        "passed": 36,
+        "pending": 0,
+        "failed": 0
+      }
+    ]
+  },
+  "uniqueApiCoverage": {
+    "ordinaryPassed": 5278,
+    "newlyExecutedAppCases": 399,
+    "repeatedPassedControls": 391,
+    "combinedPassed": 5677,
+    "optionalStorageSkipped": 2,
+    "todo": 5,
+    "calculation": "5278 +399; the790 whole-file cases include391 repeated controls. CI157cases are also within this app coverage and are not added again."
+  },
+  "sourceAndInstalledMetadataUnchanged": true,
+  "ownDatabaseCountAfter": 0,
+  "cleanupConfirmed": true,
+  "firstFullRun": {
+    "commands": 52,
+    "passed": 51,
+    "failed": 1,
+    "resultPassed": false,
+    "failedLabel": "route-fences.check"
+  },
+  "wholeFileClosure": {
+    "passed": true,
+    "sourceAssertionsUnchanged": true,
+    "setupCommands": 3,
+    "testCommands": 1,
+    "correction": "Omit harness TRUST_PROXY=0; native default1"
+  },
+  "preservedFailures": [
+    "1536MiB heap OOM: compiler comparison incomplete",
+    "2048MiB heap OOM: compiler comparison incomplete",
+    "Tool provisioning preparation errors: quoting/commented repository URI classification/merged-/lib symlink copy",
+    "Post-success compiler host progress filename collision; native result harvested without rerunning",
+    "Original52-command run remains failed; corrected unchanged whole-file followup is separate"
+  ],
+  "limits": [
+    "No full52-command green rerun is claimed. Combined app-CI scope coverage is independently bound.",
+    "Local integrated platform database plus native nested standalone suites; not the exact GitHub hosted service image.",
+    "Tested8cb API/App/DB/dependencies byte-identical to current1a4 per independently checked source bridge; full current Console frame not retested here.",
+    "No staging authentication, business operation, provider/SMS/payment/channel call or deployment. Official distro apt provisioning only used isolated credential-free tool builder.",
+    "Exact final hosted six-job CI and staging acceptance remain coordinator gates."
+  ],
+  "inputs": {
+    "setup.json": "43d5b93ece475dcce7e6ea636ccbadee46e01e5827447d7146af225a1b5a3f2d",
+    "plan.json": "f22086f2ff59f4de1694f8ce2cd97373e832d2ac10ee5eb8739f2a50ad37b59e",
+    "source-manifest.json": "3528bdcee6837289945552df270a0691397141d5c8f5e8fafd052803289722fb",
+    "dependency-inputs.json": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+    "install-v1/result.json": "b2518120c0767e23a7ef2d286c8a31443185ebd2693f762439e2a45b2eb21675",
+    "checks-v1/result.json": "7c09ce1605961bca283eb9bdaeed3d852838c75e0f20a09a0c4533be9515bc79",
+    "ratchet-v3/result.json": "dbb46835f03b8828bb6ac02aefd5f558a9c38e87e43fe363f3562c2e9088cde2",
+    "ratchet-v3-harvest.json": "a56053baec34579b513350491cb641b5f737a88e80a501bc7faaf8ee2af6062b",
+    "ratchet-v3-independent-review.json": "2034bc9f9a0378913a5f159ee4d76eeb6fe4d750f0fea689581a28bda24412b3",
+    "tool-provision-v4/result.json": "3b92e49de8d6371e0008fc9d9624bd61aebe3bca80f79972ac6964c6142ff3cc",
+    "remaining-v1/result.json": "a4e2df7cc191942c3c2e696afa319d77d82c57cd6beedbd89430ed3de8b38798",
+    "route-followup-v1/result.json": "a8abb8353b068cd17e59121ddce0b73348919f58db9f5152ccb34b002bc20f64",
+    "app-ci-coverage-review.json": "c40c8c1388fb26774ee1be64d947b8a3116e2efb619a1969a84500562c1e9ab5",
+    "restore-independent-review.json": "2b5376666d35741fc077a40cc77856ac617991e631def4c0f2c6e41417a05f7f",
+    "current-scope-bridge-review.json": "61e937aef5c45d66a712e0ddf09f91272c8436b61d535f9719e49b0c2315221c",
+    "gap-plan-final.json": "130d1de9f44a1dd74d2abfbe7ffb84682704541219399e4c34ed581672dc7557",
+    "gap-v1/result.json": "f9d160d6be9f81ed4426e60d47feb95630ed512d86d51cfa7d65b3d24358afd2",
+    "gap-v1-terminal.json": "66fe51182a7ecd858c265e291c2647b420073d764915a44f52e9238d9495bc6e"
+  }
+}

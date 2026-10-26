@@ -1,0 +1,29 @@
+{
+  "ticket": "SCRUM-638",
+  "startedAt": "2026-10-26T08:23:57.928Z",
+  "processId": 90352,
+  "hostFreeMiB": 2324,
+  "metrics": {
+    "currentBytes": 368189440,
+    "anonBytes": 8671232,
+    "fileBytes": 44617728,
+    "inactiveFileBytes": 44470272,
+    "linuxMemAvailableKiB": 10590984
+  },
+  "boundedAdditionalMiB": 2721,
+  "decision": "One whole ratchet after Console units;2048MiB heap/3GiB cap;Linux MemAvailable>=4GiB and idle worker anon<1GiB; host free recorded without treating reclaimable WSL memory as unavailable; same3GiB container cap.",
+  "nodeHeapMiB": 2048,
+  "workerMemoryMiB": 3072,
+  "rootResourceJudgmentAuthorized": true,
+  "resourceGuard": "linux-available-plus-cgroup-cache",
+  "helperSha256": "6720a78538d3ebe89f6bbe7d09bc818363e92c1511c20f19e37e94bba1b2826b",
+  "installReceiptSha256": "b2518120c0767e23a7ef2d286c8a31443185ebd2693f762439e2a45b2eb21675",
+  "exitCode": 1,
+  "signal": null,
+  "completedAt": "2026-10-26T08:25:08.927Z",
+  "hostFreeMiBAfter": 2706,
+  "stderrObserved": false,
+  "spawnFailed": false,
+  "resultSha256": "207b1222cb0531cde128a74f8d75fb85289f751e42c207bfd0b0e3d83b913d91",
+  "passed": false
+}

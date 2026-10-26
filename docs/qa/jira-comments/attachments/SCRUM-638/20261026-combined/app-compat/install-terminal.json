@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-638",
+  "startedAt": "2026-10-26T08:06:10.798Z",
+  "freeMemoryMiBBefore": 3654,
+  "minimumFreeMemoryMiB": 3584,
+  "rootResourceAmendment": true,
+  "workerMemoryMiB": 3072,
+  "pgMemoryMiB": 512,
+  "workerId": "0db31f184387b9ef2b98479e9d55d40fce46a9040526c42ed062499b11338752",
+  "pgId": "90559aae2beec3f39eab7e67ad4ee07ccdaea953bfe40ea59eb398013ff27e00",
+  "memoryMeasurement": "Windows available physical via node os.freemem; no extra CIM process",
+  "helperSha256": "5acb710a278e1074185a51251708380e5280cc7d80dd48d48034db5386c3afdd",
+  "setupSha256": "43d5b93ece475dcce7e6ea636ccbadee46e01e5827447d7146af225a1b5a3f2d",
+  "processId": 89924,
+  "exitCode": 0,
+  "signal": null,
+  "completedAt": "2026-10-26T08:06:50.231Z",
+  "freeMemoryMiBAfter": 2434,
+  "stderrObserved": false,
+  "spawnFailed": false,
+  "actualReceiptSha256": "b2518120c0767e23a7ef2d286c8a31443185ebd2693f762439e2a45b2eb21675",
+  "passed": true
+}

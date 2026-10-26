@@ -1,0 +1,53 @@
+{
+    "ticket":  "SCRUM-638",
+    "worktree":  "C:/w/admin-assistant-settings",
+    "branch":  "lane/admin-assistant-settings",
+    "head":  "1a4ed23b4286c577d69c39cd0fc4467415678015",
+    "fixedBaseMain":  "544cd736598640a240faf6c2584c344de1f811ec",
+    "sourceInputs":  3790,
+    "sourceManifestSha256":  "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+    "oldIntegratedHead":  "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+    "oldIntegratedManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+    "sourceBridge":  "C:/w/admin638-full-20261026/source-bridge-to-661.json",
+    "ownActiveGateSessions":  [
+
+                              ],
+    "uncommittedFiles":  [
+                             "docs/progress/STATUS.md"
+                         ],
+    "finalRunner":  "C:/w/admin638-final-run.mjs",
+    "finalRunnerSha256":  "b9bcb093a7dc98595421744ca4667c0e756cff875f00689f0907b4462ec3d9f0",
+    "finalOutputFolder":  "C:/w/admin638-final-20261026",
+    "pendingOwnGateModes":  [
+                                "console-browser",
+                                "pos",
+                                "box"
+                            ],
+    "heavyGatesHeldForDelegatedAppMemoryWindow":  true,
+    "delegatedAppWorker":  "/root/booth_diagnosis",
+    "appGapCensus":  "C:/w/admin638-full-20261026/app-runtime-gap-census.json",
+    "ordinaryApi":  {
+                        "passed":  5278,
+                        "appAvailabilitySkipped":  399,
+                        "optionalStorageSkipped":  2,
+                        "todo":  5
+                    },
+    "apiGapWholeFiles":  30,
+    "apiGapWholeFileCases":  790,
+    "initialRateDataPendingPlanner":  true,
+    "sourcePushed":  false,
+    "completeCombinedRelease":  false,
+    "stagingAcceptance":  false,
+    "coordinatorOwnsPushJiraMainDeploy":  "/root",
+    "recordedAt":  "2026-10-26T08:25:56.5170588Z",
+    "finalConsoleAndLightGates":  {
+                                      "unitsPassed":  290,
+                                      "unitTodo":  3,
+                                      "allThreeCompilerDiagnostics":  0,
+                                      "contractsMatch":  true,
+                                      "lintErrors":  0,
+                                      "generatedIgnoreWarnings":  1,
+                                      "ciReadGuardsPassed":  2
+                                  },
+    "delegatedPrioritySession":  "booth_diagnosis:72183 whole-app-ratchet2048"
+}

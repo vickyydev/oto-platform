@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-26T08:31:09.013Z",
+  "passed": true,
+  "actualWorkerPassed": true,
+  "controllerPassed": false,
+  "controllerFailure": "Exclusive progress filename collision with preserved v2 log after successful result copy; no compiler rerun.",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "resultSha256": "dbb46835f03b8828bb6ac02aefd5f558a9c38e87e43fe363f3562c2e9088cde2",
+  "commandReceiptSha256": "cd45be82a943aa434ae2ae0ba0986b55f08a17391aeaa55decbdad337c152be3",
+  "logSha256": "6aff0c71fabd4cec690e12d35434b1380c4c5b46db212070be7cfd45b7709db8",
+  "originalIntentSha256": "50724a1f0275b7969bb21551ac858274ab879079743c4d4dc1856ecfd4add8c2",
+  "capRestoredMiB": 3072,
+  "observedMemory": {
+    "peakOwnProcessTreeRssKiB": 2658692,
+    "peakCgroupBytes": 3373588480
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-workspace",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm exec turbo run typecheck build --force --concurrency=2",
+  "startedAt": "2026-10-26T07:26:29.455Z",
+  "completedAt": "2026-10-26T07:29:12.640Z",
+  "sourceHead": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "inputs": 3789,
+  "sourceManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "logSha256": "acaa41cd31c706d91712d5583cb6662d63478b916405c93ccf205e1dae6b9f3d",
+  "logBytes": 13066
+}

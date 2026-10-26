@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "startedAt": "2026-10-26T08:31:09.395Z",
+  "builderId": "00f13eae369feee317134d77d742eab6c65b304efcf45adca2bb48d95e6c0f57",
+  "workerId": "0db31f184387b9ef2b98479e9d55d40fce46a9040526c42ed062499b11338752",
+  "passed": false,
+  "files": [],
+  "providerCredentials": false,
+  "appSourceTouched": false,
+  "appDependencyLocksTouched": false,
+  "existingImagesModified": false,
+  "aptReceiptSha256": "3545f7ece8a2e929832803f2f8e93240074ede295dd5c0ff3f9233ee3cdd5d88",
+  "versions": {
+    "ffmpeg": "ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 5.1.9-0+deb12u1 Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "helperSha256": "36f8e5d2ee44aba1c23f8167b18a07ce59b538b28f27ec93cc8a9055520cddb5",
+  "priorFailure": "Docker cp -L merged-/lib symlink resolution; actual apt stages passed",
+  "rerunApt": false
+}

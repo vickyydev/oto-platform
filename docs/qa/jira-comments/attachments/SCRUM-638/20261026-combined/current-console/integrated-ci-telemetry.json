@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-ci-telemetry",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "node apps/oto-app/server/lib/telemetry/check-sync.mjs",
+  "startedAt": "2026-10-26T08:03:15.880Z",
+  "completedAt": "2026-10-26T08:03:19.391Z",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "inputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "syntheticCodeRedactions": 0,
+  "logSha256": "560c63eab003a54e749e348543867b549eb974136549fcdddfd659f2ba7ac79e",
+  "logBytes": 72
+}

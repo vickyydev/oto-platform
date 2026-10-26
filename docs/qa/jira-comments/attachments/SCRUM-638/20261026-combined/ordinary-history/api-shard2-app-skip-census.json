@@ -1,0 +1,107 @@
+{
+    "ticket":  "SCRUM-638",
+    "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+    "receiptSha256":  "54a8086008e0f6695eb524566d7742b18015ac541144d31d3184945cfbbc0c5a",
+    "logSha256":  "439a55e461baa79e0cc46c3c9a43e41816ec3ff64d0aa10ece890e4a7030f8bc",
+    "fullLogLines":  1159,
+    "distinctLinesReadAfterOnlyExactDuplicateRemovalAndPidNormalization":  347,
+    "passed":  1796,
+    "skipped":  174,
+    "todo":  4,
+    "appRuntimeClosureRequired":  true,
+    "files":  [
+                  {
+                      "file":  "test/s217b-r6-review.test.ts",
+                      "tests":  65,
+                      "skippedOrTodoReportedInFileLine":  51,
+                      "passed":  14,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r4a-review.test.ts",
+                      "tests":  37,
+                      "skippedOrTodoReportedInFileLine":  12,
+                      "passed":  25,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r2-review.test.ts",
+                      "tests":  33,
+                      "skippedOrTodoReportedInFileLine":  3,
+                      "passed":  30,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r2.test.ts",
+                      "tests":  33,
+                      "skippedOrTodoReportedInFileLine":  2,
+                      "passed":  31,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r1.test.ts",
+                      "tests":  31,
+                      "skippedOrTodoReportedInFileLine":  1,
+                      "passed":  30,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r4a.test.ts",
+                      "tests":  28,
+                      "skippedOrTodoReportedInFileLine":  2,
+                      "passed":  26,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s221-r4-closing-audit.test.ts",
+                      "tests":  37,
+                      "skippedOrTodoReportedInFileLine":  4,
+                      "passed":  33,
+                      "classification":  "existing-todo"
+                  },
+                  {
+                      "file":  "test/s217b-r7-access-cross-review.test.ts",
+                      "tests":  15,
+                      "skippedOrTodoReportedInFileLine":  15,
+                      "passed":  0,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r5.test.ts",
+                      "tests":  18,
+                      "skippedOrTodoReportedInFileLine":  1,
+                      "passed":  17,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217c-sop-history-review.test.ts",
+                      "tests":  16,
+                      "skippedOrTodoReportedInFileLine":  15,
+                      "passed":  1,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r7-readers-review.test.ts",
+                      "tests":  4,
+                      "skippedOrTodoReportedInFileLine":  4,
+                      "passed":  0,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s548-qa-reports-review.test.ts",
+                      "tests":  36,
+                      "skippedOrTodoReportedInFileLine":  36,
+                      "passed":  0,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-scheduling-review.test.ts",
+                      "tests":  32,
+                      "skippedOrTodoReportedInFileLine":  32,
+                      "passed":  0,
+                      "classification":  "app-runtime-required"
+                  }
+              ],
+    "sourceInspection":  "All174 skipped cases use installed-app runtime/module availability guards. Four closing-audit it.todo pins remain separate. R6 document generation has a native Chromium-available conditional.",
+    "historicalReceiptUnchanged":  true
+}

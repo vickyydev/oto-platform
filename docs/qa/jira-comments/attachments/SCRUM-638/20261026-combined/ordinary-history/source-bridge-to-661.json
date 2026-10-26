@@ -1,0 +1,73 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T07:57:37.683Z",
+  "beforeHead": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "fixedBaseMain": "544cd736598640a240faf6c2584c344de1f811ec",
+  "oldInputs": 3789,
+  "currentInputs": 3790,
+  "beforeManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "currentManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "changes": [
+    {
+      "path": "apps/console/e2e/overview.spec.ts",
+      "beforeSha256": "3ba3997faa039a6a166c0ba40029e47cee4937b643b566431e518dce18d0f833",
+      "afterSha256": "fcf1d4952fcc3626dd04bb50fe6e4b1c8ab1383d2361a3d90d7d487e7f2beb57"
+    },
+    {
+      "path": "apps/console/src/components/booth/PrizeEditor.tsx",
+      "beforeSha256": "57be4dd4c1bceaf99b2780e868a39a74ec144964acd5c01f02ad84ee84a87f29",
+      "afterSha256": "67f7259225ee300530b5a456ebf7761ff6c33996a1b9ac87ed80893f03c61e07"
+    },
+    {
+      "path": "apps/console/src/components/booth/readState.ts",
+      "beforeSha256": "86b4c71def66e17ba4ff4fa357b964e33c0a9643fd3dd99a0956357a0ac0647d",
+      "afterSha256": "4d88ca8742b1bea1be49b1ad2d7e66dd544e426cfb7b91e52457c8fd855892e7"
+    },
+    {
+      "path": "apps/console/test/prize-editor-validation.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "f0431dd1e8ff4393d02291c1cd252a2513ffba5d4b3c166c7c076e7a09d16147"
+    }
+  ],
+  "rebasedOwnCommits": [
+    {
+      "sha": "9ec67708d9b44b5a7175acb5a892c8fc074a413d",
+      "subject": "feat(console): add operator assistant settings and usage estimates"
+    },
+    {
+      "sha": "889c4ed834b1455a1179f7fdb09904afff49704e",
+      "subject": "test(console): preserve assistant settings checkpoint evidence"
+    },
+    {
+      "sha": "53906ba8e78aae99aeccf96b683dec4a4fb38419",
+      "subject": "feat(assistant): read the operator's saved caps, debounce and pacing"
+    },
+    {
+      "sha": "7297e968bd5449d8f8b03580e738ca710b781c00",
+      "subject": "test(console): record assistant consumer integration checks"
+    },
+    {
+      "sha": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+      "subject": "test(console): check native clipboard text across Windows line endings"
+    }
+  ],
+  "skippedOwnCommits": 0,
+  "unchangedDomains": [
+    "apps/api",
+    "apps/oto-app",
+    "packages/db",
+    "all dependency lockfiles and package manifests",
+    "all five planner-delivered protected production/test files",
+    "all non-Console source"
+  ],
+  "main661FilesByteIdentical": true,
+  "plannerDeliveryByteIdentical": true,
+  "clipboardPatchSha256": "e2f5f3d392f9c4f73dd4869a692436c755bbda4d6a846d899e073966afd0cd99",
+  "historicalNativeApiAndAppInputsRemainBound": true,
+  "fullBatteryRepeatedOnNewFrame": false,
+  "consoleFinalGatesPending": true,
+  "initialRatesPendingPlanner": true,
+  "pushed": false,
+  "stagingAcceptance": false
+}

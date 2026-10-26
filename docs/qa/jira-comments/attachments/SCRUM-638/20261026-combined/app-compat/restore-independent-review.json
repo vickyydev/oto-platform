@@ -1,0 +1,26 @@
+{
+  "ticket": "SCRUM-638",
+  "reviewedAt": "2026-10-26T08:45:34.296Z",
+  "passed": true,
+  "actualLocal": true,
+  "staging": false,
+  "sourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "logSha256": "a5a4679c77d6a4a55362ec0021e1f6f4d8df97241f6504cfaa5db557b6020eae",
+  "wholeOutputBytesRead": 29328,
+  "sourceTables": 184,
+  "sourceRows": 1108,
+  "platformMigrations": 88,
+  "appMigrations": 31,
+  "runs": 2,
+  "originalCountsPreserved": true,
+  "replayStable": true,
+  "cleanup": "complete",
+  "postRestoreTables": 236,
+  "postRestoreViews": 8,
+  "departmentMetadataViewsPresent": true,
+  "ownDatabaseCountAfter": 0,
+  "limits": [
+    "Actual isolated PG16 restore/replay; no staging database or deploy operation.",
+    "Redacted output fingerprint placeholders remain unchanged; full source manifest binds committed baseline bytes."
+  ]
+}

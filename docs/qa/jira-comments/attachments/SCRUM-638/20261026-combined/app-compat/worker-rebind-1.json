@@ -1,0 +1,9 @@
+{
+    "ticket":  "SCRUM-638",
+    "setupSha256":  "43d5b93ece475dcce7e6ea636ccbadee46e01e5827447d7146af225a1b5a3f2d",
+    "beforeWorkerSha256":  "77dde0787a175ab571ea88034ee54eb1e35b102c62700cb2bd10b97a86fc5a67",
+    "afterWorkerSha256":  "2e6d9e1254aefec05bdd4cbfefd4e15b887ac787237d043efa77b98242c99cb8",
+    "beforeRuntimeDispatch":  true,
+    "changedAt":  "2026-10-26T07:55:58.4776882Z",
+    "reason":  "Record missing cached ffmpeg as failed readiness while still executing independent checks; no source/test/assertion or network relaxation."
+}

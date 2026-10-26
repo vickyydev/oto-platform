@@ -1,0 +1,321 @@
+{
+  "ticket": "SCRUM-638",
+  "actualLocal": true,
+  "staging": false,
+  "sourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceFiles": 3791,
+  "dependencyInputs": 28,
+  "workerSha256": "816c3571d8aca4174db892387137e5078fe68cda82ea61438439059478e3a650",
+  "startedAt": "2026-10-26T08:41:54.424Z",
+  "commands": [
+    {
+      "label": "all-app-availability-files",
+      "cwd": "/workspace",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@oto/api",
+        "exec",
+        "vitest",
+        "run",
+        "--pool=forks",
+        "--maxWorkers=1",
+        "--fileParallelism=false",
+        "test/g17-round0-review.test.ts",
+        "test/s217b-r1-review-recheck.test.ts",
+        "test/s217b-r1-review.test.ts",
+        "test/s217b-r1.test.ts",
+        "test/s217b-r2-review.test.ts",
+        "test/s217b-r2.test.ts",
+        "test/s217b-r3-review.test.ts",
+        "test/s217b-r3.test.ts",
+        "test/s217b-r4a-review.test.ts",
+        "test/s217b-r4a.test.ts",
+        "test/s217b-r4b-review.test.ts",
+        "test/s217b-r4b.test.ts",
+        "test/s217b-r5-review.test.ts",
+        "test/s217b-r5.test.ts",
+        "test/s217b-r6-review.test.ts",
+        "test/s217b-r6.test.ts",
+        "test/s217b-r7-access-cross-review.test.ts",
+        "test/s217b-r7-access-review.test.ts",
+        "test/s217b-r7-finance-access-cross-review.test.ts",
+        "test/s217b-r7-finance-cross-review.test.ts",
+        "test/s217b-r7-finance.test.ts",
+        "test/s217b-r7-payroll-cross-review.test.ts",
+        "test/s217b-r7-readers-review.test.ts",
+        "test/s217b-scheduling-review.test.ts",
+        "test/s217c-camp-sms-review.test.ts",
+        "test/s217c-employee-history-review.test.ts",
+        "test/s217c-fix-preview-review.test.ts",
+        "test/s217c-presence-delivery-review.test.ts",
+        "test/s217c-sop-history-review.test.ts",
+        "test/s548-qa-reports-review.test.ts",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=../../test-results/app-runtime-gap.json"
+      ],
+      "startedAt": "2026-10-26T08:41:54.767Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "report": {
+        "path": "test-results/app-runtime-gap.json",
+        "sha256": "5a8e5b34adc2cc6337e6a5c7f19d5b663e677e347130d70397d9f973e469b2e9",
+        "files": 30,
+        "tests": 790,
+        "pending": 0,
+        "failed": 0
+      },
+      "completedAt": "2026-10-26T08:51:05.101Z",
+      "logSha256": "7b02c7481322bc75c08555648f5f94247a2350451529a1b74c5a18af47b4ff7f",
+      "logBytes": 118104,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    }
+  ],
+  "passed": true,
+  "cleanupConfirmed": true,
+  "databasesBefore": [],
+  "databasesAfter": [],
+  "installedFresh": true,
+  "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "reportSha256": "5a8e5b34adc2cc6337e6a5c7f19d5b663e677e347130d70397d9f973e469b2e9",
+  "reportTests": 790,
+  "reportPending": 0,
+  "reportFailed": 0,
+  "files": [
+    {
+      "path": "test/g17-round0-review.test.ts",
+      "tests": 32,
+      "passed": 32,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r1-review-recheck.test.ts",
+      "tests": 17,
+      "passed": 17,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r1-review.test.ts",
+      "tests": 42,
+      "passed": 42,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r1.test.ts",
+      "tests": 31,
+      "passed": 31,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r2-review.test.ts",
+      "tests": 33,
+      "passed": 33,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r2.test.ts",
+      "tests": 33,
+      "passed": 33,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r3-review.test.ts",
+      "tests": 44,
+      "passed": 44,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r3.test.ts",
+      "tests": 41,
+      "passed": 41,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r4a-review.test.ts",
+      "tests": 37,
+      "passed": 37,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r4a.test.ts",
+      "tests": 28,
+      "passed": 28,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r4b-review.test.ts",
+      "tests": 29,
+      "passed": 29,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r4b.test.ts",
+      "tests": 36,
+      "passed": 36,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r5-review.test.ts",
+      "tests": 30,
+      "passed": 30,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r5.test.ts",
+      "tests": 18,
+      "passed": 18,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r6-review.test.ts",
+      "tests": 65,
+      "passed": 65,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r6.test.ts",
+      "tests": 36,
+      "passed": 36,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r7-access-cross-review.test.ts",
+      "tests": 15,
+      "passed": 15,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r7-access-review.test.ts",
+      "tests": 18,
+      "passed": 18,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r7-finance-access-cross-review.test.ts",
+      "tests": 8,
+      "passed": 8,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r7-finance-cross-review.test.ts",
+      "tests": 4,
+      "passed": 4,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r7-finance.test.ts",
+      "tests": 7,
+      "passed": 7,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r7-payroll-cross-review.test.ts",
+      "tests": 25,
+      "passed": 25,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-r7-readers-review.test.ts",
+      "tests": 4,
+      "passed": 4,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217b-scheduling-review.test.ts",
+      "tests": 32,
+      "passed": 32,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217c-camp-sms-review.test.ts",
+      "tests": 23,
+      "passed": 23,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217c-employee-history-review.test.ts",
+      "tests": 28,
+      "passed": 28,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217c-fix-preview-review.test.ts",
+      "tests": 7,
+      "passed": 7,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217c-presence-delivery-review.test.ts",
+      "tests": 15,
+      "passed": 15,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s217c-sop-history-review.test.ts",
+      "tests": 16,
+      "passed": 16,
+      "pending": 0,
+      "failed": 0
+    },
+    {
+      "path": "test/s548-qa-reports-review.test.ts",
+      "tests": 36,
+      "passed": 36,
+      "pending": 0,
+      "failed": 0
+    }
+  ],
+  "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "completedAt": "2026-10-26T08:51:05.250Z"
+}

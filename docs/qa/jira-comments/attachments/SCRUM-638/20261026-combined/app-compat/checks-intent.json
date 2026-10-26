@@ -1,0 +1,20 @@
+{
+  "ticket": "SCRUM-638",
+  "startedAt": "2026-10-26T08:12:23.514Z",
+  "processId": 100264,
+  "hostFreeMiB": 3221,
+  "metrics": {
+    "currentBytes": 403542016,
+    "anonBytes": 8667136,
+    "fileBytes": 90935296,
+    "inactiveFileBytes": 90030080,
+    "linuxMemAvailableKiB": 10593500
+  },
+  "boundedAdditionalMiB": 2688,
+  "decision": "One serial build/ratchet under unchanged3GiB cap; existing file cache is reclaimable; reserve bounded extra cap plus512MiB host margin.",
+  "nodeHeapMiB": 1536,
+  "workerMemoryMiB": 3072,
+  "rootResourceJudgmentAuthorized": true,
+  "helperSha256": "e5cc3fbd35de49f99a8847a135d5e8afe6b8ed3a678dce8a4e1f4a5ded59ef04",
+  "installReceiptSha256": "b2518120c0767e23a7ef2d286c8a31443185ebd2693f762439e2a45b2eb21675"
+}

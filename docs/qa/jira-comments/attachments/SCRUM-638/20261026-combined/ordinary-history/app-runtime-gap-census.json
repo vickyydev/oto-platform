@@ -1,0 +1,227 @@
+{
+    "ticket":  "SCRUM-638",
+    "sourceHead":  "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+    "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+    "ordinaryPassed":  5278,
+    "appRuntimeSkipped":  399,
+    "optionalStorageSkipped":  2,
+    "todo":  5,
+    "gapFiles":  [
+                     {
+                         "shard":  1,
+                         "file":  "test/s217b-r3-review.test.ts",
+                         "cases":  44,
+                         "skipped":  21,
+                         "priorPassed":  23
+                     },
+                     {
+                         "shard":  1,
+                         "file":  "test/s217b-r6.test.ts",
+                         "cases":  36,
+                         "skipped":  2,
+                         "priorPassed":  34
+                     },
+                     {
+                         "shard":  1,
+                         "file":  "test/s217b-r4b.test.ts",
+                         "cases":  36,
+                         "skipped":  4,
+                         "priorPassed":  32
+                     },
+                     {
+                         "shard":  1,
+                         "file":  "test/s217b-r1-review.test.ts",
+                         "cases":  42,
+                         "skipped":  20,
+                         "priorPassed":  22
+                     },
+                     {
+                         "shard":  1,
+                         "file":  "test/s217c-employee-history-review.test.ts",
+                         "cases":  28,
+                         "skipped":  27,
+                         "priorPassed":  1
+                     },
+                     {
+                         "shard":  1,
+                         "file":  "test/s217b-r7-finance-access-cross-review.test.ts",
+                         "cases":  8,
+                         "skipped":  8,
+                         "priorPassed":  0
+                     },
+                     {
+                         "shard":  1,
+                         "file":  "test/s217c-fix-preview-review.test.ts",
+                         "cases":  7,
+                         "skipped":  7,
+                         "priorPassed":  0
+                     },
+                     {
+                         "shard":  1,
+                         "file":  "test/s217b-r7-access-review.test.ts",
+                         "cases":  18,
+                         "skipped":  17,
+                         "priorPassed":  1
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r6-review.test.ts",
+                         "cases":  65,
+                         "skipped":  51,
+                         "priorPassed":  14
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r4a-review.test.ts",
+                         "cases":  37,
+                         "skipped":  12,
+                         "priorPassed":  25
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r2-review.test.ts",
+                         "cases":  33,
+                         "skipped":  3,
+                         "priorPassed":  30
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r2.test.ts",
+                         "cases":  33,
+                         "skipped":  2,
+                         "priorPassed":  31
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r1.test.ts",
+                         "cases":  31,
+                         "skipped":  1,
+                         "priorPassed":  30
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r4a.test.ts",
+                         "cases":  28,
+                         "skipped":  2,
+                         "priorPassed":  26
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r7-access-cross-review.test.ts",
+                         "cases":  15,
+                         "skipped":  15,
+                         "priorPassed":  0
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r5.test.ts",
+                         "cases":  18,
+                         "skipped":  1,
+                         "priorPassed":  17
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217c-sop-history-review.test.ts",
+                         "cases":  16,
+                         "skipped":  15,
+                         "priorPassed":  1
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-r7-readers-review.test.ts",
+                         "cases":  4,
+                         "skipped":  4,
+                         "priorPassed":  0
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s548-qa-reports-review.test.ts",
+                         "cases":  36,
+                         "skipped":  36,
+                         "priorPassed":  0
+                     },
+                     {
+                         "shard":  2,
+                         "file":  "test/s217b-scheduling-review.test.ts",
+                         "cases":  32,
+                         "skipped":  32,
+                         "priorPassed":  0
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217b-r4b-review.test.ts",
+                         "cases":  29,
+                         "skipped":  11,
+                         "priorPassed":  18
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217b-r3.test.ts",
+                         "cases":  41,
+                         "skipped":  9,
+                         "priorPassed":  32
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/g17-round0-review.test.ts",
+                         "cases":  32,
+                         "skipped":  4,
+                         "priorPassed":  28
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217b-r5-review.test.ts",
+                         "cases":  30,
+                         "skipped":  20,
+                         "priorPassed":  10
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217b-r1-review-recheck.test.ts",
+                         "cases":  17,
+                         "skipped":  10,
+                         "priorPassed":  7
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217b-r7-payroll-cross-review.test.ts",
+                         "cases":  25,
+                         "skipped":  25,
+                         "priorPassed":  0
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217c-presence-delivery-review.test.ts",
+                         "cases":  15,
+                         "skipped":  12,
+                         "priorPassed":  3
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217c-camp-sms-review.test.ts",
+                         "cases":  23,
+                         "skipped":  23,
+                         "priorPassed":  0
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217b-r7-finance-cross-review.test.ts",
+                         "cases":  4,
+                         "skipped":  2,
+                         "priorPassed":  2
+                     },
+                     {
+                         "shard":  3,
+                         "file":  "test/s217b-r7-finance.test.ts",
+                         "cases":  7,
+                         "skipped":  3,
+                         "priorPassed":  4
+                     }
+                 ],
+    "runtimeRequirements":  [
+                                "Real installed OTO App npm tree; native file assertions unchanged.",
+                                "R6 document paths use native Chrome/Puppeteer conditional.",
+                                "No real SMS, AI, payments, external provider or staging calls."
+                            ],
+    "noFullCoverageClaim":  true
+}

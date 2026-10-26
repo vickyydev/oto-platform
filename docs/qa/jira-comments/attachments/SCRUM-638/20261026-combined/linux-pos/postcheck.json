@@ -1,0 +1,12 @@
+{
+  "name": "postcheck",
+  "startedAt": "2026-10-26T08:56:47.370Z",
+  "completedAt": "2026-10-26T08:56:48.151Z",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "logBytes": 0,
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceInputs": 3790
+}

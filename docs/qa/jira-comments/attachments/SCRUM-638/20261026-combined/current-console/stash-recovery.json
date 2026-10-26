@@ -1,0 +1,11 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-26T09:14:39.167Z",
+  "stashSha": "4d45a7446191f92dab8aed0ebae99679b5a8ed6f",
+  "paths": [
+    "docs/progress/STATUS.md"
+  ],
+  "patchSha256": "ea63e6c06441924977e26d46aece92a3c6090016fc63c1810bf71a0c061a96e6",
+  "recovery": "The pre-rebase in-progress note is retained externally; the final completed-code-check note supersedes it. No source or user WIP was in this stash.",
+  "droppedExactOwnStash": true
+}

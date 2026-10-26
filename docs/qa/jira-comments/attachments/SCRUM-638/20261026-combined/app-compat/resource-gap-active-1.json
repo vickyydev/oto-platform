@@ -1,0 +1,119 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-26T08:48:18.581Z",
+  "stage": "gap-active-1",
+  "memory": {
+    "hostFreeMiB": 895,
+    "metrics": {
+      "currentBytes": 2210054144,
+      "anonBytes": 1201160192,
+      "fileBytes": 600727552,
+      "inactiveFileBytes": 75919360,
+      "linuxMemAvailableKiB": 9221320
+    }
+  },
+  "processes": {
+    "at": "2026-10-26T08:48:19.273Z",
+    "events": [
+      [
+        "low",
+        "0"
+      ],
+      [
+        "high",
+        "0"
+      ],
+      [
+        "max",
+        "3053"
+      ],
+      [
+        "oom",
+        "0"
+      ],
+      [
+        "oom_kill",
+        "0"
+      ],
+      [
+        "oom_group_kill",
+        "0"
+      ]
+    ],
+    "processes": [
+      {
+        "pid": 9762,
+        "name": "node (vitest 1)",
+        "state": "S",
+        "parentId": 5842,
+        "rssKiB": 336220
+      },
+      {
+        "pid": 5842,
+        "name": "node (vitest)",
+        "state": "S",
+        "parentId": 5830,
+        "rssKiB": 261228
+      },
+      {
+        "pid": 9833,
+        "name": "node",
+        "state": "R",
+        "parentId": 9799,
+        "rssKiB": 229740
+      },
+      {
+        "pid": 9832,
+        "name": "node",
+        "state": "R",
+        "parentId": 9800,
+        "rssKiB": 225588
+      },
+      {
+        "pid": 9831,
+        "name": "node",
+        "state": "R",
+        "parentId": 9798,
+        "rssKiB": 220440
+      },
+      {
+        "pid": 5813,
+        "name": "node",
+        "state": "S",
+        "parentId": 0,
+        "rssKiB": 138132
+      },
+      {
+        "pid": 5830,
+        "name": "node",
+        "state": "S",
+        "parentId": 5813,
+        "rssKiB": 94132
+      },
+      {
+        "pid": 9799,
+        "name": "node",
+        "state": "S",
+        "parentId": 9762,
+        "rssKiB": 63140
+      },
+      {
+        "pid": 9800,
+        "name": "node",
+        "state": "S",
+        "parentId": 9762,
+        "rssKiB": 63068
+      },
+      {
+        "pid": 9798,
+        "name": "node",
+        "state": "S",
+        "parentId": 9762,
+        "rssKiB": 62876
+      }
+    ],
+    "totalRssKiB": 1764600
+  },
+  "readProcessArguments": false,
+  "readEnvironmentValues": false
+}

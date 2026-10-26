@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-other-packages",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm --filter '!oto-platform' --filter '!@oto/api' --filter '!@oto/pos' --filter '!@oto/console' --filter '!@oto/box-agent' test",
+  "startedAt": "2026-10-26T07:17:27.374Z",
+  "completedAt": "2026-10-26T07:25:36.128Z",
+  "sourceHead": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "inputs": 3789,
+  "sourceManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": {
+    "ownNativeServer": true,
+    "port": 62523,
+    "databaseCountBefore": 0,
+    "databaseCountAfter": 0,
+    "credentialsPersisted": false,
+    "stopped": true,
+    "cleanupConfirmed": true
+  },
+  "logSha256": "f78f1469ebf07e2825b7877fba7a514a9dc5697dd797f2627b2f4e56e7a0847a",
+  "logBytes": 50515
+}

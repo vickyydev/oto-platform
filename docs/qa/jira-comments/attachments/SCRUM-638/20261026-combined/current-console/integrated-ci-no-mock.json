@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-ci-no-mock",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "node scripts/check-no-mock-members.mjs",
+  "startedAt": "2026-10-26T08:03:15.880Z",
+  "completedAt": "2026-10-26T08:03:20.215Z",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "inputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "syntheticCodeRedactions": 0,
+  "logSha256": "4d61b9b3cb871f96a013ab5ba481df2d4fbebe1947a2a8c142ff64e2ae86f173",
+  "logBytes": 129
+}

@@ -1,0 +1,51 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T08:08:29.155Z",
+  "nativeJsonParse": true,
+  "files": [
+    {
+      "filename": "external-artifacts.json",
+      "sha256": "f139a816e6f895d88f720f2ec0b9f608c54744e4578aa515957ade9fb5173a4d"
+    },
+    {
+      "filename": "integrated-compiler.json",
+      "sha256": "79778fbe93f9282c3d4eafff0ecd235d48126f7a8fba192f854f4a09939d1d74"
+    },
+    {
+      "filename": "integrated-contract.json",
+      "sha256": "629230aefaa733ad73f140a40ec369c30dfbb0b1c8503d280350f13cb166d6c8"
+    },
+    {
+      "filename": "integrated-guards.json",
+      "sha256": "f220e04259a4bf90ce615281979d1ad1b962b88d421a53c084d4e25e93dbe54a"
+    },
+    {
+      "filename": "integrated-lint.json",
+      "sha256": "9e6c1dcf3b8b3097d367a9cc8cc73e84b230ed28c16fd34a11eebed71ec2f210"
+    },
+    {
+      "filename": "integrated-tests-manifest.json",
+      "sha256": "571513b032aeb120365c6b0da0c93d47b243907c412db89577e98e9048b4b37e"
+    },
+    {
+      "filename": "integrated-tests.json",
+      "sha256": "f31c2d7d2b472fa8f6179b88d7e24087a03f6f069a5e81426c636b4094fdb957"
+    },
+    {
+      "filename": "integration-review.json",
+      "sha256": "754d9cca9f7c2eb56b1acb5265ce513b513714e98f36ef4d8ca667ace783db34"
+    },
+    {
+      "filename": "original-consumers-install.json",
+      "sha256": "04b4dc3fd97f903576f09fc51c10a5f2e19d492971878733d60d5a6db43ed167"
+    },
+    {
+      "filename": "original-consumers-tests-manifest.json",
+      "sha256": "3596df8bc03aa66b10b1d021542be28578441cd7c499ef267589bd76d5af2dcc"
+    },
+    {
+      "filename": "original-consumers-tests.json",
+      "sha256": "5177bff190412874726e7a16ce8e53da33fcea1d3bb6f118f9720ec47c676403"
+    }
+  ]
+}

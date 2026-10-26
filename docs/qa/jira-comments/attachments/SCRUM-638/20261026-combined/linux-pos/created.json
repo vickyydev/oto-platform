@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-26T08:54:53.326Z",
+  "id": "a405eeceeb1c658fe82a064886e22435029dd9e39f3154db849365cc6fea82d7",
+  "name": "/oto-admin638-pos-aux-20261026",
+  "image": "sha256:ecfc844d13d36b27adf7f5a1cf705fbe876efba601da39d39bbe64dad85d6b26",
+  "status": "created",
+  "oomKilled": false,
+  "memory": 2147483648,
+  "network": "none",
+  "mounts": [],
+  "ports": {},
+  "ticket": "SCRUM-638",
+  "owner": "release-review-pos"
+}

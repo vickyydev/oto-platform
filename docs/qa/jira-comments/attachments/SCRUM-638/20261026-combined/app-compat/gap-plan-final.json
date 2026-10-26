@@ -1,0 +1,278 @@
+{
+  "ticket": "SCRUM-638",
+  "sourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceGuardFiles": [
+    "test/g17-round0-review.test.ts",
+    "test/s217b-r1-review-recheck.test.ts",
+    "test/s217b-r1-review.test.ts",
+    "test/s217b-r1.test.ts",
+    "test/s217b-r2-review.test.ts",
+    "test/s217b-r2.test.ts",
+    "test/s217b-r3-review.test.ts",
+    "test/s217b-r3.test.ts",
+    "test/s217b-r4a-review.test.ts",
+    "test/s217b-r4a.test.ts",
+    "test/s217b-r4b-review.test.ts",
+    "test/s217b-r4b.test.ts",
+    "test/s217b-r5-review.test.ts",
+    "test/s217b-r5.test.ts",
+    "test/s217b-r6-review.test.ts",
+    "test/s217b-r6.test.ts",
+    "test/s217b-r7-access-cross-review.test.ts",
+    "test/s217b-r7-access-review.test.ts",
+    "test/s217b-r7-finance-access-cross-review.test.ts",
+    "test/s217b-r7-finance-cross-review.test.ts",
+    "test/s217b-r7-finance.test.ts",
+    "test/s217b-r7-payroll-cross-review.test.ts",
+    "test/s217b-r7-readers-review.test.ts",
+    "test/s217b-scheduling-review.test.ts",
+    "test/s217c-camp-sms-review.test.ts",
+    "test/s217c-employee-history-review.test.ts",
+    "test/s217c-fix-preview-review.test.ts",
+    "test/s217c-presence-delivery-review.test.ts",
+    "test/s217c-sop-history-review.test.ts",
+    "test/s548-qa-reports-review.test.ts"
+  ],
+  "caseExpectations": [
+    {
+      "shard": 1,
+      "file": "test/s217b-r3-review.test.ts",
+      "cases": 44,
+      "skipped": 21,
+      "priorPassed": 23
+    },
+    {
+      "shard": 1,
+      "file": "test/s217b-r6.test.ts",
+      "cases": 36,
+      "skipped": 2,
+      "priorPassed": 34
+    },
+    {
+      "shard": 1,
+      "file": "test/s217b-r4b.test.ts",
+      "cases": 36,
+      "skipped": 4,
+      "priorPassed": 32
+    },
+    {
+      "shard": 1,
+      "file": "test/s217b-r1-review.test.ts",
+      "cases": 42,
+      "skipped": 20,
+      "priorPassed": 22
+    },
+    {
+      "shard": 1,
+      "file": "test/s217c-employee-history-review.test.ts",
+      "cases": 28,
+      "skipped": 27,
+      "priorPassed": 1
+    },
+    {
+      "shard": 1,
+      "file": "test/s217b-r7-finance-access-cross-review.test.ts",
+      "cases": 8,
+      "skipped": 8,
+      "priorPassed": 0
+    },
+    {
+      "shard": 1,
+      "file": "test/s217c-fix-preview-review.test.ts",
+      "cases": 7,
+      "skipped": 7,
+      "priorPassed": 0
+    },
+    {
+      "shard": 1,
+      "file": "test/s217b-r7-access-review.test.ts",
+      "cases": 18,
+      "skipped": 17,
+      "priorPassed": 1
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r6-review.test.ts",
+      "cases": 65,
+      "skipped": 51,
+      "priorPassed": 14
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r4a-review.test.ts",
+      "cases": 37,
+      "skipped": 12,
+      "priorPassed": 25
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r2-review.test.ts",
+      "cases": 33,
+      "skipped": 3,
+      "priorPassed": 30
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r2.test.ts",
+      "cases": 33,
+      "skipped": 2,
+      "priorPassed": 31
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r1.test.ts",
+      "cases": 31,
+      "skipped": 1,
+      "priorPassed": 30
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r4a.test.ts",
+      "cases": 28,
+      "skipped": 2,
+      "priorPassed": 26
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r7-access-cross-review.test.ts",
+      "cases": 15,
+      "skipped": 15,
+      "priorPassed": 0
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r5.test.ts",
+      "cases": 18,
+      "skipped": 1,
+      "priorPassed": 17
+    },
+    {
+      "shard": 2,
+      "file": "test/s217c-sop-history-review.test.ts",
+      "cases": 16,
+      "skipped": 15,
+      "priorPassed": 1
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-r7-readers-review.test.ts",
+      "cases": 4,
+      "skipped": 4,
+      "priorPassed": 0
+    },
+    {
+      "shard": 2,
+      "file": "test/s548-qa-reports-review.test.ts",
+      "cases": 36,
+      "skipped": 36,
+      "priorPassed": 0
+    },
+    {
+      "shard": 2,
+      "file": "test/s217b-scheduling-review.test.ts",
+      "cases": 32,
+      "skipped": 32,
+      "priorPassed": 0
+    },
+    {
+      "shard": 3,
+      "file": "test/s217b-r4b-review.test.ts",
+      "cases": 29,
+      "skipped": 11,
+      "priorPassed": 18
+    },
+    {
+      "shard": 3,
+      "file": "test/s217b-r3.test.ts",
+      "cases": 41,
+      "skipped": 9,
+      "priorPassed": 32
+    },
+    {
+      "shard": 3,
+      "file": "test/g17-round0-review.test.ts",
+      "cases": 32,
+      "skipped": 4,
+      "priorPassed": 28
+    },
+    {
+      "shard": 3,
+      "file": "test/s217b-r5-review.test.ts",
+      "cases": 30,
+      "skipped": 20,
+      "priorPassed": 10
+    },
+    {
+      "shard": 3,
+      "file": "test/s217b-r1-review-recheck.test.ts",
+      "cases": 17,
+      "skipped": 10,
+      "priorPassed": 7
+    },
+    {
+      "shard": 3,
+      "file": "test/s217b-r7-payroll-cross-review.test.ts",
+      "cases": 25,
+      "skipped": 25,
+      "priorPassed": 0
+    },
+    {
+      "shard": 3,
+      "file": "test/s217c-presence-delivery-review.test.ts",
+      "cases": 15,
+      "skipped": 12,
+      "priorPassed": 3
+    },
+    {
+      "shard": 3,
+      "file": "test/s217c-camp-sms-review.test.ts",
+      "cases": 23,
+      "skipped": 23,
+      "priorPassed": 0
+    },
+    {
+      "shard": 3,
+      "file": "test/s217b-r7-finance-cross-review.test.ts",
+      "cases": 4,
+      "skipped": 2,
+      "priorPassed": 2
+    },
+    {
+      "shard": 3,
+      "file": "test/s217b-r7-finance.test.ts",
+      "cases": 7,
+      "skipped": 3,
+      "priorPassed": 4
+    }
+  ],
+  "expectedCases": 790,
+  "priorPassed": 391,
+  "priorAppSkipped": 399,
+  "completeThreeShardCensus": true,
+  "originalCensus": {
+    "path": "C:/w/admin638-full-20261026/app-runtime-gap-census.json",
+    "sha256": "460aa152d3c95ee9d5a9623b6877dbf0cd60ef3f5ad08d5c14d31e943d841de8",
+    "sourceManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263"
+  },
+  "actualCensuses": [
+    {
+      "shard": 1,
+      "path": "C:/w/admin638-full-20261026/api-shard1-app-skip-census.json",
+      "sha256": "ab49a34c65d7af9661843c8954356199008e5919ab71978489ca090f92660df4"
+    },
+    {
+      "shard": 2,
+      "path": "C:/w/admin638-full-20261026/api-shard2-app-skip-census.json",
+      "sha256": "eecf6410f65f32811193d99e5fa3aadd9f991ebcc240f4fcf790a9a6ee4b1ef0"
+    },
+    {
+      "shard": 3,
+      "path": "C:/w/admin638-full-20261026/api-shard3-app-skip-census.json",
+      "sha256": "b95ea263a82cc2b333eae28ee8b82f593e6b1399f4721b994b9dafa02d967a5e"
+    }
+  ],
+  "optionalStorageSkipped": 2,
+  "todo": 5,
+  "noDoubleCounting": true
+}

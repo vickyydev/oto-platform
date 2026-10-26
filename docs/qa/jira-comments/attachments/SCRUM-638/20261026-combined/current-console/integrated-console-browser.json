@@ -1,0 +1,26 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-console-browser",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm --filter @oto/console e2e",
+  "startedAt": "2026-10-26T08:58:06.918Z",
+  "completedAt": "2026-10-26T09:03:41.750Z",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "inputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": {
+    "ownNativeServer": true,
+    "port": 55752,
+    "databaseCountBefore": 0,
+    "databaseCountAfter": 0,
+    "credentialsPersisted": false,
+    "stopped": true,
+    "cleanupConfirmed": true
+  },
+  "syntheticCodeRedactions": 0,
+  "logSha256": "77862627c1656f26149e128bee7b4b385b1c6dec4348fe75a684cc11d96f6e1f",
+  "logBytes": 45768
+}

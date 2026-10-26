@@ -1,0 +1,95 @@
+{
+  "ticket": "SCRUM-638",
+  "actualLocal": true,
+  "staging": false,
+  "sourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceFiles": 3791,
+  "dependencyInputs": 28,
+  "workerSha256": "e5cc3fbd35de49f99a8847a135d5e8afe6b8ed3a678dce8a4e1f4a5ded59ef04",
+  "startedAt": "2026-10-26T08:12:23.736Z",
+  "commands": [
+    {
+      "label": "app-build",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "startedAt": "2026-10-26T08:12:24.729Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:12:39.711Z",
+      "logSha256": "0d1fad71cc98abae42a161ce9454dbfc20b0ecba779ba5499a60a46de9d3317c",
+      "logBytes": 33137,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "whole-ratchet",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "npm",
+        "run",
+        "check:ratchet"
+      ],
+      "startedAt": "2026-10-26T08:12:39.711Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 1,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": false,
+      "completedAt": "2026-10-26T08:13:24.596Z",
+      "logSha256": "98d121686c04d2ed6d0e8e1a21ae5b906e37ed3945f4ad8db9d4f2847de1e8b2",
+      "logBytes": 1277,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    }
+  ],
+  "passed": false,
+  "cleanupConfirmed": false,
+  "databasesBefore": null,
+  "databasesAfter": null,
+  "installedFresh": true,
+  "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "databaseStarted": false,
+  "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "observedMemory": {
+    "peakChildRssKiB": 63640,
+    "peakCgroupBytes": 2760339456
+  },
+  "completedAt": "2026-10-26T08:13:24.719Z"
+}

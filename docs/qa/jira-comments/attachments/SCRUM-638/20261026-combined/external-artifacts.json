@@ -1,0 +1,1476 @@
+{
+  "ticket": "SCRUM-638",
+  "metadataOnly": true,
+  "rawLogsTarsReportersAndHelpersRemainExternal": true,
+  "artifacts": [
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-api-shard1.display.log",
+      "relativePath": "ordinary-history/integrated-api-shard1.display.log",
+      "bytes": 135716,
+      "sha256": "5ca0f63861d580ad8cbc2367a34a24b83153db88f0faefced9ae256d94c0cffd",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-api-shard1.log",
+      "relativePath": "ordinary-history/integrated-api-shard1.log",
+      "bytes": 135716,
+      "sha256": "5ca0f63861d580ad8cbc2367a34a24b83153db88f0faefced9ae256d94c0cffd",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-api-shard2.display.log",
+      "relativePath": "ordinary-history/integrated-api-shard2.display.log",
+      "bytes": 138248,
+      "sha256": "bed910cd2c9b7945c7b4452ce773e633bda92eaf2470b98b8673239f2c1b0b1f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-api-shard2.log",
+      "relativePath": "ordinary-history/integrated-api-shard2.log",
+      "bytes": 138224,
+      "sha256": "439a55e461baa79e0cc46c3c9a43e41816ec3ff64d0aa10ece890e4a7030f8bc",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-api-shard3.display.log",
+      "relativePath": "ordinary-history/integrated-api-shard3.display.log",
+      "bytes": 148249,
+      "sha256": "f82c34720838065d62c17ce794baa10bd4bc4f031923435db386a232ec82564e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-api-shard3.log",
+      "relativePath": "ordinary-history/integrated-api-shard3.log",
+      "bytes": 148249,
+      "sha256": "f82c34720838065d62c17ce794baa10bd4bc4f031923435db386a232ec82564e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-console-browser.log",
+      "relativePath": "ordinary-history/integrated-console-browser.log",
+      "bytes": 48437,
+      "sha256": "9b3d2ffa1ae20e2d73490fa4bee2d7e6ed8e1d4cb4307a211591a3131222602f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-console-compiler.log",
+      "relativePath": "ordinary-history/integrated-console-compiler.log",
+      "bytes": 183,
+      "sha256": "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-console-units.log",
+      "relativePath": "ordinary-history/integrated-console-units.log",
+      "bytes": 2207,
+      "sha256": "b66555158ddda6a13e9d1201ef089afe3c55fce4328e6e568cfc3051edb43c91",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-other-packages.log",
+      "relativePath": "ordinary-history/integrated-other-packages.log",
+      "bytes": 50515,
+      "sha256": "f78f1469ebf07e2825b7877fba7a514a9dc5697dd797f2627b2f4e56e7a0847a",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-verify-schema.log",
+      "relativePath": "ordinary-history/integrated-verify-schema.log",
+      "bytes": 329,
+      "sha256": "c920af6d4a23158db366c24dcb33f5cb691949d813357bf457d7c4e2fcff7590",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\integrated-workspace.log",
+      "relativePath": "ordinary-history/integrated-workspace.log",
+      "bytes": 13066,
+      "sha256": "acaa41cd31c706d91712d5583cb6662d63478b916405c93ccf205e1dae6b9f3d",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-full-20261026\\overview-before-clipboard.spec.ts",
+      "relativePath": "ordinary-history/overview-before-clipboard.spec.ts",
+      "bytes": 23569,
+      "sha256": "3ba3997faa039a6a166c0ba40029e47cee4937b643b566431e518dce18d0f833",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-box.log",
+      "relativePath": "current-console/integrated-box.log",
+      "bytes": 176908,
+      "sha256": "cffaa61d03af4558468f49597f7630beacc56ff6f982c9347dac9f8f3346332b",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-ci-no-mock.log",
+      "relativePath": "current-console/integrated-ci-no-mock.log",
+      "bytes": 129,
+      "sha256": "4d61b9b3cb871f96a013ab5ba481df2d4fbebe1947a2a8c142ff64e2ae86f173",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-ci-telemetry.log",
+      "relativePath": "current-console/integrated-ci-telemetry.log",
+      "bytes": 72,
+      "sha256": "560c63eab003a54e749e348543867b549eb974136549fcdddfd659f2ba7ac79e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-console-browser.log",
+      "relativePath": "current-console/integrated-console-browser.log",
+      "bytes": 45768,
+      "sha256": "77862627c1656f26149e128bee7b4b385b1c6dec4348fe75a684cc11d96f6e1f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-console-compiler.log",
+      "relativePath": "current-console/integrated-console-compiler.log",
+      "bytes": 183,
+      "sha256": "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-console-units.log",
+      "relativePath": "current-console/integrated-console-units.log",
+      "bytes": 2120,
+      "sha256": "83d2d54d7d92325ffa391a8d06f1d22e6b00fef86ab59f2ae6db654366acc8d5",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-contracts.log",
+      "relativePath": "current-console/integrated-contracts.log",
+      "bytes": 591,
+      "sha256": "f8c9cec2459c9bfaaa2a755c59ca37b21ded60ab197536224fd15f980380f9f1",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-lint.log",
+      "relativePath": "current-console/integrated-lint.log",
+      "bytes": 272,
+      "sha256": "3db5a5e0d70c987b0349c04a018d17321227dea40af7b4280165f0a5b903b790",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-final-20261026\\integrated-pos.log",
+      "relativePath": "current-console/integrated-pos.log",
+      "bytes": 43305,
+      "sha256": "20d9b746d70cd800d96180203651bad6a79d5ff07f1aaa4726ca108a4afa55be",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-pos-aux-20261026\\inside.cjs",
+      "relativePath": "linux-pos/inside.cjs",
+      "bytes": 3191,
+      "sha256": "df68985d15aedf3dc347d82e3bafcd73c6d3adecbb267a44e49ecc4d486f3e6c",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-pos-aux-20261026\\offline-install.log",
+      "relativePath": "linux-pos/offline-install.log",
+      "bytes": 137,
+      "sha256": "ea33d294dc4b0e4ea2a07ffc1967613bbd42f482f9423412c973b90543a23b73",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-pos-aux-20261026\\pos-native.log",
+      "relativePath": "linux-pos/pos-native.log",
+      "bytes": 6526,
+      "sha256": "4dca06c565e3188cf264176658495ad41c876f47aea2a317c8f8f193114fc45b",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-pos-aux-20261026\\postcheck.log",
+      "relativePath": "linux-pos/postcheck.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-pos-aux-20261026\\precheck.log",
+      "relativePath": "linux-pos/precheck.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-pos-aux-20261026\\prepare.log",
+      "relativePath": "linux-pos/prepare.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-pos-aux-20261026\\source.tar",
+      "relativePath": "linux-pos/source.tar",
+      "bytes": 158778880,
+      "sha256": "0f07cd19c5cd12a576e94304992453b7d3295708f99ef718836d015594e7e225",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\capture-resource.mjs",
+      "relativePath": "app-compat/capture-resource.mjs",
+      "bytes": 1053,
+      "sha256": "7a871f3c381cc6877c908a511d3d0e3bf990a1992d5de647f40bd27641d9f48f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\checks-progress-v1.log",
+      "relativePath": "app-compat/checks-progress-v1.log",
+      "bytes": 379,
+      "sha256": "a8089462be91fbdf2f357515eb4255bb49275a01db80cc12f7a9f6b1500c9f55",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\checks-v1\\01-app-build.log",
+      "relativePath": "app-compat/checks-v1/01-app-build.log",
+      "bytes": 33137,
+      "sha256": "0d1fad71cc98abae42a161ce9454dbfc20b0ecba779ba5499a60a46de9d3317c",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\checks-v1\\02-whole-ratchet.log",
+      "relativePath": "app-compat/checks-v1/02-whole-ratchet.log",
+      "bytes": 1277,
+      "sha256": "98d121686c04d2ed6d0e8e1a21ae5b906e37ed3945f4ad8db9d4f2847de1e8b2",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\checks-v1\\checks-worker.mjs",
+      "relativePath": "app-compat/checks-v1/checks-worker.mjs",
+      "bytes": 9762,
+      "sha256": "e5cc3fbd35de49f99a8847a135d5e8afe6b8ed3a678dce8a4e1f4a5ded59ef04",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\checks-v1\\dependency-inputs.json",
+      "relativePath": "app-compat/checks-v1/dependency-inputs.json",
+      "bytes": 3773,
+      "sha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\checks-v1\\plan.json",
+      "relativePath": "app-compat/checks-v1/plan.json",
+      "bytes": 29949,
+      "sha256": "f22086f2ff59f4de1694f8ce2cd97373e832d2ac10ee5eb8739f2a50ad37b59e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\checks-v1\\source-manifest.json",
+      "relativePath": "app-compat/checks-v1/source-manifest.json",
+      "bytes": 568238,
+      "sha256": "3528bdcee6837289945552df270a0691397141d5c8f5e8fafd052803289722fb",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\checks-worker.mjs",
+      "relativePath": "app-compat/checks-worker.mjs",
+      "bytes": 9762,
+      "sha256": "e5cc3fbd35de49f99a8847a135d5e8afe6b8ed3a678dce8a4e1f4a5ded59ef04",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\cleanup-owned.mjs",
+      "relativePath": "app-compat/cleanup-owned.mjs",
+      "bytes": 5696,
+      "sha256": "111cbf21c10e26ad429c19d0eea4c6eca8e5bb933ec714c6debaf9096c61b861",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\complete-gap-plan.mjs",
+      "relativePath": "app-compat/complete-gap-plan.mjs",
+      "bytes": 2737,
+      "sha256": "94ea1c5785f308c5e229ac469dfa67d110477626a1f8fd0a03870e05f4c032c0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\controller-before-worker-rebind.mjs",
+      "relativePath": "app-compat/controller-before-worker-rebind.mjs",
+      "bytes": 11096,
+      "sha256": "e3e0707211df1869a161d0dac288a771f73a69180bd55eb1aabc40d54c8a13ee",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\controller.mjs",
+      "relativePath": "app-compat/controller.mjs",
+      "bytes": 11638,
+      "sha256": "b160821c44b84fb02eec9a77d08d1856cb8a96e8d6c557dc95d09c56c3e98e6e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\early-failures\\10-route-fences.check.log",
+      "relativePath": "app-compat/early-failures/10-route-fences.check.log",
+      "bytes": 958,
+      "sha256": "e00666aca466be5719fdce18c595753bd6ca2ef38af5fee28408ec86a8503bbf",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\final-review.mjs",
+      "relativePath": "app-compat/final-review.mjs",
+      "bytes": 5440,
+      "sha256": "9ca7b854747b58995386c618276341e29a95a31e40a371f4f2fdae84bdfe28f0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\finalize-tools-v4.mjs",
+      "relativePath": "app-compat/finalize-tools-v4.mjs",
+      "bytes": 5492,
+      "sha256": "36f8e5d2ee44aba1c23f8167b18a07ce59b538b28f27ec93cc8a9055520cddb5",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-progress-v1.log",
+      "relativePath": "app-compat/gap-progress-v1.log",
+      "bytes": 240,
+      "sha256": "72d8de6367803a9204ecc0079d417ae742e2641c1a78530466e6dbd9b98e9dca",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-v1\\01-all-app-availability-files.log",
+      "relativePath": "app-compat/gap-v1/01-all-app-availability-files.log",
+      "bytes": 118104,
+      "sha256": "7b02c7481322bc75c08555648f5f94247a2350451529a1b74c5a18af47b4ff7f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-v1\\dependency-inputs.json",
+      "relativePath": "app-compat/gap-v1/dependency-inputs.json",
+      "bytes": 3773,
+      "sha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-v1\\gap-plan.json",
+      "relativePath": "app-compat/gap-v1/gap-plan.json",
+      "bytes": 6789,
+      "sha256": "130d1de9f44a1dd74d2abfbe7ffb84682704541219399e4c34ed581672dc7557",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-v1\\gap-worker-v3.mjs",
+      "relativePath": "app-compat/gap-v1/gap-worker-v3.mjs",
+      "bytes": 11906,
+      "sha256": "816c3571d8aca4174db892387137e5078fe68cda82ea61438439059478e3a650",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-v1\\plan.json",
+      "relativePath": "app-compat/gap-v1/plan.json",
+      "bytes": 29949,
+      "sha256": "f22086f2ff59f4de1694f8ce2cd97373e832d2ac10ee5eb8739f2a50ad37b59e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-v1\\source-manifest.json",
+      "relativePath": "app-compat/gap-v1/source-manifest.json",
+      "bytes": 568238,
+      "sha256": "3528bdcee6837289945552df270a0691397141d5c8f5e8fafd052803289722fb",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-v1\\tool-binding.json",
+      "relativePath": "app-compat/gap-v1/tool-binding.json",
+      "bytes": 63643,
+      "sha256": "3b92e49de8d6371e0008fc9d9624bd61aebe3bca80f79972ac6964c6142ff3cc",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-worker-v2.mjs",
+      "relativePath": "app-compat/gap-worker-v2.mjs",
+      "bytes": 11902,
+      "sha256": "3610e59c03969fedc94f7b77a48bab0d16a1ce312c83f52b7a781f9194d50785",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-worker-v3.mjs",
+      "relativePath": "app-compat/gap-worker-v3.mjs",
+      "bytes": 11906,
+      "sha256": "816c3571d8aca4174db892387137e5078fe68cda82ea61438439059478e3a650",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\gap-worker.mjs",
+      "relativePath": "app-compat/gap-worker.mjs",
+      "bytes": 11701,
+      "sha256": "1ae3b9ab1b4f582ad02d62252140ff77eb1dae6f836c68cdab437d7d6ba6f7bc",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\harvest-ratchet-v3.mjs",
+      "relativePath": "app-compat/harvest-ratchet-v3.mjs",
+      "bytes": 1486,
+      "sha256": "7e95d7f8a7a96c69b02682d9b6aa66d3c88cc567ab0118914b032bcc1a7c6055",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-progress-v1.log",
+      "relativePath": "app-compat/install-progress-v1.log",
+      "bytes": 390,
+      "sha256": "22d8977a49e6ecb4ec1a95f92c5889c2651fa51b799779bdbf9dcc60ec08978d",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-v1\\api-closure.json",
+      "relativePath": "app-compat/install-v1/api-closure.json",
+      "bytes": 1447,
+      "sha256": "5ea11cb2a535ce0d6255cb4b1cd7817eb54f38b235646f30ecd39b5e32cc5801",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-v1\\api-closure.log",
+      "relativePath": "app-compat/install-v1/api-closure.log",
+      "bytes": 119,
+      "sha256": "67ce4ff8a3b400467f6d0601a26a788a14c037aaaaa0d847ef9f79d4d81b1f81",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-v1\\dependency-inputs.json",
+      "relativePath": "app-compat/install-v1/dependency-inputs.json",
+      "bytes": 3773,
+      "sha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-v1\\install-worker.mjs",
+      "relativePath": "app-compat/install-v1/install-worker.mjs",
+      "bytes": 5161,
+      "sha256": "5acb710a278e1074185a51251708380e5280cc7d80dd48d48034db5386c3afdd",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-v1\\npm-ci.json",
+      "relativePath": "app-compat/install-v1/npm-ci.json",
+      "bytes": 1373,
+      "sha256": "63b172ea87f76d2a8f191d2eccc646f2b538a5f6bdf1129895caedb9c2ea5c08",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-v1\\npm-ci.log",
+      "relativePath": "app-compat/install-v1/npm-ci.log",
+      "bytes": 104,
+      "sha256": "507992894b0693bfc7416284dee7f67fd9f1a5d7421a44b2f35c87f8cf078fe5",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-v1\\plan.json",
+      "relativePath": "app-compat/install-v1/plan.json",
+      "bytes": 29949,
+      "sha256": "f22086f2ff59f4de1694f8ce2cd97373e832d2ac10ee5eb8739f2a50ad37b59e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-v1\\source-manifest.json",
+      "relativePath": "app-compat/install-v1/source-manifest.json",
+      "bytes": 568238,
+      "sha256": "3528bdcee6837289945552df270a0691397141d5c8f5e8fafd052803289722fb",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\install-worker.mjs",
+      "relativePath": "app-compat/install-worker.mjs",
+      "bytes": 5161,
+      "sha256": "5acb710a278e1074185a51251708380e5280cc7d80dd48d48034db5386c3afdd",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\metadata-publication-list.mjs",
+      "relativePath": "app-compat/metadata-publication-list.mjs",
+      "bytes": 2891,
+      "sha256": "dd7ad2fd3fcba86c46b78a85d9111c9bf3408832ef3751bc3b80e132ae3f0e90",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\pre-cleanup-worker.mjs",
+      "relativePath": "app-compat/pre-cleanup-worker.mjs",
+      "bytes": 1144,
+      "sha256": "c1a33ad3c23bf357f095385c927a5e8181c595359390b71109c1d053bf5e1436",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-checks.mjs",
+      "relativePath": "app-compat/prepare-checks.mjs",
+      "bytes": 2431,
+      "sha256": "efa9c0f89387f7e34664d49bbcdb88c8c6368072a6eac73b2b3d7126e32423be",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-followups.mjs",
+      "relativePath": "app-compat/prepare-followups.mjs",
+      "bytes": 4255,
+      "sha256": "68ec3b2903811a6fee0241737671c732622a19375743f74a0ff8ddedec9d4376",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-gap-before-existing-todo-classification.mjs",
+      "relativePath": "app-compat/prepare-gap-before-existing-todo-classification.mjs",
+      "bytes": 6672,
+      "sha256": "eca77276df5308ab7f1d2833fb8a21539a8e17062c081afeb80bd9da50c69a3a",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-gap.mjs",
+      "relativePath": "app-compat/prepare-gap.mjs",
+      "bytes": 6726,
+      "sha256": "d78955a88f8152bdfc43e3ef41d5692607e3393fedf89f0fd24332cb64d79066",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-ratchet-v3.mjs",
+      "relativePath": "app-compat/prepare-ratchet-v3.mjs",
+      "bytes": 2044,
+      "sha256": "d0b8cefd3c7e3c7979b2534bc8d14d202803f508b774db07bcf56984cf519d8f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-ratchet.mjs",
+      "relativePath": "app-compat/prepare-ratchet.mjs",
+      "bytes": 3567,
+      "sha256": "a12fc7d064c1679f7c48d0ef3bb702ae175ddc96384910f9d7b960bf5072a1a9",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-remaining.mjs",
+      "relativePath": "app-compat/prepare-remaining.mjs",
+      "bytes": 4464,
+      "sha256": "8721a37cfbc60da33accd96c919f3f51f53b66c39cf7be260d1409fb5788e76f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-tool-v2.mjs",
+      "relativePath": "app-compat/prepare-tool-v2.mjs",
+      "bytes": 2260,
+      "sha256": "c7f3ae56fe803c416b4c1b8bb7e35d954bd8419cac3ef53e0e9c0d951b94ced6",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare-tool-v3.mjs",
+      "relativePath": "app-compat/prepare-tool-v3.mjs",
+      "bytes": 257,
+      "sha256": "b3701f5c81b17679c153d9cd3cd849a904b01a7e80ed6d319c4698e644efdac5",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\prepare.mjs",
+      "relativePath": "app-compat/prepare.mjs",
+      "bytes": 10849,
+      "sha256": "d65829e9cfc72ef8f4175647a9318c1e4491cdc7cb5203271ac2ccbab1be209d",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\process-memory-worker.mjs",
+      "relativePath": "app-compat/process-memory-worker.mjs",
+      "bytes": 727,
+      "sha256": "d7479c694403168c7df6fb0eb06191aad2b0b5bfa9993925e1474360cac06b8e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\provision-tools-v2.mjs",
+      "relativePath": "app-compat/provision-tools-v2.mjs",
+      "bytes": 8145,
+      "sha256": "cb6110d1c6c301a88f748dbc61d00f4dcfbd01ad1dded834b6c8a44f4ebb6a99",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\provision-tools-v3.mjs",
+      "relativePath": "app-compat/provision-tools-v3.mjs",
+      "bytes": 8145,
+      "sha256": "2c189d7bafa16f10f21c17babbb45b534c7f50bf17eee19334832972c5c8d15c",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\provision-tools.mjs",
+      "relativePath": "app-compat/provision-tools.mjs",
+      "bytes": 8097,
+      "sha256": "ab9d28d52920c94c7d9398d4ad46e1833031dde5a8e668eb1ab74305afa6a41a",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-progress-v2.log",
+      "relativePath": "app-compat/ratchet-progress-v2.log",
+      "bytes": 273,
+      "sha256": "f95dcf64893bc3b51754b85bcb5dd3b0bfe6d30757f0d1abd93a8e34196429bd",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v2\\01-whole-ratchet-2048.log",
+      "relativePath": "app-compat/ratchet-v2/01-whole-ratchet-2048.log",
+      "bytes": 1323,
+      "sha256": "fc0aac257c26fb78f63672d97484a99d7dd83c6b072154fff9bca8c2af706cc1",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v2\\dependency-inputs.json",
+      "relativePath": "app-compat/ratchet-v2/dependency-inputs.json",
+      "bytes": 3773,
+      "sha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v2\\plan.json",
+      "relativePath": "app-compat/ratchet-v2/plan.json",
+      "bytes": 29949,
+      "sha256": "f22086f2ff59f4de1694f8ce2cd97373e832d2ac10ee5eb8739f2a50ad37b59e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v2\\ratchet-worker-v2.mjs",
+      "relativePath": "app-compat/ratchet-v2/ratchet-worker-v2.mjs",
+      "bytes": 9915,
+      "sha256": "6720a78538d3ebe89f6bbe7d09bc818363e92c1511c20f19e37e94bba1b2826b",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v2\\source-manifest.json",
+      "relativePath": "app-compat/ratchet-v2/source-manifest.json",
+      "bytes": 568238,
+      "sha256": "3528bdcee6837289945552df270a0691397141d5c8f5e8fafd052803289722fb",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v3\\01-whole-ratchet-4096.log",
+      "relativePath": "app-compat/ratchet-v3/01-whole-ratchet-4096.log",
+      "bytes": 134461,
+      "sha256": "6aff0c71fabd4cec690e12d35434b1380c4c5b46db212070be7cfd45b7709db8",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v3\\dependency-inputs.json",
+      "relativePath": "app-compat/ratchet-v3/dependency-inputs.json",
+      "bytes": 3773,
+      "sha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v3\\plan.json",
+      "relativePath": "app-compat/ratchet-v3/plan.json",
+      "bytes": 29949,
+      "sha256": "f22086f2ff59f4de1694f8ce2cd97373e832d2ac10ee5eb8739f2a50ad37b59e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v3\\ratchet-worker-v3.mjs",
+      "relativePath": "app-compat/ratchet-v3/ratchet-worker-v3.mjs",
+      "bytes": 9915,
+      "sha256": "c773421ad300b3b214ddacc1d1e2b324e3f39a352d88f369347418a2396b4991",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-v3\\source-manifest.json",
+      "relativePath": "app-compat/ratchet-v3/source-manifest.json",
+      "bytes": 568238,
+      "sha256": "3528bdcee6837289945552df270a0691397141d5c8f5e8fafd052803289722fb",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-worker-v2.mjs",
+      "relativePath": "app-compat/ratchet-worker-v2.mjs",
+      "bytes": 9915,
+      "sha256": "6720a78538d3ebe89f6bbe7d09bc818363e92c1511c20f19e37e94bba1b2826b",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\ratchet-worker-v3.mjs",
+      "relativePath": "app-compat/ratchet-worker-v3.mjs",
+      "bytes": 9915,
+      "sha256": "c773421ad300b3b214ddacc1d1e2b324e3f39a352d88f369347418a2396b4991",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\README.md",
+      "relativePath": "app-compat/README.md",
+      "bytes": 6484,
+      "sha256": "744f32a3e86a07945fd04e2c49543f385d5114ddb169b41391d3a076e79c3bef",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\rebind-remaining-final-prerequisites.mjs",
+      "relativePath": "app-compat/rebind-remaining-final-prerequisites.mjs",
+      "bytes": 607,
+      "sha256": "d06a73abcf0100c6cf8b742abf0a099638165291b76f4f6400b7bd3a717b89ca",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-progress-v1.log",
+      "relativePath": "app-compat/remaining-progress-v1.log",
+      "bytes": 7869,
+      "sha256": "6d77b7045091efd43620163a1b0e34a00afdd31f027390fba0366b18a7604be0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\01-pg_dump-version.log",
+      "relativePath": "app-compat/remaining-v1/01-pg_dump-version.log",
+      "bytes": 53,
+      "sha256": "bc4dca300e6d5c60823206896c2f41c6cd04818290e5ff0c36b23508b4133d45",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\02-pg_restore-version.log",
+      "relativePath": "app-compat/remaining-v1/02-pg_restore-version.log",
+      "bytes": 56,
+      "sha256": "9bb5e97e84aaee99afea0cc5da004153a8a18460c16c1a8fa9e050a9d7235880",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\03-restore-replay.log",
+      "relativePath": "app-compat/remaining-v1/03-restore-replay.log",
+      "bytes": 29328,
+      "sha256": "a5a4679c77d6a4a55362ec0021e1f6f4d8df97241f6504cfaa5db557b6020eae",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\04-platform-migrate.log",
+      "relativePath": "app-compat/remaining-v1/04-platform-migrate.log",
+      "bytes": 632,
+      "sha256": "fe3185cb090418854628357553092756b4b2cd2032ca9e000727966d429bddb7",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\05-app-migrate.log",
+      "relativePath": "app-compat/remaining-v1/05-app-migrate.log",
+      "bytes": 1675,
+      "sha256": "6f7daf41b9540eb84bb3e6835c69f530ca3349c954cab4e9b4262ac5e3544c64",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\06-app-migrate-noop.log",
+      "relativePath": "app-compat/remaining-v1/06-app-migrate-noop.log",
+      "bytes": 127,
+      "sha256": "a227731b4a157fe1e4930b54d5b565b9487053c4d3781423d94e0f8bf657dad4",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\07-payroll-golden.check.log",
+      "relativePath": "app-compat/remaining-v1/07-payroll-golden.check.log",
+      "bytes": 1737,
+      "sha256": "f548810c06a2eee7a65046aabaa559477e9bcfa15247ac770def5b056c4c4b01",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\08-payroll-engine.check.log",
+      "relativePath": "app-compat/remaining-v1/08-payroll-engine.check.log",
+      "bytes": 11080,
+      "sha256": "54066e651560140a3b1152f2d0ed040e4af45c6b3e4c0ef6e33050dae075a1ed",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\09-platform-theme.check.log",
+      "relativePath": "app-compat/remaining-v1/09-platform-theme.check.log",
+      "bytes": 34,
+      "sha256": "784b2f7ad0cdd485407f7946e8395ebeef33d0810c45dd21306b5f9891fb1be2",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\10-route-fences.check.log",
+      "relativePath": "app-compat/remaining-v1/10-route-fences.check.log",
+      "bytes": 958,
+      "sha256": "e00666aca466be5719fdce18c595753bd6ca2ef38af5fee28408ec86a8503bbf",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\11-fix-module.check.log",
+      "relativePath": "app-compat/remaining-v1/11-fix-module.check.log",
+      "bytes": 972,
+      "sha256": "adac36180224cce809bad428175026d016cea348d50cd719d197c53d247b3879",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\12-night-jobs.check.log",
+      "relativePath": "app-compat/remaining-v1/12-night-jobs.check.log",
+      "bytes": 2031,
+      "sha256": "7a48532107cbc611bde674b654b5cb9b8c822536fed695914f7193998e558d38",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\13-suite-sign-in.check.log",
+      "relativePath": "app-compat/remaining-v1/13-suite-sign-in.check.log",
+      "bytes": 561,
+      "sha256": "1acfff96fe23cfaaee07e22112a939b19acfb35d9142ecd790c232aa9866decc",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\14-suite-sign-in-routes.check.log",
+      "relativePath": "app-compat/remaining-v1/14-suite-sign-in-routes.check.log",
+      "bytes": 1655,
+      "sha256": "e2f48cfb13352a67fd6f28e9875b83cf132a176eca4202fda053024672c626ff",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\15-handoff-target.check.log",
+      "relativePath": "app-compat/remaining-v1/15-handoff-target.check.log",
+      "bytes": 5090,
+      "sha256": "577ec0540fd2b3eea29bd2affb3793b73685abea9fd1d5d5e5cdab9c4ef7520f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\16-tenant-ownership.check.log",
+      "relativePath": "app-compat/remaining-v1/16-tenant-ownership.check.log",
+      "bytes": 3057,
+      "sha256": "945a8aeba45161cfa6d9fd83b8a859109e475a69b77a787855e33a5dc34cf7bd",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\17-attention.check.log",
+      "relativePath": "app-compat/remaining-v1/17-attention.check.log",
+      "bytes": 2129,
+      "sha256": "69e1dca813ca35e81b640e7c20ea0c02f2ee122e019dc0391994abbf47648205",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\18-attendance.check.log",
+      "relativePath": "app-compat/remaining-v1/18-attendance.check.log",
+      "bytes": 4936,
+      "sha256": "00f729afabc4b8a23ba3162b93b961411412995ed31b95d7f38137364a97f43f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\19-attendance-evidence.check.log",
+      "relativePath": "app-compat/remaining-v1/19-attendance-evidence.check.log",
+      "bytes": 126,
+      "sha256": "fd51d5829196d0704efa8087c93ef6eb83275217959e1d42bcf03cc2390cfe95",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\20-timekeeping-review.check.log",
+      "relativePath": "app-compat/remaining-v1/20-timekeeping-review.check.log",
+      "bytes": 149,
+      "sha256": "3b0301868a2145a2097e66848da8d8236c31a34127d0a6ae84edeab0a16196a7",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\21-documents.check.log",
+      "relativePath": "app-compat/remaining-v1/21-documents.check.log",
+      "bytes": 6937,
+      "sha256": "17de92e36b4b6076212b6e7ce8b075a818f6ad22ae53784629a8f48797b134a3",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\22-finance.check.log",
+      "relativePath": "app-compat/remaining-v1/22-finance.check.log",
+      "bytes": 3644,
+      "sha256": "782edc2fd95a08446ad489e47da27771f581620468ec6c97198f3c9035d9f0cc",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\23-finance-access.check.log",
+      "relativePath": "app-compat/remaining-v1/23-finance-access.check.log",
+      "bytes": 3331,
+      "sha256": "ad7c0f314970dbdd504cb4f851696fd642ec77f3b9d26024a5ecfd026e086d26",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\24-xero-access.check.log",
+      "relativePath": "app-compat/remaining-v1/24-xero-access.check.log",
+      "bytes": 1158,
+      "sha256": "3d5f6331b1b33754e41086fe7cd7f75fe2e3e4143c5ffa279bb1bef149a1734f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\25-administration.check.log",
+      "relativePath": "app-compat/remaining-v1/25-administration.check.log",
+      "bytes": 8247,
+      "sha256": "cac7f09aaa6595b0ad1f95ac869828416cfc9d05f04b250e69084b8bf5b15265",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\26-record-deletion.check.log",
+      "relativePath": "app-compat/remaining-v1/26-record-deletion.check.log",
+      "bytes": 2206,
+      "sha256": "e9517750af2d82a0e8e42f0447af96619e5d25665113c490edbdb38f2dedc117",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\27-camp-cancelled-days.check.log",
+      "relativePath": "app-compat/remaining-v1/27-camp-cancelled-days.check.log",
+      "bytes": 185,
+      "sha256": "5a31b0588b83f3c1dac98c0a02775b933d5e840f9a31e7cd4607b801a5cbeaf5",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\28-camp-creation-exclusions.check.log",
+      "relativePath": "app-compat/remaining-v1/28-camp-creation-exclusions.check.log",
+      "bytes": 222,
+      "sha256": "b18075ce434b2418a0e50b93da811f2859e77dc20797ffdcd3afe978cdf3ebf4",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\29-salary-visibility.check.log",
+      "relativePath": "app-compat/remaining-v1/29-salary-visibility.check.log",
+      "bytes": 42,
+      "sha256": "ced94b015572b06abc33ba1cd8f837c750f88879f12b51e0844de6b206d64808",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\30-checklist-media.check.log",
+      "relativePath": "app-compat/remaining-v1/30-checklist-media.check.log",
+      "bytes": 40,
+      "sha256": "a0368846a68441936fd88d8626ab129710d5c4c4542ede6a3a9d63cd60891cca",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\31-leave-types.check.log",
+      "relativePath": "app-compat/remaining-v1/31-leave-types.check.log",
+      "bytes": 2268,
+      "sha256": "d63ab7da9284ddf60e9dc09fd55db5c9c07b3d90bde0e6bfb7e2099f8da33b31",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\32-task-assignees-today.check.log",
+      "relativePath": "app-compat/remaining-v1/32-task-assignees-today.check.log",
+      "bytes": 923,
+      "sha256": "f7a6462c33414ad514b8fa5912f98ee943f47e5194623680c608270613d09a67",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\33-checklist-assignees-today.check.log",
+      "relativePath": "app-compat/remaining-v1/33-checklist-assignees-today.check.log",
+      "bytes": 1001,
+      "sha256": "bfc6033533d23dafd3a0a507a0b1f7a63c0c0fbf0a02deb07e604abf5ed43423",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\34-checkin-child-card.check.log",
+      "relativePath": "app-compat/remaining-v1/34-checkin-child-card.check.log",
+      "bytes": 414,
+      "sha256": "d3d98b4040abdeab27e48d84a1d857ac18a3e1e0df79d317fb9a87df85db9de8",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\35-leave-balance-reach.check.log",
+      "relativePath": "app-compat/remaining-v1/35-leave-balance-reach.check.log",
+      "bytes": 1511,
+      "sha256": "e5197015abddd03bf41513da6f73941448ccae7b6610e4c131324c37608c0f68",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\36-access-escalation.check.log",
+      "relativePath": "app-compat/remaining-v1/36-access-escalation.check.log",
+      "bytes": 1754,
+      "sha256": "b62bacd9e31ce928e3ee2e1245de2e702bad0744deadd39d9208e838a94cf67c",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\37-named-rights.check.log",
+      "relativePath": "app-compat/remaining-v1/37-named-rights.check.log",
+      "bytes": 1128,
+      "sha256": "300b78d6e03aefa8c9dc4b020c10d4a1e38f9f28f2e63036a511556ff53b874f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\38-kiosk-devices.check.log",
+      "relativePath": "app-compat/remaining-v1/38-kiosk-devices.check.log",
+      "bytes": 332,
+      "sha256": "0ef2a2b18edb803ac3264608b2d3d7c788eb4d9d5f2dd26adef516bda185cd64",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\39-birthdays-sidebar.check.log",
+      "relativePath": "app-compat/remaining-v1/39-birthdays-sidebar.check.log",
+      "bytes": 1510,
+      "sha256": "244ffd43434320b063cd5f03069a514eaebcda3fd5ed5e385db7f27dc1b8bd8f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\40-payroll-config.check.log",
+      "relativePath": "app-compat/remaining-v1/40-payroll-config.check.log",
+      "bytes": 40,
+      "sha256": "4c2603cf3cd478b7fa0ebf416a3376197c2221309659d860e9269db17ae18499",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\41-payroll-profile-editor.check.log",
+      "relativePath": "app-compat/remaining-v1/41-payroll-profile-editor.check.log",
+      "bytes": 47,
+      "sha256": "3f6250e2c1f4acbabbd263f32a7da008244782e7308df9294b815450f477b486",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\42-payroll-cutover.check.log",
+      "relativePath": "app-compat/remaining-v1/42-payroll-cutover.check.log",
+      "bytes": 842,
+      "sha256": "0c90c062a5cb91ee8f64e52110d2155910988f1ee4e6dd4676bfeb32caf1737d",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\43-payroll-golden.check.log",
+      "relativePath": "app-compat/remaining-v1/43-payroll-golden.check.log",
+      "bytes": 4684,
+      "sha256": "31c7ceaca32a4daf40ac11d5e682a1b30825bb061f0c943b77da5236c8f1bac2",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\44-payroll-feeds.check.log",
+      "relativePath": "app-compat/remaining-v1/44-payroll-feeds.check.log",
+      "bytes": 2681,
+      "sha256": "a32805eb50dcf4bad1797b4e8ce5af73a0725c04730b4e0cf008806693463ec7",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\45-payroll-lifecycle.check.log",
+      "relativePath": "app-compat/remaining-v1/45-payroll-lifecycle.check.log",
+      "bytes": 2782,
+      "sha256": "16732a80b779f964acf89c192d458bb43c249a868ad1de7d71310ea2ac631553",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\46-payroll-documents.check.log",
+      "relativePath": "app-compat/remaining-v1/46-payroll-documents.check.log",
+      "bytes": 1939,
+      "sha256": "dde8a9519e976e21df506c97cb94a60932ae9b5361941c115d8879d6a8205b10",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\47-payroll-outputs.check.log",
+      "relativePath": "app-compat/remaining-v1/47-payroll-outputs.check.log",
+      "bytes": 1653,
+      "sha256": "4fa56c621aca46e07bc185e10076e890bd67013b551f1d2a9807b5306fbdae17",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\48-feature-runtime.log",
+      "relativePath": "app-compat/remaining-v1/48-feature-runtime.log",
+      "bytes": 603,
+      "sha256": "94149ad1d483e3fbb96c60fe278874d526686a203c4df69340e99d7544f8dabd",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\49-qa-runtime.log",
+      "relativePath": "app-compat/remaining-v1/49-qa-runtime.log",
+      "bytes": 341,
+      "sha256": "dc54185f25a6ec4fc8163a21ba23ac796a52dc7e162d06c5530c5898dfaa19e4",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\50-scheduling-runtime.log",
+      "relativePath": "app-compat/remaining-v1/50-scheduling-runtime.log",
+      "bytes": 3389,
+      "sha256": "8b65157767d8ab39147646ad670dd7d8cf4dcb73b239566e99c1c45e29b15262",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\51-offboarding-census.log",
+      "relativePath": "app-compat/remaining-v1/51-offboarding-census.log",
+      "bytes": 260,
+      "sha256": "3214850774a39402993c091b4438a1be41fa1c1962fd2f64fafabac525ca0c75",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\52-tenant-readback.log",
+      "relativePath": "app-compat/remaining-v1/52-tenant-readback.log",
+      "bytes": 4115,
+      "sha256": "e5018203d33f3930c626f8ebc8101578389e173e4f4df7b1b541d08609c9d906",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\dependency-inputs.json",
+      "relativePath": "app-compat/remaining-v1/dependency-inputs.json",
+      "bytes": 3773,
+      "sha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\plan.json",
+      "relativePath": "app-compat/remaining-v1/plan.json",
+      "bytes": 29949,
+      "sha256": "f22086f2ff59f4de1694f8ce2cd97373e832d2ac10ee5eb8739f2a50ad37b59e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\remaining-worker-v1.mjs",
+      "relativePath": "app-compat/remaining-v1/remaining-worker-v1.mjs",
+      "bytes": 15241,
+      "sha256": "41cd884f72d1c3692ae7e67e73572494a298ad598924ba12380a13ee8459300f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\source-manifest.json",
+      "relativePath": "app-compat/remaining-v1/source-manifest.json",
+      "bytes": 568238,
+      "sha256": "3528bdcee6837289945552df270a0691397141d5c8f5e8fafd052803289722fb",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\tool-binding.json",
+      "relativePath": "app-compat/remaining-v1/tool-binding.json",
+      "bytes": 63643,
+      "sha256": "3b92e49de8d6371e0008fc9d9624bd61aebe3bca80f79972ac6964c6142ff3cc",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-v1\\worker.mjs",
+      "relativePath": "app-compat/remaining-v1/worker.mjs",
+      "bytes": 14453,
+      "sha256": "2e6d9e1254aefec05bdd4cbfefd4e15b887ac787237d043efa77b98242c99cb8",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-worker-v1-before-final-prerequisites.mjs",
+      "relativePath": "app-compat/remaining-worker-v1-before-final-prerequisites.mjs",
+      "bytes": 15241,
+      "sha256": "ec7354a66d632927f65bd230c43210c407b11709126a35e55c777d5d7c18ecf2",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\remaining-worker-v1.mjs",
+      "relativePath": "app-compat/remaining-worker-v1.mjs",
+      "bytes": 15241,
+      "sha256": "41cd884f72d1c3692ae7e67e73572494a298ad598924ba12380a13ee8459300f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\resource-now.mjs",
+      "relativePath": "app-compat/resource-now.mjs",
+      "bytes": 961,
+      "sha256": "c877b444308c4318dfb88abe939515d1cf96811eb880ebbadfcb48803b9c430f",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\review-ci-coverage.mjs",
+      "relativePath": "app-compat/review-ci-coverage.mjs",
+      "bytes": 3972,
+      "sha256": "2dbdd449edfe5dbc5392656ff13870b35d60513bebb042fb3ea256cfccead330",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\review-ratchet.mjs",
+      "relativePath": "app-compat/review-ratchet.mjs",
+      "bytes": 1988,
+      "sha256": "efe701885a208c8a0e3b7bc818caedce88b224a280515ade41e8462f4a5c184b",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\review-restore.mjs",
+      "relativePath": "app-compat/review-restore.mjs",
+      "bytes": 1903,
+      "sha256": "ee23fbe55b4eab1ee316608994a0915a568c33d707e4560c77946a0bff725f65",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\revise-resource-guard.mjs",
+      "relativePath": "app-compat/revise-resource-guard.mjs",
+      "bytes": 1591,
+      "sha256": "81e313e33aff8a3b3423ec22251c7d35544b8dd8ef9972beee62d769bc67d082",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-progress-v1.log",
+      "relativePath": "app-compat/route-followup-progress-v1.log",
+      "bytes": 660,
+      "sha256": "3b64876a77a4114952f8c9d32063fa97826ad74931b3d5e7786598c380d9cb18",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\01-platform-migrate.log",
+      "relativePath": "app-compat/route-followup-v1/01-platform-migrate.log",
+      "bytes": 740,
+      "sha256": "c4dbcdb79947aee527ddc9fc200cae54f58060e20c398a8f5e52f31fd3e163a9",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\02-app-migrate.log",
+      "relativePath": "app-compat/route-followup-v1/02-app-migrate.log",
+      "bytes": 1675,
+      "sha256": "6f7daf41b9540eb84bb3e6835c69f530ca3349c954cab4e9b4262ac5e3544c64",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\03-app-migrate-noop.log",
+      "relativePath": "app-compat/route-followup-v1/03-app-migrate-noop.log",
+      "bytes": 127,
+      "sha256": "a227731b4a157fe1e4930b54d5b565b9487053c4d3781423d94e0f8bf657dad4",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\04-route-fences-whole-file.log",
+      "relativePath": "app-compat/route-followup-v1/04-route-fences-whole-file.log",
+      "bytes": 3084,
+      "sha256": "d7f05272a6bd080dc9e22e46818e2a4e87fafe8f4549be09bd7b3bc8a454d121",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\dependency-inputs.json",
+      "relativePath": "app-compat/route-followup-v1/dependency-inputs.json",
+      "bytes": 3773,
+      "sha256": "e94de931c1b4cdfd13b6f619bb5fae1692afcfb5450c0b3673a16f8725cc35a0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\plan.json",
+      "relativePath": "app-compat/route-followup-v1/plan.json",
+      "bytes": 29949,
+      "sha256": "f22086f2ff59f4de1694f8ce2cd97373e832d2ac10ee5eb8739f2a50ad37b59e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\route-followup-worker-v1.mjs",
+      "relativePath": "app-compat/route-followup-v1/route-followup-worker-v1.mjs",
+      "bytes": 10333,
+      "sha256": "b02afc2255529ea63ea626f440a928bcf9299f26c905ac6659845078c79c9ab1",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\source-manifest.json",
+      "relativePath": "app-compat/route-followup-v1/source-manifest.json",
+      "bytes": 568238,
+      "sha256": "3528bdcee6837289945552df270a0691397141d5c8f5e8fafd052803289722fb",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-v1\\tool-binding.json",
+      "relativePath": "app-compat/route-followup-v1/tool-binding.json",
+      "bytes": 63643,
+      "sha256": "3b92e49de8d6371e0008fc9d9624bd61aebe3bca80f79972ac6964c6142ff3cc",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\route-followup-worker-v1.mjs",
+      "relativePath": "app-compat/route-followup-worker-v1.mjs",
+      "bytes": 10333,
+      "sha256": "b02afc2255529ea63ea626f440a928bcf9299f26c905ac6659845078c79c9ab1",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-checks.mjs",
+      "relativePath": "app-compat/run-checks.mjs",
+      "bytes": 3774,
+      "sha256": "49966bcc4e832563d22009e53550d022ce1be0e35c44a1c41dbc0abe8f4de669",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-gap-v1.mjs",
+      "relativePath": "app-compat/run-gap-v1.mjs",
+      "bytes": 4098,
+      "sha256": "a6666a1d90983c0195d1c06b628448aac3d43d450b2793811bbc9cb7af6873a3",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-install-before-3584-resource-amendment.mjs",
+      "relativePath": "app-compat/run-install-before-3584-resource-amendment.mjs",
+      "bytes": 3158,
+      "sha256": "df97af22338b8163354e11128dfc31d3c7739ec5ff656dcbcba09c5542b7ceb0",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-install.mjs",
+      "relativePath": "app-compat/run-install.mjs",
+      "bytes": 3143,
+      "sha256": "32f1095ad18626555dfa1edf9443527374d19393568ceb9e47d564d1a34f723c",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-ratchet-v2-before-linux-budget.mjs",
+      "relativePath": "app-compat/run-ratchet-v2-before-linux-budget.mjs",
+      "bytes": 3821,
+      "sha256": "9e96e499bdec867eec565aa30d849d8c30cb761e28ec619e3d31a0b59c04a949",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-ratchet-v2.mjs",
+      "relativePath": "app-compat/run-ratchet-v2.mjs",
+      "bytes": 3956,
+      "sha256": "4fba731261b14c12fbe7f926141c54bc6ac1afd5c6b494e0819491830440524e",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-ratchet-v3.mjs",
+      "relativePath": "app-compat/run-ratchet-v3.mjs",
+      "bytes": 4768,
+      "sha256": "14eb6ef4306db4614a688c2808e117740271f639d9f144d237368fdddff0b799",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-remaining-v1-before-final-prerequisites.mjs",
+      "relativePath": "app-compat/run-remaining-v1-before-final-prerequisites.mjs",
+      "bytes": 4072,
+      "sha256": "628b7ca482b86652afed85615cc7658329b06642d41a2ec763bed4cd5417dbfd",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-remaining-v1.mjs",
+      "relativePath": "app-compat/run-remaining-v1.mjs",
+      "bytes": 4074,
+      "sha256": "38c69e5c09f167f359d224913e82b0068f9dd52d1ffc284ac9a83d5e98fdd76d",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\run-route-followup-v1.mjs",
+      "relativePath": "app-compat/run-route-followup-v1.mjs",
+      "bytes": 4149,
+      "sha256": "1bbe681a3cd95e13108efbc81abb0bfab6f361d6989aa557d06b41ff234e0ee2",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\selected-source.tar",
+      "relativePath": "app-compat/selected-source.tar",
+      "bytes": 158491648,
+      "sha256": "dfd7e6ea958a471f71ecec3aab24940dc12c929c528c8f51fd9f6770959fa849",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\selected-source.z",
+      "relativePath": "app-compat/selected-source.z",
+      "bytes": 170180,
+      "sha256": "a92b7f317c5f6a33c3a6e2bccee5f6dcd3106b3eeb585b8e6c5867b69942ed1d",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\tool-provision-v3\\apt-ffmpeg.log",
+      "relativePath": "app-compat/tool-provision-v3/apt-ffmpeg.log",
+      "bytes": 71299,
+      "sha256": "77690471927627bcb826fb3f9927e36e939e82446767211ff810544a2c6d1286",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\tool-provision-v3\\apt-update.log",
+      "relativePath": "app-compat/tool-provision-v3/apt-update.log",
+      "bytes": 522,
+      "sha256": "db95242793d22e15f23ab5db06b28c0f0a99cb7e3fa50118f56b36c8c62941af",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\tool-repository-diagnostic.mjs",
+      "relativePath": "app-compat/tool-repository-diagnostic.mjs",
+      "bytes": 1756,
+      "sha256": "3d647ead3168228791451c8eade0eb73a35f0ab1743dce5dadee01937b26ffc6",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\validate-official-repositories-before-comment-fix.mjs",
+      "relativePath": "app-compat/validate-official-repositories-before-comment-fix.mjs",
+      "bytes": 853,
+      "sha256": "ade6ff174238932375f151a47d8c8a2e0486c6e9b75d3eed5b8019820dacabe7",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\validate-official-repositories.mjs",
+      "relativePath": "app-compat/validate-official-repositories.mjs",
+      "bytes": 950,
+      "sha256": "aff980c5803f81c4b0cd8fc5ec0143cea31d660a576c7e2b506b4ae208026d65",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\verify-current-scope-bridge.mjs",
+      "relativePath": "app-compat/verify-current-scope-bridge.mjs",
+      "bytes": 1837,
+      "sha256": "677ad4bad2a6007d473bbe0377d31702cd3c9f41dde6a89f7cf948a04326c23c",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\worker-before-prerequisite-continuation.mjs",
+      "relativePath": "app-compat/worker-before-prerequisite-continuation.mjs",
+      "bytes": 14081,
+      "sha256": "77dde0787a175ab571ea88034ee54eb1e35b102c62700cb2bd10b97a86fc5a67",
+      "published": false
+    },
+    {
+      "path": "C:\\w\\admin638-app-compat-20261026\\worker.mjs",
+      "relativePath": "app-compat/worker.mjs",
+      "bytes": 14453,
+      "sha256": "2e6d9e1254aefec05bdd4cbfefd4e15b887ac787237d043efa77b98242c99cb8",
+      "published": false
+    },
+    {
+      "path": "C:/w/admin638-final-20261026/pre-rebase-progress-status.patch",
+      "relativePath": "pre-rebase-progress-status.patch",
+      "bytes": 4197,
+      "sha256": "ea63e6c06441924977e26d46aece92a3c6090016fc63c1810bf71a0c061a96e6",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-final-run.mjs",
+      "relativePath": "admin638-final-run.mjs",
+      "bytes": 8788,
+      "sha256": "b9bcb093a7dc98595421744ca4667c0e756cff875f00689f0907b4462ec3d9f0",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-full-run.mjs",
+      "relativePath": "admin638-full-run.mjs",
+      "bytes": 7889,
+      "sha256": "0197f879090393eaa156eff184338f8f3b8f94488056da660b2ea8c71c567086",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-pos-aux.mjs",
+      "relativePath": "admin638-pos-aux.mjs",
+      "bytes": 10237,
+      "sha256": "b6aaa972378cb2b5ed57e30efbf8f120da87d3c39a6dab2b915079224b364f43",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-pos-aux-cleanup.mjs",
+      "relativePath": "admin638-pos-aux-cleanup.mjs",
+      "bytes": 2670,
+      "sha256": "67bcf8c9a3e21e844e05aa245a554b3ff439b59db5c4d0c4b86627f4143ebde1",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-pos-aux-review.mjs",
+      "relativePath": "admin638-pos-aux-review.mjs",
+      "bytes": 2831,
+      "sha256": "acf377243abb238cf96404869e074cf6e7ec35d2e5930a9aa689668f1e9c740b",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-bridge-docs-rebase.mjs",
+      "relativePath": "admin638-bridge-docs-rebase.mjs",
+      "bytes": 2891,
+      "sha256": "f233c9d58df64b5b8257ffaec578ec007e608e31b5a2fab2c4f4ce917433730e",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-publish-combined-checkpoint.mjs",
+      "relativePath": "admin638-publish-combined-checkpoint.mjs",
+      "bytes": 12433,
+      "sha256": "b59160bcd01cac8301afae6eda74546d4a2683883516bbaf2fd449e56c95ad1d",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-finish-checkpoint-docs.mjs",
+      "relativePath": "admin638-finish-checkpoint-docs.mjs",
+      "bytes": 6689,
+      "sha256": "75d8cbaefa7540eb6ca51bd40860355d4704cf4a0ff3a23e2eda7812a64215d2",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-overview-native-clipboard-unapplied.patch",
+      "relativePath": "admin638-overview-native-clipboard-unapplied.patch",
+      "bytes": 2844,
+      "sha256": "e2f5f3d392f9c4f73dd4869a692436c755bbda4d6a846d899e073966afd0cd99",
+      "published": false,
+      "observedAfterRuns": true
+    },
+    {
+      "path": "C:/w/admin638-app-compat-20261026/gap-preparation-failed-1.json",
+      "relativePath": "raw-app-metadata/gap-preparation-failed-1.json",
+      "bytes": 397,
+      "sha256": "96b873e81aa87577232543f1c0ce3e60dab7bbdcf2f34b6629041463eadc05bc",
+      "published": false,
+      "normalizedDisplayPublished": "app-compat/gap-preparation-failed-1.json"
+    },
+    {
+      "path": "C:/w/admin638-app-compat-20261026/install-preflight-failed-1.json",
+      "relativePath": "raw-app-metadata/install-preflight-failed-1.json",
+      "bytes": 403,
+      "sha256": "00df4fac59e08ef2ea744e6b465ca49445a00ba62d3eb3a4a7003ca59675c71a",
+      "published": false,
+      "normalizedDisplayPublished": "app-compat/install-preflight-failed-1.json"
+    },
+    {
+      "path": "C:/w/admin638-app-compat-20261026/worker-rebind-1.json",
+      "relativePath": "raw-app-metadata/worker-rebind-1.json",
+      "bytes": 559,
+      "sha256": "45eaf4d7993340452ca92c88bf5ffc7e40f0da14e859e20b817195abfa18c4f8",
+      "published": false,
+      "normalizedDisplayPublished": "app-compat/worker-rebind-1.json"
+    }
+  ]
+}

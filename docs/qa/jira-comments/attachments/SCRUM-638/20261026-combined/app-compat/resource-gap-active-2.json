@@ -1,0 +1,77 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-26T08:50:21.081Z",
+  "stage": "gap-active-2",
+  "memory": {
+    "hostFreeMiB": 1448,
+    "metrics": {
+      "currentBytes": 1369751552,
+      "anonBytes": 383926272,
+      "fileBytes": 607219712,
+      "inactiveFileBytes": 62828544,
+      "linuxMemAvailableKiB": 10066676
+    }
+  },
+  "processes": {
+    "at": "2026-10-26T08:50:21.488Z",
+    "events": [
+      [
+        "low",
+        "0"
+      ],
+      [
+        "high",
+        "0"
+      ],
+      [
+        "max",
+        "3053"
+      ],
+      [
+        "oom",
+        "0"
+      ],
+      [
+        "oom_kill",
+        "0"
+      ],
+      [
+        "oom_group_kill",
+        "0"
+      ]
+    ],
+    "processes": [
+      {
+        "pid": 5842,
+        "name": "node (vitest)",
+        "state": "S",
+        "parentId": 5830,
+        "rssKiB": 239060
+      },
+      {
+        "pid": 5813,
+        "name": "node",
+        "state": "S",
+        "parentId": 0,
+        "rssKiB": 138132
+      },
+      {
+        "pid": 5830,
+        "name": "node",
+        "state": "S",
+        "parentId": 5813,
+        "rssKiB": 94132
+      },
+      {
+        "pid": 11258,
+        "name": "node (vitest 1)",
+        "state": "S",
+        "parentId": 5842,
+        "rssKiB": 88296
+      }
+    ],
+    "totalRssKiB": 628512
+  },
+  "readProcessArguments": false,
+  "readEnvironmentValues": false
+}

@@ -1,0 +1,11 @@
+{
+  "label": "apt-update",
+  "exitCode": 0,
+  "signal": null,
+  "spawnFailed": false,
+  "timedOut": false,
+  "limited": false,
+  "completedAt": "2026-10-26T08:27:32.397Z",
+  "logSha256": "db95242793d22e15f23ab5db06b28c0f0a99cb7e3fa50118f56b36c8c62941af",
+  "passed": true
+}

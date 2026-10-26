@@ -1,0 +1,958 @@
+{
+  "ticket": "SCRUM-638",
+  "status": "preparation-only-awaiting-root-go",
+  "runtimeStarted": false,
+  "installedFresh": false,
+  "preparedAt": "2026-10-26T07:33:53.711Z",
+  "sourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "sourceRoot": "C:/w/admin-assistant-settings",
+  "intendedWorktree": "C:/w/admin638-app-compat",
+  "intendedBranch": "lane/admin638-app-compat",
+  "sourceFiles": 3791,
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "dependencyInputs": 28,
+  "dependencyInputsSha256": "f9cdec0d1c9af87316b7572b06f4d51dd92403ff6abb3e3e223da3b02c47de95",
+  "otoSourceFiles": 1092,
+  "otoSourceManifestSha256": "55c12d936b441e1e0b9bc237349a084070077d01529d845b0c29fd5f0dec66f6",
+  "unchangedAppAndCiComparedWith": "0aff040be10fb1622bfcddfeb0343ff8846f541e",
+  "platformDelta": [
+    "packages/db/migrations/0087_assistant_settings.sql",
+    "packages/db/migrations/meta/0087_snapshot.json",
+    "packages/db/migrations/meta/_journal.json",
+    "packages/db/src/schema/platform.ts"
+  ],
+  "workflow": {
+    "path": ".github/workflows/ci.yml",
+    "sha256": "4de5b7227af662b0653728a097c18da13804a94797a9f8c379a767c5f160b1f4"
+  },
+  "ciRunner": "ubuntu-24.04",
+  "ciRunCommands": [
+    {
+      "name": "Install the OTO App",
+      "command": "npm ci --ignore-scripts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "Build the OTO App",
+      "command": "npm run build",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The OTO App's inherited typecheck ceiling",
+      "command": "npm run check:ratchet",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The payroll golden example (engine leg)",
+      "command": "npx tsx tests/payroll-golden.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The payroll engine checks",
+      "command": "npx tsx tests/payroll-engine.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The suite theme checks",
+      "command": "npx tsx tests/platform-theme.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "Install PostgreSQL 16 and video evidence tools",
+      "command": "sudo apt-get update\nsudo apt-get install --yes postgresql-client-16 ffmpeg",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "Rehearse the app restore and replay",
+      "command": "node script/restore-rehearsal.mjs > restore-rehearsal-counts.json",
+      "cwd": "apps/oto-app",
+      "environmentNames": [
+        "REHEARSAL_DATABASE_URL",
+        "REHEARSAL_PG_BIN"
+      ]
+    },
+    {
+      "name": "The otoapp schema, as the platform makes it",
+      "command": "node -e \"const pg=require('pg');const c=new pg.Client({connectionString:process.env.DATABASE_URL});c.connect().then(()=>c.query('create schema if not exists otoapp')).then(()=>c.end())\"",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's migrations apply cleanly from empty (twice)",
+      "command": "npm run db:migrate\nnpm run db:migrate",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's route checks",
+      "command": "npx tsx tests/route-fences.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's fix module checks",
+      "command": "npx tsx tests/fix-module.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's night-job checks",
+      "command": "npx tsx tests/night-jobs.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's suite sign-in checks",
+      "command": "npx tsx tests/suite-sign-in.check.ts\nnpx tsx tests/suite-sign-in-routes.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's hand-off target checks",
+      "command": "npx tsx tests/handoff-target.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's tenant ownership checks",
+      "command": "npx tsx tests/tenant-ownership.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's Attention checks",
+      "command": "npx tsx tests/attention.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's attendance checks",
+      "command": "npx tsx tests/attendance.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's attendance evidence parser checks",
+      "command": "npx tsx tests/attendance-evidence.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's attendance reviewer transaction checks",
+      "command": "npx tsx tests/timekeeping-review.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's document checks",
+      "command": "npx tsx tests/documents.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": [
+        "PUPPETEER_EXECUTABLE_PATH"
+      ]
+    },
+    {
+      "name": "The app's finance import checks",
+      "command": "npx tsx tests/finance.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's finance ownership checks",
+      "command": "npx tsx tests/finance-access.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's Xero connection ownership checks",
+      "command": "npx tsx tests/xero-access.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's administration and payroll checks",
+      "command": "npx tsx tests/administration.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": [
+        "PUPPETEER_EXECUTABLE_PATH"
+      ]
+    },
+    {
+      "name": "The app's record deletion checks",
+      "command": "npx tsx tests/record-deletion.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's camp cancelled-day checks",
+      "command": "npx tsx tests/camp-cancelled-days.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's camp creation day-exclusion checks",
+      "command": "npx tsx tests/camp-creation-exclusions.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's salary visibility checks",
+      "command": "npx tsx tests/salary-visibility.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's checklist media and history checks",
+      "command": "npx tsx tests/checklist-media.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's leave type checks",
+      "command": "npx tsx tests/leave-types.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's task assignees in Today checks",
+      "command": "npx tsx tests/task-assignees-today.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's checklist assignees in Today checks",
+      "command": "npx tsx tests/checklist-assignees-today.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's check-in child card checks",
+      "command": "npx tsx tests/checkin-child-card.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": [
+        "TSX_TSCONFIG_PATH"
+      ]
+    },
+    {
+      "name": "The app's leave balance reach checks",
+      "command": "npx tsx tests/leave-balance-reach.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's access escalation checks",
+      "command": "npx tsx tests/access-escalation.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's named rights checks",
+      "command": "npx tsx tests/named-rights.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's kiosk device checks",
+      "command": "npx tsx tests/kiosk-devices.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's birthdays and sidebar checks",
+      "command": "npx tsx tests/birthdays-sidebar.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's payroll configuration checks",
+      "command": "npx tsx tests/payroll-config.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's payroll profile editor check",
+      "command": "npx tsx tests/payroll-profile-editor.check.tsx",
+      "cwd": "apps/oto-app",
+      "environmentNames": [
+        "TSX_TSCONFIG_PATH"
+      ]
+    },
+    {
+      "name": "The app's payroll cutover check",
+      "command": "npx tsx tests/payroll-cutover.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The payroll golden example (service and HTTP leg)",
+      "command": "npx tsx tests/payroll-golden.check.ts --http",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's payroll feeds checks",
+      "command": "npx tsx tests/payroll-feeds.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's payroll lifecycle checks",
+      "command": "npx tsx tests/payroll-lifecycle.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's payroll statutory documents checks",
+      "command": "npx tsx tests/payroll-documents.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's payroll outputs checks",
+      "command": "npx tsx tests/payroll-outputs.check.ts",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "Install the focused feature review dependencies",
+      "command": "pnpm install --frozen-lockfile --filter '@oto/api...'",
+      "cwd": ".",
+      "environmentNames": []
+    },
+    {
+      "name": "The app's feature runtime reviews",
+      "command": "node -e \"require('node:fs').accessSync('apps/oto-app/node_modules/tsx/dist/cli.mjs')\"\nmkdir -p test-results\npnpm --filter @oto/api exec vitest run --pool=forks test/s217c-fix-preview-review.test.ts test/s217c-sop-history-review.test.ts test/s217c-presence-delivery-review.test.ts test/s217c-camp-sms-review.test.ts test/s217c-employee-history-review.test.ts --reporter=default --reporter=json --outputFile.json=../../test-results/feature-runtime.json\nnode -e \"const r=JSON.parse(require('node:fs').readFileSync('test-results/feature-runtime.json','utf8'));if(r.numPendingTests!==0||r.numTotalTests===0||r.testResults.length!==5)throw new Error('All five feature runtime suites must run without skipped tests')\"",
+      "cwd": ".",
+      "environmentNames": [
+        "TEST_DATABASE_URL"
+      ]
+    },
+    {
+      "name": "The app's issue reporting review",
+      "command": "pnpm --filter @oto/api exec vitest run --pool=forks test/s548-qa-reports-review.test.ts --reporter=default --reporter=json --outputFile.json=../../test-results/qa-runtime.json\nnode -e \"const r=JSON.parse(require('node:fs').readFileSync('test-results/qa-runtime.json','utf8'));if(r.numPendingTests!==0||r.numTotalTests===0||r.testResults.length!==1)throw new Error('The QA reporting review must run without skipped tests')\"",
+      "cwd": ".",
+      "environmentNames": [
+        "TEST_DATABASE_URL"
+      ]
+    },
+    {
+      "name": "The app's scheduling park-group review",
+      "command": "node -e \"require('node:fs').accessSync('apps/oto-app/node_modules/tsx/dist/cli.mjs')\"\npnpm --filter @oto/api exec vitest run --pool=forks test/s217b-scheduling-review.test.ts --reporter=default --reporter=json --outputFile.json=../../test-results/scheduling-runtime.json\nnode -e \"const r=JSON.parse(require('node:fs').readFileSync('test-results/scheduling-runtime.json','utf8'));if(r.numPendingTests!==0||r.numTotalTests===0||r.testResults.length!==1)throw new Error('The scheduling runtime suite must run without skipped tests')\"",
+      "cwd": ".",
+      "environmentNames": [
+        "TEST_DATABASE_URL"
+      ]
+    },
+    {
+      "name": "The offboarding census",
+      "command": "npm run offboarding:census",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    },
+    {
+      "name": "The tenant ownership read-back",
+      "command": "npm run tenant:readback",
+      "cwd": "apps/oto-app",
+      "environmentNames": []
+    }
+  ],
+  "nativePrograms": [
+    {
+      "path": "apps/oto-app/tests/payroll-golden.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-golden.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-engine.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-engine.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/platform-theme.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/platform-theme.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/route-fences.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/route-fences.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/fix-module.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/fix-module.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/night-jobs.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/night-jobs.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/suite-sign-in.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/suite-sign-in.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/suite-sign-in-routes.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/suite-sign-in-routes.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/handoff-target.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/handoff-target.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/tenant-ownership.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/tenant-ownership.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/attention.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/attention.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/attendance.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/attendance.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/attendance-evidence.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/attendance-evidence.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/timekeeping-review.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/timekeeping-review.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/documents.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/documents.check.ts"
+      ],
+      "environmentNames": [
+        "PUPPETEER_EXECUTABLE_PATH"
+      ]
+    },
+    {
+      "path": "apps/oto-app/tests/finance.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/finance.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/finance-access.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/finance-access.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/xero-access.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/xero-access.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/administration.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/administration.check.ts"
+      ],
+      "environmentNames": [
+        "PUPPETEER_EXECUTABLE_PATH"
+      ]
+    },
+    {
+      "path": "apps/oto-app/tests/record-deletion.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/record-deletion.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/camp-cancelled-days.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/camp-cancelled-days.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/camp-creation-exclusions.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/camp-creation-exclusions.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/salary-visibility.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/salary-visibility.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/checklist-media.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/checklist-media.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/leave-types.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/leave-types.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/task-assignees-today.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/task-assignees-today.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/checklist-assignees-today.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/checklist-assignees-today.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/checkin-child-card.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/checkin-child-card.check.ts"
+      ],
+      "environmentNames": [
+        "TSX_TSCONFIG_PATH"
+      ]
+    },
+    {
+      "path": "apps/oto-app/tests/leave-balance-reach.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/leave-balance-reach.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/access-escalation.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/access-escalation.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/named-rights.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/named-rights.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/kiosk-devices.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/kiosk-devices.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/birthdays-sidebar.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/birthdays-sidebar.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-config.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-config.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-profile-editor.check.tsx",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-profile-editor.check.tsx"
+      ],
+      "environmentNames": [
+        "TSX_TSCONFIG_PATH"
+      ]
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-cutover.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-cutover.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-golden.check.ts",
+      "args": [
+        "--http"
+      ],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-golden.check.ts",
+        "--http"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-feeds.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-feeds.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-lifecycle.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-lifecycle.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-documents.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-documents.check.ts"
+      ],
+      "environmentNames": []
+    },
+    {
+      "path": "apps/oto-app/tests/payroll-outputs.check.ts",
+      "args": [],
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-outputs.check.ts"
+      ],
+      "environmentNames": []
+    }
+  ],
+  "nestedCoverage": {
+    "requiredEnvironment": {
+      "CI": "true",
+      "OTOAPP_JOBS": "platform",
+      "OBJECT_STORAGE": "local",
+      "USE_AWS_REKOGNITION": "false"
+    },
+    "platformRoleEntry": "tests/handoff-target.check.ts -> tests/platform-role-suite.check.ts",
+    "platformRoleChildPrograms": 9,
+    "suiteSignInEntry": "tests/suite-sign-in-routes.check.ts -> tests/s633-suite.check.ts + tests/s634-suite.check.ts",
+    "evidence": [
+      "Capture child program counts/labels and original exit statuses; do not claim imported-only files executed."
+    ]
+  },
+  "compilerBaseline": {
+    "path": "apps/oto-app/script/typecheck-baseline.json",
+    "sha256": "946a7a21ff4497348a063069049cafac2da45039c1eb0e2ab86938044382d826",
+    "errors": 418,
+    "files": 54,
+    "fileCodeBuckets": 109,
+    "wholeOutputReviewRequired": true
+  },
+  "pg16Tools": {
+    "directory": "C:/w/admin631-oto-pg-tools",
+    "receiptSha256": "62c2ea6f5bd272ddc04ff7ad42fd4c6ecd7dedf7b50ab7858605f3f3c0b922b3",
+    "files": [
+      {
+        "path": "bin/pg_dump.real",
+        "sha256": "542afdf9f965640469735efad980e474607545614c6753fe0fbb8efa5e4bb8b6"
+      },
+      {
+        "path": "bin/pg_restore.real",
+        "sha256": "da4736c52bb2a5dcc60591749fba46eee8dd7c1dc3ee2cd503b201b3f01be744"
+      },
+      {
+        "path": "lib/libpq.so.5",
+        "sha256": "9cce9bfae9405a71e0d642457d9d8748093cea9fdc0f785b5d2ed9575aec168d"
+      },
+      {
+        "path": "lib/libzstd.so.1",
+        "sha256": "27f07c9a49c2c956bcfb64cd4712976586a66facbf15fc7f09bc37413b5f2b21"
+      },
+      {
+        "path": "lib/liblz4.so.1",
+        "sha256": "67bf8b84af77e962e09be661944f7c61393c4806746734e36db9fbdaebc1de36"
+      },
+      {
+        "path": "lib/libcrypto.so.3",
+        "sha256": "8bb5f3fdffe280d4453eb79a4663c2c47af70b7c247fe2e94e2da703cee1fd3d"
+      },
+      {
+        "path": "lib/libz.so.1",
+        "sha256": "85590dd58edf5445e18bc7193e5ebc01ac5841f1ae187e97705a662e90c6421e"
+      },
+      {
+        "path": "lib/libc.so.6",
+        "sha256": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92"
+      },
+      {
+        "path": "lib/libssl.so.3",
+        "sha256": "4b34859318555bf96d518131bed5fc4d5e35fefa4e1729f49eaa26bd05263850"
+      },
+      {
+        "path": "lib/libgssapi_krb5.so.2",
+        "sha256": "c290f761873ebeac539911010526e1c5db86218bfcb29672760da46841741de0"
+      },
+      {
+        "path": "lib/libm.so.6",
+        "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+      },
+      {
+        "path": "lib/libldap.so.2",
+        "sha256": "e8f34e65087f24f296fa7a65a8c65383f4a7e2b532c46e40463d4e59a206c20a"
+      },
+      {
+        "path": "lib/libxxhash.so.0",
+        "sha256": "7dd49b353facbee50c371d0559ce29db5afee5ac33249ca5c7068420fb642762"
+      },
+      {
+        "path": "lib/libkrb5.so.3",
+        "sha256": "c4ab64e6bc2874a83e649e4439be752465da027a0041e2bb5343f81c80f0882d"
+      },
+      {
+        "path": "lib/libk5crypto.so.3",
+        "sha256": "c4c3221d0350f882cee0430b58d5fb289a5776c684d3156964864c8a9719dff1"
+      },
+      {
+        "path": "lib/libcom_err.so.2",
+        "sha256": "dc4828400674492839b630c001db424cd38e5cecfcf46dbf705a637647e04bea"
+      },
+      {
+        "path": "lib/libkrb5support.so.0",
+        "sha256": "f559f051ee5d39f151a57d79f2cde475c484030098b0c73f9f7035b421b187c4"
+      },
+      {
+        "path": "lib/liblber.so.2",
+        "sha256": "ca319704dd4f58b5b3fc8510738850f03f18940544ba04bebf2fa8a23a798346"
+      },
+      {
+        "path": "lib/libsasl2.so.2",
+        "sha256": "3f93968591811eb3972c3467c69c2968dd9cb2b51f7b7bb48de22ba8e17d13fd"
+      },
+      {
+        "path": "lib/libkeyutils.so.1",
+        "sha256": "e5d5a7450d08eff7d4bbcaac75ef2b94d3447c81a1b2ddf3ab85d2de4709a9a8"
+      },
+      {
+        "path": "lib/libresolv.so.2",
+        "sha256": "d41dd4adacf5a35df426461dd8a92d7bdd5ba29bb61a1c3531bec0ada386f8dd"
+      },
+      {
+        "path": "lib/ld-linux-x86-64.so.2",
+        "sha256": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307"
+      },
+      {
+        "path": "bin/pg_dump",
+        "sha256": "00eedd1976195ff8726021a4e28f2bdeb96f1796ccd108939db91734dd1b16da"
+      },
+      {
+        "path": "bin/pg_restore",
+        "sha256": "c27e41b4656585305eaf1c7bf96d70d659e53ce72ee2d8bdde560c40e5e7be93"
+      }
+    ],
+    "previouslyRecordedVersions": {
+      "pg_dump": "pg_dump (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2)",
+      "pg_restore": "pg_restore (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2)"
+    },
+    "actualRuntimeVersionChecksRequired": true
+  },
+  "executionPrerequisites": {
+    "rootGoRequired": true,
+    "reviewedRuntimeBindingRequired": true,
+    "install": "npm ci --ignore-scripts",
+    "installMustBeObservedFresh": true,
+    "imageDigest": null,
+    "postgresImageDigest": null,
+    "ownWorkerContainerId": null,
+    "ownPostgresContainerId": null,
+    "internalNetworkOnly": true,
+    "hostPorts": false,
+    "hostMounts": false,
+    "existingTenContainersUntouched": true,
+    "recommendedWorkerMemoryMiB": 3072,
+    "recommendedPostgresMemoryMiB": 512,
+    "concurrency": 1,
+    "minimumFreeHostMemoryMiB": 4096,
+    "cacheMiss": "STOP; no implicit image pulls, package downloads or apt commands"
+  },
+  "acceptance": [
+    "Source/dependency/installed-lock fingerprints match before and after each command.",
+    "Fresh npm ci receipt binds start/end/status/log and generated hidden lock; no inherited install claim.",
+    "Full own app build and whole ratchet output reviewed per file/code; native compiler failures remain failures.",
+    "Restore/replay actually runs current platform migrations including core.setting and complete app chain twice.",
+    "Native CI programs run serially against an own fresh integrated-platform/app database; retain standalone nested-suite proofs.",
+    "All seven focused feature API files from CI run with installed OTO deps; no pending/empty suite substituted.",
+    "Offboarding census/tenant readback run last against that actual populated scratch database.",
+    "All scratch databases disappear, all test children stop, source remains stable; root removes only newly owned exact resources."
+  ],
+  "limitations": [
+    "Preparation metadata is not installation, execution or CI evidence.",
+    "Local compatibility uses the current full platform database base; exact hosted standalone CI still follows the landing.",
+    "Older 29-command and prior restore receipts are references only; none are relabelled as this candidate."
+  ],
+  "references": [
+    "C:/w/admin638-full-run.mjs",
+    "C:/w/admin637-combined-integration-20261026.mjs",
+    "C:/w/admin633-oto-restore-runner-v2.mjs",
+    "C:/w/admin631-oto-pg-tools/receipt.json"
+  ]
+}

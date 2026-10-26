@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-lint",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm exec eslint 'apps/api/src/routes/aggregates.ts' 'apps/api/src/routes/assistant-settings.ts' 'apps/api/src/routes/console.ts' 'apps/api/src/services/aggregates-ai.ts' 'apps/api/src/services/assistant-settings.ts' 'apps/api/src/services/assistant/engine.ts' 'apps/api/src/services/inbox/ai-engine.ts' 'apps/api/src/services/inbox/ai-turns.ts' 'apps/api/test/assistant-engine.test.ts' 'apps/api/test/assistant-settings-review.test.ts' 'apps/api/test/id-conformance.test.ts' 'apps/api/test/inbox-ai-engine.test.ts' 'apps/api/test/route-scope-target.test.ts' 'apps/api/test/route-write-conformance.test.ts' 'apps/api/test/routes-guarded.test.ts' 'apps/api/test/s638-pricing-review.test.ts' 'apps/console/e2e/assistant-settings.spec.ts' 'apps/console/e2e/overview.spec.ts' 'apps/console/src/App.tsx' 'apps/console/src/api/assistant-settings.ts' 'apps/console/src/components/ConsoleLayout.tsx' 'apps/console/src/components/consoleSections.tsx' 'apps/console/src/pages/AreaLanding.tsx' 'apps/console/src/pages/AssistantSettings.tsx' 'packages/api-types/src/openapi.ts' 'packages/db/src/schema/platform.ts' 'packages/db/test/assistant-settings.test.ts'",
+  "startedAt": "2026-10-26T08:18:07.807Z",
+  "completedAt": "2026-10-26T08:18:25.396Z",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "inputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "syntheticCodeRedactions": 0,
+  "logSha256": "3db5a5e0d70c987b0349c04a018d17321227dea40af7b4280165f0a5b903b790",
+  "logBytes": 272
+}

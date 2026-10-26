@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T08:37:10.164Z",
+  "node": "v22.17.1",
+  "observation": "Synthetic number formatting only; no product, test, system locale or provider setting changed.",
+  "rows": [
+    {
+      "name": "clean-wrapper-default",
+      "locale": "en-AT",
+      "grouped": "4.240",
+      "decimal": "2.000,5",
+      "network": false,
+      "sourceMutations": false
+    },
+    {
+      "name": "explicit-ci-locale",
+      "locale": "en-AT",
+      "grouped": "4.240",
+      "decimal": "2.000,5",
+      "network": false,
+      "sourceMutations": false
+    }
+  ]
+}

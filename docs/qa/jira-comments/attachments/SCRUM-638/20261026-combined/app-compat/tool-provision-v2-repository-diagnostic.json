@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-26T08:27:09.034Z",
+  "exitCode": 1,
+  "errorCode": "OFFICIAL_DEBIAN_REPOSITORIES_REQUIRED",
+  "activeEntries": 2,
+  "activeHostsOfficial": true,
+  "activePathsAllowed": true,
+  "activeCredentials": false,
+  "commentURIs": 2,
+  "commentHostsOutsideActiveList": 2,
+  "aptDispatched": false,
+  "rawContentsPersisted": false
+}

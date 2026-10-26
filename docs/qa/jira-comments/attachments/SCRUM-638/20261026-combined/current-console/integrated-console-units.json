@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-console-units",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm --filter @oto/console test",
+  "startedAt": "2026-10-26T08:15:20.897Z",
+  "completedAt": "2026-10-26T08:15:31.311Z",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "inputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "syntheticCodeRedactions": 0,
+  "logSha256": "83d2d54d7d92325ffa391a8d06f1d22e6b00fef86ab59f2ae6db654366acc8d5",
+  "logBytes": 2120
+}

@@ -1,0 +1,32 @@
+{
+  "label": "access-escalation.check",
+  "cwd": "/workspace/apps/oto-app",
+  "argv": [
+    "node",
+    "node_modules/tsx/dist/cli.mjs",
+    "tests/access-escalation.check.ts"
+  ],
+  "startedAt": "2026-10-26T08:36:44.674Z",
+  "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "installedBefore": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "timedOut": false,
+  "passed": true,
+  "completedAt": "2026-10-26T08:36:48.638Z",
+  "logSha256": "b62bacd9e31ce928e3ee2e1245de2e702bad0744deadd39d9208e838a94cf67c",
+  "logBytes": 1754,
+  "logRedactedBeforeDisk": true,
+  "shellGuard": "set -eo pipefail"
+}

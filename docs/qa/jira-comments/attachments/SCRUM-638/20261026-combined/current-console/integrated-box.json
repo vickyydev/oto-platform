@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-box",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm --filter @oto/box-agent test --test-concurrency=1",
+  "startedAt": "2026-10-26T08:26:54.627Z",
+  "completedAt": "2026-10-26T08:28:45.344Z",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "inputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "syntheticCodeRedactions": 0,
+  "logSha256": "cffaa61d03af4558468f49597f7630beacc56ff6f982c9347dac9f8f3346332b",
+  "logBytes": 176908
+}

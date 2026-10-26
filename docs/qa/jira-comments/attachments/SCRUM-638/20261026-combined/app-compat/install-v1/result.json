@@ -1,0 +1,92 @@
+{
+  "ticket": "SCRUM-638",
+  "stage": "fresh-offline-installs",
+  "sourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceFiles": 3791,
+  "dependencyInputs": 28,
+  "startedAt": "2026-10-26T08:06:11.033Z",
+  "helperSha256": "5acb710a278e1074185a51251708380e5280cc7d80dd48d48034db5386c3afdd",
+  "commands": [
+    {
+      "label": "npm-ci",
+      "argv": [
+        "npm",
+        "ci",
+        "--ignore-scripts"
+      ],
+      "cwd": "/workspace/apps/oto-app",
+      "startedAt": "2026-10-26T08:06:12.006Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "peakRssKiB": 1265548,
+      "peakCgroupBytes": 3221213184,
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "completedAt": "2026-10-26T08:06:48.970Z",
+      "logSha256": "507992894b0693bfc7416284dee7f67fd9f1a5d7421a44b2f35c87f8cf078fe5",
+      "logBytes": 104,
+      "logRedactedBeforeDisk": true,
+      "passed": true
+    },
+    {
+      "label": "api-closure",
+      "argv": [
+        "pnpm",
+        "install",
+        "--offline",
+        "--frozen-lockfile",
+        "--ignore-scripts",
+        "--filter",
+        "@oto/api..."
+      ],
+      "cwd": "/workspace",
+      "startedAt": "2026-10-26T08:06:48.971Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "peakRssKiB": 138772,
+      "peakCgroupBytes": 2081652736,
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "completedAt": "2026-10-26T08:06:49.958Z",
+      "logSha256": "67ce4ff8a3b400467f6d0601a26a788a14c037aaaaa0d847ef9f79d4d81b1f81",
+      "logBytes": 119,
+      "logRedactedBeforeDisk": true,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "observedFreshNpmCi": true,
+  "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "completedAt": "2026-10-26T08:06:50.072Z"
+}

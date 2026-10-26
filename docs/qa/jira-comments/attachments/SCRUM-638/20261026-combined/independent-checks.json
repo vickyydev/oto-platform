@@ -1,0 +1,135 @@
+{
+  "ticket": "SCRUM-638",
+  "recordedAt": "2026-10-26T09:12:52.788Z",
+  "sourceHead": "22ae61a94376cef081c721267c8ce54a7a9fc9a9",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "allRequiredCodeGatesCovered": true,
+  "fullBatteryOnSingleFinalFrame": false,
+  "localReleaseGreen": false,
+  "initialProviderListRatesPendingPlanner": true,
+  "migrationNumberProvisional": "0087",
+  "mainPush": false,
+  "featureCi": false,
+  "renderDeploy": false,
+  "stagingAcceptance": false,
+  "ordinaryApi": {
+    "passed": 5278,
+    "appAvailabilitySkipped": 399,
+    "optionalStorageSkipped": 2,
+    "todo": 5
+  },
+  "appGap": {
+    "files": 30,
+    "passed": 790,
+    "repeatedControls": 391,
+    "newlyExecuted": 399,
+    "uniqueCombinedApiPassed": 5677,
+    "optionalStorageSkipped": 2,
+    "todo": 5
+  },
+  "app": {
+    "freshNpmCi": true,
+    "build": true,
+    "compiler": {
+      "diagnostics": 418,
+      "files": 54,
+      "fileCodeBuckets": 109,
+      "baselineUnchanged": true
+    },
+    "nativeCiPrograms": 41,
+    "restore": {
+      "platformMigrations": 88,
+      "appMigrations": 31,
+      "sourceTables": 184,
+      "sourceRows": 1108,
+      "replays": 2,
+      "preserved": true
+    },
+    "original52CommandRunGreen": false,
+    "wholeAffectedFileClosure": true
+  },
+  "workspace": {
+    "compilers": 16,
+    "builds": 5,
+    "successfulTasks": 21,
+    "cacheHits": 0
+  },
+  "remainingPackages": {
+    "passed": 2406
+  },
+  "console": {
+    "units": 290,
+    "todo": 3,
+    "compilerConfigurations": 3,
+    "diagnostics": 0,
+    "builtBrowserPassed": 256,
+    "assistantSettingsBrowserPassed": 16,
+    "clipboardWriterExactAndOnlyOsCrLfAccepted": true
+  },
+  "pos": {
+    "linuxPassed": 1437,
+    "files": 101,
+    "windowsHistoryPassed": 1430,
+    "windowsHistoryFailed": 7,
+    "assertionsAndTimeoutsUnchanged": true
+  },
+  "box": {
+    "passed": 749,
+    "fileConcurrency": 1
+  },
+  "contractsMatch": true,
+  "changedFileLint": {
+    "files": 27,
+    "errors": 0,
+    "generatedFileIgnoreWarnings": 1
+  },
+  "resources": {
+    "privateNativeDatabaseCensuses": "zero before and after; servers stopped",
+    "appOwnedContainersRemoved": 3,
+    "posOwnedContainersRemoved": 1,
+    "sharedBaselineContainersPreserved": 10,
+    "sharedVolumesOrImagesDeleted": false
+  },
+  "sourceBinding": {
+    "ordinaryFrame": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+    "finalFrame": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+    "ordinaryToCurrentChanges": "Three main661 Console files plus the reviewed Overview clipboard test only.",
+    "docOnlyRebaseChanges": [
+      "docs/handover/CLOUD_HANDOVER.md",
+      "docs/handover/CODEX_HANDOVER.md",
+      "docs/progress/STATUS.md",
+      "docs/progress/plans/super-admin-console/PLAN.md"
+    ],
+    "allFiveOwnCommitsPreserved": true
+  },
+  "failedHistoryRetained": [
+    "Original consumers RED3/100 before GREEN103",
+    "First Windows built-browser255/1 clipboard failure before final256/0",
+    "Windows POS1430/7 native locale failures before separate Linux1437/0",
+    "App heap OOM attempts and tool setup refusals",
+    "Original app52-command51/1 harness TRUST_PROXY mismatch before unchanged whole-file closure",
+    "Read-only auxiliary cleanup top preflight refusal before exact-idle resource cleanup",
+    "Rejected local docs rebase attempt; corrected from preserved commit with all five commits, no push"
+  ],
+  "logHygiene": {
+    "rawLogsExternal": true,
+    "apiDisplayRedactions": 1,
+    "source": "apps/api/test/auth-codes.test.ts:170",
+    "kind": "fixed synthetic auth code only",
+    "nativeReceiptsAndRawHashesUnchanged": true
+  },
+  "limits": [
+    "Code-gate coverage is composed from explicitly bridged domain-identical frames; no monolithic whole battery on the final documentation commit is claimed.",
+    "No green full52-command app rerun is claimed: original failure and passing whole affected-file follow-up stay distinct.",
+    "Initial provider-list USD rates remain the planner delivery. Local tests use synthetic rates and captured adapters; no initial provider-list price was invented and no staging rate, real AI, SMS, payment, channel or digest action was used.",
+    "Final migration landing number, exact hosted CI, automatic Render rollout and actual postdeploy screenshots remain coordinator gates."
+  ],
+  "metadataArchive": {
+    "copiedMetadataFiles": 182,
+    "byteIdenticalFiles": 179,
+    "lfDisplayCopies": 3,
+    "rawExternalOriginalsPreserved": true,
+    "nativeReceiptPayloadsUnchanged": true
+  }
+}

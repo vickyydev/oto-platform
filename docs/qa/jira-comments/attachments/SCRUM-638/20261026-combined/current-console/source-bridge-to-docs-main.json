@@ -1,0 +1,50 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-26T09:07:17.679Z",
+  "passed": true,
+  "beforeHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "afterHead": "22ae61a94376cef081c721267c8ce54a7a9fc9a9",
+  "base": "ff39539d401c1d22dd42edf748bb5bb3d4dff41a",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceBytesUnchanged": true,
+  "changedPaths": [
+    "docs/handover/CLOUD_HANDOVER.md",
+    "docs/handover/CODEX_HANDOVER.md",
+    "docs/progress/STATUS.md",
+    "docs/progress/plans/super-admin-console/PLAN.md"
+  ],
+  "preservedOwnCommits": [
+    {
+      "sha": "b4d3858d3b8ef75e983d9fb830fe00453ff2121d",
+      "subject": "feat(console): add operator assistant settings and usage estimates"
+    },
+    {
+      "sha": "bb7e968303ec15487331960164ddb2ad5b67408b",
+      "subject": "test(console): preserve assistant settings checkpoint evidence"
+    },
+    {
+      "sha": "7e58cd004ac80971ad30e1ada83c010839b7e50c",
+      "subject": "feat(assistant): read the operator's saved caps, debounce and pacing"
+    },
+    {
+      "sha": "7bc108d00da07cda598b0782363010417d3f5ae6",
+      "subject": "test(console): record assistant consumer integration checks"
+    },
+    {
+      "sha": "22ae61a94376cef081c721267c8ce54a7a9fc9a9",
+      "subject": "test(console): check native clipboard text across Windows line endings"
+    }
+  ],
+  "skippedCommits": 0,
+  "conflictResolution": "Main live handover block precedes preserved historical focused-consumer note in both handovers.",
+  "correctedLocalAttempt": {
+    "rejectedHead": "5669e843cce5467a48024faf49994ede82c0b254",
+    "pushed": false,
+    "reason": "Resolver refusal was followed by unsafe shell continuation; repeated from preserved pre-rebase commit with individually gated commands."
+  },
+  "fullBatteryRerunAfterDocsOnlyRebase": false,
+  "priorDomainBoundResultsRetained": true,
+  "pushed": false,
+  "stagingAcceptance": false
+}

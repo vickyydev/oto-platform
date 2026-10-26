@@ -1,0 +1,9 @@
+{
+    "ticket":  "SCRUM-638",
+    "passed":  false,
+    "preparationOnly":  true,
+    "runtimeDispatched":  false,
+    "failedAt":  "2026-10-26T07:50:53.4355372Z",
+    "errorCode":  "GUARDED_FILE_CENSUS_NOT_COVERED",
+    "cause":  "The shard2 census includes four existing TODOs in s221-r4-closing-audit, separately classified existing-todo; these are outside app availability closure."
+}

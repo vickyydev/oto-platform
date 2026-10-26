@@ -1,0 +1,12 @@
+{
+    "ticket":  "SCRUM-638",
+    "attempt":  "install-preflight-1",
+    "passed":  false,
+    "checkedAt":  "2026-10-26T07:47:15.4432460Z",
+    "freeMemoryMiB":  3524,
+    "requiredFreeMemoryMiB":  4096,
+    "errorCode":  "AT_LEAST_FOUR_GIB_FREE_BEFORE_INSTALL_REQUIRED",
+    "dispatched":  false,
+    "installStarted":  false,
+    "sourceSha":  "8cbf2b6f41f71623106f5b9604b5289249c519a0"
+}

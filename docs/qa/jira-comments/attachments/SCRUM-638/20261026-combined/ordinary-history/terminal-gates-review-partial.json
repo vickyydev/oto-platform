@@ -1,0 +1,62 @@
+{
+    "ticket":  "SCRUM-638",
+    "recordedAt":  "2026-10-26T07:29:27.5121154Z",
+    "gates":  [
+                  {
+                      "name":  "integrated-console-units",
+                      "receiptSha256":  "ce98ff9141e26ef9ea2ef143d75afc386ab889598b6ac212adc678bf6c959a3f",
+                      "logSha256":  "b66555158ddda6a13e9d1201ef089afe3c55fce4328e6e568cfc3051edb43c91",
+                      "exitCode":  0,
+                      "sourceUnchanged":  true,
+                      "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+                      "wholeOutputRead":  true,
+                      "postgresCleanupConfirmed":  null
+                  },
+                  {
+                      "name":  "integrated-console-compiler",
+                      "receiptSha256":  "9ee9758a41c7b8ada5d757df1dbe57ce0be6598190a60668543b220e86ec5a87",
+                      "logSha256":  "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+                      "exitCode":  0,
+                      "sourceUnchanged":  true,
+                      "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+                      "wholeOutputRead":  true,
+                      "postgresCleanupConfirmed":  null
+                  },
+                  {
+                      "name":  "integrated-console-browser",
+                      "receiptSha256":  "5abb8bba19ebeb784c9958222526fd55bff2c91b05cd44903fea94f2171f92ac",
+                      "logSha256":  "9b3d2ffa1ae20e2d73490fa4bee2d7e6ed8e1d4cb4307a211591a3131222602f",
+                      "exitCode":  1,
+                      "sourceUnchanged":  true,
+                      "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+                      "wholeOutputRead":  true,
+                      "postgresCleanupConfirmed":  true
+                  },
+                  {
+                      "name":  "integrated-other-packages",
+                      "receiptSha256":  "0683861aee2b0ad96877d6523f1ba23b6c08af82fb5985bad222bcb1872459df",
+                      "logSha256":  "f78f1469ebf07e2825b7877fba7a514a9dc5697dd797f2627b2f4e56e7a0847a",
+                      "exitCode":  0,
+                      "sourceUnchanged":  true,
+                      "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+                      "wholeOutputRead":  true,
+                      "postgresCleanupConfirmed":  true
+                  },
+                  {
+                      "name":  "integrated-verify-schema",
+                      "receiptSha256":  "dd21b9e9ed0ed122e1ef75ae0dbce2e1b1dbf1ae782ea0b4f111ad6ffdd24c16",
+                      "logSha256":  "c920af6d4a23158db366c24dcb33f5cb691949d813357bf457d7c4e2fcff7590",
+                      "exitCode":  0,
+                      "sourceUnchanged":  true,
+                      "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+                      "wholeOutputRead":  true,
+                      "postgresCleanupConfirmed":  true
+                  }
+              ],
+    "findings":  [
+                     "Existing Overview native clipboard test assumes LF readback on Windows; original failure preserved; reviewed exact-writer/CRLF test-only patch remains unapplied during active gates."
+                 ],
+    "fullBatteryGreen":  false,
+    "sourcePushed":  false,
+    "stagingAcceptance":  false
+}

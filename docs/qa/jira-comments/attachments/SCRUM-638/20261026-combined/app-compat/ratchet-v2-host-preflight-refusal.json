@@ -1,0 +1,9 @@
+{
+  "ticket": "SCRUM-638",
+  "dispatchOccurred": false,
+  "testFailure": false,
+  "reason": "Obsolete host-only estimate refused while Linux MemAvailable was10.1GiB; no compiler dispatched. Root authorized Linux/cgroup resource judgment.",
+  "originalControllerSha256": "9e96e499bdec867eec565aa30d849d8c30cb761e28ec619e3d31a0b59c04a949",
+  "controllerSha256": "4fba731261b14c12fbe7f926141c54bc6ac1afd5c6b494e0819491830440524e",
+  "recordedAt": "2026-10-26T08:23:05.921Z"
+}

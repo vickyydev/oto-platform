@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-api-shard2",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm --filter @oto/api test --shard=2/3",
+  "startedAt": "2026-10-26T07:24:01.539Z",
+  "completedAt": "2026-10-26T07:45:17.676Z",
+  "sourceHead": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "inputs": 3789,
+  "sourceManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": {
+    "ownNativeServer": true,
+    "port": 59939,
+    "databaseCountBefore": 0,
+    "databaseCountAfter": 0,
+    "credentialsPersisted": false,
+    "stopped": true,
+    "cleanupConfirmed": true
+  },
+  "logSha256": "439a55e461baa79e0cc46c3c9a43e41816ec3ff64d0aa10ece890e4a7030f8bc",
+  "logBytes": 138224
+}

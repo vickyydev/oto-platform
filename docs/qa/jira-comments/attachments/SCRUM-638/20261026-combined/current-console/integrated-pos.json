@@ -1,0 +1,18 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-pos",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm --filter @oto/pos test",
+  "startedAt": "2026-10-26T08:32:01.241Z",
+  "completedAt": "2026-10-26T08:33:17.192Z",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "inputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "sourceUnchanged": true,
+  "exitCode": 1,
+  "failure": null,
+  "postgres": null,
+  "syntheticCodeRedactions": 0,
+  "logSha256": "20d9b746d70cd800d96180203651bad6a79d5ff07f1aaa4726ca108a4afa55be",
+  "logBytes": 43305
+}

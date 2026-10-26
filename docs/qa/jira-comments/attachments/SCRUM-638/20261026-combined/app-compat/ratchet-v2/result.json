@@ -1,0 +1,64 @@
+{
+  "ticket": "SCRUM-638",
+  "actualLocal": true,
+  "staging": false,
+  "sourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceFiles": 3791,
+  "dependencyInputs": 28,
+  "workerSha256": "6720a78538d3ebe89f6bbe7d09bc818363e92c1511c20f19e37e94bba1b2826b",
+  "startedAt": "2026-10-26T08:23:58.098Z",
+  "commands": [
+    {
+      "label": "whole-ratchet-2048",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "npm",
+        "run",
+        "check:ratchet"
+      ],
+      "startedAt": "2026-10-26T08:23:59.199Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 1,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": false,
+      "completedAt": "2026-10-26T08:25:08.156Z",
+      "logSha256": "fc0aac257c26fb78f63672d97484a99d7dd83c6b072154fff9bca8c2af706cc1",
+      "logBytes": 1323,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    }
+  ],
+  "passed": false,
+  "cleanupConfirmed": false,
+  "databasesBefore": null,
+  "databasesAfter": null,
+  "installedFresh": true,
+  "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "databaseStarted": false,
+  "nodeHeapMiB": 2048,
+  "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "observedMemory": {
+    "peakOwnProcessTreeRssKiB": 2360068,
+    "peakCgroupBytes": 3068633088
+  },
+  "completedAt": "2026-10-26T08:25:08.310Z"
+}

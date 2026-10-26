@@ -1,0 +1,42 @@
+{
+  "ticket": "SCRUM-638",
+  "at": "2026-10-26T09:20:11.092Z",
+  "reason": "Repository .gitattributes requires LF text; exact external preparation receipts remain immutable.",
+  "normalizations": [
+    {
+      "path": "app-compat/gap-preparation-failed-1.json",
+      "source": "C:/w/admin638-app-compat-20261026/gap-preparation-failed-1.json",
+      "sourceSha256": "96b873e81aa87577232543f1c0ce3e60dab7bbdcf2f34b6629041463eadc05bc",
+      "sourceBytes": 397,
+      "archiveSha256": "62c56af52e94915b9e55c0ca30ffcdeb675ac9205e025fd080e907fb4def85ba",
+      "archiveBytes": 389,
+      "crlfReplacements": 8,
+      "normalization": "CRLF to LF only",
+      "semanticJsonUnchanged": true
+    },
+    {
+      "path": "app-compat/install-preflight-failed-1.json",
+      "source": "C:/w/admin638-app-compat-20261026/install-preflight-failed-1.json",
+      "sourceSha256": "00df4fac59e08ef2ea744e6b465ca49445a00ba62d3eb3a4a7003ca59675c71a",
+      "sourceBytes": 403,
+      "archiveSha256": "0ca42c5fa743ffb150dd365def8c3b447e7a0bd15b2ecb834629829eb2e9e653",
+      "archiveBytes": 392,
+      "crlfReplacements": 11,
+      "normalization": "CRLF to LF only",
+      "semanticJsonUnchanged": true
+    },
+    {
+      "path": "app-compat/worker-rebind-1.json",
+      "source": "C:/w/admin638-app-compat-20261026/worker-rebind-1.json",
+      "sourceSha256": "45eaf4d7993340452ca92c88bf5ffc7e40f0da14e859e20b817195abfa18c4f8",
+      "sourceBytes": 559,
+      "archiveSha256": "cd6e09962bfe91d81e8b331fdf1e0604053f506a7062dcef0da977f417b5784b",
+      "archiveBytes": 551,
+      "crlfReplacements": 8,
+      "normalization": "CRLF to LF only",
+      "semanticJsonUnchanged": true
+    }
+  ],
+  "rawExternalReceiptsUnchanged": true,
+  "nativeTestCompilerAndCleanupReceiptsUnchanged": true
+}

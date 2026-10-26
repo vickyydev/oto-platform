@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-console-compiler",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm --filter @oto/console typecheck",
+  "startedAt": "2026-10-26T07:15:24.069Z",
+  "completedAt": "2026-10-26T07:16:20.304Z",
+  "sourceHead": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "inputs": 3789,
+  "sourceManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": null,
+  "logSha256": "a078a7d6f5233523e6341463ca3458cfaf00820a14cbff362235e95a184f729a",
+  "logBytes": 183
+}

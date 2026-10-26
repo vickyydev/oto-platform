@@ -1,0 +1,1763 @@
+{
+  "ticket": "SCRUM-638",
+  "actualLocal": true,
+  "staging": false,
+  "sourceSha": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "sourceManifestSha256": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "sourceFiles": 3791,
+  "dependencyInputs": 28,
+  "workerSha256": "41cd884f72d1c3692ae7e67e73572494a298ad598924ba12380a13ee8459300f",
+  "startedAt": "2026-10-26T08:33:35.319Z",
+  "commands": [
+    {
+      "label": "pg_dump-version",
+      "cwd": "/workspace",
+      "argv": [
+        "/tmp/admin631-pg-tools/bin/pg_dump",
+        "--version"
+      ],
+      "startedAt": "2026-10-26T08:33:35.935Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:33:36.214Z",
+      "logSha256": "bc4dca300e6d5c60823206896c2f41c6cd04818290e5ff0c36b23508b4133d45",
+      "logBytes": 53,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "pg_restore-version",
+      "cwd": "/workspace",
+      "argv": [
+        "/tmp/admin631-pg-tools/bin/pg_restore",
+        "--version"
+      ],
+      "startedAt": "2026-10-26T08:33:36.214Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:33:36.466Z",
+      "logSha256": "9bb5e97e84aaee99afea0cc5da004153a8a18460c16c1a8fa9e050a9d7235880",
+      "logBytes": 56,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "restore-replay",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "npm",
+        "run",
+        "restore:rehearse"
+      ],
+      "startedAt": "2026-10-26T08:33:36.574Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:33:46.589Z",
+      "logSha256": "a5a4679c77d6a4a55362ec0021e1f6f4d8df97241f6504cfaa5db557b6020eae",
+      "logBytes": 29328,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "platform-migrate",
+      "cwd": "/workspace/packages/db",
+      "argv": [
+        "node",
+        "node_modules/drizzle-kit/bin.cjs",
+        "migrate"
+      ],
+      "startedAt": "2026-10-26T08:33:46.619Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:33:48.873Z",
+      "logSha256": "fe3185cb090418854628357553092756b4b2cd2032ca9e000727966d429bddb7",
+      "logBytes": 632,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "app-migrate",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "npm",
+        "run",
+        "db:migrate"
+      ],
+      "startedAt": "2026-10-26T08:33:48.873Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:33:50.722Z",
+      "logSha256": "6f7daf41b9540eb84bb3e6835c69f530ca3349c954cab4e9b4262ac5e3544c64",
+      "logBytes": 1675,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "app-migrate-noop",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "npm",
+        "run",
+        "db:migrate"
+      ],
+      "startedAt": "2026-10-26T08:33:50.722Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:33:51.266Z",
+      "logSha256": "a227731b4a157fe1e4930b54d5b565b9487053c4d3781423d94e0f8bf657dad4",
+      "logBytes": 127,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-golden.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-golden.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:33:51.274Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:33:52.233Z",
+      "logSha256": "f548810c06a2eee7a65046aabaa559477e9bcfa15247ac770def5b056c4c4b01",
+      "logBytes": 1737,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-engine.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-engine.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:33:52.233Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:34:13.864Z",
+      "logSha256": "54066e651560140a3b1152f2d0ed040e4af45c6b3e4c0ef6e33050dae075a1ed",
+      "logBytes": 11080,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "platform-theme.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/platform-theme.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:34:13.864Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:34:14.350Z",
+      "logSha256": "784b2f7ad0cdd485407f7946e8395ebeef33d0810c45dd21306b5f9891fb1be2",
+      "logBytes": 34,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "route-fences.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/route-fences.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:34:14.351Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 1,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": false,
+      "completedAt": "2026-10-26T08:34:19.054Z",
+      "logSha256": "e00666aca466be5719fdce18c595753bd6ca2ef38af5fee28408ec86a8503bbf",
+      "logBytes": 958,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "fix-module.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/fix-module.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:34:19.055Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:34:24.426Z",
+      "logSha256": "adac36180224cce809bad428175026d016cea348d50cd719d197c53d247b3879",
+      "logBytes": 972,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "night-jobs.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/night-jobs.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:34:24.426Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:34:30.778Z",
+      "logSha256": "7a48532107cbc611bde674b654b5cb9b8c822536fed695914f7193998e558d38",
+      "logBytes": 2031,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "suite-sign-in.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/suite-sign-in.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:34:30.778Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:34:31.316Z",
+      "logSha256": "1acfff96fe23cfaaee07e22112a939b19acfb35d9142ecd790c232aa9866decc",
+      "logBytes": 561,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "suite-sign-in-routes.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/suite-sign-in-routes.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:34:31.317Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:34:56.755Z",
+      "logSha256": "e2f48cfb13352a67fd6f28e9875b83cf132a176eca4202fda053024672c626ff",
+      "logBytes": 1655,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "handoff-target.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/handoff-target.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:34:56.755Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:09.134Z",
+      "logSha256": "577ec0540fd2b3eea29bd2affb3793b73685abea9fd1d5d5e5cdab9c4ef7520f",
+      "logBytes": 5090,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "tenant-ownership.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/tenant-ownership.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:09.135Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:14.541Z",
+      "logSha256": "945a8aeba45161cfa6d9fd83b8a859109e475a69b77a787855e33a5dc34cf7bd",
+      "logBytes": 3057,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "attention.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/attention.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:14.541Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:22.180Z",
+      "logSha256": "69e1dca813ca35e81b640e7c20ea0c02f2ee122e019dc0391994abbf47648205",
+      "logBytes": 2129,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "attendance.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/attendance.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:22.180Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:26.643Z",
+      "logSha256": "00f729afabc4b8a23ba3162b93b961411412995ed31b95d7f38137364a97f43f",
+      "logBytes": 4936,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "attendance-evidence.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/attendance-evidence.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:26.643Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:27.220Z",
+      "logSha256": "fd51d5829196d0704efa8087c93ef6eb83275217959e1d42bcf03cc2390cfe95",
+      "logBytes": 126,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "timekeeping-review.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/timekeeping-review.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:27.220Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:28.333Z",
+      "logSha256": "3b0301868a2145a2097e66848da8d8236c31a34127d0a6ae84edeab0a16196a7",
+      "logBytes": 149,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "documents.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/documents.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:28.335Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:50.090Z",
+      "logSha256": "17de92e36b4b6076212b6e7ce8b075a818f6ad22ae53784629a8f48797b134a3",
+      "logBytes": 6937,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "finance.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/finance.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:50.090Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:51.072Z",
+      "logSha256": "782edc2fd95a08446ad489e47da27771f581620468ec6c97198f3c9035d9f0cc",
+      "logBytes": 3644,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "finance-access.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/finance-access.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:51.072Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:52.115Z",
+      "logSha256": "ad7c0f314970dbdd504cb4f851696fd642ec77f3b9d26024a5ecfd026e086d26",
+      "logBytes": 3331,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "xero-access.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/xero-access.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:52.115Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:35:53.412Z",
+      "logSha256": "3d5f6331b1b33754e41086fe7cd7f75fe2e3e4143c5ffa279bb1bef149a1734f",
+      "logBytes": 1158,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "administration.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/administration.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:35:53.413Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:06.389Z",
+      "logSha256": "cac7f09aaa6595b0ad1f95ac869828416cfc9d05f04b250e69084b8bf5b15265",
+      "logBytes": 8247,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "record-deletion.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/record-deletion.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:06.391Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:10.513Z",
+      "logSha256": "e9517750af2d82a0e8e42f0447af96619e5d25665113c490edbdb38f2dedc117",
+      "logBytes": 2206,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "camp-cancelled-days.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/camp-cancelled-days.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:10.513Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:13.595Z",
+      "logSha256": "5a31b0588b83f3c1dac98c0a02775b933d5e840f9a31e7cd4607b801a5cbeaf5",
+      "logBytes": 185,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "camp-creation-exclusions.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/camp-creation-exclusions.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:13.595Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:16.733Z",
+      "logSha256": "b18075ce434b2418a0e50b93da811f2859e77dc20797ffdcd3afe978cdf3ebf4",
+      "logBytes": 222,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "salary-visibility.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/salary-visibility.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:16.733Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:20.797Z",
+      "logSha256": "ced94b015572b06abc33ba1cd8f837c750f88879f12b51e0844de6b206d64808",
+      "logBytes": 42,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "checklist-media.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/checklist-media.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:20.797Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:24.338Z",
+      "logSha256": "a0368846a68441936fd88d8626ab129710d5c4c4542ede6a3a9d63cd60891cca",
+      "logBytes": 40,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "leave-types.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/leave-types.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:24.339Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:28.137Z",
+      "logSha256": "d63ab7da9284ddf60e9dc09fd55db5c9c07b3d90bde0e6bfb7e2099f8da33b31",
+      "logBytes": 2268,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "task-assignees-today.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/task-assignees-today.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:28.138Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:31.939Z",
+      "logSha256": "f7a6462c33414ad514b8fa5912f98ee943f47e5194623680c608270613d09a67",
+      "logBytes": 923,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "checklist-assignees-today.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/checklist-assignees-today.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:31.939Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:35.462Z",
+      "logSha256": "bfc6033533d23dafd3a0a507a0b1f7a63c0c0fbf0a02deb07e604abf5ed43423",
+      "logBytes": 1001,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "checkin-child-card.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/checkin-child-card.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:35.462Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:40.858Z",
+      "logSha256": "d3d98b4040abdeab27e48d84a1d857ac18a3e1e0df79d317fb9a87df85db9de8",
+      "logBytes": 414,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "leave-balance-reach.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/leave-balance-reach.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:40.860Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:44.673Z",
+      "logSha256": "e5197015abddd03bf41513da6f73941448ccae7b6610e4c131324c37608c0f68",
+      "logBytes": 1511,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "access-escalation.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/access-escalation.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:44.674Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:48.638Z",
+      "logSha256": "b62bacd9e31ce928e3ee2e1245de2e702bad0744deadd39d9208e838a94cf67c",
+      "logBytes": 1754,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "named-rights.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/named-rights.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:48.638Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:52.392Z",
+      "logSha256": "300b78d6e03aefa8c9dc4b020c10d4a1e38f9f28f2e63036a511556ff53b874f",
+      "logBytes": 1128,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "kiosk-devices.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/kiosk-devices.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:52.393Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:55.431Z",
+      "logSha256": "0ef2a2b18edb803ac3264608b2d3d7c788eb4d9d5f2dd26adef516bda185cd64",
+      "logBytes": 332,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "birthdays-sidebar.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/birthdays-sidebar.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:55.432Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:36:59.270Z",
+      "logSha256": "244ffd43434320b063cd5f03069a514eaebcda3fd5ed5e385db7f27dc1b8bd8f",
+      "logBytes": 1510,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-config.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-config.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:36:59.271Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:37:03.660Z",
+      "logSha256": "4c2603cf3cd478b7fa0ebf416a3376197c2221309659d860e9269db17ae18499",
+      "logBytes": 40,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-profile-editor.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-profile-editor.check.tsx"
+      ],
+      "startedAt": "2026-10-26T08:37:03.660Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:37:08.153Z",
+      "logSha256": "3f6250e2c1f4acbabbd263f32a7da008244782e7308df9294b815450f477b486",
+      "logBytes": 47,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-cutover.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-cutover.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:37:08.153Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:37:08.624Z",
+      "logSha256": "0c90c062a5cb91ee8f64e52110d2155910988f1ee4e6dd4676bfeb32caf1737d",
+      "logBytes": 842,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-golden.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-golden.check.ts",
+        "--http"
+      ],
+      "startedAt": "2026-10-26T08:37:08.626Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:37:16.901Z",
+      "logSha256": "31c7ceaca32a4daf40ac11d5e682a1b30825bb061f0c943b77da5236c8f1bac2",
+      "logBytes": 4684,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-feeds.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-feeds.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:37:16.901Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:37:24.382Z",
+      "logSha256": "a32805eb50dcf4bad1797b4e8ce5af73a0725c04730b4e0cf008806693463ec7",
+      "logBytes": 2681,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-lifecycle.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-lifecycle.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:37:24.382Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:37:29.952Z",
+      "logSha256": "16732a80b779f964acf89c192d458bb43c249a868ad1de7d71310ea2ac631553",
+      "logBytes": 2782,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-documents.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-documents.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:37:29.952Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:37:34.188Z",
+      "logSha256": "dde8a9519e976e21df506c97cb94a60932ae9b5361941c115d8879d6a8205b10",
+      "logBytes": 1939,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "payroll-outputs.check",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "node",
+        "node_modules/tsx/dist/cli.mjs",
+        "tests/payroll-outputs.check.ts"
+      ],
+      "startedAt": "2026-10-26T08:37:34.188Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:37:38.833Z",
+      "logSha256": "4fa56c621aca46e07bc185e10076e890bd67013b551f1d2a9807b5306fbdae17",
+      "logBytes": 1653,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "feature-runtime",
+      "cwd": "/workspace",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@oto/api",
+        "exec",
+        "vitest",
+        "run",
+        "--pool=forks",
+        "--maxWorkers=1",
+        "--fileParallelism=false",
+        "test/s217c-fix-preview-review.test.ts",
+        "test/s217c-sop-history-review.test.ts",
+        "test/s217c-presence-delivery-review.test.ts",
+        "test/s217c-camp-sms-review.test.ts",
+        "test/s217c-employee-history-review.test.ts",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=../../test-results/feature-runtime.json"
+      ],
+      "startedAt": "2026-10-26T08:37:38.836Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "report": {
+        "path": "test-results/feature-runtime.json",
+        "sha256": "f73aca3f6884c2ee20c3488a538391eff2bb7fe18f92d3d2cef7f8ec5a95cdb1",
+        "files": 5,
+        "tests": 89,
+        "pending": 0,
+        "failed": 0
+      },
+      "completedAt": "2026-10-26T08:38:05.868Z",
+      "logSha256": "94149ad1d483e3fbb96c60fe278874d526686a203c4df69340e99d7544f8dabd",
+      "logBytes": 603,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "qa-runtime",
+      "cwd": "/workspace",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@oto/api",
+        "exec",
+        "vitest",
+        "run",
+        "--pool=forks",
+        "--maxWorkers=1",
+        "--fileParallelism=false",
+        "test/s548-qa-reports-review.test.ts",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=../../test-results/qa-runtime.json"
+      ],
+      "startedAt": "2026-10-26T08:38:05.868Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "report": {
+        "path": "test-results/qa-runtime.json",
+        "sha256": "63e9bc588a326a766d83393880ca1ead0c3db9f4584abf164e20ed7869264bc6",
+        "files": 1,
+        "tests": 36,
+        "pending": 0,
+        "failed": 0
+      },
+      "completedAt": "2026-10-26T08:38:13.066Z",
+      "logSha256": "dc54185f25a6ec4fc8163a21ba23ac796a52dc7e162d06c5530c5898dfaa19e4",
+      "logBytes": 341,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "scheduling-runtime",
+      "cwd": "/workspace",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@oto/api",
+        "exec",
+        "vitest",
+        "run",
+        "--pool=forks",
+        "--maxWorkers=1",
+        "--fileParallelism=false",
+        "test/s217b-scheduling-review.test.ts",
+        "--reporter=default",
+        "--reporter=json",
+        "--outputFile.json=../../test-results/scheduling-runtime.json"
+      ],
+      "startedAt": "2026-10-26T08:38:13.066Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "report": {
+        "path": "test-results/scheduling-runtime.json",
+        "sha256": "4fd951210603752586c4c2096bbda95df836b590f53d284b3b6c18a67fe729c1",
+        "files": 1,
+        "tests": 32,
+        "pending": 0,
+        "failed": 0
+      },
+      "completedAt": "2026-10-26T08:38:23.298Z",
+      "logSha256": "8b65157767d8ab39147646ad670dd7d8cf4dcb73b239566e99c1c45e29b15262",
+      "logBytes": 3389,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "offboarding-census",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "npm",
+        "run",
+        "offboarding:census"
+      ],
+      "startedAt": "2026-10-26T08:38:23.299Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:38:23.727Z",
+      "logSha256": "3214850774a39402993c091b4438a1be41fa1c1962fd2f64fafabac525ca0c75",
+      "logBytes": 260,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    },
+    {
+      "label": "tenant-readback",
+      "cwd": "/workspace/apps/oto-app",
+      "argv": [
+        "npm",
+        "run",
+        "tenant:readback"
+      ],
+      "startedAt": "2026-10-26T08:38:23.729Z",
+      "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+      "installedBefore": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "installedAfter": {
+        "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+        "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+        "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "timedOut": false,
+      "passed": true,
+      "completedAt": "2026-10-26T08:38:24.185Z",
+      "logSha256": "e5018203d33f3930c626f8ebc8101578389e173e4f4df7b1b541d08609c9d906",
+      "logBytes": 4115,
+      "logRedactedBeforeDisk": true,
+      "shellGuard": "set -eo pipefail"
+    }
+  ],
+  "passed": false,
+  "cleanupConfirmed": true,
+  "databasesBefore": [],
+  "databasesAfter": [],
+  "installedFresh": true,
+  "sourceBefore": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "prerequisiteReceipts": {
+    "install": "b2518120c0767e23a7ef2d286c8a31443185ebd2693f762439e2a45b2eb21675",
+    "priorBuildFrame": "7c09ce1605961bca283eb9bdaeed3d852838c75e0f20a09a0c4533be9515bc79",
+    "completedRatchet": "dbb46835f03b8828bb6ac02aefd5f558a9c38e87e43fe363f3562c2e9088cde2",
+    "toolBinding": "3b92e49de8d6371e0008fc9d9624bd61aebe3bca80f79972ac6964c6142ff3cc"
+  },
+  "runtimePrerequisites": {
+    "browserCached": true,
+    "ffmpegCached": true
+  },
+  "databasesAfterRestore": [],
+  "integratedDatabase": {
+    "setting": "core.setting",
+    "queue": "otoapp.login_lifecycle_events"
+  },
+  "sourceAfter": "2083060c970fac6682db087fbf14c68636718a2ce82c7c07d8be0e1eb68a24d1",
+  "installedAfter": {
+    "apps/oto-app/node_modules/.package-lock.json": "863e0d96200d0225ce96ed7c7192e6b52c7553b31a175ce39793bfa88a94be29",
+    "node_modules/.modules.yaml": "9c2ee5f838df09b31faa304cf2fbae22f8fd225ec7c00c642948fbb1d5fd5771",
+    "node_modules/.pnpm/lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "completedAt": "2026-10-26T08:38:24.335Z",
+  "expectedCommands": 52
+}

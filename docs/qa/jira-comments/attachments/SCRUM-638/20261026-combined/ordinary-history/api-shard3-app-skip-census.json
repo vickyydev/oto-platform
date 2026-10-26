@@ -1,0 +1,102 @@
+{
+    "ticket":  "SCRUM-638",
+    "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+    "receiptSha256":  "8cb18b31a7760d8e09c4bfe323f927d865897dcbe3e1396c474b8137d0a08b43",
+    "logSha256":  "f82c34720838065d62c17ce794baa10bd4bc4f031923435db386a232ec82564e",
+    "fullLogLines":  1232,
+    "passed":  1647,
+    "skipped":  121,
+    "appAvailabilitySkips":  119,
+    "optionalStorageSkips":  2,
+    "todo":  1,
+    "appRuntimeClosureRequired":  true,
+    "files":  [
+                  {
+                      "file":  "test/s217b-r4b-review.test.ts",
+                      "tests":  29,
+                      "skippedOrTodoReportedInFileLine":  11,
+                      "passed":  18,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r3.test.ts",
+                      "tests":  41,
+                      "skippedOrTodoReportedInFileLine":  9,
+                      "passed":  32,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/g17-round0-review.test.ts",
+                      "tests":  32,
+                      "skippedOrTodoReportedInFileLine":  4,
+                      "passed":  28,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r5-review.test.ts",
+                      "tests":  30,
+                      "skippedOrTodoReportedInFileLine":  20,
+                      "passed":  10,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r1-review-recheck.test.ts",
+                      "tests":  17,
+                      "skippedOrTodoReportedInFileLine":  10,
+                      "passed":  7,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r7-payroll-cross-review.test.ts",
+                      "tests":  25,
+                      "skippedOrTodoReportedInFileLine":  25,
+                      "passed":  0,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/offline-capability.test.ts",
+                      "tests":  23,
+                      "skippedOrTodoReportedInFileLine":  1,
+                      "passed":  22,
+                      "classification":  "existing-todo"
+                  },
+                  {
+                      "file":  "test/s217c-presence-delivery-review.test.ts",
+                      "tests":  15,
+                      "skippedOrTodoReportedInFileLine":  12,
+                      "passed":  3,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217c-camp-sms-review.test.ts",
+                      "tests":  23,
+                      "skippedOrTodoReportedInFileLine":  23,
+                      "passed":  0,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r7-finance-cross-review.test.ts",
+                      "tests":  4,
+                      "skippedOrTodoReportedInFileLine":  2,
+                      "passed":  2,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/s217b-r7-finance.test.ts",
+                      "tests":  7,
+                      "skippedOrTodoReportedInFileLine":  3,
+                      "passed":  4,
+                      "classification":  "app-runtime-required"
+                  },
+                  {
+                      "file":  "test/files.test.ts",
+                      "tests":  5,
+                      "skippedOrTodoReportedInFileLine":  2,
+                      "passed":  3,
+                      "classification":  "optional-storage-unavailable"
+                  }
+              ],
+    "sourceInspection":  "119 cases gated on installed app runtime/modules. files.test.ts two t.skip calls require optional storageUp. offline-capability one it.todo remains. No guard is weakened.",
+    "historicalReceiptUnchanged":  true,
+    "distinctLinesReadAfterOnlyExactDuplicateRemovalAndPidNormalization":  384
+}

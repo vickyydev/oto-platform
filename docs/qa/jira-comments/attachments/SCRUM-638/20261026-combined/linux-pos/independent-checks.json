@@ -1,0 +1,59 @@
+{
+  "ticket": "SCRUM-638",
+  "reviewedAt": "2026-10-26T09:01:41.300Z",
+  "passed": true,
+  "scope": "local Linux CI-locale POS closure",
+  "sourceHead": "1a4ed23b4286c577d69c39cd0fc4467415678015",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "tests": 1437,
+  "files": 101,
+  "wholeLogRead": true,
+  "locale": {
+    "resolved": "en-US",
+    "integer": "4,240",
+    "decimal": "2,000.5"
+  },
+  "sourceAndInstalledBindingsUnchanged": true,
+  "node": "v22.23.3",
+  "pnpm": "10.33.0",
+  "exactOwnedContainerRemoved": "a405eeceeb1c658fe82a064886e22435029dd9e39f3154db849365cc6fea82d7",
+  "sharedBaselinePreserved": 10,
+  "command": "pnpm --filter @oto/pos test --maxWorkers=1 --fileParallelism=false",
+  "noNetwork": true,
+  "noHostMounts": true,
+  "noHostPorts": true,
+  "assertionsChanged": false,
+  "timeoutsChanged": false,
+  "intlMonkeypatch": false,
+  "preservedWindowsHistory": {
+    "path": "C:/w/admin638-final-20261026/integrated-pos.json",
+    "passed": 1430,
+    "failed": 7,
+    "cause": "native Windows default ICU en-AT format differs from CI en-US"
+  },
+  "preparationHistory": [
+    {
+      "code": "DOCKER_TOP_PID_COLUMN_REQUIRED",
+      "effect": "read-only cleanup preflight refused before stop/remove",
+      "correction": "add PID column; retain comm-only process inspection"
+    }
+  ],
+  "inputs": {
+    "create-intent.json": "9c355d1f530569ec5e2d4519e2bdef77c4352319f227da66b00fafb643d216e6",
+    "created.json": "5eb849a37dbe47463453c6955b1e28a40b1c7addfd3df43da33e877a447c6440",
+    "prepare-binding.json": "5a6d9a4439d0bd13a502d537fdf80abb3eb3a52d50fa48e9e7a12d41f8c7652b",
+    "offline-install.json": "131ce223406eb24a7bc785123d5b2d45533bff6ba5e590bd5d8f74f7759f7d59",
+    "before.json": "24c928bd8bf073b79d366acc3f19e2194345178adfc7656f6c4fe16b08081f8a",
+    "pos-native.json": "f431c932d468dfc3b1d3c760bacbb25cc6c2b65c5014bbabfc49336e10fbfdf4",
+    "pos-native.log": "4dca06c565e3188cf264176658495ad41c876f47aea2a317c8f8f193114fc45b",
+    "after.json": "88d765da6d82aeeb32b8bf71563760bcb483f8d22d2649926716a5cb1a090bd1",
+    "result.json": "d58ff049d4dc8cb9321b1b747fe9c0c2e066bf0ab8c70206f3f3c0274f1e0f55",
+    "cleanup-intent.json": "5037251449d0cb81ec6ee9f5930d9d4af36501940aa4821e45e0a23328b90d17",
+    "cleanup.json": "5feea441049e5885030aec7815ab7d10b739c00179c223c90ac241e8d7d3e396"
+  },
+  "limits": [
+    "This local POS result is a separate Linux execution; the original Windows result remains failed.",
+    "Not hosted CI, staging acceptance or a complete combined release; final Console browser and planner initial rates are separate."
+  ]
+}

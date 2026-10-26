@@ -1,0 +1,36 @@
+{
+    "ticket":  "SCRUM-638",
+    "recordedAt":  "2026-10-26T07:25:59.7962618Z",
+    "sourceHead":  "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+    "observation":  "Observed during running gates; not represented as a pre-start snapshot.",
+    "docs":  [
+                 {
+                     "path":  "docs/architecture/ARCHITECTURE.md",
+                     "sha256":  "3f5597b9c0dbd0d77664481b790c1b848cddab172f5da8206d7bd60af6ec158f",
+                     "priorCheckpointSha256":  "3f5597b9c0dbd0d77664481b790c1b848cddab172f5da8206d7bd60af6ec158f",
+                     "matchesPriorCheckpoint":  true,
+                     "committed":  true
+                 },
+                 {
+                     "path":  "docs/ops/COUNTER_VOUCHERS.md",
+                     "sha256":  "600175b62064e0e3b1f3100ea40fa6f0a0799ae403d0e5991d97a1367239fe2a",
+                     "priorCheckpointSha256":  "600175b62064e0e3b1f3100ea40fa6f0a0799ae403d0e5991d97a1367239fe2a",
+                     "matchesPriorCheckpoint":  true,
+                     "committed":  true
+                 },
+                 {
+                     "path":  "docs/progress/plans/events-kiosk/PLAN.md",
+                     "sha256":  "dc19e298e8e1531bae1933835d1229751492ab99d291419cdac9954833e6c42d",
+                     "priorCheckpointSha256":  "dc19e298e8e1531bae1933835d1229751492ab99d291419cdac9954833e6c42d",
+                     "matchesPriorCheckpoint":  true,
+                     "committed":  true
+                 },
+                 {
+                     "path":  "docs/progress/plans/otoapp-lift/PLAN.md",
+                     "sha256":  "b460d27706430353d498ed4bd6740745b3c694107d418b5b5e5ce10672f57855",
+                     "priorCheckpointSha256":  "b460d27706430353d498ed4bd6740745b3c694107d418b5b5e5ce10672f57855",
+                     "matchesPriorCheckpoint":  true,
+                     "committed":  true
+                 }
+             ]
+}

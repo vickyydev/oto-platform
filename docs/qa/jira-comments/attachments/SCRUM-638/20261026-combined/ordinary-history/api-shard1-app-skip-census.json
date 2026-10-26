@@ -1,0 +1,62 @@
+{
+    "ticket":  "SCRUM-638",
+    "sourceManifestSha256":  "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+    "receiptSha256":  "7e5453cca6a150693ab1b4574cc740cd0e393093c907854c71b59304e1d46ba9",
+    "logSha256":  "5ca0f63861d580ad8cbc2367a34a24b83153db88f0faefced9ae256d94c0cffd",
+    "fullLogLines":  1137,
+    "distinctLinesReadAfterOnlyExactDuplicateRemovalAndPidNormalization":  352,
+    "passed":  1835,
+    "skipped":  106,
+    "appRuntimeClosureRequired":  true,
+    "files":  [
+                  {
+                      "file":  "test/s217b-r3-review.test.ts",
+                      "tests":  44,
+                      "skipped":  21,
+                      "passed":  23
+                  },
+                  {
+                      "file":  "test/s217b-r6.test.ts",
+                      "tests":  36,
+                      "skipped":  2,
+                      "passed":  34
+                  },
+                  {
+                      "file":  "test/s217b-r4b.test.ts",
+                      "tests":  36,
+                      "skipped":  4,
+                      "passed":  32
+                  },
+                  {
+                      "file":  "test/s217b-r1-review.test.ts",
+                      "tests":  42,
+                      "skipped":  20,
+                      "passed":  22
+                  },
+                  {
+                      "file":  "test/s217c-employee-history-review.test.ts",
+                      "tests":  28,
+                      "skipped":  27,
+                      "passed":  1
+                  },
+                  {
+                      "file":  "test/s217b-r7-finance-access-cross-review.test.ts",
+                      "tests":  8,
+                      "skipped":  8,
+                      "passed":  0
+                  },
+                  {
+                      "file":  "test/s217c-fix-preview-review.test.ts",
+                      "tests":  7,
+                      "skipped":  7,
+                      "passed":  0
+                  },
+                  {
+                      "file":  "test/s217b-r7-access-review.test.ts",
+                      "tests":  18,
+                      "skipped":  17,
+                      "passed":  1
+                  }
+              ],
+    "historicalReceiptUnchanged":  true
+}

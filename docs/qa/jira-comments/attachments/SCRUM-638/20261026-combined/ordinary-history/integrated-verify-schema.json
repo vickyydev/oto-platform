@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-638",
+  "name": "integrated-verify-schema",
+  "root": "C:/w/admin-assistant-settings",
+  "command": "pnpm --filter @oto/db verify-schema",
+  "startedAt": "2026-10-26T07:17:27.392Z",
+  "completedAt": "2026-10-26T07:17:55.621Z",
+  "sourceHead": "8cbf2b6f41f71623106f5b9604b5289249c519a0",
+  "inputs": 3789,
+  "sourceManifestSha256": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "failure": null,
+  "postgres": {
+    "ownNativeServer": true,
+    "port": 62524,
+    "databaseCountBefore": 0,
+    "databaseCountAfter": 0,
+    "credentialsPersisted": false,
+    "stopped": true,
+    "cleanupConfirmed": true
+  },
+  "logSha256": "c920af6d4a23158db366c24dcb33f5cb691949d813357bf457d7c4e2fcff7590",
+  "logBytes": 329
+}

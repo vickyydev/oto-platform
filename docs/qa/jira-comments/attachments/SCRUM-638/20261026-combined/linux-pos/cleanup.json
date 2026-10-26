@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-26T08:58:06.448Z",
+  "id": "a405eeceeb1c658fe82a064886e22435029dd9e39f3154db849365cc6fea82d7",
+  "removed": true,
+  "sharedBaselinePreserved": true,
+  "sharedBaselineCount": 10,
+  "oomKilled": false,
+  "volumesDeleted": false,
+  "imagesDeleted": false,
+  "otherResourcesChanged": false
+}

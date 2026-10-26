@@ -1,0 +1,41 @@
+{
+    "ticket":  "SCRUM-638",
+    "recordedAt":  "2026-10-26T08:07:37.5978771Z",
+    "source":  "apps/api/test/auth-codes.test.ts:170",
+    "pattern":  "^(legacy sha256 row brute-forced in \\d+ms\\s*(?:\\u2192|-\u003e)\\s*)\\d{6}([ \\t]*)(?=\\r?\\n|$)",
+    "replacement":  "$1[REDACTED SYNTHETIC AUTH CODE]$2",
+    "calibrationPassed":  true,
+    "originalLogsAndReceiptsPreserved":  true,
+    "rows":  [
+                 {
+                     "shard":  1,
+                     "rawPath":  "C:/w/admin638-full-20261026/integrated-api-shard1.log",
+                     "rawSha256":  "5ca0f63861d580ad8cbc2367a34a24b83153db88f0faefced9ae256d94c0cffd",
+                     "displayPath":  "C:/w/admin638-full-20261026/integrated-api-shard1.display.log",
+                     "displaySha256":  "5ca0f63861d580ad8cbc2367a34a24b83153db88f0faefced9ae256d94c0cffd",
+                     "redactedSyntheticAuthResults":  0,
+                     "remainingMatches":  0,
+                     "assertionOrTestChanges":  false
+                 },
+                 {
+                     "shard":  2,
+                     "rawPath":  "C:/w/admin638-full-20261026/integrated-api-shard2.log",
+                     "rawSha256":  "439a55e461baa79e0cc46c3c9a43e41816ec3ff64d0aa10ece890e4a7030f8bc",
+                     "displayPath":  "C:/w/admin638-full-20261026/integrated-api-shard2.display.log",
+                     "displaySha256":  "bed910cd2c9b7945c7b4452ce773e633bda92eaf2470b98b8673239f2c1b0b1f",
+                     "redactedSyntheticAuthResults":  1,
+                     "remainingMatches":  0,
+                     "assertionOrTestChanges":  false
+                 },
+                 {
+                     "shard":  3,
+                     "rawPath":  "C:/w/admin638-full-20261026/integrated-api-shard3.log",
+                     "rawSha256":  "f82c34720838065d62c17ce794baa10bd4bc4f031923435db386a232ec82564e",
+                     "displayPath":  "C:/w/admin638-full-20261026/integrated-api-shard3.display.log",
+                     "displaySha256":  "f82c34720838065d62c17ce794baa10bd4bc4f031923435db386a232ec82564e",
+                     "redactedSyntheticAuthResults":  0,
+                     "remainingMatches":  0,
+                     "assertionOrTestChanges":  false
+                 }
+             ]
+}
