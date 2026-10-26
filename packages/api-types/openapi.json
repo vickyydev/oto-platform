@@ -2496,6 +2496,11 @@
               "type": "string",
               "enum": [
                 "console:overview:read",
+                "console:app_registry:read",
+                "console:app_registry:manage",
+                "console:release:read",
+                "console:release:flag_manage",
+                "console:release:kill_switch",
                 "hr:salary:view",
                 "platform:operator:switch",
                 "admin:account:create",
@@ -68501,6 +68506,427 @@
                     "revision",
                     "updatedAt",
                     "updatedBy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apps": {
+      "get": {
+        "description": "The current suite registry. Expired maintenance resolves to its saved tile state without a read changing storage. Only public HTTP(S) locations are returned; no provider is contacted.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "apps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "console",
+                              "oto_app",
+                              "radar",
+                              "booth",
+                              "inbox"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "purpose": {
+                            "type": "string"
+                          },
+                          "origins": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          },
+                          "schemaName": {
+                            "type": "string"
+                          },
+                          "owningService": {
+                            "type": "string"
+                          },
+                          "healthUrl": {
+                            "type": "string",
+                            "format": "uri",
+                            "nullable": true
+                          },
+                          "versionSource": {
+                            "type": "string"
+                          },
+                          "requiredPermission": {
+                            "type": "string"
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          },
+                          "storedState": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "coming_soon",
+                              "hidden",
+                              "maintenance"
+                            ]
+                          },
+                          "effectiveState": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "coming_soon",
+                              "hidden",
+                              "maintenance"
+                            ]
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "exclusiveMinimum": true,
+                            "minimum": 0
+                          },
+                          "maintenance": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "expiresAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "message",
+                              "expiresAt"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "name",
+                          "purpose",
+                          "origins",
+                          "schemaName",
+                          "owningService",
+                          "healthUrl",
+                          "versionSource",
+                          "requiredPermission",
+                          "sortOrder",
+                          "storedState",
+                          "effectiveState",
+                          "revision",
+                          "maintenance"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "apps"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/releases": {
+      "get": {
+        "description": "Recorded deployment history, newest recorded event first, with nullable unknown version/commit/actor/CI/deployment time. No inferred release or deploy action. Archived apps are excluded.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pos",
+                "console",
+                "oto_app",
+                "radar",
+                "booth",
+                "inbox"
+              ]
+            },
+            "in": "query",
+            "name": "app",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "deployments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "app": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "console",
+                              "oto_app",
+                              "radar",
+                              "booth",
+                              "inbox"
+                            ]
+                          },
+                          "appName": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "commit": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "actorAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "ciGreen": {
+                            "type": "boolean",
+                            "nullable": true
+                          },
+                          "deployedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "recordedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "app",
+                          "appName",
+                          "version",
+                          "commit",
+                          "actorAccountId",
+                          "status",
+                          "ciGreen",
+                          "deployedAt",
+                          "recordedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "total",
+                    "limit",
+                    "offset",
+                    "deployments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/releases/agents": {
+      "get": {
+        "description": "Current operator box agent versions and the existing fleet minimum. Both box and branch ownership are required; unknown versions remain unknown. No box action or policy change.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "operatorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "minimumSupportedVersion": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slot": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "branchName": {
+                            "type": "string"
+                          },
+                          "agentVersion": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastHeartbeatAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "belowMinimum": {
+                            "type": "boolean",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slot",
+                          "branchId",
+                          "branchName",
+                          "agentVersion",
+                          "lastHeartbeatAt",
+                          "belowMinimum"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "operatorId",
+                    "minimumSupportedVersion",
+                    "total",
+                    "limit",
+                    "offset",
+                    "agents"
                   ],
                   "additionalProperties": false
                 }

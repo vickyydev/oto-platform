@@ -123,6 +123,8 @@ function expectKnownFailures(actual: string[], known: string[], label: string, t
  * column on one of these would have nothing to point at.
  */
 const PLATFORM_OWNED: Record<string, string> = {
+  'core.app_registry': 'SCRUM-643: the six suite app identities are platform-owned, shared by all operators.',
+  'core.deploy_event': 'SCRUM-643: deployment facts describe a suite service, not an operator business record.',
   'core.operator': 'The tenant itself. A row here IS an operator.',
   'core.auth_throttle':
     'Keyed on a hashed phone or an IP and written before anybody is identified — at the moment it is written there is no account, so there is no operator to attribute it to.',
@@ -373,6 +375,8 @@ describe('timestamps (SCRUM-292)', () => {
  * `archived_at`.
  */
 const PARTIAL_UNIQUE_EXEMPT: Record<string, string> = {
+  'core.app_registry.app_registry_key_unique':
+    'SCRUM-643: archiving a suite app does not release its key or detach deployment and flag history; the native suite-controls test refuses reuse while archived.',
   // SCRUM-631 / approved Q15: source identities survive archive so a returning
   // assignment restores the same row, preserving existing team/grant references.
   // s631-department-migration.test.ts proves duplicates are refused while archived.

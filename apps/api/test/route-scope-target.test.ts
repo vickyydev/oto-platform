@@ -217,8 +217,11 @@ const OPERATOR_WIDE_WRITES = [
   'PUT /benefits/profiles/:employeeId',
   'PUT /me/session/operator', // SCRUM-640: service also requires a genuine null-scope switch assignment.
 ];
-// These platform-global reads also require health permission at operator scope.
+// These platform-global reads require their named permission at operator scope.
 const PLATFORM_WIDE_READS = [
+  'GET /console/apps', 'HEAD /console/apps',
+  'GET /console/releases', 'HEAD /console/releases',
+  'GET /console/releases/agents', 'HEAD /console/releases/agents',
   'GET /platform/alerts', 'HEAD /platform/alerts',
   'GET /platform/jobs', 'HEAD /platform/jobs',
   'GET /platform/environment', 'HEAD /platform/environment',
