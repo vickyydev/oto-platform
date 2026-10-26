@@ -1,0 +1,123 @@
+{
+  "tickets": [
+    "SCRUM-638",
+    "SCRUM-640"
+  ],
+  "preparedAt": "2026-10-26T09:51:49.000Z",
+  "recommendedPreparationOnly": true,
+  "source638Head": "1ad1211539fab888d3f0c501e3853f8f806cd787",
+  "source640Head": "950646674fde66333f911401af82f956f58188b0",
+  "sources": [
+    {
+      "root": "C:/w/admin-assistant-settings",
+      "path": "apps/console/src/pages/AssistantSettings.tsx",
+      "sha256": "da5a2e9979d960fb33c1836b016537e0a959528ca20fa729169aeb993aae57fd"
+    },
+    {
+      "root": "C:/w/admin-assistant-settings",
+      "path": "apps/console/src/components/ConsoleLayout.tsx",
+      "sha256": "71a26b589f7713ff0df72bee63ad4486970fe032aefe98e92245ca8635b7c4da"
+    },
+    {
+      "root": "C:/w/admin-assistant-settings",
+      "path": "apps/console/src/pages/AreaLanding.tsx",
+      "sha256": "bbfc43c30910a0e98092465e39a19f87394a88fb100fb418c549c8ad34ae2188"
+    },
+    {
+      "root": "C:/w/admin-assistant-settings",
+      "path": "apps/console/src/api/assistant-settings.ts",
+      "sha256": "24d6fa0d23a8ad95cdad623e4517ab7b23ce75cc9b4706faa6596d43243b4198"
+    },
+    {
+      "root": "C:/w/admin-assistant-settings",
+      "path": "apps/console/e2e/assistant-settings.spec.ts",
+      "sha256": "57f1554a7d7951ad4c655e373b3201740db0aab53e7ce947f3cefe5509e0c694"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/src/lib/workingAuthority.ts",
+      "sha256": "4fbca9ef35c39f2438920555c16448705d20e667648df2cd8b9711fd0aca4f3a"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/src/auth/SessionContext.tsx",
+      "sha256": "f07c6e69d919d998e6a5b956a2f68efe5f319e75c5bba00f24f48eb876461b6d"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/src/api/platform.ts",
+      "sha256": "33469135d256c17ca5fefff805a9759898e0e7aff82f2e2e9790487b81ce1de1"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/src/pages/TeamsRouting.tsx",
+      "sha256": "90bd249403c29dbb28d6f64a770cc5731d8be80cf213ad4377b9b15b4246a058"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/src/pages/Staff.tsx",
+      "sha256": "602ec7ef3cfa3fae1e081efd547e0135ae2dd4b227faf789063531cce1923934"
+    }
+  ],
+  "productionFiles": [
+    "apps/console/src/pages/AssistantSettings.tsx",
+    "apps/console/src/components/ConsoleLayout.tsx",
+    "apps/console/src/pages/AreaLanding.tsx"
+  ],
+  "productionPatch": {
+    "path": "C:/w/admin638-effective-authority-unapplied/production-for-combined-base.patch",
+    "sha256": "97538c13e619aa066ee92f5486890c4414cbb67ddbaabf977838776df786cffe",
+    "files": 3,
+    "insertions": 18,
+    "deletions": 14
+  },
+  "applicability": [
+    {
+      "path": "C:/w/admin638-effective-authority-unapplied/production-for-combined-base.patch",
+      "exitCode": 0
+    }
+  ],
+  "current638TestFixturePatchesPreserved": [
+    {
+      "path": "C:/w/admin638-assistant-settings-for-640-dto-unapplied.patch",
+      "sha256": "26d71db1febe534129712b5d1ff56d33dd790571586b95271890d74b47fe0213"
+    },
+    {
+      "path": "C:/w/admin638-assistant-settings-for-640-wait-unapplied.patch",
+      "sha256": "4973c7a6e0c8be751d07e13296dda2984b9972922c9aa99b711dc2114ea58c46"
+    },
+    {
+      "path": "C:/w/admin638-assistant-settings-for-640-combined-unapplied.patch",
+      "sha256": "d9edd0972799f95782bf1cb7db48071a4e30be37103bbd960b2dbd5f768cb17b"
+    }
+  ],
+  "regressionSteps": "C:/w/admin638-effective-authority-unapplied/REGRESSIONS.md",
+  "changes": [
+    "Use verified effectiveOperatorId for page ownership/grant matching and the two newly added offer callers; keep home account factual.",
+    "Include provider epoch, canonical context and refreshing in the editor lifetime; use native working.isCurrent before every retained callback and working.run around the unchanged typed GET/PUT.",
+    "Keep sparse numeric/rate/body/idempotency/error/readback behavior unchanged; do not add new API shapes or transport bypasses."
+  ],
+  "existingSixteenAssertionsUntouched": true,
+  "futureBaseRequirement": "Compose the two source lanes later while retaining640 verified SessionContext/workingAuthority/global client and638 new page/route/navigation registration. The source patch is based on exact638 bytes; current640 does not yet contain the638 page or offer lines.",
+  "originalApiAndNavigationHelperChanged": false,
+  "applied": false,
+  "trackedFilesEdited": false,
+  "newRuntime": false,
+  "compilerExecution": false,
+  "nativeTestExecution": false,
+  "staging": false,
+  "commit": false,
+  "push": false,
+  "noGreenClaim": true,
+  "supersededOptionalDrafts": [
+    "browser-regressions-after-dto-and-wait.patch",
+    "browser-regressions-from-638.patch",
+    "assistant-settings.with-regressions.spec.ts",
+    "readiness.json"
+  ],
+  "limits": [
+    "No composite worktree was built. Git applicability checks do not establish type correctness, native behavior or a deployable combined base.",
+    "Future combined execution must first record the DTO-only inactive-wait RED, then the real effective-B/offer feature RED before applying production changes.",
+    "The optional unexecuted browser-hunk exploration remains external; per coordinator direction, final delivery uses prescribed regression steps and the minimal three-source-file patch."
+  ]
+}

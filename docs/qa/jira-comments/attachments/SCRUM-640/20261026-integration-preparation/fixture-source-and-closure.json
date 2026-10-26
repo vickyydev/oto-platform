@@ -1,0 +1,119 @@
+{
+  "ticket": "SCRUM-638",
+  "forIntegrationInto": "SCRUM-640",
+  "preparedAt": "2026-10-26T09:36:03.566Z",
+  "applied": false,
+  "testExecution": false,
+  "newRuntime": false,
+  "staging": false,
+  "commit": false,
+  "push": false,
+  "source638Head": "1ad1211539fab888d3f0c501e3853f8f806cd787",
+  "source640Head": "950646674fde66333f911401af82f956f58188b0",
+  "sources": [
+    {
+      "root": "C:/w/admin-assistant-settings",
+      "path": "apps/console/e2e/assistant-settings.spec.ts",
+      "sha256": "57f1554a7d7951ad4c655e373b3201740db0aab53e7ce947f3cefe5509e0c694"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/src/auth/SessionContext.tsx",
+      "sha256": "f07c6e69d919d998e6a5b956a2f68efe5f319e75c5bba00f24f48eb876461b6d"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/src/api/platform.ts",
+      "sha256": "33469135d256c17ca5fefff805a9759898e0e7aff82f2e2e9790487b81ce1de1"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/api/src/routes/me.ts",
+      "sha256": "c7e772bf2b88a2e2c867a67f638179a1b7fba085a458fd09d871bcdaf5621b0e"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/e2e/overview.spec.ts",
+      "sha256": "d541f0954788e3ebbfc548fed39c18c9db3f0a1a20d7a52cdbaed21b4eee45e0"
+    },
+    {
+      "root": "C:/w/admin-operator-switch",
+      "path": "apps/console/e2e/organisation.spec.ts",
+      "sha256": "68d60bc3dcabafe2d75af69b41df57bc7f436be78d4878606edea0f071cb5ebf"
+    }
+  ],
+  "drafts": [
+    {
+      "path": "C:/w/admin638-fixture-for-640-unapplied/assistant-settings.dto.spec.ts",
+      "sha256": "bc18f5d827ddbd66c42af1a1d185beed5fb1b1d5ae1e7f0b9fb15da099f82cac"
+    },
+    {
+      "path": "C:/w/admin638-fixture-for-640-unapplied/assistant-settings.combined.spec.ts",
+      "sha256": "63d6774d2129d9ccdaee36a0aebeb19293b0aa859f88084a53531338dd9f31a2"
+    }
+  ],
+  "patches": [
+    {
+      "path": "C:/w/admin638-assistant-settings-for-640-dto-unapplied.patch",
+      "sha256": "26d71db1febe534129712b5d1ff56d33dd790571586b95271890d74b47fe0213"
+    },
+    {
+      "path": "C:/w/admin638-assistant-settings-for-640-wait-unapplied.patch",
+      "sha256": "4973c7a6e0c8be751d07e13296dda2984b9972922c9aa99b711dc2114ea58c46"
+    },
+    {
+      "path": "C:/w/admin638-assistant-settings-for-640-combined-unapplied.patch",
+      "sha256": "d9edd0972799f95782bf1cb7db48071a4e30be37103bbd960b2dbd5f768cb17b"
+    }
+  ],
+  "gitApplyChecks": [
+    {
+      "label": "dto-only",
+      "patches": [
+        "C:/w/admin638-assistant-settings-for-640-dto-unapplied.patch"
+      ],
+      "exitCode": 0
+    },
+    {
+      "label": "wait-only",
+      "patches": [
+        "C:/w/admin638-assistant-settings-for-640-wait-unapplied.patch"
+      ],
+      "exitCode": 0
+    },
+    {
+      "label": "dto-plus-wait",
+      "patches": [
+        "C:/w/admin638-assistant-settings-for-640-combined-unapplied.patch"
+      ],
+      "exitCode": 0
+    }
+  ],
+  "closure": {
+    "existingTests": 16,
+    "testSuffixByteIdentical": true,
+    "testSuffixSha256": "e549334fad6390b37917714e8bc7f038f076cc929ca7676257e560207e4bd945",
+    "allAssertionsWordingPermissionsAndTimeoutsUnchanged": true,
+    "dtoChanges": "Only the fixture helper and returned /me.operatorContext. All existing native UUID values stay unchanged.",
+    "contextFields": [
+      "sessionId",
+      "homeOperatorId",
+      "effectiveOperatorId",
+      "operatorOverride",
+      "branchId",
+      "stationId",
+      "revision"
+    ],
+    "homeAndEffective": "Both match the existing actor home operator; override is null. Existing operator changes accompany actor replacement, not an operator PUT.",
+    "sessionIdentity": "A native lowercase random UUID remains stable through one actor session/canonical double read; a changed actor creates a different session, including A-B-A.",
+    "seatAndRevision": "branchId is the existing selected native UUID; stationId is null and revision0 because the fixture makes no operator-selection writes.",
+    "metadataReads": "No operators lookup or switch permission is added; isPlatformAdmin remains false and every existing permission/grant fixture is unchanged.",
+    "nativePath": "/me remains the actual authApi.me request spelling despite the generated schema key /me/. No request grammar is broadened.",
+    "separateWaitFix": "Wait for the native /me response rather than permissions:640 rejects inactive context after first /me before a permission request. Active cases retain their subsequent locator/response assertions."
+  },
+  "nextRequired": "Record a real combined-run RED with DTO-only integration before applying the separate synchronization hunk, then run the unchanged16 cases in the integrated runtime. No runtime GREEN is claimed by patch applicability.",
+  "limitations": [
+    "Source/closure/applicability preparation only; no TypeScript compiler, browser, test or live request was executed.",
+    "This null-override fixture patch does not establish AssistantSettings production use of640 effective-operator authority; that production integration remains coordinator-owned."
+  ]
+}

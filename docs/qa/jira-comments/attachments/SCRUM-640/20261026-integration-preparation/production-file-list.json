@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "path": "C:/w/admin638-effective-authority-unapplied/production-for-combined-base.patch",
+      "bytes": 9070,
+      "sha256": "97538c13e619aa066ee92f5486890c4414cbb67ddbaabf977838776df786cffe"
+    },
+    {
+      "path": "C:/w/admin638-effective-authority-unapplied/REGRESSIONS.md",
+      "bytes": 3294,
+      "sha256": "ba61c0a1131c302944aa85e28587c08243662dee6993d1fd9d3bb06f9eeeab9e"
+    },
+    {
+      "path": "C:/w/admin638-effective-authority-unapplied/final-readiness.json",
+      "bytes": 5343,
+      "sha256": "9d902dc77466503f1f8dec60b753efd315340eedec1c0ed6bf07f90cbef077b4"
+    }
+  ],
+  "applied": false,
+  "nativeTestExecution": false
+}

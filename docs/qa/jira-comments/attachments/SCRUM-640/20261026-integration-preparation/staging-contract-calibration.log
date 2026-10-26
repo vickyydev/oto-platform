@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: import is inert and operation model is session-only
+ok 1 - import is inert and operation model is session-only
+  ---
+  duration_ms: 0.4469
+  type: 'test'
+  ...
+# Subtest: synthetic same-session A-B-A and exact request-time audit pairs calibrate
+ok 2 - synthetic same-session A-B-A and exact request-time audit pairs calibrate
+  ---
+  duration_ms: 7.5391
+  type: 'test'
+  ...
+# Subtest: home identity rewrite is refused
+ok 3 - home identity rewrite is refused
+  ---
+  duration_ms: 0.444
+  type: 'test'
+  ...
+# Subtest: employee or grant rewrites are refused
+ok 4 - employee or grant rewrites are refused
+  ---
+  duration_ms: 0.3121
+  type: 'test'
+  ...
+# Subtest: lost or ABA revision and leftover seat are refused
+ok 5 - lost or ABA revision and leftover seat are refused
+  ---
+  duration_ms: 0.2606
+  type: 'test'
+  ...
+# Subtest: Reception must actually receive403 with picker absent and unchanged snapshot
+ok 6 - Reception must actually receive403 with picker absent and unchanged snapshot
+  ---
+  duration_ms: 0.6787
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 65.2554

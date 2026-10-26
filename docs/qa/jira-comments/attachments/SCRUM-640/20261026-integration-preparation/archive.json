@@ -1,0 +1,142 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T09:59:04.261Z",
+  "preparationOnly": true,
+  "source638": "1ad1211539fab888d3f0c501e3853f8f806cd787",
+  "source640": "950646674fde66333f911401af82f956f58188b0",
+  "applied": false,
+  "combinedRuntime": false,
+  "nativeApplicationTestExecution": false,
+  "staging": false,
+  "deployed": false,
+  "review": {
+    "outcome": "PASS, preparation only",
+    "productionFiles": 3,
+    "sourceBindingsVerified": true,
+    "originalSixteenAssertionsPreserved": true,
+    "actualFutureRedGreenRequired": true
+  },
+  "codeRoundtripsVerified": 6,
+  "files": [
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-preparation.json",
+      "sha256": "80ce1fb1239e683e0d647feb80ba418087e9ba97f3a8b15daa3c7cf5cc5dbb04",
+      "bytes": 5598
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/STAGING.md",
+      "sha256": "c2382c9fa44295dc08275a8d4d7b13147b7b64684155713a46fa9fa7afbdf4ef",
+      "bytes": 10232
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-contract-calibration.json",
+      "sha256": "6f82856a70dfcc8543ed62df240c57595e3c6da8df714cdfb0f42bf2e1c549f9",
+      "bytes": 602
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-contract-calibration.log",
+      "sha256": "ca2a6de55d3c18d60403fcdda37df85816f5c57524f57211cc1f5b557e34ba07",
+      "bytes": 1169
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/fixture-source-and-closure.json",
+      "sha256": "c38a2132ae254ccd282285c8bd6f0d45f099b71f6c1f05c0607907d6f30f6f50",
+      "bytes": 5147
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/production-file-list.json",
+      "sha256": "869b513d8daf91853495d59298fffcb4821ccb81695d1ab002c8656ee6f19aaa",
+      "bytes": 677
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/production-readiness.json",
+      "sha256": "9d902dc77466503f1f8dec60b753efd315340eedec1c0ed6bf07f90cbef077b4",
+      "bytes": 5343
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/REGRESSIONS.md",
+      "sha256": "ba61c0a1131c302944aa85e28587c08243662dee6993d1fd9d3bb06f9eeeab9e",
+      "bytes": 3294
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-independent-checkpoint-review.json",
+      "sha256": "3db4fdf69fdf8e8d5ef2d36f39ac1f88f80e6445a67ced7953e49830c1200578",
+      "bytes": 4654
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/unapplied-code.json",
+      "sha256": "f22aa9e91320e11c30933c0994630af0ecaa6bf91dc677dcd0619ff901015dda",
+      "bytes": 26322
+    },
+    {
+      "path": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/README.md",
+      "sha256": "013ac85f82939b990d8bc8ad37466ac7792649565e3d33f976c40a1fb6eb7157",
+      "bytes": 2397
+    }
+  ],
+  "originalCopies": [
+    {
+      "source": "C:/w/admin640-staging-preparation.json",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-preparation.json",
+      "originalSha256": "80ce1fb1239e683e0d647feb80ba418087e9ba97f3a8b15daa3c7cf5cc5dbb04",
+      "archivedSha256": "80ce1fb1239e683e0d647feb80ba418087e9ba97f3a8b15daa3c7cf5cc5dbb04",
+      "crlfConversions": 0
+    },
+    {
+      "source": "C:/w/admin640-staging-acceptance-preparation.md",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/STAGING.md",
+      "originalSha256": "c2382c9fa44295dc08275a8d4d7b13147b7b64684155713a46fa9fa7afbdf4ef",
+      "archivedSha256": "c2382c9fa44295dc08275a8d4d7b13147b7b64684155713a46fa9fa7afbdf4ef",
+      "crlfConversions": 0
+    },
+    {
+      "source": "C:/w/admin640-staging-contract-calibration.json",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-contract-calibration.json",
+      "originalSha256": "6f82856a70dfcc8543ed62df240c57595e3c6da8df714cdfb0f42bf2e1c549f9",
+      "archivedSha256": "6f82856a70dfcc8543ed62df240c57595e3c6da8df714cdfb0f42bf2e1c549f9",
+      "crlfConversions": 0
+    },
+    {
+      "source": "C:/w/admin640-staging-contract-calibration.log",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/staging-contract-calibration.log",
+      "originalSha256": "ca2a6de55d3c18d60403fcdda37df85816f5c57524f57211cc1f5b557e34ba07",
+      "archivedSha256": "ca2a6de55d3c18d60403fcdda37df85816f5c57524f57211cc1f5b557e34ba07",
+      "crlfConversions": 0
+    },
+    {
+      "source": "C:/w/admin638-fixture-for-640-unapplied/source-and-closure.json",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/fixture-source-and-closure.json",
+      "originalSha256": "c38a2132ae254ccd282285c8bd6f0d45f099b71f6c1f05c0607907d6f30f6f50",
+      "archivedSha256": "c38a2132ae254ccd282285c8bd6f0d45f099b71f6c1f05c0607907d6f30f6f50",
+      "crlfConversions": 0
+    },
+    {
+      "source": "C:/w/admin638-effective-authority-unapplied/final-file-list.json",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/production-file-list.json",
+      "originalSha256": "869b513d8daf91853495d59298fffcb4821ccb81695d1ab002c8656ee6f19aaa",
+      "archivedSha256": "869b513d8daf91853495d59298fffcb4821ccb81695d1ab002c8656ee6f19aaa",
+      "crlfConversions": 0
+    },
+    {
+      "source": "C:/w/admin638-effective-authority-unapplied/final-readiness.json",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/production-readiness.json",
+      "originalSha256": "9d902dc77466503f1f8dec60b753efd315340eedec1c0ed6bf07f90cbef077b4",
+      "archivedSha256": "9d902dc77466503f1f8dec60b753efd315340eedec1c0ed6bf07f90cbef077b4",
+      "crlfConversions": 0
+    },
+    {
+      "source": "C:/w/admin638-effective-authority-unapplied/REGRESSIONS.md",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-integration-preparation/REGRESSIONS.md",
+      "originalSha256": "ba61c0a1131c302944aa85e28587c08243662dee6993d1fd9d3bb06f9eeeab9e",
+      "archivedSha256": "ba61c0a1131c302944aa85e28587c08243662dee6993d1fd9d3bb06f9eeeab9e",
+      "crlfConversions": 0
+    },
+    {
+      "source": "C:/w/admin638-checkpoint-independent-review-20261026.json",
+      "target": "docs/qa/jira-comments/attachments/SCRUM-638/20261026-independent-checkpoint-review.json",
+      "originalSha256": "3db4fdf69fdf8e8d5ef2d36f39ac1f88f80e6445a67ced7953e49830c1200578",
+      "archivedSha256": "3db4fdf69fdf8e8d5ef2d36f39ac1f88f80e6445a67ced7953e49830c1200578",
+      "crlfConversions": 0
+    }
+  ]
+}

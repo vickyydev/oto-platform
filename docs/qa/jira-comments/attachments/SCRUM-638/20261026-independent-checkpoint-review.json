@@ -1,0 +1,136 @@
+{
+  "ticket": "SCRUM-638",
+  "reviewedAt": "2026-10-26T09:22:36.213Z",
+  "passed": true,
+  "scope": "Independent local evidence checkpoint review; not a full release or staging approval",
+  "sourceHead": "22ae61a94376cef081c721267c8ce54a7a9fc9a9",
+  "base": "ff39539d401c1d22dd42edf748bb5bb3d4dff41a",
+  "sourceInputs": 3790,
+  "sourceManifestSha256": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+  "allCurrentSourceBytesMatch": true,
+  "index": {
+    "path": "C:/w/admin638-final-20261026/checkpoint-final-file-list-v2.json",
+    "sha256": "c212678565f86e31fd1ca4e7bf8c8b1be9c1d6896743d77735e016176e434908",
+    "files": 190,
+    "qa": 186,
+    "docs": 4,
+    "allFileHashesMatch": true,
+    "previous189FileIndexPreserved": true
+  },
+  "metadata": {
+    "nativeJsonParsed": 185,
+    "bomCount": 0,
+    "crlfJsonCount": 0,
+    "exactExternalCopies": 179,
+    "declaredLfOnlyCopies": 3,
+    "lfNormalizationReceiptSha256": "43ac00c2480831666b05d0a8117e603ccfda04d329ead3bf10b783e1507c988e",
+    "normalizedJsonSemanticallyEqual": true,
+    "originalExternalBytesUnchanged": true,
+    "externalHashLinks": 208,
+    "externalHashMismatches": 0
+  },
+  "counts": {
+    "ordinaryApiPassed": 5278,
+    "ordinaryAvailabilitySkipped": 399,
+    "ordinaryOptionalStorageSkipped": 2,
+    "todo": 5,
+    "appGapFiles": 30,
+    "appGapWholePassed": 790,
+    "repeatedControlsExcluded": 391,
+    "uniqueCombinedApiPassed": 5677,
+    "apiTotalNotDoubleCounted": true,
+    "appCompiler": {
+      "errors": 418,
+      "files": 54,
+      "buckets": 109,
+      "currentCaptureSha256": "6aff0c71fabd4cec690e12d35434b1380c4c5b46db212070be7cfd45b7709db8",
+      "actualReceiptPassed": true,
+      "byteIdenticalToPreviouslyWholeReadCompiler": true
+    },
+    "nativeAppCiPrograms": 41,
+    "restore": {
+      "platformMigrations": 88,
+      "appMigrations": 31,
+      "originalTables": 184,
+      "originalRows": 1108,
+      "replays": 2,
+      "preserved": true
+    },
+    "appOriginal52": {
+      "passed": false,
+      "commands": 52,
+      "failedLabel": "route-fences.check",
+      "followupPassed": true,
+      "followupCommands": 4,
+      "whole52RerunGreenClaimed": false
+    },
+    "workspace": {
+      "typechecks": 16,
+      "builds": 5,
+      "successfulTasks": 21,
+      "cacheHits": 0
+    },
+    "remainingPackages": {
+      "vitestPassed": 2373,
+      "boothTapPassed": 33,
+      "totalPassed": 2406
+    },
+    "console": {
+      "units": 290,
+      "todo": 3,
+      "compilerConfigurations": 3,
+      "compilerDiagnostics": 0,
+      "builtBrowser": 256,
+      "assistantSettingsCases": 16
+    },
+    "pos": {
+      "linuxFiles": 101,
+      "linuxPassed": 1437,
+      "windowsHistoryPassed": 1430,
+      "windowsHistoryFailed": 7,
+      "windowsHistoryRetained": true
+    },
+    "box": 749,
+    "changedLint": {
+      "files": 27,
+      "errors": 0,
+      "generatedIgnoreWarnings": 1
+    }
+  },
+  "sourceBridge": {
+    "ordinaryFrame": "f60ba3191d70681ca72618297347e0507d31292407c7d84585c93712c3d27263",
+    "finalFrame": "145ce2294c5298b109b625258fae4b87003a53817e382665d62f727cbabc1c5e",
+    "onlyConsole661ThreeFilesAndClipboardTestDiffer": true,
+    "appApiDbDependenciesAndProtectedConsumersUnchanged": true,
+    "finalDocsOnlyRebase": true,
+    "skippedCommits": 0
+  },
+  "cleanup": {
+    "appOwnedContainersRemoved": 3,
+    "posOwnedContainersRemoved": 1,
+    "appNetworksRemoved": 2,
+    "baselineTenIdsNamesImagesPreserved": true,
+    "sharedImagesVolumesDeleted": false,
+    "nativeScratchDatabaseCensusesZeroAndServersStopped": true
+  },
+  "publicationSafety": {
+    "authCodeFixtureLeakMatches": 0,
+    "jwtCookieShapeMatches": 0,
+    "attributionMatches": 0,
+    "envImportsServicesPaths": 0,
+    "rawLogsPublished": false,
+    "localReleaseGreen": false,
+    "featureCi": false,
+    "renderDeploy": false,
+    "stagingAcceptance": false,
+    "initialRatesPendingPlanner": true,
+    "migration0087Provisional": true
+  },
+  "findings": [],
+  "closedPreparationIssue": "Exactly3 copied preparation receipts normalized CRLF to LF, with declared source/archive hashes and immutable originals. No native test/compiler/cleanup receipt changed.",
+  "limits": [
+    "Counts and original output summaries were independently checked; this pass did not rerun any test/runtime or reread every passing API line.",
+    "App compiler actual raw bytes match the previously independently whole-read418/54/109 output and current receipt; no old receipt was relabelled.",
+    "Evidence composes explicitly bridged domain-identical frames; no single-frame final whole battery, real provider send, rate setup or staging proof is claimed."
+  ]
+}
