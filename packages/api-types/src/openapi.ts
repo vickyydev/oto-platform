@@ -29,7 +29,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "ok";
+                        };
+                    };
                 };
             };
         };
@@ -62,7 +67,74 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "ready" | "degraded";
+                            checks: {
+                                database: {
+                                    ok: boolean;
+                                    latencyMs: number;
+                                };
+                                pool: {
+                                    total: number;
+                                    idle: number;
+                                    waiting: number;
+                                    max: number | null;
+                                } | null;
+                                jobs: {
+                                    configured: boolean;
+                                    watchdogAgeS: number | null;
+                                    staleAfterS: number;
+                                    stale: boolean;
+                                };
+                                stationChannels: {
+                                    stations: number;
+                                    connections: number;
+                                    perStation: {
+                                        [key: string]: number;
+                                    };
+                                };
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "not_ready";
+                            checks: {
+                                database: {
+                                    ok: boolean;
+                                    latencyMs: number;
+                                };
+                                pool: {
+                                    total: number;
+                                    idle: number;
+                                    waiting: number;
+                                    max: number | null;
+                                } | null;
+                                jobs: {
+                                    configured: boolean;
+                                    watchdogAgeS: number | null;
+                                    staleAfterS: number;
+                                    stale: boolean;
+                                };
+                                stationChannels: {
+                                    stations: number;
+                                    connections: number;
+                                    perStation: {
+                                        [key: string]: number;
+                                    };
+                                };
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -28050,7 +28122,131 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "ok" | "warn" | "down" | "unknown";
+                            checks: {
+                                key: string;
+                                label: string;
+                                /** @enum {string} */
+                                status: "ok" | "warn" | "down" | "unknown";
+                                value?: number | string | ("null" | null);
+                                unit?: string | null;
+                                detail?: string | null;
+                            }[];
+                            jobs: {
+                                name: string;
+                                /** @enum {string} */
+                                status: "ok" | "warn" | "down" | "unknown";
+                                lastRunAt: string | null;
+                                lastOutcome: string | null;
+                                expectedEverySeconds: number | null;
+                                ageSeconds: number | null;
+                                lastError: string | null;
+                                waitingOn: string[];
+                            }[];
+                            boxes: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                slot: string;
+                                role: string;
+                                status: string;
+                                /** @enum {string} */
+                                state: "ok" | "warn" | "down" | "unknown";
+                                /** Format: uuid */
+                                branchId: string;
+                                branchName: string;
+                                /** @enum {string} */
+                                openingHours: "open" | "closed" | "not_set";
+                                agentVersion: string | null;
+                                minAgentVersion: string;
+                                agentBelowMinimum: boolean;
+                                lastHeartbeatAt: string | null;
+                                heartbeatAgeSeconds: number | null;
+                                uptimeSeconds: number | null;
+                                outboxDepth: number | null;
+                                oldestUnackedAgeS: number | null;
+                                quarantineOpen: number;
+                                lastSyncAt: string | null;
+                                clockOffsetMs: number | null;
+                                tempC: number | null;
+                                currentEpoch: number;
+                                configVersion: string | null;
+                                devices: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    kind: string;
+                                    label: string;
+                                    reachability: string;
+                                    paperStatus: string;
+                                    lastError: string | null;
+                                    lastSeenAt: string | null;
+                                }[];
+                                booths: {
+                                    /** Format: uuid */
+                                    stationId: string;
+                                    name: string;
+                                    codePrefix: string | null;
+                                    reported: {
+                                        configVersion: number | null;
+                                        printerReachable: string;
+                                        paperStatus: string;
+                                        vouchersPending: number | null;
+                                        /** @enum {string} */
+                                        pendingUnit: "vouchers" | "events";
+                                        lastSpinAt: string | null;
+                                        staffSignedIn: boolean;
+                                        dailyCapsReached: string[];
+                                        today: {
+                                            businessDate: string;
+                                            spins: number;
+                                            vouchers: number;
+                                        } | null;
+                                        pointerPresent: boolean | null;
+                                    } | null;
+                                    unattributedToday: number | null;
+                                    businessDate: string;
+                                }[];
+                                conditions: string[];
+                                detail: string | null;
+                            }[];
+                            alerts: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                /** @enum {string} */
+                                severity: "info" | "warning" | "critical";
+                                title: string;
+                                detail: string | null;
+                                openedAt: string;
+                                acknowledgedAt: string | null;
+                                resolvedAt: string | null;
+                                count: number;
+                            }[];
+                            watchdogAgeSeconds: number | null;
+                            generatedAt: string;
+                            reach: {
+                                /** @enum {string} */
+                                scope: "operator" | "branch";
+                                branches: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            rollups: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                today: string;
+                                lastRolledUpAt: string | null;
+                                boothLastRolledUpAt: string | null;
+                                reportsLastRolledUpAt: string | null;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -28389,7 +28585,30 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            providers: {
+                                key: string;
+                                name: string;
+                                purpose: string;
+                                category: string;
+                                /** @enum {string} */
+                                state: "configured" | "missing" | "disabled" | "degraded" | "unknown";
+                                missingVars?: string[];
+                                endpoint?: string | null;
+                                lastDeliveryAt?: string | null;
+                                lastDeliveryOutcome?: string | null;
+                                detail?: string | null;
+                            }[];
+                            variables: {
+                                name: string;
+                                present: boolean;
+                                required: boolean;
+                                purpose: string;
+                                provider: string | null;
+                            }[];
+                        };
+                    };
                 };
             };
         };

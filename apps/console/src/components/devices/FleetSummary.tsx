@@ -1,20 +1,12 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import {
-  boxVitals,
-  fleetApi,
-  isMissingRoute,
-  HEARTBEAT_LATE_AFTER_S,
-  type BoxRow,
-  type DeviceRow,
-} from '@/api/fleet';
-import { directoryApi, type BranchRow } from '@/api/platform';
+import { clockOffsetWords } from '@/api/fleet';
+import type { HealthBox } from '@/api/observability';
 import { Cpu } from 'lucide-react';
 import { Loading, RouteUnavailable } from '@/components/Panel';
-import { StatusMark, type Tone } from '@/components/Status';
+import { StatusMark, toneForHealth } from '@/components/Status';
 import { StatusChip } from '@/components/redesign/chips';
 import { CardShell, StripedList, type Span } from '@/components/redesign/layout';
-import { EmptyNote } from '@/components/redesign/StatTile';
+import { EmptyNote, UnreadNote } from '@/components/redesign/StatTile';
 import {
   boxRoleWord,
   boxStatusWord,
@@ -34,52 +26,18 @@ import { elapsed, formatWhen, timeAgo } from '@/lib/time';
  * station sits on it is a different question, asked at a different moment.
  * Each row links across rather than repeating the drawer here.
  */
-export function FleetSummary({ timezone, span }: { timezone?: string | null; span?: Span }) {
-  const [boxes, setBoxes] = useState<BoxRow[] | null>(null);
-  const [devices, setDevices] = useState<DeviceRow[]>([]);
-  const [branches, setBranches] = useState<BranchRow[]>([]);
-  const [missing, setMissing] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      // Boxes are asked for per branch and devices per box, because that is
-      // how they are owned. The estate is a handful of branches and a box or
-      // two each, so walking it is a few requests rather than a page of them.
-      let live: BranchRow[] = [];
-      try {
-        const { branches: list } = await directoryApi.branches();
-        live = list.filter((b) => !b.archived);
-      } catch {
-        // An account may read health without reading the branch list. Nothing
-        // below can be asked for without a branch, so the panel says as much.
-      }
-      if (cancelled) return;
-      setBranches(live);
-
-      const boxResults = await Promise.allSettled(live.map((b) => fleetApi.boxes(b.id)));
-      if (cancelled) return;
-      const found = boxResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.boxes : []));
-      const everyReadMissing =
-        boxResults.length > 0 &&
-        boxResults.every((r) => r.status === 'rejected' && isMissingRoute(r.reason));
-      setMissing(everyReadMissing);
-      setBoxes(found);
-
-      const deviceResults = await Promise.allSettled(
-        found.filter((box) => !box.archived).map((box) => fleetApi.boxDevices(box.id)),
-      );
-      if (cancelled) return;
-      setDevices(deviceResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.devices : [])));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Only branches that report hours AND have none set. An undefined field is a
-  // deployment that does not send them, which is not a fact about the branch.
-  const withoutHours = branches.filter((b) => b.openingHours === null);
+export function FleetSummary({ boxes, loading, missing, error, onRetry, timezone, span }: {
+  boxes?: readonly HealthBox[];
+  loading: boolean;
+  missing: boolean;
+  error: string | null;
+  onRetry: () => void;
+  timezone?: string | null;
+  span?: Span;
+}) {
+  const withoutHours = Array.from(new Map((boxes ?? [])
+    .filter((box) => box.openingHours === 'not_set')
+    .map((box) => [box.branchId, { id: box.branchId, name: box.branchName }])).values());
 
   return (
     <CardShell
@@ -88,12 +46,14 @@ export function FleetSummary({ timezone, span }: { timezone?: string | null; spa
       title="The boxes"
       note="the machine at each counter, gate and booth, and whether it is still talking to us"
     >
-      {missing ? (
+      {missing || (!loading && !error && boxes === undefined) ? (
         <RouteUnavailable
-          what="The box register"
-          detail="Boxes report in as soon as the fleet API is deployed to this environment."
+          what="The box health record"
+          detail="Boxes report here when the health API includes their current state."
         />
-      ) : boxes === null ? (
+      ) : error ? (
+        <UnreadNote what="The box list" onRetry={onRetry} />
+      ) : boxes === undefined ? (
         <Loading what="boxes" />
       ) : boxes.length === 0 ? (
         <EmptyNote
@@ -102,20 +62,17 @@ export function FleetSummary({ timezone, span }: { timezone?: string | null; spa
         />
       ) : (
         <StripedList label="Boxes">
-          {boxes
-            .filter((box) => !box.archived)
-            .map((box) => (
+          {boxes.map((box) => (
               <BoxHealthRow
                 key={box.id}
                 box={box}
-                devices={devices.filter((d) => d.boxId === box.id && !d.archived)}
                 timezone={timezone}
               />
             ))}
         </StripedList>
       )}
 
-      {withoutHours.map((branch) => (
+      {!error && withoutHours.map((branch) => (
         <p key={branch.id} className="flex items-start gap-2 px-3 text-xs text-muted-foreground">
           <StatusMark tone="idle" className="mt-0.5" />
           <span>
@@ -131,19 +88,13 @@ export function FleetSummary({ timezone, span }: { timezone?: string | null; spa
 
 function BoxHealthRow({
   box,
-  devices,
   timezone,
 }: {
-  box: BoxRow;
-  devices: DeviceRow[];
+  box: HealthBox;
   timezone?: string | null;
 }) {
-  const vitals = boxVitals(box);
-  const late =
-    box.status === 'online' &&
-    vitals.heartbeatAgeSeconds !== null &&
-    vitals.heartbeatAgeSeconds > HEARTBEAT_LATE_AFTER_S;
-  const tone: Tone = late ? 'warn' : toneForBoxStatus(box.status);
+  const devices = box.devices ?? [];
+  const tone = toneForHealth(box.state);
 
   return (
     <li className="px-3 py-2.5">
@@ -159,20 +110,25 @@ function BoxHealthRow({
           <span className="text-xs text-muted-foreground">{boxRoleWord(box.role)}</span>
         </span>
         <span className="hidden font-mono text-xs text-muted-foreground @lg:block">
-          {vitals.agentVersion ? `agent ${vitals.agentVersion}` : box.slot}
+          {box.agentVersion ? `agent ${box.agentVersion}` : box.slot}
         </span>
         <span className="text-right text-[12.5px] text-muted-foreground tabular-nums whitespace-nowrap">
-          {vitals.heartbeatAgeSeconds === null
+          {box.heartbeatAgeSeconds == null
             ? 'never reported'
-            : `heartbeat ${elapsed(vitals.heartbeatAgeSeconds)} old`}
+            : `heartbeat ${elapsed(box.heartbeatAgeSeconds)} old`}
         </span>
       </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 pl-6 text-xs text-muted-foreground">
         <StatusChip tone={toneForBoxStatus(box.status)}>{boxStatusWord(box.status)}</StatusChip>
-        {vitals.agentVersion && <span className="@lg:hidden">agent {vitals.agentVersion}</span>}
-        {vitals.uptimeSeconds !== null && <span>up {elapsed(vitals.uptimeSeconds)}</span>}
-        {vitals.outboxDepth !== null && <span>outbox {vitals.outboxDepth}</span>}
+        {box.agentVersion && <span className="@lg:hidden">agent {box.agentVersion}</span>}
+        {box.uptimeSeconds != null && <span>up {elapsed(box.uptimeSeconds)}</span>}
+        {box.outboxDepth != null && <span>outbox {box.outboxDepth}</span>}
+        {box.oldestUnackedAgeS != null && <span>oldest waiting {elapsed(box.oldestUnackedAgeS)}</span>}
+        {box.clockOffsetMs != null && <span>clock {clockOffsetWords(box.clockOffsetMs)}</span>}
+        <span>{box.lastSyncAt ? `last sync ${timeAgo(box.lastSyncAt)}` : 'last sync not recorded'}</span>
+        {box.agentVersion && box.minAgentVersion && <span>minimum agent {box.minAgentVersion}</span>}
+        {box.agentVersion && box.agentBelowMinimum && <StatusChip tone="warn">Below minimum</StatusChip>}
         {box.lastHeartbeatAt && (
           <span title={formatWhen(box.lastHeartbeatAt, timezone)}>
             last heard {timeAgo(box.lastHeartbeatAt)}

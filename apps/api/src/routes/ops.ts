@@ -11,6 +11,7 @@ import {
   syncQuarantine,
 } from '@oto/db';
 import type { App } from '../app';
+import { HealthSnapshotResponse, IntegrationsResponse } from './health-integration-schemas';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
@@ -169,6 +170,7 @@ export async function opsRoutes(app: App): Promise<void> {
       schema: {
         description:
           'Dependency checks, the job register, every box with its devices, and open alerts — read from the database, not from this process',
+        response: { 200: HealthSnapshotResponse },
       },
     },
     async (req) => {
@@ -704,6 +706,7 @@ export async function opsRoutes(app: App): Promise<void> {
       config: { permission: 'admin:health:read' },
       schema: {
         description: 'Outside services: a name, a state, what is unset by name, and when each last ran',
+        response: { 200: IntegrationsResponse },
       },
     },
     async (req) => {

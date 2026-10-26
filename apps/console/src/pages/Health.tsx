@@ -3,6 +3,7 @@ import { BellRing, CalendarClock, LineChart, Loader2, RefreshCw, Server } from '
 import {
   healthApi,
   type AlertRow,
+  type HealthBox,
   type HealthCheck,
   type HealthState,
   type JobStatus,
@@ -73,16 +74,24 @@ export function Health() {
   // is the one reading this page should never lose, and the richer snapshot
   // reports on dependencies rather than on the round trip to itself.
   const checks = [...apiCheck(ready), ...(snapshot?.checks ?? checksFromReady(ready).slice(1))];
+  const stationConnections = ready ? knownCheck('stationChannels', ready.checks?.stationChannels) : null;
+  if (stationConnections && !checks.some((check) => check.key === 'stationChannels')) {
+    checks.push(stationConnections);
+  }
   const jobs = snapshot?.jobs ?? [];
   const rollups = snapshot?.rollups ?? [];
   // S2-18 — Radar's freshness, for those who can open Radar.
   const radarLine = has('app:radar:access') ? radarFreshnessLine(rollups) : null;
   const alerts = (snapshot?.alerts ?? []).filter((a) => !a.resolvedAt);
-  const problems = listProblems(ready, checks, jobs, alerts);
-  const verdict = overallTone(ready, checks, jobs, alerts, problems);
+  const boxes = snapshot?.boxes ?? [];
+  const problems = listProblems(ready, checks, jobs, alerts, boxes);
+  const verdict = overallTone(ready, checks, jobs, alerts, problems, snapshot?.status);
+  const shownVerdict = error ? (ready && !ready.ok ? 'down' : 'idle') : verdict;
   // The same sentences without the alert ones: the Alerts card lists the
   // alerts themselves underneath, each with its own button.
-  const systemProblems = estateWide ? listProblems(ready, checks, jobs, []) : [];
+  const systemProblems = estateWide ? listProblems(ready, checks, jobs, [], boxes) : [];
+  const fleetProps = { boxes: snapshot?.boxes, loading, missing: snapshotMissing, error,
+    onRetry: () => void refresh(), timezone, span: 7 as const };
   /**
    * Whether "no open alerts" is something /ops/health actually said. Not before
    * its first answer (the snapshot is still null) and not while the last read
@@ -99,7 +108,7 @@ export function Health() {
         actions={
           <>
             {estateWide && (
-              <BarChip tone={verdict}>{headline(verdict, problems.length, snapshotMissing)}</BarChip>
+              <BarChip tone={shownVerdict}>{error ? 'Health could not be read' : headline(verdict, problems.length, snapshotMissing, snapshot?.status === 'unknown')}</BarChip>
             )}
             <BarChip>
               {lastCheckedAt ? `checked ${timeAgo(new Date(lastCheckedAt).toISOString())}` : 'checking…'}
@@ -156,7 +165,7 @@ export function Health() {
           </CardShell>
         )}
 
-        {!estateWide && <FleetSummary timezone={timezone} span={7} />}
+        {!estateWide && <FleetSummary {...fleetProps} />}
 
         <CardShell
           span={5}
@@ -202,7 +211,7 @@ export function Health() {
           ) : null}
         </CardShell>
 
-        {estateWide && <FleetSummary timezone={timezone} span={7} />}
+        {estateWide && <FleetSummary {...fleetProps} />}
 
         {estateWide && (
           <CardShell
@@ -275,9 +284,11 @@ export function Health() {
 // ---------------------------------------------------------------------------
 
 /** The verdict in the words the command bar's chip carries. */
-function headline(tone: Tone, problemCount: number, partial: boolean): string {
+function headline(tone: Tone, problemCount: number, partial: boolean, unknown: boolean): string {
+  if (unknown && tone === 'idle') return 'The overall health is unknown';
   if (tone === 'idle') return 'Nothing is reporting yet';
   if (tone === 'ok') return partial ? 'The API is answering' : 'Everything is healthy';
+  if (problemCount === 0) return 'The platform needs attention';
   return problemCount === 1 ? 'One thing needs attention' : `${problemCount} things need attention`;
 }
 
@@ -478,8 +489,33 @@ function apiCheck(ready: Readiness | null): HealthCheck[] {
   ];
 }
 
-/** The three `/ready` reports today, each read for what it actually means. */
+/** The named `/ready` readings, each read for what it actually means. */
 function knownCheck(key: string, raw: unknown): HealthCheck | null {
+  if (key === 'stationChannels') {
+    const obj = raw && typeof raw === 'object' && !Array.isArray(raw)
+      ? raw as Record<string, unknown> : null;
+    const stations = typeof obj?.stations === 'number' && Number.isInteger(obj.stations) && obj.stations >= 0
+      ? obj.stations : null;
+    const connections = typeof obj?.connections === 'number' && Number.isInteger(obj.connections) && obj.connections >= 0
+      ? obj.connections : null;
+    const counts = obj?.perStation;
+    const entries = counts && typeof counts === 'object' && !Array.isArray(counts)
+      ? Object.entries(counts) : null;
+    const perStationKnown = entries?.every(([, count]) => typeof count === 'number' && Number.isInteger(count) && count >= 0);
+    return {
+      key,
+      label: 'Station connections',
+      status: 'unknown',
+      value: connections !== null && stations !== null ? `${connections} connections / ${stations} stations` : null,
+      detail: !obj
+        ? 'Station connection counts were not recorded. This API instance only.'
+        : `This API instance only. ${perStationKnown
+          ? entries!.length > 0
+            ? entries!.map(([stationId, count]) => `${stationId}: ${String(count)} connections`).join('; ')
+            : 'The per-station list is empty.'
+          : 'Per-station connection counts were not recorded.'}`,
+    };
+  }
   if (!raw || typeof raw !== 'object') return null;
   const obj = raw as Record<string, unknown>;
 
@@ -558,6 +594,7 @@ function listProblems(
   checks: HealthCheck[],
   jobs: JobStatus[],
   alerts: AlertRow[],
+  boxes: readonly HealthBox[],
 ): string[] {
   const problems: string[] = [];
   if (ready && !ready.ok) problems.push(`The API answered ${ready.status} — it is not taking traffic.`);
@@ -590,6 +627,11 @@ function listProblems(
       );
     }
   }
+  for (const box of boxes) {
+    if (box.state !== 'down' && box.state !== 'warn') continue;
+    if (box.conditions.some((key) => alerts.some((alert) => alert.key === key && !alert.acknowledgedAt))) continue;
+    problems.push(box.detail || `${box.name} needs attention.`);
+  }
   const open = alerts.filter((a) => !a.acknowledgedAt);
   const only = open.length === 1 ? open[0] : undefined;
   if (only) problems.push(`Alert: ${only.title}`);
@@ -610,14 +652,16 @@ function overallTone(
   jobs: JobStatus[],
   alerts: AlertRow[],
   problems: string[],
+  reportedStatus?: HealthState,
 ): Tone {
   if (!ready) return 'idle';
-  if (!ready.ok) return 'down';
+  if (!ready.ok || reportedStatus === 'down') return 'down';
   if (checks.some((c) => c.status === 'down')) return 'down';
   if (jobs.some((j) => j.status === 'down')) return 'down';
   if (alerts.some((a) => a.severity === 'critical' && !a.acknowledgedAt)) return 'down';
   // Weighed last, so a 200 that calls itself degraded never masks something
   // underneath it that is actually broken.
-  if (ready.status !== 'ready') return 'warn';
+  if (ready.status !== 'ready' || reportedStatus === 'warn') return 'warn';
+  if (reportedStatus === 'unknown') return 'idle';
   return problems.length === 0 ? 'ok' : 'warn';
 }
