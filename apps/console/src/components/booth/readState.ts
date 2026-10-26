@@ -19,6 +19,8 @@
  * its version history, and the operator's layouts — each arriving on its own
  * request and each able to fail on its own.
  */
+import { ApiError } from '@/api/client';
+
 export interface Read<T> {
   /** The last value read. `fallback` until a read succeeds. */
   value: T;
@@ -82,5 +84,19 @@ export function readAbsent<T>(fallback: T): Read<T> {
 
 /** The words for a failed read, from whatever the fetch threw. */
 export function readFailureMessage(reason: unknown): string {
+  // A schema refusal names its fields in `details`; without them the banner
+  // says only "Request does not match the schema" and nobody can tell which
+  // box to fix (SCRUM-661: a slice colour ending in the letter O, not a zero).
+  if (reason instanceof ApiError && reason.code === 'VALIDATION' && Array.isArray(reason.details)) {
+    const parts = reason.details
+      .map((entry) => {
+        const d = entry as { instancePath?: unknown; message?: unknown };
+        const at = typeof d.instancePath === 'string' ? d.instancePath.replace(/^\//, '').replace(/\//g, '.') : '';
+        const why = typeof d.message === 'string' ? d.message : '';
+        return at && why ? `${at}: ${why}` : why || at;
+      })
+      .filter(Boolean);
+    if (parts.length > 0) return `${reason.message} — ${parts.join('; ')}`;
+  }
   return reason instanceof Error && reason.message ? reason.message : 'The request failed.';
 }

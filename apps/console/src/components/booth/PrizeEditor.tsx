@@ -37,6 +37,11 @@ import { notSetUp, worthOf } from './voucherTypes';
  * be saved and come back to. It is PUBLISHING that is refused, by the publish
  * panel and then, authoritatively, by the API.
  */
+
+/** The api's HexColor rule, said here before the submit instead of after it (SCRUM-661). */
+const HEX_COLOUR = /^#[0-9A-Fa-f]{6}$/;
+const COLOUR_RULE = 'A colour is # plus six hex digits (0–9, A–F), like #E23B3B — watch for the letter O where a zero belongs.';
+
 export function PrizeEditor({
   prize,
   siblings,
@@ -87,8 +92,19 @@ export function PrizeEditor({
   ]);
 
   const nameGiven = draft.nameEn.trim().length > 0;
+  // The api refuses anything but #RRGGBB and whole numbers in range; saying so
+  // here, beside the field, beats its generic schema refusal after the fact
+  // (SCRUM-661: a tester's slice colour ended in the letter O, not a zero, and
+  // the banner never said which field was wrong).
+  const sliceColourBad = draft.sliceColor !== null && !HEX_COLOUR.test(draft.sliceColor);
+  const textColourBad = draft.textColor !== null && !HEX_COLOUR.test(draft.textColor);
+  const wholeAtLeast = (v: number | null, min: number) => v === null || (Number.isInteger(v) && v >= min);
+  const orderBad = !wholeAtLeast(draft.sortOrder, 0);
+  const dailyCapBad = !wholeAtLeast(draft.dailyCap, 1);
+  const expiryBad = !wholeAtLeast(draft.expiryDays, 1);
   const canSave =
-    !saving && !saveUnavailable && !readOnly && nameGiven && weightBp !== null && costSatang !== null;
+    !saving && !saveUnavailable && !readOnly && nameGiven && weightBp !== null && costSatang !== null &&
+    !sliceColourBad && !textColourBad && !orderBad && !dailyCapBad && !expiryBad;
 
   const save = () => {
     if (!canSave || weightBp === null || costSatang === null) return;
@@ -303,7 +319,16 @@ export function PrizeEditor({
             </div>
           </Field>
 
-          <Field label="Wheel order" hint="Low numbers first, clockwise from the top.">
+          <Field
+            label="Wheel order"
+            hint={
+              orderBad ? (
+                <span className="text-destructive">A whole number, 0 or more.</span>
+              ) : (
+                'Low numbers first, clockwise from the top.'
+              )
+            }
+          >
             <NumberInput
               value={draft.sortOrder}
               min={0}
@@ -313,7 +338,13 @@ export function PrizeEditor({
 
           <Field
             label="Daily cap"
-            hint="Left empty it is uncapped. At its cap the prize leaves the draw for the rest of the trading day and the others renormalise — the wheel keeps spinning."
+            hint={
+              dailyCapBad ? (
+                <span className="text-destructive">A whole number, 1 or more — or empty for no cap.</span>
+              ) : (
+                'Left empty it is uncapped. At its cap the prize leaves the draw for the rest of the trading day and the others renormalise — the wheel keeps spinning.'
+              )
+            }
           >
             <NumberInput
               value={draft.dailyCap}
@@ -326,7 +357,9 @@ export function PrizeEditor({
           <Field
             label="Expires after"
             hint={
-              draft.expiryDays !== null ? (
+              expiryBad ? (
+                <span className="text-destructive">A whole number of days, 1 or more — or empty.</span>
+              ) : draft.expiryDays !== null ? (
                 'Days after the day it is won. The slip prints the last day, and the voucher is good to the end of that day in the park’s time zone.'
               ) : chosenDefinition?.expiryDays != null ? (
                 <>Left empty, it takes the voucher’s own {chosenDefinition.expiryDays} days.</>
@@ -351,7 +384,16 @@ export function PrizeEditor({
             />
           </Field>
 
-          <Field label="Slice colour" hint="Left empty it takes the layout's palette for this position.">
+          <Field
+            label="Slice colour"
+            hint={
+              sliceColourBad ? (
+                <span className="text-destructive">{COLOUR_RULE}</span>
+              ) : (
+                "Left empty it takes the layout's palette for this position."
+              )
+            }
+          >
             <TextInput
               value={draft.sliceColor ?? ''}
               onChange={(v) => setDraft({ ...draft, sliceColor: v.trim() === '' ? null : v.trim() })}
@@ -360,7 +402,12 @@ export function PrizeEditor({
             />
           </Field>
 
-          <Field label="Label colour" hint="The text on the wedge.">
+          <Field
+            label="Label colour"
+            hint={
+              textColourBad ? <span className="text-destructive">{COLOUR_RULE}</span> : 'The text on the wedge.'
+            }
+          >
             <TextInput
               value={draft.textColor ?? ''}
               onChange={(v) => setDraft({ ...draft, textColor: v.trim() === '' ? null : v.trim() })}
