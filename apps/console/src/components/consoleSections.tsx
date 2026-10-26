@@ -37,6 +37,10 @@ export interface ConsoleNavGroup {
 
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
+  { id: 'analytics', path: '/reports/analytics', label: 'Analytics & sources', icon: BarChart3,
+    description: 'Recorded sources, formula versions, queued dates and headline figures.', permission: 'console:analytics:read' },
+  { id: 'config', path: '/organisation/configuration', label: 'Configuration', icon: Building2,
+    description: 'Settings ownership and the existing pages where each setting is managed.', permission: 'console:config:read' },
   { id: 'inventory', path: '/catalogue/inventory', label: 'Inventory', icon: Ticket,
     description: 'Stock items, variants, counts and stock locations at a park.' },
   { id: 'members', path: '/catalogue/members', label: 'Members', icon: Users,
@@ -266,7 +270,7 @@ export const consoleNav: ConsoleNavGroup[] = [
   {
     id: 'organisation', label: 'Organisation', icon: Building2,
     description: 'Operators, branches, their connection to the OTO App and ticket-pricing holidays.',
-    gate: { any: ['admin:branch:read'] }, sections: pages('operators', 'branches', 'holidays'),
+    gate: { any: ['admin:branch:read', 'console:config:read'] }, sections: pages('operators', 'branches', 'holidays', 'config'),
   },
   {
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,
@@ -292,7 +296,7 @@ export const consoleNav: ConsoleNavGroup[] = [
   {
     id: 'reports', label: 'Reports', icon: BarChart3,
     description: 'Sales, profitability, discounts, tax, wallet credit, booth activity and online bookings.',
-    gate: { any: ['analytics:read'] }, sections: pages('reports-sales', 'reports-profitability', 'reports-discounts', 'reports-tax-vat', 'reports-wallet-promo', 'wallets', 'booth-report', 'bookings'),
+    gate: { any: ['analytics:read'] }, sections: pages('analytics', 'reports-sales', 'reports-profitability', 'reports-discounts', 'reports-tax-vat', 'reports-wallet-promo', 'wallets', 'booth-report', 'bookings'),
   },
   {
     id: 'watch', label: 'Watch', icon: Activity,
