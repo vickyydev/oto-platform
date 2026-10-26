@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-640",
+  "recordedAt": "2026-10-26T09:15:10.287Z",
+  "correctionOnly": true,
+  "originalRecord": "docs/qa/jira-comments/attachments/SCRUM-640/20261026-q22-rebase/admin640-post-rebase-bridge-v1-preflight.json",
+  "originalRecordSha256": "900eb39c7bf54c58e2c17b92b58720f37e3906a5b1229f290551de42fdf48369",
+  "correction": "The incorrect lib/readState.ts expectation was in the coordinator helper. No verified planner statement assigns that path. The original failed preflight record is retained unchanged; its attribution sentence is superseded by this correction.",
+  "actualPath": "apps/console/src/components/booth/readState.ts",
+  "testedScopedInputCount": 117,
+  "testedScopedInputsUnchanged": true,
+  "sourceChanged": false,
+  "gateResultsChanged": false,
+  "staging": false,
+  "release": false
+}
