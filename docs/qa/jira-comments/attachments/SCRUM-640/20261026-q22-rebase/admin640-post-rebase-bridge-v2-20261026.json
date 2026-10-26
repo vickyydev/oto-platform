@@ -1,0 +1,81 @@
+{
+  "ticket": "SCRUM-640",
+  "checkedAt": "2026-10-26T08:05:38.504Z",
+  "beforeHead": "7ef1b5effa2b5b39935e17f699cda7fe3040e03c",
+  "head": "701ff7b1c9a8b4b2d5bf34ff89a909576c7d5f6f",
+  "base": "544cd736598640a240faf6c2584c344de1f811ec",
+  "preservedCommits": [
+    {
+      "before": "ccc01c963f80c808f32dd45a7c3a1e1bd80d825a",
+      "after": "2da0c251384a97c28ec6fa494a0575a12aa579e3",
+      "subject": "feat(console): prepare isolated session operator switching"
+    },
+    {
+      "before": "bda879212538466d2dd4bc45bc0a09063db92832",
+      "after": "9cdb894c1680cea2887bb1298d9c33a3e31685af",
+      "subject": "docs(console): preserve operator switch groundwork evidence"
+    },
+    {
+      "before": "8eac4928920947f7b668104972d4907ed1bc8319",
+      "after": "fc3857c1bf680492b6865bd7e2c617bb7bda0afe",
+      "subject": "feat(auth): bind operator selection to the verified session"
+    },
+    {
+      "before": "19e061ada080666764ef526e7050bc1129b9fd53",
+      "after": "d0d29b7a8192d0d9d9121e100237e413584508cf",
+      "subject": "feat(console): fence controls by the confirmed working operator"
+    },
+    {
+      "before": "98bb597f69b75817bce859606c6a3f2799a71b8c",
+      "after": "e843373d75e2158da669626d272f353fac969674",
+      "subject": "docs(console): preserve verified operator integration checkpoints"
+    },
+    {
+      "before": "88c359ba77756968f330db53cd3e9e75a66b8a30",
+      "after": "7af05a36b1bbd5463c4c5ebae0741542e9744924",
+      "subject": "fix(api): retain verified operator context in audit records"
+    },
+    {
+      "before": "7ef1b5effa2b5b39935e17f699cda7fe3040e03c",
+      "after": "701ff7b1c9a8b4b2d5bf34ff89a909576c7d5f6f",
+      "subject": "docs(console): preserve the Q22 native audit checkpoint"
+    }
+  ],
+  "skippedCommits": 0,
+  "conflict": "Only STATUS; latest Q22 then planner661 then historical blocks retained.",
+  "exactSourceDelta": [
+    {
+      "path": "apps/console/src/components/booth/PrizeEditor.tsx",
+      "sha256": "67f7259225ee300530b5a456ebf7761ff6c33996a1b9ac87ed80893f03c61e07",
+      "exactMainBytes": true
+    },
+    {
+      "path": "apps/console/src/components/booth/readState.ts",
+      "sha256": "4d88ca8742b1bea1be49b1ad2d7e66dd544e426cfb7b91e52457c8fd855892e7",
+      "exactMainBytes": true
+    },
+    {
+      "path": "apps/console/test/prize-editor-validation.test.ts",
+      "sha256": "f0431dd1e8ff4393d02291c1cd252a2513ffba5d4b3c166c7c076e7a09d16147",
+      "exactMainBytes": true
+    }
+  ],
+  "frames": [
+    {
+      "attempt": "admin640-q22-broad-green-v1",
+      "inputCount": 841,
+      "sourceManifestSha256": "b5012653dbfed7f531398def76bcca86cff5670c929994d05d9721f23db2b256",
+      "inputsUnchangedAcrossRebase": true
+    },
+    {
+      "attempt": "admin640-final-scoped-v6",
+      "inputCount": 109,
+      "sourceManifestSha256": "671eb84667c1e5790b3785811282f7c7ac0877302033a297f4c003d0d3988810",
+      "inputsUnchangedAcrossRebase": true
+    }
+  ],
+  "sourceEditsDuringRebase": false,
+  "release": false,
+  "deployed": false,
+  "remaining": "Complete combined release still requires planner ask pinning and the 638 landing."
+}
