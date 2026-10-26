@@ -1,0 +1,43 @@
+{
+  "ticket": "SCRUM-644",
+  "phase": "red",
+  "startedAt": "2026-10-26T18:11:21.240Z",
+  "completedAt": "2026-10-26T18:11:22.842Z",
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\w\\admin-activity-failures\\apps\\console\\node_modules\\vitest\\vitest.mjs",
+      "run",
+      "test/record-view.test.ts"
+    ],
+    "cwd": "C:\\w\\admin-activity-failures\\apps\\console"
+  },
+  "nodeVersion": "v22.17.1",
+  "exitCode": 1,
+  "signal": null,
+  "errorCode": null,
+  "before": {
+    "apps/console/src/components/RecordView.tsx": "2a59662618bf5811228e4d51014773e2454b18c0799a8e0036f110f4a2535008",
+    "apps/console/test/record-view.test.ts": "6ee9fe2ed802fde9b7eba784d4297a6ac64c1354228fca2b24fe06608f5368e7",
+    "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+    "apps/console/package.json": "098e1beba7e035d47fde0ea075f783fc4a8337ac6921d93f10b0b528238ee478",
+    "apps/console/vitest.config.ts": "18a45846f1f331b472d2782817bae1946839ab900514e73400869bc49d4a3e52"
+  },
+  "after": {
+    "apps/console/src/components/RecordView.tsx": "2a59662618bf5811228e4d51014773e2454b18c0799a8e0036f110f4a2535008",
+    "apps/console/test/record-view.test.ts": "6ee9fe2ed802fde9b7eba784d4297a6ac64c1354228fca2b24fe06608f5368e7",
+    "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0",
+    "apps/console/package.json": "098e1beba7e035d47fde0ea075f783fc4a8337ac6921d93f10b0b528238ee478",
+    "apps/console/vitest.config.ts": "18a45846f1f331b472d2782817bae1946839ab900514e73400869bc49d4a3e52"
+  },
+  "inputsUnchanged": true,
+  "logPath": "C:/w/admin644-record-view-red-v1.log",
+  "logSha256": "18f58ef451c12c9b631820fa73b827d8b2949115f9b51225b40fe737b0c932eb",
+  "helperSha256": "4bba3f0ee69cce8527ffa830c16b49f41a4343122a50bda2fd180236be2e37a8",
+  "nativeReactStaticRender": true,
+  "network": false,
+  "staging": false,
+  "resourcesStarted": false
+}

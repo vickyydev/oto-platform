@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-644",
+  "at": "2026-10-26T18:19:40.552Z",
+  "originalSha": "4b0aa2a91e2082cd4a0ef464153f4790ffa02dae",
+  "sha": "4b29f08c8e8d9ad01204e42e92862b5cfb411de2",
+  "base": "5e50f12e1b0cb6086f199621f4079f7ebdb3e1ee",
+  "sourceUnchangedByRebase": true,
+  "files": {
+    "apps/api/src/routes/audit.ts": "7095d9c1778e9252da180aeedca207c7b0c9cd151e9b8883c1f08756fbb1f908",
+    "apps/api/test/audit-response-review.test.ts": "4b7589d806a03fe85b1a4168fb7a89a0483868f4042a2b7a81627be84973d1c6",
+    "apps/console/src/api/observability.ts": "e99a6eb76ea984285a96577b14235789adf3f2b32d308217626395c97baa9369",
+    "apps/console/src/components/RecordView.tsx": "c4bd6e947fac1ca3ffb03c73725598aafe670e1392e5f3befeb230672c67e141",
+    "apps/console/src/pages/Activity.tsx": "9640de0f286d2d69c87d8ddd2fb2c6a533a0a1975edeeab5783217715a275165",
+    "apps/console/src/pages/Failures.tsx": "0b65b8ab5c6554728ae4fcae67d87ab4c67d2e997b5f3b64b10f7af11a2e4fc7",
+    "apps/console/e2e/observability-lifetime.spec.ts": "fb87cb86060a9feaaccf303fed5d2ae62877f9bafcc3192abee69867f20ea207",
+    "apps/console/test/record-view.test.ts": "6ee9fe2ed802fde9b7eba784d4297a6ac64c1354228fca2b24fe06608f5368e7",
+    "packages/api-types/openapi.json": "c91b264f4c3a3b6c0ce6d9505eb42c5c10f90a285c5eb95e73068def40a16f47",
+    "packages/api-types/src/openapi.ts": "105344b0079576a62a07c4ccf43f451519547eba3a307f2e493fd60174b0788f",
+    "packages/api-types/test/migration-list.ts": "5b3fb0557c79d1db8cb49285b28ea7b0a0cd52c9114b2c6c99e2549b5d953900"
+  },
+  "commits": [
+    "4b29f08c8e8d9ad01204e42e92862b5cfb411de2 fix(console): retain current audit and failure results"
+  ],
+  "pushed": false,
+  "releaseGreen": false,
+  "staging": false
+}

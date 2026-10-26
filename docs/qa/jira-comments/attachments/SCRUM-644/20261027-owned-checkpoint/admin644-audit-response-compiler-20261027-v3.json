@@ -1,0 +1,33 @@
+{
+  "ticket": "SCRUM-644",
+  "kind": "compiler",
+  "startedAt": "2026-10-26T18:14:36.261Z",
+  "completedAt": "2026-10-26T18:15:42.792Z",
+  "exitCode": 0,
+  "signal": null,
+  "before": {
+    "apps/api/src/routes/audit.ts": "7095d9c1778e9252da180aeedca207c7b0c9cd151e9b8883c1f08756fbb1f908",
+    "apps/api/test/audit-response-review.test.ts": "4b7589d806a03fe85b1a4168fb7a89a0483868f4042a2b7a81627be84973d1c6"
+  },
+  "after": {
+    "apps/api/src/routes/audit.ts": "7095d9c1778e9252da180aeedca207c7b0c9cd151e9b8883c1f08756fbb1f908",
+    "apps/api/test/audit-response-review.test.ts": "4b7589d806a03fe85b1a4168fb7a89a0483868f4042a2b7a81627be84973d1c6"
+  },
+  "inputsUnchanged": true,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:/Users/waqar/AppData/Roaming/npm/node_modules/pnpm/bin/pnpm.cjs",
+      "--filter",
+      "@oto/api",
+      "typecheck"
+    ],
+    "cwd": "C:/w/admin-activity-failures"
+  },
+  "toolSha256": "b276da51dc8ca5b0d3ee3371695b50fc8b3244b281b091c63a3f082a88dadeb9",
+  "runnerSha256": "0ba54a34c792f23ae037314d45d45fa85aa889e3fb655ac5bc474ed62c3afe24",
+  "logPath": "C:/w/admin644-audit-response-compiler-20261027-v3.log",
+  "logSha256": "15e4f85eda658f03cf2d938a789932f6fee55d29668c43f93bb6156a6bafb79a",
+  "redactionApplied": false,
+  "noStaging": true
+}

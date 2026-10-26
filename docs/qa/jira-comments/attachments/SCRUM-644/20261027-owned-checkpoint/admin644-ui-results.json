@@ -1,0 +1,170 @@
+{
+    "ticket":  "SCRUM-644",
+    "scope":  "Independent Activity/Failures data reliability slice",
+    "createdAt":  "2026-10-26T18:19:55.5552977Z",
+    "worktree":  "C:/w/admin-activity-failures",
+    "ownedFiles":  [
+                       {
+                           "path":  "apps/console/src/pages/Activity.tsx",
+                           "sha256":  "9640de0f286d2d69c87d8ddd2fb2c6a533a0a1975edeeab5783217715a275165"
+                       },
+                       {
+                           "path":  "apps/console/src/pages/Failures.tsx",
+                           "sha256":  "0b65b8ab5c6554728ae4fcae67d87ab4c67d2e997b5f3b64b10f7af11a2e4fc7"
+                       },
+                       {
+                           "path":  "apps/console/e2e/observability-lifetime.spec.ts",
+                           "sha256":  "fb87cb86060a9feaaccf303fed5d2ae62877f9bafcc3192abee69867f20ea207"
+                       }
+                   ],
+    "ownedSourcesFrozen":  true,
+    "integrationInputs":  [
+                              {
+                                  "path":  "apps/console/src/api/observability.ts",
+                                  "sha256":  "e99a6eb76ea984285a96577b14235789adf3f2b32d308217626395c97baa9369"
+                              },
+                              {
+                                  "path":  "apps/console/src/components/RecordView.tsx",
+                                  "sha256":  "c4bd6e947fac1ca3ffb03c73725598aafe670e1392e5f3befeb230672c67e141"
+                              },
+                              {
+                                  "path":  "apps/console/test/record-view.test.ts",
+                                  "sha256":  "6ee9fe2ed802fde9b7eba784d4297a6ac64c1354228fca2b24fe06608f5368e7"
+                              },
+                              {
+                                  "path":  "packages/api-types/src/openapi.ts",
+                                  "sha256":  "105344b0079576a62a07c4ccf43f451519547eba3a307f2e493fd60174b0788f"
+                              },
+                              {
+                                  "path":  "apps/console/src/api/client.ts",
+                                  "sha256":  "a787392f14a79db7e65d91ccf6d9680e7d149c8e6bfb648a9623e889c1e47121"
+                              },
+                              {
+                                  "path":  "apps/console/src/auth/SessionContext.tsx",
+                                  "sha256":  "f07c6e69d919d998e6a5b956a2f68efe5f319e75c5bba00f24f48eb876461b6d"
+                              },
+                              {
+                                  "path":  "apps/console/src/App.tsx",
+                                  "sha256":  "5470987f8cbb65b667ea527d35c90dad039dc7392eb406e6f702ebde4e599ee1"
+                              }
+                          ],
+    "baseline":  {
+                     "originalPageHashes":  [
+                                                "65dcf1b647ba43a1abb7c25eda2d742754fa928d24675cca8c1e30036f644fef",
+                                                "bc9efe274767ed4d62fa2c4e18724ec8a2820f0a615804a339283ae7b766aced"
+                                            ],
+                     "initial":  {
+                                     "receipt":  {
+                                                     "path":  "C:/w/admin644-ui-browser-red.json",
+                                                     "sha256":  "2ef58f52eb964bf01f2cb765bff7f862658c43c23e40f69cbe0c770f13073b0d"
+                                                 },
+                                     "log":  {
+                                                 "path":  "C:/w/admin644-ui-browser-red.log",
+                                                 "sha256":  "6ec505e5c311868df62ddf2a30cd59527983fe211722c77d10757cfae93b7a21"
+                                             },
+                                     "failed":  7,
+                                     "passed":  1,
+                                     "classification":  "Five direct race failures and two detail-error tests with an invented alert-role locator. Preserve as mixed initial run, not clean seven-defect proof."
+                                 },
+                     "corrected":  {
+                                       "receipt":  {
+                                                       "path":  "C:/w/admin644-ui-browser-red-v2.json",
+                                                       "sha256":  "0532a889fb422d5eaec2533a2fd8cc4d774731151f39edaa4ac05c65cd71adb1"
+                                                   },
+                                       "log":  {
+                                                   "path":  "C:/w/admin644-ui-browser-red-v2.log",
+                                                   "sha256":  "5fa4dd0d39ddc0438815bb49f67a61c81cbfe398898923843a99058911785892"
+                                               },
+                                       "failed":  7,
+                                       "passed":  1,
+                                       "classification":  "All seven functional failures reproduced against exact original page bytes using native message selectors. Actor-change/old401 control passed.",
+                                       "testOnlyCorrections":  [
+                                                                   "Native ErrorNote has no alert role: assert exact visible error message and existing Try again",
+                                                                   "Audit fixture uses real required entityId string and actorName:null"
+                                                               ],
+                                       "limit":  "Only owned page bytes were restored; concurrent generated adapter and RecordView work was not rolled back. No whole-repository pristine baseline claim."
+                                   },
+                     "retainedArtifacts":  "C:/w/admin644-ui-baseline"
+                 },
+    "gates":  {
+                  "initialCompiler":  {
+                                          "exitCode":  2,
+                                          "log":  {
+                                                      "path":  "C:/w/admin644-ui-typecheck.log",
+                                                      "sha256":  "faf61643a20894930af3eba0d6de22aef6c05db270f02f62e7f086ded5d6a755"
+                                                  },
+                                          "classification":  "Root adapter named /audit but canonical generated key is /audit/. Ten cascading diagnostics retained; no fallback type or guard change."
+                                      },
+                  "finalCompiler":  {
+                                        "command":  "pnpm --filter @oto/console typecheck",
+                                        "exitCode":  0,
+                                        "projects":  3,
+                                        "diagnostics":  0,
+                                        "wholeOutputRead":  true,
+                                        "log":  {
+                                                    "path":  "C:/w/admin644-ui-typecheck-v2.log",
+                                                    "sha256":  "c5b7d2700343d9da7ed683b4594c00314cdfdbfc4a191b7e188009f86d02b35b"
+                                                }
+                                    },
+                  "units":  {
+                                "command":  "pnpm --filter @oto/console test",
+                                "exitCode":  0,
+                                "filesPassed":  38,
+                                "testsPassed":  376,
+                                "existingTodo":  3,
+                                "log":  {
+                                            "path":  "C:/w/admin644-ui-unit.log",
+                                            "sha256":  "6a693c5d7a462b6bfc1cbdb95a3104a3eb8d18419bd32960387130612284a1ff"
+                                        }
+                            },
+                  "lint":  {
+                               "exitCode":  0,
+                               "changedFiles":  3,
+                               "outputLines":  0,
+                               "log":  {
+                                           "path":  "C:/w/admin644-ui-eslint-final.log",
+                                           "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                       }
+                           },
+                  "native":  {
+                                 "command":  "pnpm --filter @oto/console e2e -- observability-lifetime.spec.ts read-failures.spec.ts",
+                                 "exitCode":  0,
+                                 "passed":  16,
+                                 "failed":  0,
+                                 "newInterceptedFixtureCases":  8,
+                                 "retainedReadFailureCases":  8,
+                                 "consoleAndPosBuildsPassed":  true,
+                                 "receipt":  {
+                                                 "path":  "C:/w/admin644-ui-browser-green.json",
+                                                 "sha256":  "0ea7ab727c65bbb997cddf2f71d1e1eff9d30a296660fc5c2bad7750fc646ca4"
+                                             },
+                                 "log":  {
+                                             "path":  "C:/w/admin644-ui-browser-green.log",
+                                             "sha256":  "e9c297de57af33ea1db61aeade4fe1aaa429390c10b2b28c048df5fb88b34907"
+                                         },
+                                 "startedAt":  "2026-10-26T18:17:54.423Z",
+                                 "finishedAt":  "2026-10-26T18:18:52.336Z",
+                                 "teardown":  {
+                                                  "helperDatabaseDropped":  true,
+                                                  "harnessDatabasesAbsent":  true,
+                                                  "embeddedServerStopped":  true
+                                              },
+                                 "databaseCensusUnchanged":  true
+                             }
+              },
+    "changes":  [
+                    "Query-owned mounted/request generations reject obsolete list/page success/error/finally and old Retry filter continuations",
+                    "Failed related/history reads remain errors with existing retry, distinct from genuine empty results",
+                    "Explicit object narrowing allows honest scalar/array/null audit JSON without transforming payloads"
+                ],
+    "limits":  [
+                   "New eight native cases use intercepted local API/session responses; they do not prove server authorization or serialization",
+                   "Existing eight read-failure cases use only the owned ephemeral local seeded harness",
+                   "Central canonical request fence is unchanged; positive control passed before and after",
+                   "No Q24/Q25 integration, unsupported Activity filters/export, alert delivery/mute behavior or runtime consumers implemented",
+                   "No repository Git/docs/Jira mutation, staging authentication/deployment/proof or complete-ticket acceptance by this lane"
+               ],
+    "staging":  false,
+    "sourceLanded":  false,
+    "ticketAcceptanceClaimed":  false
+}

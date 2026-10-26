@@ -1,0 +1,97 @@
+{
+  "ticket": "SCRUM-644",
+  "reviewedAt": "2026-10-26T18:13:41.245Z",
+  "passed": true,
+  "scope": "Narrow audit JSON rendering data-reliability correction",
+  "sourceFiles": [
+    {
+      "path": "apps/console/src/components/RecordView.tsx",
+      "sha256": "c4bd6e947fac1ca3ffb03c73725598aafe670e1392e5f3befeb230672c67e141"
+    },
+    {
+      "path": "apps/console/test/record-view.test.ts",
+      "sha256": "6ee9fe2ed802fde9b7eba784d4297a6ac64c1354228fca2b24fe06608f5368e7"
+    }
+  ],
+  "preservedOriginal": {
+    "path": "C:/w/admin644-record-view-before-fix.tsx",
+    "sha256": "2a59662618bf5811228e4d51014773e2454b18c0799a8e0036f110f4a2535008"
+  },
+  "actualRed": {
+    "total": 13,
+    "failed": 8,
+    "passedControls": 5,
+    "meaning": "Present false/zero/empty roots were called missing; primitive changes were called unchanged or displayed as string indices."
+  },
+  "actualGreen": {
+    "total": 13,
+    "passed": 13,
+    "failed": 0
+  },
+  "sameTestBytes": true,
+  "changes": [
+    "RecordDiff and RecordFields accept the native unknown JSON values.",
+    "Only nonnull objects enter field/index lookup; arrays retain the existing indexed presentation.",
+    "Root primitives use the existing Scalar renderer; presence is determined by null/undefined, retaining false,zero and empty string.",
+    "Root primitive diff compares the complete JSON value; object field/masking and RawRecord serialization remain intact."
+  ],
+  "receipts": [
+    {
+      "phase": "red",
+      "path": "C:/w/admin644-record-view-red-v1.json",
+      "sha256": "6e427c6c00418386753d665d16f18cc4f6c00001a67307a0a44fa18de9a16824",
+      "exitCode": 1,
+      "logPath": "C:/w/admin644-record-view-red-v1.log",
+      "logSha256": "18f58ef451c12c9b631820fa73b827d8b2949115f9b51225b40fe737b0c932eb",
+      "inputsUnchanged": true,
+      "wholeOutputRead": true,
+      "testHash": "6ee9fe2ed802fde9b7eba784d4297a6ac64c1354228fca2b24fe06608f5368e7"
+    },
+    {
+      "phase": "green",
+      "path": "C:/w/admin644-record-view-green-v1.json",
+      "sha256": "10cffc28ff58419868fe6819181fdd3551a9ce1141f156e9eb0cc2241d2cc3d6",
+      "exitCode": 0,
+      "logPath": "C:/w/admin644-record-view-green-v1.log",
+      "logSha256": "0c51842a3b8163fae81335ea987c049a0b95a6e23930922ea37253356dfdd2f2",
+      "inputsUnchanged": true,
+      "wholeOutputRead": true,
+      "testHash": "6ee9fe2ed802fde9b7eba784d4297a6ac64c1354228fca2b24fe06608f5368e7"
+    },
+    {
+      "phase": "lint",
+      "path": "C:/w/admin644-record-view-lint-v1.json",
+      "sha256": "86dd7384ebf49f85696ee1e01907d46b2134e4bab65267b73d34fbd5205ebc5a",
+      "exitCode": 0,
+      "logPath": "C:/w/admin644-record-view-lint-v1.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "inputsUnchanged": true,
+      "wholeOutputRead": true,
+      "testHash": "6ee9fe2ed802fde9b7eba784d4297a6ac64c1354228fca2b24fe06608f5368e7"
+    }
+  ],
+  "lint": {
+    "files": 2,
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "compiler": "Awaiting the UI agent whole Console compiler; no independent compiler pass claimed here.",
+  "openFindings": [],
+  "limits": [
+    "Native React renderToStaticMarkup tests use the existing Console Vitest harness; no browser, database or server was started by this work.",
+    "No server masking, permissions, session/client, route schema or JSON payload was modified.",
+    "No source release, staging acceptance, audit export, producer integration or full644 completion is claimed."
+  ],
+  "actions": {
+    "repoFilesEdited": [
+      "apps/console/src/components/RecordView.tsx",
+      "apps/console/test/record-view.test.ts"
+    ],
+    "otherRepoEdits": false,
+    "gitMutation": false,
+    "jira": false,
+    "network": false,
+    "providers": false
+  }
+}

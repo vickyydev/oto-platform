@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-644",
+  "sourceSha": "4b29f08c8e8d9ad01204e42e92862b5cfb411de2",
+  "command": "pnpm --filter @oto/api typecheck\npnpm --filter @oto/api-types typecheck\npnpm --filter @oto/console typecheck\npnpm --filter @oto/console test\npnpm api-types:check\npnpm --filter @oto/api-types test",
+  "startedAt": "2026-10-26T18:19:44.754Z",
+  "completedAt": "2026-10-26T18:21:32.992Z",
+  "exitCode": 0,
+  "signal": null,
+  "inputsUnchanged": true,
+  "logSha256": "0084e65fe922ab9cdaa3be3b78650b596b1de20e580c3961fce982edbcd4cc19",
+  "runnerSha256": "3c1ce2d8b8b305e5369f61c8430166e12d7c316c771f7b685608f3570e26c967",
+  "staging": false,
+  "fullRelease": false
+}

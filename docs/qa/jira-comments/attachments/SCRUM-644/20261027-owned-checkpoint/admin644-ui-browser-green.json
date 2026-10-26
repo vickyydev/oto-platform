@@ -1,0 +1,18 @@
+{
+  "phase": "green",
+  "startedAt": "2026-10-26T18:17:54.423Z",
+  "finishedAt": "2026-10-26T18:18:52.336Z",
+  "exitCode": 0,
+  "nativeExitCode": 0,
+  "failure": null,
+  "teardown": {
+    "helperDatabaseDropped": true,
+    "harnessDatabasesAbsent": true,
+    "embeddedServerStopped": true
+  },
+  "databaseCensusUnchanged": true,
+  "logSha256": "e9c297de57af33ea1db61aeade4fe1aaa429390c10b2b28c048df5fb88b34907",
+  "staging": false,
+  "built": true,
+  "command": "pnpm --filter @oto/console e2e -- observability-lifetime.spec.ts read-failures.spec.ts"
+}

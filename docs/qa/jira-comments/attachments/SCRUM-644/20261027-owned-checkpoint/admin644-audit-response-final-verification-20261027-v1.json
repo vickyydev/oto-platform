@@ -1,0 +1,178 @@
+{
+  "ticket": "SCRUM-644",
+  "kind": "audit-additive-response-schema-local-verification",
+  "completedAt": "2026-10-26T18:16:36.944Z",
+  "passed": true,
+  "sourceFiles": {
+    "apps/api/src/routes/audit.ts": "7095d9c1778e9252da180aeedca207c7b0c9cd151e9b8883c1f08756fbb1f908",
+    "apps/api/test/audit-response-review.test.ts": "4b7589d806a03fe85b1a4168fb7a89a0483868f4042a2b7a81627be84973d1c6"
+  },
+  "originalAuditReadTestSha256": "cca89ee9137b9f430ed5e7c763c9f9c2d9fd19b9880f989014fa0b5ff3901f95",
+  "inputs": [
+    {
+      "path": "C:/w/admin644-audit-response-red-20261027-v1.json",
+      "sha256": "1687937c838289dc492563888a55636e92011ea35e0a22decc6911c0baeebde4",
+      "logPath": "C:/w/admin644-audit-response-red-20261027-v1.log",
+      "logSha256": "9fc814685aa0718b0f97a4a9cd4f058e793e4f1316e959466c9069b12160e6fe",
+      "exitCode": 1,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:08:40.028Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-green-20261027-v1.json",
+      "sha256": "36e1ce2cbe220d22c7f36390f5727bb7c6d2e863b1beee1b78a2b62b7bfd1308",
+      "logPath": "C:/w/admin644-audit-response-green-20261027-v1.log",
+      "logSha256": "da6264769030a17b978452112e11a344338ab227fdfebc460f6a34f64f69bb3b",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:10:04.281Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-green-20261027-v2.json",
+      "sha256": "3b524a68e55073804ab4599f7963b38d7933dad8855f8db71b874cb960335c2f",
+      "logPath": "C:/w/admin644-audit-response-green-20261027-v2.log",
+      "logSha256": "937fe218424a5e577c32a5bc96dd0fe1464e6a92dfdc30f2a5c84de534f1761f",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:13:40.389Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-green-20261027-v3.json",
+      "sha256": "931599f2775d8d45a0def5700bcc613ec9c5ee8fe71febc05c56b8a8e04780ba",
+      "logPath": "C:/w/admin644-audit-response-green-20261027-v3.log",
+      "logSha256": "08494c885aa747a3ffd90c44687649cfa9fd03f6ff2dd644592020c700e63e2e",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:15:16.357Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-compiler-20261027-v1.json",
+      "sha256": "bb45437742c082add31f2b4a4b87646b7f5bc35a6d6d317341a62816b3c7916c",
+      "logPath": "C:/w/admin644-audit-response-compiler-20261027-v1.log",
+      "logSha256": "a55fbf954d5c5397cb606e3f5b8f0295932cf6d117cfd5bb587b2a1cbf89a3b9",
+      "exitCode": 2,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:11:46.164Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-lint-20261027-v1.json",
+      "sha256": "41eaeb90fa0bd9bc5e91fb2f7cb13b9fcbab1d178eeae5f403b86d95f50e36c8",
+      "logPath": "C:/w/admin644-audit-response-lint-20261027-v1.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:11:48.433Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-compiler-20261027-v2.json",
+      "sha256": "8726ad37c7dd9b362c3cdaf9e7c23a73790f884c5e832b8e06c373d93d4820ba",
+      "logPath": "C:/w/admin644-audit-response-compiler-20261027-v2.log",
+      "logSha256": "8ba37b3cf61283a2fce665d46fd8c496804b8064ca0913fcf7fd194b3671e1c0",
+      "exitCode": 2,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:14:12.232Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-lint-20261027-v2.json",
+      "sha256": "ae7dd610ed031759b46687b07eb6fd3ca6ef004cbd21b208aa68da87d9368938",
+      "logPath": "C:/w/admin644-audit-response-lint-20261027-v2.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:14:14.714Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-compiler-20261027-v3.json",
+      "sha256": "5d1d388eeba0193c65259e62d6457fa4aff0b7325f8ecb40a79a9e0546dc938f",
+      "logPath": "C:/w/admin644-audit-response-compiler-20261027-v3.log",
+      "logSha256": "15e4f85eda658f03cf2d938a789932f6fee55d29668c43f93bb6156a6bafb79a",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:15:42.792Z"
+    },
+    {
+      "path": "C:/w/admin644-audit-response-lint-20261027-v3.json",
+      "sha256": "497661283dfdb103cf93a67821ecd3394980f6bff3c483afc24bfd5849a19bcb",
+      "logPath": "C:/w/admin644-audit-response-lint-20261027-v3.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "inputsUnchanged": true,
+      "completedAt": "2026-10-26T18:15:44.618Z"
+    }
+  ],
+  "scopeProof": {
+    "path": "C:/w/admin644-audit-schema-delta-20261027-v3.json",
+    "sha256": "ddc1f4078abf44798c4220eed3fd13498af8ae687ebdbf36160e965667f6afbe",
+    "allNativeHandlerQueryMaskingPaginationCodeUnchanged": true,
+    "typeAnnotationOnlyRuntimeJavaScriptIdentity": true
+  },
+  "nativeCases": {
+    "initialRed": {
+      "passed": 12,
+      "failed": 1,
+      "total": 13,
+      "reason": "actual registered 200 response schema absent"
+    },
+    "finalGreen": {
+      "passed": 13,
+      "failed": 0,
+      "total": 13,
+      "newReviewCases": 4,
+      "unchangedExistingCases": 9
+    },
+    "sameReviewTestBytesAllRuns": true,
+    "uniqueCases": 13,
+    "wholeOutputRead": true
+  },
+  "compiler": {
+    "exitCode": 0,
+    "diagnostics": 0,
+    "fullOutputRead": true,
+    "logPath": "C:/w/admin644-audit-response-compiler-20261027-v3.log"
+  },
+  "lint": {
+    "exitCode": 0,
+    "fullOutputRead": true,
+    "logPath": "C:/w/admin644-audit-response-lint-20261027-v3.log"
+  },
+  "history": [
+    "v1 and v2 native runs passed13; their compiler unknown/JSON-input type mismatch is retained.",
+    "Final v3 uses a type-only z.ZodType<unknown> annotation with the same runtime JSON union; no identity transform remains."
+  ],
+  "response": {
+    "entryFields": [
+      "id",
+      "action",
+      "entityType",
+      "entityId",
+      "actorAccountId",
+      "actorName",
+      "branchId",
+      "requestId",
+      "before",
+      "after",
+      "createdAt"
+    ],
+    "envelopeRequired": [
+      "entries",
+      "masked",
+      "nextCursor"
+    ],
+    "envelopeOptional": [
+      "total"
+    ],
+    "beforeAfter": "all native JSON values, including scalar, array and nested object",
+    "attribution": "existing stored home/effective fields are unchanged and are not newly exposed"
+  },
+  "ownEmbeddedPostgresRemoved": true,
+  "rootEnvFilePresent": false,
+  "sharedDatabaseEnvironmentRemoved": true,
+  "noStaging": true,
+  "noExternalProviders": true,
+  "noDocker": true,
+  "limitations": [
+    "Generated client/contracts are coordinator-owned and are not asserted by this receipt.",
+    "No target-app filter, export, new audit field, masking change or scope rule is implemented.",
+    "This is local schema validation, not a complete SCRUM-644 release or staging claim."
+  ]
+}

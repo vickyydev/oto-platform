@@ -1,0 +1,18 @@
+{
+  "phase": "red-v2",
+  "startedAt": "2026-10-26T18:12:19.683Z",
+  "finishedAt": "2026-10-26T18:14:00.929Z",
+  "exitCode": 1,
+  "nativeExitCode": 1,
+  "failure": null,
+  "teardown": {
+    "helperDatabaseDropped": true,
+    "harnessDatabasesAbsent": true,
+    "embeddedServerStopped": true
+  },
+  "databaseCensusUnchanged": true,
+  "logSha256": "5fa4dd0d39ddc0438815bb49f67a61c81cbfe398898923843a99058911785892",
+  "staging": false,
+  "built": true,
+  "command": "pnpm --filter @oto/console e2e -- observability-lifetime.spec.ts"
+}

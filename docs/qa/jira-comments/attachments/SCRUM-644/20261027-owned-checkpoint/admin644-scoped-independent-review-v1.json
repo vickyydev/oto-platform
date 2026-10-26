@@ -1,0 +1,218 @@
+{
+  "ticket": "SCRUM-644",
+  "reviewedAt": "2026-10-26T18:23:09.473Z",
+  "passed": true,
+  "scope": "Independent API/generated adapter and native Activity/Failures reliability slice review; coordinator-reviewed RecordView correction included as separately authored work",
+  "sourceSha": "4b29f08c8e8d9ad01204e42e92862b5cfb411de2",
+  "sourceCheckpoint": {
+    "path": "C:/w/admin644-source-checkpoint-v1.json",
+    "sha256": "696e263870db90e396c5864e27e8428f716141e8929f6ff5d087804e9853f667",
+    "files": 11,
+    "allCurrentCommittedAndPreRebaseHashesMatch": true,
+    "sourceUnchangedAcrossRebase": true
+  },
+  "openFindings": [],
+  "api": {
+    "verification": {
+      "path": "C:/w/admin644-audit-response-final-verification-20261027-v1.json",
+      "sha256": "693624dcc497fa800a7637205083fbe68fd5f342fa7e327b7c5058b85a4d3519"
+    },
+    "initialNativeRed": {
+      "passed": 12,
+      "failed": 1,
+      "total": 13,
+      "reason": "Missing registered response schema"
+    },
+    "finalNative": {
+      "passed": 13,
+      "failed": 0,
+      "total": 13,
+      "newCases": 4,
+      "unchangedExistingCases": 9
+    },
+    "wholeInitialRedAndFinalGreenLogsRead": true,
+    "compiler": {
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    "lint": {
+      "errors": 0,
+      "wholeOutputRead": true
+    },
+    "nativePermissionConfigQueryHandlerMaskAndOutcomeExpressionUnchanged": true,
+    "nativeJsonAndAll11CurrentEntryFieldsPreserved": true,
+    "storedHomeEffectiveAndEventPointersNotNewlyExposed": true,
+    "optionalTotalAndKeysetSemanticsPreserved": true,
+    "generatedAdapterRuntimeJavaScriptIdenticalToBase": true,
+    "legacyUncoveredCallAllowanceReducedFrom9To8": true,
+    "generatedContractCheckAndSeam10Passed": true,
+    "earlierTypeMismatchFailuresPreserved": true,
+    "jsonUnionAnnotation": "Final z.ZodType<unknown> is a type-only annotation of the same runtime JSON union; no identity transform or handler change remains."
+  },
+  "ui": {
+    "verification": {
+      "path": "C:/w/admin644-ui-results.json",
+      "sha256": "21a810200fae2560c02dd41151c390a1043cdf9a9e2f2e51591bd1ca2041f1cb"
+    },
+    "correctedBaseline": {
+      "passed": 1,
+      "failed": 7,
+      "total": 8,
+      "originalTwoPageBytesRestored": true,
+      "wholeRepositoryPristineClaim": false,
+      "wholeLogRead": true,
+      "initialMixedLocatorRunExcludedFromFunctionalBaseline": true
+    },
+    "finalNative": {
+      "passed": 16,
+      "failed": 0,
+      "newInterceptedFixtureCases": 8,
+      "retainedReadFailureCases": 8,
+      "oneWorker": true,
+      "wholeLogRead": true,
+      "receipt": {
+        "path": "C:/w/admin644-ui-browser-green.json",
+        "sha256": "0ea7ab727c65bbb997cddf2f71d1e1eff9d30a296660fc5c2bad7750fc646ca4"
+      },
+      "log": {
+        "path": "C:/w/admin644-ui-browser-green.log",
+        "sha256": "e9c297de57af33ea1db61aeade4fe1aaa429390c10b2b28c048df5fb88b34907"
+      },
+      "cleanup": {
+        "helperDatabaseDropped": true,
+        "harnessDatabasesAbsent": true,
+        "embeddedServerStopped": true
+      },
+      "databaseCensusUnchanged": true
+    },
+    "units": {
+      "files": 38,
+      "passed": 376,
+      "todo": 3,
+      "includesRecordView13": true
+    },
+    "compiler": {
+      "projects": 3,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    "queryOwnership": {
+      "obsoleteListPageSuccessErrorAndFinallyIgnored": true,
+      "refreshInvalidatesPreviousRequestGeneration": true,
+      "oldRetryCompletionCannotDispatchPreviousFilterRead": true,
+      "relatedAndRunsFailureRemainErrorsWithNativeRetry": true,
+      "effectCleanupCancelsDetachedDetailReads": true
+    },
+    "centralFences": [
+      {
+        "path": "apps/console/src/App.tsx",
+        "sha256": "5470987f8cbb65b667ea527d35c90dad039dc7392eb406e6f702ebde4e599ee1",
+        "unchangedFromBase": true
+      },
+      {
+        "path": "apps/console/src/auth/SessionContext.tsx",
+        "sha256": "f07c6e69d919d998e6a5b956a2f68efe5f319e75c5bba00f24f48eb876461b6d",
+        "unchangedFromBase": true
+      },
+      {
+        "path": "apps/console/src/api/client.ts",
+        "sha256": "a787392f14a79db7e65d91ccf6d9680e7d149c8e6bfb648a9623e889c1e47121",
+        "unchangedFromBase": true
+      },
+      {
+        "path": "apps/console/src/lib/workingAuthority.ts",
+        "sha256": "4fbca9ef35c39f2438920555c16448705d20e667648df2cd8b9711fd0aca4f3a",
+        "unchangedFromBase": true
+      }
+    ],
+    "authorizationOrPageLayoutWidened": false,
+    "earlierMixedLocatorBaselineAndWrongGeneratedPathCompilerRetained": true
+  },
+  "recordView": {
+    "authoredByThisReviewer": true,
+    "coordinatorReviewReportedAccepted": true,
+    "reportPath": "C:/w/admin644-record-view-review-v1.json",
+    "reportSha256": "579fcae579d9e1bcd2e522b63d733f8502127a2647714b8d12837104c12e8168",
+    "actualRed": {
+      "failed": 8,
+      "controlsPassed": 5,
+      "total": 13
+    },
+    "sameTestGreen": 13,
+    "arbitraryJsonRetainedWithoutCoercion": true
+  },
+  "contract": {
+    "path": "C:/w/admin644-final-contract-v2.json",
+    "sha256": "7a2c7397771dce3e7715d28a9f54ac64addf73efa3f5efc4415f7b6b24701a66",
+    "all11BeforeAfterSourceBindingsMatch": true,
+    "apiTypesCompilerDiagnostics": 0,
+    "generatedApiMatches": true,
+    "clientSeamPassed": 10,
+    "changedTypeScriptLintFiles": 9,
+    "errors": 0,
+    "wholeLogRead": true
+  },
+  "limits": [
+    "This is a partial reliability checkpoint. App/source/target filters, presets, audited export, recipients and fingerprint mute/consumer delivery remain separate Q24/Q25 work; none is declared built here.",
+    "New browser cases intercept local API/session responses; native API13 separately exercise actual authorization, masking and serialization on disposable PostgreSQL.",
+    "The held Retry pin proves that an already dispatched retry cannot refresh an obsolete filter after it settles. It does not claim a new general-purpose callback authorization layer; central session/client behavior remains unchanged.",
+    "Final browser and API tests were run by their owning agents. This reviewer executed only the separately authorized RecordView13 RED/GREEN and two-file lint; no additional browser/server/database/network/provider work was performed.",
+    "The original API9 and RecordView13 repeat within the stated larger suites; counts must not be added as new unique cases.",
+    "The post-rebase100 is affected whole-file/guard coverage, not the full API battery. It repeats the13 audit cases; the376 Console units include the13 RecordView cases. No full release, hosted CI, deployment or staging approval."
+  ],
+  "postRebase": {
+    "passed": true,
+    "receipts": [
+      {
+        "kind": "native",
+        "path": "C:/w/admin644-post-native-v1.json",
+        "sha256": "c037bd792dc3a17c0c07d40d2e155df765de96ec2f6d8769c5f97f61fb2f258e",
+        "sourceSha": "4b29f08c8e8d9ad01204e42e92862b5cfb411de2",
+        "exitCode": 0,
+        "inputsUnchanged": true,
+        "completedAt": "2026-10-26T18:21:09.243Z",
+        "logPath": "C:/w/admin644-post-native-v1.log",
+        "logSha256": "265bcf784bd589cd80ae9258b5a6fa2bafc6459363ccdca7b0ba8c455efc500e",
+        "wholeOutputRead": true
+      },
+      {
+        "kind": "workspace",
+        "path": "C:/w/admin644-post-workspace-v1.json",
+        "sha256": "ef9ded34ed34736906c73183cbff3d48440a290447bb6c10b935be9f8e4c5ab5",
+        "sourceSha": "4b29f08c8e8d9ad01204e42e92862b5cfb411de2",
+        "exitCode": 0,
+        "inputsUnchanged": true,
+        "completedAt": "2026-10-26T18:21:32.992Z",
+        "logPath": "C:/w/admin644-post-workspace-v1.log",
+        "logSha256": "0084e65fe922ab9cdaa3be3b78650b596b1de20e580c3961fce982edbcd4cc19",
+        "wholeOutputRead": true
+      }
+    ],
+    "native": {
+      "files": 6,
+      "passed": 100,
+      "failed": 0,
+      "existingAuditCases": 9,
+      "newAuditResponseCases": 4,
+      "fourGuardCases": 87
+    },
+    "workspace": {
+      "packageCompilerScripts": 3,
+      "typeScriptConfigurations": 5,
+      "diagnostics": 0,
+      "console": {
+        "files": 38,
+        "passed": 376,
+        "todo": 3
+      },
+      "generatedContractMatches": true,
+      "apiTypesSeamPassed": 10
+    },
+    "noSourceChanges": true
+  },
+  "priorPrePostReview": {
+    "path": "C:/w/admin644-scoped-independent-review-before-post-rebase.json",
+    "sha256": "eec166ed408b52dc665f85f5d029a5a638c48ce5e8d3bc2c7a535d1723a78666",
+    "preserved": true
+  }
+}

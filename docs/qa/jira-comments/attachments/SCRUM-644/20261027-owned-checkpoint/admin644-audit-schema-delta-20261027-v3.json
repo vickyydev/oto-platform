@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-644",
+  "kind": "final-audit-schema-only-ast-delta",
+  "checkedAt": "2026-10-26T18:15:54.153Z",
+  "passed": true,
+  "beforePath": "C:/w/admin644-audit-route-before-response-schema-20261027.ts",
+  "beforeSha256": "0875765f24d35706c6e8ffbbb07f216ba6e2b8e03acb2944a76c784182d3f1ab",
+  "afterPath": "C:/w/admin-activity-failures/apps/api/src/routes/audit.ts",
+  "afterSha256": "7095d9c1778e9252da180aeedca207c7b0c9cd151e9b8883c1f08756fbb1f908",
+  "removedOnlyExpectedAdditions": {
+    "jsonUnion": 1,
+    "responseSchema": 1
+  },
+  "allRemainingNativeCodeUnchanged": true,
+  "typeAnnotationJavaScriptIdenticalToInitialUnion": true,
+  "initialUnionSourcePath": "C:/w/admin644-audit-route-before-type-widening-v1.ts",
+  "initialUnionSourceSha256": "72e9f3c283c6b54a0a71e460f6b279aaee975a8641290d068acb5c254a79e222",
+  "parserVersion": "5.9.3"
+}
