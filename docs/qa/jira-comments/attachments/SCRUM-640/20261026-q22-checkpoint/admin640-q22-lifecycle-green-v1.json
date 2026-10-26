@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "lifecycle-green",
+  "attempt": "v1",
+  "startedAt": "2026-10-26T07:14:52.172Z",
+  "completedAt": "2026-10-26T07:15:20.332Z",
+  "command": "pnpm --filter @oto/api test test/operator-switch-lifecycle-review.test.ts",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "inputsUnchanged": true,
+  "inputCount": 841,
+  "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+  "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+  "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4",
+  "logSha256": "9866b6a8ed0f123d50bb4f141badcceb0b3ff368fbbdfb479bd913c975fc66d5",
+  "logPath": "C:/w/admin640-q22-lifecycle-green-v1.log",
+  "isolatedEmbeddedDatabase": true,
+  "inheritedDatabaseSettingsDiscarded": true,
+  "staging": false,
+  "release": false
+}

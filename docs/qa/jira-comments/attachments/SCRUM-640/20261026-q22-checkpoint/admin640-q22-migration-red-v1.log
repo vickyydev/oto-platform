@@ -1,0 +1,303 @@
+
+> @oto/db@0.1.0 test C:\w\admin-operator-switch\packages\db
+> vitest run --no-file-parallelism "test/s640-operator-switch-migration.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/packages/db
+
+stdout | test/s640-operator-switch-migration.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-LqefS8 ... ok
+creating subdirectories ...
+
+stdout | test/s640-operator-switch-migration.test.ts
+ok
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+
+stdout | test/s640-operator-switch-migration.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/s640-operator-switch-migration.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/s640-operator-switch-migration.test.ts
+Asia/Bangkok
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+creating configuration files ...
+
+stdout | test/s640-operator-switch-migration.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/s640-operator-switch-migration.test.ts
+ok
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/s640-operator-switch-migration.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/s640-operator-switch-migration.test.ts
+ok
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-LqefS8^" -l logfile start
+
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+2026-10-26 14:08:15.029 +07 [91744] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+2026-10-26 14:08:15.033 +07 [91744] LOG:  listening on IPv6 address "::1", port 54993
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+2026-10-26 14:08:15.033 +07 [91744] LOG:  listening on IPv4 address "127.0.0.1", port 54993
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+2026-10-26 14:08:15.096 +07 [45940] LOG:  database system was shut down at 2026-10-26 14:08:12 +07
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+2026-10-26 14:08:15.124 +07 [91744] LOG:  database system is ready to accept connections
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+2026-10-26 14:08:19.009 +07 [93068] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > refuses an unknown operator UUID and leaves the complete session unchanged
+2026-10-26 14:08:19.123 +07 [91444] ERROR:  insert or update on table "session" violates foreign key constraint "session_operator_override_operator_id_fk"
+2026-10-26 14:08:19.123 +07 [91444] DETAIL:  Key (operator_override)=(01a17709-e332-723f-9fab-9ac167f1909c) is not present in table "operator".
+2026-10-26 14:08:19.123 +07 [91444] STATEMENT:  update core.session set operator_override = $2 where id = $1
+
+
+stdout | test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > refuses malformed UUID data rather than storing an untyped context
+2026-10-26 14:08:19.126 +07 [91444] ERROR:  invalid input syntax for type uuid: "ZZ TEST not a UUID"
+2026-10-26 14:08:19.126 +07 [91444] CONTEXT:  unnamed portal parameter $2 = '...'
+2026-10-26 14:08:19.126 +07 [91444] STATEMENT:  update core.session set operator_override = $2 where id = $1
+
+
+stdout | test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > migrates a real predecessor database without backfilling or altering existing session or audit data
+2026-10-26 14:08:24.546 +07 [87064] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > migrates a real predecessor database without backfilling or altering existing session or audit data
+2026-10-26 14:08:24.565 +07 [91176] ERROR:  column "home_operator_id" does not exist at character 12
+2026-10-26 14:08:24.565 +07 [91176] STATEMENT:  select id, home_operator_id, effective_operator_id from core.audit_log
+	        where id = any($1::uuid[]) order by id
+
+
+stdout | test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > migrates a real predecessor database without backfilling or altering existing session or audit data
+2026-10-26 14:08:24.576 +07 [90100] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > migrates a real predecessor database without backfilling or altering existing session or audit data
+2026-10-26 14:08:28.908 +07 [90100] LOG:  checkpoint complete: wrote 1783 buffers (10.9%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.196 s, sync=4.115 s, total=4.333 s; sync files=1855, longest=0.087 s, average=0.003 s; distance=29636 kB, estimate=29636 kB; lsn=0/3269358, redo lsn=0/3269320
+
+
+stdout | test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > replays the complete native migration chain without another ledger row or any session/account/audit change
+2026-10-26 14:08:30.159 +07 [57224] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+2026-10-26 14:08:30.210 +07 [90100] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/s640-operator-switch-migration.test.ts
+2026-10-26 14:08:30.218 +07 [90100] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.002 s, total=0.009 s; sync files=2, longest=0.002 s, average=0.001 s; distance=3 kB, estimate=26673 kB; lsn=0/326A300, redo lsn=0/326A2C8
+
+
+ ❯ test/s640-operator-switch-migration.test.ts (12 tests | 5 failed) 24596ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > adds a nullable UUID with no default to the session, never the home account 18ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > defaults newly created seated and branchless sessions to null without changing their identity or state 11ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > references only the new session column to the existing operator primary key 5ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > accepts an existing other operator and clearing to null without rewriting home, seat or session fields 4ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > refuses an unknown operator UUID and leaves the complete session unchanged 3ms
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > refuses malformed UUID data rather than storing an untyped context 2ms
+   × SCRUM-640 expand-only session override and Q22 audit context migration > adds exactly two nullable UUID audit context columns without defaults or account/session substitutes 11ms
+     → expected [] to deeply equal [ …(2) ]
+   × SCRUM-640 expand-only session override and Q22 audit context migration > references each new audit column only to operator.id with native NO ACTION 2ms
+     → expected [] to deeply equal [ { …(6) }, { …(6) } ]
+   × SCRUM-640 expand-only session override and Q22 audit context migration > defaults audit attribution to null and validates both UUID references without changing event ownership or payloads 3ms
+     → expected undefined to be null
+   × SCRUM-640 expand-only session override and Q22 audit context migration > extends its predecessor snapshot by exactly three nullable columns and three foreign keys 37ms
+     → expected [] to deeply equal [ 'effective_operator_id', …(1) ]
+   × SCRUM-640 expand-only session override and Q22 audit context migration > migrates a real predecessor database without backfilling or altering existing session or audit data 10132ms
+     → column "home_operator_id" does not exist
+   ✓ SCRUM-640 expand-only session override and Q22 audit context migration > replays the complete native migration chain without another ledger row or any session/account/audit change  860ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > adds exactly two nullable UUID audit context columns without defaults or account/session substitutes
+AssertionError: expected [] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+- [
+-   {
+-     "column_default": null,
+-     "column_name": "effective_operator_id",
+-     "data_type": "uuid",
+-     "is_nullable": "YES",
+-     "table_name": "audit_log",
+-   },
+-   {
+-     "column_default": null,
+-     "column_name": "home_operator_id",
+-     "data_type": "uuid",
+-     "is_nullable": "YES",
+-     "table_name": "audit_log",
+-   },
+- ]
++ []
+
+ ❯ test/s640-operator-switch-migration.test.ts:175:21
+    173|       and table_name in ('audit_log', 'session', 'account')
+    174|       and column_name in ('home_operator_id', 'effective_operator_id')…
+    175|     expect(columns).toEqual([
+       |                     ^
+    176|       { table_name: 'audit_log', column_name: 'effective_operator_id',…
+    177|       { table_name: 'audit_log', column_name: 'home_operator_id', data…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > references each new audit column only to operator.id with native NO ACTION
+AssertionError: expected [] to deeply equal [ { …(6) }, { …(6) } ]
+
+- Expected
++ Received
+
+- [
+-   {
+-     "columns": [
+-       "effective_operator_id",
+-     ],
+-     "delete_action": "a",
+-     "target_columns": [
+-       "id",
+-     ],
+-     "target_schema": "core",
+-     "target_table": "operator",
+-     "update_action": "a",
+-   },
+-   {
+-     "columns": [
+-       "home_operator_id",
+-     ],
+-     "delete_action": "a",
+-     "target_columns": [
+-       "id",
+-     ],
+-     "target_schema": "core",
+-     "target_table": "operator",
+-     "update_action": "a",
+-   },
+- ]
++ []
+
+ ❯ test/s640-operator-switch-migration.test.ts:193:24
+    191|       .filter(row => row.columns.some(column => ['home_operator_id', '…
+    192|       .sort((a, b) => a.columns[0]!.localeCompare(b.columns[0]!));
+    193|     expect(references).toEqual(['effective_operator_id', 'home_operato…
+       |                        ^
+    194|       target_schema: 'core', target_table: 'operator', target_columns:…
+    195|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > defaults audit attribution to null and validates both UUID references without changing event ownership or payloads
+AssertionError: expected undefined to be null
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ test/s640-operator-switch-migration.test.ts:199:37
+    197|   it('defaults audit attribution to null and validates both UUID refer…
+    198|     const id = await addAudit(client, fixture), before = await auditRo…
+    199|     expect(before.home_operator_id).toBeNull(); expect(before.effectiv…
+       |                                     ^
+    200|     await client.query(`update core.audit_log set home_operator_id = $…
+    201|       [id, fixture.home, fixture.target]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > extends its predecessor snapshot by exactly three nullable columns and three foreign keys
+AssertionError: expected [] to deeply equal [ 'effective_operator_id', …(1) ]
+
+- Expected
++ Received
+
+- [
+-   "effective_operator_id",
+-   "home_operator_id",
+- ]
++ []
+
+ ❯ test/s640-operator-switch-migration.test.ts:237:31
+    235|     const priorAudit = before.tables['core.audit_log']!, nextAudit = a…
+    236|     const addedAuditColumns = Object.keys(nextAudit.columns).filter(ke…
+    237|     expect(addedAuditColumns).toEqual(['effective_operator_id', 'home_…
+       |                               ^
+    238|     const addedAuditKeys = Object.keys(nextAudit.foreignKeys).filter(k…
+    239|     expect(addedAuditKeys).toHaveLength(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  test/s640-operator-switch-migration.test.ts > SCRUM-640 expand-only session override and Q22 audit context migration > migrates a real predecessor database without backfilling or altering existing session or audit data
+error: column "home_operator_id" does not exist
+ ❯ ../../node_modules/.pnpm/pg@8.23.0/node_modules/pg/lib/client.js:694:17
+ ❯ test/s640-operator-switch-migration.test.ts:281:15
+    279|         .toEqual(previousRows.map(fingerprint));
+    280|       expect(fingerprint((await c.query('select to_jsonb(a) as row fro…
+    281|       expect((await c.query(`select id, home_operator_id, effective_op…
+       |               ^
+    282|         where id = any($1::uuid[]) order by id`, [auditIds])).rows)
+    283|         .toEqual([...auditIds].sort().map(id => ({ id, home_operator_i…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 7 passed (12)
+   Start at  14:08:07
+   Duration  26.42s (transform 632ms, setup 0ms, collect 1.51s, tests 24.60s, environment 0ms, prepare 136ms)
+
+C:\w\admin-operator-switch\packages\db:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/db@0.1.0 test: `vitest run --no-file-parallelism "test/s640-operator-switch-migration.test.ts"`
+Exit status 1

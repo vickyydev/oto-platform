@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-640",
+  "appliedAt": "2026-10-26T07:56:10.000Z",
+  "sourceEdits": 0,
+  "rawExternalLogEdits": 0,
+  "receiptEdits": 0,
+  "knownOutputMatchesBefore": 1,
+  "knownOutputMatchesAfter": 0,
+  "syntheticCalibrationPassed": true,
+  "ordinaryNumericControlsUnchanged": true,
+  "displaySha256": "9cbbf634d5b21b5b964b537861a64772811f69827950824eb4875b3c3f43ae06",
+  "checkpointSha256": "218d435d556d0b8a530cb471049e07426fefef53589be3346ab40b389fa07225",
+  "declarativePlanSha256": "95fbbdfe4cc6312521e9956e2506785fa758485801ca5fc5abe02f62bea2ea24",
+  "originalRawLogSha256": "76bb0ceba337972c90518a0636ddb196b82240364000633985fbea273f2d6768"
+}

@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-640",
+  "phase": "checks",
+  "attempt": "v1",
+  "startedAt": "2026-10-26T07:14:52.230Z",
+  "completedAt": "2026-10-26T07:17:10.989Z",
+  "command": "pnpm --filter @oto/api typecheck\npnpm --filter @oto/db typecheck\npnpm --filter @oto/api-types typecheck\npnpm api-types:check\npnpm --filter @oto/api-types test",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "inputsUnchanged": true,
+  "inputCount": 841,
+  "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+  "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+  "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4",
+  "logSha256": "93438180de749982b0a3f9f48cb57ddd3dcace9f81864dd6f3a034cede4047c8",
+  "logPath": "C:/w/admin640-q22-checks-v1.log",
+  "isolatedEmbeddedDatabase": true,
+  "inheritedDatabaseSettingsDiscarded": true,
+  "staging": false,
+  "release": false
+}

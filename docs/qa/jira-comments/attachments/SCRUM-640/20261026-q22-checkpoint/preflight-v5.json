@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-640",
+  "attempt": "final-scoped-v5",
+  "result": "preflight-failed-before-gates",
+  "originalRunner": "admin640-final-scoped-gates-20261026.mjs",
+  "originalRunnerSha256": "84c5506783e522dae465b610fc8d60762129c0048f0ce40c7c60eff089bf0be2",
+  "errorCode": "ENOENT",
+  "path": "apps/console/test/prize-editor-validation.test.ts",
+  "reason": "A concurrent fetch advanced origin/main; the old diff included an unrelated main-only file absent from this older source lane.",
+  "gateCommandsStarted": false,
+  "sourceMutation": false,
+  "retry": "final-scoped-v6",
+  "fix": "Freeze the exact main SHA and merge-base once before selecting existing changed files."
+}

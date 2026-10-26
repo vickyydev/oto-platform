@@ -1,0 +1,459 @@
+
+> @oto/api@0.1.0 test C:\w\admin-operator-switch\apps\api
+> vitest run --pool=forks "test/operator-switch-audit-context-review.test.ts"
+
+
+ RUN  v3.2.7 C:/w/admin-operator-switch/apps/api
+
+stdout | test/operator-switch-audit-context-review.test.ts
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-10gHQk ... ok
+creating subdirectories ...
+
+stdout | test/operator-switch-audit-context-review.test.ts
+ok
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+selecting dynamic shared memory implementation ... windows
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+selecting default max_connections ...
+
+stdout | test/operator-switch-audit-context-review.test.ts
+100
+selecting default shared_buffers ...
+
+stdout | test/operator-switch-audit-context-review.test.ts
+128MB
+selecting default time zone ...
+
+stdout | test/operator-switch-audit-context-review.test.ts
+Asia/Bangkok
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+creating configuration files ...
+
+stdout | test/operator-switch-audit-context-review.test.ts
+ok
+running bootstrap script ...
+
+stdout | test/operator-switch-audit-context-review.test.ts
+ok
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+performing post-bootstrap initialization ...
+
+stdout | test/operator-switch-audit-context-review.test.ts
+ok
+syncing data to disk ...
+
+stdout | test/operator-switch-audit-context-review.test.ts
+ok
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+
+Success. You can now start the database server using:
+
+    ^"C^:^\w^\admin^-operator^-switch^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-10gHQk^" -l logfile start
+
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+2026-10-26 14:08:21.563 +07 [48808] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+2026-10-26 14:08:21.568 +07 [48808] LOG:  listening on IPv6 address "::1", port 54409
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+2026-10-26 14:08:21.568 +07 [48808] LOG:  listening on IPv4 address "127.0.0.1", port 54409
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+2026-10-26 14:08:21.632 +07 [52084] LOG:  database system was shut down at 2026-10-26 14:08:18 +07
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+2026-10-26 14:08:21.666 +07 [48808] LOG:  database system is ready to accept connections
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+2026-10-26 14:08:29.129 +07 [7552] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/operator-switch-audit-context-review.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:53740) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | test/operator-switch-audit-context-review.test.ts
+2026-10-26 14:08:31.231 +07 [83992] LOG:  checkpoint starting: immediate force wait
+
+
+stdout | test/operator-switch-audit-context-review.test.ts
+2026-10-26 14:08:31.253 +07 [83992] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.005 s, total=0.022 s; sync files=5, longest=0.002 s, average=0.001 s; distance=15669 kB, estimate=15669 kB; lsn=0/24C5668, redo lsn=0/24C5630
+
+
+ ❯ test/operator-switch-audit-context-review.test.ts (20 tests | 13 failed) 15603ms
+   × SCRUM-640 Q22 trusted audit-context native house review > R1 [high] installs the actual carrier and nullable columns; fix: append the expand migration and native module 14ms
+     → The no-context baseline is for RED only; GREEN requires the actual module: expected null not to be null
+   × SCRUM-640 Q22 trusted audit-context native house review > R2 [critical] native HTTP derives home attribution from verified auth, ignores body JSON, and preserves event-owner/payload; fix: capture the request continuation 51ms
+     → expected { …(9) } to match object { …(2) }
+(12 matching properties omitted from actual)
+   × SCRUM-640 Q22 trusted audit-context native house review > R3 [critical] native HTTP preserves real home while attributing the chosen working operator; fix: use the captured effective scope 26ms
+     → expected { …(9) } to match object { …(2) }
+(8 matching properties omitted from actual)
+   × SCRUM-640 Q22 trusted audit-context native house review > R4 [critical] overlapping native request continuations never inherit the other actor; fix: AsyncLocalStorage.run around the native done continuation 17ms
+     → expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+   × SCRUM-640 Q22 trusted audit-context native house review > R5 [critical] an old native continuation is not resampled after a concurrent real session switch; fix: freeze attribution once at verified resolution 21ms
+     → expected { …(9) } to match object { …(2) }
+(8 matching properties omitted from actual)
+   × SCRUM-640 Q22 trusted audit-context native house review > R6 [critical] copied input and exposed attribution cannot mutate a post-await snapshot; fix: store immutable scalar copies 8ms
+     → expected null to deeply equal { …(2) }
+   × SCRUM-640 Q22 trusted audit-context native house review > R7 [critical] interleaved same-account home/selected snapshots stay isolated; fix: run-scoped storage without enterWith 20ms
+     → expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+   ✓ SCRUM-640 Q22 trusted audit-context native house review > R8 [control] mismatched actors never acquire somebody else's attribution 9ms
+   ✓ SCRUM-640 Q22 trusted audit-context native house review > R9 [control] system and unwrapped records retain nullable attribution rather than guessing from event ownership 10ms
+   × SCRUM-640 Q22 trusted audit-context native house review > R10 [critical] a nested null scope masks then restores the outer verified context; fix: run(null) must not reuse an outer store 10ms
+     → expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+   × SCRUM-640 Q22 trusted audit-context native house review > R11 [high] truthful legacy home with absent revision remains compatible; fix: narrow fallback to unselected home 9ms
+     → expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+   × SCRUM-640 Q22 trusted audit-context native house review > R11 [high] truthful legacy home with zero revision remains compatible; fix: narrow fallback to unselected home 11ms
+     → expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+   ✓ SCRUM-640 Q22 trusted audit-context native house review > R12 [high] missing-home-override yields null attribution; fix: reject contradictory context without inventing home 8ms
+   ✓ SCRUM-640 Q22 trusted audit-context native house review > R12 [high] missing-home-revision yields null attribution; fix: reject contradictory context without inventing home 9ms
+   ✓ SCRUM-640 Q22 trusted audit-context native house review > R12 [high] contradictory-effective yields null attribution; fix: reject contradictory context without inventing home 8ms
+   ✓ SCRUM-640 Q22 trusted audit-context native house review > R12 [high] contradictory-override yields null attribution; fix: reject contradictory context without inventing home 8ms
+   × SCRUM-640 Q22 trusted audit-context native house review > R13 [critical] caller entry fields and nested JSON cannot override a trusted attribution; fix: audit.record reads only the matching carrier 9ms
+     → expected { …(9) } to match object { …(2) }
+(10 matching properties omitted from actual)
+   × SCRUM-640 Q22 trusted audit-context native house review > R14 [critical] rollback removes the success/business change but preserves the frozen failure attribution after a later switch; fix: keep withTx failure continuation inside run 84ms
+     → expected { …(9) } to match object { …(2) }
+(8 matching properties omitted from actual)
+   ✓ SCRUM-640 Q22 trusted audit-context native house review > R15 [control] withTx failure attribution remains null when its operation actor mismatches the verified human 17ms
+   × SCRUM-640 Q22 trusted audit-context native house review > R16 [critical] public exchange attributes the sealed verified actor despite an unrelated valid cookie, without exposing internal context; fix: scope only its success audit to auditAuth 48ms
+     → expected { …(9) } to match object { …(2) }
+(9 matching properties omitted from actual)
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 13 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R1 [high] installs the actual carrier and nullable columns; fix: append the expand migration and native module
+AssertionError: The no-context baseline is for RED only; GREEN requires the actual module: expected null not to be null
+ ❯ test/operator-switch-audit-context-review.test.ts:127:101
+    125| describe('SCRUM-640 Q22 trusted audit-context native house review', ()…
+    126|   it('R1 [high] installs the actual carrier and nullable columns; fix:…
+    127|     expect(module, 'The no-context baseline is for RED only; GREEN req…
+       |                                                                                                     ^
+    128|     const result = await ctx.db.execute<{ column_name: string; data_ty…
+    129|       select column_name, data_type, is_nullable from information_sche…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R2 [critical] native HTTP derives home attribution from verified auth, ignores body JSON, and preserves event-owner/payload; fix: capture the request continuation
+AssertionError: expected { …(9) } to match object { …(2) }
+(12 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-10d7-79bc-bc5f-ad8ce49995e5",
+-   "home_operator_id": "01a1770a-10d7-79bc-bc5f-ad8ce49995e5",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:143:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R3 [critical] native HTTP preserves real home while attributing the chosen working operator; fix: use the captured effective scope
+AssertionError: expected { …(9) } to match object { …(2) }
+(8 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-110a-791b-a0f4-41e5df381637",
+-   "home_operator_id": "01a1770a-110a-791b-a0f4-41e4fe96b077",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:153:72
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R4 [critical] overlapping native request continuations never inherit the other actor; fix: AsyncLocalStorage.run around the native done continuation
+AssertionError: expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-1124-781c-b448-109b7024e99b",
+-   "home_operator_id": "01a1770a-1124-781c-b448-109b7024e99b",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:167:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R5 [critical] an old native continuation is not resampled after a concurrent real session switch; fix: freeze attribution once at verified resolution
+AssertionError: expected { …(9) } to match object { …(2) }
+(8 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-1135-7b3a-976f-061572a2f6ae",
+-   "home_operator_id": "01a1770a-1135-7b3a-976f-061572a2f6ae",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:180:74
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R6 [critical] copied input and exposed attribution cannot mutate a post-await snapshot; fix: store immutable scalar copies
+AssertionError: expected null to deeply equal { …(2) }
+
+- Expected:
+{
+  "effectiveOperatorId": "01a1770a-114a-758f-a7a3-49c677051bfb",
+  "homeOperatorId": "01a1770a-114a-758f-a7a3-49c677051bfb",
+}
+
++ Received:
+null
+
+ ❯ test/operator-switch-audit-context-review.test.ts:192:44
+    190|       if (exposed) { try { exposed.homeOperatorId = f.otherHome; expos…
+    191|       await Promise.resolve();
+    192|       expect(attribution(originalAccount)).toEqual({ homeOperatorId: f…
+       |                                            ^
+    193|       await audit.record(ctx.db, entry(marker, originalAccount));
+    194|     });
+ ❯ test/operator-switch-audit-context-review.test.ts:187:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R7 [critical] interleaved same-account home/selected snapshots stay isolated; fix: run-scoped storage without enterWith
+AssertionError: expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-1152-7c13-87c3-690557d01627",
+-   "home_operator_id": "01a1770a-1152-7c13-87c3-690557d01627",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:209:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R10 [critical] a nested null scope masks then restores the outer verified context; fix: run(null) must not reuse an outer store
+AssertionError: expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-1179-7a6a-a6d1-d86c19f8ee38",
+-   "home_operator_id": "01a1770a-1179-7a6a-a6d1-d86c19f8ee38",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:234:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R11 [high] truthful legacy home with absent revision remains compatible; fix: narrow fallback to unselected home
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R11 [high] truthful legacy home with zero revision remains compatible; fix: narrow fallback to unselected home
+AssertionError: expected { …(9) } to match object { …(2) }
+(7 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-1183-7ab3-b075-059553197913",
+-   "home_operator_id": "01a1770a-1183-7ab3-b075-059553197913",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:242:67
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R13 [critical] caller entry fields and nested JSON cannot override a trusted attribution; fix: audit.record reads only the matching carrier
+AssertionError: expected { …(9) } to match object { …(2) }
+(10 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-11b9-74a7-bf6d-4c0101dfd891",
+-   "home_operator_id": "01a1770a-11b9-74a7-bf6d-4c0101dfd891",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:263:45
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R14 [critical] rollback removes the success/business change but preserves the frozen failure attribution after a later switch; fix: keep withTx failure continuation inside run
+AssertionError: expected { …(9) } to match object { …(2) }
+(8 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-11c2-7629-9148-93a05ed62db0",
+-   "home_operator_id": "01a1770a-11c2-7629-9148-93a05ed62db0",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:282:74
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/13]⎯
+
+ FAIL  test/operator-switch-audit-context-review.test.ts > SCRUM-640 Q22 trusted audit-context native house review > R16 [critical] public exchange attributes the sealed verified actor despite an unrelated valid cookie, without exposing internal context; fix: scope only its success audit to auditAuth
+AssertionError: expected { …(9) } to match object { …(2) }
+(9 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "effective_operator_id": "01a1770a-1227-746b-9cd7-3d38496ac972",
+-   "home_operator_id": "01a1770a-1227-746b-9cd7-3d3794e824a0",
++   "effective_operator_id": null,
++   "home_operator_id": null,
+  }
+
+ ❯ columns test/operator-switch-audit-context-review.test.ts:122:15
+    120| function columns(row: PersistedAudit | undefined, home: string | null,…
+    121|   expect(row).toBeDefined();
+    122|   expect(row).toMatchObject({ home_operator_id: home, effective_operat…
+       |               ^
+    123| }
+    124|
+ ❯ test/operator-switch-audit-context-review.test.ts:310:37
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/13]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  13 failed | 7 passed (20)
+   Start at  14:08:07
+   Duration  24.59s (transform 4.68s, setup 0ms, collect 8.65s, tests 15.60s, environment 0ms, prepare 124ms)
+
+C:\w\admin-operator-switch\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api@0.1.0 test: `vitest run --pool=forks "test/operator-switch-audit-context-review.test.ts"`
+Exit status 1

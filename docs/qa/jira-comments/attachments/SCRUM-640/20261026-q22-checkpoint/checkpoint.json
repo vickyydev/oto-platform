@@ -1,0 +1,224 @@
+{
+  "ticket": "SCRUM-640",
+  "kind": "local-Q22-checkpoint",
+  "archivedAt": "2026-10-26T07:46:22.627Z",
+  "staging": false,
+  "release": false,
+  "deployed": false,
+  "description": "Granted Q22 lifecycle and audit plumbing, with actual native RED/GREEN pins and final scoped checks. Distinct input frames remain distinct.",
+  "normalization": "Archived log display only: CRLF to LF, trailing horizontal whitespace and redundant final blank lines. Original raw-log hashes remain in unchanged receipts. The broad display log additionally redacts one known synthetic legacy-auth-code output; source, original raw log and receipts remain unchanged. See displayRedactions.",
+  "attempts": [
+    {
+      "name": "admin640-q22-lifecycle-red-v1",
+      "observed": {
+        "passed": 6,
+        "failed": 3
+      },
+      "receiptSha256": "04f80d56a4297976da0ed24366cc56b566206074fec53e49dcb26362f557b086",
+      "originalLogSha256": "9f4ffb5a1811f843661ad69891409003e9aa0413a6210a545f4561cb130d7870",
+      "archivedLogSha256": "cd04e180cd6d0a05463ee870c36e99ea9b5f1accb01341bde83ef96ed1c8ce2f",
+      "inputsSha256": "7fc849fc91d78220a83023a0e097fedf731bfa9184a794c9236d1938a85c04fe",
+      "sourceManifestSha256": "75d469dbaf2307d5e39822b88ddc412a317052e2a3ebad414d018866d2f02099",
+      "inputCount": 839,
+      "completedAt": "2026-10-26T07:03:31.004Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4"
+    },
+    {
+      "name": "admin640-q22-audit-red-v1",
+      "observed": {
+        "passed": 7,
+        "failed": 13
+      },
+      "receiptSha256": "7dbb812bf46594ffc1f6540398e9ba6f1111feb8544a7f0f06e8b677564dc90d",
+      "originalLogSha256": "4edace8ddc929f73fc7dacccd3b39927b5226a0ca221162e77e42fb64c541eff",
+      "archivedLogSha256": "d67a13f4e2dce5b46927dabff9f8c5d0117b10f6c7891545b29737255c056c65",
+      "inputsSha256": "16d21847991260e869cd13f69cef027aca5e024a696d605012b5038624b6906b",
+      "sourceManifestSha256": "afa6a56d1ff80bb1c190077f52c47ebc5f32b0c233fe13ce5c0429125c46dfb7",
+      "inputCount": 840,
+      "completedAt": "2026-10-26T07:08:32.823Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4"
+    },
+    {
+      "name": "admin640-q22-migration-red-v1",
+      "observed": {
+        "passed": 7,
+        "failed": 5
+      },
+      "receiptSha256": "7b02a77f39457261e81ec1fe046b32851024bcb609fefc5db7a63e4419f158fe",
+      "originalLogSha256": "ce9e31bec92507105cdebb4c1f1faeaea300579563e4463f0ccb5637408d6a3a",
+      "archivedLogSha256": "2ef781d5b3cee644e50db09fec0511dd154c1324942be1b28db4162cf96d489a",
+      "inputsSha256": "16d21847991260e869cd13f69cef027aca5e024a696d605012b5038624b6906b",
+      "sourceManifestSha256": "afa6a56d1ff80bb1c190077f52c47ebc5f32b0c233fe13ce5c0429125c46dfb7",
+      "inputCount": 840,
+      "completedAt": "2026-10-26T07:08:34.387Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4"
+    },
+    {
+      "name": "admin640-q22-lifecycle-green-v1",
+      "observed": {
+        "passed": 9,
+        "failed": 0
+      },
+      "receiptSha256": "8da60b09406ae1388398fcd1cf3731a24f51907c284b36150c81970dec576f8f",
+      "originalLogSha256": "9866b6a8ed0f123d50bb4f141badcceb0b3ff368fbbdfb479bd913c975fc66d5",
+      "archivedLogSha256": "e074d1c8dd6cddafb87aa33544d88fef8ed193eaf4307c586b980326896318a4",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "completedAt": "2026-10-26T07:15:20.332Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4"
+    },
+    {
+      "name": "admin640-q22-audit-green-v1",
+      "observed": {
+        "passed": 20,
+        "failed": 0
+      },
+      "receiptSha256": "681c45aef7fbbad9cbc252156e54ad9cc3726cc89f760d82d2c442c4a3fc8c4d",
+      "originalLogSha256": "cf0679c7b480e82034109506944f3abb4a9e922c24c8639476afad25530df4f1",
+      "archivedLogSha256": "8e4dcb9b3abe6e5140a77818b51af7290f4dce4467682390be8a2e0701770a09",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "completedAt": "2026-10-26T07:15:20.631Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4"
+    },
+    {
+      "name": "admin640-q22-migration-green-v1",
+      "observed": {
+        "passed": 12,
+        "failed": 0
+      },
+      "receiptSha256": "d4aea5ccdf069f0932df36cf5bff24ea3c1bdbd796677842105795d1edb9e28a",
+      "originalLogSha256": "b61a2ad6c55a5be1cd400cf95e785beb2a7b57c18b1aeffeb43f4346f0ab01a8",
+      "archivedLogSha256": "4711703124bc72c19aaf7d87cdd1b2bcdae95763ade329ebf7db7ad2a0b86478",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "completedAt": "2026-10-26T07:15:17.243Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4"
+    },
+    {
+      "name": "admin640-q22-schema-v1",
+      "observed": {
+        "schemaMatches": true
+      },
+      "receiptSha256": "c4c9fdd43557a13c73a3b6bbdf1f90d2475c20761270ab71fe805df7a0d788df",
+      "originalLogSha256": "78898e0980197d1a15e61acebf0bd81684d6caec0eae0789daa687f09e6f1371",
+      "archivedLogSha256": "8949c2bf368cdc0a05f5d755f566aeb5ea42c469c64a7f5cd09dd591f1a2c0c2",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "completedAt": "2026-10-26T07:15:09.158Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4"
+    },
+    {
+      "name": "admin640-q22-checks-v1",
+      "observed": {
+        "compilerDiagnostics": 0,
+        "seamTestsPassed": 10
+      },
+      "receiptSha256": "849470bce8dee27aa9bb9a967478f51678ef10e602ce990435255409530543ff",
+      "originalLogSha256": "93438180de749982b0a3f9f48cb57ddd3dcace9f81864dd6f3a034cede4047c8",
+      "archivedLogSha256": "6d9dffd56cf64a5bf85c57b87f07f455fc4173fea7b1a40a31344a3cf120fc9c",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "completedAt": "2026-10-26T07:17:10.989Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4"
+    },
+    {
+      "name": "admin640-q22-handoff-red-v1",
+      "observed": {
+        "passed": 24,
+        "failed": 1
+      },
+      "receiptSha256": "bb23e6d5fb5c25ce904e354d76ac615523ad29044642ef066a164631eff0f5da",
+      "originalLogSha256": "12372e4655c9ee2b680ee3a8c386f4b4d0c3614efa910895fb84f2b602cba74e",
+      "archivedLogSha256": "a276bbc3b53b9633a35398e1c392ef30054635581a947edfb166bf2d79f7e21b",
+      "inputsSha256": "294d680375bf440592a88eafbbebf65a9370b5e9457b037125eabc8195b1691e",
+      "sourceManifestSha256": "e2fd78cc261a31c535a94c8b6776fb20942499efe59bdf9798b6887c94cdcc32",
+      "inputCount": 841,
+      "completedAt": "2026-10-26T07:20:25.220Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "3b1f9dfc951ff50574d3416307fab353143d766ac37e1ac746a0d483a65daa93"
+    },
+    {
+      "name": "admin640-q22-handoff-green-v1",
+      "observed": {
+        "passed": 25,
+        "failed": 0
+      },
+      "receiptSha256": "3f6ff99ed899db9c5ca0f957cb0c475614d10bbab438f57c4700c17bae992dcd",
+      "originalLogSha256": "3c399c611a013dbcbcba7a03449079b7ae3bcce4c8a035c13dd22d956d50be9f",
+      "archivedLogSha256": "9139ea819ac71c8f375ff626896a3fd73ec326fe01f83d83ee01cca34e7e7922",
+      "inputsSha256": "954d90a4532530bbc051eec6317a4935d5dd09834cfc0d568e98b49bbeec2629",
+      "sourceManifestSha256": "b5012653dbfed7f531398def76bcca86cff5670c929994d05d9721f23db2b256",
+      "inputCount": 841,
+      "completedAt": "2026-10-26T07:22:54.555Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "3b1f9dfc951ff50574d3416307fab353143d766ac37e1ac746a0d483a65daa93"
+    },
+    {
+      "name": "admin640-final-scoped-v6",
+      "observed": {
+        "compilerDiagnostics": 0,
+        "seamTestsPassed": 10,
+        "lintFiles": 102
+      },
+      "receiptSha256": "900c76b03f1c77df404411caa1f1ae46bac648ce1a2bc0a9f22184a1c525ccb1",
+      "originalLogSha256": "c265ad95b19caa654cc6ca81a90993047f90f36b7a735021c7306631edcbf0da",
+      "archivedLogSha256": "abe6a2ba19c2c4c9472ac40306dba1c5ef092ad1c551e6e7206755b8694aa9d2",
+      "inputsSha256": "44bd5e4e0fb66f2f6fab4431a80bc529b98ee463dd518aaefbf618de69475b93",
+      "sourceManifestSha256": "671eb84667c1e5790b3785811282f7c7ac0877302033a297f4c003d0d3988810",
+      "inputCount": 109,
+      "completedAt": "2026-10-26T07:35:53.606Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "126df1cb7558d24c909fecf6b8ac6d8c8dba9f1ad58dfb192ab6f788d5d56671"
+    },
+    {
+      "name": "admin640-q22-broad-green-v1",
+      "observed": {
+        "passed": 466,
+        "filesPassed": 27,
+        "failed": 0
+      },
+      "receiptSha256": "8ca7399b7f318b8215f29d053266970db48fa8e48e87fe98240e8410918cf262",
+      "originalLogSha256": "76bb0ceba337972c90518a0636ddb196b82240364000633985fbea273f2d6768",
+      "archivedLogSha256": "9cbbf634d5b21b5b964b537861a64772811f69827950824eb4875b3c3f43ae06",
+      "inputsSha256": "954d90a4532530bbc051eec6317a4935d5dd09834cfc0d568e98b49bbeec2629",
+      "sourceManifestSha256": "b5012653dbfed7f531398def76bcca86cff5670c929994d05d9721f23db2b256",
+      "inputCount": 841,
+      "completedAt": "2026-10-26T07:45:16.437Z",
+      "inputsUnchanged": true,
+      "runnerSha256": "ae2eeab076cc2bc244314892b3c0cedf830537f681f3f8aebd380cca303a7646"
+    }
+  ],
+  "remaining": [
+    "Planner-owned protected assistant creation-time ask capture/attribution patch.",
+    "SCRUM-638 combined release and planner-supplied initial provider-list USD rates.",
+    "Rebase and renumber the still-unapplied 640 migration after 638 lands, preserving SQL changes exactly.",
+    "Full combined release gates, exact-SHA main CI, automatic Render deployment and inspected postdeploy staging evidence."
+  ],
+  "displayRedactions": [
+    {
+      "filename": "admin640-q22-broad-green-v1.log",
+      "kind": "synthetic-auth-code-output",
+      "count": 1,
+      "pattern": "^(legacy sha256 row brute-forced in \\d+ms\\s*(?:\\u2192|->)\\s*)\\d{6}([ \\t]*)(?=\\n|$)",
+      "source": "apps/api/test/auth-codes.test.ts:170",
+      "sourceSha256": "89ac2dbe6ccdf1d3219cd3d3e417aea37d6ffb7f223dc855d5ac83590017bfd5",
+      "originalRawLogSha256": "76bb0ceba337972c90518a0636ddb196b82240364000633985fbea273f2d6768",
+      "whitespaceNormalizedBeforeRedactionSha256": "a8484a77cf21c88fc681a093d86420e2830bdcffebcd935917d92384324a47d2",
+      "redactedDisplaySha256": "9cbbf634d5b21b5b964b537861a64772811f69827950824eb4875b3c3f43ae06"
+    }
+  ]
+}

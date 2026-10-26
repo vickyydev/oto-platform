@@ -1,0 +1,694 @@
+{
+  "ticket": "SCRUM-640",
+  "reviewedAt": "2026-10-26T07:53:47.856Z",
+  "kind": "INDEPENDENT_READ_ONLY_Q22_CHECKPOINT_EVIDENCE",
+  "passed": false,
+  "evidenceBindingsPassed": true,
+  "nativeBroadPassed": true,
+  "archiveReady": false,
+  "staging": false,
+  "release": false,
+  "deployed": false,
+  "checkpoint": {
+    "path": "C:/w/admin-operator-switch/docs/qa/jira-comments/attachments/SCRUM-640/20261026-q22-checkpoint/checkpoint.json",
+    "sha256": "53ca7cd3873e67a6b0755b941d0dc54911636687e57ae477f5795f3eaf4a7ea3",
+    "archiveFiles": 44,
+    "attempts": 12,
+    "runnerFiles": 5
+  },
+  "broad": {
+    "receiptSha256": "8ca7399b7f318b8215f29d053266970db48fa8e48e87fe98240e8410918cf262",
+    "inputsSha256": "954d90a4532530bbc051eec6317a4935d5dd09834cfc0d568e98b49bbeec2629",
+    "logSha256": "76bb0ceba337972c90518a0636ddb196b82240364000633985fbea273f2d6768",
+    "bytes": 119467,
+    "lineSegments": 2810,
+    "nonemptyLines": 1638,
+    "fullOutputRead": true,
+    "readMethod": "All nonempty lines read in bounded untruncated numbered chunks; empty lines accounted separately. No test content omitted.",
+    "sourceFiles": 841,
+    "sourceManifestSha256": "b5012653dbfed7f531398def76bcca86cff5670c929994d05d9721f23db2b256",
+    "exitCode": 0,
+    "signal": null,
+    "filesPassed": 27,
+    "testsPassed": 466,
+    "skipped": 0,
+    "todo": 0,
+    "perFile": [
+      {
+        "path": "test/operator-switch-lifecycle-review.test.ts",
+        "tests": 9
+      },
+      {
+        "path": "test/operator-switch-handoff-review.test.ts",
+        "tests": 25
+      },
+      {
+        "path": "test/auth.test.ts",
+        "tests": 24
+      },
+      {
+        "path": "test/auth-enumeration.test.ts",
+        "tests": 10
+      },
+      {
+        "path": "test/id-conformance.test.ts",
+        "tests": 24
+      },
+      {
+        "path": "test/auth-codes.test.ts",
+        "tests": 8
+      },
+      {
+        "path": "test/operator-switch-idempotency-review.test.ts",
+        "tests": 21
+      },
+      {
+        "path": "test/archived-tenancy.test.ts",
+        "tests": 15
+      },
+      {
+        "path": "test/platform-review.test.ts",
+        "tests": 18
+      },
+      {
+        "path": "test/session-branch-station.test.ts",
+        "tests": 16
+      },
+      {
+        "path": "test/permissions.test.ts",
+        "tests": 26
+      },
+      {
+        "path": "test/operator-switch-audit-context-review.test.ts",
+        "tests": 20
+      },
+      {
+        "path": "test/s629-role-mapping-review.test.ts",
+        "tests": 7
+      },
+      {
+        "path": "test/operator-switch-seat-review.test.ts",
+        "tests": 2
+      },
+      {
+        "path": "test/auth-handoff-files-tx.test.ts",
+        "tests": 10
+      },
+      {
+        "path": "test/operator-switch-session-review.test.ts",
+        "tests": 39
+      },
+      {
+        "path": "test/scrum-607-reach.test.ts",
+        "tests": 11
+      },
+      {
+        "path": "test/console-branch-scope.test.ts",
+        "tests": 27
+      },
+      {
+        "path": "test/routes-guarded.test.ts",
+        "tests": 21
+      },
+      {
+        "path": "test/handoff.test.ts",
+        "tests": 22
+      },
+      {
+        "path": "test/s629-handoff-role.test.ts",
+        "tests": 4
+      },
+      {
+        "path": "test/transactions.test.ts",
+        "tests": 5
+      },
+      {
+        "path": "test/handoff-department.test.ts",
+        "tests": 9
+      },
+      {
+        "path": "test/operator-switch-route-review.test.ts",
+        "tests": 26
+      },
+      {
+        "path": "test/operator-switch-review.test.ts",
+        "tests": 29
+      },
+      {
+        "path": "test/route-write-conformance.test.ts",
+        "tests": 19
+      },
+      {
+        "path": "test/route-scope-target.test.ts",
+        "tests": 19
+      }
+    ],
+    "perFileTestsSum": 466
+  },
+  "diagnostics": {
+    "errors": 13,
+    "postgresWarnings": 6,
+    "fastifyDeprecations": 30,
+    "unexpectedErrorLines": [],
+    "unexpectedWarningLines": [],
+    "classification": "All13 ERRORs are named rollback injections in lifecycle,629 role/link,auth-file and transaction tests. All6 PostgreSQL warnings follow injected commit failures. Existing Fastify disableRequestLogging deprecation remains informational. Routine Windows PG client-disconnect LOG entries also occur during fixture setup."
+  },
+  "scoped": {
+    "inputCount": 109,
+    "sourceManifestSha256": "671eb84667c1e5790b3785811282f7c7ac0877302033a297f4c003d0d3988810",
+    "lintFiles": 102,
+    "exitCode": 0,
+    "compilerDiagnostics": 0,
+    "contractsMatch": true,
+    "seamTests": 10,
+    "wholeChecksLogRead": true,
+    "wholeSchemaLogRead": true,
+    "schemaSnapshot": "0087_snapshot.json",
+    "schemaMatches": true,
+    "publicEmpty": true
+  },
+  "historicalRedCounts": {
+    "lifecycle": {
+      "failed": 3,
+      "passed": 6
+    },
+    "audit": {
+      "failed": 13,
+      "passed": 7
+    },
+    "migration": {
+      "failed": 5,
+      "passed": 7
+    },
+    "handoff": {
+      "failed": 1,
+      "passed": 24
+    }
+  },
+  "greenCounts": {
+    "lifecycle": 9,
+    "audit": 20,
+    "migration": 12,
+    "handoff": 25,
+    "broad": 466
+  },
+  "attempts": [
+    {
+      "name": "admin640-q22-lifecycle-red-v1",
+      "receiptSha256": "04f80d56a4297976da0ed24366cc56b566206074fec53e49dcb26362f557b086",
+      "inputsSha256": "7fc849fc91d78220a83023a0e097fedf731bfa9184a794c9236d1938a85c04fe",
+      "rawLogSha256": "9f4ffb5a1811f843661ad69891409003e9aa0413a6210a545f4561cb130d7870",
+      "displayLogSha256": "cd04e180cd6d0a05463ee870c36e99ea9b5f1accb01341bde83ef96ed1c8ce2f",
+      "sourceManifestSha256": "75d469dbaf2307d5e39822b88ddc412a317052e2a3ebad414d018866d2f02099",
+      "inputCount": 839,
+      "exitCode": 1,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:03:31.004Z",
+      "tests": [
+        "3 failed | 6 passed (9)"
+      ],
+      "files": [
+        "1 failed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-audit-red-v1",
+      "receiptSha256": "7dbb812bf46594ffc1f6540398e9ba6f1111feb8544a7f0f06e8b677564dc90d",
+      "inputsSha256": "16d21847991260e869cd13f69cef027aca5e024a696d605012b5038624b6906b",
+      "rawLogSha256": "4edace8ddc929f73fc7dacccd3b39927b5226a0ca221162e77e42fb64c541eff",
+      "displayLogSha256": "d67a13f4e2dce5b46927dabff9f8c5d0117b10f6c7891545b29737255c056c65",
+      "sourceManifestSha256": "afa6a56d1ff80bb1c190077f52c47ebc5f32b0c233fe13ce5c0429125c46dfb7",
+      "inputCount": 840,
+      "exitCode": 1,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:08:32.823Z",
+      "tests": [
+        "13 failed | 7 passed (20)"
+      ],
+      "files": [
+        "1 failed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-migration-red-v1",
+      "receiptSha256": "7b02a77f39457261e81ec1fe046b32851024bcb609fefc5db7a63e4419f158fe",
+      "inputsSha256": "16d21847991260e869cd13f69cef027aca5e024a696d605012b5038624b6906b",
+      "rawLogSha256": "ce9e31bec92507105cdebb4c1f1faeaea300579563e4463f0ccb5637408d6a3a",
+      "displayLogSha256": "2ef781d5b3cee644e50db09fec0511dd154c1324942be1b28db4162cf96d489a",
+      "sourceManifestSha256": "afa6a56d1ff80bb1c190077f52c47ebc5f32b0c233fe13ce5c0429125c46dfb7",
+      "inputCount": 840,
+      "exitCode": 1,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:08:34.387Z",
+      "tests": [
+        "5 failed | 7 passed (12)"
+      ],
+      "files": [
+        "1 failed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-lifecycle-green-v1",
+      "receiptSha256": "8da60b09406ae1388398fcd1cf3731a24f51907c284b36150c81970dec576f8f",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "rawLogSha256": "9866b6a8ed0f123d50bb4f141badcceb0b3ff368fbbdfb479bd913c975fc66d5",
+      "displayLogSha256": "e074d1c8dd6cddafb87aa33544d88fef8ed193eaf4307c586b980326896318a4",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "exitCode": 0,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:15:20.332Z",
+      "tests": [
+        "9 passed (9)"
+      ],
+      "files": [
+        "1 passed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-audit-green-v1",
+      "receiptSha256": "681c45aef7fbbad9cbc252156e54ad9cc3726cc89f760d82d2c442c4a3fc8c4d",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "rawLogSha256": "cf0679c7b480e82034109506944f3abb4a9e922c24c8639476afad25530df4f1",
+      "displayLogSha256": "8e4dcb9b3abe6e5140a77818b51af7290f4dce4467682390be8a2e0701770a09",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "exitCode": 0,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:15:20.631Z",
+      "tests": [
+        "20 passed (20)"
+      ],
+      "files": [
+        "1 passed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-migration-green-v1",
+      "receiptSha256": "d4aea5ccdf069f0932df36cf5bff24ea3c1bdbd796677842105795d1edb9e28a",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "rawLogSha256": "b61a2ad6c55a5be1cd400cf95e785beb2a7b57c18b1aeffeb43f4346f0ab01a8",
+      "displayLogSha256": "4711703124bc72c19aaf7d87cdd1b2bcdae95763ade329ebf7db7ad2a0b86478",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "exitCode": 0,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:15:17.243Z",
+      "tests": [
+        "12 passed (12)"
+      ],
+      "files": [
+        "1 passed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-schema-v1",
+      "receiptSha256": "c4c9fdd43557a13c73a3b6bbdf1f90d2475c20761270ab71fe805df7a0d788df",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "rawLogSha256": "78898e0980197d1a15e61acebf0bd81684d6caec0eae0789daa687f09e6f1371",
+      "displayLogSha256": "8949c2bf368cdc0a05f5d755f566aeb5ea42c469c64a7f5cd09dd591f1a2c0c2",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "exitCode": 0,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:15:09.158Z",
+      "tests": [],
+      "files": [],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-checks-v1",
+      "receiptSha256": "849470bce8dee27aa9bb9a967478f51678ef10e602ce990435255409530543ff",
+      "inputsSha256": "98fd21e111d9ca8db42cd61c8ffa706d667267aa6df767386bbf8ff3106bd8a0",
+      "rawLogSha256": "93438180de749982b0a3f9f48cb57ddd3dcace9f81864dd6f3a034cede4047c8",
+      "displayLogSha256": "6d9dffd56cf64a5bf85c57b87f07f455fc4173fea7b1a40a31344a3cf120fc9c",
+      "sourceManifestSha256": "814764ad7fbf44ff111e1fa1dc147b1632700327a0b866c5bf6c34fcaba4d28e",
+      "inputCount": 841,
+      "exitCode": 0,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:17:10.989Z",
+      "tests": [
+        "10 passed (10)"
+      ],
+      "files": [
+        "1 passed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-handoff-red-v1",
+      "receiptSha256": "bb23e6d5fb5c25ce904e354d76ac615523ad29044642ef066a164631eff0f5da",
+      "inputsSha256": "294d680375bf440592a88eafbbebf65a9370b5e9457b037125eabc8195b1691e",
+      "rawLogSha256": "12372e4655c9ee2b680ee3a8c386f4b4d0c3614efa910895fb84f2b602cba74e",
+      "displayLogSha256": "a276bbc3b53b9633a35398e1c392ef30054635581a947edfb166bf2d79f7e21b",
+      "sourceManifestSha256": "e2fd78cc261a31c535a94c8b6776fb20942499efe59bdf9798b6887c94cdcc32",
+      "inputCount": 841,
+      "exitCode": 1,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:20:25.220Z",
+      "tests": [
+        "1 failed | 24 passed (25)"
+      ],
+      "files": [
+        "1 failed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-handoff-green-v1",
+      "receiptSha256": "3f6ff99ed899db9c5ca0f957cb0c475614d10bbab438f57c4700c17bae992dcd",
+      "inputsSha256": "954d90a4532530bbc051eec6317a4935d5dd09834cfc0d568e98b49bbeec2629",
+      "rawLogSha256": "3c399c611a013dbcbcba7a03449079b7ae3bcce4c8a035c13dd22d956d50be9f",
+      "displayLogSha256": "9139ea819ac71c8f375ff626896a3fd73ec326fe01f83d83ee01cca34e7e7922",
+      "sourceManifestSha256": "b5012653dbfed7f531398def76bcca86cff5670c929994d05d9721f23db2b256",
+      "inputCount": 841,
+      "exitCode": 0,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:22:54.555Z",
+      "tests": [
+        "25 passed (25)"
+      ],
+      "files": [
+        "1 passed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-final-scoped-v6",
+      "receiptSha256": "900c76b03f1c77df404411caa1f1ae46bac648ce1a2bc0a9f22184a1c525ccb1",
+      "inputsSha256": "44bd5e4e0fb66f2f6fab4431a80bc529b98ee463dd518aaefbf618de69475b93",
+      "rawLogSha256": "c265ad95b19caa654cc6ca81a90993047f90f36b7a735021c7306631edcbf0da",
+      "displayLogSha256": "abe6a2ba19c2c4c9472ac40306dba1c5ef092ad1c551e6e7206755b8694aa9d2",
+      "sourceManifestSha256": "671eb84667c1e5790b3785811282f7c7ac0877302033a297f4c003d0d3988810",
+      "inputCount": 109,
+      "exitCode": 0,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:35:53.606Z",
+      "tests": [
+        "10 passed (10)"
+      ],
+      "files": [
+        "1 passed (1)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    },
+    {
+      "name": "admin640-q22-broad-green-v1",
+      "receiptSha256": "8ca7399b7f318b8215f29d053266970db48fa8e48e87fe98240e8410918cf262",
+      "inputsSha256": "954d90a4532530bbc051eec6317a4935d5dd09834cfc0d568e98b49bbeec2629",
+      "rawLogSha256": "76bb0ceba337972c90518a0636ddb196b82240364000633985fbea273f2d6768",
+      "displayLogSha256": "a8484a77cf21c88fc681a093d86420e2830bdcffebcd935917d92384324a47d2",
+      "sourceManifestSha256": "b5012653dbfed7f531398def76bcca86cff5670c929994d05d9721f23db2b256",
+      "inputCount": 841,
+      "exitCode": 0,
+      "signal": null,
+      "launchError": null,
+      "completedAt": "2026-10-26T07:45:16.437Z",
+      "tests": [
+        "466 passed (466)"
+      ],
+      "files": [
+        "27 passed (27)"
+      ],
+      "bindings": {
+        "receiptIdentical": true,
+        "inputsIdentical": true,
+        "receiptIndexHash": true,
+        "inputsIndexHash": true,
+        "rawLogReceiptHash": true,
+        "sourceManifest": true,
+        "beforeAfterEqual": true,
+        "inputCount": true,
+        "declaredDisplayNormalization": true,
+        "displayIndexHash": true,
+        "runnerHash": true
+      }
+    }
+  ],
+  "archivedRunners": [
+    {
+      "name": "admin640-final-scoped-gates-20261026.mjs",
+      "sha256": "84c5506783e522dae465b610fc8d60762129c0048f0ce40c7c60eff089bf0be2",
+      "matchesExternal": true
+    },
+    {
+      "name": "admin640-final-scoped-gates-v2-20261026.mjs",
+      "sha256": "126df1cb7558d24c909fecf6b8ac6d8c8dba9f1ad58dfb192ab6f788d5d56671",
+      "matchesExternal": true
+    },
+    {
+      "name": "admin640-q22-native-gates-20261026.mjs",
+      "sha256": "7f19798f14a7d511aa6a0cfe704e2b155113ab32cf22df1ff1041b8f069affd4",
+      "matchesExternal": true
+    },
+    {
+      "name": "admin640-q22-native-gates-v2-20261026.mjs",
+      "sha256": "3b1f9dfc951ff50574d3416307fab353143d766ac37e1ac746a0d483a65daa93",
+      "matchesExternal": true
+    },
+    {
+      "name": "admin640-q22-native-gates-v3-20261026.mjs",
+      "sha256": "ae2eeab076cc2bc244314892b3c0cedf830537f681f3f8aebd380cca303a7646",
+      "matchesExternal": true
+    }
+  ],
+  "currentFrames": [
+    {
+      "path": "C:/w/admin640-q22-broad-green-v1.inputs.json",
+      "count": 841,
+      "currentMismatches": []
+    },
+    {
+      "path": "C:/w/admin640-final-scoped-v6.inputs.json",
+      "count": 109,
+      "currentMismatches": []
+    }
+  ],
+  "authOutputScan": [
+    {
+      "filename": "admin640-q22-lifecycle-red-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-audit-red-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-migration-red-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-lifecycle-green-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-audit-green-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-migration-green-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-schema-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-checks-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-handoff-red-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-handoff-green-v1.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-final-scoped-v6.log",
+      "findings": []
+    },
+    {
+      "filename": "admin640-q22-broad-green-v1.log",
+      "findings": [
+        {
+          "line": 688,
+          "categories": [
+            "synthetic-auth-code-output"
+          ]
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ARCHIVE_AUTH_CODE",
+      "severity": "archive-hygiene",
+      "status": "open",
+      "filename": "admin640-q22-broad-green-v1.log",
+      "line": 688,
+      "syntheticFixture": true,
+      "source": "apps/api/test/auth-codes.test.ts:159,170",
+      "sourceSha256": "89ac2dbe6ccdf1d3219cd3d3e417aea37d6ffb7f223dc855d5ac83590017bfd5",
+      "detail": "One legacy brute-force test prints a fixed synthetic verification-code fixture. No value is reproduced in this report. Other11 archived logs have no matching auth-value shapes.",
+      "prescribedFix": "Apply the reviewed exact single-output display redaction and declare it in checkpoint metadata; keep original external raw hash and unchanged receipts/inputs.",
+      "unappliedPatch": "C:/w/admin640-q22-archive-auth-code-redaction-unapplied.json"
+    }
+  ],
+  "limits": [
+    "This is local scoped implementation evidence, not a complete combined release, CI/deploy or staging acceptance.",
+    "Earlier RED frames remain separate839/840/841-input records; the109-input changed-file check is not relabelled a whole-source manifest.",
+    "Protected assistant ask pinning and final combined landing/rebase/migration/full-release gates remain as checkpoint README states.",
+    "No source, archive log, receipt, runtime or staging changes were made by this review."
+  ]
+}
