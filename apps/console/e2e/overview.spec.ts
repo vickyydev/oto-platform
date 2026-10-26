@@ -263,15 +263,34 @@ test('Copy status summary writes the exact current server text to the native cli
   await expect(copy).toBeEnabled({ timeout: 5000 });
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(page.url()).origin });
   await page.evaluate(() => navigator.clipboard.writeText('ZZ TEST clipboard sentinel'));
+  await page.evaluate(() => {
+    const writes: string[] = [];
+    const nativeWrite = navigator.clipboard.writeText.bind(navigator.clipboard);
+    (window as Window & { __overviewNativeClipboardWrites?: string[] }).__overviewNativeClipboardWrites = writes;
+    navigator.clipboard.writeText = (text: string) => {
+      writes.push(text);
+      return nativeWrite(text);
+    };
+  });
   await copy.click();
   const expected = snapshot().statusSummary;
-  // Return only a boolean: a failed copy must not reveal the machine's unrelated clipboard.
-  await expect.poll(() => page.evaluate(async text => (await navigator.clipboard.readText()) === text, expected)).toBe(true);
+  // Capture the exact writer argument, while forwarding to the real OS clipboard.
+  // Only booleans leave the browser; never return unrelated clipboard contents.
+  await expect.poll(() => page.evaluate(text => {
+    const writes = (window as Window & { __overviewNativeClipboardWrites?: string[] }).__overviewNativeClipboardWrites;
+    return writes?.length === 1 && writes[0] === text;
+  }, expected)).toBe(true);
+  // Native OS readback may convert LF to CRLF; the writer argument above remains byte-exact.
+  await expect.poll(() => page.evaluate(async text => (await navigator.clipboard.readText()).replace(/\r\n/g, '\n') === text.replace(/\r\n/g, '\n'), expected)).toBe(true);
   await expect(page.getByText('Status summary copied.', { exact: true })).toBeVisible();
   const picker = page.getByRole('combobox', { name: 'Park', exact: true }); await picker.selectOption(parks[1].id);
   await expect(page.getByRole('article', { name: 'Revenue today', exact: true })).toContainText('4,321');
   await copy.click();
-  await expect.poll(() => page.evaluate(async text => (await navigator.clipboard.readText()) === text, snapshot(parks[1].id).statusSummary)).toBe(true);
+  await expect.poll(() => page.evaluate(text => {
+    const writes = (window as Window & { __overviewNativeClipboardWrites?: string[] }).__overviewNativeClipboardWrites;
+    return writes?.length === 2 && writes[1] === text;
+  }, snapshot(parks[1].id).statusSummary)).toBe(true);
+  await expect.poll(() => page.evaluate(async text => (await navigator.clipboard.readText()).replace(/\r\n/g, '\n') === text.replace(/\r\n/g, '\n'), snapshot(parks[1].id).statusSummary)).toBe(true);
   expect(state.writes).toEqual([]);
 });
 
