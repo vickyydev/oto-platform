@@ -1,0 +1,320 @@
+{
+  "ticket": "SCRUM-638",
+  "archiveCommit": "4ecb959992e5212de2dc0d3c07eff8df3f28ad1a",
+  "checkedAt": "2026-10-26T13:16:42.753Z",
+  "files": 38,
+  "rawEvidenceUnchanged": true,
+  "normalizationOnly": [
+    "plan.json",
+    "visual-review.json",
+    "ci-final.json",
+    "history/20261026-v1/plan.json"
+  ],
+  "policy": "Repository .gitattributes stores text with LF. Original proof hashes and copied bytes stay preserved externally; this receipt binds their committed LF representations. No JSON value or PNG byte changes.",
+  "bindings": [
+    {
+      "path": "SCRUM-638-01-settings-desktop.png",
+      "rawSha256": "0b44ae69ae52c4e8f044d5d39ef083a5044dbc24f2ec85ab373669bf71359726",
+      "committedSha256": "0b44ae69ae52c4e8f044d5d39ef083a5044dbc24f2ec85ab373669bf71359726",
+      "rawBytes": 163120,
+      "committedBytes": 163120,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "SCRUM-638-02-settings-phone.png",
+      "rawSha256": "336128614e57cf532daa92e9279e5145e73f94929eb22feaa8b00447273d1ec2",
+      "committedSha256": "336128614e57cf532daa92e9279e5145e73f94929eb22feaa8b00447273d1ec2",
+      "rawBytes": 135819,
+      "committedBytes": 135819,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "SCRUM-638-03-settings-restricted.png",
+      "rawSha256": "da3ed9750464ad6cd551c6c116bab241a0734af39ec4e5a001ade4abf515091e",
+      "committedSha256": "da3ed9750464ad6cd551c6c116bab241a0734af39ec4e5a001ade4abf515091e",
+      "rawBytes": 77762,
+      "committedBytes": 77762,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "result.json",
+      "rawSha256": "d2f4ba0f75928c37d1ae3afe8baec703eaf3bb604c5a80e2463d3411bcd50b14",
+      "committedSha256": "d2f4ba0f75928c37d1ae3afe8baec703eaf3bb604c5a80e2463d3411bcd50b14",
+      "rawBytes": 28575,
+      "committedBytes": 28575,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "intents.jsonl",
+      "rawSha256": "a7ce61525adaca09c178febc5650e372d7c0eee40678af7fbb3140f0c632de2f",
+      "committedSha256": "a7ce61525adaca09c178febc5650e372d7c0eee40678af7fbb3140f0c632de2f",
+      "rawBytes": 7427,
+      "committedBytes": 7427,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "plan.json",
+      "rawSha256": "44ace8d4dbed64dcdfab9d11953d3c718b261c19ca8ec97fe7316b04e7a81521",
+      "committedSha256": "a21d0eed99ad3c0bc3650b343dd007a40b4fc64b98a42518a822f08db8b73fce",
+      "rawBytes": 3896,
+      "committedBytes": 3823,
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "bindings.json",
+      "rawSha256": "7dfbb6136677e19cca981735cd27bfb10c3b78ff2f729b322cfdd6f372792ae4",
+      "committedSha256": "7dfbb6136677e19cca981735cd27bfb10c3b78ff2f729b322cfdd6f372792ae4",
+      "rawBytes": 3918,
+      "committedBytes": 3918,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "visual-review.json",
+      "rawSha256": "4d2d453e8a75fcc45b0a29b623a8ae68216f2713b307fa8a805cbaa8dd92ac17",
+      "committedSha256": "872abb1730bebc93b7d99fedd9703a93e0545b712e1ac59de03b373adc850e23",
+      "rawBytes": 1234,
+      "committedBytes": 1209,
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "ci-final.json",
+      "rawSha256": "bf257cf5690915ec9b08dd169fc8ce50a24ffe8dad3ad812f746f3a2a12cf310",
+      "committedSha256": "c4ef82fea036aed0d54084ff84e19de04a9d0a78f05c542a913ce12ea6ae6982",
+      "rawBytes": 26332,
+      "committedBytes": 26331,
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "local-release.json",
+      "rawSha256": "3ebe3ed885f74bf87cb332c2fd2ce9d8f98e295b98015431a7f6edf4a3a0a4fd",
+      "committedSha256": "3ebe3ed885f74bf87cb332c2fd2ce9d8f98e295b98015431a7f6edf4a3a0a4fd",
+      "rawBytes": 7042,
+      "committedBytes": 7042,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "reviews/local-release-independent-review.json",
+      "rawSha256": "393e50700c1444b0c65046c0efdcc4cf354b9743178a6c37ee6a2fa0e6dff815",
+      "committedSha256": "393e50700c1444b0c65046c0efdcc4cf354b9743178a6c37ee6a2fa0e6dff815",
+      "rawBytes": 9535,
+      "committedBytes": 9535,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "reviews/rate-proof-independent-review-v2.json",
+      "rawSha256": "806555ac21a5ca58bf27a49f3476442a51f28b3a0606623336ef964a68612810",
+      "committedSha256": "806555ac21a5ca58bf27a49f3476442a51f28b3a0606623336ef964a68612810",
+      "rawBytes": 7111,
+      "committedBytes": 7111,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/rate-proof-review-v1.json",
+      "rawSha256": "54449f416eccebd08b43d5bdc06f5b812d9ab08509df2d87f693ab74ced1ce39",
+      "committedSha256": "54449f416eccebd08b43d5bdc06f5b812d9ab08509df2d87f693ab74ced1ce39",
+      "rawBytes": 4161,
+      "committedBytes": 4161,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/rate-proof-review-v1-erratum.md",
+      "rawSha256": "f05b78e9202ff9b2f3b666e86f73848c082c3c1c0cdab178d85f16d4ba06edd6",
+      "committedSha256": "f05b78e9202ff9b2f3b666e86f73848c082c3c1c0cdab178d85f16d4ba06edd6",
+      "rawBytes": 692,
+      "committedBytes": 692,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "tools/staging-rate-proof.mjs.txt",
+      "rawSha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839",
+      "committedSha256": "660c1afc4095d0d2cbd97313a05a03ee19f255fbbdf7cbcf3803f1fb0ebbf839",
+      "rawBytes": 43812,
+      "committedBytes": 43812,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "tools/staging-rate-proof.test.mjs.txt",
+      "rawSha256": "ea2d35f7151bcde6c295b226198f76e3c212f0b48524d3649ed289362a56a48f",
+      "committedSha256": "ea2d35f7151bcde6c295b226198f76e3c212f0b48524d3649ed289362a56a48f",
+      "rawBytes": 36092,
+      "committedBytes": 36092,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "tools/close-evidence.mjs.txt",
+      "rawSha256": "db27c914142a997151febaf8f5d3a136b3eb520ef4a4d7ab2263dbc9f1208810",
+      "committedSha256": "db27c914142a997151febaf8f5d3a136b3eb520ef4a4d7ab2263dbc9f1208810",
+      "rawBytes": 18084,
+      "committedBytes": 18084,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "tools/create-rate-proof-plan.mjs.txt",
+      "rawSha256": "46d0da759b2ffbb77b85e604d7467ed1a21bb9af80156ab0b9654373f3ab0936",
+      "committedSha256": "46d0da759b2ffbb77b85e604d7467ed1a21bb9af80156ab0b9654373f3ab0936",
+      "rawBytes": 17120,
+      "committedBytes": 17120,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "tools/staging-rate-proof.md",
+      "rawSha256": "baf311ac724044c70eced914d2f0c2e46dd1ea1cb55237b51f114f9adab76c46",
+      "committedSha256": "baf311ac724044c70eced914d2f0c2e46dd1ea1cb55237b51f114f9adab76c46",
+      "rawBytes": 2464,
+      "committedBytes": 2464,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/source-published.json",
+      "rawSha256": "4310e6232109a705bf3c5c1422111d3e0423aef655efed0760fae7d04316fd4b",
+      "committedSha256": "4310e6232109a705bf3c5c1422111d3e0423aef655efed0760fae7d04316fd4b",
+      "rawBytes": 505,
+      "committedBytes": 505,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/admin638-rate-proof-preflight-predispatch-red.json",
+      "rawSha256": "ed1253084c9f7b52117ca706c48311d598babb409a70e9333fca5a4ed061307f",
+      "committedSha256": "ed1253084c9f7b52117ca706c48311d598babb409a70e9333fca5a4ed061307f",
+      "rawBytes": 619,
+      "committedBytes": 619,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/admin638-rate-proof-preflight-predispatch-red.log",
+      "rawSha256": "77823c013f90bd6babe9233bd51c9f7c140accbd2d531ec1555a08b7d382abaf",
+      "committedSha256": "77823c013f90bd6babe9233bd51c9f7c140accbd2d531ec1555a08b7d382abaf",
+      "rawBytes": 8175,
+      "committedBytes": 8175,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/admin638-rate-proof-preflight-predispatch-green.json",
+      "rawSha256": "e1827b3c522f0576d9db83d7c438392a62b75605012da33f5d3d3661daae71ed",
+      "committedSha256": "e1827b3c522f0576d9db83d7c438392a62b75605012da33f5d3d3661daae71ed",
+      "rawBytes": 619,
+      "committedBytes": 619,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/admin638-rate-proof-preflight-predispatch-green.log",
+      "rawSha256": "1d9809afa4571722789f81b1ef4bd223bd5c7126dbd85a587dfcf4fe64c2e1e8",
+      "committedSha256": "1d9809afa4571722789f81b1ef4bd223bd5c7126dbd85a587dfcf4fe64c2e1e8",
+      "rawBytes": 7150,
+      "committedBytes": 7150,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/admin638-rate-proof-preflight-final-v2.json",
+      "rawSha256": "8ce1479a334c7cb26a9bb8fb9e8b339e1313d6b7ba55a3c12619dcf3fc9bf150",
+      "committedSha256": "8ce1479a334c7cb26a9bb8fb9e8b339e1313d6b7ba55a3c12619dcf3fc9bf150",
+      "rawBytes": 619,
+      "committedBytes": 619,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/admin638-rate-proof-preflight-final-v2.log",
+      "rawSha256": "4b491490af6c865f23c4fc1887c35a9cf27632820c16f278279fa70859997973",
+      "committedSha256": "4b491490af6c865f23c4fc1887c35a9cf27632820c16f278279fa70859997973",
+      "rawBytes": 7799,
+      "committedBytes": 7799,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/ci-attempt1/intent.json",
+      "rawSha256": "bf8bf17f95394e1b134f5ba55e407a67003d6937aee4aa25d4bad1945b347855",
+      "committedSha256": "bf8bf17f95394e1b134f5ba55e407a67003d6937aee4aa25d4bad1945b347855",
+      "rawBytes": 534,
+      "committedBytes": 534,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/ci-attempt1/cancel-result.json",
+      "rawSha256": "b0ec803053a5441f84333d539904401618d99fb3c5c60d1ef6a5f3e9e5a75e8b",
+      "committedSha256": "b0ec803053a5441f84333d539904401618d99fb3c5c60d1ef6a5f3e9e5a75e8b",
+      "rawBytes": 39972,
+      "committedBytes": 39972,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/ci-attempt1/rerun-intent.json",
+      "rawSha256": "e982ca941d074785e3d24b69ebf21dcac8df381f3c146c972212be2eaa39d72b",
+      "committedSha256": "e982ca941d074785e3d24b69ebf21dcac8df381f3c146c972212be2eaa39d72b",
+      "rawBytes": 173,
+      "committedBytes": 173,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/ci-attempt1/rerun-observed.json",
+      "rawSha256": "0215b57a3bd0872def807dbff3455dba74bbf53a10b2e0387f100d2184ae9af9",
+      "committedSha256": "0215b57a3bd0872def807dbff3455dba74bbf53a10b2e0387f100d2184ae9af9",
+      "rawBytes": 462,
+      "committedBytes": 462,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/ci-attempt1/diagnosis-review.json",
+      "rawSha256": "d3d6a18f9974b2b75661f3f99435cc561b3a678724c256b2e0975d09efa1c076",
+      "committedSha256": "d3d6a18f9974b2b75661f3f99435cc561b3a678724c256b2e0975d09efa1c076",
+      "rawBytes": 6262,
+      "committedBytes": 6262,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/ci-attempt1/diagnosis-attempt1-metadata.json",
+      "rawSha256": "bbb0d0654eb1d60c40191d509e0a6d9f11929a56514260fec5063cb4682b74ce",
+      "committedSha256": "bbb0d0654eb1d60c40191d509e0a6d9f11929a56514260fec5063cb4682b74ce",
+      "rawBytes": 17433,
+      "committedBytes": 17433,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/ci-attempt1/diagnosis-attempt1-sanitized.log",
+      "rawSha256": "88a6bed1a9df5ddcbe4d0b2b15123734f97e524a71a07f8ce430706dac4f14a5",
+      "committedSha256": "88a6bed1a9df5ddcbe4d0b2b15123734f97e524a71a07f8ce430706dac4f14a5",
+      "rawBytes": 336490,
+      "committedBytes": 336490,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/ci-attempt1/diagnosis-baseline-comparison.json",
+      "rawSha256": "fa1ed3024fe3720bf5bced524ec6a40ffeadce3d4f84ca694839004d6e2f8161",
+      "committedSha256": "fa1ed3024fe3720bf5bced524ec6a40ffeadce3d4f84ca694839004d6e2f8161",
+      "rawBytes": 505,
+      "committedBytes": 505,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/20261026-v1/result.json",
+      "rawSha256": "421ec495901008ddc78e1f489805e982c6082089f1b49415d0bf252e78c28174",
+      "committedSha256": "421ec495901008ddc78e1f489805e982c6082089f1b49415d0bf252e78c28174",
+      "rawBytes": 11989,
+      "committedBytes": 11989,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/20261026-v1/intents.jsonl",
+      "rawSha256": "a6310bdd6da3eafcd8aa7878e42c6fe26d37b7771ba798d4eb43f59a8dbdbf0d",
+      "committedSha256": "a6310bdd6da3eafcd8aa7878e42c6fe26d37b7771ba798d4eb43f59a8dbdbf0d",
+      "rawBytes": 2288,
+      "committedBytes": 2288,
+      "lineEndingNormalizationOnly": false
+    },
+    {
+      "path": "history/20261026-v1/plan.json",
+      "rawSha256": "e0ada9959e2c735c2c8e10a5b09a39383097709ce8a2b7bfdae788ef13961993",
+      "committedSha256": "a3c926f94d2de2c427bfe2e285328845a449af46da9e966ed852e28cf8771bec",
+      "rawBytes": 3895,
+      "committedBytes": 3822,
+      "lineEndingNormalizationOnly": true
+    },
+    {
+      "path": "history/20261026-v1/bindings.json",
+      "rawSha256": "0090fda1fd281cb22e4971cfb0874aa3171c3d35ba99f53d10fac723e0712eb2",
+      "committedSha256": "0090fda1fd281cb22e4971cfb0874aa3171c3d35ba99f53d10fac723e0712eb2",
+      "rawBytes": 3916,
+      "committedBytes": 3916,
+      "lineEndingNormalizationOnly": false
+    }
+  ]
+}
