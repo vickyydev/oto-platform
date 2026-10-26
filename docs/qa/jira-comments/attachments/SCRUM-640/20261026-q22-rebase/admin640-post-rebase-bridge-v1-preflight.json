@@ -1,0 +1,12 @@
+{
+  "ticket": "SCRUM-640",
+  "attempt": "post-rebase-bridge-v1",
+  "result": "metadata-preflight-failed-before-file-comparison",
+  "recordedAt": "2026-10-26T08:05:37.376Z",
+  "runnerSha256": "01c395a9550e3c20853338da08ec83ac58048a9f89344d37948cbbe3bc73c817",
+  "reason": "The planner note named lib/readState.ts; the exact main source commit places this file in components/booth/readState.ts.",
+  "sourceMutations": 0,
+  "gateCommandsStarted": false,
+  "retry": "post-rebase-bridge-v2",
+  "expectedDeltaPathsFromActualMainCommit": true
+}
