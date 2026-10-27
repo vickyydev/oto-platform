@@ -8,6 +8,7 @@
 // approved — while every other route stays exactly as the subject sees it.
 import assert from "node:assert/strict";
 import {
+  IMPERSONATION_READ_ONLY_MESSAGE,
   IMPERSONATION_REFUSED_MESSAGE,
   impersonationRefusal,
   readImpersonationMark,
@@ -62,6 +63,18 @@ assert.ok(impersonationRefusal("/api/payroll/runs", { ...MARK, mode: "write_allo
 for (const path of ["/api/user", "/api/branches", "/api/timekeeping/live", "/api/payrolls-report", "/api/contracts-help"]) {
   assert.equal(impersonationRefusal(path, MARK), null, `${path} stays open to the window: whole segments only`);
 }
+// A read-only window writes nothing anywhere in this app; a write window may write outside pay and contracts.
+for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+  const refused = impersonationRefusal("/api/tasks/7", MARK, method);
+  assert.ok(refused, `${method} is refused in a read-only window`);
+  assert.equal(refused.reason, "impersonation_read_only");
+  assert.equal(refused.message, IMPERSONATION_READ_ONLY_MESSAGE);
+  assert.equal(impersonationRefusal("/api/tasks/7", { ...MARK, mode: "write_allowed" }, method), null, `${method} passes a write window`);
+  assert.equal(impersonationRefusal("/api/payroll/runs", { ...MARK, mode: "write_allowed" }, method)?.reason, "impersonation_refused");
+}
+assert.equal(impersonationRefusal("/api/tasks/7", MARK, "GET"), null, "reads pass a read-only window");
+assert.equal(impersonationRefusal("/api/logout", MARK, "POST"), null, "the window can always be ended from inside it");
+
 for (const path of ["/api/payroll", "/api/contracts/1"]) {
   assert.equal(impersonationRefusal(path, null), null, `${path} is untouched for an ordinary sign-on`);
   assert.equal(impersonationRefusal(path, undefined), null);
