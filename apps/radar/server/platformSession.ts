@@ -246,6 +246,40 @@ export interface RadarIdentity {
    * null from a platform that does not answer them yet.
    */
   preferences: UiPreferences | null;
+  /**
+   * SCRUM-648 — set when this session is a support administrator's audited
+   * view-as window (the platform's `/me` `impersonation`): the client's fixed
+   * banner names both people until it ends, and a read-only window writes
+   * nothing here. Null on every ordinary session.
+   */
+  viewAs: RadarViewAs | null;
+}
+
+/** SCRUM-648: what Radar keeps of a view-as window — for the banner and the read-only rule, nothing that acts. */
+export interface RadarViewAs {
+  id: string;
+  actorName: string | null;
+  subjectName: string | null;
+  mode: "read_only" | "write_allowed";
+  expiresAt: string;
+}
+
+/** Pure: the window out of a platform `/me` answer, or null when there is none (or it is unreadable). */
+export function viewAsFromMe(me: unknown): RadarViewAs | null {
+  const v = (me as { impersonation?: unknown } | null)?.impersonation as {
+    id?: unknown; actor?: { name?: unknown } | null; subject?: { name?: unknown } | null; mode?: unknown; expiresAt?: unknown;
+  } | null | undefined;
+  if (!v || typeof v !== "object" || typeof v.id !== "string" || typeof v.expiresAt !== "string") return null;
+  if (v.mode !== "read_only" && v.mode !== "write_allowed") return null;
+  const name = (n: unknown) => (typeof n === "string" ? n : null);
+  return { id: v.id, actorName: name(v.actor?.name), subjectName: name(v.subject?.name), mode: v.mode, expiresAt: v.expiresAt };
+}
+
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+/** Pure: a read-only view-as window writes nothing in Radar; signing out stays open. */
+export function viewAsRefusal(viewAs: RadarViewAs | null, method: string, path: string): string | null {
+  if (!viewAs || viewAs.mode !== "read_only" || READ_METHODS.has(method.toUpperCase()) || path === "/api/auth/sign-out") return null;
+  return "This is a read-only view-as window: nothing can be changed from it.";
 }
 
 export type IdentityAnswer =
@@ -305,6 +339,7 @@ async function ask(apiUrl: string, token: string): Promise<IdentityAnswer> {
       name: me.employee?.nickname || me.employee?.name || null,
       branch: me.branch ?? null,
       preferences: readUiPreferences(me),
+      viewAs: viewAsFromMe(me),
     };
     return holdsRadarAccess(perms) ? { kind: "ok", identity } : { kind: "no_access", identity };
   } catch (err) {
@@ -392,9 +427,13 @@ export function requireRadarSession(req: Request, res: Response, next: NextFunct
   resolveIdentity(apiUrl, token)
     .then((answer) => {
       switch (answer.kind) {
-        case "ok":
+        case "ok": {
+          // SCRUM-648 — a read-only view-as window writes nothing here.
+          const refused = viewAsRefusal(answer.identity.viewAs, req.method, req.path);
+          if (refused) return void res.status(403).json(withLauncher({ reason: "impersonation_read_only", message: refused }));
           req.radar = { token, identity: answer.identity };
           return next();
+        }
         case "signed_out":
           clearRadarCookie(res);
           return void res
