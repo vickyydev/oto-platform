@@ -25,6 +25,8 @@ import { Button } from '@/components/ui/button';
 import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
 import { StatusMark, type Tone } from '@/components/Status';
 import { GatewaySimulatorPanel } from '@/components/integrations/GatewaySimulatorPanel';
+import { CredentialExpiryPanel, IntegrationTestsPanel } from '@/components/integrations/IntegrationControls';
+import { integrationReadNote } from '@/lib/readAvailability';
 import { SettlementImportPanel } from '@/components/integrations/SettlementImportPanel';
 import { CommandBar } from '@/components/redesign/CommandBar';
 import { BarChip, CodeTag, StatusChip, Tag, TitleChip } from '@/components/redesign/chips';
@@ -164,6 +166,9 @@ export function Integrations() {
          * exists to make impossible to miss, so it says so here in its own words
          * rather than as one card among a dozen.
          */}
+        {!missing && <CredentialExpiryPanel />}
+        {!missing && <IntegrationTestsPanel timezone={timezone} />}
+
         <GatewaySimulatorPanel timezone={timezone} span={12} />
         <SettlementImportPanel />
 
@@ -223,9 +228,12 @@ function ProviderCard({
   timezone?: string | null;
   showCategory: boolean;
 }) {
-  const tone = toneForIntegration(provider.state);
+  // SCRUM-645 / Q26: a row whose record was not read is never shown green.
+  const readNote = integrationReadNote(provider.availability);
+  const tone = readNote && provider.state === 'configured' ? 'idle' : toneForIntegration(provider.state);
   const hasFacts =
-    (provider.missingVars?.length ?? 0) > 0 || Boolean(provider.endpoint) || Boolean(provider.lastDeliveryAt);
+    (provider.missingVars?.length ?? 0) > 0 || Boolean(provider.endpoint) || Boolean(provider.lastDeliveryAt) ||
+    Boolean(provider.lastOkAt) || Boolean(provider.lastFailedAt);
   return (
     <CardShell
       span={6}
@@ -264,7 +272,20 @@ function ProviderCard({
               </span>
             </FactLine>
           )}
+          {provider.lastOkAt && (
+            <FactLine label="Last success">
+              <span title={formatWhen(provider.lastOkAt, timezone)}>{timeAgo(provider.lastOkAt)}</span>
+            </FactLine>
+          )}
+          {provider.lastFailedAt && (
+            <FactLine label="Last failure">
+              <span title={formatWhen(provider.lastFailedAt, timezone)}>{timeAgo(provider.lastFailedAt)}</span>
+            </FactLine>
+          )}
         </FactList>
+      )}
+      {readNote && (
+        <p role="status" className="text-xs leading-normal text-amber-600 break-words">{readNote}</p>
       )}
       {provider.detail && (
         <p className="mt-auto text-xs leading-normal text-muted-foreground/80 break-words">{provider.detail}</p>
@@ -355,6 +376,8 @@ function stateWord(state: string): string {
       return 'Off';
     case 'degraded':
       return 'Failing';
+    case 'unknown':
+      return 'Not read';
     default:
       return state;
   }
