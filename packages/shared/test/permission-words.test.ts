@@ -14,6 +14,20 @@ describe('plain permission sentences (SCRUM-612)', () => {
     }
   });
 
+  it('gives the analytics source switch and re-run to administrators only, with honest words (SCRUM-646 Q27)', () => {
+    for (const key of ['console:analytics:manage_source', 'console:analytics:rerun']) {
+      expect(PERMISSIONS).toContain(key);
+      expect(ROLE_BUNDLES.platform_admin).toContain(key);
+      expect(ROLE_BUNDLES.operator_admin).toContain(key);
+      expect(ROLE_BUNDLES.branch_manager).not.toContain(key);
+    }
+    const words = PERMISSION_WORDS as Record<string, string>;
+    expect(words['console:analytics:manage_source']).toMatch(/preview/);
+    expect(words['console:analytics:rerun']).toMatch(/our own records/);
+    expect(words['console:analytics:rerun']).toMatch(/never be rebuilt/);
+    expect(Object.values(words).join(' ')).not.toMatch(/unfreeze/i);
+  });
+
   it('covers exactly the declared vocabulary through the public permissions module', () => {
     expect(Object.keys(PERMISSION_WORDS).sort()).toEqual([...PERMISSIONS].sort());
     for (const permission of PERMISSIONS) {

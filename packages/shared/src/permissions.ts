@@ -14,6 +14,10 @@ export const PERMISSIONS = [
   // Super Admin Console home (SCRUM-609).
   'console:overview:read',
   'console:analytics:read',
+  /** Switch a park's serving analytics source from the Console (SCRUM-646, Q27 Stage 1). */
+  'console:analytics:manage_source',
+  /** Queue our own POS days for recomputation; never a legacy day (SCRUM-646, Q27 Stage 1). */
+  'console:analytics:rerun',
   'console:config:read',
   /** Read employee pay in the OTO App when its legal entity enables platform access. */
   'hr:salary:view',
