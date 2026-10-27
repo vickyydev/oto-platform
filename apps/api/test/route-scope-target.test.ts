@@ -257,6 +257,10 @@ const OPERATOR_WIDE_WRITES = [
   'POST /ops/alert-recipients/:recipientId/archive',
   'POST /ops/alert-mutes',
   'POST /ops/alert-mutes/:muteId/lift',
+  // SCRUM-645 / Q26: an operator's credential expiry date, and the integration
+  // test press (also behind OPS_TEST_CONTROLS) — never at one park's grant.
+  'PUT /ops/integrations/:key/expiry',
+  'POST /ops/integrations/:key/test',
 ];
 // These platform-global reads require their named permission at operator scope.
 const PLATFORM_WIDE_READS = [
