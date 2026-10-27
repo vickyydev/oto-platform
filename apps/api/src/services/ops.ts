@@ -40,6 +40,13 @@ import { AppError } from '../lib/errors';
 import { isPgError, scrubPgError } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { boxSettings, withinOpeningHours } from './box';
+import {
+  evidenceIncomplete,
+  evidenceOf,
+  readEvidence,
+  type HealthEvidence,
+  type ReadAvailability,
+} from './health-evidence';
 import { occupancyHealthCheck } from './occupancy';
 import { syncSettings } from './sync';
 import type { Exec } from './tx';
@@ -552,6 +559,21 @@ export async function probe<T>(work: () => Promise<T>, fallback: T, ms = PROBE_T
   }
 }
 
+/** SCRUM-645 / Q26: hears about a supporting read that did not answer. */
+type UnreadRead = (availability: 'failed' | 'denied') => void;
+
+/**
+ * `probe`'s contract — the fallback on a failed or slow read — plus telling
+ * `onUnread` that the fallback was used, so a caller that renders the value
+ * can say it was not read rather than present the fallback as data.
+ */
+async function evidenceOr<T>(work: () => Promise<T>, fallback: T, onUnread?: UnreadRead): Promise<T> {
+  const read = await readEvidence(work);
+  if (read.ok) return read.value;
+  onUnread?.(read.availability);
+  return fallback;
+}
+
 export type HealthState = 'ok' | 'warn' | 'down' | 'unknown';
 
 export interface HealthCheck {
@@ -634,6 +656,12 @@ export interface HealthSnapshot {
   alerts: AlertRow[];
   watchdogAgeSeconds: number | null;
   generatedAt: string;
+  /**
+   * SCRUM-645 / Q26 — whether each evidence read behind this answer actually
+   * answered. A list above that is empty because its read was refused or
+   * failed is marked here, and `status` is then never `ok` on it.
+   */
+  evidence: HealthEvidence[];
 }
 
 interface PoolState {
@@ -916,8 +944,19 @@ export async function openAlerts(deps: HealthDeps, limit = 50): Promise<AlertRow
   }));
 }
 
-/** The dependency tiles: what each reported on the last check. */
-export async function healthChecks(deps: HealthDeps, now = Date.now()): Promise<HealthCheck[]> {
+/**
+ * The dependency tiles: what each reported on the last check.
+ *
+ * `evidence`, when given, receives whether the watchdog and occupancy reads
+ * answered (SCRUM-645 / Q26): their tiles already read `unknown` when they
+ * did not, and the snapshot needs to know that was a failed read rather than
+ * a genuinely unreported state.
+ */
+export async function healthChecks(
+  deps: HealthDeps,
+  now = Date.now(),
+  evidence?: HealthEvidence[],
+): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = [];
 
   /**
@@ -957,15 +996,15 @@ export async function healthChecks(deps: HealthDeps, now = Date.now()): Promise<
       : { key: 'pool', label: 'Connection pool', status: 'unknown', value: null, detail: 'the driver does not report counters' },
   );
 
-  const watchdog = await probe(
-    () =>
-      deps.db
-        .select({ lastOkAt: opsLast.lastOkAt })
-        .from(opsLast)
-        .where(eq(opsLast.name, deps.watchdogJob))
-        .limit(1),
-    null as { lastOkAt: Date | null }[] | null,
+  const watchdogRead = await readEvidence(() =>
+    deps.db
+      .select({ lastOkAt: opsLast.lastOkAt })
+      .from(opsLast)
+      .where(eq(opsLast.name, deps.watchdogJob))
+      .limit(1),
   );
+  evidence?.push(evidenceOf('watchdog', watchdogRead));
+  const watchdog = watchdogRead.ok ? watchdogRead.value : null;
   const staleAfterS = deps.watchdogIntervalSeconds * WATCHDOG_STALE_AFTER_RUNS;
   const ageS = watchdog?.[0] ? secondsSince(watchdog[0].lastOkAt, now) : null;
   checks.push({
@@ -989,17 +1028,14 @@ export async function healthChecks(deps: HealthDeps, now = Date.now()): Promise<
    * current, per gate branch in the caller's reach (`services/occupancy.ts`).
    * Probed like the others: a slow count must not hold the whole page.
    */
+  const occupancyRead = await readEvidence(() =>
+    occupancyHealthCheck(deps.db, deps.operatorId, deps.reach, new Date(now)),
+  );
+  evidence?.push(evidenceOf('occupancy', occupancyRead));
   checks.push(
-    await probe(
-      () => occupancyHealthCheck(deps.db, deps.operatorId, deps.reach, new Date(now)),
-      {
-        key: 'occupancy',
-        label: 'Live occupancy',
-        status: 'unknown',
-        value: null,
-        detail: 'the count did not answer',
-      } as HealthCheck,
-    ),
+    occupancyRead.ok
+      ? occupancyRead.value
+      : { key: 'occupancy', label: 'Live occupancy', status: 'unknown', value: null, detail: 'the count did not answer' },
   );
 
   return checks;
@@ -2258,6 +2294,13 @@ export function evaluateBox(
 export async function fleetHealth(
   deps: { db: Db; operatorId?: string | null; reach?: HealthReach },
   now = Date.now(),
+  /**
+   * SCRUM-645 / Q26: told about each supporting read (stations, booth counts,
+   * the sync ledger, quarantine) that did not answer. Their fallbacks — and so
+   * what the watchdog evaluates — are unchanged; Health uses this to say the
+   * fleet was not fully read rather than present a partial one as complete.
+   */
+  onUnread?: UnreadRead,
 ): Promise<FleetSnapshot> {
   const settings = boxSettings();
   const rules: BoxRuleSettings = {
@@ -2331,9 +2374,10 @@ export async function fleetHealth(
     deps.db,
     rows.map((r) => r.id),
     now,
+    onUnread,
   );
 
-  const booths = await boxBooths(deps.db, rows, new Date(now));
+  const booths = await boxBooths(deps.db, rows, new Date(now), onUnread);
 
   const snapshot: FleetSnapshot = { boxes: [], conditions: [] };
   for (const row of rows) {
@@ -2379,11 +2423,12 @@ async function boxBooths(
   db: Db,
   rows: FleetBoxRow[],
   now: Date,
+  onUnread?: UnreadRead,
 ): Promise<Map<string, FleetBoothRow[]>> {
   const out = new Map<string, FleetBoothRow[]>();
   const byBox = new Map(rows.map((r) => [r.id, r]));
 
-  const stations = await probe(
+  const stations = await evidenceOr(
     async () =>
       (await db
         .select({
@@ -2410,6 +2455,7 @@ async function boxBooths(
         codePrefix: string | null;
       }>,
     [] as Array<{ stationId: string; boxId: string; name: string; codePrefix: string | null }>,
+    onUnread,
   );
   if (stations.length === 0) return out;
 
@@ -2441,7 +2487,7 @@ async function boxBooths(
    * not raise anything about attribution: nobody is meant to be signed in for
    * it.
    */
-  const counts = await probe(
+  const counts = await evidenceOr(
     async () => {
       const ids = sql.join(
         dated.map((s) => sql`${s.stationId}::uuid`),
@@ -2475,6 +2521,7 @@ async function boxBooths(
      * by a query that never answered.
      */
     null as Array<{ station_id: string; business_date: string; n: string }> | null,
+    onUnread,
   );
   const counted = new Map(
     (counts ?? []).map((r) => [`${r.station_id}|${r.business_date}`, Number(r.n)]),
@@ -2514,6 +2561,7 @@ async function boxSyncStates(
   db: Db,
   boxIds: string[],
   now: number,
+  onUnread?: UnreadRead,
 ): Promise<Map<string, BoxSyncState>> {
   const out = new Map<string, BoxSyncState>();
   if (boxIds.length === 0) return out;
@@ -2536,7 +2584,7 @@ async function boxSyncStates(
 
   // A raw statement's `min(created_at)` arrives as `pg`'s text, not a Date
   // (SCRUM-475); the reader below wraps it in `new Date()` for that reason.
-  const outbox = await probe(
+  const outbox = await evidenceOr(
     async () =>
       (
         await db.execute<{ box_id: string; depth: string; oldest: string | Date | null }>(
@@ -2547,6 +2595,7 @@ async function boxSyncStates(
         )
       ).rows,
     [] as Array<{ box_id: string; depth: string; oldest: string | Date | null }>,
+    onUnread,
   );
   for (const row of outbox) {
     const state = out.get(row.box_id);
@@ -2557,7 +2606,7 @@ async function boxSyncStates(
       : null;
   }
 
-  const quarantine = await probe(
+  const quarantine = await evidenceOr(
     async () =>
       (
         await db.execute<{ box_id: string; open: string; epoch: string }>(
@@ -2570,6 +2619,7 @@ async function boxSyncStates(
         )
       ).rows,
     [] as Array<{ box_id: string; open: string; epoch: string }>,
+    onUnread,
   );
   for (const row of quarantine) {
     const state = out.get(row.box_id);
@@ -2578,7 +2628,7 @@ async function boxSyncStates(
     state.epochRegressedOpen = Number(row.epoch);
   }
 
-  const cursors = await probe(
+  const cursors = await evidenceOr(
     async () =>
       (
         await db.execute<{ box_id: string; last_push_at: Date | null }>(
@@ -2589,6 +2639,7 @@ async function boxSyncStates(
         )
       ).rows,
     [] as Array<{ box_id: string; last_push_at: Date | null }>,
+    onUnread,
   );
   for (const row of cursors) {
     const state = out.get(row.box_id);
@@ -2614,7 +2665,7 @@ async function boxSyncStates(
    * for weeks makes this a longer scan — by which time `sync.cursor_stalled` has
    * been open for weeks too.
    */
-  const stalled = await probe(
+  const stalled = await evidenceOr(
     async () =>
       (
         await db.execute<{ box_id: string; behind: string; hole: string | null }>(
@@ -2634,6 +2685,7 @@ async function boxSyncStates(
         )
       ).rows,
     [] as Array<{ box_id: string; behind: string; hole: string | null }>,
+    onUnread,
   );
   for (const row of stalled) {
     const state = out.get(row.box_id);
@@ -2656,10 +2708,22 @@ function overallStatus(
   jobs: JobStatus[],
   boxes: BoxHealth[],
   alerts: AlertRow[],
+  evidence: HealthEvidence[],
 ): HealthState {
   if (checks.some((c) => c.status === 'down') || jobs.some((j) => j.status === 'down')) return 'down';
   if (boxes.some((b) => b.state === 'down')) return 'down';
   if (alerts.some((a) => a.severity === 'critical' && !a.acknowledgedAt)) return 'down';
+  /**
+   * SCRUM-645 / Q26 — EVIDENCE THAT WAS NOT READ IS NOT EVIDENCE OF HEALTH.
+   *
+   * Below a known `down`, and above everything else: whatever was read and is
+   * broken is still said, but an empty list whose read was refused or failed
+   * may be hiding the very critical alert that would have made this `down`, so
+   * neither `warn` nor `ok` can be claimed over it. `unknown` is the honest
+   * verdict, and `evidence` names which read it was. `/ready` is untouched:
+   * only the database probe decides whether this instance takes traffic.
+   */
+  if (evidenceIncomplete(evidence)) return 'unknown';
   if (checks.some((c) => c.status === 'warn') || jobs.some((j) => j.status === 'warn')) return 'warn';
   if (boxes.some((b) => b.state === 'warn')) return 'warn';
   /**
@@ -2702,23 +2766,55 @@ export async function healthSnapshot(deps: HealthDeps): Promise<HealthSnapshot> 
   const estateWide = !deps.reach || deps.reach.kind === 'operator';
   // Sequential rather than parallel: these share one small pool, and a health
   // page must never be the reason a till waits for a connection.
-  const checks = estateWide ? await healthChecks(deps, now) : [];
-  const jobs = estateWide ? await probe(() => jobRegister(deps, now), [] as JobStatus[]) : [];
-  const fleet = await probe(
-    () => fleetHealth({ db: deps.db, operatorId: deps.operatorId, reach: deps.reach }, now),
-    { boxes: [], conditions: [] } as FleetSnapshot,
+  //
+  // SCRUM-645 / Q26: each list below is read through `readEvidence`, not
+  // `probe`. A refused or failed read still yields an empty list — the page
+  // must render — but the failure is kept in `evidence`, and `overallStatus`
+  // will not call an unread estate healthy. Before this, the empty fallback
+  // was indistinguishable from "nothing is wrong".
+  const evidence: HealthEvidence[] = [];
+  const checks = estateWide ? await healthChecks(deps, now, evidence) : [];
+  let jobs: JobStatus[] = [];
+  if (estateWide) {
+    const jobsRead = await readEvidence(() => jobRegister(deps, now));
+    evidence.push(evidenceOf('jobs', jobsRead));
+    if (jobsRead.ok) jobs = jobsRead.value;
+  }
+  const unread: { fleet: 'failed' | 'denied' | null } = { fleet: null };
+  const fleetRead = await readEvidence(() =>
+    fleetHealth({ db: deps.db, operatorId: deps.operatorId, reach: deps.reach }, now, (availability) => {
+      // A refusal is the more specific thing to say, so it wins over a failure.
+      if (unread.fleet !== 'denied') unread.fleet = availability;
+    }),
   );
-  const alerts = await probe(() => openAlerts(deps), [] as AlertRow[]);
+  const fleet: FleetSnapshot = fleetRead.ok ? fleetRead.value : { boxes: [], conditions: [] };
+  const partialFleet = unread.fleet;
+  evidence.push(
+    evidenceOf(
+      'fleet',
+      !fleetRead.ok || partialFleet === null
+        ? fleetRead
+        : {
+            ok: false,
+            availability: partialFleet,
+            detail: `part of the box record could not be read (${partialFleet === 'denied' ? 'refused' : 'failed'}); the boxes shown are incomplete`,
+          },
+    ),
+  );
+  const alertsRead = await readEvidence(() => openAlerts(deps));
+  evidence.push(evidenceOf('alerts', alertsRead));
+  const alerts = alertsRead.ok ? alertsRead.value : [];
   const watchdogCheck = checks.find((c) => c.key === 'watchdog');
 
   return {
-    status: overallStatus(checks, jobs, fleet.boxes, alerts),
+    status: overallStatus(checks, jobs, fleet.boxes, alerts, evidence),
     checks,
     jobs,
     boxes: fleet.boxes,
     alerts,
     watchdogAgeSeconds: typeof watchdogCheck?.value === 'number' ? watchdogCheck.value : null,
     generatedAt: new Date(now).toISOString(),
+    evidence,
   };
 }
 

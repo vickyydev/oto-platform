@@ -79,7 +79,9 @@ describe('SCRUM-645 native Health and Integrations response schemas', () => {
 
   it('R3: estate and park Health schemas enumerate nested fleet, device, booth, reach and rollup fields', () => {
     const schema = schemaOf('/ops/health');
-    expect(schema.required?.slice().sort()).toEqual(['alerts', 'boxes', 'checks', 'generatedAt', 'jobs', 'reach', 'rollups', 'status', 'watchdogAgeSeconds']);
+    expect(schema.required?.slice().sort()).toEqual(['alerts', 'boxes', 'checks', 'evidence', 'generatedAt', 'jobs', 'reach', 'rollups', 'status', 'watchdogAgeSeconds']);
+    // SCRUM-645 / Q26: the read-availability verdict of each evidence read.
+    expect(Object.keys(schema.properties!.evidence!.items!.properties!).sort()).toEqual(['availability', 'detail', 'label', 'source']);
     const fleet = schema.properties!.boxes!.items!;
     expect(Object.keys(fleet.properties!).sort()).toEqual(boxKeys);
     expect(Object.keys(fleet.properties!.devices!.items!.properties!).sort())
