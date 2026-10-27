@@ -285,6 +285,14 @@
                             "expiresAt": {
                               "type": "string",
                               "format": "date-time"
+                            },
+                            "actorName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "subjectName": {
+                              "type": "string",
+                              "nullable": true
                             }
                           },
                           "required": [
@@ -293,7 +301,9 @@
                             "subjectAccountId",
                             "targetApp",
                             "mode",
-                            "expiresAt"
+                            "expiresAt",
+                            "actorName",
+                            "subjectName"
                           ],
                           "additionalProperties": false
                         },
@@ -389,6 +399,14 @@
                             "expiresAt": {
                               "type": "string",
                               "format": "date-time"
+                            },
+                            "actorName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "subjectName": {
+                              "type": "string",
+                              "nullable": true
                             }
                           },
                           "required": [
@@ -397,7 +415,9 @@
                             "subjectAccountId",
                             "targetApp",
                             "mode",
-                            "expiresAt"
+                            "expiresAt",
+                            "actorName",
+                            "subjectName"
                           ],
                           "additionalProperties": false
                         },
@@ -517,6 +537,14 @@
                             "expiresAt": {
                               "type": "string",
                               "format": "date-time"
+                            },
+                            "actorName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "subjectName": {
+                              "type": "string",
+                              "nullable": true
                             }
                           },
                           "required": [
@@ -525,7 +553,9 @@
                             "subjectAccountId",
                             "targetApp",
                             "mode",
-                            "expiresAt"
+                            "expiresAt",
+                            "actorName",
+                            "subjectName"
                           ],
                           "additionalProperties": false
                         },
@@ -75059,7 +75089,7 @@
     },
     "/inbox/me": {
       "get": {
-        "description": "The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator channel accounts. Needs app:inbox:access.",
+        "description": "The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator channel accounts, and (SCRUM-648) `impersonation`: the view-as window this session is, for the banner, or null. Needs app:inbox:access.",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -75220,6 +75250,81 @@
                         "ai"
                       ],
                       "additionalProperties": false
+                    },
+                    "impersonation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "subject": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "oto_app",
+                            "radar",
+                            "inbox"
+                          ]
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "read_only",
+                            "write_allowed"
+                          ]
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "actor",
+                        "subject",
+                        "targetApp",
+                        "mode",
+                        "expiresAt"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
                     },
                     "simulator": {
                       "type": "object",

@@ -38,6 +38,7 @@ import { limitPrincipal } from '../services/throttle';
 import { ipLimited } from '../plugins/rate-limit';
 import { verify } from '@node-rs/argon2';
 import { boxStoreFor } from '../lib/box-store';
+import { bannerNamesOf } from '../services/impersonation';
 import { managerForStation } from '../services/station-session';
 
 const PhoneSchema = z.string().min(6).max(32);
@@ -54,6 +55,8 @@ const HandoffExchangeBaseSchema = z.object({
   impersonation: z.object({
     id: z.string().uuid(), actorAccountId: z.string().uuid(), subjectAccountId: z.string().uuid(),
     targetApp: z.enum(HANDOFF_APPS), mode: z.enum(['read_only', 'write_allowed']), expiresAt: z.string().datetime(),
+    /** For the app's banner: the two people's names as the suite shows staff. */
+    actorName: z.string().nullable(), subjectName: z.string().nullable(),
   }).strict().optional(),
 });
 const HandoffExchangeResponseSchema = z.union([
@@ -354,7 +357,8 @@ export async function authRoutes(app: App): Promise<void> {
           ...(identity ? { identity } : {}),
           ...(result.otoApp ? { otoApp: result.otoApp } : {}),
           ...(result.impersonation ? { impersonation: { ...result.impersonation,
-            expiresAt: result.impersonation.expiresAt.toISOString() } } : {}),
+            expiresAt: result.impersonation.expiresAt.toISOString(),
+            ...(await bannerNamesOf(app.db, result.impersonation.actorAccountId, result.impersonation.subjectAccountId)) } } : {}),
         });
       } catch (err) {
         if (err instanceof HandoffRejected) {

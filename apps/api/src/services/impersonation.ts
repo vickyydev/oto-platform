@@ -335,6 +335,16 @@ export async function impersonationsAsSubject(db: Db, subjectAccountId: string) 
   return windowsWhere(db, and(eq(impersonationSession.subjectAccountId, subjectAccountId)), 50);
 }
 
+/** The banner's projection of a window: who, as whom, where, in which mode, until when. */
+export const bannerOf = (v: ImpersonationView) => ({ id: v.id, actor: v.actor, subject: v.subject, targetApp: v.targetApp,
+  mode: v.mode, expiresAt: v.expiresAt });
+
+/** The names the banner shows for a hand-off exchange's window (nickname, else name). */
+export async function bannerNamesOf(db: Exec, actorAccountId: string, subjectAccountId: string) {
+  const names = await namesOf(db, [actorAccountId, subjectAccountId]);
+  return { actorName: names.get(actorAccountId) ?? null, subjectName: names.get(subjectAccountId) ?? null };
+}
+
 /** What `/me` says about this session: the window it is, or the windows it has open. */
 export async function impersonationMarksOf(db: Db, auth: AuthContext) {
   const now = new Date();
