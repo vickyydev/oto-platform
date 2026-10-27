@@ -134,6 +134,8 @@ const PLATFORM_OWNED: Record<string, string> = {
     "The watchdog's own configuration: which platform jobs must run and how often. Not an operator's data.",
   'core.ops_last':
     'The last outcome of one of those platform jobs, keyed by the job name.',
+  'core.setting_registry':
+    "SCRUM-646: the code-owned catalogue of which settings exist and which app owns them — metadata only, identical for every operator. No setting value lives here; an operator's values stay in their native stores (core.setting is operator-scoped).",
 };
 
 /**
