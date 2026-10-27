@@ -249,6 +249,54 @@
                         "sessionLocked": {
                           "type": "boolean"
                         },
+                        "impersonation": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "actorAccountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "subjectAccountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "targetApp": {
+                              "type": "string",
+                              "enum": [
+                                "pos",
+                                "console",
+                                "oto_app",
+                                "radar",
+                                "booth",
+                                "inbox"
+                              ]
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "read_only",
+                                "write_allowed"
+                              ]
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "actorAccountId",
+                            "subjectAccountId",
+                            "targetApp",
+                            "mode",
+                            "expiresAt"
+                          ],
+                          "additionalProperties": false
+                        },
                         "audience": {
                           "type": "string",
                           "enum": [
@@ -304,6 +352,54 @@
                         },
                         "sessionLocked": {
                           "type": "boolean"
+                        },
+                        "impersonation": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "actorAccountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "subjectAccountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "targetApp": {
+                              "type": "string",
+                              "enum": [
+                                "pos",
+                                "console",
+                                "oto_app",
+                                "radar",
+                                "booth",
+                                "inbox"
+                              ]
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "read_only",
+                                "write_allowed"
+                              ]
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "actorAccountId",
+                            "subjectAccountId",
+                            "targetApp",
+                            "mode",
+                            "expiresAt"
+                          ],
+                          "additionalProperties": false
                         },
                         "audience": {
                           "type": "string",
@@ -384,6 +480,54 @@
                         },
                         "sessionLocked": {
                           "type": "boolean"
+                        },
+                        "impersonation": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "actorAccountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "subjectAccountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "targetApp": {
+                              "type": "string",
+                              "enum": [
+                                "pos",
+                                "console",
+                                "oto_app",
+                                "radar",
+                                "booth",
+                                "inbox"
+                              ]
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "read_only",
+                                "write_allowed"
+                              ]
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "actorAccountId",
+                            "subjectAccountId",
+                            "targetApp",
+                            "mode",
+                            "expiresAt"
+                          ],
+                          "additionalProperties": false
                         },
                         "audience": {
                           "type": "string",
@@ -769,6 +913,158 @@
                         "sessionId"
                       ],
                       "additionalProperties": false
+                    },
+                    "impersonation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "subject": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "oto_app",
+                            "radar",
+                            "inbox"
+                          ]
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "read_only",
+                            "write_allowed"
+                          ]
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "actor",
+                        "subject",
+                        "targetApp",
+                        "mode",
+                        "expiresAt"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "impersonating": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "actor": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "subject": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "targetApp": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "oto_app",
+                              "radar",
+                              "inbox"
+                            ]
+                          },
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "read_only",
+                              "write_allowed"
+                            ]
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actor",
+                          "subject",
+                          "targetApp",
+                          "mode",
+                          "expiresAt"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -779,7 +1075,9 @@
                     "photoFileId",
                     "sessionLocked",
                     "preferences",
-                    "operatorContext"
+                    "operatorContext",
+                    "impersonation",
+                    "impersonating"
                   ],
                   "additionalProperties": false
                 }
@@ -820,6 +1118,152 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/me/impersonations": {
+      "get": {
+        "description": "The view-as (impersonation) windows support administrators opened as this account, newest first, with who opened each, the app, the reason and reference, and how it ended.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "impersonations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "actor": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "subject": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "targetApp": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "oto_app",
+                              "radar",
+                              "inbox"
+                            ]
+                          },
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "read_only",
+                              "write_allowed"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reference": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "approvalId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "endReason": {
+                            "type": "string",
+                            "enum": [
+                              "ended",
+                              "actor_signed_out",
+                              "subject_signed_out"
+                            ],
+                            "nullable": true
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "ended",
+                              "expired"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actor",
+                          "subject",
+                          "targetApp",
+                          "mode",
+                          "reason",
+                          "reference",
+                          "approvalId",
+                          "startedAt",
+                          "expiresAt",
+                          "endedAt",
+                          "endReason",
+                          "state"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "impersonations"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -2501,6 +2945,9 @@
                 "console:release:read",
                 "console:release:flag_manage",
                 "console:release:kill_switch",
+                "console:support:lookup",
+                "console:support:trace",
+                "console:support:impersonate",
                 "hr:salary:view",
                 "platform:operator:switch",
                 "admin:account:create",
@@ -8971,7 +9418,7 @@
     },
     "/sales/lookup": {
       "get": {
-        "description": "Find sales by a band code or short code (`band`) or by a member phone in any format (`phone`) — one of the two. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is.",
+        "description": "Find sales by a band code or short code (`band`), by a member phone in any format (`phone`) or by an exact receipt number (`receipt`, SCRUM-648) — one of the three. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is.",
         "parameters": [
           {
             "schema": {
@@ -8991,6 +9438,16 @@
             },
             "in": "query",
             "name": "phone",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "query",
+            "name": "receipt",
             "required": false
           },
           {
@@ -71076,6 +71533,1259 @@
         }
       }
     },
+    "/console/support/lookup": {
+      "get": {
+        "description": "The cross-app support lookup: one phone, band, receipt number, booking reference, voucher code, account id or action id (`kind` names it; otherwise every kind it could be is searched). Each section is answered by its own app’s route as the caller, so each keeps its own permission, scope and masking: a section the caller may not read says `denied`, one with no safe reader says `not_built`, one whose app failed says `unavailable`. Member and child records are masked unless the caller holds admin:audit:read_sensitive operator-wide. One data_access audit row per lookup, naming the kinds and which sections answered, never a value.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "q",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "phone",
+                "band",
+                "receipt",
+                "booking",
+                "voucher",
+                "account",
+                "action"
+              ]
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "kinds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "phone",
+                          "band",
+                          "receipt",
+                          "booking",
+                          "voucher",
+                          "account",
+                          "action"
+                        ]
+                      }
+                    },
+                    "detected": {
+                      "type": "boolean"
+                    },
+                    "masked": {
+                      "type": "boolean"
+                    },
+                    "sections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "app": {
+                            "type": "string",
+                            "enum": [
+                              "crm",
+                              "pos",
+                              "inbox",
+                              "oto_app",
+                              "platform"
+                            ]
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "phone",
+                              "band",
+                              "receipt",
+                              "booking",
+                              "voucher",
+                              "account",
+                              "action"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "found",
+                              "empty",
+                              "denied",
+                              "unavailable",
+                              "not_built"
+                            ]
+                          },
+                          "permission": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "rowCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "masked": {
+                            "type": "boolean"
+                          },
+                          "rows": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            }
+                          },
+                          "note": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "app",
+                          "kind",
+                          "label",
+                          "status",
+                          "permission",
+                          "rowCount",
+                          "masked",
+                          "rows",
+                          "note"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "kinds",
+                    "detected",
+                    "masked",
+                    "sections"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/support/trace": {
+      "get": {
+        "description": "What happened to one action, sale, refund, payment attempt, receipt or wallet: one vertical trace in pipeline order — till intent, box session and lease, device call (projected), outbox event with epoch and sequence, cloud apply or quarantine, audit rows, payment webhook and inquiry, rollup effect — each step with its ops_run, latency and time since the previous step. A stage with no record is returned as a gap with the reasons it can be missing. Accepts exactly the Money oversight links (`/support?trace=<id>&kind=…`). Every read writes a data_access audit row; 404 when nothing in this operator carries the key.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "in": "query",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "action",
+                "sale",
+                "refund",
+                "payment_attempt",
+                "receipt",
+                "wallet"
+              ],
+              "default": "action"
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "anchor": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "action",
+                            "sale",
+                            "refund",
+                            "payment_attempt",
+                            "receipt",
+                            "wallet"
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "saleId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "walletId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "receiptNumber": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "actionIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "alsoMatched": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id",
+                        "branchId",
+                        "saleId",
+                        "walletId",
+                        "receiptNumber",
+                        "actionIds",
+                        "alsoMatched"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stage": {
+                            "type": "string",
+                            "enum": [
+                              "till_intent",
+                              "box_session",
+                              "device_call",
+                              "outbox",
+                              "cloud_apply",
+                              "wallet_ledger",
+                              "audit",
+                              "payment",
+                              "rollup"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "recorded",
+                              "failed",
+                              "quarantined",
+                              "pending",
+                              "gap"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "source": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "recordId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "opsRunId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "requestId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "actionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "latencyMs": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "sincePreviousMs": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "outOfOrder": {
+                            "type": "boolean"
+                          },
+                          "detail": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "enum": [
+                                    "null"
+                                  ],
+                                  "nullable": true
+                                }
+                              ]
+                            }
+                          },
+                          "traceUrl": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "note": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "stage",
+                          "label",
+                          "status",
+                          "at",
+                          "source",
+                          "recordId",
+                          "opsRunId",
+                          "requestId",
+                          "actionId",
+                          "latencyMs",
+                          "sincePreviousMs",
+                          "outOfOrder",
+                          "detail",
+                          "traceUrl",
+                          "note"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "gaps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "till_intent",
+                          "box_session",
+                          "device_call",
+                          "outbox",
+                          "cloud_apply",
+                          "wallet_ledger",
+                          "audit",
+                          "payment",
+                          "rollup"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "anchor",
+                    "steps",
+                    "gaps"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/support/impersonations": {
+      "get": {
+        "description": "The caller’s view-as windows (open and recent) and the open write-allowed requests awaiting or holding a second approval, with the window length and whether writes need a second administrator.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "maxMinutes": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "dualControl": {
+                      "type": "boolean"
+                    },
+                    "targetApps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "pos",
+                          "oto_app",
+                          "radar",
+                          "inbox"
+                        ]
+                      }
+                    },
+                    "windows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "actor": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "subject": {
+                            "type": "object",
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "accountId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "targetApp": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "oto_app",
+                              "radar",
+                              "inbox"
+                            ]
+                          },
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "read_only",
+                              "write_allowed"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reference": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "approvalId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "endReason": {
+                            "type": "string",
+                            "enum": [
+                              "ended",
+                              "actor_signed_out",
+                              "subject_signed_out"
+                            ],
+                            "nullable": true
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "ended",
+                              "expired"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actor",
+                          "subject",
+                          "targetApp",
+                          "mode",
+                          "reason",
+                          "reference",
+                          "approvalId",
+                          "startedAt",
+                          "expiresAt",
+                          "endedAt",
+                          "endReason",
+                          "state"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "approvals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "approved",
+                              "consumed",
+                              "expired"
+                            ]
+                          },
+                          "payloadSha256": {
+                            "type": "string"
+                          },
+                          "requesterAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "requesterName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "approverAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "subjectAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "subjectName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "targetApp": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "oto_app",
+                              "radar",
+                              "inbox"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "reference": {
+                            "type": "string"
+                          },
+                          "mine": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "requestExpiresAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "state",
+                          "payloadSha256",
+                          "requesterAccountId",
+                          "requesterName",
+                          "approverAccountId",
+                          "subjectAccountId",
+                          "subjectName",
+                          "targetApp",
+                          "reason",
+                          "reference",
+                          "mine",
+                          "createdAt",
+                          "requestExpiresAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "maxMinutes",
+                    "dualControl",
+                    "targetApps",
+                    "windows",
+                    "approvals"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Open a view-as window: a new, marked session of the subject for one app, read-only unless `mode` is write_allowed (which needs a reason, a reference and, while CONSOLE_DUAL_CONTROL names impersonate_write, the id and digest of an approved request). Lasts IMPERSONATION_MAX_MIN minutes or until the actor signs out. Refused for a subject holding platform_admin or any Console permission, for oneself and from a window. Answers the launch URL carrying the hand-off in its fragment. Audited, and raises console.impersonation.start.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subjectAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "targetApp": {
+                    "type": "string",
+                    "enum": [
+                      "pos",
+                      "oto_app",
+                      "radar",
+                      "inbox"
+                    ]
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "read_only",
+                      "write_allowed"
+                    ],
+                    "default": "read_only"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "approval": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "expectedPayloadSha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "expectedPayloadSha256"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "subjectAccountId",
+                  "targetApp"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "impersonation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "subject": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "oto_app",
+                            "radar",
+                            "inbox"
+                          ]
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "read_only",
+                            "write_allowed"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reference": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "approvalId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "startedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "endedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endReason": {
+                          "type": "string",
+                          "enum": [
+                            "ended",
+                            "actor_signed_out",
+                            "subject_signed_out"
+                          ],
+                          "nullable": true
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "ended",
+                            "expired"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "actor",
+                        "subject",
+                        "targetApp",
+                        "mode",
+                        "reason",
+                        "reference",
+                        "approvalId",
+                        "startedAt",
+                        "expiresAt",
+                        "endedAt",
+                        "endReason",
+                        "state"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "launchUrl": {
+                      "type": "string"
+                    },
+                    "handoffExpiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "impersonation",
+                    "launchUrl",
+                    "handoffExpiresAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/support/impersonations/approvals": {
+      "post": {
+        "description": "Ask a second platform administrator to approve one write-allowed view-as window: one subject, one app, one reason and one reference, checked now and bound by its digest. A different administrator must approve within ten minutes; only the asker then opens it. Requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subjectAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "targetApp": {
+                    "type": "string",
+                    "enum": [
+                      "pos",
+                      "oto_app",
+                      "radar",
+                      "inbox"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "subjectAccountId",
+                  "targetApp",
+                  "reason",
+                  "reference"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "consumed",
+                        "expired"
+                      ]
+                    },
+                    "payloadSha256": {
+                      "type": "string"
+                    },
+                    "requesterAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "approverAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestExpiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "payloadSha256",
+                    "requesterAccountId",
+                    "approverAccountId",
+                    "createdAt",
+                    "requestExpiresAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/support/impersonations/approvals/{id}/approve": {
+      "post": {
+        "description": "Approve another platform administrator’s exact write-allowed view-as request within ten minutes of it. The asker cannot approve their own; an expired request is recorded as expired. Requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedPayloadSha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "expectedPayloadSha256"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "consumed",
+                        "expired"
+                      ]
+                    },
+                    "payloadSha256": {
+                      "type": "string"
+                    },
+                    "requesterAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "approverAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestExpiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "payloadSha256",
+                    "requesterAccountId",
+                    "approverAccountId",
+                    "createdAt",
+                    "requestExpiresAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/support/impersonations/{id}/end": {
+      "post": {
+        "description": "End a view-as window now: its session is revoked at once in every app it reached. The actor who opened it, or another platform administrator. Requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "impersonation": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "subject": {
+                          "type": "object",
+                          "properties": {
+                            "accountId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "accountId",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "oto_app",
+                            "radar",
+                            "inbox"
+                          ]
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "read_only",
+                            "write_allowed"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reference": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "approvalId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "startedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "endedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endReason": {
+                          "type": "string",
+                          "enum": [
+                            "ended",
+                            "actor_signed_out",
+                            "subject_signed_out"
+                          ],
+                          "nullable": true
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "ended",
+                            "expired"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "actor",
+                        "subject",
+                        "targetApp",
+                        "mode",
+                        "reason",
+                        "reference",
+                        "approvalId",
+                        "startedAt",
+                        "expiresAt",
+                        "endedAt",
+                        "endReason",
+                        "state"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "impersonation"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/overview": {
       "get": {
         "description": "Today at the live parks within console:overview:read reach, independent of the session seat. The optional branchId selects one reachable park. Revenue and guests use each park’s business date, selected analytics source and stored rollup, with its provisional and freshness marks. Bookings count every state for that visit date. Inbox unanswered reuses its existing rule; alerts are unresolved. These park counts exclude branchless Inbox conversations and operator/platform alerts. Offline boxes use their reported offline status at any hour; alerting hours are unchanged. Summary-only authority: linked screens retain their own permissions. Foreign, absent or archived park: 404; own unreachable park: 403.",
@@ -73659,6 +75369,16 @@
             },
             "in": "query",
             "name": "unanswered",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "in": "query",
+            "name": "phone",
             "required": false
           },
           {

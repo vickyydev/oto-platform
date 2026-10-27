@@ -314,6 +314,20 @@ export interface paths {
                             accountId: string;
                             mustChangePassword: boolean;
                             sessionLocked: boolean;
+                            impersonation?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                actorAccountId: string;
+                                /** Format: uuid */
+                                subjectAccountId: string;
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            };
                             /** @enum {string} */
                             audience: "booth";
                             identity: {
@@ -329,6 +343,20 @@ export interface paths {
                             accountId: string;
                             mustChangePassword: boolean;
                             sessionLocked: boolean;
+                            impersonation?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                actorAccountId: string;
+                                /** Format: uuid */
+                                subjectAccountId: string;
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            };
                             /** @enum {string} */
                             audience: "oto_app";
                             otoApp?: {
@@ -350,6 +378,20 @@ export interface paths {
                             accountId: string;
                             mustChangePassword: boolean;
                             sessionLocked: boolean;
+                            impersonation?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                actorAccountId: string;
+                                /** Format: uuid */
+                                subjectAccountId: string;
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            };
                             /** @enum {string} */
                             audience: "pos" | "console" | "radar" | "inbox";
                         };
@@ -640,6 +682,46 @@ export interface paths {
                                 /** Format: uuid */
                                 sessionId: string;
                             };
+                            impersonation: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            } | null;
+                            impersonating: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            }[];
                         };
                     };
                 };
@@ -679,6 +761,75 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/me/impersonations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The view-as (impersonation) windows support administrators opened as this account, newest first, with who opened each, the app, the reason and reference, and how it ended. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            impersonations: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                reason: string | null;
+                                reference: string | null;
+                                /** Format: uuid */
+                                approvalId: string | null;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** @enum {string|null} */
+                                endReason: "ended" | "actor_signed_out" | "subject_signed_out" | null;
+                                /** @enum {string} */
+                                state: "active" | "ended" | "expired";
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/me/session/operator": {
@@ -1638,7 +1789,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:support:lookup" | "console:support:trace" | "console:support:impersonate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -4487,12 +4638,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Find sales by a band code or short code (`band`) or by a member phone in any format (`phone`) — one of the two. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is. */
+        /** @description Find sales by a band code or short code (`band`), by a member phone in any format (`phone`) or by an exact receipt number (`receipt`, SCRUM-648) — one of the three. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is. */
         get: {
             parameters: {
                 query?: {
                     band?: string;
                     phone?: string;
+                    receipt?: string;
                     branchId?: string;
                     limit?: number;
                 };
@@ -28628,6 +28780,514 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/console/support/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The cross-app support lookup: one phone, band, receipt number, booking reference, voucher code, account id or action id (`kind` names it; otherwise every kind it could be is searched). Each section is answered by its own app’s route as the caller, so each keeps its own permission, scope and masking: a section the caller may not read says `denied`, one with no safe reader says `not_built`, one whose app failed says `unavailable`. Member and child records are masked unless the caller holds admin:audit:read_sensitive operator-wide. One data_access audit row per lookup, naming the kinds and which sections answered, never a value. */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                    kind?: "phone" | "band" | "receipt" | "booking" | "voucher" | "account" | "action";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            kinds: ("phone" | "band" | "receipt" | "booking" | "voucher" | "account" | "action")[];
+                            detected: boolean;
+                            masked: boolean;
+                            sections: {
+                                key: string;
+                                /** @enum {string} */
+                                app: "crm" | "pos" | "inbox" | "oto_app" | "platform";
+                                /** @enum {string} */
+                                kind: "phone" | "band" | "receipt" | "booking" | "voucher" | "account" | "action";
+                                label: string;
+                                /** @enum {string} */
+                                status: "found" | "empty" | "denied" | "unavailable" | "not_built";
+                                permission: string | null;
+                                rowCount: number;
+                                masked: boolean;
+                                rows: {
+                                    [key: string]: unknown;
+                                }[];
+                                note: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/trace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What happened to one action, sale, refund, payment attempt, receipt or wallet: one vertical trace in pipeline order — till intent, box session and lease, device call (projected), outbox event with epoch and sequence, cloud apply or quarantine, audit rows, payment webhook and inquiry, rollup effect — each step with its ops_run, latency and time since the previous step. A stage with no record is returned as a gap with the reasons it can be missing. Accepts exactly the Money oversight links (`/support?trace=<id>&kind=…`). Every read writes a data_access audit row; 404 when nothing in this operator carries the key. */
+        get: {
+            parameters: {
+                query: {
+                    id: string;
+                    kind?: "action" | "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            anchor: {
+                                /** @enum {string} */
+                                kind: "action" | "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                                id: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                /** Format: uuid */
+                                saleId: string | null;
+                                /** Format: uuid */
+                                walletId: string | null;
+                                receiptNumber: string | null;
+                                actionIds: string[];
+                                alsoMatched: number;
+                            };
+                            steps: {
+                                /** @enum {string} */
+                                stage: "till_intent" | "box_session" | "device_call" | "outbox" | "cloud_apply" | "wallet_ledger" | "audit" | "payment" | "rollup";
+                                label: string;
+                                /** @enum {string} */
+                                status: "recorded" | "failed" | "quarantined" | "pending" | "gap";
+                                /** Format: date-time */
+                                at: string | null;
+                                source: string | null;
+                                recordId: string | null;
+                                opsRunId: string | null;
+                                requestId: string | null;
+                                actionId: string | null;
+                                latencyMs: number | null;
+                                sincePreviousMs: number | null;
+                                outOfOrder: boolean;
+                                detail: {
+                                    [key: string]: string | number | boolean | ("null" | null);
+                                };
+                                traceUrl: string | null;
+                                note: string | null;
+                            }[];
+                            gaps: ("till_intent" | "box_session" | "device_call" | "outbox" | "cloud_apply" | "wallet_ledger" | "audit" | "payment" | "rollup")[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/impersonations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller’s view-as windows (open and recent) and the open write-allowed requests awaiting or holding a second approval, with the window length and whether writes need a second administrator. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            maxMinutes: number;
+                            dualControl: boolean;
+                            targetApps: ("pos" | "oto_app" | "radar" | "inbox")[];
+                            windows: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                reason: string | null;
+                                reference: string | null;
+                                /** Format: uuid */
+                                approvalId: string | null;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** @enum {string|null} */
+                                endReason: "ended" | "actor_signed_out" | "subject_signed_out" | null;
+                                /** @enum {string} */
+                                state: "active" | "ended" | "expired";
+                            }[];
+                            approvals: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                state: "pending" | "approved" | "consumed" | "expired";
+                                payloadSha256: string;
+                                /** Format: uuid */
+                                requesterAccountId: string;
+                                requesterName: string | null;
+                                /** Format: uuid */
+                                approverAccountId: string | null;
+                                /** Format: uuid */
+                                subjectAccountId: string;
+                                subjectName: string | null;
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                reason: string;
+                                reference: string;
+                                mine: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                requestExpiresAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Open a view-as window: a new, marked session of the subject for one app, read-only unless `mode` is write_allowed (which needs a reason, a reference and, while CONSOLE_DUAL_CONTROL names impersonate_write, the id and digest of an approved request). Lasts IMPERSONATION_MAX_MIN minutes or until the actor signs out. Refused for a subject holding platform_admin or any Console permission, for oneself and from a window. Answers the launch URL carrying the hand-off in its fragment. Audited, and raises console.impersonation.start. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        subjectAccountId: string;
+                        /** @enum {string} */
+                        targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                        /**
+                         * @default read_only
+                         * @enum {string}
+                         */
+                        mode?: "read_only" | "write_allowed";
+                        reason?: string;
+                        reference?: string;
+                        approval?: {
+                            /** Format: uuid */
+                            id: string;
+                            expectedPayloadSha256: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            impersonation: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                reason: string | null;
+                                reference: string | null;
+                                /** Format: uuid */
+                                approvalId: string | null;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** @enum {string|null} */
+                                endReason: "ended" | "actor_signed_out" | "subject_signed_out" | null;
+                                /** @enum {string} */
+                                state: "active" | "ended" | "expired";
+                            };
+                            launchUrl: string;
+                            /** Format: date-time */
+                            handoffExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/impersonations/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ask a second platform administrator to approve one write-allowed view-as window: one subject, one app, one reason and one reference, checked now and bound by its digest. A different administrator must approve within ten minutes; only the asker then opens it. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        subjectAccountId: string;
+                        /** @enum {string} */
+                        targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                        reason: string;
+                        reference: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            state: "pending" | "approved" | "consumed" | "expired";
+                            payloadSha256: string;
+                            /** Format: uuid */
+                            requesterAccountId: string;
+                            /** Format: uuid */
+                            approverAccountId: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            requestExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/impersonations/approvals/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Approve another platform administrator’s exact write-allowed view-as request within ten minutes of it. The asker cannot approve their own; an expired request is recorded as expired. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        expectedPayloadSha256: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            state: "pending" | "approved" | "consumed" | "expired";
+                            payloadSha256: string;
+                            /** Format: uuid */
+                            requesterAccountId: string;
+                            /** Format: uuid */
+                            approverAccountId: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            requestExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/impersonations/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End a view-as window now: its session is revoked at once in every app it reached. The actor who opened it, or another platform administrator. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            impersonation: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                reason: string | null;
+                                reference: string | null;
+                                /** Format: uuid */
+                                approvalId: string | null;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** @enum {string|null} */
+                                endReason: "ended" | "actor_signed_out" | "subject_signed_out" | null;
+                                /** @enum {string} */
+                                state: "active" | "ended" | "expired";
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/overview": {
         parameters: {
             query?: never;
@@ -29643,6 +30303,7 @@ export interface paths {
                     language?: string;
                     q?: string;
                     unanswered?: "true" | "false";
+                    phone?: string;
                     handledFrom?: string;
                     handledTo?: string;
                     resolvedBy?: "ai" | "human";
