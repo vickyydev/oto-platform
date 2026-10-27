@@ -45,6 +45,27 @@ describe('route guards (S2-01b)', () => {
     }
   });
 
+  it('guards the Console sources panel: reads on the Analytics door, writes on their own permissions (SCRUM-646 Q27)', async () => {
+    for (const [url, query] of [['/console/analytics/sources', ''],
+      ['/console/analytics/sources/preview', '?branchId=01964600-0000-7000-8000-000000000001&source=pisell']] as const) {
+      const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === url);
+      expect(route?.config.dynamicPermission, url).toBe(true);
+      expect(route?.config.public, url).not.toBe(true);
+      expect((await ctx.app.inject({ method: 'GET', url: url + query })).statusCode, url).toBe(401);
+    }
+    const writes = [
+      ['PUT', '/console/analytics/sources/:branchId', 'console:analytics:manage_source', { branchId: 'params.branchId' }],
+      ['POST', '/console/analytics/rerun', 'console:analytics:rerun', { branchId: 'body.branchId' }],
+    ] as const;
+    for (const [method, url, permission, target] of writes) {
+      const route = ctx.app.routeRegistry.find(r => r.method === method && r.url === url);
+      expect(route?.config.permission, url).toBe(permission);
+      expect(route?.config.target, url).toEqual(target);
+      expect(route?.config.public, url).not.toBe(true);
+      expect(route?.config.credential, url).toBeUndefined();
+    }
+  });
+
   it('requires the operator-wide switch permission for the current native session (SCRUM-640)', async () => {
     const route = ctx.app.routeRegistry.find(r => r.method === 'PUT' && r.url === '/me/session/operator');
     expect(route?.config.permission).toBe('platform:operator:switch');
