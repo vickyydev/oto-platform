@@ -15,6 +15,7 @@ import {
   signInOptions,
 } from "./middleware/platformSignOn";
 import { User as SelectUser } from "@shared/schema";
+import { viewAsForClient } from "./lib/platformSession";
 import { loadPlatformUserWithBranchAccess } from "./lib/platformRoleMapping";
 import { PlatformRoleMappingError } from "@shared/platformRoleMapping";
 
@@ -209,6 +210,8 @@ export function setupAuth(app: Express) {
         // SCRUM-653 — the person's theme and language from their suite
         // account, read at sign-on; the client's ThemeProvider adopts it.
         platformPreferences: req.session?.platform?.preferences ?? null,
+        // SCRUM-648 — a support administrator's view-as window: the client's fixed banner reads it.
+        platformViewAs: viewAsForClient(req.session?.platform?.impersonation),
       });
     }
     res.json(safeUser);

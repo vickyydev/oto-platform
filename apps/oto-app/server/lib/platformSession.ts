@@ -123,6 +123,9 @@ export interface PlatformImpersonation {
   subjectAccountId: string;
   mode: "read_only" | "write_allowed";
   expiresAt: string;
+  /** For the banner: the two people's names as the suite shows staff; null when the platform did not name them. */
+  actorName: string | null;
+  subjectName: string | null;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -137,12 +140,52 @@ export function readImpersonationMark(value: unknown): PlatformImpersonation | n
     typeof v.actorAccountId !== "string" || !UUID.test(v.actorAccountId) ||
     typeof v.subjectAccountId !== "string" || !UUID.test(v.subjectAccountId) ||
     (v.mode !== "read_only" && v.mode !== "write_allowed") ||
-    typeof v.expiresAt !== "string" || Number.isNaN(Date.parse(v.expiresAt))
+    typeof v.expiresAt !== "string" || Number.isNaN(Date.parse(v.expiresAt)) ||
+    (v.actorName !== undefined && v.actorName !== null && typeof v.actorName !== "string") ||
+    (v.subjectName !== undefined && v.subjectName !== null && typeof v.subjectName !== "string")
   ) {
     throw new Error("malformed impersonation mark");
   }
   return { id: v.id, actorAccountId: v.actorAccountId, subjectAccountId: v.subjectAccountId,
-    mode: v.mode, expiresAt: v.expiresAt };
+    mode: v.mode, expiresAt: v.expiresAt,
+    actorName: typeof v.actorName === "string" ? v.actorName : null,
+    subjectName: typeof v.subjectName === "string" ? v.subjectName : null };
+}
+
+/**
+ * What the app's client reads for the banner (`/api/user` `platformViewAs`):
+ * the window and the two names, never anything that acts.
+ */
+export function viewAsForClient(mark: PlatformImpersonation | null | undefined) {
+  if (!mark) return null;
+  return { id: mark.id, actorName: mark.actorName, subjectName: mark.subjectName, mode: mark.mode, expiresAt: mark.expiresAt };
+}
+
+/**
+ * The view-as mark on an activity-log row this app writes inside a window
+ * (`storage.createActivityLog`): `actor_type`, the actor really there and
+ * `on_behalf_of` the subject, merged into the row's metadata JSON. A row
+ * written outside a window, or whose metadata is not a JSON object, is
+ * returned exactly as it was: the mark is additive and never rewrites what
+ * another reader already parses.
+ */
+export function viewAsMetadata(
+  metadataJson: string | null | undefined,
+  viewAs: { id: string; actorAccountId: string; subjectAccountId: string } | null | undefined,
+): string | null | undefined {
+  if (!viewAs) return metadataJson;
+  let base: Record<string, unknown> = {};
+  if (metadataJson) {
+    try {
+      const parsed: unknown = JSON.parse(metadataJson);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return metadataJson;
+      base = parsed as Record<string, unknown>;
+    } catch {
+      return metadataJson;
+    }
+  }
+  return JSON.stringify({ ...base, actor_type: "impersonated", actor_account_id: viewAs.actorAccountId,
+    on_behalf_of: viewAs.subjectAccountId, impersonation_id: viewAs.id });
 }
 
 /**

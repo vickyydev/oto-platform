@@ -46,7 +46,20 @@ export const logger = safeLogger(base);
  * caused it, and a handler that has to be given the id is a handler that will
  * be written without it.
  */
-export const requestContext = new AsyncLocalStorage<{ requestId: string }>();
+export const requestContext = new AsyncLocalStorage<{
+  requestId: string;
+  /**
+   * SCRUM-648 — set by the sign-on middleware when this request comes from a
+   * support administrator's view-as window, so a row written deep inside a
+   * service can carry who was really there (`viewAsMetadata`).
+   */
+  viewAs?: { id: string; actorAccountId: string; subjectAccountId: string };
+}>();
+
+/** The view-as window this request runs in, or undefined. */
+export function currentViewAs() {
+  return requestContext.getStore()?.viewAs;
+}
 
 /** The current request id, or undefined outside a request (a job, boot). */
 export function currentRequestId(): string | undefined {
