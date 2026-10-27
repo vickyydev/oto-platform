@@ -89,10 +89,14 @@ const LEFTOVER_DIGITS = /\d(?:[^\p{L}\d\n]?\d){9,}/u;
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isThai = (s) => /[\u0e00-\u0e7f]/.test(s);
 
-/** Replace one name wherever it stands as a word (a substring, for Thai, which has no word spaces). */
+/**
+ * Replace one name wherever it stands as a word — for Thai, which has no word
+ * spaces, wherever it appears, and only from three letters up, so a short
+ * name part that is also a common word (ดี, "good") is left alone.
+ */
 function replaceName(text, name) {
   if (!name || [...name].length < 2) return text;
-  if (isThai(name)) return text.split(name).join('[name]');
+  if (isThai(name)) return [...name].length < 3 ? text : text.split(name).join('[name]');
   return text.replace(new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(name)}(?![\\p{L}\\p{N}])`, 'giu'), '[name]');
 }
 
@@ -568,8 +572,13 @@ async function cmdSelect(dir, opts) {
   }
 
   const picked = pickBest(rated, target);
+  const byN = new Map(pairs.map((p) => [p.n, p]));
+  const selectedFile = join(dir, 'selected.json');
+  const previous = existsSync(selectedFile) ? JSON.parse(readFileSync(selectedFile, 'utf8')).examples ?? [] : [];
+  const idOf = stableIds(previous);
   const selected = picked.map((r) => ({
-    id: uuidv7(),
+    id: idOf(sourceKey(byN.get(r.n))),
+    source: sourceKey(byN.get(r.n)),
     intent: r.intent,
     language: r.language,
     verdict: r.verdict,
@@ -578,14 +587,14 @@ async function cmdSelect(dir, opts) {
     quality: r.quality,
   }));
   writeFileSync(
-    join(dir, 'selected.json'),
+    selectedFile,
     JSON.stringify({ generatedAt: new Date().toISOString(), model: MODEL, business, examples: selected }, null, 2),
   );
 
   // The knowledge base's gaps: suggestions only, never loaded by this tool.
   let existing = [];
   if (opts.api) {
-    const session = await signIn(opts.api, opts.prefix ?? '/api', opts.as ?? 'ADMIN');
+    const session = await signIn(opts.api, opts.prefix ?? '/api', String(opts.as ?? 'ADMIN').toUpperCase());
     const res = await session.get('/inbox/kb?status=approved');
     if (res.ok) existing = (await res.json()).entries.map((e) => `${e.topic} · ${e.language} · ${e.question} — ${e.body}`);
     else console.log(`  the knowledge base could not be read (${res.status}); gaps are judged against its topics only`);
@@ -662,6 +671,23 @@ async function signIn(origin, prefix, who) {
         body: JSON.stringify(body),
       }),
   };
+}
+
+/** A fingerprint of the de-identified pair an example was made from. */
+export const sourceKey = (pair) =>
+  createHash('sha256')
+    .update(`${pair?.customer ?? ''}\n--\n${pair?.reply ?? ''}`)
+    .digest('hex')
+    .slice(0, 32);
+
+/**
+ * Ids for a new selection: an example made from the same pair as one in the
+ * previous selected.json keeps that one's id, so loading after a second
+ * `select` replays it rather than proposing it twice; a new one gets a new id.
+ */
+export function stableIds(previous) {
+  const known = new Map(previous.filter((x) => x.source && x.id).map((x) => [x.source, x.id]));
+  return (source) => known.get(source) ?? uuidv7();
 }
 
 /** The same chunk always travels under the same key, so a rerun is answered as a replay. */

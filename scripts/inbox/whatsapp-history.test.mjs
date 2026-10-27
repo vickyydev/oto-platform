@@ -13,6 +13,8 @@ import {
   AI_INTENTS,
   chunkKey,
   cmdLoad,
+  sourceKey,
+  stableIds,
   deidentify,
   guessBusiness,
   guessLanguage,
@@ -289,6 +291,18 @@ describe('ids and keys', () => {
     assert.equal(chunkKey(chunk), chunkKey([...chunk]));
     assert.notEqual(chunkKey(chunk), chunkKey([chunk[0]]));
     assert.ok(chunkKey(chunk).length <= 200);
+  });
+
+  it('a second select keeps the id of an example made from the same pair, so a second load replays it', () => {
+    const pair = { customer: 'Do I need socks?', reply: 'Yes.' };
+    const before = [{ id: uuidv7(), source: sourceKey(pair) }];
+    const idOf = stableIds(before);
+    assert.equal(idOf(sourceKey({ ...pair })), before[0].id);
+    assert.notEqual(idOf(sourceKey({ customer: 'Parking?', reply: 'Yes.' })), before[0].id);
+  });
+
+  it('a short Thai name part that is also a word is left alone; the whole name still goes', () => {
+    assert.equal(deidentify('ใจดีมากค่ะ ขอบคุณค่ะ สมชาย ดี', ['สมชาย ดี']), 'ใจดีมากค่ะ ขอบคุณค่ะ [name]');
   });
 
   it('reads the command line', () => {
