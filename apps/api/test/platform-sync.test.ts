@@ -103,7 +103,8 @@ describe('platform sync (S2-01b)', () => {
     const administratorIds = system.filter(row => ['platform_admin', 'operator_admin'].includes(row.name)).map(row => row.id);
     const otherIds = system.filter(row => !['platform_admin', 'operator_admin'].includes(row.name)).map(row => row.id);
     expect(administratorIds).toHaveLength(2);
-    expect(otherIds).toHaveLength(3);
+    // branch_manager, reception, staff and (SCRUM-648) support.
+    expect(otherIds).toHaveLength(4);
     await ctx.db.delete(rolePermission).where(and(inArray(rolePermission.roleId, administratorIds), eq(rolePermission.permission, 'hr:salary:view')));
     await ctx.db.insert(rolePermission).values(otherIds.map(roleId => ({ id: newId(), roleId, permission: 'hr:salary:view' })));
     const [owner] = await ctx.db.select({ id: operator.id }).from(operator).limit(1);
