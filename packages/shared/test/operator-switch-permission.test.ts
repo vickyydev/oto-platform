@@ -14,9 +14,11 @@ describe('SCRUM-640 session operator selection permission', () => {
       expect(ROLE_BUNDLES[role], role).toContain(permission);
     }
     expect([...ROLE_BUNDLES.platform_admin].sort()).toEqual([...PERMISSIONS].sort());
-    // SCRUM-643 reserves only these new suite writers for the platform administrator.
+    // SCRUM-643 reserves only these new suite writers for the platform administrator,
+    // and SCRUM-648 adds viewing as another account.
     const platformOnly = new Set<string>([
       'console:app_registry:manage', 'console:release:flag_manage', 'console:release:kill_switch',
+      'console:support:impersonate',
     ]);
     expect([...ROLE_BUNDLES.operator_admin].sort()).toEqual(PERMISSIONS.filter(entry => !platformOnly.has(entry)).sort());
     // The session route must separately require a genuine null-scope assignment.
