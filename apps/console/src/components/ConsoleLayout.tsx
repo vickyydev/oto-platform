@@ -16,6 +16,7 @@ import { filterPlatformHealthLinks, usePlatformAuthority } from '@/lib/platformA
 import { OperatorSwitchPicker } from '@/components/OperatorSwitchPicker';
 import { ErrorNote } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
+import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 const POS_URL = import.meta.env.VITE_POS_URL?.trim();
@@ -107,6 +108,8 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <Backdrop />
+      {/* SCRUM-648: fixed for the whole view-as window, above every page, never dismissible. */}
+      {me && <ImpersonationBanner me={me} />}
 
       {/* The phone's bar: the sidebar is a drawer below md, so this is the way into it. */}
       <header className="md:hidden sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-card-border bg-background/90 px-4 backdrop-blur">
