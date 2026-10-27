@@ -29,6 +29,7 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'admin:branch:update': 'Change park details within the park group.',
   'admin:audit:read': 'Read the activity history with sensitive details masked.',
   'admin:audit:read_sensitive': 'Read unmasked activity details, including child health notes, phone numbers and terminal data.',
+  'console:activity:export': 'Download a bounded page of the activity history with the same masking as reading it, and every download is recorded.',
 
   'admin:station:read': 'Read station setup, assigned staff, devices and payment routing.',
   'admin:station:create': 'Create a station and its setup.',
@@ -52,6 +53,7 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'booth:staff:sign_in': 'Sign in to work at a booth where you are also assigned as staff.',
   'admin:health:read': 'Read platform health, failures and integration status.',
   'admin:ops:manage': 'Retry failed runs, acknowledge alerts and resolve operational expectations.',
+  'console:alert:manage': 'Mute an alert for at most a day with a reason and keep the alert recipient list, while delivery stays on the console only.',
 
   'pos:member:read': 'Look up one member and their details at the counter.',
   'pos:member:list': 'Browse the member register, including guardian phone numbers.',
