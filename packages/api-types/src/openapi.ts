@@ -1638,7 +1638,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -19924,7 +19924,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Query the audit log (keyset paginated, masked without admin:audit:read_sensitive) */
+        /** @description Query the audit log (keyset paginated, masked without admin:audit:read_sensitive). Also filters by app, target app and the data_access or denial category on the server */
         get: {
             parameters: {
                 query?: {
@@ -19936,6 +19936,9 @@ export interface paths {
                     outcome?: "success" | "failure";
                     from?: string;
                     to?: string;
+                    app?: string;
+                    targetApp?: string;
+                    category?: "data_access" | "denial";
                     cursor?: string;
                     limit?: number;
                     count?: "true";
@@ -19973,12 +19976,64 @@ export interface paths {
                                 };
                                 /** Format: date-time */
                                 createdAt: string;
+                                app: string | null;
+                                targetApp: string | null;
+                                category: string | null;
                             }[];
                             masked: boolean;
                             nextCursor: string | null;
                             total?: number;
                         };
                     };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audit/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Download one bounded page (at most 5000 rows) of the audit log as CSV or NDJSON, with the same selection, reach and masking as GET /audit. Each export is recorded as an audit.export data_access row naming its filters and row count; a full page answers x-oto-next-cursor */
+        get: {
+            parameters: {
+                query?: {
+                    action?: string;
+                    entityType?: string;
+                    entityId?: string;
+                    actorAccountId?: string;
+                    branchId?: string;
+                    outcome?: "success" | "failure";
+                    from?: string;
+                    to?: string;
+                    app?: string;
+                    targetApp?: string;
+                    category?: "data_access" | "denial";
+                    format?: "csv" | "ndjson";
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };
@@ -28049,6 +28104,390 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/alert-mutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The fingerprint mutes in force: who muted what, why and until when, and how many deliveries each has held back (recorded, never dropped). At most 24 hours each */
+        get: {
+            parameters: {
+                query?: {
+                    fingerprint?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            mutes: {
+                                /** Format: uuid */
+                                id: string;
+                                fingerprint: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                reason: string;
+                                /** Format: date-time */
+                                startsAt: string;
+                                /** Format: date-time */
+                                mutedUntil: string;
+                                /** Format: uuid */
+                                createdByAccountId: string;
+                                createdByName: string | null;
+                                heldBack: number;
+                            }[];
+                            defaultMinutes: number;
+                            maxMinutes: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Mute one alert fingerprint: a reason is required, one hour unless told otherwise, at most 24 hours. The alert is still raised and listed; its deliveries are recorded as muted. A fresh mute replaces the one in force */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        fingerprint: string;
+                        reason: string;
+                        /** @default 60 */
+                        minutes?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            mute: {
+                                /** Format: uuid */
+                                id: string;
+                                fingerprint: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                reason: string;
+                                /** Format: date-time */
+                                startsAt: string;
+                                /** Format: date-time */
+                                mutedUntil: string;
+                                /** Format: uuid */
+                                createdByAccountId: string;
+                                createdByName: string | null;
+                                heldBack: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/alert-mutes/{muteId}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End a fingerprint mute early. The mute row stays, with who lifted it and when */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    muteId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            mute: {
+                                /** Format: uuid */
+                                id: string;
+                                fingerprint: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                reason: string;
+                                /** Format: date-time */
+                                startsAt: string;
+                                /** Format: date-time */
+                                mutedUntil: string;
+                                /** Format: uuid */
+                                createdByAccountId: string;
+                                createdByName: string | null;
+                                heldBack: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/alert-recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Alert recipients: category to channel and an address REFERENCE (an environment variable name). Says whether each name is set here, never its value. Delivery is console-only until a provider integration is its own ticket */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            recipients: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                /** Format: uuid */
+                                branchId: string | null;
+                                category: string;
+                                /** @enum {string} */
+                                channel: "console" | "email" | "webhook";
+                                addressRef: string | null;
+                                addressConfigured: boolean | null;
+                                delivered: boolean;
+                                label: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            }[];
+                            deliveredChannels: ("console" | "email" | "webhook")[];
+                            deliveryNote: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Add an alert recipient row. Email and webhook rows name an ALERT_ environment variable, never an address, and are recorded as not delivered until a provider integration exists */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        category: string;
+                        /** @enum {string} */
+                        channel: "console" | "email" | "webhook";
+                        addressRef?: string | null;
+                        label?: string | null;
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        /**
+                         * @default operator
+                         * @enum {string}
+                         */
+                        scope?: "operator" | "platform";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            recipient: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                /** Format: uuid */
+                                branchId: string | null;
+                                category: string;
+                                /** @enum {string} */
+                                channel: "console" | "email" | "webhook";
+                                addressRef: string | null;
+                                addressConfigured: boolean | null;
+                                delivered: boolean;
+                                label: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/alert-recipients/{recipientId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Change an alert recipient row: its category, channel, address reference or label */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    recipientId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        category?: string;
+                        /** @enum {string} */
+                        channel?: "console" | "email" | "webhook";
+                        addressRef?: string | null;
+                        label?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            recipient: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                /** Format: uuid */
+                                branchId: string | null;
+                                category: string;
+                                /** @enum {string} */
+                                channel: "console" | "email" | "webhook";
+                                addressRef: string | null;
+                                addressConfigured: boolean | null;
+                                delivered: boolean;
+                                label: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/ops/alert-recipients/{recipientId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Archive an alert recipient row. Archived rows are kept and no longer consulted */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    recipientId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;

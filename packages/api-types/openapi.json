@@ -2512,6 +2512,7 @@
                 "admin:branch:update",
                 "admin:audit:read",
                 "admin:audit:read_sensitive",
+                "console:activity:export",
                 "admin:station:read",
                 "admin:station:create",
                 "admin:station:update",
@@ -2534,6 +2535,7 @@
                 "booth:staff:sign_in",
                 "admin:health:read",
                 "admin:ops:manage",
+                "console:alert:manage",
                 "pos:member:read",
                 "pos:member:list",
                 "pos:member:create",
@@ -46819,7 +46821,7 @@
     },
     "/audit/": {
       "get": {
-        "description": "Query the audit log (keyset paginated, masked without admin:audit:read_sensitive)",
+        "description": "Query the audit log (keyset paginated, masked without admin:audit:read_sensitive). Also filters by app, target app and the data_access or denial category on the server",
         "parameters": [
           {
             "schema": {
@@ -46891,6 +46893,36 @@
             },
             "in": "query",
             "name": "to",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$"
+            },
+            "in": "query",
+            "name": "app",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$"
+            },
+            "in": "query",
+            "name": "targetApp",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "data_access",
+                "denial"
+              ]
+            },
+            "in": "query",
+            "name": "category",
             "required": false
           },
           {
@@ -47026,6 +47058,18 @@
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "app": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "targetApp": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "category": {
+                            "type": "string",
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -47039,7 +47083,10 @@
                           "requestId",
                           "before",
                           "after",
-                          "createdAt"
+                          "createdAt",
+                          "app",
+                          "targetApp",
+                          "category"
                         ],
                         "additionalProperties": false
                       }
@@ -47065,6 +47112,153 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/audit/export": {
+      "get": {
+        "description": "Download one bounded page (at most 5000 rows) of the audit log as CSV or NDJSON, with the same selection, reach and masking as GET /audit. Each export is recorded as an audit.export data_access row naming its filters and row count; a full page answers x-oto-next-cursor",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "action",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "entityType",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "entityId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "actorAccountId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "failure"
+              ]
+            },
+            "in": "query",
+            "name": "outcome",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": "query",
+            "name": "from",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": "query",
+            "name": "to",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$"
+            },
+            "in": "query",
+            "name": "app",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$"
+            },
+            "in": "query",
+            "name": "targetApp",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "data_access",
+                "denial"
+              ]
+            },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "ndjson"
+              ],
+              "default": "csv"
+            },
+            "in": "query",
+            "name": "format",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000,
+              "default": 1000
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }
@@ -70486,6 +70680,742 @@
                     "aggregates",
                     "decisions",
                     "statusSummary"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ops/alert-mutes": {
+      "get": {
+        "description": "The fingerprint mutes in force: who muted what, why and until when, and how many deliveries each has held back (recorded, never dropped). At most 24 hours each",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "fingerprint",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mutes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "fingerprint": {
+                            "type": "string"
+                          },
+                          "scope": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "platform"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "mutedUntil": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "createdByAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "createdByName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "heldBack": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fingerprint",
+                          "scope",
+                          "reason",
+                          "startsAt",
+                          "mutedUntil",
+                          "createdByAccountId",
+                          "createdByName",
+                          "heldBack"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "defaultMinutes": {
+                      "type": "integer"
+                    },
+                    "maxMinutes": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "mutes",
+                    "defaultMinutes",
+                    "maxMinutes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Mute one alert fingerprint: a reason is required, one hour unless told otherwise, at most 24 hours. The alert is still raised and listed; its deliveries are recorded as muted. A fresh mute replaces the one in force",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fingerprint": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 200
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "default": 60
+                  }
+                },
+                "required": [
+                  "fingerprint",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mute": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "operator",
+                            "platform"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "startsAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "mutedUntil": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "createdByAccountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "createdByName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "heldBack": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "fingerprint",
+                        "scope",
+                        "reason",
+                        "startsAt",
+                        "mutedUntil",
+                        "createdByAccountId",
+                        "createdByName",
+                        "heldBack"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "mute"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ops/alert-mutes/{muteId}/lift": {
+      "post": {
+        "description": "End a fingerprint mute early. The mute row stays, with who lifted it and when",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "muteId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "mute": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "fingerprint": {
+                          "type": "string"
+                        },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "operator",
+                            "platform"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "startsAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "mutedUntil": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "createdByAccountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "createdByName": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "heldBack": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "fingerprint",
+                        "scope",
+                        "reason",
+                        "startsAt",
+                        "mutedUntil",
+                        "createdByAccountId",
+                        "createdByName",
+                        "heldBack"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "mute"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ops/alert-recipients": {
+      "get": {
+        "description": "Alert recipients: category to channel and an address REFERENCE (an environment variable name). Says whether each name is set here, never its value. Delivery is console-only until a provider integration is its own ticket",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "recipients": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "scope": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "platform"
+                            ]
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "category": {
+                            "type": "string"
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": [
+                              "console",
+                              "email",
+                              "webhook"
+                            ]
+                          },
+                          "addressRef": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "addressConfigured": {
+                            "type": "boolean",
+                            "nullable": true
+                          },
+                          "delivered": {
+                            "type": "boolean"
+                          },
+                          "label": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "scope",
+                          "branchId",
+                          "category",
+                          "channel",
+                          "addressRef",
+                          "addressConfigured",
+                          "delivered",
+                          "label",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "deliveredChannels": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "console",
+                          "email",
+                          "webhook"
+                        ]
+                      }
+                    },
+                    "deliveryNote": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "recipients",
+                    "deliveredChannels",
+                    "deliveryNote"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Add an alert recipient row. Email and webhook rows name an ALERT_ environment variable, never an address, and are recorded as not delivered until a provider integration exists",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "pattern": "^(\\*|[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*)$",
+                    "maxLength": 80
+                  },
+                  "channel": {
+                    "type": "string",
+                    "enum": [
+                      "console",
+                      "email",
+                      "webhook"
+                    ]
+                  },
+                  "addressRef": {
+                    "type": "string",
+                    "pattern": "^ALERT_[A-Z0-9_]{2,58}$",
+                    "nullable": true
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "operator",
+                      "platform"
+                    ],
+                    "default": "operator"
+                  }
+                },
+                "required": [
+                  "category",
+                  "channel"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "recipient": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "operator",
+                            "platform"
+                          ]
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "category": {
+                          "type": "string"
+                        },
+                        "channel": {
+                          "type": "string",
+                          "enum": [
+                            "console",
+                            "email",
+                            "webhook"
+                          ]
+                        },
+                        "addressRef": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "addressConfigured": {
+                          "type": "boolean",
+                          "nullable": true
+                        },
+                        "delivered": {
+                          "type": "boolean"
+                        },
+                        "label": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "scope",
+                        "branchId",
+                        "category",
+                        "channel",
+                        "addressRef",
+                        "addressConfigured",
+                        "delivered",
+                        "label",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "recipient"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ops/alert-recipients/{recipientId}": {
+      "patch": {
+        "description": "Change an alert recipient row: its category, channel, address reference or label",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "pattern": "^(\\*|[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*)$",
+                    "maxLength": 80
+                  },
+                  "channel": {
+                    "type": "string",
+                    "enum": [
+                      "console",
+                      "email",
+                      "webhook"
+                    ]
+                  },
+                  "addressRef": {
+                    "type": "string",
+                    "pattern": "^ALERT_[A-Z0-9_]{2,58}$",
+                    "nullable": true
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "recipientId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "recipient": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "operator",
+                            "platform"
+                          ]
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "category": {
+                          "type": "string"
+                        },
+                        "channel": {
+                          "type": "string",
+                          "enum": [
+                            "console",
+                            "email",
+                            "webhook"
+                          ]
+                        },
+                        "addressRef": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "addressConfigured": {
+                          "type": "boolean",
+                          "nullable": true
+                        },
+                        "delivered": {
+                          "type": "boolean"
+                        },
+                        "label": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "scope",
+                        "branchId",
+                        "category",
+                        "channel",
+                        "addressRef",
+                        "addressConfigured",
+                        "delivered",
+                        "label",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "recipient"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ops/alert-recipients/{recipientId}/archive": {
+      "post": {
+        "description": "Archive an alert recipient row. Archived rows are kept and no longer consulted",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "recipientId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
                   ],
                   "additionalProperties": false
                 }
