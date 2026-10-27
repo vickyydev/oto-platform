@@ -191,7 +191,17 @@ const CATEGORY_ICON_INK: Record<InboxCategoryKey, string> = {
 };
 
 /** "By category": the stacked violet / sky / pink bar with its icon-and-count legend (:1813-1836). */
-export function CategoryMixCard({ data }: { data: Record<InboxCategoryKey, number> }) {
+export function CategoryMixCard({
+  data,
+  selected = '',
+  onPick,
+}: {
+  data: Record<InboxCategoryKey, number>;
+  /** The category the list is filtered to, if any: its legend entry reads as pressed. */
+  selected?: InboxCategoryKey | '';
+  /** Present, each legend entry filters the list to its category (a second press clears it). */
+  onPick?: (category: InboxCategoryKey) => void;
+}) {
   const keys: InboxCategoryKey[] = ['birthdays', 'general', 'marketing'];
   const total = Math.max(1, data.birthdays + data.general + data.marketing);
   const w = (n: number) => `${Math.round((n / total) * 100)}%`;
@@ -215,11 +225,31 @@ export function CategoryMixCard({ data }: { data: Record<InboxCategoryKey, numbe
       <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
         {keys.map((k) => {
           const Icon = CATEGORY_ICON[k];
+          if (!onPick) {
+            return (
+              <span key={k} className="flex items-center gap-1" title={CATEGORY_LABEL[k]}>
+                <Icon className={`h-3 w-3 ${CATEGORY_ICON_INK[k]}`} />
+                {data[k]}
+              </span>
+            );
+          }
+          const on = selected === k;
           return (
-            <span key={k} className="flex items-center gap-1" title={CATEGORY_LABEL[k]}>
-              <Icon className={`h-3 w-3 ${CATEGORY_ICON_INK[k]}`} />
+            <button
+              key={k}
+              type="button"
+              onClick={() => onPick(k)}
+              aria-pressed={on}
+              title={on ? `Showing ${CATEGORY_LABEL[k]} only — click to clear` : `Show ${CATEGORY_LABEL[k]} only`}
+              className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 transition ${
+                on
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                  : 'hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Icon className={`h-3 w-3 ${on ? '' : CATEGORY_ICON_INK[k]}`} />
               {data[k]}
-            </span>
+            </button>
           );
         })}
       </div>

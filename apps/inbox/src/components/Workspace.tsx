@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Archive, Bot, FileText, FlaskConical, LogOut, MessageSquare, Monitor, Moon, Settings as SettingsGear, Sparkles, Sun } from 'lucide-react';
-import type { InboxTab } from '@oto/shared/inbox';
+import type { InboxCategoryKey, InboxTab } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { assistantCapabilities } from '@/api/assistant';
 import { inboxApi, type ConversationList as ListPage, type ConversationRow, type Dashboard as DashboardData, type InboxMe, type Message } from '@/api/inbox';
@@ -544,6 +544,29 @@ export function Workspace({ me }: { me: InboxMe }) {
     patchFilters({ unanswered: !filters.unanswered });
   };
 
+  // The tiles the prototype did not have (owner, demo day 2026-10-27): each
+  // opens the list it counts. The dashboard counts open threads, so Active and
+  // a category bring the list back from the archive, as Unanswered does.
+  const openTab = () => defaultTab(me.tabs.filter((t) => t !== 'handled'));
+  const activeOnly = tab !== 'handled' && filters.status === 'active' && !filters.unanswered;
+  const toggleActive = () => {
+    if (tab === 'handled') chooseTab(openTab());
+    patchFilters(activeOnly ? { status: '' } : { status: 'active', unanswered: false });
+  };
+  const handledTodayShown = tab === 'handled' && filters.archiveRange === 'today';
+  const toggleHandledToday = () => {
+    if (handledTodayShown) {
+      chooseTab(openTab());
+      return;
+    }
+    chooseTab('handled');
+    patchFilters({ archiveRange: 'today' });
+  };
+  const pickCategory = (category: InboxCategoryKey) => {
+    if (tab === 'handled') chooseTab(openTab());
+    patchFilters({ category: filters.category === category ? '' : category });
+  };
+
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6">
       {/* HEADER */}
@@ -601,7 +624,18 @@ export function Workspace({ me }: { me: InboxMe }) {
           </div>
         </div>
         {me.capabilities.dashboard && (
-          <Dashboard data={dashboard} error={dashboardError} unansweredOnly={filters.unanswered} onToggleUnanswered={toggleUnanswered} />
+          <Dashboard
+            data={dashboard}
+            error={dashboardError}
+            unansweredOnly={filters.unanswered}
+            onToggleUnanswered={toggleUnanswered}
+            activeOnly={activeOnly}
+            onToggleActive={toggleActive}
+            handledTodayShown={handledTodayShown}
+            {...(me.tabs.includes('handled') ? { onToggleHandledToday: toggleHandledToday } : {})}
+            category={tab === 'handled' ? '' : filters.category}
+            onPickCategory={pickCategory}
+          />
         )}
       </header>
 

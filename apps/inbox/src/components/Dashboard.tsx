@@ -1,4 +1,5 @@
 import { Activity, CheckCircle2, Clock3, MessageSquare, MessageSquareWarning } from 'lucide-react';
+import type { InboxCategoryKey } from '@oto/shared/inbox';
 import type { Dashboard as DashboardData } from '@/api/inbox';
 import { CategoryMixCard, MetricCard } from '@/components/atoms';
 import { durationLabel, responseScopeLabel } from '@/lib/view';
@@ -22,11 +23,30 @@ export function Dashboard({
   error,
   unansweredOnly,
   onToggleUnanswered,
+  activeOnly = false,
+  onToggleActive,
+  handledTodayShown = false,
+  onToggleHandledToday,
+  category = '',
+  onPickCategory,
 }: {
   data: DashboardData | null;
   error: string | null;
   unansweredOnly: boolean;
   onToggleUnanswered: () => void;
+  /**
+   * The tiles beyond the prototype's three (owner, demo day 2026-10-27): each
+   * one that has a list behind it opens that list, the way Unanswered does —
+   * Active the open threads, Handled today the archive from the park's
+   * midnight, a category its threads. New today and Avg response have no list
+   * of their own and stay read-outs.
+   */
+  activeOnly?: boolean;
+  onToggleActive?: () => void;
+  handledTodayShown?: boolean;
+  onToggleHandledToday?: () => void;
+  category?: InboxCategoryKey | '';
+  onPickCategory?: (category: InboxCategoryKey) => void;
 }) {
   if (error) {
     return <p className="mt-5 rounded-lg bg-rose-50 dark:bg-rose-500/15 px-3 py-2 text-[12.5px] text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-500/30">{error}</p>;
@@ -45,8 +65,24 @@ export function Dashboard({
         onClick={onToggleUnanswered}
         hint={unansweredOnly ? 'Click to clear filter' : 'Click to filter list'}
       />
-      <MetricCard icon={Activity} label="Active" value={v(data?.active)} tint="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/15" />
-      <MetricCard icon={CheckCircle2} label="Handled today" value={v(data?.handledToday)} tint="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15" />
+      <MetricCard
+        icon={Activity}
+        label="Active"
+        value={v(data?.active)}
+        tint="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/15"
+        {...(onToggleActive
+          ? { active: activeOnly, onClick: onToggleActive, hint: activeOnly ? 'Click to clear filter' : 'Click to filter list' }
+          : {})}
+      />
+      <MetricCard
+        icon={CheckCircle2}
+        label="Handled today"
+        value={v(data?.handledToday)}
+        tint="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15"
+        {...(onToggleHandledToday
+          ? { active: handledTodayShown, onClick: onToggleHandledToday, hint: handledTodayShown ? 'Click to go back' : 'Click to open' }
+          : {})}
+      />
       <MetricCard
         icon={Clock3}
         label="Avg response"
@@ -54,7 +90,11 @@ export function Dashboard({
         tint="text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800"
         hint={scope ?? undefined}
       />
-      <CategoryMixCard data={data?.byCategory ?? { birthdays: 0, general: 0, marketing: 0 }} />
+      <CategoryMixCard
+        data={data?.byCategory ?? { birthdays: 0, general: 0, marketing: 0 }}
+        selected={category}
+        {...(onPickCategory ? { onPick: onPickCategory } : {})}
+      />
     </div>
   );
 }

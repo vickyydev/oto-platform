@@ -560,6 +560,10 @@ describe('time, on the parks’ day', () => {
   });
   it('turns the archive range into handledFrom', () => {
     expect(archiveFrom('7d', now)).toBe('2026-10-13T03:00:00.000Z');
+    // Today is the park's day: from Bangkok midnight, even when UTC is still on the day before.
+    expect(archiveFrom('today', now)).toBe('2026-10-19T17:00:00.000Z');
+    expect(archiveFrom('today', new Date('2026-10-20T18:30:00.000Z'))).toBe('2026-10-20T17:00:00.000Z');
+    expect(archiveFrom('today', new Date('2026-10-20T16:59:59.000Z'))).toBe('2026-10-19T17:00:00.000Z');
     expect(archiveFrom('all', now)).toBeUndefined();
   });
 });

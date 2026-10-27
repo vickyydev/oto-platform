@@ -225,6 +225,43 @@ describe('F3 — the phone shows the list first', () => {
     expect(grid(true)).toContain('aria-pressed="true"');
   });
 
+  it('opens the list behind every tile that has one: Active, Handled today, each category (demo day 2026-10-27)', () => {
+    const wired = (over: Record<string, unknown> = {}) =>
+      renderToStaticMarkup(
+        createElement(Dashboard, {
+          data,
+          error: null,
+          unansweredOnly: false,
+          onToggleUnanswered: noop,
+          onToggleActive: noop,
+          onToggleHandledToday: noop,
+          onPickCategory: noop,
+          ...over,
+        }),
+      );
+    const html = wired();
+    // Unanswered, Active and Handled today are buttons; New today and Avg response stay read-outs.
+    const buttons = html.match(/<button[^>]*>[\s\S]*?<\/button>/g) ?? [];
+    const labelled = (label: string) => buttons.some((b) => b.includes(label));
+    expect(labelled('Unanswered')).toBe(true);
+    expect(labelled('Active')).toBe(true);
+    expect(labelled('Handled today')).toBe(true);
+    expect(labelled('New today')).toBe(false);
+    expect(labelled('Avg response')).toBe(false);
+    // Each category in the legend is its own button, named for the list it opens.
+    for (const name of ['Birthdays &amp; Events', 'General', 'Marketing']) expect(html).toContain(`Show ${name} only`);
+    // Pressed states read back.
+    expect(wired({ activeOnly: true })).toContain('Click to clear filter');
+    expect(wired({ handledTodayShown: true })).toContain('Click to go back');
+    expect(wired({ category: 'birthdays' })).toContain('Showing Birthdays &amp; Events only');
+  });
+
+  it('without the new handlers the tiles render exactly as before: only Unanswered is a button', () => {
+    const buttons = grid().match(/<button[^>]*>[\s\S]*?<\/button>/g) ?? [];
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toContain('Unanswered');
+  });
+
   it('gives the phone one compact line: the unanswered chip, active, avg response', () => {
     const html = strip();
     expect(html).toContain('lg:hidden');

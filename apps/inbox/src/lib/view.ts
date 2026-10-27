@@ -341,15 +341,26 @@ export function durationLabel(seconds: number | null): string {
 }
 
 /** The archive's date range (:1497-1502) as the list route's `handledFrom`. */
-export type ArchiveRange = '7d' | '30d' | '90d' | 'all';
+export type ArchiveRange = 'today' | '7d' | '30d' | '90d' | 'all';
 export const ARCHIVE_RANGES: [ArchiveRange, string][] = [
+  ['today', 'Today'],
   ['7d', '7 days'],
   ['30d', '30 days'],
   ['90d', '90 days'],
   ['all', 'All time'],
 ];
+/**
+ * `today` is the park's day, the one the dashboard's "Handled today" counts:
+ * from midnight in Asia/Bangkok, which keeps no daylight saving, so the offset
+ * is a fixed seven hours.
+ */
+const BANGKOK_OFFSET_MS = 7 * 3_600_000;
 export function archiveFrom(range: ArchiveRange, now: Date = new Date()): string | undefined {
   if (range === 'all') return undefined;
+  if (range === 'today') {
+    const local = new Date(now.getTime() + BANGKOK_OFFSET_MS);
+    return new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - BANGKOK_OFFSET_MS).toISOString();
+  }
   const days = { '7d': 7, '30d': 30, '90d': 90 }[range];
   return new Date(now.getTime() - days * 86_400_000).toISOString();
 }
