@@ -26,7 +26,19 @@ export interface MeResponse {
    * what is painted".
    */
   preferences?: UiPreferences;
+  /**
+   * SCRUM-648 — this session IS a support administrator's view-as window, or
+   * the windows this session has open as the actor. Either draws the fixed
+   * banner. Optional because an api from before them answers without them.
+   */
+  impersonation?: ImpersonationBanner | null;
+  impersonating?: ImpersonationBanner[];
 }
+
+/** SCRUM-648: what the banner names — who is really there, as whom, where, until when. */
+export type ImpersonationBanner = ApiResponse<'/me/', 'get'>['impersonating'][number];
+/** SCRUM-648: one window anybody opened as this account, as the subject sees it. */
+export type ImpersonationHistoryEntry = ApiResponse<'/me/impersonations', 'get'>['impersonations'][number];
 
 export interface EffectivePermission {
   permission: string;
@@ -112,6 +124,8 @@ export interface AuditEntry {
 }
 
 export const accountApi = {
+  /** SCRUM-648 — every view-as window opened as this account, newest first. Needs only the session. */
+  impersonations: () => api.get<ApiResponse<'/me/impersonations', 'get'>>('/me/impersonations'),
   sessions: (accountId: string) =>
     api.get<{
       sessions: Array<{

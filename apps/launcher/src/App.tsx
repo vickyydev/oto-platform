@@ -7,6 +7,7 @@ import { Backdrop } from '@/components/Backdrop';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/BrandMark';
 import { SuiteAssistant } from '@/components/assistant/AssistantDock';
+import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { SessionProvider, useSession } from '@/auth/SessionContext';
 import { accountTheme } from '@/lib/accountTheme';
 
@@ -71,6 +72,8 @@ export default function App() {
   return (
     <SessionProvider>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+        {/* SCRUM-648: above every page for the whole view-as window; never dismissible. */}
+        <ImpersonationBanner />
         <Routes />
         {/* The internal assistant's floating button and chat popup (SCRUM-591), on every
             signed-in page and mounted once, so what is open and typed survives a move
