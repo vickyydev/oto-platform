@@ -48,6 +48,93 @@ export const appRegistry = core.table('app_registry', {
   )`),
 ]);
 
+/**
+ * The typed flag catalogue (SCRUM-643, planner ruling Q24). A key that is not
+ * here does not exist: the resolver, the preview and every writer refuse it.
+ * `supported: false` keys are listed so the Console can show what is planned,
+ * but no write path accepts them until their real consumer is integrated and
+ * proven in its own ticket — a generic store must never imply that a payment,
+ * gate, booth or rollup action works.
+ *
+ * `defaultValue` is also the safe fallback: an expired or malformed override
+ * resolves to it immediately at read time.
+ */
+export type FlagValue = boolean | string;
+export interface FlagCatalogueEntry {
+  key: string;
+  kind: FlagKind;
+  targetApp: SuiteAppKey;
+  label: string;
+  /** What stops working while the flag holds its non-default value. */
+  effect: string;
+  valueType: 'boolean' | 'enum';
+  /** Allowed values of an `enum` flag. */
+  values?: readonly string[];
+  defaultValue: FlagValue;
+  scopes: readonly FlagScopeType[];
+  supported: boolean;
+}
+
+const SIGN_IN_APP_NAMES: Record<SuiteAppKey, string> = {
+  pos: 'POS', console: 'Admin', oto_app: 'OTO App', radar: 'Radar', booth: 'Lucky Wheel', inbox: 'Inbox',
+};
+export const SIGN_IN_BLOCK_PREFIX = 'signin.blocked.';
+export const signInBlockKey = (app: SuiteAppKey) => `${SIGN_IN_BLOCK_PREFIX}${app}`;
+export const MESSAGING_PAUSE_KEY = 'messaging.outbound_paused';
+
+export const FLAG_CATALOGUE: readonly FlagCatalogueEntry[] = [
+  {
+    key: MESSAGING_PAUSE_KEY, kind: 'kill_switch', targetApp: 'inbox', label: 'Pause outbound messaging',
+    effect: 'Queued Inbox replies and automatic messages stay queued and are not handed to any channel provider.',
+    valueType: 'boolean', defaultValue: false, scopes: ['platform', 'operator', 'branch'], supported: true,
+  },
+  ...SUITE_APP_KEYS.map((app): FlagCatalogueEntry => ({
+    key: signInBlockKey(app), kind: 'kill_switch', targetApp: app, label: `Block new sign-ins to ${SIGN_IN_APP_NAMES[app]}`,
+    effect: `New hand-offs into ${SIGN_IN_APP_NAMES[app]} are refused. Existing sessions, platform sign-in and other apps keep working.`,
+    valueType: 'boolean', defaultValue: false, scopes: ['platform', 'operator', 'branch', 'station'], supported: true,
+  })),
+  {
+    key: 'payments.qr_tender_disabled', kind: 'kill_switch', targetApp: 'pos', label: 'Disable QR tender',
+    effect: 'Not integrated: the till does not read this switch yet.', valueType: 'boolean', defaultValue: false,
+    scopes: ['platform', 'operator', 'branch', 'station'], supported: false,
+  },
+  {
+    key: 'payments.card_tender_disabled', kind: 'kill_switch', targetApp: 'pos', label: 'Disable card tender',
+    effect: 'Not integrated: the till does not read this switch yet.', valueType: 'boolean', defaultValue: false,
+    scopes: ['platform', 'operator', 'branch', 'station'], supported: false,
+  },
+  {
+    key: 'payments.manual_recording_forced', kind: 'kill_switch', targetApp: 'pos', label: 'Force manual payment recording',
+    effect: 'Not integrated: the till does not read this switch yet.', valueType: 'boolean', defaultValue: false,
+    scopes: ['platform', 'operator', 'branch', 'station'], supported: false,
+  },
+  {
+    key: 'gate.closed', kind: 'kill_switch', targetApp: 'pos', label: 'Close the gate',
+    effect: 'Not integrated: gates and boxes do not read this switch yet.', valueType: 'enum',
+    values: ['open', 'deny_all', 'exit_only'], defaultValue: 'open', scopes: ['platform', 'operator', 'branch', 'station'], supported: false,
+  },
+  {
+    key: 'booth.stopped', kind: 'kill_switch', targetApp: 'booth', label: 'Stop the booth',
+    effect: 'Not integrated: the booth does not read this switch yet.', valueType: 'boolean', defaultValue: false,
+    scopes: ['platform', 'operator', 'branch'], supported: false,
+  },
+  {
+    key: 'analytics.rollups_frozen', kind: 'kill_switch', targetApp: 'radar', label: 'Freeze analytics rollups',
+    effect: 'Not integrated: the rollup jobs do not read this switch yet.', valueType: 'boolean', defaultValue: false,
+    scopes: ['platform', 'operator'], supported: false,
+  },
+];
+
+export function flagCatalogueEntry(key: string): FlagCatalogueEntry | undefined {
+  return FLAG_CATALOGUE.find(entry => entry.key === key);
+}
+
+/** A value is only ever one the catalogue allows; anything else is not a value of that flag. */
+export function isFlagValue(entry: FlagCatalogueEntry, value: unknown): value is FlagValue {
+  return entry.valueType === 'boolean' ? typeof value === 'boolean'
+    : typeof value === 'string' && (entry.values ?? []).includes(value);
+}
+
 /** Scope shape is structural; services validate the exact live station/branch/operator lineage. */
 export const featureFlag = core.table('feature_flag', {
   id: idPk(),

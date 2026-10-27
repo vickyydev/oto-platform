@@ -42,6 +42,7 @@ import { seedBenefitCredentials, seedBenefits } from './benefits';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
 import { describeInboxSync, syncInboxSetup } from './inbox';
 import { stableJson } from './stable-id';
+import { syncSuiteRegistry } from './suite-controls';
 import * as s from '../schema/index';
 
 /**
@@ -222,6 +223,11 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
   // them — insert-if-absent, so an edit made in the Inbox is never undone.
   const inboxLine = describeInboxSync(await syncInboxSetup(db));
   if (inboxLine) console.log(inboxLine);
+
+  // The suite registry (SCRUM-643): the six apps, insert-if-absent, so a saved
+  // maintenance window or tile state survives every sync.
+  const registered = await syncSuiteRegistry(db);
+  if (registered > 0) console.log(`Suite registry: registered ${registered} app(s).`);
 
   return roleIds;
 }
