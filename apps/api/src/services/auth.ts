@@ -21,6 +21,7 @@ import { audit } from './audit';
 import { withTx, type Exec } from './tx';
 import { bumpWindow } from './throttle';
 import { revokeStaffTokens } from './staff-token';
+import { endImpersonationsForSession } from './impersonation';
 import type { SmsSender } from './sms';
 import { hashToken, newSessionToken } from '../plugins/session';
 
@@ -1044,6 +1045,9 @@ export async function signOut(db: Db, sessionId: string, actorAccountId: string,
        * is the bound.
        */
       await revokeStaffTokens(tx, { sessionId }, 'sign_out', actorAccountId);
+      // SCRUM-648: the actor's sign-out ends every view-as window opened from this
+      // session, and a window's own sign-out ends the window.
+      await endImpersonationsForSession(tx, sessionId, actorAccountId, requestId);
       await audit.record(tx, {
         actorAccountId,
         // Sprint 1 left this null, so a sign-out was the one access event that

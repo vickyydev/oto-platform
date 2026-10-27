@@ -4,13 +4,17 @@ import { and, eq, gt, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { account, auditLog, branch, operator, role, roleAssignment, rolePermission, session as sessionTable, station } from '@oto/db';
+import {
+  account, auditLog, branch, impersonationSession, operator, role, roleAssignment, rolePermission, session as sessionTable, station,
+  type ImpersonationMode, type ImpersonationTargetApp,
+} from '@oto/db';
 import type { Permission } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { branchScopeRefusal } from '../services/access-control';
 import { hasPermission, resolveEffectivePermissions, type EffectivePermission, type ScopeTarget } from '../services/permissions';
 import type { Exec } from '../services/tx';
 import { runWithAuditContext } from '../services/audit-context';
+import { audit } from '../services/audit';
 
 export const SESSION_COOKIE = 'oto_session';
 const auditRequestScope = Symbol('verifiedAuditRequestScope');
@@ -33,6 +37,22 @@ export class PermissionDeniedError extends AppError {
   }
 }
 
+/**
+ * SCRUM-648 — the mark on a session minted for an impersonation ("view as")
+ * window. The session belongs to the SUBJECT, so everything it reads and
+ * may do is the subject's; the mark is what makes every request in it
+ * recognisable as somebody else's hands, and what ends it with the window.
+ */
+export interface ImpersonationMark {
+  id: string;
+  actorAccountId: string;
+  actorSessionId: string;
+  subjectAccountId: string;
+  targetApp: ImpersonationTargetApp;
+  mode: ImpersonationMode;
+  expiresAt: Date;
+}
+
 export interface AuthContext {
   accountId: string;
   /** Working scope; never a replacement for the real account's home identity. */
@@ -48,6 +68,8 @@ export interface AuthContext {
   isPlatformAdmin: boolean;
   /** Set while the POS is locked on inactivity; business routes refuse. */
   lockedAt: Date | null;
+  /** SCRUM-648: present only on a session minted for an impersonation window. */
+  impersonation?: ImpersonationMark | null;
 }
 
 declare module 'fastify' {
@@ -85,6 +107,7 @@ export function clearSessionCookie(reply: FastifyReply, secure: boolean): void {
 async function loadAuth(db: Exec, token: string, signOutCleanupOnly = false): Promise<AuthContext | null> {
   const now = new Date(), tokenHash = hashToken(token);
   const effectiveOperator = alias(operator, 'session_effective_operator');
+  const actorSeat = alias(sessionTable, 'impersonation_actor_session');
   const rows = await db
     .select({
       s: sessionTable,
@@ -100,6 +123,10 @@ async function loadAuth(db: Exec, token: string, signOutCleanupOnly = false): Pr
       stationOperatorId: station.operatorId,
       stationBranchId: station.branchId,
       stationArchivedAt: station.archivedAt,
+      // SCRUM-648: the window this session was minted for, and the actor's own seat it hangs from.
+      imp: impersonationSession,
+      actorRevokedAt: actorSeat.revokedAt,
+      actorExpiresAt: actorSeat.expiresAt,
       // These values share the same statement snapshot as the session. A
       // switch or grant revocation cannot splice two different contexts.
       switchGrant: sql<boolean>`exists (
@@ -128,6 +155,8 @@ async function loadAuth(db: Exec, token: string, signOutCleanupOnly = false): Pr
     .leftJoin(effectiveOperator, eq(effectiveOperator.id, sql<string>`coalesce(${sessionTable.operatorOverride}, ${account.operatorId})`))
     .leftJoin(branch, eq(sessionTable.branchId, branch.id))
     .leftJoin(station, eq(sessionTable.stationId, station.id))
+    .leftJoin(impersonationSession, eq(impersonationSession.sessionId, sessionTable.id))
+    .leftJoin(actorSeat, eq(actorSeat.id, impersonationSession.actorSessionId))
     .where(eq(sessionTable.tokenHash, tokenHash))
     .limit(1);
   const row = rows[0];
@@ -144,6 +173,13 @@ async function loadAuth(db: Exec, token: string, signOutCleanupOnly = false): Pr
     return null;
   }
   if (row.a.status !== 'active') return null; // deactivated mid-session → rejected
+  /**
+   * SCRUM-648 — an impersonation window ends at its expiry, when it is ended,
+   * or when the actor's own session ends, whichever comes first. Any of the
+   * three refuses the marked session exactly as an expired one is refused.
+   */
+  if (row.imp && (row.imp.endedAt !== null || row.imp.expiresAt <= now
+    || row.actorRevokedAt !== null || !row.actorExpiresAt || row.actorExpiresAt <= now)) return null;
   /**
    * SCRUM-253 — AND THE TENANT AND THE PARK ARE STILL OPEN.
    *
@@ -198,7 +234,28 @@ async function loadAuth(db: Exec, token: string, signOutCleanupOnly = false): Pr
     // effective permissions; an override never supplies another actor's roles.
     isPlatformAdmin: row.platformWide,
     lockedAt: row.s.lockedAt,
+    impersonation: row.imp ? {
+      id: row.imp.id, actorAccountId: row.imp.actorAccountId, actorSessionId: row.imp.actorSessionId,
+      subjectAccountId: row.imp.subjectAccountId, targetApp: row.imp.targetApp, mode: row.imp.mode, expiresAt: row.imp.expiresAt,
+    } : null,
   };
+}
+
+/**
+ * SCRUM-648 — what a READ-ONLY impersonation window may still send that is
+ * not a read: ending itself and the lock screen's own doors. Everything else
+ * that writes is refused before its body is parsed, its key claimed or its
+ * handler run.
+ */
+const IMPERSONATION_READ_ONLY_EXEMPT = new Set(['POST:/auth/sign-out', 'POST:/auth/lock', 'POST:/auth/unlock']);
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+export function impersonationRefusal(req: FastifyRequest): AppError | null {
+  const mark = req.auth?.impersonation;
+  if (!mark || mark.mode !== 'read_only' || READ_METHODS.has(req.method) || req.routeOptions.config?.public) return null;
+  const url = (req.routeOptions?.url ?? req.url).replace(/\/$/, '') || '/';
+  if (IMPERSONATION_READ_ONLY_EXEMPT.has(`${req.method}:${url}`)) return null;
+  return new AppError(403, 'IMPERSONATION_READ_ONLY', 'This is a read-only view-as window: nothing can be changed from it.');
 }
 
 /** Shared session resolution always enforces working-context eligibility. */
@@ -259,7 +316,11 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
 
   const initializeRequest = async (req: FastifyRequest) => {
     const token = req.cookies?.[SESSION_COOKIE];
-    try { req.auth = token ? await resolveSessionAuth(app.db, token) : null; }
+    try {
+      req.auth = token ? await resolveSessionAuth(app.db, token) : null;
+      const refused = impersonationRefusal(req);
+      if (refused) throw refused;
+    }
     catch (error) {
       // An invalid working override must not close a public sign-in or
       // readiness door. It supplies no authority to their handlers.
@@ -352,6 +413,28 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
         scope.runInAsyncScope(done, req.raw);
       });
     }, done);
+  });
+
+  /**
+   * SCRUM-648 — every request in a view-as window is an audit row of its own,
+   * reads included and refusals included: the actor really there, the subject
+   * whose session it was, the route and the answer. Never the body.
+   */
+  app.addHook('onSend', async (req, reply, payload) => {
+    const mark = req.auth?.impersonation;
+    if (!mark) return payload;
+    try {
+      await audit.record(app.db, {
+        actorAccountId: mark.actorAccountId, actorType: 'impersonated', onBehalfOf: mark.subjectAccountId,
+        operatorId: req.auth!.operatorId, branchId: req.auth!.branchId, action: 'impersonation.request',
+        entityType: 'impersonation_session', entityId: mark.id, requestId: req.id,
+        after: { method: req.method, route: req.routeOptions?.url ?? null, status: reply.statusCode, mode: mark.mode },
+        targetApp: mark.targetApp, origin: 'impersonation',
+      });
+    } catch (err) {
+      req.log.error({ err }, 'an impersonation request could not be recorded');
+    }
+    return payload;
   });
 
   app.addHook('preValidation', (req, _reply, done) => {

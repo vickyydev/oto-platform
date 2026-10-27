@@ -1,6 +1,6 @@
 import { auditLog } from '@oto/db';
 import { newId } from '@oto/shared';
-import { auditContextForActor } from './audit-context';
+import { auditContextForActor, impersonationForActor } from './audit-context';
 
 /**
  * Audit log service (SCRUM-14, CLAUDE.md §3): one helper, called from every
@@ -40,6 +40,14 @@ export interface AuditEntry {
   reason?: string | null;
   /** SCRUM-643: where the action came from — `console`, `job`. */
   origin?: string | null;
+  /**
+   * SCRUM-648: `impersonated` with `onBehalfOf` the subject, for a row
+   * written inside a view-as window. Derived from the verified session when
+   * the row is written as the subject; explicit only where no request
+   * context exists (the per-request window record).
+   */
+  actorType?: 'impersonated' | null;
+  onBehalfOf?: string | null;
 }
 
 /** Minimal insert surface shared by Db and its transaction handle. */
@@ -50,11 +58,15 @@ interface InsertCapable {
 export const audit = {
   async record(tx: unknown, entry: AuditEntry): Promise<void> {
     const context = auditContextForActor(entry.actorAccountId);
+    // A row written as the subject of a view-as window names the person who was really there.
+    const impersonated = entry.actorType ? null : impersonationForActor(entry.actorAccountId);
     await (tx as InsertCapable).insert(auditLog).values({
       id: newId(),
       operatorId: entry.operatorId ?? null,
       branchId: entry.branchId ?? null,
-      actorAccountId: entry.actorAccountId,
+      actorAccountId: impersonated ? impersonated.actorAccountId : entry.actorAccountId,
+      actorType: entry.actorType ?? (impersonated ? 'impersonated' : null),
+      onBehalfOf: entry.onBehalfOf ?? impersonated?.subjectAccountId ?? null,
       homeOperatorId: context?.homeOperatorId ?? null,
       effectiveOperatorId: context?.effectiveOperatorId ?? null,
       requestId: entry.requestId ?? null,

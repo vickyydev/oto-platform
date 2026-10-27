@@ -2,7 +2,11 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { AuthContext } from '../plugins/session';
 
 type Attribution = Readonly<{ homeOperatorId: string; effectiveOperatorId: string }>;
-type AuditContext = Readonly<{ actorAccountId: string; sessionId: string; attribution: Attribution }>;
+/** SCRUM-648: whose hands were really on a marked (impersonated) session. */
+export type ImpersonationAttribution = Readonly<{ impersonationId: string; actorAccountId: string; subjectAccountId: string }>;
+type AuditContext = Readonly<{
+  actorAccountId: string; sessionId: string; attribution: Attribution; impersonation: ImpersonationAttribution | null;
+}>;
 const contexts = new AsyncLocalStorage<AuditContext | null>();
 
 function capturedContext(auth: Readonly<AuthContext> | null): AuditContext | null {
@@ -15,8 +19,12 @@ function capturedContext(auth: Readonly<AuthContext> | null): AuditContext | nul
   const home = auth.homeOperatorId ?? auth.operatorId;
   if (!home || (override === null ? auth.operatorId !== home
     : override === home || auth.operatorId !== override)) return null;
+  const mark = auth.impersonation ?? null;
   return Object.freeze({ actorAccountId: auth.accountId, sessionId: auth.sessionId,
-    attribution: Object.freeze({ homeOperatorId: home, effectiveOperatorId: auth.operatorId }) });
+    attribution: Object.freeze({ homeOperatorId: home, effectiveOperatorId: auth.operatorId }),
+    impersonation: mark && mark.subjectAccountId === auth.accountId ? Object.freeze({
+      impersonationId: mark.id, actorAccountId: mark.actorAccountId, subjectAccountId: mark.subjectAccountId,
+    }) : null });
 }
 
 /** Called only with server-verified auth, never an audit entry or request body. */
@@ -28,4 +36,13 @@ export function runWithAuditContext<T>(auth: Readonly<AuthContext> | null, conti
 export function auditContextForActor(actorAccountId: string | null): Attribution | null {
   const context = contexts.getStore();
   return actorAccountId !== null && context?.actorAccountId === actorAccountId ? context.attribution : null;
+}
+
+/**
+ * SCRUM-648 — the impersonation behind a row written as `actorAccountId`, or
+ * null. Only the verified session's own subject is ever rewritten.
+ */
+export function impersonationForActor(actorAccountId: string | null): ImpersonationAttribution | null {
+  const context = contexts.getStore();
+  return actorAccountId !== null && context?.actorAccountId === actorAccountId ? context.impersonation : null;
 }

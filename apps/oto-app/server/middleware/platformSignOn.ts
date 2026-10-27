@@ -9,10 +9,13 @@ import { loadPlatformUserWithBranchAccess } from "../lib/platformRoleMapping";
 import {
   PLATFORM_SESSION_COOKIE,
   REFUSAL_FALLBACK,
+  impersonationRefusal,
   openPlatformToken,
+  readImpersonationMark,
   refusalMessage,
   sealPlatformToken,
   sessionTokenFromSetCookie,
+  type PlatformImpersonation,
 } from "../lib/platformSession";
 
 /**
@@ -80,6 +83,8 @@ interface PlatformLink {
    */
   preferences?: UiPreferences | null;
   otoApp?: OtoAppRoleContext;
+  /** SCRUM-648 — present only for a support administrator's view-as window. */
+  impersonation?: PlatformImpersonation;
 }
 
 declare module "express-session" {
@@ -183,13 +188,14 @@ const SEALING_SECRET = process.env.SESSION_SECRET ?? randomBytes(32).toString("h
 // --- The exchange -----------------------------------------------------------
 
 type Exchange =
-  | { ok: true; accountId: string; sessionToken: string; otoApp?: OtoAppRoleContext }
+  | { ok: true; accountId: string; sessionToken: string; otoApp?: OtoAppRoleContext; impersonation?: PlatformImpersonation }
   | { ok: false; status: number; reason: string; message: string };
 
 interface ExchangeBody {
   accountId?: unknown;
   mustChangePassword?: unknown;
   otoApp?: unknown;
+  impersonation?: unknown;
 }
 
 interface ErrorBody {
@@ -289,7 +295,9 @@ async function exchange(
   }
   try {
     const otoApp = readOtoAppRoleContext(body?.otoApp);
-    return { ok: true, accountId, sessionToken, ...(otoApp ? { otoApp } : {}) };
+    // SCRUM-648 — a malformed mark is unreadable, never "not a view-as window".
+    const impersonation = readImpersonationMark(body?.impersonation);
+    return { ok: true, accountId, sessionToken, ...(otoApp ? { otoApp } : {}), ...(impersonation ? { impersonation } : {}) };
   } catch {
     return { ok: false, status: 502, reason: "platform_unreadable", message: REFUSAL_FALLBACK };
   }
@@ -518,22 +526,31 @@ export function registerPlatformSignOn(app: Express): void {
           sealedToken: sealPlatformToken(SEALING_SECRET, req.sessionID, exchanged.sessionToken),
           preferences,
           ...(exchanged.otoApp ? { otoApp: exchanged.otoApp } : {}),
+          ...(exchanged.impersonation ? { impersonation: exchanged.impersonation } : {}),
         };
         req.session.save((saveErr) => {
           if (saveErr) return next(saveErr);
-          log().info({ userId: user.id }, "signed in from the launcher hand-off");
+          log().info({ userId: user.id, viewAs: exchanged.impersonation?.id ?? null }, "signed in from the launcher hand-off");
           res.json({ ok: true });
         });
       });
     })().catch(next);
   });
 
-  app.use((req: Request, _res: Response, next: NextFunction) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     const platform = req.session?.platform;
     if (!platform || !config) return next();
     // Only `/api`. A request for the client bundle carries no data and spends
     // no session; the first call a screen makes is where that happens.
     if (!req.path.startsWith("/api")) return next();
+
+    // SCRUM-648 — a view-as window never reaches payroll or contracts, read or write.
+    const refused = impersonationRefusal(req.path, platform.impersonation);
+    if (refused) {
+      log().warn({ viewAs: platform.impersonation?.id, path: req.path }, "a view-as window was refused a payroll or contract route");
+      res.status(refused.status).json({ reason: refused.reason, message: refused.message });
+      return;
+    }
 
     const token = openPlatformToken(SEALING_SECRET, req.sessionID, platform.sealedToken);
     if (!token) {

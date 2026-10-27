@@ -112,13 +112,13 @@ const ApprovalRefBody = z.object({
   expectedPayloadSha256: z.string().regex(/^[a-f0-9]{64}$/), confirmation: ConfirmationSchema,
 }).strict();
 
-function idempotencyKeyRequired(req: FastifyRequest) {
+export function idempotencyKeyRequired(req: FastifyRequest) {
   const key = req.headers['idempotency-key'];
   if (typeof key !== 'string' || key.length === 0 || key.length > 200) throw errors.badRequest('An Idempotency-Key is required');
 }
 
 /** Platform authority, before the replay store can answer: the permission held platform-wide (null operator scope). */
-async function requirePlatformHolder(req: FastifyRequest, permission: Permission) {
+export async function requirePlatformHolder(req: FastifyRequest, permission: Permission) {
   req.requireAuth();
   await req.requirePermission(permission, { operatorOnly: true });
   const held = (await req.effectivePermissions())
