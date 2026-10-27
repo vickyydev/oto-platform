@@ -8,6 +8,7 @@ import {
 import { errors } from '../lib/errors';
 import { PermissionDeniedError } from '../plugins/session';
 import { hasPermission, type EffectivePermission } from './permissions';
+import type { Exec } from './tx';
 
 export interface ConsoleAnalyticsFormulaRows {
   source: AnalyticsSource;
@@ -52,6 +53,42 @@ function emptyDirtyDates(): DirtyDates {
   return { total: 0, byKind: { sales: 0, hourly: 0, booth: 0, wallet: 0 }, oldestBusinessDate: null, newestMarkedAt: null };
 }
 
+export interface AnalyticsSelection {
+  /** Parks held on both console:analytics:read and analytics:read, by name. */
+  selected: { id: string; name: string; archivedAt: Date | null }[];
+  /** Requested own parks outside that reach. */
+  omitted: string[];
+  /** True when the caller named the parks rather than taking the default. */
+  explicit: boolean;
+}
+
+/**
+ * The Analytics area's one door, shared by every Console analytics read: the
+ * named parks (foreign or unknown is 404) or the live parks by default, cut to
+ * those held on both the Console and the native analytics read. None is 403.
+ */
+export async function analyticsSelectionOf(tx: Exec, input: {
+  operatorId: string;
+  effective: EffectivePermission[];
+  branchIds?: readonly string[];
+}): Promise<AnalyticsSelection> {
+  const own = await tx.select({ id: branch.id, name: branch.name, archivedAt: branch.archivedAt })
+    .from(branch).where(eq(branch.operatorId, input.operatorId)).orderBy(asc(branch.name), asc(branch.id));
+  const requested = [...new Set(input.branchIds ?? [])];
+  const candidates = requested.length ? requested.map(id => {
+    const found = own.find(park => park.id === id);
+    if (!found) throw errors.notFound('Branch not found');
+    return found;
+  }) : own.filter(park => park.archivedAt === null);
+  const consoleRead = (id: string) => hasPermission(input.effective, 'console:analytics:read', { operatorId: input.operatorId, branchId: id });
+  const nativeRead = (id: string) => hasPermission(input.effective, 'analytics:read', { operatorId: input.operatorId, branchId: id });
+  const selected = candidates.filter(park => consoleRead(park.id) && nativeRead(park.id));
+  if (!selected.length) throw new PermissionDeniedError(candidates.some(park => consoleRead(park.id)) ? 'analytics:read' : 'console:analytics:read');
+  const ids = selected.map(park => park.id);
+  const omitted = requested.length ? candidates.filter(park => !ids.includes(park.id)).map(park => park.id) : [];
+  return { selected, omitted, explicit: requested.length > 0 };
+}
+
 /** Retained metadata only. Source selection and KPI formulas remain in their native services. */
 export async function consoleAnalyticsOf(db: Db, input: {
   operatorId: string;
@@ -61,20 +98,8 @@ export async function consoleAnalyticsOf(db: Db, input: {
 }): Promise<ConsoleAnalyticsMetadata> {
   const now = input.now ?? new Date();
   return db.transaction(async tx => {
-    const own = await tx.select({ id: branch.id, name: branch.name, archivedAt: branch.archivedAt })
-      .from(branch).where(eq(branch.operatorId, input.operatorId)).orderBy(asc(branch.name), asc(branch.id));
-    const requested = [...new Set(input.branchIds ?? [])];
-    const candidates = requested.length ? requested.map(id => {
-      const found = own.find(park => park.id === id);
-      if (!found) throw errors.notFound('Branch not found');
-      return found;
-    }) : own.filter(park => park.archivedAt === null);
-    const consoleRead = (id: string) => hasPermission(input.effective, 'console:analytics:read', { operatorId: input.operatorId, branchId: id });
-    const nativeRead = (id: string) => hasPermission(input.effective, 'analytics:read', { operatorId: input.operatorId, branchId: id });
-    const selected = candidates.filter(park => consoleRead(park.id) && nativeRead(park.id));
-    if (!selected.length) throw new PermissionDeniedError(candidates.some(park => consoleRead(park.id)) ? 'analytics:read' : 'console:analytics:read');
+    const { selected, omitted } = await analyticsSelectionOf(tx, input);
     const ids = selected.map(park => park.id);
-    const omitted = requested.length ? candidates.filter(park => !ids.includes(park.id)).map(park => park.id) : [];
 
     // Both sides of each reference must belong to this operator. Independent FKs do not establish lineage.
     const switches = await tx.select({
