@@ -17,10 +17,10 @@ export const suiteControlsApi = {
   apps: () => api.get<ApiResponse<'/console/apps', 'get'>>('/console/apps'),
   releases: (offset = 0) => api.get<ApiResponse<'/console/releases', 'get'>>(`/console/releases${qs({ limit: 50, offset })}`),
   agents: (offset = 0) => api.get<ApiResponse<'/console/releases/agents', 'get'>>(`/console/releases/agents${qs({ limit: 50, offset })}`),
-  flags: () => api.get<SuiteFlags>('/console/flags'),
+  flags: () => api.get<ApiResponse<'/console/flags', 'get'>>('/console/flags'),
   /** The same resolver the consumers enforce with; writes nothing. */
   preview: (input: { key: string; scopeType: string; scopeId?: string; operatorId?: string; value: string }) =>
-    api.get<SuiteFlagPreview>(`/console/flags/preview${qs(input)}`),
+    api.get<ApiResponse<'/console/flags/preview', 'get'>>(`/console/flags/preview${qs(input)}`),
   /**
    * SCRUM-643 writes. Platform administrators only; each takes the typed
    * confirmation and a reason, and a caller-held key so a retry is the same change.
@@ -33,7 +33,7 @@ export const suiteControlsApi = {
   setSwitch: (body: ApiBody<'/console/flags', 'put'>, idempotencyKey: string) =>
     api.put<ApiResponse<'/console/flags', 'put'>>('/console/flags', body, { idempotencyKey }),
   requestSwitch: (body: SuiteFlagRequest, idempotencyKey: string) =>
-    api.post<SuiteApproval>('/console/flags/approvals', body, { idempotencyKey }),
+    api.post<ApiResponse<'/console/flags/approvals', 'post'>>('/console/flags/approvals', body, { idempotencyKey }),
   approveSwitch: (id: string, body: ApiBody<'/console/flags/approvals/{id}/approve', 'post'>, idempotencyKey: string) =>
     api.post<ApiResponse<'/console/flags/approvals/{id}/approve', 'post'>>(`/console/flags/approvals/${id}/approve`, body, { idempotencyKey }),
   applySwitch: (id: string, body: ApiBody<'/console/flags/approvals/{id}/apply', 'post'>, idempotencyKey: string) =>

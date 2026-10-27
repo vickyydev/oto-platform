@@ -110,6 +110,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
     caller:
       "the OTO App outbox pump (server/lib/platformLifecycle.ts, SCRUM-633), posting only an event ID with the operator-bound provision credential",
   },
+  {
+    prefix: '/console/deploy-events',
+    exact: true,
+    caller:
+      'the release pipeline (SCRUM-643): a deploy step posts each release’s app, version, commit and CI outcome as a platform administrator; its CI wiring is assigned at the parent story’s acceptance',
+  },
 ];
 
 /**
