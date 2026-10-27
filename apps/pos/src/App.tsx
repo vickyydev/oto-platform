@@ -25,6 +25,7 @@ import { BranchProvider } from "@/branch/BranchContext";
 import { LockScreen } from "@/components/auth/LockScreen";
 import { ChangePasswordScreen } from "@/components/auth/ChangePasswordScreen";
 import { InactivityWarning } from "@/components/auth/InactivityWarning";
+import { ImpersonationBanner } from "@/components/auth/ImpersonationBanner";
 import { MobileShell } from "@/components/mobile/MobileShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { staffThemeController } from "@/lib/themePref";
@@ -178,6 +179,8 @@ function StaffApp() {
                   </Route>
                 </Switch>
               <StaffToaster />
+              {/* SCRUM-648: a support administrator's view-as window, named over every staff screen. */}
+              <ImpersonationBanner />
               {/* Renders nothing. Registers the service worker that makes the
                   shell load with no internet, and applies a waiting build only
                   at the lock screen with no open sale (S2-06). */}

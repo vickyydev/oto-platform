@@ -56,6 +56,7 @@ const operatorValue: OperatorValue = {
   handoffError: null,
   logout: noop,
   warningActive: false,
+  viewAs: null,
   secondsLeft: 0,
   stayActive: noop,
   sessionResolved: true,
