@@ -216,6 +216,10 @@ const OPERATOR_WIDE_WRITES = [
   'PUT /benefits/templates/:role',
   'PUT /benefits/profiles/:employeeId',
   'PUT /me/session/operator', // SCRUM-640: service also requires a genuine null-scope switch assignment.
+  // SCRUM-645 / Q26: an operator's credential expiry date, and the integration
+  // test press (also behind OPS_TEST_CONTROLS) — never at one park's grant.
+  'PUT /ops/integrations/:key/expiry',
+  'POST /ops/integrations/:key/test',
 ];
 // These platform-global reads also require health permission at operator scope.
 const PLATFORM_WIDE_READS = [
