@@ -25,6 +25,13 @@ export const PERMISSIONS = [
   'console:release:read',
   'console:release:flag_manage',
   'console:release:kill_switch',
+  /**
+   * SCRUM-645 (planner ruling Q26) — Integrations. The read stays
+   * `admin:health:read`; these add the test buttons (also behind
+   * `OPS_TEST_CONTROLS`) and the owner-supplied credential expiry date.
+   */
+  'console:integration:test',
+  'console:integration:manage',
   /** Read employee pay in the OTO App when its legal entity enables platform access. */
   'hr:salary:view',
   /** Select a session's working operator; enforcement also requires a live platform-wide grant. */
