@@ -70689,6 +70689,429 @@
         }
       }
     },
+    "/ops/health": {
+      "get": {
+        "description": "Dependency checks, the job register, every box with its devices, and open alerts — read from the database, not from this process",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/alerts/{alertId}/acknowledge": {
+      "post": {
+        "description": "Take an alert — says somebody is on it, and never that it is resolved",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "alertId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/failures": {
+      "get": {
+        "description": "Runs that failed in the window, grouped by fingerprint, newest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2160,
+              "default": 24
+            },
+            "in": "query",
+            "name": "windowHours",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "http",
+                "process",
+                "job",
+                "client",
+                "adapter",
+                "device",
+                "sync",
+                "webhook",
+                "integration",
+                "console"
+              ]
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/runs": {
+      "get": {
+        "description": "The individual runs behind one fingerprint, newest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 64
+            },
+            "in": "query",
+            "name": "fingerprint",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/runs/{runId}/retry": {
+      "post": {
+        "description": "Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id), check-ins (`otoapp:attendee.checkin`, each under its own check-in id) and party edits (`otoapp:party.update`, oldest first, each under its own edit id). Nothing else is safe from here",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "runId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/quarantine": {
+      "get": {
+        "description": "Events refused at sync, newest first — which box, which event, why, and what became of it, with a keyset cursor and the count still open across the whole table. The payload itself is never returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "replayed",
+                "discarded"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "conflict",
+                "poison",
+                "epoch_regressed",
+                "sequence_gap",
+                "unknown_type",
+                "schema_too_new",
+                "actor_unknown",
+                "signature_invalid",
+                "apply_failed"
+              ]
+            },
+            "in": "query",
+            "name": "reason",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "boxId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/anomalies": {
+      "get": {
+        "description": "Events applied with something worth recording — a clock that was not trusted, a batch that arrived twice, a journal position that never came, a member created at two boxes and merged. Newest first, keyset-paginated; nothing here is waiting on anybody.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "clock_recomputed",
+                "duplicate_replay",
+                "sequence_gap",
+                "merge",
+                "epoch_regressed",
+                "late_arrival",
+                "receipt_collision",
+                "revoked_actor",
+                "wallet_overdraft",
+                "stock_oversold"
+              ]
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "boxId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/quarantine/{quarantineId}/replay": {
+      "post": {
+        "description": "Put a refused event back through the sync door it was refused at, under the rules it arrived under. A box event is verified and epoch-checked again; an event the test controls injected was never sealed by a box and replays unsigned, so the reason it comes back with is its own rather than a missing signature.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "quarantineId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/quarantine/{quarantineId}/discard": {
+      "post": {
+        "description": "Decide not to apply a refused event. The reason is required.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "note"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "quarantineId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/integrations": {
+      "get": {
+        "description": "Outside services: a name, a state, what is unset by name, and when each last ran",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/test-controls": {
+      "get": {
+        "description": "Which staging-only controls this deployment offers this caller",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/test-controls/{key}": {
+      "post": {
+        "description": "Run one staging-only control",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/demo-reset": {
+      "get": {
+        "description": "Whether the demo reset is available to this caller",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "description": "Delete the demo facts, keeping accounts and the catalogue",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "confirm": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "confirm"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/ops/alert-mutes": {
       "get": {
         "description": "The fingerprint mutes in force: who muted what, why and until when, and how many deliveries each has held back (recorded, never dropped). At most 24 hours each",
@@ -71421,429 +71844,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/ops/health": {
-      "get": {
-        "description": "Dependency checks, the job register, every box with its devices, and open alerts — read from the database, not from this process",
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/alerts/{alertId}/acknowledge": {
-      "post": {
-        "description": "Take an alert — says somebody is on it, and never that it is resolved",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "path",
-            "name": "alertId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/failures": {
-      "get": {
-        "description": "Runs that failed in the window, grouped by fingerprint, newest first",
-        "parameters": [
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 2160,
-              "default": 24
-            },
-            "in": "query",
-            "name": "windowHours",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "http",
-                "process",
-                "job",
-                "client",
-                "adapter",
-                "device",
-                "sync",
-                "webhook",
-                "integration",
-                "console"
-              ]
-            },
-            "in": "query",
-            "name": "kind",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "maxLength": 200
-            },
-            "in": "query",
-            "name": "cursor",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "default": 50
-            },
-            "in": "query",
-            "name": "limit",
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/runs": {
-      "get": {
-        "description": "The individual runs behind one fingerprint, newest first",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 4,
-              "maxLength": 64
-            },
-            "in": "query",
-            "name": "fingerprint",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "default": 20
-            },
-            "in": "query",
-            "name": "limit",
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/runs/{runId}/retry": {
-      "post": {
-        "description": "Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id), check-ins (`otoapp:attendee.checkin`, each under its own check-in id) and party edits (`otoapp:party.update`, oldest first, each under its own edit id). Nothing else is safe from here",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "path",
-            "name": "runId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/quarantine": {
-      "get": {
-        "description": "Events refused at sync, newest first — which box, which event, why, and what became of it, with a keyset cursor and the count still open across the whole table. The payload itself is never returned.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "open",
-                "replayed",
-                "discarded"
-              ]
-            },
-            "in": "query",
-            "name": "status",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "conflict",
-                "poison",
-                "epoch_regressed",
-                "sequence_gap",
-                "unknown_type",
-                "schema_too_new",
-                "actor_unknown",
-                "signature_invalid",
-                "apply_failed"
-              ]
-            },
-            "in": "query",
-            "name": "reason",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "query",
-            "name": "boxId",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "maxLength": 200
-            },
-            "in": "query",
-            "name": "cursor",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "default": 50
-            },
-            "in": "query",
-            "name": "limit",
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/anomalies": {
-      "get": {
-        "description": "Events applied with something worth recording — a clock that was not trusted, a batch that arrived twice, a journal position that never came, a member created at two boxes and merged. Newest first, keyset-paginated; nothing here is waiting on anybody.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "clock_recomputed",
-                "duplicate_replay",
-                "sequence_gap",
-                "merge",
-                "epoch_regressed",
-                "late_arrival",
-                "receipt_collision",
-                "revoked_actor",
-                "wallet_overdraft",
-                "stock_oversold"
-              ]
-            },
-            "in": "query",
-            "name": "kind",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "query",
-            "name": "boxId",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "maxLength": 200
-            },
-            "in": "query",
-            "name": "cursor",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "default": 50
-            },
-            "in": "query",
-            "name": "limit",
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/quarantine/{quarantineId}/replay": {
-      "post": {
-        "description": "Put a refused event back through the sync door it was refused at, under the rules it arrived under. A box event is verified and epoch-checked again; an event the test controls injected was never sealed by a box and replays unsigned, so the reason it comes back with is its own rather than a missing signature.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "path",
-            "name": "quarantineId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/quarantine/{quarantineId}/discard": {
-      "post": {
-        "description": "Decide not to apply a refused event. The reason is required.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "note": {
-                    "type": "string",
-                    "minLength": 3,
-                    "maxLength": 500
-                  }
-                },
-                "required": [
-                  "note"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "path",
-            "name": "quarantineId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/integrations": {
-      "get": {
-        "description": "Outside services: a name, a state, what is unset by name, and when each last ran",
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/test-controls": {
-      "get": {
-        "description": "Which staging-only controls this deployment offers this caller",
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/test-controls/{key}": {
-      "post": {
-        "description": "Run one staging-only control",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "maxLength": 40
-            },
-            "in": "path",
-            "name": "key",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      }
-    },
-    "/ops/demo-reset": {
-      "get": {
-        "description": "Whether the demo reset is available to this caller",
-        "responses": {
-          "200": {
-            "description": "Default Response"
-          }
-        }
-      },
-      "post": {
-        "description": "Delete the demo facts, keeping accounts and the catalogue",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "confirm": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "confirm"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Default Response"
           }
         }
       }

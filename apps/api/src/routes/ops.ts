@@ -58,7 +58,6 @@ import {
 import { retryAttendeeWriteBack } from '../services/event-writes';
 import { PARTY_UPDATE_RUN, retryPartyEditWriteBack } from '../services/parties';
 import { ATTENDEE_CHECKIN_RUN, retryCheckinWriteBack } from '../services/event-checkins';
-import { opsAlertRoutingRoutes } from './ops-alert-routing';
 
 /**
  * What the Console reads about how the platform is running (S2-03), and the
@@ -160,9 +159,6 @@ export async function opsRoutes(app: App): Promise<void> {
     }
     return auth;
   };
-
-  // SCRUM-644 (Q25): fingerprint mutes and alert recipients, in their own file.
-  await app.register(opsAlertRoutingRoutes);
 
   // --- Health -------------------------------------------------------------
 
