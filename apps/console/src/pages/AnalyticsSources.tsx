@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { formatTHB } from '@oto/shared/money';
+import { formatTHB } from '@oto/shared';
 import { consoleConfigurationApi, type AnalyticsMetadata, type AnalyticsSummary } from '@/api/consoleConfiguration';
 import { useSession } from '@/auth/SessionContext';
 import { ErrorNote, Loading, PermissionRequired } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { CommandBar } from '@/components/redesign/CommandBar';
 import { SelectChip } from '@/components/redesign/chips';
 import { CardShell, PageGrid } from '@/components/redesign/layout';
@@ -69,8 +68,8 @@ function AnalyticsSourcesBody() {
       <div className="flex min-w-0 flex-wrap items-end gap-3">
         <SelectChip label="Park" showLabel value={branchId} onChange={setBranchId} anyLabel="All readable parks"
           options={metadata.branches.map(park => ({ value: park.branchId, label: park.name }))} />
-        <label className="min-w-0 text-sm" htmlFor="analytics-from">From<Input id="analytics-from" type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>
-        <label className="min-w-0 text-sm" htmlFor="analytics-to">To<Input id="analytics-to" type="date" value={to} onChange={event => setTo(event.target.value)} /></label>
+        <label className="min-w-0 text-sm" htmlFor="analytics-from">From<input id="analytics-from" type="date" value={from} onChange={event => setFrom(event.target.value)} className="h-9 rounded-full border border-border bg-card px-3.5 text-[12.5px] font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring" /></label>
+        <label className="min-w-0 text-sm" htmlFor="analytics-to">To<input id="analytics-to" type="date" value={to} onChange={event => setTo(event.target.value)} className="h-9 rounded-full border border-border bg-card px-3.5 text-[12.5px] font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring" /></label>
       </div>
       {from > to && <p className="text-sm text-destructive">The start date must not be after the end date.</p>}
       {metadata.omitted.length > 0 && <p className="text-sm text-muted-foreground">{metadata.omitted.length} requested parks were outside this reading.</p>}
