@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { and, desc, eq, gt, isNull, ne } from 'drizzle-orm';
 import { account, branch, employee, fileObject, session as sessionTable } from '@oto/db';
 import {
+  ImpersonationBannerSchema,
   THEME_PREFERENCES,
   UI_LANGUAGES,
   normalizePhone,
@@ -14,7 +15,7 @@ import { holdsGrantAt, outOfBranchScope } from '../services/access-control';
 import { audit } from '../services/audit';
 import { isPlatformWide } from '../services/permissions';
 import { switchSessionOperator } from '../services/operator-switch';
-import { impersonationMarksOf, impersonationsAsSubject, type ImpersonationView } from '../services/impersonation';
+import { bannerOf, impersonationMarksOf, impersonationsAsSubject } from '../services/impersonation';
 import { opCtx, withTx } from '../services/tx';
 
 /** What `GET /me` and `PUT /me/preferences` answer as `preferences` (SCRUM-653). */
@@ -32,17 +33,8 @@ const OperatorContextShape = z.object({
   revision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 });
 
-/** SCRUM-648 — what every app's banner reads: who is really there, as whom, where, until when. */
-const ImpersonationBannerShape = z.object({
-  id: z.string().uuid(),
-  actor: z.object({ accountId: z.string().uuid(), name: z.string().nullable() }),
-  subject: z.object({ accountId: z.string().uuid(), name: z.string().nullable() }),
-  targetApp: z.enum(['pos', 'oto_app', 'radar', 'inbox']),
-  mode: z.enum(['read_only', 'write_allowed']),
-  expiresAt: z.string().datetime(),
-}).strict();
-const bannerOf = (v: ImpersonationView) => ({ id: v.id, actor: v.actor, subject: v.subject, targetApp: v.targetApp,
-  mode: v.mode, expiresAt: v.expiresAt });
+/** SCRUM-648 — what every app's banner reads: who is really there, as whom, where, until when (shared with the Inbox). */
+const ImpersonationBannerShape = ImpersonationBannerSchema;
 
 export const ImpersonationHistoryShape = z.object({
   id: z.string().uuid(),

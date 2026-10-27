@@ -327,6 +327,8 @@ export interface paths {
                                 mode: "read_only" | "write_allowed";
                                 /** Format: date-time */
                                 expiresAt: string;
+                                actorName: string | null;
+                                subjectName: string | null;
                             };
                             /** @enum {string} */
                             audience: "booth";
@@ -356,6 +358,8 @@ export interface paths {
                                 mode: "read_only" | "write_allowed";
                                 /** Format: date-time */
                                 expiresAt: string;
+                                actorName: string | null;
+                                subjectName: string | null;
                             };
                             /** @enum {string} */
                             audience: "oto_app";
@@ -391,6 +395,8 @@ export interface paths {
                                 mode: "read_only" | "write_allowed";
                                 /** Format: date-time */
                                 expiresAt: string;
+                                actorName: string | null;
+                                subjectName: string | null;
                             };
                             /** @enum {string} */
                             audience: "pos" | "console" | "radar" | "inbox";
@@ -30209,7 +30215,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator channel accounts. Needs app:inbox:access. */
+        /** @description The signed-in viewer of the Inbox: who they are, the prototype views they stand in (owner, a team, or `staff` for a reader in no team), their tabs (the ported code: the owner and reception get Team and Handled, every other view all three), every team of the operator with theirs marked, the people who can hold a slot, and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator channel accounts, and (SCRUM-648) `impersonation`: the view-as window this session is, for the banner, or null. Needs app:inbox:access. */
         get: {
             parameters: {
                 query?: never;
@@ -30261,6 +30267,26 @@ export interface paths {
                                 kb: boolean;
                                 ai: boolean;
                             };
+                            impersonation?: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            } | null;
                             simulator: {
                                 channelAccounts: {
                                     /** Format: uuid */

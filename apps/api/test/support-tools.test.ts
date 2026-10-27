@@ -25,6 +25,7 @@ const KID = 'k1';
 const SECRET = 'support-tools-test-secret-0123456789abcdef';
 const POS_ORIGIN = 'https://pos.test';
 const CONSOLE_ORIGIN = 'https://console.test';
+const INBOX_ORIGIN = 'https://inbox.test';
 const PASSWORD = 'supporttools1234';
 const MEMBER_PHONE = '+66811111111';
 const TEMPLATE = 'https://observability.test/trace?request={requestId}';
@@ -55,8 +56,8 @@ beforeAll(async () => {
     env: {
       PROCESS_ROLES: 'api',
       HANDOFF_SIGNING_KEY: `${KID}:${SECRET}`,
-      HANDOFF_APP_ORIGINS: `pos=${POS_ORIGIN},console=${CONSOLE_ORIGIN}`,
-      ALLOWED_ORIGINS: `${POS_ORIGIN},${CONSOLE_ORIGIN}`,
+      HANDOFF_APP_ORIGINS: `pos=${POS_ORIGIN},console=${CONSOLE_ORIGIN},inbox=${INBOX_ORIGIN}`,
+      ALLOWED_ORIGINS: `${POS_ORIGIN},${CONSOLE_ORIGIN},${INBOX_ORIGIN}`,
       TRACE_URL_TEMPLATE: TEMPLATE,
     },
   });
@@ -410,5 +411,57 @@ describe('SCRUM-648 audited, time-boxed impersonation', () => {
     const leftOpen = await ctx.db.select().from(impersonationSession).where(and(inArray(impersonationSession.subjectAccountId, [receptionId]),
       isNull(impersonationSession.endedAt)));
     expect(leftOpen.every(w => w.expiresAt.getTime() <= Date.now() || w.endedAt !== null)).toBe(true);
+  });
+});
+
+describe('SCRUM-648 round 2: every session read carries the window', () => {
+  let agentId: string, agent: string;
+  beforeAll(async () => {
+    agentId = newId();
+    await ctx.db.insert(s.account).values({ id: agentId, operatorId: oto, phone: '+66810648004', passwordHash: await hash(PASSWORD),
+      phoneVerifiedAt: new Date(), status: 'active' });
+    const [inboxAgent] = await ctx.db.select().from(s.role).where(and(eq(s.role.operatorId, oto), eq(s.role.name, 'inbox_agent')));
+    await ctx.db.insert(s.roleAssignment).values({ id: newId(), accountId: agentId, roleId: inboxAgent!.id, scopeType: 'operator', scopeId: oto });
+    agent = await signInAs(ctx.app, '+66810648004', PASSWORD);
+  });
+
+  it('GET /inbox/me says null on an ordinary session and names both people inside an Inbox window', async () => {
+    const own = await call(agent, 'GET', '/inbox/me');
+    expect(own.status, own.raw).toBe(200);
+    expect(own.body.impersonation).toBeNull();
+    const opened = await call(admin, 'POST', '/console/support/impersonations', { subjectAccountId: agentId, targetApp: 'inbox' }, { key: null });
+    expect(opened.status, opened.raw).toBe(200);
+    const exchanged = await call(null, 'POST', '/auth/handoff/exchange', { token: tokenOf(opened.body.launchUrl) }, { key: null, origin: INBOX_ORIGIN });
+    expect(exchanged.status, exchanged.raw).toBe(200);
+    // The exchange names both people, for an app that reads no /me of the platform's (the OTO App).
+    expect(exchanged.body.impersonation).toMatchObject({ id: opened.body.impersonation.id, actorAccountId: adminId, subjectAccountId: agentId,
+      actorName: opened.body.impersonation.actor.name, subjectName: opened.body.impersonation.subject.name });
+    const inWindow = await call(cookieOf(exchanged), 'GET', '/inbox/me');
+    expect(inWindow.status, inWindow.raw).toBe(200);
+    expect(inWindow.body.impersonation).toMatchObject({ id: opened.body.impersonation.id, targetApp: 'inbox', mode: 'read_only',
+      actor: { accountId: adminId }, subject: { accountId: agentId } });
+    expect(Date.parse(inWindow.body.impersonation.expiresAt)).toBe(Date.parse(opened.body.impersonation.expiresAt));
+    // The Inbox's own reads keep their visibility; its writes are refused like every write in a read-only window.
+    expect((await call(cookieOf(exchanged), 'GET', '/inbox/conversations')).status).toBe(200);
+    await call(admin, 'POST', `/console/support/impersonations/${opened.body.impersonation.id}/end`, {});
+    expect((await call(cookieOf(exchanged), 'GET', '/inbox/me')).status).toBe(401);
+  });
+
+  it('seeds the support role with lookup and trace and never impersonation', async () => {
+    const [support] = await ctx.db.select().from(s.role).where(and(isNull(s.role.operatorId), eq(s.role.name, 'support')));
+    expect(support).toMatchObject({ isSystem: true });
+    const perms = (await ctx.db.select().from(s.rolePermission).where(eq(s.rolePermission.roleId, support!.id))).map(r => r.permission).sort();
+    expect(perms).toEqual(['app:console:access', 'assistant:ask:use', 'console:app_registry:read', 'console:overview:read',
+      'console:release:read', 'console:support:lookup', 'console:support:trace']);
+    // A support holder can search; an impersonation start is refused, and they are never impersonatable themselves.
+    const holderId = newId();
+    await ctx.db.insert(s.account).values({ id: holderId, operatorId: oto, phone: '+66810648005', passwordHash: await hash(PASSWORD),
+      phoneVerifiedAt: new Date(), status: 'active' });
+    await ctx.db.insert(s.roleAssignment).values({ id: newId(), accountId: holderId, roleId: support!.id, scopeType: 'operator', scopeId: oto });
+    const holder = await signInAs(ctx.app, '+66810648005', PASSWORD);
+    expect((await call(holder, 'GET', `/console/support/lookup?q=${encodeURIComponent(MEMBER_PHONE)}`)).status).toBe(200);
+    expect((await call(holder, 'POST', '/console/support/impersonations', { subjectAccountId: receptionId, targetApp: 'pos' }, { key: null })).status).toBe(403);
+    const asSubject = await call(admin, 'POST', '/console/support/impersonations', { subjectAccountId: holderId, targetApp: 'pos' }, { key: null });
+    expect([asSubject.status, asSubject.body.error.code]).toEqual([403, 'IMPERSONATION_SUBJECT_PRIVILEGED']);
   });
 });

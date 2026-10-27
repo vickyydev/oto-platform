@@ -17,6 +17,7 @@ import {
 import type { App } from '../app';
 import { PermissionDeniedError } from '../plugins/session';
 import { opCtx, withTx } from '../services/tx';
+import { bannerOf, impersonationMarksOf } from '../services/impersonation';
 import { holdsAnywhere, viewerScopeOf, type InboxViewer } from '../services/inbox/read-visibility';
 import {
   conversationDetail,
@@ -70,13 +71,17 @@ export async function inboxReadRoutes(app: App): Promise<void> {
           'every other view all three), every team of the operator with theirs marked, the people who can hold a slot, ' +
           'and what they may do (`writes`, on since the reply landed; `templates` for the template settings), and — only ' +
           'where this deployment runs the inbox simulator and the viewer holds inbox:channel:manage — the simulator ' +
-          'channel accounts. Needs app:inbox:access.',
+          'channel accounts, and (SCRUM-648) `impersonation`: the view-as window this session is, for the banner, or null. ' +
+          'Needs app:inbox:access.',
         response: { 200: InboxMeSchema },
       },
     },
     async (req) => {
       const { viewer, effective } = await inboxCaller(req, 'app:inbox:access');
-      return inboxMe(app.db, viewer, effective, { simulatorEnabled: app.inboxChannels.simulatorEnabled });
+      const me = await inboxMe(app.db, viewer, effective, { simulatorEnabled: app.inboxChannels.simulatorEnabled });
+      // SCRUM-648 — the Inbox reads no /me of its own, so the view-as mark rides here.
+      const marks = await impersonationMarksOf(app.db, req.requireAuth());
+      return { ...me, impersonation: marks.impersonation ? bannerOf(marks.impersonation) : null };
     },
   );
 
