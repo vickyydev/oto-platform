@@ -14,6 +14,7 @@ import { holdsGrantAt, outOfBranchScope } from '../services/access-control';
 import { audit } from '../services/audit';
 import { isPlatformWide } from '../services/permissions';
 import { switchSessionOperator } from '../services/operator-switch';
+import { impersonationMarksOf, impersonationsAsSubject, type ImpersonationView } from '../services/impersonation';
 import { opCtx, withTx } from '../services/tx';
 
 /** What `GET /me` and `PUT /me/preferences` answer as `preferences` (SCRUM-653). */
@@ -31,6 +32,30 @@ const OperatorContextShape = z.object({
   revision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 });
 
+/** SCRUM-648 — what every app's banner reads: who is really there, as whom, where, until when. */
+const ImpersonationBannerShape = z.object({
+  id: z.string().uuid(),
+  actor: z.object({ accountId: z.string().uuid(), name: z.string().nullable() }),
+  subject: z.object({ accountId: z.string().uuid(), name: z.string().nullable() }),
+  targetApp: z.enum(['pos', 'oto_app', 'radar', 'inbox']),
+  mode: z.enum(['read_only', 'write_allowed']),
+  expiresAt: z.string().datetime(),
+}).strict();
+const bannerOf = (v: ImpersonationView) => ({ id: v.id, actor: v.actor, subject: v.subject, targetApp: v.targetApp,
+  mode: v.mode, expiresAt: v.expiresAt });
+
+export const ImpersonationHistoryShape = z.object({
+  id: z.string().uuid(),
+  actor: z.object({ accountId: z.string().uuid(), name: z.string().nullable() }),
+  subject: z.object({ accountId: z.string().uuid(), name: z.string().nullable() }),
+  targetApp: z.enum(['pos', 'oto_app', 'radar', 'inbox']),
+  mode: z.enum(['read_only', 'write_allowed']),
+  reason: z.string().nullable(), reference: z.string().nullable(), approvalId: z.string().uuid().nullable(),
+  startedAt: z.string().datetime(), expiresAt: z.string().datetime(), endedAt: z.string().datetime().nullable(),
+  endReason: z.enum(['ended', 'actor_signed_out', 'subject_signed_out']).nullable(),
+  state: z.enum(['active', 'ended', 'expired']),
+}).strict();
+
 const MeShape = z.object({
   account: z.object({ id: z.string().uuid(), phone: z.string(), status: z.enum(['invited', 'active', 'inactive']),
     mustChangePassword: z.boolean(), operatorId: z.string().uuid() }),
@@ -41,6 +66,13 @@ const MeShape = z.object({
   sessionLocked: z.boolean(),
   preferences: PreferencesShape,
   operatorContext: OperatorContextShape.extend({ sessionId: z.string().uuid() }),
+  /**
+   * SCRUM-648 — this session IS a view-as window (every app shows a fixed
+   * banner naming both people for as long as it lasts), and the windows this
+   * session has open as the actor (the Console and launcher show those).
+   */
+  impersonation: ImpersonationBannerShape.nullable(),
+  impersonating: z.array(ImpersonationBannerShape),
 });
 
 function preferencesOf(row: { uiTheme: UiPreferences['theme']; uiLanguage: UiPreferences['language'] }): UiPreferences {
@@ -66,6 +98,7 @@ export async function meRoutes(app: App): Promise<void> {
       .where(and(eq(fileObject.ownerEntityType, 'account'), eq(fileObject.ownerEntityId, acc.id)))
       .orderBy(desc(fileObject.createdAt))
       .limit(1);
+    const marks = await impersonationMarksOf(app.db, auth);
     return {
       account: {
         id: acc.id,
@@ -95,7 +128,26 @@ export async function meRoutes(app: App): Promise<void> {
         stationId: auth.stationId,
         revision: auth.operatorRevision ?? 0,
       },
+      impersonation: marks.impersonation ? bannerOf(marks.impersonation) : null,
+      impersonating: marks.impersonating.map(bannerOf),
     };
+  });
+
+  /**
+   * SCRUM-648 — every view-as window anybody opened as this account: who, into
+   * which app, why, and how it ended. The subject's own record, so it needs no
+   * permission beyond being signed in as them.
+   */
+  app.get('/impersonations', {
+    config: { auth: 'session' },
+    schema: {
+      description: 'The view-as (impersonation) windows support administrators opened as this account, newest first, with who opened each, the app, the reason and reference, and how it ended.',
+      response: { 200: z.object({ impersonations: z.array(ImpersonationHistoryShape) }) },
+    },
+  }, async (req, reply) => {
+    const auth = req.requireAuth();
+    reply.header('cache-control', 'private, no-store');
+    return { impersonations: await impersonationsAsSubject(app.db, auth.accountId) };
   });
 
   app.put('/session/operator', {

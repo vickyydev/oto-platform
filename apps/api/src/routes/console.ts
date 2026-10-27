@@ -17,6 +17,7 @@ import { consoleAnalyticsSourcesRoutes } from './console-analytics-sources';
 import { suiteControlWriteRoutes } from './suite-control-writes';
 import { suiteControlRoutes } from './suite-controls';
 import { consoleMoneyRoutes } from './console-money';
+import { consoleSupportRoutes } from './console-support';
 
 const count = z.number().int().nonnegative();
 const figures = z.object({
@@ -64,6 +65,8 @@ export async function consoleRoutes(app: App): Promise<void> {
   await app.register(suiteControlRoutes);
   await app.register(suiteControlWriteRoutes);
   await app.register(consoleMoneyRoutes);
+  // SCRUM-648: Support tools — the lookup, the trace and audited impersonation.
+  await app.register(consoleSupportRoutes);
   app.get('/overview', {
     config: { dynamicPermission: true },
     schema: {

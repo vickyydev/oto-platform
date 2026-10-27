@@ -182,6 +182,13 @@ export interface HandoffClaims {
   iss: string;
   iat: number;
   exp: number;
+  /**
+   * SCRUM-648 — the mark of a token minted for an impersonation ("view as")
+   * window: the window's id and the account really acting. Signed with the
+   * rest, so an app can see — and refuse — a view-as sign-on without asking.
+   */
+  imp?: string;
+  act?: string;
 }
 
 export const HANDOFF_ISSUER = ISSUER;
@@ -221,6 +228,8 @@ export function verifyToken(keys: HandoffKey[], token: string): HandoffClaims | 
     return null;
   }
   if (typeof claims.exp !== 'number' || typeof claims.iat !== 'number') return null;
+  if ((claims.imp !== undefined && typeof claims.imp !== 'string') || (claims.act !== undefined && typeof claims.act !== 'string')) return null;
+  if ((claims.imp === undefined) !== (claims.act === undefined)) return null;
   if (!HANDOFF_APPS.includes(claims.aud as HandoffApp)) return null;
   return claims as unknown as HandoffClaims;
 }
@@ -284,6 +293,8 @@ interface IssueOptions {
   /** The session's own cookie, kept only inside the encrypted row. */
   sessionToken: string;
   audience: HandoffApp;
+  /** SCRUM-648: the view-as window this token opens; required exactly when the session is one. */
+  impersonation?: { id: string; actorAccountId: string };
 }
 interface SealedSessionContext {
   version: 1;
@@ -359,6 +370,21 @@ function requireAppContext(auth: AuthContext, audience: HandoffApp): void {
 }
 
 /**
+ * SCRUM-648 — a view-as window's session opens exactly one app, and only
+ * through the Console's own mint: never from the launcher, never into another
+ * app. A session that is not one may not be minted a marked token.
+ */
+function requireImpersonationMatch(auth: AuthContext, audience: HandoffApp,
+  requested: { id: string; actorAccountId: string } | null): void {
+  const mark = auth.impersonation ?? null;
+  if (!mark && !requested) return;
+  if (!mark || !requested || mark.id !== requested.id || mark.actorAccountId !== requested.actorAccountId) {
+    throw new HandoffRejected('revoked', 'A view-as window opens only from the Console, into its own app');
+  }
+  if (audience !== mark.targetApp) throw new HandoffRejected('audience', 'This view-as window is for a different app');
+}
+
+/**
  * SCRUM-643 (S2-23, planner ruling Q24): a NEW hand-off into an app in
  * maintenance, or into an app whose "block new sign-ins" switch is on where
  * this session works, is refused — at the mint and again at the exchange, so
@@ -400,6 +426,7 @@ async function issueBoundHandoff(
     throw new HandoffRejected('revoked', 'The session changed while this hand-off was being issued');
   }
   requireAppContext(auth, opts.audience);
+  requireImpersonationMatch(auth, opts.audience, opts.impersonation ?? null);
   await requireAppOpenForSignOn(exec, auth, opts.audience);
   const context = boundContext(auth, opts.sessionToken);
   const key = config.keys[0]!;
@@ -426,6 +453,7 @@ async function issueBoundHandoff(
     iss: ISSUER,
     iat: Math.floor(now / 1000),
     exp: Math.floor(expiresAt.getTime() / 1000),
+    ...(auth.impersonation ? { imp: auth.impersonation.id, act: auth.impersonation.actorAccountId } : {}),
   });
 
   return {
@@ -528,6 +556,10 @@ export interface ExchangedHandoff {
   auditAuth: Readonly<AuthContext>;
   /** Present only for an OTO App identity whose operator enabled platform roles. */
   otoApp?: OtoAppRoleContext;
+  /** SCRUM-648: the view-as window this sign-on is, so the app can mark — or refuse — it. */
+  impersonation: {
+    id: string; actorAccountId: string; subjectAccountId: string; targetApp: string; mode: string; expiresAt: Date;
+  } | null;
 }
 
 /**
@@ -662,6 +694,13 @@ export async function exchangeHandoff(
         throw new HandoffRejected('revoked', 'Open the app from the launcher again', seen);
       }
       requireAppContext(auth, row.audience);
+      // SCRUM-648: the token's mark and the session's must agree exactly — a marked token
+      // for an unmarked session, or the reverse, is not something this code ever minted.
+      const mark = auth.impersonation ?? null;
+      if ((claims.imp ?? null) !== (mark?.id ?? null)
+        || (mark && (claims.act !== mark.actorAccountId || row.audience !== mark.targetApp))) {
+        throw new HandoffRejected('revoked', 'This hand-off no longer matches its view-as window', seen);
+      }
       await requireAppOpenForSignOn(tx, auth, row.audience);
       const auditAuth = Object.freeze({ ...auth });
 
@@ -687,6 +726,8 @@ export async function exchangeHandoff(
         sessionLocked: auth.lockedAt !== null,
         auditAuth,
         ...(otoApp ? { otoApp } : {}),
+        impersonation: mark ? { id: mark.id, actorAccountId: mark.actorAccountId, subjectAccountId: mark.subjectAccountId,
+          targetApp: mark.targetApp, mode: mark.mode, expiresAt: mark.expiresAt } : null,
       };
     });
   } catch (error) {

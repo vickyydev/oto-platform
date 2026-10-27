@@ -46,6 +46,15 @@ const HandoffExchangeBaseSchema = z.object({
   accountId: z.string().uuid(),
   mustChangePassword: z.boolean(),
   sessionLocked: z.boolean(),
+  /**
+   * SCRUM-648: present only when this sign-on is a view-as window opened from
+   * the Console. The app shows the banner from it for the whole window, and
+   * may refuse routes it will not open to somebody else's hands.
+   */
+  impersonation: z.object({
+    id: z.string().uuid(), actorAccountId: z.string().uuid(), subjectAccountId: z.string().uuid(),
+    targetApp: z.enum(HANDOFF_APPS), mode: z.enum(['read_only', 'write_allowed']), expiresAt: z.string().datetime(),
+  }).strict().optional(),
 });
 const HandoffExchangeResponseSchema = z.union([
   HandoffExchangeBaseSchema.extend({
@@ -344,6 +353,8 @@ export async function authRoutes(app: App): Promise<void> {
           sessionLocked: result.sessionLocked,
           ...(identity ? { identity } : {}),
           ...(result.otoApp ? { otoApp: result.otoApp } : {}),
+          ...(result.impersonation ? { impersonation: { ...result.impersonation,
+            expiresAt: result.impersonation.expiresAt.toISOString() } } : {}),
         });
       } catch (err) {
         if (err instanceof HandoffRejected) {

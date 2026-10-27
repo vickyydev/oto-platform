@@ -130,17 +130,21 @@ async function expire(tx: Tx, ctx: OpContext, row: ApprovalRow, now: Date) {
   return expired!;
 }
 
-export async function requestSuiteControlApproval(db: Db, ctx: OpContext, input: unknown) {
-  return requestApproval<SuiteControlOperation>(db, ctx, input);
-}
+type ApprovalView<O extends ApprovalOperation> = ReturnType<typeof view<O>>;
+
 /** SCRUM-648: ask a second platform administrator to approve one write-allowed impersonation. */
 export async function requestImpersonationApproval(db: Db, ctx: OpContext, input: ImpersonationWriteOperation) {
-  return requestApproval<ImpersonationWriteOperation>(db, ctx, input);
+  return requestSuiteControlApproval(db, ctx, input, 'impersonation.write');
 }
 
-async function requestApproval<O extends ApprovalOperation>(db: Db, ctx: OpContext, input: unknown) {
+// Each door asks only for its own kind of operation (SCRUM-648 shares the table with the kill switch).
+export async function requestSuiteControlApproval(db: Db, ctx: OpContext, input: unknown): Promise<ApprovalView<SuiteControlOperation>>;
+export async function requestSuiteControlApproval(db: Db, ctx: OpContext, input: unknown,
+  action: 'impersonation.write'): Promise<ApprovalView<ImpersonationWriteOperation>>;
+export async function requestSuiteControlApproval(db: Db, ctx: OpContext, input: unknown,
+  action: SuiteControlApprovalAction = 'kill_switch.set') {
   const actor = actorOf(ctx), parsed = operationSchema.safeParse(input);
-  if (!parsed.success) throw errors.badRequest('A valid intended control operation is required.');
+  if (!parsed.success || parsed.data.action !== action) throw errors.badRequest('A valid intended control operation is required.');
   const operation = parsed.data;
   const ownerCtx = { ...ctx, operatorId: operation.operatorId, branchId: null };
   return withTx(db, ownerCtx, 'suite_control.approval_request', async tx => {
@@ -152,22 +156,25 @@ async function requestApproval<O extends ApprovalOperation>(db: Db, ctx: OpConte
       requesterAccountId: actor, state: 'pending', createdAt: now, updatedAt: now,
       requestExpiresAt: new Date(now.getTime() + requestLifetimeMs) }).returning();
     await record(tx, ownerCtx, 'requested', row!);
-    return view(row!, operation as O);
+    return view(row!, operation);
   });
 }
 
-export async function approveSuiteControlApproval(db: Db, ctx: OpContext, input: unknown) {
-  return approveApproval<SuiteControlOperation>(db, ctx, input);
-}
 /** SCRUM-648: approve another administrator's write-allowed impersonation request. */
 export async function approveImpersonationApproval(db: Db, ctx: OpContext, input: unknown) {
-  return approveApproval<ImpersonationWriteOperation>(db, ctx, input);
+  return approveSuiteControlApproval(db, ctx, input, 'impersonation.write');
 }
 
-async function approveApproval<O extends ApprovalOperation>(db: Db, ctx: OpContext, input: unknown) {
+export async function approveSuiteControlApproval(db: Db, ctx: OpContext, input: unknown): Promise<ApprovalView<SuiteControlOperation>>;
+export async function approveSuiteControlApproval(db: Db, ctx: OpContext, input: unknown,
+  action: 'impersonation.write'): Promise<ApprovalView<ImpersonationWriteOperation>>;
+export async function approveSuiteControlApproval(db: Db, ctx: OpContext, input: unknown,
+  action: SuiteControlApprovalAction = 'kill_switch.set') {
   const actor = actorOf(ctx), ref = reference(input), ownerCtx = { ...ctx };
   return withTx(db, ownerCtx, 'suite_control.approval_approve', async tx => {
-    const row = await lockedApproval(tx, ref.id, ownerCtx), operation = reviewed(row, ref.expectedPayloadSha256) as O;
+    const row = await lockedApproval(tx, ref.id, ownerCtx), operation = reviewed(row, ref.expectedPayloadSha256);
+    // SCRUM-648: each door approves only its own kind of operation.
+    if (operation.action !== action) throw errors.notFound('Approval not found.');
     if (actor === row.requesterAccountId) throw errors.forbidden('A different platform administrator must approve.');
     await lockAdministrators(tx, [row.requesterAccountId, actor], PERMISSION_OF[operation.action]);
     const now = new Date(), current = await expire(tx, ownerCtx, row, now);

@@ -296,6 +296,18 @@ const PLATFORM_WIDE_WRITES = [
   'POST /console/flags/approvals/:id/approve',
   'POST /console/flags/approvals/:id/apply',
   'POST /console/deploy-events',
+  // SCRUM-648: impersonation is platform-only — the window, its write approval and its end.
+  'POST /console/support/impersonations',
+  'POST /console/support/impersonations/approvals',
+  'POST /console/support/impersonations/approvals/:id/approve',
+  'POST /console/support/impersonations/:id/end',
+];
+
+// SCRUM-648: the support lookup, trace and the impersonation card read the whole working operator.
+const SUPPORT_READS = [
+  'GET /console/support/lookup', 'HEAD /console/support/lookup',
+  'GET /console/support/trace', 'HEAD /console/support/trace',
+  'GET /console/support/impersonations', 'HEAD /console/support/impersonations',
 ];
 
 describe('operator-wide settings are changed at operator scope (SCRUM-606)', () => {
@@ -334,7 +346,7 @@ describe('operator-wide settings are changed at operator scope (SCRUM-606)', () 
       .filter((r) => r.config.target?.operator === true)
       .map((r) => `${r.method} ${r.url}`)
       .sort();
-    expect(declared).toEqual([...OPERATOR_WIDE_WRITES, ...PLATFORM_WIDE_READS, ...PLATFORM_WIDE_WRITES].sort());
+    expect(declared).toEqual([...OPERATOR_WIDE_WRITES, ...PLATFORM_WIDE_READS, ...PLATFORM_WIDE_WRITES, ...SUPPORT_READS].sort());
   });
 
   it('every platform-global suite control write is platform-wide with a named permission at operator scope (SCRUM-643)', () => {

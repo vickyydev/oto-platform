@@ -101,6 +101,44 @@ describe('Suite controls registration (SCRUM-643)', () => {
   });
 });
 
+const SUPPORT_WRITES = [
+  'POST /console/support/impersonations',
+  'POST /console/support/impersonations/approvals',
+  'POST /console/support/impersonations/approvals/:id/approve',
+  'POST /console/support/impersonations/:id/end',
+];
+
+describe('Support tools registration (SCRUM-648)', () => {
+  it('every impersonation write is platform-held before replay, typed, and reaches the audited transaction', () => {
+    const registered = routes.filter(r => MUTATING.has(r.method) && r.path.startsWith('/console/support'))
+      .map(r => `${r.method} ${r.path}`).sort();
+    expect(registered).toEqual([...SUPPORT_WRITES].sort());
+    for (const key of SUPPORT_WRITES) {
+      const route = routes.find(r => `${r.method} ${r.path}` === key)!;
+      expect(route.optionsText, key).toContain("requirePlatformHolder(req, 'console:support:impersonate')");
+      expect(route.optionsText, key).toContain('body:');
+      expect(route.optionsText, key).toContain('response:');
+      expect(reachesText(route.handlerText, text => /\bwithTx\s*\(/.test(text), functions, 3), key).toBe(true);
+      expect(reachesText(route.handlerText, text => /\baudit\.record\s*\(/.test(text), functions, 3), key).toBe(true);
+      const config = configs.get(key);
+      expect(config?.credential, key).toBeUndefined(); expect(config?.public, key).not.toBe(true);
+      // Only the window itself answers a credential; every other write takes a key.
+      if (key === 'POST /console/support/impersonations') expect(config?.secretResponse, key).toBe(true);
+      else expect(route.optionsText, key).toContain('idempotencyKeyRequired(req)');
+    }
+  });
+
+  it('the lookup and the trace are reads that write only their data_access row', () => {
+    for (const path of ['/console/support/lookup', '/console/support/trace']) {
+      const route = routes.find(r => r.method === 'GET' && r.path === path)!;
+      expect(route, path).toBeDefined();
+      expect(route.optionsText, path).toContain('querystring:');
+      expect(reachesText(route.handlerText, text => /\brecordSupportRead\s*\(/.test(text), functions, 1), path).toBe(true);
+      expect(reachesText(route.handlerText, text => /\b(?:raiseAlert|deliverAlert|recordRun|createJobRunner)\s*\(/.test(text), functions, 1), path).toBe(false);
+    }
+  });
+});
+
 describe('Operator selection write registration (SCRUM-640)', () => {
   it('uses the verified session service and its transaction/audit without a write or replay exemption', () => {
     const route = routes.find(r => r.method === 'PUT' && r.path === '/me/session/operator');
@@ -654,6 +692,12 @@ const OUTSIDE_THE_REPLAY_STORE = [
    */
   'POST /boxes/:id/claim-code [secretResponse]',
   'POST /branches/:branchId/boxes [secretResponse]',
+  /**
+   * SCRUM-648 — opening a view-as window answers the hand-off into it, a
+   * credential. A retry opens a NEW window (its own audit row, its own short
+   * session) rather than replaying a token; the old one expires unused.
+   */
+  'POST /console/support/impersonations [secretResponse]',
   /**
    * SCRUM-244 — the booth's television surface and its pairing pair.
    *

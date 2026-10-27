@@ -108,3 +108,68 @@ export const REFUSAL_FALLBACK =
 export function refusalMessage(reason: string): string {
   return REFUSALS[reason] ?? REFUSAL_FALLBACK;
 }
+
+// ─── SCRUM-648: a view-as (impersonation) sign-on ─────────────────────────────
+
+/**
+ * The mark the platform puts on an exchange when the hand-off opened a
+ * support administrator's audited "view as" window (S2-23 Support tools):
+ * the window, who is really acting, whose session it is, and when it ends.
+ * Kept on the session record, never sent to the browser as a credential.
+ */
+export interface PlatformImpersonation {
+  id: string;
+  actorAccountId: string;
+  subjectAccountId: string;
+  mode: "read_only" | "write_allowed";
+  expiresAt: string;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The exchange's `impersonation`, or null when there is none. Throws on a malformed one. */
+export function readImpersonationMark(value: unknown): PlatformImpersonation | null {
+  if (value === undefined || value === null) return null;
+  const v = value as Record<string, unknown>;
+  if (
+    typeof v !== "object" ||
+    typeof v.id !== "string" || !UUID.test(v.id) ||
+    typeof v.actorAccountId !== "string" || !UUID.test(v.actorAccountId) ||
+    typeof v.subjectAccountId !== "string" || !UUID.test(v.subjectAccountId) ||
+    (v.mode !== "read_only" && v.mode !== "write_allowed") ||
+    typeof v.expiresAt !== "string" || Number.isNaN(Date.parse(v.expiresAt))
+  ) {
+    throw new Error("malformed impersonation mark");
+  }
+  return { id: v.id, actorAccountId: v.actorAccountId, subjectAccountId: v.subjectAccountId,
+    mode: v.mode, expiresAt: v.expiresAt };
+}
+
+/**
+ * The routes this app never opens to somebody else's hands, however the window
+ * was approved: payroll, and employment contracts and letters with their
+ * signing pages (S2-23: "the OTO App refuses it for payroll and contract
+ * routes"). Matched on whole path segments, so `/api/payrolls-report` would
+ * not be caught by accident and `/api/payroll/…` always is.
+ */
+export const IMPERSONATION_REFUSED_PREFIXES = [
+  "/api/payroll",
+  "/api/contracts",
+  "/api/signing",
+  "/api/letters",
+  "/api/letter-sign",
+] as const;
+
+export const IMPERSONATION_REFUSED_MESSAGE =
+  "Payroll and contracts are not available while viewing the OTO App as somebody else.";
+
+/** A refusal for this request inside a view-as window, or null to let it through. */
+export function impersonationRefusal(
+  path: string,
+  mark: PlatformImpersonation | null | undefined,
+): { status: 403; reason: "impersonation_refused"; message: string } | null {
+  if (!mark) return null;
+  const lower = path.toLowerCase();
+  const hit = IMPERSONATION_REFUSED_PREFIXES.some((p) => lower === p || lower.startsWith(`${p}/`));
+  return hit ? { status: 403, reason: "impersonation_refused", message: IMPERSONATION_REFUSED_MESSAGE } : null;
+}
