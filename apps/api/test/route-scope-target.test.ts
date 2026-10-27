@@ -128,6 +128,24 @@ describe('Analytics drift selected parks (SCRUM-646)', () => {
   });
 });
 
+describe('Analytics sources panel park ownership (SCRUM-646 Q27)', () => {
+  it('reads bind to the operator and fresh grants; writes declare their park target', () => {
+    for (const path of ['/console/analytics/sources', '/console/analytics/sources/preview']) {
+      const route = routes.find(r => r.method === 'GET' && r.path === path);
+      expect(route, path).toBeDefined();
+      expect(configs.get(`GET ${path}`)?.dynamicPermission, path).toBe(true);
+      expect(reachesText(route!.handlerText, text => /auth\.operatorId/.test(text), functions), path).toBe(true);
+      expect(reachesText(route!.handlerText, text => /req\.effectivePermissions\s*\(/.test(text), functions), path).toBe(true);
+    }
+    expect(configs.get('PUT /console/analytics/sources/:branchId')?.target).toEqual({ branchId: 'params.branchId' });
+    expect(configs.get('POST /console/analytics/rerun')?.target).toEqual({ branchId: 'body.branchId' });
+    for (const [method, path] of [['PUT', '/console/analytics/sources/:branchId'], ['POST', '/console/analytics/rerun']] as const) {
+      const route = routes.find(r => r.method === method && r.path === path)!;
+      expect(reachesText(route.handlerText, text => /auth\.operatorId/.test(text), functions), path).toBe(true);
+    }
+  });
+});
+
 describe('Staff summary selected park (SCRUM-634)', () => {
   it('declares dynamic authority and reaches owned operator metadata before any app read', () => {
     const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');

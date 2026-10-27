@@ -86,6 +86,30 @@ describe('Platform read registration (SCRUM-639)', () => {
   });
 });
 
+describe('Console analytics sources writes (SCRUM-646 Q27 Stage 1)', () => {
+  it('switches through the existing audited service and re-runs by marks only, both keyed and transacted', () => {
+    const write = (method: string, path: string) => {
+      const route = routes.find(r => r.method === method && r.path === path);
+      expect(route, path).toBeDefined();
+      // The key and the permission are checked in preValidation, before the replay store can answer.
+      expect(route!.optionsText).toContain('preValidation: keyedWrite(');
+      expect(reachesText(route!.optionsText, text => text.includes("req.headers['idempotency-key']")
+        && text.includes('An Idempotency-Key is required') && /req\.requirePermission\(/.test(text), functions)).toBe(true);
+      expect(reachesText(route!.handlerText, text => /\bwithTx\s*\(/.test(text), functions)).toBe(true);
+      const config = configs.get(`${method} ${path}`);
+      expect(config?.secretResponse).not.toBe(true); expect(config?.replaysByOwnId).not.toBe(true);
+      return route!;
+    };
+    const switcher = write('PUT', '/console/analytics/sources/:branchId');
+    expect(reachesText(switcher.handlerText, text => /\bswitchBranchSource\s*\(/.test(text), functions)).toBe(true);
+    const rerun = write('POST', '/console/analytics/rerun');
+    expect(reachesText(rerun.handlerText, text => /analytics\.mark_dirty_date\(/.test(text), functions)).toBe(true);
+    expect(reachesText(rerun.handlerText, text => /\baudit\.record\s*\(/.test(text), functions)).toBe(true);
+    expect(reachesText(rerun.handlerText, text => /\b(?:rollupDailyBranchDay|runDailyRollupJob|createJobRunner)\s*\(|insert\(dailySummary\)|update\(dailySummary\)/.test(text), functions)).toBe(false);
+    expect(routes.some(r => /unfreeze/i.test(r.path))).toBe(false);
+  });
+});
+
 describe('Assistant settings atomic replacement (SCRUM-638)', () => {
   it('registers one typed keyed write that reaches the audited transaction, without an exemption', () => {
     const settings = routes.filter(r => r.path === '/assistant-settings');

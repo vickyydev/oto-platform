@@ -2497,6 +2497,8 @@
               "enum": [
                 "console:overview:read",
                 "console:analytics:read",
+                "console:analytics:manage_source",
+                "console:analytics:rerun",
                 "console:config:read",
                 "hr:salary:view",
                 "platform:operator:switch",
@@ -69072,6 +69074,470 @@
                     "branchIds",
                     "omitted",
                     "comparisons"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/analytics/sources": {
+      "get": {
+        "description": "Each in-scope park's analytics source as the model really is: one serving source for every date (oto_pos, pisell or papaya), Radar's independent preference, and lastEditedAt — when the switch was last edited, never an effective business date. Parks come from the Analytics read (console:analytics:read and analytics:read; foreign or unknown 404, none readable 403). mayManageSource and mayRerun report the Console write doors per park. Read-only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "whole-branch-switch"
+                      ]
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "oto_pos",
+                              "pisell",
+                              "papaya"
+                            ]
+                          },
+                          "preference": {
+                            "type": "string",
+                            "enum": [
+                              "oto_pos",
+                              "legacy",
+                              "both"
+                            ]
+                          },
+                          "lastEditedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "lastEditedBy": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "mayManageSource": {
+                            "type": "boolean"
+                          },
+                          "mayRerun": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "name",
+                          "source",
+                          "preference",
+                          "lastEditedAt",
+                          "lastEditedBy",
+                          "mayManageSource",
+                          "mayRerun"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "omitted": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "basis",
+                    "branches",
+                    "omitted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/analytics/sources/preview": {
+      "get": {
+        "description": "Read-only preview of switching one park to a proposed source. The switch is whole-branch: every date in the range is served from the proposed source; servedDays counts its stored days (a legacy source: its frozen days only) and emptyDays the days with no such row, which will show empty. newestWrittenAt is the newest write among the served rows. Never a date splice. Default range: the last 30 days ending on the park's current business date; at most 366 days. Analytics read door at the park; foreign or unknown park 404. No writes, no audit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "oto_pos",
+                "pisell",
+                "papaya"
+              ]
+            },
+            "in": "query",
+            "name": "source",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "currentSource": {
+                      "type": "string",
+                      "enum": [
+                        "oto_pos",
+                        "pisell",
+                        "papaya"
+                      ]
+                    },
+                    "proposedSource": {
+                      "type": "string",
+                      "enum": [
+                        "oto_pos",
+                        "pisell",
+                        "papaya"
+                      ]
+                    },
+                    "unchanged": {
+                      "type": "boolean"
+                    },
+                    "effect": {
+                      "type": "string",
+                      "enum": [
+                        "whole-branch"
+                      ]
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "days": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "servedDays": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "emptyDays": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "servesFrozenOnly": {
+                      "type": "boolean"
+                    },
+                    "firstServedDate": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "lastServedDate": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "nullable": true
+                    },
+                    "newestWrittenAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "currentSource",
+                    "proposedSource",
+                    "unchanged",
+                    "effect",
+                    "from",
+                    "to",
+                    "days",
+                    "servedDays",
+                    "emptyDays",
+                    "servesFrozenOnly",
+                    "firstServedDate",
+                    "lastServedDate",
+                    "newestWrittenAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/analytics/sources/{branchId}": {
+      "put": {
+        "description": "Switch one park's whole-branch serving source and Radar preference through the existing audited switch: serialised per park, audited before and after, and a request for what the park already has changes and records nothing. console:analytics:manage_source at the park; requires Idempotency-Key; foreign park 404. lastEditedAt is the edit time, never an effective date.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "oto_pos",
+                      "pisell",
+                      "papaya"
+                    ]
+                  },
+                  "preference": {
+                    "type": "string",
+                    "enum": [
+                      "oto_pos",
+                      "legacy",
+                      "both"
+                    ]
+                  }
+                },
+                "required": [
+                  "source",
+                  "preference"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "branchId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "oto_pos",
+                        "pisell",
+                        "papaya"
+                      ]
+                    },
+                    "preference": {
+                      "type": "string",
+                      "enum": [
+                        "oto_pos",
+                        "legacy",
+                        "both"
+                      ]
+                    },
+                    "lastEditedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "lastEditedBy": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "mayManageSource": {
+                      "type": "boolean"
+                    },
+                    "mayRerun": {
+                      "type": "boolean"
+                    },
+                    "changed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "name",
+                    "source",
+                    "preference",
+                    "lastEditedAt",
+                    "lastEditedBy",
+                    "mayManageSource",
+                    "mayRerun",
+                    "changed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/analytics/rerun": {
+      "post": {
+        "description": "Queue one park's own POS days, from..to (at most 92 days, none in the future), for the existing jobs process: marks analytics.dirty_date (kind sales) only, never writes a summary row and never runs the rollup inline. It recomputes our POS figures from our own records and can never regenerate a legacy system's day: a park serving a legacy source is refused (409 ANALYTICS_RERUN_LEGACY_SOURCE), and so is a range holding frozen days of the serving source (409 ANALYTICS_RERUN_FROZEN_DAYS). Audited as analytics.rerun.request. console:analytics:rerun at the park; requires Idempotency-Key; foreign park 404.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "from": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "to": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "branchId",
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "to": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "days": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "sales"
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "oto_pos"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "from",
+                    "to",
+                    "days",
+                    "kind",
+                    "source",
+                    "reason"
                   ],
                   "additionalProperties": false
                 }
