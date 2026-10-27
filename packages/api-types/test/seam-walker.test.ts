@@ -99,6 +99,12 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
       "the OTO App's server (SCRUM-539), with the operator-bound provision key whose digest the api holds",
   },
   {
+    prefix: '/inbox/ai/examples/import',
+    exact: true,
+    caller:
+      'the chat-history tool (scripts/inbox/whatsapp-history.mjs load, SCRUM-220), signed in as a person who reviews the examples queue',
+  },
+  {
     prefix: '/admin/apps/oto_app/lifecycle-deactivations',
     exact: true,
     caller:
