@@ -79,6 +79,8 @@ const IntegrationProvider = z.object({
   state: z.enum(['configured', 'missing', 'disabled', 'degraded', 'unknown']),
   missingVars: z.array(z.string()).optional(), endpoint: NullableText.optional(), lastDeliveryAt: NullableText.optional(),
   lastDeliveryOutcome: NullableText.optional(), detail: NullableText.optional(),
+  // SCRUM-645 / Q26: this read's availability, and the row's integration history.
+  availability: ReadAvailability, lastOkAt: NullableText, lastFailedAt: NullableText,
 });
 const EnvVariable = z.object({ name: z.string(), present: z.boolean(), required: z.boolean(), purpose: z.string(), provider: NullableText });
 export const IntegrationsResponse: z.ZodType<unknown> = z.object({ providers: z.array(IntegrationProvider), variables: z.array(EnvVariable) });

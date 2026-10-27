@@ -3349,6 +3349,16 @@ export interface IntegrationProvider {
   lastDeliveryAt?: string | null;
   lastDeliveryOutcome?: string | null;
   detail?: string | null;
+  /**
+   * SCRUM-645 / Q26 — whether this read of the row's evidence (its
+   * operational record, its probe, its delivery log) answered. Anything but
+   * `ok` and the row is never `configured`: what could not be read is said,
+   * never assumed.
+   */
+  availability: ReadAvailability;
+  /** Integration history: the last success and last failure the record holds, test presses included. Null when unread. */
+  lastOkAt: string | null;
+  lastFailedAt: string | null;
 }
 
 export interface EnvVariable {
@@ -3443,6 +3453,11 @@ async function suiteAppProviders(env: { HANDOFF_APP_ORIGINS: string }): Promise<
       category: 'Suite apps',
       state: health.ok ? 'configured' : 'degraded',
       endpoint: origin,
+      // SCRUM-645 / Q26: no answer at all is an unread health endpoint; an
+      // answer other than 200 was read, and is the app's own failing.
+      availability: health.status === 0 ? 'failed' : 'ok',
+      lastOkAt: null,
+      lastFailedAt: null,
       detail: health.ok
         ? null
         : health.status === 0
@@ -3477,11 +3492,22 @@ export async function integrationsSnapshot(deps: IntegrationDeps): Promise<Integ
    * has no delivery to show — and starts showing one the day a send is
    * recorded, without this file changing.
    */
-  const names = ['adapter:sms.send', deps.watchdogJob];
-  const lasts = await probe(
-    () => deps.db.select().from(opsLast).where(inArray(opsLast.name, names)),
-    [] as Array<{ name: string; lastOutcome: string; lastFinishedAt: Date | null; lastStartedAt: Date }>,
-  );
+  //
+  // SCRUM-645 / Q26 — and each row's INTEGRATION HISTORY: the last success and
+  // the last failure of everything recorded under it, the test presses
+  // (`integration:<key>.test`) included. One read for every row, through
+  // `readEvidence`: when it is refused or fails, the rows that depend on it
+  // say so (`availability`) instead of showing "never delivered".
+  const history: Record<string, string[]> = {
+    sms: ['adapter:sms.send', 'integration:sms.test'],
+    storage: ['integration:storage.test'],
+    jobs: [deps.watchdogJob],
+    alerts: ['integration:webhook.test'],
+  };
+  const names = [...new Set(Object.values(history).flat())];
+  const lastsRead = await readEvidence(() => deps.db.select().from(opsLast).where(inArray(opsLast.name, names)));
+  const lasts = lastsRead.ok ? lastsRead.value : [];
+  const historyAvailability: ReadAvailability = lastsRead.ok ? 'ok' : lastsRead.availability;
   const lastByName = new Map(lasts.map((l) => [l.name, l]));
   const lastOf = (name: string) => {
     const row = lastByName.get(name);
@@ -3491,6 +3517,21 @@ export async function integrationsSnapshot(deps: IntegrationDeps): Promise<Integ
       lastDeliveryOutcome: row.lastOutcome,
     };
   };
+  const latest = (values: Array<Date | null | undefined>): string | null => {
+    const times = values.filter((v): v is Date => v instanceof Date).map((v) => v.getTime());
+    return times.length > 0 ? new Date(Math.max(...times)).toISOString() : null;
+  };
+  const historyOf = (key: string) => {
+    const rows = (history[key] ?? []).map((name) => lastByName.get(name));
+    return {
+      availability: history[key] ? historyAvailability : ('ok' as ReadAvailability),
+      lastOkAt: latest(rows.map((row) => row?.lastOkAt)),
+      lastFailedAt: latest(rows.map((row) => row?.lastFailedAt)),
+    };
+  };
+  /** The more specific failure wins: a refusal over a failure, a failure over ok. */
+  const worst = (...verdicts: ReadAvailability[]): ReadAvailability =>
+    verdicts.includes('denied') ? 'denied' : verdicts.includes('failed') ? 'failed' : verdicts.includes('unknown') ? 'unknown' : 'ok';
 
   // --- SMS
   const smsMissing = env.SMS_ADAPTER === 'twilio' ? twilioMissing() : [];
@@ -3519,6 +3560,7 @@ export async function integrationsSnapshot(deps: IntegrationDeps): Promise<Integ
         ? 'Codes are written to the api log, not sent. A local machine only.'
         : null,
     ...lastOf('adapter:sms.send'),
+    ...historyOf('sms'),
   });
 
   // --- Object storage
@@ -3527,10 +3569,16 @@ export async function integrationsSnapshot(deps: IntegrationDeps): Promise<Integ
    * inner one wins and the card can say WHY it did not answer rather than
    * only that something took too long.
    */
-  const storageProbe = deps.storage
-    ? await probe(() => deps.storage!.probe(), { state: 'unreachable', reason: 'probe timed out' }, 6_000)
-    : null;
+  const storageRead = deps.storage ? await readEvidence(() => deps.storage!.probe(), 6_000) : null;
+  const storageProbe = !storageRead
+    ? null
+    : storageRead.ok
+      ? storageRead.value
+      : { state: 'unreachable', reason: storageRead.detail };
+  const storageHistory = historyOf('storage');
   providers.push({
+    ...storageHistory,
+    availability: worst(storageHistory.availability, storageRead && !storageRead.ok ? storageRead.availability : 'ok'),
     key: 'storage',
     name: 'Object storage (S3)',
     purpose: 'Profile photos and every uploaded file, behind short-lived signed URLs.',
@@ -3565,24 +3613,27 @@ export async function integrationsSnapshot(deps: IntegrationDeps): Promise<Integ
       ? `This process carries: ${roles.join(', ')}.`
       : `PROCESS_ROLES does not name jobs on this process (${roles.join(', ') || 'none'}), so another one runs them.`,
     ...lastOf(deps.watchdogJob),
+    ...historyOf('jobs'),
   });
 
   // --- Alert channels
   const channels = env.ALERT_CHANNELS.split(',').map((c) => c.trim()).filter(Boolean);
-  const lastDelivery = await probe(
-    () =>
-      deps.db
-        .select({
-          channel: alertDelivery.channel,
-          status: alertDelivery.status,
-          attemptedAt: alertDelivery.attemptedAt,
-        })
-        .from(alertDelivery)
-        .orderBy(desc(alertDelivery.attemptedAt))
-        .limit(1),
-    [] as Array<{ channel: string; status: string; attemptedAt: Date }>,
+  const deliveryRead = await readEvidence(() =>
+    deps.db
+      .select({
+        channel: alertDelivery.channel,
+        status: alertDelivery.status,
+        attemptedAt: alertDelivery.attemptedAt,
+      })
+      .from(alertDelivery)
+      .orderBy(desc(alertDelivery.attemptedAt))
+      .limit(1),
   );
+  const lastDelivery = deliveryRead.ok ? deliveryRead.value : [];
+  const alertsHistory = historyOf('alerts');
   providers.push({
+    ...alertsHistory,
+    availability: worst(alertsHistory.availability, deliveryRead.ok ? 'ok' : deliveryRead.availability),
     key: 'alerts',
     name: 'Alert channels',
     purpose: 'Where an alert goes when the watchdog raises one.',
@@ -3608,10 +3659,27 @@ export async function integrationsSnapshot(deps: IntegrationDeps): Promise<Integ
     state: env.SENTRY_DSN ? 'configured' : 'disabled',
     missingVars: env.SENTRY_DSN ? undefined : ['SENTRY_DSN'],
     detail: env.SENTRY_DSN ? null : 'Unset, so the reporter is a no-op and errors go to the log only.',
+    // Nothing is read for this row beyond the environment, which always answers.
+    ...historyOf('sentry'),
   });
 
   // --- The other apps in the suite
   providers.push(...(await suiteAppProviders(env)));
+
+  /**
+   * SCRUM-645 / Q26 — NEVER GREEN ON WHAT WAS NOT READ. A row whose evidence
+   * read was refused or failed may still say how it is provisioned, but it
+   * does not say `configured`: that word is a claim that it works, and the
+   * record that would back it could not be read.
+   */
+  for (const provider of providers) {
+    if (provider.availability === 'ok' || provider.state !== 'configured') continue;
+    provider.state = 'unknown';
+    const why = provider.availability === 'denied' ? 'refused' : provider.availability === 'failed' ? 'failed' : 'not attempted';
+    provider.detail = [provider.detail, `Its record could not be read just now (${why}), so it is not shown as working.`]
+      .filter(Boolean)
+      .join(' ');
+  }
 
   const onDeployment = env.DEPLOY_ENV !== 'local';
   const twilio = env.SMS_ADAPTER === 'twilio';
