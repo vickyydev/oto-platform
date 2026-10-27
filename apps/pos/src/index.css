@@ -199,3 +199,16 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/*
+ * SCRUM-648 — the view-as banner is fixed at the top at one height (2.25rem).
+ * While it shows, `html.view-as-active` starts the page below it and gives
+ * every full-height region its height back, so it never covers a header
+ * control; sticky regions read the same offset.
+ */
+html.view-as-active { --view-as-offset: 2.25rem; }
+html.view-as-active body { padding-top: var(--view-as-offset); }
+html.view-as-active .h-screen { height: calc(100vh - var(--view-as-offset)); }
+html.view-as-active .min-h-screen { min-height: calc(100vh - var(--view-as-offset)); }
+html.view-as-active .h-\[100dvh\] { height: calc(100dvh - var(--view-as-offset)); }
+html.view-as-active .min-h-\[100dvh\] { min-height: calc(100dvh - var(--view-as-offset)); }
