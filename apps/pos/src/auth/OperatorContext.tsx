@@ -14,7 +14,7 @@ import { getOperatorThemePref } from '@/mockApi';
 import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
 import { staffThemeController, useCustomerTheme } from '@/lib/themePref';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { authApi } from '@/api/platform';
+import { authApi, type PosImpersonation } from '@/api/platform';
 import { ApiError } from '@/api/client';
 import { bridgeApi, setBridgeStaffName } from '@/api/bridge';
 import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffToken';
@@ -78,6 +78,8 @@ interface OperatorContextValue {
   logout: () => void;
   /** True while the pre-logout inactivity warning is showing. */
   warningActive: boolean;
+  /** SCRUM-648 — this session is a support administrator's view-as window (banner data), or null. */
+  viewAs: PosImpersonation | null;
   /** Seconds remaining before auto-logout while the warning is active. */
   secondsLeft: number;
   /** Keep the operator logged in (resets the inactivity timer). */
@@ -197,6 +199,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const [sessionResolved, setSessionResolved] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [viewAs, setViewAs] = useState<PosImpersonation | null>(null);
 
   const [, setCustomerTheme] = useCustomerTheme();
   const { setLang } = useLanguage();
@@ -227,6 +230,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setOperator(null);
     setHeld(new Set());
     setMustChangePassword(false);
+    setViewAs(null);
     setOfflineUnlock(null);
     // The next person's theme arrives with their sign-in; nothing is written
     // to this one's account after the shift ends.
@@ -310,6 +314,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     });
     setHeld(new Set(permissions.map((p) => p.permission)));
     setMustChangePassword(me.account.mustChangePassword);
+    setViewAs(me.impersonation ?? null);
     setOperator(op);
     applyThemePrefs(op.id, me);
     return { operator: op, sessionLocked: me.sessionLocked };
@@ -489,6 +494,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       setOperator(null);
       setHeld(new Set());
       setMustChangePassword(false);
+      setViewAs(null);
     };
     window.addEventListener('oto:unauthorized', onUnauthorized);
     return () => window.removeEventListener('oto:unauthorized', onUnauthorized);
@@ -518,6 +524,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         handoffError,
         logout,
         warningActive,
+        viewAs,
         secondsLeft,
         stayActive,
         sessionResolved,

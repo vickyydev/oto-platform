@@ -40,6 +40,22 @@ export interface MeResponse {
    * api from before the column answers without it.
    */
   preferences?: UiPreferences;
+  /**
+   * SCRUM-648 — present when this session is a support administrator's
+   * audited view-as window: the till shows a fixed banner naming both people
+   * for as long as it lasts. Optional for an api from before it.
+   */
+  impersonation?: PosImpersonation | null;
+}
+
+/** SCRUM-648: who is really at this till, as whom, and until when. */
+export interface PosImpersonation {
+  id: string;
+  actor: { accountId: string; name: string | null };
+  subject: { accountId: string; name: string | null };
+  targetApp: 'pos' | 'oto_app' | 'radar' | 'inbox';
+  mode: 'read_only' | 'write_allowed';
+  expiresAt: string;
 }
 
 /** SCRUM-653 — the caller's own theme and language, either alone. */
