@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Loader2, Radar, Settings, Store } from 'lucide-react';
 import { Backdrop } from '@/components/Backdrop';
 import { BrandMark } from '@/components/BrandMark';
@@ -9,7 +9,8 @@ import { SuiteHeader } from '@/components/SuiteHeader';
 import { AppTile } from '@/components/AppTile';
 import { SignOutNote } from '@/components/SignOutNote';
 import { ThemeCycleButton } from '@/components/ThemeCycleButton';
-import { SUITE_APPS, tilesFor } from '@/suite/apps';
+import { launcherTiles, SUITE_APPS, type RegistryTile } from '@/suite/apps';
+import { suiteApi } from '@/api/platform';
 import { useSession, displayName } from '@/auth/SessionContext';
 import { greeting, inWords } from '@/lib/greeting';
 
@@ -84,10 +85,25 @@ function SignedOut() {
   );
 }
 
+/**
+ * The registry's state for this person's apps (SCRUM-643). Null until it
+ * answers, and null if it cannot: the tiles then stand exactly as they did
+ * before the registry existed, rather than vanishing over a failed read.
+ */
+function useRegistry(): [RegistryTile[] | null, () => void] {
+  const [registry, setRegistry] = useState<RegistryTile[] | null>(null);
+  const load = useCallback(() => {
+    suiteApi.apps().then((body) => setRegistry(body.apps), () => setRegistry(null));
+  }, []);
+  useEffect(load, [load]);
+  return [registry, load];
+}
+
 function SignedIn() {
   const { me, has } = useSession();
+  const [registry, reloadRegistry] = useRegistry();
 
-  const open = tilesFor(has);
+  const open = launcherTiles(has, registry);
   // Apps the account simply has no grant for are named in a line underneath, so
   // a person knows the suite is larger than their tiles and who to ask. Apps
   // gated by a second permission — the demonstration booth — are not named at
@@ -111,8 +127,8 @@ function SignedIn() {
 
         {open.length > 0 ? (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {open.map((app) => (
-              <AppTile key={app.key} app={app} />
+            {open.map((tile) => (
+              <AppTile key={tile.app.key} tile={tile} onStale={reloadRegistry} />
             ))}
           </div>
         ) : (
