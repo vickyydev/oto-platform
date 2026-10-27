@@ -12,7 +12,7 @@ import {
   threadItemKey,
   threadOf,
 } from '@/assistant/shell';
-import type { SuiteApp } from '@/suite/apps';
+import { closedForNow, launcherTiles, tileAction, type LauncherTile, type RegistryTile, type SuiteApp } from '@/suite/apps';
 
 function view(over: Partial<AskView> = {}): AskView {
   const base = {
@@ -129,5 +129,67 @@ describe('the empty thread (the test-night round, W8)', () => {
       EMPTY_THREAD_NEUTRAL_LINE,
     );
     expect(EMPTY_THREAD_NEUTRAL_LINE).toBe('Ask a question about your work; I answer from what your access can see.');
+  });
+});
+
+// SCRUM-643 — the launcher reads the suite registry (planner ruling Q24): the
+// registry orders, hides and closes tiles, but never adds one or widens a gate.
+describe('the registry on the tiles (SCRUM-643)', () => {
+  const holds =
+    (...held: Permission[]) =>
+    (p: Permission) =>
+      held.includes(p);
+  const row = (key: RegistryTile['key'], over: Partial<RegistryTile> = {}): RegistryTile => ({
+    key, sortOrder: 0, state: 'open', maintenance: null, ...over,
+  });
+  const later = '2026-10-27T12:00:00.000Z';
+
+  it('keeps every existing gate: a registry row never adds a tile the person has no grant for', () => {
+    const tiles = launcherTiles(holds('app:pos:access'), [row('pos'), row('console'), row('inbox')]);
+    expect(tiles.map((t) => t.app.key)).toEqual(['pos']);
+  });
+
+  it('keeps the booth behind its second permission whatever the registry says', () => {
+    expect(launcherTiles(holds('app:booth:access'), [row('booth')]).map((t) => t.app.key)).toEqual([]);
+    expect(launcherTiles(holds('app:booth:access', 'admin:booth:read'), [row('booth')]).map((t) => t.app.key)).toEqual(['booth']);
+  });
+
+  it('orders by the registry, hides a hidden app, and keeps static identity', () => {
+    const has = holds('app:pos:access', 'app:console:access', 'app:inbox:access');
+    const tiles = launcherTiles(has, [row('pos', { sortOrder: 30 }), row('console', { sortOrder: 10, state: 'hidden' }), row('inbox', { sortOrder: 20 })]);
+    expect(tiles.map((t) => t.app.key)).toEqual(['inbox', 'pos']);
+    expect(tiles[0]!.app.name).toBe('Inbox');
+    expect(typeof tiles[0]!.app.icon).not.toBe('undefined');
+  });
+
+  it('without a registry the tiles stand exactly as before it existed', () => {
+    const has = holds('app:pos:access', 'app:console:access');
+    expect(launcherTiles(has, null).map((t) => [t.app.key, t.state])).toEqual([['pos', 'open'], ['console', 'open']]);
+  });
+
+  it('shows maintenance with its message, and a maintenance tile opens nothing', () => {
+    const [tile] = launcherTiles(holds('app:inbox:access'), [row('inbox', { state: 'maintenance', maintenance: { message: 'Back at noon', expiresAt: later } })]);
+    expect(tile).toMatchObject({ state: 'maintenance', maintenance: { message: 'Back at noon' } });
+    expect(tileAction(tile!, Date.parse(later) - 1)).toBe('none');
+  });
+
+  it('refuses a stale maintenance tile: once its window has passed it reads the registry again instead of acting', () => {
+    const tile: LauncherTile = { app: { ...app('inbox'), origin: 'https://inbox.example' }, state: 'maintenance',
+      maintenance: { message: 'Back at noon', expiresAt: later } };
+    expect(tileAction(tile, Date.parse(later))).toBe('refresh');
+  });
+
+  it('opens only an open, deployed app; coming soon goes to its page', () => {
+    const live = { ...app('pos'), origin: 'https://pos.example' };
+    expect(tileAction({ app: live, state: 'open', maintenance: null })).toBe('open');
+    expect(tileAction({ app: live, state: 'coming_soon', maintenance: null })).toBe('soon');
+    expect(tileAction({ app: app('pos'), state: 'open', maintenance: null })).toBe('soon');
+  });
+
+  it('treats the hand-off refusals of a closed app as closed, and nothing else', () => {
+    expect(closedForNow('APP_IN_MAINTENANCE')).toBe(true);
+    expect(closedForNow('APP_SIGN_IN_BLOCKED')).toBe(true);
+    expect(closedForNow('HANDOFF_REJECTED')).toBe(false);
+    expect(closedForNow(undefined)).toBe(false);
   });
 });

@@ -151,3 +151,67 @@ export function findApp(key: string): SuiteApp | undefined {
 export function tilesFor(has: (permission: Permission) => boolean): SuiteApp[] {
   return SUITE_APPS.filter((app) => has(app.permission) && (!app.alsoRequires || has(app.alsoRequires)));
 }
+
+/**
+ * The suite registry's word on an app (SCRUM-643, `GET /suite/apps`): what the
+ * Console has set, already resolved by the API — an expired maintenance window
+ * arrives as the state it restored. It never adds a tile: the key, icon, name
+ * and both permission gates above stay this file's, so a registry row can only
+ * order a tile, hide it, mark it coming soon or put it in maintenance.
+ */
+export interface RegistryTile {
+  key: SuiteAppKey;
+  sortOrder: number;
+  state: 'open' | 'coming_soon' | 'hidden' | 'maintenance';
+  maintenance: { message: string; expiresAt: string } | null;
+}
+
+export interface LauncherTile {
+  app: SuiteApp;
+  state: 'open' | 'coming_soon' | 'maintenance';
+  maintenance: { message: string; expiresAt: string } | null;
+}
+
+/**
+ * The home page's tiles: this person's apps by the existing gates, then the
+ * registry's state and order applied to them. No registry (an older API, or a
+ * read that failed) leaves the tiles exactly as they were before it existed.
+ */
+export function launcherTiles(
+  has: (permission: Permission) => boolean,
+  registry: readonly RegistryTile[] | null,
+): LauncherTile[] {
+  const mine = tilesFor(has);
+  if (!registry) return mine.map((app) => ({ app, state: 'open', maintenance: null }));
+  const rows = new Map(registry.map((row) => [row.key, row]));
+  const tiles: Array<LauncherTile & { order: number; index: number }> = [];
+  mine.forEach((app, index) => {
+    const row = rows.get(app.key);
+    if (row?.state === 'hidden') return;
+    const state = row?.state === 'maintenance' && row.maintenance ? 'maintenance'
+      : row?.state === 'coming_soon' ? 'coming_soon' : 'open';
+    tiles.push({ app, state, maintenance: state === 'maintenance' ? row!.maintenance : null,
+      order: row?.sortOrder ?? Number.MAX_SAFE_INTEGER, index });
+  });
+  return tiles.sort((a, b) => a.order - b.order || a.index - b.index).map(({ app, state, maintenance }) => ({ app, state, maintenance }));
+}
+
+/**
+ * What pressing a tile may do. A tile in maintenance does nothing; one whose
+ * window has passed since it was drawn is stale and reads the registry again
+ * rather than acting on what it showed; one not live goes to its "coming
+ * soon" page; only an open, deployed app asks for a hand-off.
+ */
+export function tileAction(tile: LauncherTile, now: number = Date.now()): 'open' | 'soon' | 'refresh' | 'none' {
+  if (tile.state === 'maintenance') {
+    const until = Date.parse(tile.maintenance?.expiresAt ?? '');
+    return Number.isFinite(until) && until <= now ? 'refresh' : 'none';
+  }
+  if (tile.state === 'coming_soon' || !tile.app.origin) return 'soon';
+  return 'open';
+}
+
+/** The API's refusal of a NEW hand-off into an app that is closed for now (maintenance, or sign-ins blocked). */
+export function closedForNow(code: string | undefined): boolean {
+  return code === 'APP_IN_MAINTENANCE' || code === 'APP_SIGN_IN_BLOCKED';
+}

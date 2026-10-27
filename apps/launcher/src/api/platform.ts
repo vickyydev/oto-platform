@@ -91,6 +91,15 @@ export const handoffApi = {
   issue: (app: SuiteAppKey) => api.post<IssuedHandoff>('/auth/handoff', { app }),
 };
 
+/**
+ * SCRUM-643 — the suite registry's state for this person's own apps: tile
+ * state, order and any maintenance message. Read with the session alone; no
+ * Console permission is involved.
+ */
+export const suiteApi = {
+  apps: () => api.get<ApiResponse<'/suite/apps', 'get'>>('/suite/apps'),
+};
+
 export interface AuditEntry {
   id: string;
   action: string;
