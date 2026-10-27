@@ -30822,6 +30822,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/ai/examples/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Import 1–50 examples from outside the inbox — the park’s own chat history, de-identified before it is sent. Each names its intent (one of the assistant’s, else 409 INTENT_UNKNOWN), its language (th, en, ru), its verdict, the customer text (1–500) and, for should_answer, the good reply (1–800; else 409 GOOD_REPLY_REQUIRED). Each lands PROPOSED with no source links and waits in the examples queue: nothing reaches the assistant until a person approves it. All or nothing: an item whose text still looks like personal data — a phone number or another long number, an e-mail, a web address with a query string, a messaging handle such as "line: @x" — is refused 400 PERSONAL_DATA_FOUND naming its index and field, and nothing is saved. Ids are caller-named: an id already naming one of the caller’s examples is a replay of it (counted in `replayed`, nothing written); one naming any other record is 409 ID_IN_USE. Needs inbox:kb:manage with operator reach. Audited as inbox.ai_example.create per example and inbox.ai_example.import for the request (counts and ids — never the words). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        examples: {
+                            /** Format: uuid */
+                            id?: string;
+                            customerText: string;
+                            goodReply?: string | null;
+                            /** @enum {string} */
+                            verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                            intent: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            created: number;
+                            replayed: number;
+                            examples: {
+                                /** Format: uuid */
+                                id: string;
+                                intent: string;
+                                /** @enum {string} */
+                                language: "th" | "en" | "ru";
+                                customerText: string;
+                                goodReply: string | null;
+                                /** @enum {string} */
+                                verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                                /** @enum {string} */
+                                status: "proposed" | "approved" | "rejected";
+                                /** Format: uuid */
+                                sourceMessageId: string | null;
+                                /** Format: uuid */
+                                sourceConversationId: string | null;
+                                /** Format: uuid */
+                                proposedByAccountId: string;
+                                /** Format: uuid */
+                                approvedByAccountId: string | null;
+                                approvedAt: string | null;
+                                deidentifiedConfirmed: boolean;
+                                createdAt: string;
+                                updatedAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbox/ai/examples/{id}": {
         parameters: {
             query?: never;

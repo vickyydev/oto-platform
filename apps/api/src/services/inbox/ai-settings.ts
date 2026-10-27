@@ -7,6 +7,8 @@ import {
   type InboxAiChannelAccount,
   type InboxAiExample,
   type InboxAiExampleCreate,
+  type InboxAiExampleImport,
+  type InboxAiExampleImportResult,
   type InboxAiExamplePatch,
   type InboxAiMode,
   type InboxAiPause,
@@ -24,6 +26,7 @@ import { claimClientId, markReplay } from '../client-id';
 import { hasPermission, type EffectivePermission } from '../permissions';
 import type { Exec, Tx } from '../tx';
 import { aiEligibility, cancelAiForThread } from './ai-turns';
+import { personalDataIn } from './personal-data';
 import { loadVisibleConversation, type InboxViewer } from './read-visibility';
 
 /**
@@ -750,6 +753,125 @@ export async function deleteExample(tx: Tx, ctx: SettingsCtx, id: string): Promi
     after: { deleted: true },
   });
   return { id: before.id, deleted: true };
+}
+
+/**
+ * Import examples from outside the inbox (SCRUM-220: the park's own WhatsApp
+ * history, de-identified by `scripts/inbox/whatsapp-history.mjs`). Each one
+ * lands PROPOSED with no source links — there is no thread behind it — and
+ * waits in the queue for a person to review and approve it; nothing here
+ * reaches the assistant on its own.
+ *
+ * All or nothing: every item is checked before anything is written — its
+ * intent is one of the assistant's, a should_answer carries its reply, and
+ * neither text still looks like personal data (`personalDataIn`) — and the
+ * first that fails names its index. A caller-named id that already names
+ * this caller's example is a replay of that one (nothing written for it); one
+ * naming any other record is 409 ID_IN_USE. Audited per example as
+ * `inbox.ai_example.create` (enums and lengths) and once for the request as
+ * `inbox.ai_example.import` (counts and ids) — never the words.
+ */
+export async function importExamples(tx: Tx, ctx: SettingsCtx, input: InboxAiExampleImport): Promise<InboxAiExampleImportResult> {
+  const sentIds = input.examples.map((x) => x.id).filter((id): id is string => !!id);
+  if (new Set(sentIds).size !== sentIds.length) {
+    throw errors.badRequest('Two examples in this import carry the same id. Nothing was saved.');
+  }
+  input.examples.forEach((x, index) => {
+    if (!INTENTS.has(x.intent)) {
+      throw errors.conflict('INTENT_UNKNOWN', `Example ${index + 1}: ${EXAMPLE_MESSAGES.intentNotKnown} Nothing was saved.`, {
+        index,
+        intents: [...AI_INTENTS],
+      });
+    }
+    if (x.verdict === 'should_answer' && !x.goodReply) {
+      throw errors.conflict('GOOD_REPLY_REQUIRED', `Example ${index + 1}: ${EXAMPLE_MESSAGES.goodReplyRequired} Nothing was saved.`, { index });
+    }
+    for (const [field, label] of [['customerText', 'the customer text'], ['goodReply', 'the good reply']] as const) {
+      const kind = personalDataIn(x[field]);
+      if (kind) {
+        throw new AppError(
+          400,
+          'PERSONAL_DATA_FOUND',
+          `Example ${index + 1}: ${label} still looks like it holds ${kind}. Remove it and send the import again. Nothing was saved.`,
+          { index, field, kind },
+        );
+      }
+    }
+  });
+
+  const out: InboxAiExample[] = [];
+  const createdIds: string[] = [];
+  const replayedIds: string[] = [];
+  for (const x of input.examples) {
+    const claim = await claimClientId(
+      x.id,
+      async (id) => (await tx.select().from(aiExample).where(eq(aiExample.id, id)).limit(1))[0],
+      (row) => row.operatorId === ctx.operatorId && row.proposedByAccountId === ctx.accountId,
+    );
+    if (claim.replay) {
+      replayedIds.push(claim.id);
+      out.push(exampleView(claim.row));
+      continue;
+    }
+    const [made] = await tx
+      .insert(aiExample)
+      .values({
+        id: claim.id,
+        operatorId: ctx.operatorId,
+        intent: x.intent,
+        language: x.language,
+        customerText: x.customerText,
+        goodReply: x.goodReply ?? null,
+        verdict: x.verdict,
+        sourceMessageId: null,
+        sourceConversationId: null,
+        status: 'proposed',
+        proposedByAccountId: ctx.accountId,
+        deidentifiedConfirmed: false,
+        createdAt: ctx.now,
+        updatedAt: ctx.now,
+      })
+      .returning();
+    await audit.record(tx, {
+      actorAccountId: ctx.accountId,
+      action: 'inbox.ai_example.create',
+      entityType: 'inbox.ai_example',
+      entityId: made!.id,
+      operatorId: ctx.operatorId,
+      branchId: null,
+      requestId: ctx.requestId,
+      after: { ...exampleAudit(made!), imported: true },
+    });
+    createdIds.push(made!.id);
+    out.push(exampleView(made!));
+  }
+
+  if (createdIds.length > 0) {
+    const tally = (key: 'language' | 'verdict') =>
+      input.examples.reduce<Record<string, number>>((acc, x) => ({ ...acc, [x[key]]: (acc[x[key]] ?? 0) + 1 }), {});
+    // The request's own row, filed under its first new example's id (an
+    // import has no id of its own): counts and ids, never the words.
+    await audit.record(tx, {
+      actorAccountId: ctx.accountId,
+      action: 'inbox.ai_example.import',
+      entityType: 'inbox.ai_example_import',
+      entityId: createdIds[0]!,
+      operatorId: ctx.operatorId,
+      branchId: null,
+      requestId: ctx.requestId,
+      after: {
+        received: input.examples.length,
+        created: createdIds.length,
+        replayed: replayedIds.length,
+        createdIds,
+        replayedIds,
+        byLanguage: tally('language'),
+        byVerdict: tally('verdict'),
+      },
+    });
+  }
+  const result: InboxAiExampleImportResult = { created: createdIds.length, replayed: replayedIds.length, examples: out };
+  return createdIds.length === 0 ? markReplay(result) : result;
 }
 
 // --- The controls ----------------------------------------------------------------------------

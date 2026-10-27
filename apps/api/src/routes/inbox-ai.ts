@@ -6,6 +6,8 @@ import {
   InboxAiExampleApproveBodySchema,
   InboxAiExampleCreateSchema,
   InboxAiExampleDeletedSchema,
+  InboxAiExampleImportResultSchema,
+  InboxAiExampleImportSchema,
   InboxAiExampleListQuerySchema,
   InboxAiExampleListSchema,
   InboxAiExamplePatchSchema,
@@ -34,6 +36,7 @@ import {
   createExample,
   createKb,
   deleteExample,
+  importExamples,
   listAiChannelAccounts,
   listExamples,
   listKb,
@@ -59,6 +62,7 @@ import {
  *   POST  /inbox/kb/{id}/archive                  archive                    "
  *   GET   /inbox/ai/examples                      the examples queue         inbox:kb:manage, operator reach
  *   POST  /inbox/ai/examples                      "Correct the assistant"    reply on the message's thread
+ *   POST  /inbox/ai/examples/import               load from chat history     inbox:kb:manage, operator reach
  *   PATCH /inbox/ai/examples/{id}                 edit a proposed one        inbox:kb:manage, operator reach
  *   POST  /inbox/ai/examples/{id}/approve         approve (de-identified)    "
  *   POST  /inbox/ai/examples/{id}/reject          reject                     "
@@ -263,6 +267,37 @@ export async function inboxAiRoutes(app: App): Promise<void> {
       const { auth, effective } = await callerHolding(req, 'inbox:conversation:reply');
       const made = await withTx(app.db, opCtx(req), 'inbox.ai_example.create', (tx) =>
         createExample(tx, ctxOf(req, auth), viewersOf(auth, effective), req.body),
+      );
+      if (wasReplay(made)) reply.header(REPLAY_HEADER, 'true');
+      return made;
+    },
+  );
+
+  app.post(
+    '/ai/examples/import',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Import 1–50 examples from outside the inbox — the park’s own chat history, de-identified before it is ' +
+          'sent. Each names its intent (one of the assistant’s, else 409 INTENT_UNKNOWN), its language (th, en, ru), ' +
+          'its verdict, the customer text (1–500) and, for should_answer, the good reply (1–800; else 409 ' +
+          'GOOD_REPLY_REQUIRED). Each lands PROPOSED with no source links and waits in the examples queue: nothing ' +
+          'reaches the assistant until a person approves it. All or nothing: an item whose text still looks like ' +
+          'personal data — a phone number or another long number, an e-mail, a web address with a query string, a ' +
+          'messaging handle such as "line: @x" — is refused 400 PERSONAL_DATA_FOUND naming its index and field, ' +
+          'and nothing is saved. Ids are caller-named: an id already naming one of the caller’s examples is a ' +
+          'replay of it (counted in `replayed`, nothing written); one naming any other record is 409 ID_IN_USE. ' +
+          'Needs inbox:kb:manage with operator reach. Audited as inbox.ai_example.create per example and ' +
+          'inbox.ai_example.import for the request (counts and ids — never the words).',
+        body: InboxAiExampleImportSchema,
+        response: { 200: InboxAiExampleImportResultSchema },
+      },
+    },
+    async (req, reply) => {
+      const { auth } = await queueCaller(req);
+      const made = await withTx(app.db, opCtx(req), 'inbox.ai_example.import', (tx) =>
+        importExamples(tx, ctxOf(req, auth), req.body),
       );
       if (wasReplay(made)) reply.header(REPLAY_HEADER, 'true');
       return made;

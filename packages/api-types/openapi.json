@@ -76541,6 +76541,199 @@
         }
       }
     },
+    "/inbox/ai/examples/import": {
+      "post": {
+        "description": "Import 1–50 examples from outside the inbox — the park’s own chat history, de-identified before it is sent. Each names its intent (one of the assistant’s, else 409 INTENT_UNKNOWN), its language (th, en, ru), its verdict, the customer text (1–500) and, for should_answer, the good reply (1–800; else 409 GOOD_REPLY_REQUIRED). Each lands PROPOSED with no source links and waits in the examples queue: nothing reaches the assistant until a person approves it. All or nothing: an item whose text still looks like personal data — a phone number or another long number, an e-mail, a web address with a query string, a messaging handle such as \"line: @x\" — is refused 400 PERSONAL_DATA_FOUND naming its index and field, and nothing is saved. Ids are caller-named: an id already naming one of the caller’s examples is a replay of it (counted in `replayed`, nothing written); one naming any other record is 409 ID_IN_USE. Needs inbox:kb:manage with operator reach. Audited as inbox.ai_example.create per example and inbox.ai_example.import for the request (counts and ids — never the words).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "examples": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "customerText": {
+                          "type": "string"
+                        },
+                        "goodReply": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "verdict": {
+                          "type": "string",
+                          "enum": [
+                            "should_answer",
+                            "should_handover",
+                            "should_stay_silent"
+                          ]
+                        },
+                        "intent": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                        },
+                        "language": {
+                          "type": "string",
+                          "enum": [
+                            "th",
+                            "en",
+                            "ru"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "customerText",
+                        "verdict",
+                        "intent",
+                        "language"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 50
+                  }
+                },
+                "required": [
+                  "examples"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "created": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "replayed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "examples": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "intent": {
+                            "type": "string"
+                          },
+                          "language": {
+                            "type": "string",
+                            "enum": [
+                              "th",
+                              "en",
+                              "ru"
+                            ]
+                          },
+                          "customerText": {
+                            "type": "string"
+                          },
+                          "goodReply": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "verdict": {
+                            "type": "string",
+                            "enum": [
+                              "should_answer",
+                              "should_handover",
+                              "should_stay_silent"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "proposed",
+                              "approved",
+                              "rejected"
+                            ]
+                          },
+                          "sourceMessageId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "sourceConversationId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "proposedByAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "approvedByAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "approvedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "deidentifiedConfirmed": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "intent",
+                          "language",
+                          "customerText",
+                          "goodReply",
+                          "verdict",
+                          "status",
+                          "sourceMessageId",
+                          "sourceConversationId",
+                          "proposedByAccountId",
+                          "approvedByAccountId",
+                          "approvedAt",
+                          "deidentifiedConfirmed",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "created",
+                    "replayed",
+                    "examples"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/inbox/ai/examples/{id}": {
       "patch": {
         "description": "Edit a PROPOSED example: the customer text, the good reply, the verdict, the intent or the language. Otherwise 409 EXAMPLE_NOT_PROPOSED. A should_answer verdict needs a good reply (409 GOOD_REPLY_REQUIRED). Needs inbox:kb:manage with operator reach.",

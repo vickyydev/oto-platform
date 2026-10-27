@@ -189,6 +189,46 @@ export const InboxAiExampleApproveBodySchema = z.object({
 
 export const InboxAiExampleDeletedSchema = z.object({ id: Uuid, deleted: z.literal(true) });
 
+/** The most examples one import may carry. */
+export const INBOX_AI_EXAMPLE_IMPORT_MAX = 50;
+
+/**
+ * One example loaded from outside the inbox — the park's own chat history,
+ * already de-identified by the tool that made it (`scripts/inbox/whatsapp-history.mjs`).
+ * Unlike "Correct the assistant" it names no message: intent and language are
+ * the caller's to say. It lands PROPOSED, for the queue's review.
+ */
+export const InboxAiExampleImportItemSchema = z.object({
+  /** Caller-named, so a resend is the same example; absent, the platform names it. */
+  id: Uuid.optional(),
+  customerText: chars(1, 500, 'the customer text'),
+  /** Required for should_answer; may be absent for a handover or a silence. */
+  goodReply: chars(1, 800, 'the good reply').nullable().optional(),
+  verdict: z.enum(INBOX_AI_EXAMPLE_VERDICTS),
+  /** One of the assistant's intents (409 INTENT_UNKNOWN otherwise). */
+  intent: Intent,
+  language: z.enum(INBOX_AI_CONTENT_LANGUAGES),
+});
+export type InboxAiExampleImportItem = z.infer<typeof InboxAiExampleImportItemSchema>;
+
+export const InboxAiExampleImportSchema = z.object({
+  examples: z
+    .array(InboxAiExampleImportItemSchema)
+    .min(1, 'send at least one example')
+    .max(INBOX_AI_EXAMPLE_IMPORT_MAX, `send at most ${INBOX_AI_EXAMPLE_IMPORT_MAX} examples at a time`),
+});
+export type InboxAiExampleImport = z.infer<typeof InboxAiExampleImportSchema>;
+
+export const InboxAiExampleImportResultSchema = z.object({
+  /** Examples written by this request. */
+  created: z.number().int().min(0),
+  /** Examples whose caller-named id already named this caller's example: nothing written for them. */
+  replayed: z.number().int().min(0),
+  /** Every example of the request as it now stands, in the request's order. */
+  examples: z.array(InboxAiExampleSchema),
+});
+export type InboxAiExampleImportResult = z.infer<typeof InboxAiExampleImportResultSchema>;
+
 // --- The controls (§D.4) ---------------------------------------------------------------------
 
 export const InboxAiChannelAccountSchema = z.object({
