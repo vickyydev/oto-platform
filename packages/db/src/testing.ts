@@ -8,6 +8,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
+import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -135,7 +136,21 @@ async function ensureServer(): Promise<string> {
   }
   const { default: EmbeddedPostgres } = await import('embedded-postgres');
   const dataDir = mkdtempSync(join(tmpdir(), 'oto-pg-'));
-  const port = 54330 + Math.floor(Math.random() * 1000);
+  // Ask the OS for a free port instead of drawing from 54330..55329: that
+  // range overlaps Windows' reserved ports (e.g. 54873..54972), where bind
+  // fails with "Permission denied" and the whole test file flakes.
+  const port = await new Promise<number>((resolvePort, reject) => {
+    const probe = createServer();
+    probe.once('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const address = probe.address();
+      if (address === null || typeof address === 'string') {
+        probe.close(() => reject(new Error('could not probe a free port')));
+        return;
+      }
+      probe.close(() => resolvePort(address.port));
+    });
+  });
   const instance = new EmbeddedPostgres({
     databaseDir: dataDir,
     user: 'oto',
