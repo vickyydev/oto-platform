@@ -16,6 +16,13 @@ export interface AuditEntry {
   after?: unknown;
   operatorId?: string | null;
   branchId?: string | null;
+  /**
+   * SCRUM-644 (Q25): the app a producer labels its write with, and the
+   * activity category (`data_access`, `denial`). Optional and additive: a
+   * caller that does not label writes exactly what it wrote before.
+   */
+  sourceApp?: string | null;
+  category?: string | null;
   requestId?: string | null;
   /**
    * `x-oto-action-id`, minted where the person tapped and carried PWA → box →
@@ -68,6 +75,8 @@ export const audit = {
       entityId: entry.entityId,
       before: entry.before ?? null,
       after: entry.after ?? null,
+      sourceApp: entry.sourceApp ?? null,
+      category: entry.category ?? null,
     });
   },
 };
