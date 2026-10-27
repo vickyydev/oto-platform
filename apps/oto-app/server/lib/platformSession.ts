@@ -162,14 +162,30 @@ export const IMPERSONATION_REFUSED_PREFIXES = [
 
 export const IMPERSONATION_REFUSED_MESSAGE =
   "Payroll and contracts are not available while viewing the OTO App as somebody else.";
+export const IMPERSONATION_READ_ONLY_MESSAGE =
+  "This is a read-only view-as window: nothing can be changed from it.";
 
-/** A refusal for this request inside a view-as window, or null to let it through. */
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+/** Ending the window from inside it stays possible, read-only or not. */
+const READ_ONLY_EXEMPT = new Set(["/api/logout", "/api/auth/logout"]);
+
+/**
+ * A refusal for this request inside a view-as window, or null to let it
+ * through: payroll and contracts always, and every write while the window is
+ * read-only — the platform refuses its own writes the same way; this app's
+ * writes never pass through the platform, so it says so itself.
+ */
 export function impersonationRefusal(
   path: string,
   mark: PlatformImpersonation | null | undefined,
-): { status: 403; reason: "impersonation_refused"; message: string } | null {
+  method = "GET",
+): { status: 403; reason: "impersonation_refused" | "impersonation_read_only"; message: string } | null {
   if (!mark) return null;
   const lower = path.toLowerCase();
   const hit = IMPERSONATION_REFUSED_PREFIXES.some((p) => lower === p || lower.startsWith(`${p}/`));
-  return hit ? { status: 403, reason: "impersonation_refused", message: IMPERSONATION_REFUSED_MESSAGE } : null;
+  if (hit) return { status: 403, reason: "impersonation_refused", message: IMPERSONATION_REFUSED_MESSAGE };
+  if (mark.mode === "read_only" && !READ_METHODS.has(method.toUpperCase()) && !READ_ONLY_EXEMPT.has(lower)) {
+    return { status: 403, reason: "impersonation_read_only", message: IMPERSONATION_READ_ONLY_MESSAGE };
+  }
+  return null;
 }
