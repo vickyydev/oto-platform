@@ -29,6 +29,9 @@ export const suiteControlsApi = {
     api.put<ApiResponse<'/console/apps/{key}/maintenance', 'put'>>(`/console/apps/${app}/maintenance`, body, { idempotencyKey }),
   clearMaintenance: (app: AppKey, body: ApiBody<'/console/apps/{key}/maintenance/clear', 'post'>, idempotencyKey: string) =>
     api.post<ApiResponse<'/console/apps/{key}/maintenance/clear', 'post'>>(`/console/apps/${app}/maintenance/clear`, body, { idempotencyKey }),
+  /** Direct set, only when the server reports no second approval for kill switches (CONSOLE_DUAL_CONTROL). */
+  setSwitch: (body: ApiBody<'/console/flags', 'put'>, idempotencyKey: string) =>
+    api.put<ApiResponse<'/console/flags', 'put'>>('/console/flags', body, { idempotencyKey }),
   requestSwitch: (body: SuiteFlagRequest, idempotencyKey: string) =>
     api.post<SuiteApproval>('/console/flags/approvals', body, { idempotencyKey }),
   approveSwitch: (id: string, body: ApiBody<'/console/flags/approvals/{id}/approve', 'post'>, idempotencyKey: string) =>
