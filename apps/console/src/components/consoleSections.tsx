@@ -38,9 +38,9 @@ export interface ConsoleNavGroup {
 /** Existing pages keep their permissions and their old addresses. */
 export const CONSOLE_SECTIONS: ConsoleSection[] = [
   { id: 'apps', path: '/organisation/apps', label: 'Apps', icon: Plug,
-    description: 'The recorded suite app registry, origins, tile states and maintenance details.', permission: 'console:app_registry:read' },
+    description: 'The suite app registry, origins, tile states and maintenance windows.', permission: 'console:app_registry:read' },
   { id: 'releases', path: '/watch/releases', label: 'Releases', icon: Activity,
-    description: 'Recorded app deployment history, versions, commits and CI outcomes.', permission: 'console:release:read' },
+    description: 'Kill switches, feature flags, deployment history and box agent versions.', permission: 'console:release:read' },
   { id: 'inventory', path: '/catalogue/inventory', label: 'Inventory', icon: Ticket,
     description: 'Stock items, variants, counts and stock locations at a park.' },
   { id: 'members', path: '/catalogue/members', label: 'Members', icon: Users,
