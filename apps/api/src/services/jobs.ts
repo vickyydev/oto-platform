@@ -37,7 +37,6 @@ import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
   buildAlertChannels,
-  deliverAlert,
   fleetHealth,
   purgeOldOpsRuns,
   purgeResolvedAlerts,
@@ -46,6 +45,8 @@ import {
   resolveAlert,
   type AlertChannel,
 } from './ops';
+// SCRUM-644 (Q25): fingerprint mutes and recipients, consulted before any delivery.
+import { deliverRoutedAlert } from './alert-routing';
 import {
   purgeOldStationEvents,
   purgeOldSyncAnomalies,
@@ -317,7 +318,7 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     // these to stop reading them.
     if (raised.outcome === 'opened') {
       summary.opened += 1;
-      await deliverAlert(
+      await deliverRoutedAlert(
         db,
         channels,
         { alertId: raised.id, key, category, severity, subject, summary: summaryLine, event: 'opened' },
@@ -342,7 +343,7 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     if (!resolved) return;
     summary.resolved += 1;
     if (resolved.wasNotified) {
-      await deliverAlert(
+      await deliverRoutedAlert(
         db,
         channels,
         {
