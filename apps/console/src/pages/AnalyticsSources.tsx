@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { formatTHB } from '@oto/shared';
 import {
-  consoleConfigurationApi, type AnalyticsDrift, type AnalyticsMetadata, type AnalyticsSummary, type DriftComparison,
+  consoleConfigurationApi, type AnalyticsDrift, type AnalyticsMetadata, type AnalyticsSources, type AnalyticsSummary, type DriftComparison,
 } from '@/api/consoleConfiguration';
 import { useSession } from '@/auth/SessionContext';
 import { ErrorNote, Loading, PermissionRequired } from '@/components/Panel';
@@ -13,6 +13,7 @@ import { CardShell, PageGrid } from '@/components/redesign/layout';
 import { EmptyNote, StatTile, UnreadNote } from '@/components/redesign/StatTile';
 import { formatExact } from '@/lib/time';
 import { useWorkingAuthority } from '@/lib/workingAuthority';
+import { SourcesPanel } from './AnalyticsSourcesPanel';
 import { RadarTile } from './Reports';
 
 const sources = { oto_pos: 'OTO POS', pisell: 'Pisell', papaya: 'Papaya' };
@@ -41,6 +42,9 @@ function AnalyticsSourcesBody() {
   const [drift, setDrift] = useState<AnalyticsDrift | null>(null);
   const [driftError, setDriftError] = useState<string | null>(null);
   const [driftRefresh, setDriftRefresh] = useState(0);
+  const [parkSources, setParkSources] = useState<AnalyticsSources | null>(null);
+  const [sourcesError, setSourcesError] = useState<string | null>(null);
+  const [sourcesRefresh, setSourcesRefresh] = useState(0);
   useEffect(() => {
     let live = true;
     setMetadata(null); setError(null);
@@ -74,6 +78,16 @@ function AnalyticsSourcesBody() {
     });
     return () => { live = false; };
   }, [branchId, refresh, driftRefresh, working.run, working.isCurrent]);
+  useEffect(() => {
+    let live = true;
+    setParkSources(null); setSourcesError(null);
+    void working.run(() => consoleConfigurationApi.sources(branchId ? [branchId] : undefined)).then(answer => {
+      if (live && working.isCurrent()) setParkSources(answer);
+    }).catch((failure: unknown) => {
+      if (live && working.isCurrent()) setSourcesError(failure instanceof Error ? failure.message : 'The report sources could not be read.');
+    });
+    return () => { live = false; };
+  }, [branchId, refresh, sourcesRefresh, working.run, working.isCurrent]);
   const parks = metadata?.branches.filter(park => !branchId || park.branchId === branchId) ?? [];
   return <>
     <CommandBar sectionId="analytics" actions={<Button variant="outline" onClick={() => setRefresh(value => value + 1)}>Refresh</Button>} />
@@ -127,6 +141,8 @@ function AnalyticsSourcesBody() {
           <p className="text-sm text-muted-foreground">Sales {park.dirtyDates.byKind.sales} · Hourly {park.dirtyDates.byKind.hourly} · Booth {park.dirtyDates.byKind.booth} · Wallet {park.dirtyDates.byKind.wallet}. Queue counts include claimed rows.</p>
         </CardShell>)}</PageGrid>
       </>}
+      <SourcesPanel sources={parkSources} error={sourcesError} onRetry={() => setSourcesRefresh(value => value + 1)}
+        onChanged={() => setRefresh(value => value + 1)} />
       <DriftPanel drift={drift} error={driftError} parks={metadata.branches}
         onRetry={() => setDriftRefresh(value => value + 1)} />
     </>}
