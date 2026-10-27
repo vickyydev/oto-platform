@@ -13,6 +13,7 @@ Code is read here, then integrated into `apps/*` and `packages/*` deliberately.
 | `imports/_db/` | The production **schema** file and **data dump(s)** of the existing Postgres. |
 | `imports/_vendor-docs/` | Device and provider documents: card terminal integration specs, gate controller protocol, wristband and receipt printer command manuals, 2C2P documentation. |
 | `imports/oto-pos/` | The original Oto POS Replit prototype that `apps/pos` was ported from. |
+| `imports/whatsapp-history/` | WhatsApp Business chat exports (`.txt`, or the `.zip` WhatsApp makes) for `scripts/inbox/whatsapp-history.mjs`, which seeds the assistant's examples. Its outputs (`pairs.json`, `selected.json`, `kb-gaps.md`) are written here too. Real customer conversations: never committed, never shared. |
 
 ## Rules for a drop
 

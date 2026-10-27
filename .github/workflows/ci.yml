@@ -103,6 +103,12 @@ jobs:
       - name: No screen reads mock members
         if: steps.changes.outputs.workspace == 'true'
         run: node scripts/check-no-mock-members.mjs
+      # The chat-history tool that seeds the assistant's examples (SCRUM-220):
+      # its parser, de-identification and load step, on fictional data and a
+      # stub platform on localhost. Plain Node, no database, no network.
+      - name: Chat-history tool tests
+        if: steps.changes.outputs.workspace == 'true'
+        run: node --test scripts/inbox/whatsapp-history.test.mjs
       # The front ends' types and the seam walker read packages/api-types,
       # generated from the api's own route schemas (SCRUM-272). A schema
       # changed without regenerating fails here, naming the routes that moved;
