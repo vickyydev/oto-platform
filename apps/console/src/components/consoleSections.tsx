@@ -1,6 +1,6 @@
 import {
   Activity, BarChart3, Building2, CalendarCheck, FerrisWheel, HeartPulse,
-  LayoutDashboard, MessagesSquare, Plug, Router, Shield, Ticket,
+  LayoutDashboard, LifeBuoy, MessagesSquare, Plug, Router, Shield, Ticket,
   TriangleAlert, Users, type LucideIcon,
 } from 'lucide-react';
 import type { Permission } from '@oto/shared/permissions';
@@ -41,6 +41,10 @@ export const CONSOLE_SECTIONS: ConsoleSection[] = [
     description: 'The suite app registry, origins, tile states and maintenance windows.', permission: 'console:app_registry:read' },
   { id: 'releases', path: '/watch/releases', label: 'Releases', icon: Activity,
     description: 'Kill switches, feature flags, deployment history and box agent versions.', permission: 'console:release:read' },
+  // SCRUM-648: `/support` stays the alias the Money oversight trace links open.
+  { id: 'support', path: '/watch/support', label: 'Support', icon: LifeBuoy,
+    description: 'Find anything across the suite, trace what happened to one sale, and view an app as a staff account.',
+    permission: 'console:support:lookup' },
   { id: 'inventory', path: '/catalogue/inventory', label: 'Inventory', icon: Ticket,
     description: 'Stock items, variants, counts and stock locations at a park.' },
   { id: 'members', path: '/catalogue/members', label: 'Members', icon: Users,
@@ -301,8 +305,8 @@ export const consoleNav: ConsoleNavGroup[] = [
   {
     id: 'watch', label: 'Watch', icon: Activity,
     description: 'Health, failures, integrations, the activity log and recorded releases.',
-    gate: { any: ['admin:health:read', 'admin:audit:read', 'console:release:read'] },
-    sections: pages('health', 'failures', 'integrations', 'activity', 'releases'),
+    gate: { any: ['admin:health:read', 'admin:audit:read', 'console:release:read', 'console:support:lookup'] },
+    sections: pages('health', 'failures', 'integrations', 'activity', 'releases', 'support'),
   },
   {
     id: 'platform', label: 'Platform', icon: Shield,

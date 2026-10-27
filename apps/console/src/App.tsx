@@ -46,6 +46,7 @@ import { TeamsRouting } from '@/pages/TeamsRouting';
 import { AssistantSettings } from '@/pages/AssistantSettings';
 import { Operations } from '@/pages/Operations';
 import { Staff } from '@/pages/Staff';
+import { Support } from '@/pages/Support';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -192,6 +193,7 @@ const pageElements: Record<string, ReactElement> = {
   devices: <Devices />, branches: <Branches />, bookings: <Bookings />,
   booths: <Booths />, 'booth-report': <BoothReport />, vouchers: <Vouchers />,
   'voucher-types': <VoucherTypes />, integrations: <Integrations />,
+  support: <Support />,
 };
 
 function Routes() {
