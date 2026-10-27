@@ -68936,6 +68936,2146 @@
         }
       }
     },
+    "/suite/apps": {
+      "get": {
+        "description": "The launcher's read of the suite registry: the effective tile state and any maintenance message of each app the signed-in person already holds `app:<key>:access` for. No Console permission is needed and no origin or service detail is returned.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "apps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "console",
+                              "oto_app",
+                              "radar",
+                              "booth",
+                              "inbox"
+                            ]
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "coming_soon",
+                              "hidden",
+                              "maintenance"
+                            ]
+                          },
+                          "maintenance": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "expiresAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "message",
+                              "expiresAt"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "sortOrder",
+                          "state",
+                          "maintenance"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "apps"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/flags": {
+      "get": {
+        "description": "The typed flag and kill-switch catalogue (unsupported switches are listed but cannot be set), every stored override with whether it has expired, and the open two-admin approvals. Expired overrides already resolve to the catalogue default.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "maxTtlMinutes": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "defaultTtlMinutes": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "killSwitchDualControl": {
+                      "type": "boolean"
+                    },
+                    "catalogue": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "flagKey": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "feature",
+                              "kill_switch"
+                            ]
+                          },
+                          "targetApp": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "console",
+                              "oto_app",
+                              "radar",
+                              "booth",
+                              "inbox"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "effect": {
+                            "type": "string"
+                          },
+                          "valueType": {
+                            "type": "string",
+                            "enum": [
+                              "boolean",
+                              "enum"
+                            ]
+                          },
+                          "values": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "nullable": true
+                          },
+                          "defaultValue": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            ]
+                          },
+                          "scopes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "platform",
+                                "operator",
+                                "branch",
+                                "station"
+                              ]
+                            }
+                          },
+                          "supported": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "flagKey",
+                          "kind",
+                          "targetApp",
+                          "label",
+                          "effect",
+                          "valueType",
+                          "values",
+                          "defaultValue",
+                          "scopes",
+                          "supported"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "overrides": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "flagKey": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "feature",
+                              "kill_switch"
+                            ]
+                          },
+                          "targetApp": {
+                            "type": "string",
+                            "enum": [
+                              "pos",
+                              "console",
+                              "oto_app",
+                              "radar",
+                              "booth",
+                              "inbox"
+                            ]
+                          },
+                          "scopeType": {
+                            "type": "string",
+                            "enum": [
+                              "platform",
+                              "operator",
+                              "branch",
+                              "station"
+                            ]
+                          },
+                          "scopeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "operatorId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            ]
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "updatedBy": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "exclusiveMinimum": true,
+                            "minimum": 0
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "expired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "flagKey",
+                          "kind",
+                          "targetApp",
+                          "scopeType",
+                          "scopeId",
+                          "operatorId",
+                          "value",
+                          "expiresAt",
+                          "reason",
+                          "updatedBy",
+                          "revision",
+                          "updatedAt",
+                          "expired"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "approvals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "approved",
+                              "consumed",
+                              "expired"
+                            ]
+                          },
+                          "payloadSha256": {
+                            "type": "string"
+                          },
+                          "requesterAccountId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "approverAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "operation": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "requestExpiresAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "state",
+                          "payloadSha256",
+                          "requesterAccountId",
+                          "approverAccountId",
+                          "operation",
+                          "createdAt",
+                          "requestExpiresAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "maxTtlMinutes",
+                    "defaultTtlMinutes",
+                    "killSwitchDualControl",
+                    "catalogue",
+                    "overrides",
+                    "approvals"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Set a supported flag at one scope after reviewing its preview. A kill switch carries an expiry (default 60 minutes, at most KILL_SWITCH_MAX_TTL_MIN) and, while CONSOLE_DUAL_CONTROL names kill_switch, is refused here with SECOND_APPROVAL_REQUIRED: request and apply it through /console/flags/approvals. Unknown and unsupported keys are refused. Typed confirmation of the key; requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "scopeType": {
+                    "type": "string",
+                    "enum": [
+                      "platform",
+                      "operator",
+                      "branch",
+                      "station"
+                    ]
+                  },
+                  "scopeId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "operatorId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "value": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      }
+                    ]
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "confirmation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "key",
+                  "scopeType",
+                  "scopeId",
+                  "operatorId",
+                  "value",
+                  "reason",
+                  "expectedRevision",
+                  "confirmation"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "flag": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "flagKey": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "feature",
+                            "kill_switch"
+                          ]
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "console",
+                            "oto_app",
+                            "radar",
+                            "booth",
+                            "inbox"
+                          ]
+                        },
+                        "scopeType": {
+                          "type": "string",
+                          "enum": [
+                            "platform",
+                            "operator",
+                            "branch",
+                            "station"
+                          ]
+                        },
+                        "scopeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "operatorId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            }
+                          ]
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "updatedBy": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "flagKey",
+                        "kind",
+                        "targetApp",
+                        "scopeType",
+                        "scopeId",
+                        "operatorId",
+                        "value",
+                        "expiresAt",
+                        "reason",
+                        "updatedBy",
+                        "revision",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "flag"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/flags/preview": {
+      "get": {
+        "description": "Blast-radius preview: what setting this switch would change at every live park and station it reaches, computed by the same resolver enforcement uses, and how many staff sessions are open there. Writes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "in": "query",
+            "name": "key",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "platform",
+                "operator",
+                "branch",
+                "station"
+              ]
+            },
+            "in": "query",
+            "name": "scopeType",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "scopeId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "operatorId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "query",
+            "name": "value",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "flagKey": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "effect": {
+                      "type": "string"
+                    },
+                    "targetApp": {
+                      "type": "string",
+                      "enum": [
+                        "pos",
+                        "console",
+                        "oto_app",
+                        "radar",
+                        "booth",
+                        "inbox"
+                      ]
+                    },
+                    "scopeType": {
+                      "type": "string",
+                      "enum": [
+                        "platform",
+                        "operator",
+                        "branch",
+                        "station"
+                      ]
+                    },
+                    "scopeId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "operatorId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        }
+                      ]
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "operatorId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "current": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            ]
+                          },
+                          "after": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "name",
+                          "operatorId",
+                          "current",
+                          "after"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "stations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stationId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "current": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            ]
+                          },
+                          "after": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "stationId",
+                          "name",
+                          "branchId",
+                          "current",
+                          "after"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "openSessions": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "changes": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "flagKey",
+                    "label",
+                    "effect",
+                    "targetApp",
+                    "scopeType",
+                    "scopeId",
+                    "operatorId",
+                    "value",
+                    "branches",
+                    "stations",
+                    "openSessions",
+                    "changes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apps/{key}/maintenance": {
+      "put": {
+        "description": "Put one app into maintenance (or change its open window): the launcher tile shows the message and new hand-offs into this app are refused with APP_IN_MAINTENANCE. Existing sessions, platform sign-in and other apps are untouched. Platform administrator only; typed confirmation of the app key, a reason, and an expiry within KILL_SWITCH_MAX_TTL_MIN (default 60 minutes). Requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "confirmation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "message",
+                  "reason",
+                  "expectedRevision",
+                  "confirmation"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pos",
+                "console",
+                "oto_app",
+                "radar",
+                "booth",
+                "inbox"
+              ]
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "app": {
+                      "type": "object",
+                      "properties": {
+                        "appKey": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "console",
+                            "oto_app",
+                            "radar",
+                            "booth",
+                            "inbox"
+                          ]
+                        },
+                        "tileState": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "coming_soon",
+                            "hidden",
+                            "maintenance"
+                          ]
+                        },
+                        "maintenanceMessage": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "maintenanceExpiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "maintenanceRestoreState": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "coming_soon",
+                            "hidden",
+                            "maintenance"
+                          ],
+                          "nullable": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "appKey",
+                        "tileState",
+                        "maintenanceMessage",
+                        "maintenanceExpiresAt",
+                        "maintenanceRestoreState",
+                        "revision"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "app"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apps/{key}/maintenance/clear": {
+      "post": {
+        "description": "End an app's maintenance now and restore the tile state it replaced. Platform administrator only; typed confirmation of the app key and a reason. Requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "confirmation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "reason",
+                  "expectedRevision",
+                  "confirmation"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pos",
+                "console",
+                "oto_app",
+                "radar",
+                "booth",
+                "inbox"
+              ]
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "app": {
+                      "type": "object",
+                      "properties": {
+                        "appKey": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "console",
+                            "oto_app",
+                            "radar",
+                            "booth",
+                            "inbox"
+                          ]
+                        },
+                        "tileState": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "coming_soon",
+                            "hidden",
+                            "maintenance"
+                          ]
+                        },
+                        "maintenanceMessage": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "maintenanceExpiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "maintenanceRestoreState": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "coming_soon",
+                            "hidden",
+                            "maintenance"
+                          ],
+                          "nullable": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "appKey",
+                        "tileState",
+                        "maintenanceMessage",
+                        "maintenanceExpiresAt",
+                        "maintenanceRestoreState",
+                        "revision"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "app"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/flags/clear": {
+      "post": {
+        "description": "Return a flag at one scope to normal now; the catalogue default applies at once. Platform administrator only; typed confirmation of the key and a reason. Requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "scopeType": {
+                    "type": "string",
+                    "enum": [
+                      "platform",
+                      "operator",
+                      "branch",
+                      "station"
+                    ]
+                  },
+                  "scopeId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "operatorId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "confirmation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "key",
+                  "scopeType",
+                  "scopeId",
+                  "operatorId",
+                  "expectedRevision",
+                  "reason",
+                  "confirmation"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "flagKey": {
+                      "type": "string"
+                    },
+                    "cleared": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "flagKey": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "feature",
+                            "kill_switch"
+                          ]
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "console",
+                            "oto_app",
+                            "radar",
+                            "booth",
+                            "inbox"
+                          ]
+                        },
+                        "scopeType": {
+                          "type": "string",
+                          "enum": [
+                            "platform",
+                            "operator",
+                            "branch",
+                            "station"
+                          ]
+                        },
+                        "scopeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "operatorId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            }
+                          ]
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "updatedBy": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "flagKey",
+                        "kind",
+                        "targetApp",
+                        "scopeType",
+                        "scopeId",
+                        "operatorId",
+                        "value",
+                        "expiresAt",
+                        "reason",
+                        "updatedBy",
+                        "revision",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "flagKey",
+                    "cleared"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/flags/approvals": {
+      "post": {
+        "description": "Ask a second platform administrator to approve one exact kill-switch change. The change is validated now (catalogue, supported, scope lineage, value, expiry) and bound by its digest; a different administrator must approve it within ten minutes, and either of the two then applies it. Typed confirmation of the key; requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "scopeType": {
+                    "type": "string",
+                    "enum": [
+                      "platform",
+                      "operator",
+                      "branch",
+                      "station"
+                    ]
+                  },
+                  "scopeId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "operatorId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "value": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      }
+                    ]
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "confirmation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "key",
+                  "scopeType",
+                  "scopeId",
+                  "operatorId",
+                  "value",
+                  "reason",
+                  "expectedRevision",
+                  "confirmation"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "consumed",
+                        "expired"
+                      ]
+                    },
+                    "payloadSha256": {
+                      "type": "string"
+                    },
+                    "operatorId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "requesterAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "approverAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "operation": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "enum": [
+                            1
+                          ]
+                        },
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "kill_switch.set"
+                          ]
+                        },
+                        "flagKey": {
+                          "type": "string"
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "console",
+                            "oto_app",
+                            "radar",
+                            "booth",
+                            "inbox"
+                          ]
+                        },
+                        "scopeType": {
+                          "type": "string",
+                          "enum": [
+                            "platform",
+                            "operator",
+                            "branch",
+                            "station"
+                          ]
+                        },
+                        "scopeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "operatorId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "expectedRevision": {
+                          "type": "integer"
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            }
+                          ]
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "action",
+                        "flagKey",
+                        "targetApp",
+                        "scopeType",
+                        "scopeId",
+                        "operatorId",
+                        "expectedRevision",
+                        "value",
+                        "expiresAt",
+                        "reason"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestExpiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "payloadSha256",
+                    "operatorId",
+                    "requesterAccountId",
+                    "approverAccountId",
+                    "operation",
+                    "createdAt",
+                    "requestExpiresAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/flags/approvals/{id}/approve": {
+      "post": {
+        "description": "Approve another platform administrator's exact reviewed kill-switch change within ten minutes of its request. The requester cannot approve their own, and an expired request is recorded as expired. Typed confirmation of the key; requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedPayloadSha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "confirmation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "expectedPayloadSha256",
+                  "confirmation"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "consumed",
+                        "expired"
+                      ]
+                    },
+                    "payloadSha256": {
+                      "type": "string"
+                    },
+                    "operatorId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "requesterAccountId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "approverAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "operation": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "enum": [
+                            1
+                          ]
+                        },
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "kill_switch.set"
+                          ]
+                        },
+                        "flagKey": {
+                          "type": "string"
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "console",
+                            "oto_app",
+                            "radar",
+                            "booth",
+                            "inbox"
+                          ]
+                        },
+                        "scopeType": {
+                          "type": "string",
+                          "enum": [
+                            "platform",
+                            "operator",
+                            "branch",
+                            "station"
+                          ]
+                        },
+                        "scopeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "operatorId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "expectedRevision": {
+                          "type": "integer"
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "enum": [
+                                "null"
+                              ],
+                              "nullable": true
+                            }
+                          ]
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "action",
+                        "flagKey",
+                        "targetApp",
+                        "scopeType",
+                        "scopeId",
+                        "operatorId",
+                        "expectedRevision",
+                        "value",
+                        "expiresAt",
+                        "reason"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "requestExpiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "payloadSha256",
+                    "operatorId",
+                    "requesterAccountId",
+                    "approverAccountId",
+                    "operation",
+                    "createdAt",
+                    "requestExpiresAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/flags/approvals/{id}/apply": {
+      "post": {
+        "description": "Apply an approved kill-switch change, by its requester or its approver, before the ten-minute approval and the switch's own expiry pass. Catalogue, lineage, value, revision and maximum expiry are checked again in the transaction that consumes the approval. Requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedPayloadSha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "confirmation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "expectedPayloadSha256",
+                  "confirmation"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "flag": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "flagKey": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "feature",
+                            "kill_switch"
+                          ]
+                        },
+                        "targetApp": {
+                          "type": "string",
+                          "enum": [
+                            "pos",
+                            "console",
+                            "oto_app",
+                            "radar",
+                            "booth",
+                            "inbox"
+                          ]
+                        },
+                        "scopeType": {
+                          "type": "string",
+                          "enum": [
+                            "platform",
+                            "operator",
+                            "branch",
+                            "station"
+                          ]
+                        },
+                        "scopeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "operatorId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            }
+                          ]
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "reason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "updatedBy": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "flagKey",
+                        "kind",
+                        "targetApp",
+                        "scopeType",
+                        "scopeId",
+                        "operatorId",
+                        "value",
+                        "expiresAt",
+                        "reason",
+                        "updatedBy",
+                        "revision",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "approval": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "consumed",
+                            "expired"
+                          ]
+                        },
+                        "payloadSha256": {
+                          "type": "string"
+                        },
+                        "operatorId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "requesterAccountId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "approverAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "operation": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "enum": [
+                                1
+                              ]
+                            },
+                            "action": {
+                              "type": "string",
+                              "enum": [
+                                "kill_switch.set"
+                              ]
+                            },
+                            "flagKey": {
+                              "type": "string"
+                            },
+                            "targetApp": {
+                              "type": "string",
+                              "enum": [
+                                "pos",
+                                "console",
+                                "oto_app",
+                                "radar",
+                                "booth",
+                                "inbox"
+                              ]
+                            },
+                            "scopeType": {
+                              "type": "string",
+                              "enum": [
+                                "platform",
+                                "operator",
+                                "branch",
+                                "station"
+                              ]
+                            },
+                            "scopeId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "nullable": true
+                            },
+                            "operatorId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "nullable": true
+                            },
+                            "expectedRevision": {
+                              "type": "integer"
+                            },
+                            "value": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "enum": [
+                                    "null"
+                                  ],
+                                  "nullable": true
+                                }
+                              ]
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "reason": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "action",
+                            "flagKey",
+                            "targetApp",
+                            "scopeType",
+                            "scopeId",
+                            "operatorId",
+                            "expectedRevision",
+                            "value",
+                            "expiresAt",
+                            "reason"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "requestExpiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "state",
+                        "payloadSha256",
+                        "operatorId",
+                        "requesterAccountId",
+                        "approverAccountId",
+                        "operation",
+                        "createdAt",
+                        "requestExpiresAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "flag",
+                    "approval"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/deploy-events": {
+      "post": {
+        "description": "Record one deployment fact for the release history exactly as supplied, under a caller-minted id (the same event again answers the same; a different event under that id is refused). Starts no deploy and infers nothing: an unknown version, commit, CI result or time stays null. Platform administrator only; requires Idempotency-Key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "app": {
+                    "type": "string",
+                    "enum": [
+                      "pos",
+                      "console",
+                      "oto_app",
+                      "radar",
+                      "booth",
+                      "inbox"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z_]{1,39}$"
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "nullable": true
+                  },
+                  "commit": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{7,40}$",
+                    "nullable": true
+                  },
+                  "ciGreen": {
+                    "type": "boolean",
+                    "nullable": true
+                  },
+                  "deployedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "app",
+                  "status",
+                  "version",
+                  "commit",
+                  "ciGreen",
+                  "deployedAt"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "replay": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "replay"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/overview": {
       "get": {
         "description": "Today at the live parks within console:overview:read reach, independent of the session seat. The optional branchId selects one reachable park. Revenue and guests use each park’s business date, selected analytics source and stored rollup, with its provisional and freshness marks. Bookings count every state for that visit date. Inbox unanswered reuses its existing rule; alerts are unresolved. These park counts exclude branchless Inbox conversations and operator/platform alerts. Offline boxes use their reported offline status at any hour; alerting hours are unchanged. Summary-only authority: linked screens retain their own permissions. Foreign, absent or archived park: 404; own unreachable park: 403.",

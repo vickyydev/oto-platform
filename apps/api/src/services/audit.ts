@@ -34,6 +34,12 @@ export interface AuditEntry {
    * shorter-lived one. The pointer has to outlive what it points at.
    */
   sourceEventId?: string | null;
+  /** SCRUM-643: the suite app a Console action reached into (S2-23). */
+  targetApp?: string | null;
+  /** SCRUM-643: the reason an action demanded, where it demanded one. */
+  reason?: string | null;
+  /** SCRUM-643: where the action came from — `console`, `job`. */
+  origin?: string | null;
 }
 
 /** Minimal insert surface shared by Db and its transaction handle. */
@@ -54,6 +60,9 @@ export const audit = {
       requestId: entry.requestId ?? null,
       actionId: entry.actionId ?? null,
       sourceEventId: entry.sourceEventId ?? null,
+      targetApp: entry.targetApp ?? null,
+      reason: entry.reason ?? null,
+      origin: entry.origin ?? null,
       action: entry.action,
       entityType: entry.entityType,
       entityId: entry.entityId,

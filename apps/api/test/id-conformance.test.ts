@@ -421,6 +421,19 @@ describe('every create names its record where OD-12 says (SCRUM-270)', () => {
     expect(app.routeRegistry.some(r => r.url === '/staff/summary' && r.method === 'POST')).toBe(false);
   });
 
+  it('suite controls act on fixed keys; a deploy event takes the caller\'s id and an approval is the platform\'s record (SCRUM-643)', () => {
+    const deploy = routes.find(r => r.method === 'POST' && r.path === '/console/deploy-events')!;
+    expect(deploy.optionsText).toContain('id: ClientIdSchema');
+    expect(reachesText(deploy.handlerText, text => /\bid:\s*input\.id\b/.test(text), functions, 2)).toBe(true);
+    // Maintenance names an app by its registry key and a flag write a catalogue key: neither mints a record id in the route.
+    for (const key of ['PUT /console/apps/:key/maintenance', 'POST /console/apps/:key/maintenance/clear', 'PUT /console/flags',
+      'POST /console/flags/clear', 'POST /console/flags/approvals/:id/approve', 'POST /console/flags/approvals/:id/apply']) {
+      const route = routes.find(r => `${r.method} ${r.path}` === key)!;
+      expect(route, key).toBeDefined();
+      expect(reachesText(route.handlerText, MINTS_ITS_ID, functions, 1), key).toBe(false);
+    }
+  });
+
   it('every route on either list is a route the app serves', () => {
     const live = new Set(app.routeRegistry.map((r) => `${r.method} ${r.url}`));
     expect([...CALLER_NAMED, ...Object.keys(PLATFORM_NAMED)].filter((k) => !live.has(k)).sort()).toEqual([]);

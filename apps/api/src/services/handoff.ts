@@ -24,6 +24,7 @@ import { runWithAuditContext } from './audit-context';
 import { holdsAtOwnDepartment } from './access-control';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
 import { reconcileOtoAppRole, type OtoAppRoleContext } from './oto-app-users';
+import { appSignOnRefusal } from './suite-flags';
 import { withTx, type Exec, type OpContext } from './tx';
 
 /**
@@ -357,6 +358,22 @@ function requireAppContext(auth: AuthContext, audience: HandoffApp): void {
   }
 }
 
+/**
+ * SCRUM-643 (S2-23, planner ruling Q24): a NEW hand-off into an app in
+ * maintenance, or into an app whose "block new sign-ins" switch is on where
+ * this session works, is refused — at the mint and again at the exchange, so
+ * a token minted a moment before the window opened cannot slip through.
+ * Sessions already open on the app, platform sign-in and every other app are
+ * untouched, and no token claim changes.
+ */
+async function requireAppOpenForSignOn(exec: Exec, auth: AuthContext, audience: HandoffApp): Promise<void> {
+  const refusal = await appSignOnRefusal(exec, audience,
+    { operatorId: auth.operatorId, branchId: auth.branchId, stationId: auth.stationId });
+  if (!refusal) return;
+  throw new HandoffRejected(refusal.reason, refusal.message, {}, refusal.reason === 'maintenance'
+    ? { statusCode: 503, code: 'APP_IN_MAINTENANCE' } : { statusCode: 503, code: 'APP_SIGN_IN_BLOCKED' });
+}
+
 export async function issueHandoff(
   exec: Exec,
   config: HandoffConfig,
@@ -383,6 +400,7 @@ async function issueBoundHandoff(
     throw new HandoffRejected('revoked', 'The session changed while this hand-off was being issued');
   }
   requireAppContext(auth, opts.audience);
+  await requireAppOpenForSignOn(exec, auth, opts.audience);
   const context = boundContext(auth, opts.sessionToken);
   const key = config.keys[0]!;
   const jti = newId();
@@ -472,7 +490,12 @@ export async function issueHandoffAudited(
 // --- Exchanging -------------------------------------------------------------
 
 /** The exact vocabulary the audit row and the account page use. */
-export type HandoffRejection = 'replayed' | 'expired' | 'audience' | 'origin' | 'revoked' | 'signature';
+export type HandoffRejection =
+  | 'replayed' | 'expired' | 'audience' | 'origin' | 'revoked' | 'signature'
+  /** SCRUM-643: the app is in maintenance (`APP_IN_MAINTENANCE`, 503). */
+  | 'maintenance'
+  /** SCRUM-643: the app's "block new sign-ins" kill switch is on (`APP_SIGN_IN_BLOCKED`, 503). */
+  | 'sign_in_blocked';
 
 export class HandoffRejected extends AppError {
   constructor(
@@ -480,8 +503,10 @@ export class HandoffRejected extends AppError {
     message: string,
     /** Whatever was established before the refusal, for the audit row. */
     readonly context: { jti?: string; sessionId?: string; accountId?: string; audience?: HandoffApp } = {},
+    /** An app that is closed for now is not a bad credential: its own status and code. */
+    readonly answer: { statusCode: number; code: string } = { statusCode: 401, code: 'HANDOFF_REJECTED' },
   ) {
-    super(401, 'HANDOFF_REJECTED', message, { reason });
+    super(answer.statusCode, answer.code, message, { reason });
     this.name = 'HandoffRejected';
   }
 }
@@ -637,6 +662,7 @@ export async function exchangeHandoff(
         throw new HandoffRejected('revoked', 'Open the app from the launcher again', seen);
       }
       requireAppContext(auth, row.audience);
+      await requireAppOpenForSignOn(tx, auth, row.audience);
       const auditAuth = Object.freeze({ ...auth });
 
       const otoApp = row.audience === 'oto_app'
@@ -665,7 +691,7 @@ export async function exchangeHandoff(
     });
   } catch (error) {
     if (error instanceof HandoffRejected) {
-      throw new HandoffRejected(error.reason, error.message, { ...seen, ...error.context });
+      throw new HandoffRejected(error.reason, error.message, { ...seen, ...error.context }, error.answer);
     }
     throw error;
   }

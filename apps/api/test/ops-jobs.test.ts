@@ -3,6 +3,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   alert,
   alertDelivery,
+  auditLog,
+  featureFlag,
+  MESSAGING_PAUSE_KEY,
+  operator,
   authThrottle,
   box,
   boxHeartbeat,
@@ -33,6 +37,8 @@ import {
   type AlertMessage,
 } from '../src/services/ops';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { loadEnv } from '../src/env';
+import { effectiveFlag, SUITE_CONTROL_EXPIRY_JOB } from '../src/services/suite-flags';
 
 /**
  * S2-03 — the operational record and the job runner.
@@ -768,5 +774,40 @@ describe('S2-03 — nothing personal reaches the operational record', () => {
     expect(
       await ctx.db.select().from(alert).where(and(eq(alert.key, key), sql`resolved_at is null`)),
     ).toHaveLength(1);
+  });
+});
+
+describe('SCRUM-643 — the suite-control expiry sweep and its settings', () => {
+  it('is a registered job that reverts a spent kill switch through the alert channels, after reads already ignored it', async () => {
+    const runner = createJobRunner({ db: ctx.db, env: ctx.app.env, log: ctx.app.log, channels });
+    expect(runner.jobs.map((j) => j.name)).toContain(SUITE_CONTROL_EXPIRY_JOB);
+    const [operatorRow] = await ctx.db.select({ id: operator.id }).from(operator).limit(1);
+    const id = newId();
+    await ctx.db.insert(featureFlag).values({
+      id, key: MESSAGING_PAUSE_KEY, kind: 'kill_switch', targetApp: 'inbox', scopeType: 'operator', scopeId: operatorRow!.id,
+      operatorId: operatorRow!.id, value: true, defaultValue: false, expiresAt: new Date(Date.now() - 1_000), reason: 'ZZ TEST 643 spent',
+    });
+    // Already the safe fallback at read time, before the sweep has done anything.
+    const lineage = { operatorId: operatorRow!.id, branchId: null, stationId: null };
+    expect((await effectiveFlag(ctx.db, MESSAGING_PAUSE_KEY, lineage)).value).toBe(false);
+    expect(await runner.runJob(SUITE_CONTROL_EXPIRY_JOB, { force: true })).toBe('ok');
+    expect(await ctx.db.select().from(featureFlag).where(eq(featureFlag.id, id))).toEqual([]);
+    const [run] = await runsOf(SUITE_CONTROL_EXPIRY_JOB);
+    expect(run!.detail).toMatchObject({ flagsReverted: 1, flagsSkipped: 0 });
+    expect(delivered.map((m) => m.category)).toContain('suite_control.ended');
+    const [row] = await ctx.db.select().from(auditLog).where(and(eq(auditLog.action, 'feature_flag.auto_revert'), eq(auditLog.entityId, id)));
+    expect(row).toMatchObject({ actorAccountId: null, targetApp: 'inbox', reason: 'expired', origin: 'job' });
+  });
+
+  it('reads the approved defaults, refuses an unknown dual-control word, and needs `none` to switch approvals off', () => {
+    const base = { NODE_ENV: 'test' as const, DATABASE_URL: 'postgres://oto:oto@localhost:1/unused' };
+    const env = loadEnv(base);
+    expect(env.KILL_SWITCH_MAX_TTL_MIN).toBe(1440);
+    expect(env.CONSOLE_DUAL_CONTROL.has('kill_switch')).toBe(true);
+    expect(loadEnv({ ...base, CONSOLE_DUAL_CONTROL: '' }).CONSOLE_DUAL_CONTROL.has('kill_switch')).toBe(true);
+    expect(loadEnv({ ...base, KILL_SWITCH_MAX_TTL_MIN: '' }).KILL_SWITCH_MAX_TTL_MIN).toBe(1440);
+    expect(loadEnv({ ...base, CONSOLE_DUAL_CONTROL: 'none' }).CONSOLE_DUAL_CONTROL.size).toBe(0);
+    expect(() => loadEnv({ ...base, CONSOLE_DUAL_CONTROL: 'kill_swich' })).toThrow(/CONSOLE_DUAL_CONTROL/);
+    expect(() => loadEnv({ ...base, KILL_SWITCH_MAX_TTL_MIN: '0' })).toThrow();
   });
 });

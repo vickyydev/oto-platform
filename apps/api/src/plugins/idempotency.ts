@@ -158,6 +158,9 @@ const NAMES_THAT_UNLOCK_NOTHING = new Set([
   'attemptkey',
   'idempotencykey',
   'previewtoken',
+  /** SCRUM-643: a suite app's registry key and a feature flag's catalogue key — names, never credentials. */
+  'appkey',
+  'flagkey',
 ]);
 
 /** Does this field name hold a credential? Exported so a test can pin it. */
