@@ -68891,6 +68891,196 @@
         }
       }
     },
+    "/console/analytics/drift": {
+      "get": {
+        "description": "Read-only drift between platform copies and their masters, for the parks the Analytics read selects (console:analytics:read and analytics:read; named foreign or unknown parks are 404, no readable park is 403). Three comparisons, each behind its own native read door: branch_names (platform is the record, admin:branch:read; app-only rows such as Head Office are intentional and never read), employees (the OTO App masters name, nickname, phone, email, owned branch and the LEFT archival rule, admin:account:read; park groups anchored to two operators are ambiguous) and app_accounts (the provisioning record and its ownership checks, admin:role:read with account dominance: the app user's stamp, its switch-off for an inactive account and the mapped role where the app's role context resolves). Only changed field names are returned, never values. An absent seam, a denied seam or read door and an ambiguous owner are reported as their own status, never as clean. Nothing is repaired, copied, audited or written.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "read-only-comparison"
+                      ]
+                    },
+                    "branchIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "omitted": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "comparisons": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "branch_names",
+                              "employees",
+                              "app_accounts"
+                            ]
+                          },
+                          "master": {
+                            "type": "string",
+                            "enum": [
+                              "platform",
+                              "oto_app"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "clean",
+                              "drift",
+                              "absent",
+                              "denied",
+                              "ambiguous"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "seam_absent",
+                              "seam_not_granted",
+                              "permission",
+                              "anchor_ambiguous",
+                              "empty_source"
+                            ],
+                            "nullable": true
+                          },
+                          "requiredPermission": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "compared": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "ambiguous": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "withheld": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "entity": {
+                                  "type": "string",
+                                  "enum": [
+                                    "branch",
+                                    "employee",
+                                    "account"
+                                  ]
+                                },
+                                "platformId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "externalId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "branchId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "changed",
+                                    "missing",
+                                    "orphan"
+                                  ]
+                                },
+                                "fields": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "entity",
+                                "platformId",
+                                "externalId",
+                                "branchId",
+                                "kind",
+                                "fields"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "master",
+                          "status",
+                          "reason",
+                          "requiredPermission",
+                          "compared",
+                          "ambiguous",
+                          "withheld",
+                          "items"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "basis",
+                    "branchIds",
+                    "omitted",
+                    "comparisons"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/overview": {
       "get": {
         "description": "Today at the live parks within console:overview:read reach, independent of the session seat. The optional branchId selects one reachable park. Revenue and guests use each park’s business date, selected analytics source and stored rollup, with its provisional and freshness marks. Bookings count every state for that visit date. Inbox unanswered reuses its existing rule; alerts are unresolved. These park counts exclude branchless Inbox conversations and operator/platform alerts. Offline boxes use their reported offline status at any hour; alerting hours are unchanged. Summary-only authority: linked screens retain their own permissions. Foreign, absent or archived park: 404; own unreachable park: 403.",
