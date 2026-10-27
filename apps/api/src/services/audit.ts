@@ -16,6 +16,13 @@ export interface AuditEntry {
   after?: unknown;
   operatorId?: string | null;
   branchId?: string | null;
+  /**
+   * SCRUM-644 (Q25): the app a producer labels its write with, and the
+   * activity category (`data_access`, `denial`). Optional and additive: a
+   * caller that does not label writes exactly what it wrote before.
+   */
+  sourceApp?: string | null;
+  category?: string | null;
   requestId?: string | null;
   /**
    * `x-oto-action-id`, minted where the person tapped and carried PWA → box →
@@ -34,6 +41,12 @@ export interface AuditEntry {
    * shorter-lived one. The pointer has to outlive what it points at.
    */
   sourceEventId?: string | null;
+  /** SCRUM-643: the suite app a Console action reached into (S2-23). */
+  targetApp?: string | null;
+  /** SCRUM-643: the reason an action demanded, where it demanded one. */
+  reason?: string | null;
+  /** SCRUM-643: where the action came from — `console`, `job`. */
+  origin?: string | null;
 }
 
 /** Minimal insert surface shared by Db and its transaction handle. */
@@ -54,11 +67,16 @@ export const audit = {
       requestId: entry.requestId ?? null,
       actionId: entry.actionId ?? null,
       sourceEventId: entry.sourceEventId ?? null,
+      targetApp: entry.targetApp ?? null,
+      reason: entry.reason ?? null,
+      origin: entry.origin ?? null,
       action: entry.action,
       entityType: entry.entityType,
       entityId: entry.entityId,
       before: entry.before ?? null,
       after: entry.after ?? null,
+      sourceApp: entry.sourceApp ?? null,
+      category: entry.category ?? null,
     });
   },
 };

@@ -10,9 +10,12 @@ type Entry = {
   id: string; action: string; entityType: string; entityId: string; actorAccountId: string | null;
   actorName: string | null; branchId: string | null; requestId: string | null;
   before: unknown; after: unknown; createdAt: string;
+  app: string | null; targetApp: string | null; category: string | null;
 };
 type Page = { entries: Entry[]; masked: boolean; nextCursor: string | null; total?: number };
-const entryKeys = ['id', 'action', 'entityType', 'entityId', 'actorAccountId', 'actorName', 'branchId', 'requestId', 'before', 'after', 'createdAt'].sort();
+// SCRUM-644 (Q25) adds three nullable labels, additively: app, targetApp and category.
+const entryKeys = ['id', 'action', 'entityType', 'entityId', 'actorAccountId', 'actorName', 'branchId', 'requestId', 'before', 'after', 'createdAt',
+  'app', 'targetApp', 'category'].sort();
 const action = 'zz.test.644.response', foreign = newId(), actor = newId(), actorEmployee = newId(), sourceEvent = newId();
 const values: unknown[] = [null, false, 0, 'ZZ TEST primitive', [1, false, { label: 'ZZ TEST nested' }],
   { label: 'ZZ TEST object', nested: [{ name: 'ZZ TEST private name', enabled: false }], empty: null }];
@@ -76,7 +79,8 @@ describe('SCRUM-644 native audit response contract', () => {
       expect(Object.keys(entry).sort()).toEqual(entryKeys);
       expect(entry).toEqual({ id, action, entityType: 'ZZ TEST audit response', entityId: 'ZZ TEST 644 ' + i,
         actorAccountId: i === 0 ? null : actor, actorName: i === 0 ? null : 'ZZ TEST 644 audit actor', branchId: null,
-        requestId: i === 0 ? null : 'ZZ-TEST-644-' + i, before: values[i], after: values[i], createdAt: stamp.toISOString() });
+        requestId: i === 0 ? null : 'ZZ-TEST-644-' + i, before: values[i], after: values[i], createdAt: stamp.toISOString(),
+        app: null, targetApp: null, category: null });
     }
     // Stored home/effective attribution and event pointers are not existing public entry fields.
     const [stored] = await ctx.db.select({ home: auditLog.homeOperatorId, effective: auditLog.effectiveOperatorId,
