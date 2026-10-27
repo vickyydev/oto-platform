@@ -624,6 +624,13 @@
       "when": 1793018039565,
       "tag": "0088_operator_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1793112135906,
+      "tag": "0089_console_setting_registry",
+      "breakpoints": true
     }
   ]
 }

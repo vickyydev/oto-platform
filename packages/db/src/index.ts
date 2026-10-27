@@ -13,6 +13,9 @@ export { schema };
  */
 export * from './schema/otoapp';
 
+/** SCRUM-646: the code-owned settings catalogue and its idempotent convergence. */
+export * from './setting-registry';
+
 export type Db = NodePgDatabase<typeof schema>;
 
 let _pool: pg.Pool | null = null;
