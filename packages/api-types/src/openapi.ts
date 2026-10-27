@@ -29,12 +29,7 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            status: "ok";
-                        };
-                    };
+                    content?: never;
                 };
             };
         };
@@ -67,74 +62,7 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            status: "ready" | "degraded";
-                            checks: {
-                                database: {
-                                    ok: boolean;
-                                    latencyMs: number;
-                                };
-                                pool: {
-                                    total: number;
-                                    idle: number;
-                                    waiting: number;
-                                    max: number | null;
-                                } | null;
-                                jobs: {
-                                    configured: boolean;
-                                    watchdogAgeS: number | null;
-                                    staleAfterS: number;
-                                    stale: boolean;
-                                };
-                                stationChannels: {
-                                    stations: number;
-                                    connections: number;
-                                    perStation: {
-                                        [key: string]: number;
-                                    };
-                                };
-                            };
-                        };
-                    };
-                };
-                /** @description Default Response */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            status: "not_ready";
-                            checks: {
-                                database: {
-                                    ok: boolean;
-                                    latencyMs: number;
-                                };
-                                pool: {
-                                    total: number;
-                                    idle: number;
-                                    waiting: number;
-                                    max: number | null;
-                                } | null;
-                                jobs: {
-                                    configured: boolean;
-                                    watchdogAgeS: number | null;
-                                    staleAfterS: number;
-                                    stale: boolean;
-                                };
-                                stationChannels: {
-                                    stations: number;
-                                    connections: number;
-                                    perStation: {
-                                        [key: string]: number;
-                                    };
-                                };
-                            };
-                        };
-                    };
+                    content?: never;
                 };
             };
         };
@@ -386,6 +314,20 @@ export interface paths {
                             accountId: string;
                             mustChangePassword: boolean;
                             sessionLocked: boolean;
+                            impersonation?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                actorAccountId: string;
+                                /** Format: uuid */
+                                subjectAccountId: string;
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            };
                             /** @enum {string} */
                             audience: "booth";
                             identity: {
@@ -401,6 +343,20 @@ export interface paths {
                             accountId: string;
                             mustChangePassword: boolean;
                             sessionLocked: boolean;
+                            impersonation?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                actorAccountId: string;
+                                /** Format: uuid */
+                                subjectAccountId: string;
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            };
                             /** @enum {string} */
                             audience: "oto_app";
                             otoApp?: {
@@ -422,6 +378,20 @@ export interface paths {
                             accountId: string;
                             mustChangePassword: boolean;
                             sessionLocked: boolean;
+                            impersonation?: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                actorAccountId: string;
+                                /** Format: uuid */
+                                subjectAccountId: string;
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            };
                             /** @enum {string} */
                             audience: "pos" | "console" | "radar" | "inbox";
                         };
@@ -712,6 +682,46 @@ export interface paths {
                                 /** Format: uuid */
                                 sessionId: string;
                             };
+                            impersonation: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            } | null;
+                            impersonating: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                /** Format: date-time */
+                                expiresAt: string;
+                            }[];
                         };
                     };
                 };
@@ -751,6 +761,75 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/me/impersonations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The view-as (impersonation) windows support administrators opened as this account, newest first, with who opened each, the app, the reason and reference, and how it ended. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            impersonations: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                reason: string | null;
+                                reference: string | null;
+                                /** Format: uuid */
+                                approvalId: string | null;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** @enum {string|null} */
+                                endReason: "ended" | "actor_signed_out" | "subject_signed_out" | null;
+                                /** @enum {string} */
+                                state: "active" | "ended" | "expired";
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/me/session/operator": {
@@ -1710,7 +1789,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:integration:test" | "console:integration:manage" | "console:money:read" | "console:money:investigate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:support:lookup" | "console:support:trace" | "console:support:impersonate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -4559,12 +4638,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Find sales by a band code or short code (`band`) or by a member phone in any format (`phone`) — one of the two. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is. */
+        /** @description Find sales by a band code or short code (`band`), by a member phone in any format (`phone`) or by an exact receipt number (`receipt`, SCRUM-648) — one of the three. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is. */
         get: {
             parameters: {
                 query?: {
                     band?: string;
                     phone?: string;
+                    receipt?: string;
                     branchId?: string;
                     limit?: number;
                 };
@@ -19996,7 +20076,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Query the audit log (keyset paginated, masked without admin:audit:read_sensitive). Also filters by app, target app and the data_access or denial category on the server */
+        /** @description Query the audit log (keyset paginated, masked without admin:audit:read_sensitive) */
         get: {
             parameters: {
                 query?: {
@@ -20008,91 +20088,9 @@ export interface paths {
                     outcome?: "success" | "failure";
                     from?: string;
                     to?: string;
-                    app?: string;
-                    targetApp?: string;
-                    category?: "data_access" | "denial";
                     cursor?: string;
                     limit?: number;
                     count?: "true";
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            entries: {
-                                /** Format: uuid */
-                                id: string;
-                                action: string;
-                                entityType: string;
-                                entityId: string;
-                                /** Format: uuid */
-                                actorAccountId: string | null;
-                                actorName: string | null;
-                                /** Format: uuid */
-                                branchId: string | null;
-                                requestId: string | null;
-                                before: ("null" | null) | string | number | boolean | unknown[] | {
-                                    [key: string]: unknown;
-                                };
-                                after: ("null" | null) | string | number | boolean | unknown[] | {
-                                    [key: string]: unknown;
-                                };
-                                /** Format: date-time */
-                                createdAt: string;
-                                app: string | null;
-                                targetApp: string | null;
-                                category: string | null;
-                            }[];
-                            masked: boolean;
-                            nextCursor: string | null;
-                            total?: number;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/audit/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Download one bounded page (at most 5000 rows) of the audit log as CSV or NDJSON, with the same selection, reach and masking as GET /audit. Each export is recorded as an audit.export data_access row naming its filters and row count; a full page answers x-oto-next-cursor */
-        get: {
-            parameters: {
-                query?: {
-                    action?: string;
-                    entityType?: string;
-                    entityId?: string;
-                    actorAccountId?: string;
-                    branchId?: string;
-                    outcome?: "success" | "failure";
-                    from?: string;
-                    to?: string;
-                    app?: string;
-                    targetApp?: string;
-                    category?: "data_access" | "denial";
-                    format?: "csv" | "ndjson";
-                    cursor?: string;
-                    limit?: number;
                 };
                 header?: never;
                 path?: never;
@@ -27769,464 +27767,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/console/analytics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Read retained analytics metadata for branches held on both console:analytics:read and analytics:read. Source and Radar preference remain separate; switchedAt is the edit timestamp. Formula counts include all retained daily/hourly rows, not the KPI date range. Queue depth counts rows including claimed rows. Default selection is live readable branches; requested own unreadable branches are omitted, foreign or unknown IDs are 404, and no readable selection is 403. This read never switches sources or runs a job. */
-        get: {
-            parameters: {
-                query?: {
-                    branches?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: date-time */
-                            generatedAt: string;
-                            /** @enum {string} */
-                            basis: "stored-summary-metadata";
-                            branches: {
-                                /** Format: uuid */
-                                branchId: string;
-                                name: string;
-                                /** @enum {string} */
-                                source: "oto_pos" | "pisell" | "papaya";
-                                /** @enum {string} */
-                                preference: "oto_pos" | "legacy" | "both";
-                                /** Format: date-time */
-                                switchedAt: string | null;
-                                formulaRows: {
-                                    /** @enum {string} */
-                                    source: "oto_pos" | "pisell" | "papaya";
-                                    formulaVersion: number;
-                                    dailyRows: number;
-                                    hourlyRows: number;
-                                    frozenDailyRows: number;
-                                    provisionalDailyRows: number;
-                                }[];
-                                dirtyDates: {
-                                    total: number;
-                                    byKind: {
-                                        sales: number;
-                                        hourly: number;
-                                        booth: number;
-                                        wallet: number;
-                                    };
-                                    oldestBusinessDate: string | null;
-                                    /** Format: date-time */
-                                    newestMarkedAt: string | null;
-                                };
-                            }[];
-                            omitted: string[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/configuration": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Read the settings index: which settings exist, the app that owns each and the page that edits it, for the caller's operator. Requires console:config:read; each entry is listed only where the caller holds the owning page's own permission, with branch entries narrowed to the named park (branchId) or to the live parks the index reaches. A foreign, unknown or archived park is 404; an own park outside the index reach is 403. Navigation targets are fixed in code, never read from storage; unsupported entries carry no navigation or edit offer. Metadata only: no setting value is returned, and the read never seeds or writes the catalogue. */
-        get: {
-            parameters: {
-                query?: {
-                    branchId?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: date-time */
-                            generatedAt: string;
-                            /** Format: uuid */
-                            operatorId: string;
-                            branches: {
-                                /** Format: uuid */
-                                id: string;
-                                name: string;
-                            }[];
-                            /** Format: uuid */
-                            selectedBranchId: string | null;
-                            entries: {
-                                /** Format: uuid */
-                                id: string;
-                                key: string;
-                                label: string;
-                                appOwner: string;
-                                editableHere: boolean;
-                                requiredPermission: string;
-                                url: string | null;
-                                openInApp: {
-                                    /** @enum {string} */
-                                    app: "oto_app" | "radar" | "inbox";
-                                    path: string;
-                                } | null;
-                                supported: boolean;
-                                /** @enum {string} */
-                                scope: "operator" | "branch";
-                                branchIds: string[];
-                                /** Format: date-time */
-                                lastChangedAt: string | null;
-                                /** @enum {string} */
-                                lastChangedAvailability: "available" | "not-recorded" | "unsupported";
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/analytics/drift": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Read-only drift between platform copies and their masters, for the parks the Analytics read selects (console:analytics:read and analytics:read; named foreign or unknown parks are 404, no readable park is 403). Three comparisons, each behind its own native read door: branch_names (platform is the record, admin:branch:read; app-only rows such as Head Office are intentional and never read), employees (the OTO App masters name, nickname, phone, email, owned branch and the LEFT archival rule, admin:account:read; park groups anchored to two operators are ambiguous) and app_accounts (the provisioning record and its ownership checks, admin:role:read with account dominance: the app user's stamp, its switch-off for an inactive account and the mapped role where the app's role context resolves). Only changed field names are returned, never values. An absent seam, a denied seam or read door and an ambiguous owner are reported as their own status, never as clean. Nothing is repaired, copied, audited or written. */
-        get: {
-            parameters: {
-                query?: {
-                    branches?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: date-time */
-                            generatedAt: string;
-                            /** @enum {string} */
-                            basis: "read-only-comparison";
-                            branchIds: string[];
-                            omitted: string[];
-                            comparisons: {
-                                /** @enum {string} */
-                                key: "branch_names" | "employees" | "app_accounts";
-                                /** @enum {string} */
-                                master: "platform" | "oto_app";
-                                /** @enum {string} */
-                                status: "clean" | "drift" | "absent" | "denied" | "ambiguous";
-                                /** @enum {string|null} */
-                                reason: "seam_absent" | "seam_not_granted" | "permission" | "anchor_ambiguous" | "empty_source" | null;
-                                requiredPermission: string | null;
-                                compared: number;
-                                ambiguous: number;
-                                withheld: number;
-                                items: {
-                                    /** @enum {string} */
-                                    entity: "branch" | "employee" | "account";
-                                    /** Format: uuid */
-                                    platformId: string | null;
-                                    externalId: string | null;
-                                    /** Format: uuid */
-                                    branchId: string | null;
-                                    /** @enum {string} */
-                                    kind: "changed" | "missing" | "orphan";
-                                    fields: string[];
-                                }[];
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/analytics/sources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Each in-scope park's analytics source as the model really is: one serving source for every date (oto_pos, pisell or papaya), Radar's independent preference, and lastEditedAt — when the switch was last edited, never an effective business date. Parks come from the Analytics read (console:analytics:read and analytics:read; foreign or unknown 404, none readable 403). mayManageSource and mayRerun report the Console write doors per park. Read-only. */
-        get: {
-            parameters: {
-                query?: {
-                    branches?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: date-time */
-                            generatedAt: string;
-                            /** @enum {string} */
-                            basis: "whole-branch-switch";
-                            branches: {
-                                /** Format: uuid */
-                                branchId: string;
-                                name: string;
-                                /** @enum {string} */
-                                source: "oto_pos" | "pisell" | "papaya";
-                                /** @enum {string} */
-                                preference: "oto_pos" | "legacy" | "both";
-                                /** Format: date-time */
-                                lastEditedAt: string | null;
-                                /** Format: uuid */
-                                lastEditedBy: string | null;
-                                mayManageSource: boolean;
-                                mayRerun: boolean;
-                            }[];
-                            omitted: string[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/analytics/sources/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Read-only preview of switching one park to a proposed source. The switch is whole-branch: every date in the range is served from the proposed source; servedDays counts its stored days (a legacy source: its frozen days only) and emptyDays the days with no such row, which will show empty. newestWrittenAt is the newest write among the served rows. Never a date splice. Default range: the last 30 days ending on the park's current business date; at most 366 days. Analytics read door at the park; foreign or unknown park 404. No writes, no audit. */
-        get: {
-            parameters: {
-                query: {
-                    branchId: string;
-                    source: "oto_pos" | "pisell" | "papaya";
-                    from?: string;
-                    to?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: uuid */
-                            branchId: string;
-                            /** @enum {string} */
-                            currentSource: "oto_pos" | "pisell" | "papaya";
-                            /** @enum {string} */
-                            proposedSource: "oto_pos" | "pisell" | "papaya";
-                            unchanged: boolean;
-                            /** @enum {string} */
-                            effect: "whole-branch";
-                            from: string;
-                            to: string;
-                            days: number;
-                            servedDays: number;
-                            emptyDays: number;
-                            servesFrozenOnly: boolean;
-                            firstServedDate: string | null;
-                            lastServedDate: string | null;
-                            /** Format: date-time */
-                            newestWrittenAt: string | null;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/analytics/sources/{branchId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description Switch one park's whole-branch serving source and Radar preference through the existing audited switch: serialised per park, audited before and after, and a request for what the park already has changes and records nothing. console:analytics:manage_source at the park; requires Idempotency-Key; foreign park 404. lastEditedAt is the edit time, never an effective date. */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    branchId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        source: "oto_pos" | "pisell" | "papaya";
-                        /** @enum {string} */
-                        preference: "oto_pos" | "legacy" | "both";
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: uuid */
-                            branchId: string;
-                            name: string;
-                            /** @enum {string} */
-                            source: "oto_pos" | "pisell" | "papaya";
-                            /** @enum {string} */
-                            preference: "oto_pos" | "legacy" | "both";
-                            /** Format: date-time */
-                            lastEditedAt: string | null;
-                            /** Format: uuid */
-                            lastEditedBy: string | null;
-                            mayManageSource: boolean;
-                            mayRerun: boolean;
-                            changed: boolean;
-                        };
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/analytics/rerun": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Queue one park's own POS days, from..to (at most 92 days, none in the future), for the existing jobs process: marks analytics.dirty_date (kind sales) only, never writes a summary row and never runs the rollup inline. It recomputes our POS figures from our own records and can never regenerate a legacy system's day: a park serving a legacy source is refused (409 ANALYTICS_RERUN_LEGACY_SOURCE), and so is a range holding frozen days of the serving source (409 ANALYTICS_RERUN_FROZEN_DAYS). Audited as analytics.rerun.request. console:analytics:rerun at the park; requires Idempotency-Key; foreign park 404. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        branchId: string;
-                        from: string;
-                        to: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: uuid */
-                            branchId: string;
-                            from: string;
-                            to: string;
-                            days: number;
-                            /** @enum {string} */
-                            kind: "sales";
-                            /** @enum {string} */
-                            source: "oto_pos";
-                            reason: string;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/console/apps": {
         parameters: {
             query?: never;
@@ -29240,20 +28780,19 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/console/money/sales": {
+    "/console/support/lookup": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** @description Sales per park, business date and revenue category, from the stored daily summary with its provisional and freshness marks. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        /** @description The cross-app support lookup: one phone, band, receipt number, booking reference, voucher code, account id or action id (`kind` names it; otherwise every kind it could be is searched). Each section is answered by its own app’s route as the caller, so each keeps its own permission, scope and masking: a section the caller may not read says `denied`, one with no safe reader says `not_built`, one whose app failed says `unavailable`. Member and child records are masked unless the caller holds admin:audit:read_sensitive operator-wide. One data_access audit row per lookup, naming the kinds and which sections answered, never a value. */
         get: {
             parameters: {
                 query: {
-                    branches?: string;
-                    from: string;
-                    to: string;
+                    q: string;
+                    kind?: "phone" | "band" | "receipt" | "booking" | "voucher" | "account" | "action";
                 };
                 header?: never;
                 path?: never;
@@ -29268,709 +28807,27 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            scope: {
-                                from: string;
-                                to: string;
-                                branches: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    name: string;
-                                }[];
-                                omitted: string[];
-                            };
-                            /** @enum {string} */
-                            basis: "stored-daily-summary";
-                            branches: {
-                                /** Format: uuid */
-                                branchId: string;
-                                name: string;
-                                source: string;
-                                today: string;
-                                lastRolledUpAt: string | null;
-                                total: {
-                                    businessDate: string | null;
-                                    provisional: boolean;
-                                    rolledDays: number;
-                                    computedAt: string | null;
-                                    revenueSatang: number;
-                                    ticketsSatang: number;
-                                    fnbSatang: number;
-                                    merchSatang: number;
-                                    partiesSatang: number;
-                                    dropoffSatang: number;
-                                    refundsSatang: number;
-                                    discountsSatang: number;
-                                    compsSatang: number;
-                                    txnCount: number;
-                                };
-                                days: {
-                                    businessDate: string | null;
-                                    provisional: boolean;
-                                    rolledDays: number;
-                                    computedAt: string | null;
-                                    revenueSatang: number;
-                                    ticketsSatang: number;
-                                    fnbSatang: number;
-                                    merchSatang: number;
-                                    partiesSatang: number;
-                                    dropoffSatang: number;
-                                    refundsSatang: number;
-                                    discountsSatang: number;
-                                    compsSatang: number;
-                                    txnCount: number;
-                                }[];
-                            }[];
-                            total: {
-                                businessDate: string | null;
-                                provisional: boolean;
-                                rolledDays: number;
-                                computedAt: string | null;
-                                revenueSatang: number;
-                                ticketsSatang: number;
-                                fnbSatang: number;
-                                merchSatang: number;
-                                partiesSatang: number;
-                                dropoffSatang: number;
-                                refundsSatang: number;
-                                discountsSatang: number;
-                                compsSatang: number;
-                                txnCount: number;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/money/refunds": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Refunds (on their original sale’s business date) and voids, with the approving manager, the reason and the original sale. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
-        get: {
-            parameters: {
-                query: {
-                    branches?: string;
-                    from: string;
-                    to: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            scope: {
-                                from: string;
-                                to: string;
-                                branches: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    name: string;
-                                }[];
-                                omitted: string[];
-                            };
-                            /** @enum {string} */
-                            basis: "original-sale-business-date";
-                            refunds: {
-                                count: number;
-                                totalSatang: number;
-                                truncated: boolean;
-                                rows: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    number: string;
-                                    amountSatang: number;
-                                    mode: string;
-                                    reason: string;
-                                    approvedBy: string | null;
-                                    createdBy: string | null;
-                                    pending: boolean;
-                                    createdAt: string;
-                                    sale: {
-                                        receiptNumber: string | null;
-                                        businessDate: string;
-                                        grossSatang: number;
-                                        status: string;
-                                    };
-                                    /** Format: uuid */
-                                    refundId: string | null;
-                                    /** Format: uuid */
-                                    saleId: string | null;
-                                    trace: {
-                                        /** @enum {string} */
-                                        kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
-                                        id: string;
-                                        href: string;
-                                    } | null;
-                                }[];
-                            };
-                            voids: {
-                                count: number;
-                                totalSatang: number;
-                                truncated: boolean;
-                                rows: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    receiptNumber: string | null;
-                                    businessDate: string;
-                                    grossSatang: number;
-                                    voidedAt: string | null;
-                                    voidedBy: string | null;
-                                    reason: string | null;
-                                    /** Format: uuid */
-                                    saleId: string | null;
-                                    trace: {
-                                        /** @enum {string} */
-                                        kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
-                                        id: string;
-                                        href: string;
-                                    } | null;
-                                }[];
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/money/discounts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Comps, manual discounts and promotions with the revenue given up, from the stored report facts. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
-        get: {
-            parameters: {
-                query: {
-                    branches?: string;
-                    from: string;
-                    to: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            scope: {
-                                from: string;
-                                to: string;
-                                branches: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    name: string;
-                                }[];
-                                omitted: string[];
-                            };
-                            /** @enum {string} */
-                            basis: "stored-report-facts";
-                            compSatang: number;
-                            manualDiscountSatang: number;
-                            promoSatang: number;
-                            freeItemBenefitSatang: number;
-                            foregoneSatang: number;
-                            promoByType: {
-                                type: string;
-                                count: number;
-                                amountSatang: number;
-                            }[];
-                            byOperator: {
-                                appliedBy: string;
-                                compCount: number;
-                                compTotalSatang: number;
-                                discountCount: number;
-                                discountTotalSatang: number;
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/money/cash": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Each park’s End of Day per business date as the POS reads it: float, paid-outs, safe drops and every line against the ฿1 tolerance. A day End of Day cannot read is not available, never zero. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
-        get: {
-            parameters: {
-                query: {
-                    branches?: string;
-                    from: string;
-                    to: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            scope: {
-                                from: string;
-                                to: string;
-                                branches: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    name: string;
-                                }[];
-                                omitted: string[];
-                            };
-                            /** @enum {string} */
-                            basis: "pos-end-of-day";
-                            toleranceSatang: number;
-                            branches: {
-                                /** Format: uuid */
-                                branchId: string;
-                                name: string;
-                                days: ({
-                                    businessDate: string;
-                                    /** @enum {boolean} */
-                                    available: true;
-                                    /** @enum {string} */
-                                    status: "open" | "closed";
-                                    /** @enum {string} */
-                                    verdict: "pending" | "ok" | "off";
-                                    floatSatang: number | null;
-                                    countedSatang: number | null;
-                                    floatLeftSatang: number | null;
-                                    paidOutSatang: number;
-                                    safeDropSatang: number;
-                                    totalExpectedSatang: number;
-                                    totalActualSatang: number;
-                                    totalDifferenceSatang: number;
-                                    linesOff: number;
-                                    lines: {
-                                        channel: string;
-                                        expectedSatang: number;
-                                        actualSatang: number | null;
-                                        differenceSatang: number;
-                                        /** @enum {string} */
-                                        flag: "pending" | "ok" | "off";
-                                    }[];
-                                    closedBy: string | null;
-                                    closedAt: string | null;
-                                    provisionalBoxes: number;
-                                } | {
-                                    businessDate: string;
-                                    /** @enum {boolean} */
-                                    available: false;
-                                    code: string;
-                                    reason: string;
-                                })[];
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/money/settlement": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Settlement per terminal TID and the imported 2C2P file per business date, with unmatched lines and unmatched taken money. The 2C2P file is imported in its documented fixture format only. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
-        get: {
-            parameters: {
-                query: {
-                    branches?: string;
-                    from: string;
-                    to: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            scope: {
-                                from: string;
-                                to: string;
-                                branches: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    name: string;
-                                }[];
-                                omitted: string[];
-                            };
-                            /** @enum {string} */
-                            basis: "pos-settlement";
-                            /** @enum {string} */
-                            gatewayFileFormat: "fixture_only";
-                            branches: {
-                                /** Format: uuid */
-                                branchId: string;
-                                name: string;
-                                days: {
-                                    businessDate: string;
-                                    terminals: {
-                                        tid: string | null;
-                                        label: string;
-                                        /** @enum {string} */
-                                        provider: "digio" | "ghl" | "simulator";
-                                        state: ("pending" | "matched" | "attention" | "failed" | "unsupported") | "not_run";
-                                        batches: number;
-                                    }[];
-                                    gateway: {
-                                        state: ("pending" | "matched" | "attention" | "failed" | "unsupported") | "no_file";
-                                        files: number;
-                                    };
-                                    matched: number;
-                                    unmatchedLines: {
-                                        /** @enum {string} */
-                                        source: "terminal" | "2c2p";
-                                        /** @enum {string} */
-                                        method: "card" | "qr";
-                                        amountSatang: number;
-                                        tid: string | null;
-                                        match: string;
-                                        transactionType: string | null;
-                                        /** Format: uuid */
-                                        attemptId: string | null;
-                                        trace: {
-                                            /** @enum {string} */
-                                            kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
-                                            id: string;
-                                            href: string;
-                                        } | null;
-                                    }[];
-                                    unmatchedAttempts: {
-                                        /** @enum {string} */
-                                        method: "card" | "qr";
-                                        amountSatang: number;
-                                        tid: string | null;
-                                        /** @enum {string} */
-                                        status: "approved" | "awaiting_settlement";
-                                        /** Format: uuid */
-                                        attemptId: string | null;
-                                        trace: {
-                                            /** @enum {string} */
-                                            kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
-                                            id: string;
-                                            href: string;
-                                        } | null;
-                                    }[];
-                                }[];
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/money/wallets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Wallet liability per park and business date as the liability job wrote it, and the live balances beside their ledger. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
-        get: {
-            parameters: {
-                query: {
-                    branches?: string;
-                    from: string;
-                    to: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            scope: {
-                                from: string;
-                                to: string;
-                                branches: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    name: string;
-                                }[];
-                                omitted: string[];
-                            };
-                            /** @enum {string} */
-                            basis: "fact-wallet-liability-daily";
-                            outstanding: {
-                                projectionSatang: number;
-                                ledgerSatang: number;
-                            };
-                            branches: {
-                                /** Format: uuid */
-                                branchId: string;
-                                name: string;
-                                outstanding: {
-                                    projectionSatang: number;
-                                    ledgerSatang: number;
-                                };
-                                days: ({
-                                    businessDate: string;
-                                    /** @enum {boolean} */
-                                    written: true;
-                                    grantedSatang: number;
-                                    spentSatang: number;
-                                    refundedSatang: number;
-                                    expiredSatang: number;
-                                    reactivatedSatang: number;
-                                    outstandingSatang: number;
-                                } | {
-                                    businessDate: string;
-                                    /** @enum {boolean} */
-                                    written: false;
-                                    /** @enum {string} */
-                                    reason: "day_not_ended" | "not_yet_written";
-                                })[];
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/money/costs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Booth prize voucher cost and staff benefit relief, from their stored report facts. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
-        get: {
-            parameters: {
-                query: {
-                    branches?: string;
-                    from: string;
-                    to: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            scope: {
-                                from: string;
-                                to: string;
-                                branches: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    name: string;
-                                }[];
-                                omitted: string[];
-                            };
-                            booths: {
-                                prizeCostSatang: number;
-                                prizeCostIncomplete: boolean;
-                                vouchersIssued: number;
-                                vouchersRedeemed: number;
-                                lastRolledUpAt: string | null;
-                                rows: {
-                                    name: string;
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    branchName: string;
-                                    prizeCostSatang: number;
-                                    prizeCostIncomplete: boolean;
-                                    vouchersIssued: number;
-                                    vouchersRedeemed: number;
-                                }[];
-                            };
-                            benefits: {
-                                totalReliefSatang: number;
-                                appliedSatang: number;
-                                compedSatang: number;
-                                freeItemsSatang: number;
-                                creditSatang: number;
-                                discountSatang: number;
-                                applications: number;
-                                lastRolledUpAt: string | null;
-                                byRole: {
-                                    role: string;
-                                    appliedSatang: number;
-                                    totalReliefSatang: number;
-                                    applications: number;
-                                }[];
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/console/money/integrity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The money integrity panel: receipt-number gaps per station and series (whole series history), sales with no settled payment, payments with no sale (after party and booking payments), attempts stuck past PAYMENT_PENDING_MIN (now), refunds exceeding their sale, and wallet balances that disagree with their ledger (now). Each row carries its identifiers and a support-trace link. Needs console:money:read and console:money:investigate at each park; none held is 403. Recorded in the audit log as console.money.investigate. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
-        get: {
-            parameters: {
-                query: {
-                    branches?: string;
-                    from: string;
-                    to: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            scope: {
-                                from: string;
-                                to: string;
-                                branches: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    name: string;
-                                }[];
-                                omitted: string[];
-                            };
-                            pendingMinutes: number;
+                            /** Format: date-time */
                             generatedAt: string;
-                            checks: {
+                            kinds: ("phone" | "band" | "receipt" | "booking" | "voucher" | "account" | "action")[];
+                            detected: boolean;
+                            masked: boolean;
+                            sections: {
+                                key: string;
                                 /** @enum {string} */
-                                key: "receipt_gaps" | "sales_without_payment" | "payments_without_sale" | "stuck_attempts" | "refunds_exceed_sale" | "wallet_ledger_mismatch";
+                                app: "crm" | "pos" | "inbox" | "oto_app" | "platform";
+                                /** @enum {string} */
+                                kind: "phone" | "band" | "receipt" | "booking" | "voucher" | "account" | "action";
                                 label: string;
                                 /** @enum {string} */
-                                window: "series_history" | "business_dates" | "now";
-                                truncated: boolean;
+                                status: "found" | "empty" | "denied" | "unavailable" | "not_built";
+                                permission: string | null;
+                                rowCount: number;
+                                masked: boolean;
                                 rows: {
-                                    /** Format: uuid */
-                                    branchId: string;
-                                    /** Format: uuid */
-                                    stationId: string | null;
-                                    stationName: string | null;
-                                    title: string;
-                                    detail: string;
-                                    businessDate: string | null;
-                                    amountSatang: number | null;
-                                    /** Format: uuid */
-                                    saleId: string | null;
-                                    /** Format: uuid */
-                                    attemptId: string | null;
-                                    actionId: string | null;
-                                    receiptNumber: string | null;
-                                    /** Format: uuid */
-                                    walletId: string | null;
-                                    trace: {
-                                        /** @enum {string} */
-                                        kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
-                                        id: string;
-                                        href: string;
-                                    };
+                                    [key: string]: unknown;
                                 }[];
+                                note: string | null;
                             }[];
                         };
                     };
@@ -29979,6 +28836,452 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/trace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What happened to one action, sale, refund, payment attempt, receipt or wallet: one vertical trace in pipeline order — till intent, box session and lease, device call (projected), outbox event with epoch and sequence, cloud apply or quarantine, audit rows, payment webhook and inquiry, rollup effect — each step with its ops_run, latency and time since the previous step. A stage with no record is returned as a gap with the reasons it can be missing. Accepts exactly the Money oversight links (`/support?trace=<id>&kind=…`). Every read writes a data_access audit row; 404 when nothing in this operator carries the key. */
+        get: {
+            parameters: {
+                query: {
+                    id: string;
+                    kind?: "action" | "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            anchor: {
+                                /** @enum {string} */
+                                kind: "action" | "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                                id: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                /** Format: uuid */
+                                saleId: string | null;
+                                /** Format: uuid */
+                                walletId: string | null;
+                                receiptNumber: string | null;
+                                actionIds: string[];
+                                alsoMatched: number;
+                            };
+                            steps: {
+                                /** @enum {string} */
+                                stage: "till_intent" | "box_session" | "device_call" | "outbox" | "cloud_apply" | "wallet_ledger" | "audit" | "payment" | "rollup";
+                                label: string;
+                                /** @enum {string} */
+                                status: "recorded" | "failed" | "quarantined" | "pending" | "gap";
+                                /** Format: date-time */
+                                at: string | null;
+                                source: string | null;
+                                recordId: string | null;
+                                opsRunId: string | null;
+                                requestId: string | null;
+                                actionId: string | null;
+                                latencyMs: number | null;
+                                sincePreviousMs: number | null;
+                                outOfOrder: boolean;
+                                detail: {
+                                    [key: string]: string | number | boolean | ("null" | null);
+                                };
+                                traceUrl: string | null;
+                                note: string | null;
+                            }[];
+                            gaps: ("till_intent" | "box_session" | "device_call" | "outbox" | "cloud_apply" | "wallet_ledger" | "audit" | "payment" | "rollup")[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/impersonations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller’s view-as windows (open and recent) and the open write-allowed requests awaiting or holding a second approval, with the window length and whether writes need a second administrator. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            maxMinutes: number;
+                            dualControl: boolean;
+                            targetApps: ("pos" | "oto_app" | "radar" | "inbox")[];
+                            windows: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                reason: string | null;
+                                reference: string | null;
+                                /** Format: uuid */
+                                approvalId: string | null;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** @enum {string|null} */
+                                endReason: "ended" | "actor_signed_out" | "subject_signed_out" | null;
+                                /** @enum {string} */
+                                state: "active" | "ended" | "expired";
+                            }[];
+                            approvals: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                state: "pending" | "approved" | "consumed" | "expired";
+                                payloadSha256: string;
+                                /** Format: uuid */
+                                requesterAccountId: string;
+                                requesterName: string | null;
+                                /** Format: uuid */
+                                approverAccountId: string | null;
+                                /** Format: uuid */
+                                subjectAccountId: string;
+                                subjectName: string | null;
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                reason: string;
+                                reference: string;
+                                mine: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                requestExpiresAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Open a view-as window: a new, marked session of the subject for one app, read-only unless `mode` is write_allowed (which needs a reason, a reference and, while CONSOLE_DUAL_CONTROL names impersonate_write, the id and digest of an approved request). Lasts IMPERSONATION_MAX_MIN minutes or until the actor signs out. Refused for a subject holding platform_admin or any Console permission, for oneself and from a window. Answers the launch URL carrying the hand-off in its fragment. Audited, and raises console.impersonation.start. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        subjectAccountId: string;
+                        /** @enum {string} */
+                        targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                        /**
+                         * @default read_only
+                         * @enum {string}
+                         */
+                        mode?: "read_only" | "write_allowed";
+                        reason?: string;
+                        reference?: string;
+                        approval?: {
+                            /** Format: uuid */
+                            id: string;
+                            expectedPayloadSha256: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            impersonation: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                reason: string | null;
+                                reference: string | null;
+                                /** Format: uuid */
+                                approvalId: string | null;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** @enum {string|null} */
+                                endReason: "ended" | "actor_signed_out" | "subject_signed_out" | null;
+                                /** @enum {string} */
+                                state: "active" | "ended" | "expired";
+                            };
+                            launchUrl: string;
+                            /** Format: date-time */
+                            handoffExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/impersonations/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ask a second platform administrator to approve one write-allowed view-as window: one subject, one app, one reason and one reference, checked now and bound by its digest. A different administrator must approve within ten minutes; only the asker then opens it. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        subjectAccountId: string;
+                        /** @enum {string} */
+                        targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                        reason: string;
+                        reference: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            state: "pending" | "approved" | "consumed" | "expired";
+                            payloadSha256: string;
+                            /** Format: uuid */
+                            requesterAccountId: string;
+                            /** Format: uuid */
+                            approverAccountId: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            requestExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/impersonations/approvals/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Approve another platform administrator’s exact write-allowed view-as request within ten minutes of it. The asker cannot approve their own; an expired request is recorded as expired. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        expectedPayloadSha256: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            state: "pending" | "approved" | "consumed" | "expired";
+                            payloadSha256: string;
+                            /** Format: uuid */
+                            requesterAccountId: string;
+                            /** Format: uuid */
+                            approverAccountId: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            requestExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/support/impersonations/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End a view-as window now: its session is revoked at once in every app it reached. The actor who opened it, or another platform administrator. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            impersonation: {
+                                /** Format: uuid */
+                                id: string;
+                                actor: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                subject: {
+                                    /** Format: uuid */
+                                    accountId: string;
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                targetApp: "pos" | "oto_app" | "radar" | "inbox";
+                                /** @enum {string} */
+                                mode: "read_only" | "write_allowed";
+                                reason: string | null;
+                                reference: string | null;
+                                /** Format: uuid */
+                                approvalId: string | null;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** @enum {string|null} */
+                                endReason: "ended" | "actor_signed_out" | "subject_signed_out" | null;
+                                /** @enum {string} */
+                                state: "active" | "ended" | "expired";
+                            };
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -30420,139 +29723,7 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            status: "ok" | "warn" | "down" | "unknown";
-                            checks: {
-                                key: string;
-                                label: string;
-                                /** @enum {string} */
-                                status: "ok" | "warn" | "down" | "unknown";
-                                value?: number | string | ("null" | null);
-                                unit?: string | null;
-                                detail?: string | null;
-                            }[];
-                            jobs: {
-                                name: string;
-                                /** @enum {string} */
-                                status: "ok" | "warn" | "down" | "unknown";
-                                lastRunAt: string | null;
-                                lastOutcome: string | null;
-                                expectedEverySeconds: number | null;
-                                ageSeconds: number | null;
-                                lastError: string | null;
-                                waitingOn: string[];
-                            }[];
-                            boxes: {
-                                /** Format: uuid */
-                                id: string;
-                                name: string;
-                                slot: string;
-                                role: string;
-                                status: string;
-                                /** @enum {string} */
-                                state: "ok" | "warn" | "down" | "unknown";
-                                /** Format: uuid */
-                                branchId: string;
-                                branchName: string;
-                                /** @enum {string} */
-                                openingHours: "open" | "closed" | "not_set";
-                                agentVersion: string | null;
-                                minAgentVersion: string;
-                                agentBelowMinimum: boolean;
-                                lastHeartbeatAt: string | null;
-                                heartbeatAgeSeconds: number | null;
-                                uptimeSeconds: number | null;
-                                outboxDepth: number | null;
-                                oldestUnackedAgeS: number | null;
-                                quarantineOpen: number;
-                                lastSyncAt: string | null;
-                                clockOffsetMs: number | null;
-                                tempC: number | null;
-                                currentEpoch: number;
-                                configVersion: string | null;
-                                devices: {
-                                    /** Format: uuid */
-                                    id: string;
-                                    kind: string;
-                                    label: string;
-                                    reachability: string;
-                                    paperStatus: string;
-                                    lastError: string | null;
-                                    lastSeenAt: string | null;
-                                }[];
-                                booths: {
-                                    /** Format: uuid */
-                                    stationId: string;
-                                    name: string;
-                                    codePrefix: string | null;
-                                    reported: {
-                                        configVersion: number | null;
-                                        printerReachable: string;
-                                        paperStatus: string;
-                                        vouchersPending: number | null;
-                                        /** @enum {string} */
-                                        pendingUnit: "vouchers" | "events";
-                                        lastSpinAt: string | null;
-                                        staffSignedIn: boolean;
-                                        dailyCapsReached: string[];
-                                        today: {
-                                            businessDate: string;
-                                            spins: number;
-                                            vouchers: number;
-                                        } | null;
-                                        pointerPresent: boolean | null;
-                                    } | null;
-                                    unattributedToday: number | null;
-                                    businessDate: string;
-                                }[];
-                                conditions: string[];
-                                detail: string | null;
-                            }[];
-                            alerts: {
-                                /** Format: uuid */
-                                id: string;
-                                key: string;
-                                /** @enum {string} */
-                                severity: "info" | "warning" | "critical";
-                                title: string;
-                                detail: string | null;
-                                openedAt: string;
-                                acknowledgedAt: string | null;
-                                resolvedAt: string | null;
-                                count: number;
-                            }[];
-                            watchdogAgeSeconds: number | null;
-                            generatedAt: string;
-                            reach: {
-                                /** @enum {string} */
-                                scope: "operator" | "branch";
-                                branches: {
-                                    /** Format: uuid */
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            rollups: {
-                                /** Format: uuid */
-                                branchId: string;
-                                name: string;
-                                today: string;
-                                lastRolledUpAt: string | null;
-                                boothLastRolledUpAt: string | null;
-                                reportsLastRolledUpAt: string | null;
-                            }[];
-                            evidence: {
-                                /** @enum {string} */
-                                source: "jobs" | "fleet" | "alerts" | "watchdog" | "occupancy";
-                                label: string;
-                                /** @enum {string} */
-                                availability: "ok" | "failed" | "denied" | "unknown";
-                                detail: string | null;
-                            }[];
-                        };
-                    };
+                    content?: never;
                 };
             };
         };
@@ -30891,34 +30062,7 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": {
-                            providers: {
-                                key: string;
-                                name: string;
-                                purpose: string;
-                                category: string;
-                                /** @enum {string} */
-                                state: "configured" | "missing" | "disabled" | "degraded" | "unknown";
-                                missingVars?: string[];
-                                endpoint?: string | null;
-                                lastDeliveryAt?: string | null;
-                                lastDeliveryOutcome?: string | null;
-                                detail?: string | null;
-                                /** @enum {string} */
-                                availability: "ok" | "failed" | "denied" | "unknown";
-                                lastOkAt: string | null;
-                                lastFailedAt: string | null;
-                            }[];
-                            variables: {
-                                name: string;
-                                present: boolean;
-                                required: boolean;
-                                purpose: string;
-                                provider: string | null;
-                            }[];
-                        };
-                    };
+                    content?: never;
                 };
             };
         };
@@ -31058,602 +30202,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ops/alert-mutes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The fingerprint mutes in force: who muted what, why and until when, and how many deliveries each has held back (recorded, never dropped). At most 24 hours each */
-        get: {
-            parameters: {
-                query?: {
-                    fingerprint?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            mutes: {
-                                /** Format: uuid */
-                                id: string;
-                                fingerprint: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                reason: string;
-                                /** Format: date-time */
-                                startsAt: string;
-                                /** Format: date-time */
-                                mutedUntil: string;
-                                /** Format: uuid */
-                                createdByAccountId: string;
-                                createdByName: string | null;
-                                heldBack: number;
-                            }[];
-                            defaultMinutes: number;
-                            maxMinutes: number;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** @description Mute one alert fingerprint: a reason is required, one hour unless told otherwise, at most 24 hours. The alert is still raised and listed; its deliveries are recorded as muted. A fresh mute replaces the one in force */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        fingerprint: string;
-                        reason: string;
-                        /** @default 60 */
-                        minutes?: number;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            mute: {
-                                /** Format: uuid */
-                                id: string;
-                                fingerprint: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                reason: string;
-                                /** Format: date-time */
-                                startsAt: string;
-                                /** Format: date-time */
-                                mutedUntil: string;
-                                /** Format: uuid */
-                                createdByAccountId: string;
-                                createdByName: string | null;
-                                heldBack: number;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/alert-mutes/{muteId}/lift": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description End a fingerprint mute early. The mute row stays, with who lifted it and when */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    muteId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {boolean} */
-                            ok: true;
-                            mute: {
-                                /** Format: uuid */
-                                id: string;
-                                fingerprint: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                reason: string;
-                                /** Format: date-time */
-                                startsAt: string;
-                                /** Format: date-time */
-                                mutedUntil: string;
-                                /** Format: uuid */
-                                createdByAccountId: string;
-                                createdByName: string | null;
-                                heldBack: number;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/alert-recipients": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Alert recipients: category to channel and an address REFERENCE (an environment variable name). Says whether each name is set here, never its value. Delivery is console-only until a provider integration is its own ticket */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            recipients: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                /** Format: uuid */
-                                branchId: string | null;
-                                category: string;
-                                /** @enum {string} */
-                                channel: "console" | "email" | "webhook";
-                                addressRef: string | null;
-                                addressConfigured: boolean | null;
-                                delivered: boolean;
-                                label: string | null;
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                updatedAt: string;
-                            }[];
-                            deliveredChannels: ("console" | "email" | "webhook")[];
-                            deliveryNote: string;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** @description Add an alert recipient row. Email and webhook rows name an ALERT_ environment variable, never an address, and are recorded as not delivered until a provider integration exists */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        category: string;
-                        /** @enum {string} */
-                        channel: "console" | "email" | "webhook";
-                        addressRef?: string | null;
-                        label?: string | null;
-                        /** Format: uuid */
-                        branchId?: string | null;
-                        /**
-                         * @default operator
-                         * @enum {string}
-                         */
-                        scope?: "operator" | "platform";
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            recipient: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                /** Format: uuid */
-                                branchId: string | null;
-                                category: string;
-                                /** @enum {string} */
-                                channel: "console" | "email" | "webhook";
-                                addressRef: string | null;
-                                addressConfigured: boolean | null;
-                                delivered: boolean;
-                                label: string | null;
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                updatedAt: string;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/alert-recipients/{recipientId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** @description Change an alert recipient row: its category, channel, address reference or label */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    recipientId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        category?: string;
-                        /** @enum {string} */
-                        channel?: "console" | "email" | "webhook";
-                        addressRef?: string | null;
-                        label?: string | null;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            recipient: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                /** Format: uuid */
-                                branchId: string | null;
-                                category: string;
-                                /** @enum {string} */
-                                channel: "console" | "email" | "webhook";
-                                addressRef: string | null;
-                                addressConfigured: boolean | null;
-                                delivered: boolean;
-                                label: string | null;
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                updatedAt: string;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/ops/alert-recipients/{recipientId}/archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Archive an alert recipient row. Archived rows are kept and no longer consulted */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    recipientId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {boolean} */
-                            ok: true;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/integrations/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The credential expiry dates the owner recorded for the integrations with a known lifetime, and how far each is from its 30- and 7-day warnings. Dates only; never a credential */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            visible: boolean;
-                            canManage: boolean;
-                            /** @enum {string} */
-                            availability: "ok" | "failed" | "denied" | "unknown";
-                            detail: string | null;
-                            credentials: {
-                                /** @enum {string} */
-                                integration: "meta_channel_token" | "pgw_maintenance_key" | "otoapp_directory_key";
-                                name: string;
-                                purpose: string;
-                                expiresOn: string | null;
-                                daysLeft: number | null;
-                                /** @enum {string} */
-                                window: "not_set" | "ok" | "30_days" | "7_days" | "expired";
-                                setAt: string | null;
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/integrations/{key}/expiry": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description Record (or clear, with null) the date an integration's credential expires, as the owner was told it. Requires Idempotency-Key. The watch reads this date only and never asks the provider */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    key: "meta_channel_token" | "pgw_maintenance_key" | "otoapp_directory_key";
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        expiresOn: string | null;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            integration: "meta_channel_token" | "pgw_maintenance_key" | "otoapp_directory_key";
-                            name: string;
-                            purpose: string;
-                            expiresOn: string | null;
-                            daysLeft: number | null;
-                            /** @enum {string} */
-                            window: "not_set" | "ok" | "30_days" | "7_days" | "expired";
-                            setAt: string | null;
-                        };
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/integrations/tests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The integration test buttons, whether this caller may press them here, and when each last ran. Every adapter behind them is a local fake */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            available: boolean;
-                            /** @enum {string} */
-                            adapter: "fake";
-                            /** @enum {string} */
-                            availability: "ok" | "failed" | "denied" | "unknown";
-                            tests: {
-                                /** @enum {string} */
-                                integration: "gateway" | "sms" | "storage" | "otlp" | "webhook";
-                                label: string;
-                                description: string;
-                                lastRunAt: string | null;
-                                lastOutcome: string | null;
-                                lastOkAt: string | null;
-                                lastFailedAt: string | null;
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/integrations/{key}/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Run one integration's harmless round trip through its seam — every adapter is a local fake in this release — and record it as an ops_run of kind integration */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    key: "gateway" | "sms" | "storage" | "otlp" | "webhook";
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {string} */
-                            integration: "gateway" | "sms" | "storage" | "otlp" | "webhook";
-                            /** Format: uuid */
-                            runId: string;
-                            /** @enum {string} */
-                            outcome: "ok" | "failed";
-                            /** @enum {string} */
-                            adapter: "fake";
-                            steps: {
-                                step: string;
-                                /** @enum {string} */
-                                outcome: "ok" | "failed";
-                            }[];
-                            message: string;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/inbox/me": {
         parameters: {
             query?: never;
@@ -31755,6 +30303,7 @@ export interface paths {
                     language?: string;
                     q?: string;
                     unanswered?: "true" | "false";
+                    phone?: string;
                     handledFrom?: string;
                     handledTo?: string;
                     resolvedBy?: "ai" | "human";
