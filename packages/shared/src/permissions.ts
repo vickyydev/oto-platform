@@ -388,6 +388,8 @@ export const SYSTEM_ROLES = [
   'branch_manager',
   'reception',
   'staff',
+  /** SCRUM-648 (S2-23): the support desk — the Console door, its reads, lookup and trace; never impersonation. */
+  'support',
 ] as const;
 
 export type SystemRole = (typeof SYSTEM_ROLES)[number];
@@ -627,6 +629,24 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'app:pos:access',
     'app:booth:access',
     'booth:staff:sign_in',
+    'assistant:ask:use',
+  ],
+  /**
+   * SCRUM-648 (S2-23 seed role `support`): the Console door, its reads, the
+   * cross-app lookup and the trace — and never `console:support:impersonate`,
+   * which stays with `platform_admin`. Assigned operator-wide like any role.
+   * Each lookup section still answers through that app's own permission, so
+   * what a support account sees beyond the Console is what its other roles
+   * grant; the bundle itself adds no app data.
+   */
+  support: [
+    'app:console:access',
+    'console:overview:read',
+    'console:app_registry:read',
+    'console:release:read',
+    'console:support:lookup',
+    'console:support:trace',
+    // SCRUM-591: the internal assistant is in every staff bundle (plan §E.2); a switch, not a data grant.
     'assistant:ask:use',
   ],
 };

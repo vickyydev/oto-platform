@@ -488,4 +488,5 @@ const ROLE_NAMES: Record<SystemRole, string> = {
   branch_manager: 'Branch manager',
   reception: 'Reception',
   staff: 'Staff',
+  support: 'Support',
 };

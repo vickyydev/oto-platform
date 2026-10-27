@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERMISSIONS, PERMISSION_WORDS, ROLE_BUNDLES, type Permission } from '../src/permissions';
+import { PERMISSIONS, PERMISSION_WORDS, ROLE_BUNDLES, SYSTEM_ROLES, type Permission } from '../src/permissions';
 
 describe('plain permission sentences (SCRUM-612)', () => {
   it('covers exactly the declared vocabulary through the public permissions module', () => {
@@ -113,6 +113,16 @@ describe('support tools permission boundaries (SCRUM-648)', () => {
       expect((PERMISSIONS as readonly string[]).filter(entry => entry === permission)).toEqual([permission]);
       expect((PERMISSION_WORDS as Readonly<Record<string, string>>)[permission]).toMatch(meaning);
     }
+  });
+
+  it('seeds a support role with the Console door, its reads, lookup and trace, and never impersonation', () => {
+    expect(SYSTEM_ROLES).toContain('support');
+    expect([...ROLE_BUNDLES.support].sort()).toEqual(['app:console:access', 'assistant:ask:use', 'console:app_registry:read',
+      'console:overview:read', 'console:release:read', 'console:support:lookup', 'console:support:trace']);
+    expect(ROLE_BUNDLES.support).not.toContain('console:support:impersonate');
+    // No app data of its own: every lookup section still answers through that app's permission.
+    expect(ROLE_BUNDLES.support.filter(permission => !permission.startsWith('console:')
+      && permission !== 'app:console:access' && permission !== 'assistant:ask:use')).toEqual([]);
   });
 
   it('gives impersonation to the platform administrator only, and the two reads to operator administrators', () => {
