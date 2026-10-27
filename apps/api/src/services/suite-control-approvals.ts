@@ -59,7 +59,7 @@ function reference(input: unknown) {
 }
 
 /** Fresh canonical role checks; supplied effective-permission unions are never authority here. */
-async function lockAdministrators(tx: Tx, ids: readonly string[]) {
+export async function lockAdministrators(tx: Tx, ids: readonly string[], required: string = permission) {
   const uniqueIds = [...new Set(ids)].sort();
   const accounts = await tx.select({ id: account.id, operatorId: account.operatorId, status: account.status,
     mustChangePassword: account.mustChangePassword }).from(account).where(inArray(account.id, uniqueIds))
@@ -77,7 +77,7 @@ async function lockAdministrators(tx: Tx, ids: readonly string[]) {
     .where(and(inArray(roleAssignment.accountId, uniqueIds), isNull(roleAssignment.archivedAt),
       eq(roleAssignment.scopeType, 'operator'), isNull(roleAssignment.scopeId),
       isNull(role.operatorId), eq(role.isSystem, true), eq(role.name, 'platform_admin'),
-      eq(rolePermission.permission, permission))).orderBy(asc(roleAssignment.id)).for('share');
+      eq(rolePermission.permission, required))).orderBy(asc(roleAssignment.id)).for('share');
   const granted = new Set(grants.map(g => g.accountId));
   if (uniqueIds.some(id => !granted.has(id))) throw errors.forbidden('A current platform administrator is required.');
 }
@@ -95,7 +95,9 @@ async function record(tx: Tx, ctx: OpContext, action: string, row: ApprovalRow, 
     action: `suite_control.approval_${action}`, entityType: 'suite_control_approval', entityId: row.id,
     before: before ? { state: before.state, payloadSha256: before.payloadSha256 } : undefined,
     after: { state: row.state, payloadSha256: row.payloadSha256, requesterAccountId: row.requesterAccountId,
-      approverAccountId: row.approverAccountId, targetApp: operation.targetApp, reason: operation.reason }, requestId: ctx.requestId });
+      approverAccountId: row.approverAccountId, targetApp: operation.targetApp, reason: operation.reason }, requestId: ctx.requestId,
+    // SCRUM-643 audit columns; a background expiry has no actor and is the job's.
+    targetApp: operation.targetApp, reason: operation.reason, origin: ctx.actorAccountId ? 'console' : 'job' });
 }
 async function expire(tx: Tx, ctx: OpContext, row: ApprovalRow, now: Date) {
   if (row.state === 'expired' || row.state === 'consumed' || row.requestExpiresAt.getTime() > now.getTime()) return row;

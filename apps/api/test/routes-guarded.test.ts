@@ -56,6 +56,39 @@ describe('route guards (S2-01b)', () => {
     }
   });
 
+  it('guards every suite control (SCRUM-643): the launcher read by session alone, every write platform-wide', async () => {
+    const launcher = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === '/suite/apps');
+    expect(launcher?.config.auth).toBe('session'); expect(launcher?.config.permission).toBeUndefined();
+    expect(launcher?.config.public).not.toBe(true);
+    for (const url of ['/console/flags', '/console/flags/preview']) {
+      const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === url);
+      expect(route?.config.permission, url).toBe('console:release:read');
+      expect(route?.config.target, url).toEqual({ operator: true });
+    }
+    const writes: Array<[string, string, string | undefined]> = [
+      ['PUT', '/console/apps/:key/maintenance', 'console:app_registry:manage'],
+      ['POST', '/console/apps/:key/maintenance/clear', 'console:app_registry:manage'],
+      ['POST', '/console/flags/approvals', 'console:release:kill_switch'],
+      ['POST', '/console/flags/approvals/:id/approve', 'console:release:kill_switch'],
+      ['POST', '/console/flags/approvals/:id/apply', 'console:release:kill_switch'],
+      ['POST', '/console/deploy-events', 'console:app_registry:manage'],
+      ['PUT', '/console/flags', undefined],
+      ['POST', '/console/flags/clear', undefined],
+    ];
+    for (const [method, url, permission] of writes) {
+      const route = ctx.app.routeRegistry.find(r => r.method === method && r.url === url);
+      expect(route, url).toBeDefined();
+      expect(route!.config.platformWide, url).toBe(true);
+      if (permission) expect(route!.config.permission, url).toBe(permission);
+      else expect(route!.config.dynamicPermission, url).toBe(true);
+      expect(route!.config.public, url).not.toBe(true); expect(route!.config.credential, url).toBeUndefined();
+    }
+    for (const [method, url] of [['GET', '/suite/apps'], ['GET', '/console/flags'], ['PUT', '/console/flags'],
+      ['PUT', '/console/apps/inbox/maintenance'], ['POST', '/console/deploy-events']] as const) {
+      expect((await ctx.app.inject({ method, url, headers: { 'idempotency-key': 'zz-test-643-guard' }, payload: method === 'GET' ? undefined : {} })).statusCode, url).toBe(401);
+    }
+  });
+
   it('requires operator-wide assistant management for both settings routes (SCRUM-638)', async () => {
     for (const method of ['GET', 'PUT'] as const) {
       const route = ctx.app.routeRegistry.find(r => r.method === method && r.url === '/assistant-settings');

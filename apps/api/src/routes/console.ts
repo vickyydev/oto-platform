@@ -10,6 +10,7 @@ import {
   InboxAiUsageAggregateSchema, MembersAggregateSchema,
 } from './aggregates';
 import { assistantSettingsRoutes } from './assistant-settings';
+import { suiteControlWriteRoutes } from './suite-control-writes';
 import { suiteControlRoutes } from './suite-controls';
 
 const count = z.number().int().nonnegative();
@@ -52,6 +53,7 @@ export async function consoleRoutes(app: App): Promise<void> {
   await app.register(platformRoutes);
   await app.register(assistantSettingsRoutes);
   await app.register(suiteControlRoutes);
+  await app.register(suiteControlWriteRoutes);
   app.get('/overview', {
     config: { dynamicPermission: true },
     schema: {

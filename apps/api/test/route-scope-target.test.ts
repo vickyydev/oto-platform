@@ -222,9 +222,23 @@ const PLATFORM_WIDE_READS = [
   'GET /console/apps', 'HEAD /console/apps',
   'GET /console/releases', 'HEAD /console/releases',
   'GET /console/releases/agents', 'HEAD /console/releases/agents',
+  // SCRUM-643: the flag catalogue and the blast-radius preview read platform-global switches.
+  'GET /console/flags', 'HEAD /console/flags',
+  'GET /console/flags/preview', 'HEAD /console/flags/preview',
   'GET /platform/alerts', 'HEAD /platform/alerts',
   'GET /platform/jobs', 'HEAD /platform/jobs',
   'GET /platform/environment', 'HEAD /platform/environment',
+];
+
+// SCRUM-643: platform-global suite controls — the permission at operator scope AND the
+// platform-wide guard (null-scope grant, re-checked against the system role in the service).
+const PLATFORM_WIDE_WRITES = [
+  'PUT /console/apps/:key/maintenance',
+  'POST /console/apps/:key/maintenance/clear',
+  'POST /console/flags/approvals',
+  'POST /console/flags/approvals/:id/approve',
+  'POST /console/flags/approvals/:id/apply',
+  'POST /console/deploy-events',
 ];
 
 describe('operator-wide settings are changed at operator scope (SCRUM-606)', () => {
@@ -263,7 +277,20 @@ describe('operator-wide settings are changed at operator scope (SCRUM-606)', () 
       .filter((r) => r.config.target?.operator === true)
       .map((r) => `${r.method} ${r.url}`)
       .sort();
-    expect(declared).toEqual([...OPERATOR_WIDE_WRITES, ...PLATFORM_WIDE_READS].sort());
+    expect(declared).toEqual([...OPERATOR_WIDE_WRITES, ...PLATFORM_WIDE_READS, ...PLATFORM_WIDE_WRITES].sort());
+  });
+
+  it('every platform-global suite control write is platform-wide with a named permission at operator scope (SCRUM-643)', () => {
+    const wrong = PLATFORM_WIDE_WRITES.filter((key) => {
+      const config = configs.get(key);
+      return !config?.permission || config.platformWide !== true || JSON.stringify(config.target) !== JSON.stringify({ operator: true });
+    });
+    expect(wrong).toEqual([]);
+    // The two catalogue-dependent writes name their permission per key, and are platform-wide too.
+    for (const key of ['PUT /console/flags', 'POST /console/flags/clear']) {
+      expect(configs.get(key)?.dynamicPermission, key).toBe(true);
+      expect(configs.get(key)?.platformWide, key).toBe(true);
+    }
   });
 
   it('the reads beside them keep their gates', () => {

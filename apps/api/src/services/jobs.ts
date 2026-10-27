@@ -61,6 +61,7 @@ import { runAssistantPurge } from './assistant/views';
 import { runWalletExpiryJob, runWalletLiabilityJob } from './wallet';
 import { overviewForScopeOf } from './console';
 import { createConsoleDigestSender, runConsoleDigest, type DigestSender } from './console-digest';
+import { runSuiteExpirySweep, SUITE_CONTROL_EXPIRY_JOB } from './suite-flags';
 
 /** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
 export const WALLET_EXPIRY_JOB = 'job:wallet.expiry';
@@ -932,10 +933,35 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
         detail: await runAssistantPurge(db, now, (row) => closeAbandoned(db, row, null)),
       }),
     },
+    /**
+     * `job:suite_control.expiry` — SCRUM-643 (S2-23 release controls).
+     *
+     * Bookkeeping for switches and maintenance windows that have run out.
+     * Enforcement never waits for it: an expired override already resolves to
+     * its safe fallback at read time. This removes the spent row only if it
+     * is unchanged since it was read (a later edit survives), writes the
+     * audit row and sends the auto-revert alert through the configured
+     * channels; it also expires unanswered two-admin approvals.
+     */
+    {
+      name: SUITE_CONTROL_EXPIRY_JOB,
+      description:
+        'Reverts kill switches and maintenance windows whose expiry has passed, with an audit row and an alert, and expires unanswered second approvals',
+      intervalSeconds: SUITE_CONTROL_EXPIRY_INTERVAL_S,
+      graceSeconds: 300,
+      run: async ({ db, now }) => ({
+        detail: await runSuiteExpirySweep(db, {
+          channels: deps.channels, flapWindowSeconds: deps.env.ALERT_FLAP_WINDOW_S, log: deps.log,
+        }, now),
+      }),
+    },
     ...buildOtoAppNightJobs(deps),
     ...digestJobs,
   ];
 }
+
+/** SCRUM-643: how often spent switches are reverted and alerted on (reads already ignore them). */
+export const SUITE_CONTROL_EXPIRY_INTERVAL_S = 60;
 
 /** The routes' assistant runtime when the runner was given it; otherwise one built from the env, once. */
 const ownInboxAi = new WeakMap<JobDeps, InboxAiRuntime>();

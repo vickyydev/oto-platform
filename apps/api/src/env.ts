@@ -8,6 +8,12 @@ import { parseOtoAppJobKeys } from './services/otoapp-directory';
 import { parseOtoAppProvisionKeys } from './lib/otoapp-provision-keys';
 import { parseStaffTokenKey } from './lib/staff-token-key';
 
+/** S2-23's dual-control vocabulary (`CONSOLE_DUAL_CONTROL`); SCRUM-643 consumes `kill_switch`. */
+export const CONSOLE_DUAL_CONTROL_ACTIONS = [
+  'grant_console_access', 'grant_platform_admin', 'impersonate_write', 'kill_switch', 'erasure', 'reset_demo',
+] as const;
+export type ConsoleDualControlAction = typeof CONSOLE_DUAL_CONTROL_ACTIONS[number];
+
 // .env lives at the repository root; entrypoints may run from any package cwd.
 loadDotenv({ path: join(dirname(fileURLToPath(import.meta.url)), '../../../.env'), quiet: true });
 
@@ -362,6 +368,37 @@ const EnvSchema = z.object({
    * impossible.
    */
   ALERT_CHANNELS: z.string().default('console'),
+  /**
+   * SCRUM-643 (S2-23 dual control): the Console actions that need a second
+   * platform administrator's approval within ten minutes, as a comma list.
+   * The default names every action S2-23 lists; this build consumes
+   * `kill_switch`. An unknown word stops the boot rather than silently
+   * weakening a safeguard by a typo.
+   */
+  CONSOLE_DUAL_CONTROL: z.preprocess(
+    // Blank (the .env.example line copied as-is) means the default, never "none".
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().default(CONSOLE_DUAL_CONTROL_ACTIONS.join(',')),
+  ).transform((raw, ctx) => {
+      // `none` is the only way to switch every second approval off, so it is a decision.
+      const words = raw.trim() === 'none' ? [] : raw.split(',').map(word => word.trim()).filter(Boolean);
+      const unknown = words.filter(word => !(CONSOLE_DUAL_CONTROL_ACTIONS as readonly string[]).includes(word));
+      if (unknown.length > 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom,
+          message: `CONSOLE_DUAL_CONTROL: unknown action(s) ${unknown.join(', ')}; known: ${CONSOLE_DUAL_CONTROL_ACTIONS.join(', ')}` });
+        return z.NEVER;
+      }
+      return new Set(words as ConsoleDualControlAction[]) as ReadonlySet<ConsoleDualControlAction>;
+    }),
+  /**
+   * SCRUM-643 (S2-23): the longest a kill switch or a maintenance window may
+   * be set for, in minutes. A kill switch defaults to 60 minutes; every one
+   * must carry an expiry no later than this.
+   */
+  KILL_SWITCH_MAX_TTL_MIN: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.coerce.number().int().min(1).max(10_080).default(1440),
+  ),
   /** Morning branch status digest; separate from alert-channel delivery. */
   CONSOLE_DIGEST_ENABLED: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
   /** Private destination: never expose its value through status or error text. */

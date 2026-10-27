@@ -6,6 +6,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { audit } from '../audit';
 import type { FileStorage } from '../files';
 import { recordRun } from '../ops';
+import { outboundMessagingPaused } from '../suite-flags';
 import { withTx } from '../tx';
 import type { InboxChannels } from './channels';
 
@@ -78,6 +79,14 @@ import type { InboxChannels } from './channels';
  * withdrawn here: its provider call may be in flight, and if the provider
  * accepts it the row is `sent` whatever a withdrawal wrote meanwhile — the
  * thread says what the customer actually received.
+ *
+ * PAUSED (SCRUM-643, the Console's "pause outbound messaging" kill switch).
+ * While the switch resolves on for the message's park group or park, nothing
+ * is claimed and no channel is called: the row stays `queued` with its
+ * attempts untouched — a pause is not a failure and must not spend the retry
+ * budget — and its next attempt moves one sweep interval on, so the paused
+ * rows rotate behind everyone else's. When the switch is cleared or reverts
+ * at its expiry, the next sweep sends them as normal.
  */
 
 export const INBOX_SEND_JOB = 'job:inbox.send';
@@ -122,7 +131,9 @@ export type SendOutcome =
   /** An AI line a person overtook (§A.3): marked `withdrawn`, never sent. */
   | { messageId: string; outcome: 'withdrawn' }
   /** Not queued, not due, or claimed by another sender. Nothing was sent. */
-  | { messageId: string; outcome: 'skipped' };
+  | { messageId: string; outcome: 'skipped' }
+  /** SCRUM-643: outbound messaging is paused here. Still queued, nothing sent, no attempt spent. */
+  | { messageId: string; outcome: 'paused' };
 
 /**
  * Refusal words the api adds to the channel's five, for a send it never
@@ -193,6 +204,15 @@ export async function sendQueuedMessage(
   const now = deps.now ?? (() => new Date());
   const startedAt = new Date();
   const at = now();
+
+  // THE PAUSE, before any claim: where the switch is on, no channel is called.
+  if (await pausedHere(db, messageId, at)) {
+    await db.update(message)
+      .set({ nextAttemptAt: new Date(at.getTime() + INBOX_SEND_INTERVAL_S * 1000), updatedAt: at })
+      .where(and(eq(message.id, messageId), eq(message.providerStatus, 'queued'),
+        or(isNull(message.nextAttemptAt), lte(message.nextAttemptAt, at))));
+    return { messageId, outcome: 'paused' };
+  }
 
   // THE CLAIM: queued, outbound, not redacted, and due — or nothing.
   const [claimed] = await db
@@ -435,6 +455,19 @@ export async function sendQueuedMessage(
   return outcome;
 }
 
+/** Whether the pause switch is on where this queued outbound message would leave from. */
+async function pausedHere(db: Db, messageId: string, at: Date): Promise<boolean> {
+  const [row] = await db
+    .select({ operatorId: message.operatorId, branchId: conversation.branchId, accountBranchId: channelAccount.branchId })
+    .from(message)
+    .leftJoin(conversation, and(eq(conversation.operatorId, message.operatorId), eq(conversation.id, message.conversationId)))
+    .leftJoin(channelAccount, and(eq(channelAccount.operatorId, message.operatorId), eq(channelAccount.id, message.channelAccountId)))
+    .where(and(eq(message.id, messageId), eq(message.direction, 'outbound'), eq(message.providerStatus, 'queued')))
+    .limit(1);
+  if (!row) return false;
+  return outboundMessagingPaused(db, { operatorId: row.operatorId, branchId: row.branchId ?? row.accountBranchId ?? null }, at);
+}
+
 /**
  * The contract's `media` content for a row's file: the inbox-owned
  * `file_object` of the row's operator, linked by a presigned GET minted now.
@@ -573,6 +606,8 @@ export interface SendSweep extends Record<string, unknown> {
   failed: number;
   withdrawn: number;
   skipped: number;
+  /** SCRUM-643: due rows left queued because outbound messaging is paused where they would leave. */
+  paused: number;
 }
 
 /**
@@ -596,13 +631,14 @@ export async function runInboxSendJob(db: Db, deps: SendDeps, now: Date): Promis
     )
     .orderBy(asc(sql`coalesce(${message.nextAttemptAt}, ${message.createdAt})`), asc(message.id))
     .limit(SWEEP_BATCH);
-  const summary: SendSweep = { due: due.length, sent: 0, retried: 0, failed: 0, withdrawn: 0, skipped: 0 };
+  const summary: SendSweep = { due: due.length, sent: 0, retried: 0, failed: 0, withdrawn: 0, skipped: 0, paused: 0 };
   const outcomes = await sendAfterCommit(db, { ...deps, now: deps.now ?? (() => new Date()) }, due.map((d) => d.id));
   for (const o of outcomes) {
     if (o.outcome === 'sent') summary.sent += 1;
     else if (o.outcome === 'retry') summary.retried += 1;
     else if (o.outcome === 'failed') summary.failed += 1;
     else if (o.outcome === 'withdrawn') summary.withdrawn += 1;
+    else if (o.outcome === 'paused') summary.paused += 1;
     else summary.skipped += 1;
   }
   return summary;

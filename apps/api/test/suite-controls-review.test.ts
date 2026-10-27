@@ -23,6 +23,8 @@ beforeAll(async () => {
   await ctx.db.insert(rolePermission).values(['console:app_registry:read', 'console:release:read'].map(permission => ({
     id: newId(), roleId: readRole, permission,
   })));
+  // The seed now registers all six apps (SCRUM-643 boundary 4); this file's directory is exactly its own three.
+  await ctx.db.delete(appRegistry);
   await ctx.db.insert(appRegistry).values([
     { key: 'console' as const, tileState: 'open' as const, sortOrder: 2 },
     { key: 'pos' as const, tileState: 'coming_soon' as const, sortOrder: 1 },

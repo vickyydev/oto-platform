@@ -60,6 +60,47 @@ afterAll(async () => {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+const SUITE_CONTROL_WRITES = [
+  'PUT /console/apps/:key/maintenance',
+  'POST /console/apps/:key/maintenance/clear',
+  'PUT /console/flags',
+  'POST /console/flags/clear',
+  'POST /console/flags/approvals',
+  'POST /console/flags/approvals/:id/approve',
+  'POST /console/flags/approvals/:id/apply',
+  'POST /console/deploy-events',
+];
+
+describe('Suite controls registration (SCRUM-643)', () => {
+  it('every suite-control write is keyed before replay, typed, and reaches the audited transaction without an exemption', () => {
+    const registered = routes.filter(r => MUTATING.has(r.method) && (r.path.startsWith('/console/apps') || r.path.startsWith('/console/flags')
+      || r.path === '/console/deploy-events')).map(r => `${r.method} ${r.path}`).sort();
+    expect(registered).toEqual([...SUITE_CONTROL_WRITES].sort());
+    for (const key of SUITE_CONTROL_WRITES) {
+      const route = routes.find(r => `${r.method} ${r.path}` === key)!;
+      expect(route.optionsText, key).toContain('preValidation');
+      expect(route.optionsText, key).toContain('requirePlatformHolder(req');
+      expect(route.optionsText, key).toContain('idempotencyKeyRequired(req)');
+      expect(route.optionsText, key).toContain('body:');
+      expect(route.optionsText, key).toContain('response:');
+      expect(reachesText(route.handlerText, text => /\bwithTx\s*\(/.test(text), functions, 3), key).toBe(true);
+      expect(reachesText(route.handlerText, text => /\baudit\.record\s*\(/.test(text), functions, 3), key).toBe(true);
+      const config = configs.get(key);
+      expect(config?.secretResponse, key).not.toBe(true); expect(config?.replaysByOwnId, key).not.toBe(true);
+      expect(config?.credential, key).toBeUndefined(); expect(config?.public, key).not.toBe(true);
+    }
+  });
+
+  it('the launcher read, the catalogue and the preview write nothing and run nothing', () => {
+    for (const path of ['/suite/apps', '/console/flags', '/console/flags/preview']) {
+      const route = routes.find(r => r.method === 'GET' && r.path === path)!;
+      expect(route, path).toBeDefined();
+      expect(route.optionsText, path).toContain('querystring:');
+      expect(reachesText(route.handlerText, text => /\b(?:withTx|raiseAlert|deliverAlert|recordRun)\s*\(/.test(text), functions), path).toBe(false);
+    }
+  });
+});
+
 describe('Operator selection write registration (SCRUM-640)', () => {
   it('uses the verified session service and its transaction/audit without a write or replay exemption', () => {
     const route = routes.find(r => r.method === 'PUT' && r.path === '/me/session/operator');
