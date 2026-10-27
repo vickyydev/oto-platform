@@ -10,6 +10,8 @@ export * from './platform';
 export * from './console-configuration';
 export * from './suite-controls';
 export * from './ops';
+// Alert routing and fingerprint mutes (SCRUM-644): beside the alerts they route.
+export * from './alert-routing';
 export * from './edge';
 export * from './sync';
 export * from './future';

@@ -57,6 +57,16 @@ export const auditLog = core.table(
     before: jsonb('before'),
     after: jsonb('after'),
     /**
+     * SCRUM-644 (Q25): the app a producer labels its write with (`console`,
+     * `inbox`, `box`, ...) and the activity category it belongs to
+     * (`data_access`, `denial`). Additive and nullable: a writer that does not
+     * label leaves both empty, and its scope and payload are unchanged. The
+     * Activity read derives `data_access` and `denial` for unlabelled rows from
+     * the action vocabulary, the same way it already derives the outcome.
+     */
+    sourceApp: text('source_app'),
+    category: text('category'),
+    /**
      * `x-oto-action-id`, minted where the person tapped and carried PWA -> box
      * -> cloud (S2-05). The audit row is the last of the four records one
      * action writes — the till line, the Box log drawer, the `ops_run` for the
@@ -91,6 +101,10 @@ export const auditLog = core.table(
     index('audit_action_idx').on(t.action, t.createdAt),
     index('audit_action_id_idx').on(t.actionId),
     index('audit_source_event_idx').on(t.sourceEventId),
+    // SCRUM-644: the Activity filters by app, target app and category.
+    index('audit_source_app_idx').on(t.sourceApp, t.createdAt),
+    index('audit_target_app_idx').on(t.targetApp, t.createdAt),
+    index('audit_category_idx').on(t.category, t.createdAt),
   ],
 );
 
