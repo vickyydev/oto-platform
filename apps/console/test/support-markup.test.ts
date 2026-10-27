@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Router } from 'wouter';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImpersonationApproval, SupportLookup, SupportTrace } from '@/api/support';
-import { ImpersonationBanner } from '@/components/ImpersonationBanner';
+import { readFileSync } from 'node:fs';
+import { ImpersonationBanner, markViewAsOffset, VIEW_AS_ACTIVE } from '@/components/ImpersonationBanner';
 import {
   ApprovalCards, ImpersonationStartForm, LookupResults, RefusalNote, TraceView,
 } from '@/components/support/SupportViews';
@@ -193,8 +194,27 @@ describe('SCRUM-648 banner and navigation', () => {
     for (const out of [actor, inWindow]) {
       expect(out).toContain('data-testid="impersonation-banner"');
       expect(out).not.toMatch(/<button/);
-      expect(out).toContain('sticky top-0 z-50');
+      expect(out).toContain('fixed inset-x-0 top-0');
+      expect(out).toContain('h-9');
     }
+    expect(banner(null, [win, { ...win, id: SUBJECT }])).toContain('1 more open');
+  });
+
+  it('moves the page and the sticky header and rail below the banner, so it covers no header control', () => {
+    const tokens = new Set<string>();
+    const root = { classList: { toggle: (token: string, on?: boolean) => { if (on) tokens.add(token); else tokens.delete(token); } } };
+    markViewAsOffset(root, true);
+    expect([...tokens]).toEqual([VIEW_AS_ACTIVE]);
+    markViewAsOffset(root, false);
+    expect([...tokens]).toEqual([]);
+    const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+    expect(css).toContain('html.view-as-active { --view-as-offset: 2.25rem; }');
+    expect(css).toContain('html.view-as-active body { padding-top: var(--view-as-offset); }');
+    expect(css).toContain(String.raw`html.view-as-active .h-\[100dvh\] { height: calc(100dvh - var(--view-as-offset)); }`);
+    const layout = readFileSync(new URL('../src/components/ConsoleLayout.tsx', import.meta.url), 'utf8');
+    // Both sticky regions (the phone header and the rail) stick below the banner, never under it.
+    expect(layout.match(/sticky top-\[var\(--view-as-offset,0px\)\]/g)?.length).toBe(2);
+    expect(layout).not.toMatch(/sticky top-0/);
   });
 
   it('renders the banner in the console shell while a window is open', async () => {

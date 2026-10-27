@@ -108,11 +108,12 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <Backdrop />
-      {/* SCRUM-648: fixed for the whole view-as window, above every page, never dismissible. */}
+      {/* SCRUM-648: fixed for the whole view-as window, above every page, never dismissible; the page and the
+          sticky header and rail sit below it (index.css `view-as-active`). */}
       {me && <ImpersonationBanner me={me} />}
 
       {/* The phone's bar: the sidebar is a drawer below md, so this is the way into it. */}
-      <header className="md:hidden sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-card-border bg-background/90 px-4 backdrop-blur">
+      <header className="md:hidden sticky top-[var(--view-as-offset,0px)] z-30 flex h-14 items-center gap-3 border-b border-card-border bg-background/90 px-4 backdrop-blur">
         <button
           className="inline-flex h-10 w-10 items-center justify-center rounded-[12px] border border-border text-foreground/70"
           onClick={() => setNavOpen(true)}
@@ -125,7 +126,7 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
 
       <div className="flex">
         <aside className="hidden md:block w-[264px] shrink-0 border-r border-card-border bg-card">
-          <div className="sticky top-0 h-[100dvh] overflow-y-auto">
+          <div className="sticky top-[var(--view-as-offset,0px)] h-[100dvh] overflow-y-auto">
             <Sidebar activeId={activeId} attention={attention} idPrefix="rail" />
           </div>
         </aside>

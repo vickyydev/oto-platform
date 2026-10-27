@@ -21,13 +21,23 @@ export function timeLeft(expiresAt: string, now: number): string {
 }
 
 // Written with createElement: the till's node test runner has no JSX transform (vitest.config.ts).
+/**
+ * The class that gives the till the banner's height (`index.css`): the body
+ * starts below the fixed banner and every full-height screen is shortened by
+ * it, so it never covers a header control. On while a window shows, off after.
+ */
+export const VIEW_AS_ACTIVE = 'view-as-active';
+export function markViewAsOffset(root: { classList: { toggle(token: string, force?: boolean): unknown } }, on: boolean): void {
+  root.classList.toggle(VIEW_AS_ACTIVE, on);
+}
+
 export function ImpersonationBannerView({ viewAs, now }: { viewAs: PosImpersonation | null; now: number }) {
   if (!viewAs) return null;
   return createElement('div', {
     role: 'status', 'aria-live': 'polite', 'data-testid': 'impersonation-banner',
-    className: 'fixed inset-x-0 top-0 z-[100] flex flex-wrap items-center justify-center gap-x-2 border-b border-amber-500 bg-amber-400 px-4 py-1.5 text-sm font-semibold text-black',
+    className: 'fixed inset-x-0 top-0 z-[100] flex h-9 items-center justify-center gap-2 overflow-hidden whitespace-nowrap border-b border-amber-500 bg-amber-400 px-4 text-sm font-semibold text-black',
   },
   createElement(Eye, { className: 'h-4 w-4 shrink-0', 'aria-hidden': 'true' }),
-  createElement('span', { className: 'min-w-0 break-words' }, viewAsLine(viewAs)),
-  createElement('span', { className: 'tabular-nums' }, `· ends in ${timeLeft(viewAs.expiresAt, now)}`));
+  createElement('span', { className: 'min-w-0 truncate' }, viewAsLine(viewAs)),
+  createElement('span', { className: 'shrink-0 tabular-nums' }, `· ends in ${timeLeft(viewAs.expiresAt, now)}`));
 }
