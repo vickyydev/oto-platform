@@ -70,6 +70,16 @@ export const auditLog = core.table(
      * points at. Same rule as `edge.box_command.action_id` and `ops_run`.
      */
     sourceEventId: uuid('source_event_id'),
+    /**
+     * SCRUM-643 (S2-23 cross-cutting audit): which suite app a Console action
+     * reached into, the reason the action demanded, and where it came from
+     * (`console`, `job`). Additive and nullable: every existing writer leaves
+     * them empty, and their event owner and attribution are unchanged. No
+     * foreign key — the audit log outlives any registry row it names.
+     */
+    targetApp: text('target_app'),
+    reason: text('reason'),
+    origin: text('origin'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => [

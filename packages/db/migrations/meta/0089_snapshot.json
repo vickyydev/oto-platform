@@ -1,5 +1,5 @@
 {
-  "id": "03b40674-f5ac-48ba-9c98-15cf921d43eb",
+  "id": "20aa7744-6a21-45af-920d-80a85503a41e",
   "prevId": "88f751eb-2b9e-496a-a64c-19987ae1bb73",
   "version": "7",
   "dialect": "postgresql",
@@ -8117,6 +8117,24 @@
         "source_event_id": {
           "name": "source_event_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_app": {
+          "name": "target_app",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },

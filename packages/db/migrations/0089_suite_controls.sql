@@ -115,6 +115,9 @@ CREATE TABLE "core"."suite_control_approval" (
   ))
 );
 --> statement-breakpoint
+ALTER TABLE "core"."audit_log" ADD COLUMN "target_app" text;--> statement-breakpoint
+ALTER TABLE "core"."audit_log" ADD COLUMN "reason" text;--> statement-breakpoint
+ALTER TABLE "core"."audit_log" ADD COLUMN "origin" text;--> statement-breakpoint
 ALTER TABLE "core"."deploy_event" ADD CONSTRAINT "deploy_event_app_app_registry_key_fk" FOREIGN KEY ("app") REFERENCES "core"."app_registry"("key") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "core"."deploy_event" ADD CONSTRAINT "deploy_event_actor_account_id_account_id_fk" FOREIGN KEY ("actor_account_id") REFERENCES "core"."account"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "core"."feature_flag" ADD CONSTRAINT "feature_flag_target_app_app_registry_key_fk" FOREIGN KEY ("target_app") REFERENCES "core"."app_registry"("key") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
