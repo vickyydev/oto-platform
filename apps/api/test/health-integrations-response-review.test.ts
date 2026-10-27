@@ -94,7 +94,9 @@ describe('SCRUM-645 native Health and Integrations response schemas', () => {
     const schema = schemaOf('/ops/integrations');
     expect(schema.required?.slice().sort()).toEqual(['providers', 'variables']);
     expect(Object.keys(schema.properties!.providers!.items!.properties!).sort())
-      .toEqual(['category', 'detail', 'endpoint', 'key', 'lastDeliveryAt', 'lastDeliveryOutcome', 'missingVars', 'name', 'purpose', 'state']);
+      .toEqual(['availability', 'category', 'detail', 'endpoint', 'key', 'lastDeliveryAt', 'lastDeliveryOutcome', 'lastFailedAt', 'lastOkAt', 'missingVars', 'name', 'purpose', 'state']);
+    // SCRUM-645 / Q26: availability and history are required on every row.
+    expect(schema.properties!.providers!.items!.required).toEqual(expect.arrayContaining(['availability', 'lastOkAt', 'lastFailedAt']));
     expect(Object.keys(schema.properties!.variables!.items!.properties!).sort()).toEqual(['name', 'present', 'provider', 'purpose', 'required']);
   });
 
