@@ -25,7 +25,8 @@ import type { Tx } from './tx';
  *    Office) are intentional and never read.
  *  - **employees** — the OTO APP is the master of the four mirrored fields and
  *    the owned branch, with its LEFT archival rule (`otoapp-employee-sync.ts`).
- *    Read through `otoapp_v.employees` and the anchor rule (`appTenantAnchors`):
+ *    Read through the app's published employees view (`otoapp-employees.ts`,
+ *    the one file allowed to name it) and the anchor rule (`appTenantAnchors`):
  *    only park groups anchored to this operator alone are compared; one
  *    anchored to two operators is ambiguous, exactly as the copy leaves it.
  *  - **app_accounts** — the PLATFORM account and its provisioning record
