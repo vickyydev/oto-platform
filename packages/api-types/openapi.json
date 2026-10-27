@@ -2496,6 +2496,8 @@
               "type": "string",
               "enum": [
                 "console:overview:read",
+                "console:analytics:read",
+                "console:config:read",
                 "hr:salary:view",
                 "platform:operator:switch",
                 "admin:account:create",
@@ -68501,6 +68503,385 @@
                     "revision",
                     "updatedAt",
                     "updatedBy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/analytics": {
+      "get": {
+        "description": "Read retained analytics metadata for branches held on both console:analytics:read and analytics:read. Source and Radar preference remain separate; switchedAt is the edit timestamp. Formula counts include all retained daily/hourly rows, not the KPI date range. Queue depth counts rows including claimed rows. Default selection is live readable branches; requested own unreadable branches are omitted, foreign or unknown IDs are 404, and no readable selection is 403. This read never switches sources or runs a job.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "stored-summary-metadata"
+                      ]
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "oto_pos",
+                              "pisell",
+                              "papaya"
+                            ]
+                          },
+                          "preference": {
+                            "type": "string",
+                            "enum": [
+                              "oto_pos",
+                              "legacy",
+                              "both"
+                            ]
+                          },
+                          "switchedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "formulaRows": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "oto_pos",
+                                    "pisell",
+                                    "papaya"
+                                  ]
+                                },
+                                "formulaVersion": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": true,
+                                  "minimum": 0
+                                },
+                                "dailyRows": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "hourlyRows": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "frozenDailyRows": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "provisionalDailyRows": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "formulaVersion",
+                                "dailyRows",
+                                "hourlyRows",
+                                "frozenDailyRows",
+                                "provisionalDailyRows"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "dirtyDates": {
+                            "type": "object",
+                            "properties": {
+                              "total": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "byKind": {
+                                "type": "object",
+                                "properties": {
+                                  "sales": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "hourly": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "booth": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "wallet": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "sales",
+                                  "hourly",
+                                  "booth",
+                                  "wallet"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "oldestBusinessDate": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "newestMarkedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "total",
+                              "byKind",
+                              "oldestBusinessDate",
+                              "newestMarkedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "name",
+                          "source",
+                          "preference",
+                          "switchedAt",
+                          "formulaRows",
+                          "dirtyDates"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "omitted": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "basis",
+                    "branches",
+                    "omitted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/configuration": {
+      "get": {
+        "description": "Read the settings index: which settings exist, the app that owns each and the page that edits it, for the caller's operator. Requires console:config:read; each entry is listed only where the caller holds the owning page's own permission, with branch entries narrowed to the named park (branchId) or to the live parks the index reaches. A foreign, unknown or archived park is 404; an own park outside the index reach is 403. Navigation targets are fixed in code, never read from storage; unsupported entries carry no navigation or edit offer. Metadata only: no setting value is returned, and the read never seeds or writes the catalogue.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "operatorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "selectedBranchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "appOwner": {
+                            "type": "string"
+                          },
+                          "editableHere": {
+                            "type": "boolean"
+                          },
+                          "requiredPermission": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "openInApp": {
+                            "type": "object",
+                            "properties": {
+                              "app": {
+                                "type": "string",
+                                "enum": [
+                                  "oto_app",
+                                  "radar",
+                                  "inbox"
+                                ]
+                              },
+                              "path": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "app",
+                              "path"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "supported": {
+                            "type": "boolean"
+                          },
+                          "scope": {
+                            "type": "string",
+                            "enum": [
+                              "operator",
+                              "branch"
+                            ]
+                          },
+                          "branchIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "lastChangedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "lastChangedAvailability": {
+                            "type": "string",
+                            "enum": [
+                              "available",
+                              "not-recorded",
+                              "unsupported"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "label",
+                          "appOwner",
+                          "editableHere",
+                          "requiredPermission",
+                          "url",
+                          "openInApp",
+                          "supported",
+                          "scope",
+                          "branchIds",
+                          "lastChangedAt",
+                          "lastChangedAvailability"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "operatorId",
+                    "branches",
+                    "selectedBranchId",
+                    "entries"
                   ],
                   "additionalProperties": false
                 }
