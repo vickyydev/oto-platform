@@ -37,6 +37,7 @@ import { Holidays } from '@/pages/Holidays';
 import { Catalogue } from '@/pages/Catalogue';
 import { MenuCatalogue } from '@/pages/MenuCatalogue';
 import { Money } from '@/pages/Money';
+import { MoneyOversight } from '@/pages/MoneyOversight';
 import { Care } from '@/pages/Care';
 import { StaffBenefits } from '@/pages/StaffBenefits';
 import { Reports, ReportsLanding } from '@/pages/Reports';
@@ -165,6 +166,7 @@ const pageElements: Record<string, ReactElement> = {
   care: <Care page="care" />,
   'print-templates': <Care page="print-templates" />,
   'staff-benefits': <StaffBenefits />,
+  money: <MoneyOversight />,
   discounts: <Money page="discounts" />,
   tenders: <Money page="tenders" />,
   tax: <Money page="tax" />,

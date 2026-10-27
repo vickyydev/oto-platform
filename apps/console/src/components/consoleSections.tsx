@@ -1,6 +1,6 @@
 import {
   Activity, BarChart3, Building2, CalendarCheck, FerrisWheel, HeartPulse,
-  LayoutDashboard, MessagesSquare, Plug, Router, Shield, Ticket,
+  Landmark, LayoutDashboard, MessagesSquare, Plug, Router, Shield, Ticket,
   TriangleAlert, Users, type LucideIcon,
 } from 'lucide-react';
 import type { Permission } from '@oto/shared/permissions';
@@ -59,6 +59,9 @@ export const CONSOLE_SECTIONS: ConsoleSection[] = [
     description: 'VAT totals and the existing date-bounded receipt exports.', permission: 'analytics:read' },
   { id: 'reports-wallet-promo', path: '/reports/wallet-promo', label: 'Wallet & promo', icon: BarChart3,
     description: 'Wallet movements, current outstanding credit and promotional voucher use.', permission: 'analytics:read' },
+  // SCRUM-647: read only, every read audited; the integrity panel needs console:money:investigate too.
+  { id: 'money', path: '/reports/money', label: 'Money oversight', icon: Landmark,
+    description: 'Sales, refunds, cash days, settlement, wallet liability and costs across parks, read only.', permission: 'console:money:read' },
   { id: 'care', path: '/catalogue/care', label: 'Drop-off & supervision', icon: Shield,
     description: 'Park drop-off and nanny prices, age bands, sibling waiver and consent checklist.', permission: 'pos:checkin:read' },
   { id: 'print-templates', path: '/catalogue/print-templates', label: 'Print templates', icon: Ticket,
@@ -292,7 +295,7 @@ export const consoleNav: ConsoleNavGroup[] = [
   {
     id: 'reports', label: 'Reports', icon: BarChart3,
     description: 'Sales, profitability, discounts, tax, wallet credit, booth activity and online bookings.',
-    gate: { any: ['analytics:read'] }, sections: pages('reports-sales', 'reports-profitability', 'reports-discounts', 'reports-tax-vat', 'reports-wallet-promo', 'wallets', 'booth-report', 'bookings'),
+    gate: { any: ['analytics:read', 'console:money:read'] }, sections: pages('money', 'reports-sales', 'reports-profitability', 'reports-discounts', 'reports-tax-vat', 'reports-wallet-promo', 'wallets', 'booth-report', 'bookings'),
   },
   {
     id: 'watch', label: 'Watch', icon: Activity,
