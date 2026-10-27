@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { formatTHB } from '@oto/shared';
-import { consoleConfigurationApi, type AnalyticsMetadata, type AnalyticsSummary } from '@/api/consoleConfiguration';
+import {
+  consoleConfigurationApi, type AnalyticsDrift, type AnalyticsMetadata, type AnalyticsSummary, type DriftComparison,
+} from '@/api/consoleConfiguration';
 import { useSession } from '@/auth/SessionContext';
 import { ErrorNote, Loading, PermissionRequired } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
 import { CommandBar } from '@/components/redesign/CommandBar';
-import { SelectChip } from '@/components/redesign/chips';
+import { CodeTag, SelectChip, StatusChip, Tag } from '@/components/redesign/chips';
+import type { Tone } from '@/components/Status';
 import { CardShell, PageGrid } from '@/components/redesign/layout';
 import { EmptyNote, StatTile, UnreadNote } from '@/components/redesign/StatTile';
 import { formatExact } from '@/lib/time';
@@ -18,8 +21,8 @@ const recordedAt = (value: string | null) => value ? formatExact(value, 'UTC') :
 
 export function AnalyticsSources() {
   const { has } = useSession();
-  if (!has('console:analytics:read')) return <PermissionRequired permission="console:analytics:read" />;
-  if (!has('analytics:read')) return <PermissionRequired permission="analytics:read" />;
+  if (!has('console:analytics:read')) return <><CommandBar sectionId="analytics" /><PermissionRequired permission="console:analytics:read" /></>;
+  if (!has('analytics:read')) return <><CommandBar sectionId="analytics" /><PermissionRequired permission="analytics:read" /></>;
   return <AnalyticsSourcesBody />;
 }
 
@@ -35,6 +38,9 @@ function AnalyticsSourcesBody() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryRefresh, setSummaryRefresh] = useState(0);
+  const [drift, setDrift] = useState<AnalyticsDrift | null>(null);
+  const [driftError, setDriftError] = useState<string | null>(null);
+  const [driftRefresh, setDriftRefresh] = useState(0);
   useEffect(() => {
     let live = true;
     setMetadata(null); setError(null);
@@ -58,6 +64,16 @@ function AnalyticsSourcesBody() {
     });
     return () => { live = false; };
   }, [metadata, branchId, from, to, summaryRefresh, working.run, working.isCurrent]);
+  useEffect(() => {
+    let live = true;
+    setDrift(null); setDriftError(null);
+    void working.run(() => consoleConfigurationApi.drift(branchId ? [branchId] : undefined)).then(answer => {
+      if (live && working.isCurrent()) setDrift(answer);
+    }).catch((failure: unknown) => {
+      if (live && working.isCurrent()) setDriftError(failure instanceof Error ? failure.message : 'The drift comparison could not be read.');
+    });
+    return () => { live = false; };
+  }, [branchId, refresh, driftRefresh, working.run, working.isCurrent]);
   const parks = metadata?.branches.filter(park => !branchId || park.branchId === branchId) ?? [];
   return <>
     <CommandBar sectionId="analytics" actions={<Button variant="outline" onClick={() => setRefresh(value => value + 1)}>Refresh</Button>} />
@@ -111,6 +127,8 @@ function AnalyticsSourcesBody() {
           <p className="text-sm text-muted-foreground">Sales {park.dirtyDates.byKind.sales} · Hourly {park.dirtyDates.byKind.hourly} · Booth {park.dirtyDates.byKind.booth} · Wallet {park.dirtyDates.byKind.wallet}. Queue counts include claimed rows.</p>
         </CardShell>)}</PageGrid>
       </>}
+      <DriftPanel drift={drift} error={driftError} parks={metadata.branches}
+        onRetry={() => setDriftRefresh(value => value + 1)} />
     </>}
     {has('app:radar:access') && <RadarTile />}
   </>;
@@ -130,4 +148,87 @@ function SummaryFigures({ row, label }: { row: AnalyticsSummary['merged'][number
     <p className="text-sm text-muted-foreground">Ticket mix: 1 hour {row.mix1h} · 2 hours {row.mix2h} · Full day {row.mixFullDay}.</p>
     {Object.entries(row.byChannel).map(([channel, figures]) => <p key={channel} className="text-sm break-words">{channel}: {formatTHB(figures.revenue)} · {figures.txn_count} transactions</p>)}
   </div>;
+}
+
+const comparisonTitles: Record<DriftComparison['key'], string> = {
+  branch_names: 'Park names in the OTO App',
+  employees: 'Employee records copied from the OTO App',
+  app_accounts: 'OTO App sign-ins',
+};
+const masters: Record<DriftComparison['master'], string> = { platform: 'Platform', oto_app: 'OTO App' };
+const statusWords: Record<DriftComparison['status'], { tone: Tone; label: string }> = {
+  clean: { tone: 'ok', label: 'No drift found' },
+  drift: { tone: 'down', label: 'Drift found' },
+  ambiguous: { tone: 'warn', label: 'Owner unclear' },
+  absent: { tone: 'idle', label: 'Source not installed' },
+  denied: { tone: 'idle', label: 'Not readable' },
+};
+const fieldWords: Record<string, string> = {
+  name: 'Name', nickname: 'Nickname', phone: 'Phone', email: 'Email', branchId: 'Owned park',
+  archivedAt: 'Archived state', platformUserId: 'Sign-in link', isActive: 'Active state', role: 'Role',
+};
+const kindWords: Record<DriftComparison['items'][number]['kind'], string> = {
+  changed: 'Differs from its master', missing: 'No copy of the master record', orphan: 'Copy whose master is gone',
+};
+const entityWords: Record<DriftComparison['items'][number]['entity'], string> = { branch: 'Park', employee: 'Employee', account: 'Sign-in' };
+
+function unreadReason(row: DriftComparison): string | null {
+  switch (row.reason) {
+    case 'seam_absent': return 'This source is not installed on this deployment, so nothing was compared.';
+    case 'seam_not_granted': return 'The database does not let the platform read this source, so nothing was compared.';
+    case 'permission': return `Comparing needs ${row.requiredPermission ?? 'a read permission you do not hold'}, so nothing was compared.`;
+    case 'empty_source': return 'The OTO App answered no employees while copies exist, so nothing was compared.';
+    case 'anchor_ambiguous': return 'Some records belong to a park group whose operator is not settled, so they were not compared.';
+    default: return null;
+  }
+}
+
+/**
+ * Read-only drift between the platform's copies and their masters. Each
+ * comparison says what it is; an absent, refused or unsettled source reads as
+ * exactly that, never as no drift. Only the names of differing fields are shown.
+ */
+export function DriftPanel({ drift, error, parks, onRetry }: {
+  drift: AnalyticsDrift | null;
+  error: string | null;
+  parks: ReadonlyArray<{ branchId: string; name: string }>;
+  onRetry: () => void;
+}) {
+  const parkName = (id: string | null) => id === null ? null : parks.find(park => park.branchId === id)?.name ?? 'Park not in this reading';
+  return <CardShell title="Copies and their masters" note="Read-only comparison; values are never shown, only which fields differ">
+    {error && <div role="alert"><ErrorNote message={error} onRetry={onRetry} /></div>}
+    {error && <UnreadNote what="Drift comparison" />}
+    {!drift && !error && <div role="status"><Loading what="drift comparison" /></div>}
+    {drift && <>
+      <p className="text-sm text-muted-foreground">Read <time dateTime={drift.generatedAt}>{recordedAt(drift.generatedAt)}</time>. Nothing is repaired or copied from here.</p>
+      <ul className="flex min-w-0 flex-col gap-3" aria-label="Drift comparisons">
+        {drift.comparisons.map(row => {
+          const words = statusWords[row.status];
+          const reason = unreadReason(row);
+          const read = row.status === 'clean' || row.status === 'drift' || row.status === 'ambiguous';
+          return <li key={row.key} data-drift-key={row.key} data-drift-status={row.status} className="min-w-0 rounded-2xl border p-4">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h3 className="font-bold break-words">{comparisonTitles[row.key]}</h3>
+              <StatusChip tone={words.tone}>{words.label}</StatusChip>
+              <Tag>Master: {masters[row.master]}</Tag>
+            </div>
+            {read && <p className="mt-2 text-sm text-muted-foreground">
+              {row.compared} compared{row.ambiguous ? ` · ${row.ambiguous} with an unsettled owner, not compared` : ''}{row.withheld ? ` · ${row.withheld} outside what you may inspect` : ''}.
+            </p>}
+            {reason && row.status !== 'drift' && <p className="mt-2 text-sm">{reason}</p>}
+            {row.items.length > 0 && <ul className="mt-3 divide-y divide-border" aria-label={`${comparisonTitles[row.key]} differences`}>
+              {row.items.map((item, index) => <li key={`${item.platformId ?? ''}:${item.externalId ?? ''}:${index}`} className="min-w-0 space-y-1 py-2 text-sm">
+                <p className="font-semibold break-words">{entityWords[item.entity]}{item.branchId ? ` · ${parkName(item.branchId)}` : ''} · {kindWords[item.kind]}</p>
+                {item.fields.length > 0 && <p className="flex min-w-0 flex-wrap gap-1.5">{item.fields.map(field => <Tag key={field}>{fieldWords[field] ?? field}</Tag>)}</p>}
+                <p className="flex min-w-0 flex-wrap gap-1.5">
+                  {item.platformId && <CodeTag>{item.platformId}</CodeTag>}
+                  {item.externalId && <CodeTag>{item.externalId}</CodeTag>}
+                </p>
+              </li>)}
+            </ul>}
+          </li>;
+        })}
+      </ul>
+    </>}
+  </CardShell>;
 }
