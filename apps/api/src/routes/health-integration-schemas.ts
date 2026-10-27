@@ -61,9 +61,17 @@ const RollupFreshness = z.object({
   boothLastRolledUpAt: NullableText, reportsLastRolledUpAt: NullableText,
 });
 
+/** SCRUM-645 / Q26: whether each evidence read behind the answer actually answered. */
+const ReadAvailability = z.enum(['ok', 'failed', 'denied', 'unknown']);
+const HealthEvidence = z.object({
+  source: z.enum(['jobs', 'fleet', 'alerts', 'watchdog', 'occupancy']), label: z.string(),
+  availability: ReadAvailability, detail: NullableText,
+});
+
 export const HealthSnapshotResponse: z.ZodType<unknown> = z.object({
   status: HealthState, checks: z.array(HealthCheck), jobs: z.array(JobStatus), boxes: z.array(BoxHealth), alerts: z.array(AlertRow),
   watchdogAgeSeconds: NullableNumber, generatedAt: z.string(), reach: Reach, rollups: z.array(RollupFreshness),
+  evidence: z.array(HealthEvidence),
 });
 
 const IntegrationProvider = z.object({
