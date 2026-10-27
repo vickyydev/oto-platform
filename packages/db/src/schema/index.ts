@@ -8,6 +8,8 @@ export * from './staff-token';
 export * from './print';
 export * from './platform';
 export * from './ops';
+// SCRUM-645: owner-supplied credential expiry dates, beside the ops record.
+export * from './integration';
 export * from './edge';
 export * from './sync';
 export * from './future';
