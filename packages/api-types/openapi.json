@@ -2763,6 +2763,8 @@
               "type": "string",
               "enum": [
                 "console:overview:read",
+                "console:integration:test",
+                "console:integration:manage",
                 "hr:salary:view",
                 "platform:operator:switch",
                 "admin:account:create",
@@ -71188,6 +71190,47 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "evidence": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "jobs",
+                              "fleet",
+                              "alerts",
+                              "watchdog",
+                              "occupancy"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "availability": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "failed",
+                              "denied",
+                              "unknown"
+                            ]
+                          },
+                          "detail": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "label",
+                          "availability",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -71199,7 +71242,8 @@
                     "watchdogAgeSeconds",
                     "generatedAt",
                     "reach",
-                    "rollups"
+                    "rollups",
+                    "evidence"
                   ],
                   "additionalProperties": false
                 }
@@ -71603,6 +71647,23 @@
                           "detail": {
                             "type": "string",
                             "nullable": true
+                          },
+                          "availability": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "failed",
+                              "denied",
+                              "unknown"
+                            ]
+                          },
+                          "lastOkAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastFailedAt": {
+                            "type": "string",
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -71610,7 +71671,10 @@
                           "name",
                           "purpose",
                           "category",
-                          "state"
+                          "state",
+                          "availability",
+                          "lastOkAt",
+                          "lastFailedAt"
                         ],
                         "additionalProperties": false
                       }
@@ -71724,6 +71788,399 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/ops/integrations/credentials": {
+      "get": {
+        "description": "The credential expiry dates the owner recorded for the integrations with a known lifetime, and how far each is from its 30- and 7-day warnings. Dates only; never a credential",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "visible": {
+                      "type": "boolean"
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "availability": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "failed",
+                        "denied",
+                        "unknown"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "credentials": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "integration": {
+                            "type": "string",
+                            "enum": [
+                              "meta_channel_token",
+                              "pgw_maintenance_key",
+                              "otoapp_directory_key"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "purpose": {
+                            "type": "string"
+                          },
+                          "expiresOn": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "daysLeft": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "window": {
+                            "type": "string",
+                            "enum": [
+                              "not_set",
+                              "ok",
+                              "30_days",
+                              "7_days",
+                              "expired"
+                            ]
+                          },
+                          "setAt": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "integration",
+                          "name",
+                          "purpose",
+                          "expiresOn",
+                          "daysLeft",
+                          "window",
+                          "setAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "visible",
+                    "canManage",
+                    "availability",
+                    "detail",
+                    "credentials"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ops/integrations/{key}/expiry": {
+      "put": {
+        "description": "Record (or clear, with null) the date an integration's credential expires, as the owner was told it. Requires Idempotency-Key. The watch reads this date only and never asks the provider",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expiresOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "expiresOn"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "meta_channel_token",
+                "pgw_maintenance_key",
+                "otoapp_directory_key"
+              ]
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "integration": {
+                      "type": "string",
+                      "enum": [
+                        "meta_channel_token",
+                        "pgw_maintenance_key",
+                        "otoapp_directory_key"
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    },
+                    "expiresOn": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "daysLeft": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "window": {
+                      "type": "string",
+                      "enum": [
+                        "not_set",
+                        "ok",
+                        "30_days",
+                        "7_days",
+                        "expired"
+                      ]
+                    },
+                    "setAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "integration",
+                    "name",
+                    "purpose",
+                    "expiresOn",
+                    "daysLeft",
+                    "window",
+                    "setAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ops/integrations/tests": {
+      "get": {
+        "description": "The integration test buttons, whether this caller may press them here, and when each last ran. Every adapter behind them is a local fake",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "adapter": {
+                      "type": "string",
+                      "enum": [
+                        "fake"
+                      ]
+                    },
+                    "availability": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "failed",
+                        "denied",
+                        "unknown"
+                      ]
+                    },
+                    "tests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "integration": {
+                            "type": "string",
+                            "enum": [
+                              "gateway",
+                              "sms",
+                              "storage",
+                              "otlp",
+                              "webhook"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "lastRunAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastOutcome": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastOkAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastFailedAt": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "integration",
+                          "label",
+                          "description",
+                          "lastRunAt",
+                          "lastOutcome",
+                          "lastOkAt",
+                          "lastFailedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "available",
+                    "adapter",
+                    "availability",
+                    "tests"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ops/integrations/{key}/test": {
+      "post": {
+        "description": "Run one integration's harmless round trip through its seam — every adapter is a local fake in this release — and record it as an ops_run of kind integration",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "gateway",
+                "sms",
+                "storage",
+                "otlp",
+                "webhook"
+              ]
+            },
+            "in": "path",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "integration": {
+                      "type": "string",
+                      "enum": [
+                        "gateway",
+                        "sms",
+                        "storage",
+                        "otlp",
+                        "webhook"
+                      ]
+                    },
+                    "runId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "failed"
+                      ]
+                    },
+                    "adapter": {
+                      "type": "string",
+                      "enum": [
+                        "fake"
+                      ]
+                    },
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "step": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": [
+                              "ok",
+                              "failed"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "step",
+                          "outcome"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "integration",
+                    "runId",
+                    "outcome",
+                    "adapter",
+                    "steps",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

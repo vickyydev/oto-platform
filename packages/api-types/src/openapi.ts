@@ -1710,7 +1710,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:integration:test" | "console:integration:manage" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -28245,6 +28245,14 @@ export interface paths {
                                 boothLastRolledUpAt: string | null;
                                 reportsLastRolledUpAt: string | null;
                             }[];
+                            evidence: {
+                                /** @enum {string} */
+                                source: "jobs" | "fleet" | "alerts" | "watchdog" | "occupancy";
+                                label: string;
+                                /** @enum {string} */
+                                availability: "ok" | "failed" | "denied" | "unknown";
+                                detail: string | null;
+                            }[];
                         };
                     };
                 };
@@ -28599,6 +28607,10 @@ export interface paths {
                                 lastDeliveryAt?: string | null;
                                 lastDeliveryOutcome?: string | null;
                                 detail?: string | null;
+                                /** @enum {string} */
+                                availability: "ok" | "failed" | "denied" | "unknown";
+                                lastOkAt: string | null;
+                                lastFailedAt: string | null;
                             }[];
                             variables: {
                                 name: string;
@@ -28739,6 +28751,218 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/integrations/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The credential expiry dates the owner recorded for the integrations with a known lifetime, and how far each is from its 30- and 7-day warnings. Dates only; never a credential */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            visible: boolean;
+                            canManage: boolean;
+                            /** @enum {string} */
+                            availability: "ok" | "failed" | "denied" | "unknown";
+                            detail: string | null;
+                            credentials: {
+                                /** @enum {string} */
+                                integration: "meta_channel_token" | "pgw_maintenance_key" | "otoapp_directory_key";
+                                name: string;
+                                purpose: string;
+                                expiresOn: string | null;
+                                daysLeft: number | null;
+                                /** @enum {string} */
+                                window: "not_set" | "ok" | "30_days" | "7_days" | "expired";
+                                setAt: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/integrations/{key}/expiry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Record (or clear, with null) the date an integration's credential expires, as the owner was told it. Requires Idempotency-Key. The watch reads this date only and never asks the provider */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    key: "meta_channel_token" | "pgw_maintenance_key" | "otoapp_directory_key";
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        expiresOn: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            integration: "meta_channel_token" | "pgw_maintenance_key" | "otoapp_directory_key";
+                            name: string;
+                            purpose: string;
+                            expiresOn: string | null;
+                            daysLeft: number | null;
+                            /** @enum {string} */
+                            window: "not_set" | "ok" | "30_days" | "7_days" | "expired";
+                            setAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/integrations/tests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The integration test buttons, whether this caller may press them here, and when each last ran. Every adapter behind them is a local fake */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            available: boolean;
+                            /** @enum {string} */
+                            adapter: "fake";
+                            /** @enum {string} */
+                            availability: "ok" | "failed" | "denied" | "unknown";
+                            tests: {
+                                /** @enum {string} */
+                                integration: "gateway" | "sms" | "storage" | "otlp" | "webhook";
+                                label: string;
+                                description: string;
+                                lastRunAt: string | null;
+                                lastOutcome: string | null;
+                                lastOkAt: string | null;
+                                lastFailedAt: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/integrations/{key}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run one integration's harmless round trip through its seam — every adapter is a local fake in this release — and record it as an ops_run of kind integration */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    key: "gateway" | "sms" | "storage" | "otlp" | "webhook";
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            integration: "gateway" | "sms" | "storage" | "otlp" | "webhook";
+                            /** Format: uuid */
+                            runId: string;
+                            /** @enum {string} */
+                            outcome: "ok" | "failed";
+                            /** @enum {string} */
+                            adapter: "fake";
+                            steps: {
+                                step: string;
+                                /** @enum {string} */
+                                outcome: "ok" | "failed";
+                            }[];
+                            message: string;
+                        };
+                    };
                 };
             };
         };
