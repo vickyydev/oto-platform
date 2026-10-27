@@ -5,6 +5,8 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'platform:operator:switch': 'Select the park group this session reads and changes while keeping the signed-in account unchanged.',
   'console:overview:read': "Read today's summary figures for the parks you can reach.",
   'console:analytics:read': 'Read recorded analytics sources, formulas and queued dates for the parks you can reach.',
+  'console:analytics:manage_source': 'Switch which recorded source a park reports from, after a preview, for the parks you can reach.',
+  'console:analytics:rerun': "Queue our own POS days to be recomputed from our own records; a legacy system's day can never be rebuilt.",
   'console:config:read': 'Read the settings index and follow the settings pages your existing access allows.',
   'hr:salary:view': 'View employee salary and pay details in the OTO App when platform access is enabled.',
 
