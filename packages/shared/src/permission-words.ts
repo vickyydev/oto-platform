@@ -4,6 +4,8 @@ import type { Permission } from './permissions';
 export const PERMISSION_WORDS: Record<Permission, string> = {
   'platform:operator:switch': 'Select the park group this session reads and changes while keeping the signed-in account unchanged.',
   'console:overview:read': "Read today's summary figures for the parks you can reach.",
+  'console:money:read': 'Read sales, refunds, cash days, settlement, wallet liability and costs for the parks you can reach, with every read recorded.',
+  'console:money:investigate': 'Also read the money integrity checks and the record numbers that open each row in the support trace, with every read recorded.',
   'hr:salary:view': 'View employee salary and pay details in the OTO App when platform access is enabled.',
 
   'admin:account:create': 'Invite a staff sign-in account with an allowed role and scope.',
