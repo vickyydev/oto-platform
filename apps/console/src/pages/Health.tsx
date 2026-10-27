@@ -32,6 +32,7 @@ import { CardShell, PageGrid, StripedList } from '@/components/redesign/layout';
 import { EmptyNote, UnreadNote } from '@/components/redesign/StatTile';
 import { useSession } from '@/auth/SessionContext';
 import { boxStoreAlertNote } from '@/lib/fleetWords';
+import { unreadEvidenceProblems, type EvidenceLike } from '@/lib/readAvailability';
 import { jobOutcomeChip, jobWaitingLine } from '@/lib/jobWords';
 import { usePlatformStatus } from '@/lib/platformStatus';
 import { isEstateWide, readReach, reachLabel } from '@/lib/reach';
@@ -84,12 +85,13 @@ export function Health() {
   const radarLine = has('app:radar:access') ? radarFreshnessLine(rollups) : null;
   const alerts = (snapshot?.alerts ?? []).filter((a) => !a.resolvedAt);
   const boxes = snapshot?.boxes ?? [];
-  const problems = listProblems(ready, checks, jobs, alerts, boxes);
+  const evidence = snapshot?.evidence;
+  const problems = listProblems(ready, checks, jobs, alerts, boxes, evidence);
   const verdict = overallTone(ready, checks, jobs, alerts, problems, snapshot?.status);
   const shownVerdict = error ? (ready && !ready.ok ? 'down' : 'idle') : verdict;
   // The same sentences without the alert ones: the Alerts card lists the
   // alerts themselves underneath, each with its own button.
-  const systemProblems = estateWide ? listProblems(ready, checks, jobs, [], boxes) : [];
+  const systemProblems = estateWide ? listProblems(ready, checks, jobs, [], boxes, evidence) : [];
   const fleetProps = { boxes: snapshot?.boxes, loading, missing: snapshotMissing, error,
     onRetry: () => void refresh(), timezone, span: 7 as const };
   /**
@@ -98,7 +100,9 @@ export function Health() {
    * failed (what is held is older than the error above it): an all-clear drawn
    * from either would be the page's guess, dressed in the green tick.
    */
-  const alertsRead = snapshot !== null && !error;
+  // SCRUM-645 / Q26: nor when the api says its own alert read was refused or failed.
+  const alertsRead = snapshot !== null && !error &&
+    (evidence ?? []).every((entry) => entry.source !== 'alerts' || entry.availability === 'ok');
 
   return (
     <>
@@ -595,6 +599,7 @@ function listProblems(
   jobs: JobStatus[],
   alerts: AlertRow[],
   boxes: readonly HealthBox[],
+  evidence?: readonly EvidenceLike[],
 ): string[] {
   const problems: string[] = [];
   if (ready && !ready.ok) problems.push(`The API answered ${ready.status} — it is not taking traffic.`);
@@ -602,6 +607,9 @@ function listProblems(
     // 200 with a status of its own: serving, but telling us something is off.
     problems.push(`The API reports itself ${ready.status}.`);
   }
+  // SCRUM-645 / Q26: a read that did not answer comes next — an empty list
+  // below it is not an all-clear.
+  problems.push(...unreadEvidenceProblems(evidence));
   for (const check of checks) {
     if (check.key === 'api') continue;
     if (check.status === 'down') problems.push(`${check.label ?? prettify(check.key)} is failing.`);

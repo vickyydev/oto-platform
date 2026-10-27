@@ -173,10 +173,12 @@ export type RollupFreshness = Omit<NativeRollupFreshness, 'boothLastRolledUpAt' 
   Partial<Pick<NativeRollupFreshness, 'boothLastRolledUpAt' | 'reportsLastRolledUpAt'>>;
 /** Keep the established older-deployment omissions visible to the screens. */
 export type HealthSnapshot = Omit<NativeHealthSnapshot,
-  'jobs' | 'boxes' | 'watchdogAgeSeconds' | 'generatedAt' | 'rollups'> & {
+  'jobs' | 'boxes' | 'watchdogAgeSeconds' | 'generatedAt' | 'rollups' | 'evidence'> & {
     jobs: JobStatus[];
     rollups?: RollupFreshness[];
-  } & Partial<Pick<NativeHealthSnapshot, 'boxes' | 'watchdogAgeSeconds' | 'generatedAt'>>;
+  } & Partial<Pick<NativeHealthSnapshot, 'boxes' | 'watchdogAgeSeconds' | 'generatedAt' | 'evidence'>>;
+/** SCRUM-645 / Q26: one evidence read's verdict. Absent on deployments before it. */
+export type HealthEvidence = NonNullable<NativeHealthSnapshot['evidence']>[number];
 
 type ReadyAnswer = ApiResponse<'/ready', 'get'> |
   paths['/ready']['get']['responses'][503]['content']['application/json'];
@@ -227,8 +229,31 @@ export type IntegrationProvider = IntegrationsSnapshot['providers'][number];
 export type IntegrationState = IntegrationProvider['state'];
 export type EnvVariable = IntegrationsSnapshot['variables'][number];
 
+/** SCRUM-645 / Q26: the owner's credential expiry dates and the integration test seams. */
+export type CredentialExpiryList = ApiResponse<'/ops/integrations/credentials', 'get'>;
+export type CredentialExpiry = CredentialExpiryList['credentials'][number];
+export type IntegrationTests = ApiResponse<'/ops/integrations/tests', 'get'>;
+export type IntegrationTestRow = IntegrationTests['tests'][number];
+export type IntegrationTestResult = ApiResponse<'/ops/integrations/{key}/test', 'post'>;
+
 export const integrationsApi = {
   snapshot: () => api.get<ApiResponse<'/ops/integrations', 'get'>>('/ops/integrations'),
+  credentials: () => api.get<ApiResponse<'/ops/integrations/credentials', 'get'>>('/ops/integrations/credentials'),
+  /** `console:integration:manage` at operator scope. Null clears the date. */
+  setExpiry: (key: CredentialExpiry['integration'], expiresOn: string | null, idempotencyKey: string) =>
+    api.put<ApiResponse<'/ops/integrations/{key}/expiry', 'put'>>(
+      `/ops/integrations/${encodeURIComponent(key)}/expiry`,
+      { expiresOn },
+      { idempotencyKey },
+    ),
+  tests: () => api.get<ApiResponse<'/ops/integrations/tests', 'get'>>('/ops/integrations/tests'),
+  /** `OPS_TEST_CONTROLS` and `console:integration:test`. Every adapter is a local fake. */
+  runTest: (key: IntegrationTestRow['integration'], idempotencyKey: string) =>
+    api.post<ApiResponse<'/ops/integrations/{key}/test', 'post'>>(
+      `/ops/integrations/${encodeURIComponent(key)}/test`,
+      undefined,
+      { idempotencyKey },
+    ),
 };
 
 // ---------------------------------------------------------------------------
