@@ -105,7 +105,8 @@ export async function consoleAnalyticsOf(db: Db, input: {
     const queued = await tx.select({
       branchId: dirtyDate.branchId, kind: dirtyDate.kind, rows: sql<string>`count(*)::text`,
       oldestBusinessDate: sql<string>`min(${dirtyDate.businessDate})::text`,
-      newestMarkedAt: sql<Date>`max(${dirtyDate.markedAt})`,
+      // A raw aggregate bypasses the column decoder; node-postgres returns timestamptz as text.
+      newestMarkedAt: sql<Date>`max(${dirtyDate.markedAt})`.mapWith(dirtyDate.markedAt),
     }).from(dirtyDate).innerJoin(branch, and(
       eq(branch.id, dirtyDate.branchId), eq(branch.operatorId, dirtyDate.operatorId),
     )).where(and(eq(dirtyDate.operatorId, input.operatorId), inArray(branch.id, ids)))
