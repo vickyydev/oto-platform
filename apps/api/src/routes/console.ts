@@ -12,6 +12,7 @@ import {
 import { assistantSettingsRoutes } from './assistant-settings';
 import { consoleAnalyticsRoutes } from './console-analytics';
 import { consoleConfigurationRoutes } from './console-configuration';
+import { consoleDriftRoutes } from './console-drift';
 
 const count = z.number().int().nonnegative();
 const figures = z.object({
@@ -54,6 +55,7 @@ export async function consoleRoutes(app: App): Promise<void> {
   await app.register(assistantSettingsRoutes);
   await app.register(consoleAnalyticsRoutes);
   await app.register(consoleConfigurationRoutes);
+  await app.register(consoleDriftRoutes);
   app.get('/overview', {
     config: { dynamicPermission: true },
     schema: {

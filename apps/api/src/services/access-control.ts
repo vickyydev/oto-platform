@@ -251,7 +251,7 @@ export async function assertRoleDominated(
  * issuing a temporary password or reading its permissions.
  */
 export async function assertDominatesAccount(
-  db: Db,
+  db: Exec,
   callerEffective: EffectivePermission[],
   operatorId: string,
   targetAccountId: string,

@@ -35,7 +35,7 @@ const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
   it('requires a session for the reach-filtered Analytics and Configuration readers (SCRUM-646)', async () => {
-    for (const url of ['/console/analytics', '/console/configuration']) {
+    for (const url of ['/console/analytics', '/console/analytics/drift', '/console/configuration']) {
       const route = ctx.app.routeRegistry.find(r => r.method === 'GET' && r.url === url);
       expect(route, url).toBeDefined();
       expect(route?.config.dynamicPermission, url).toBe(true);

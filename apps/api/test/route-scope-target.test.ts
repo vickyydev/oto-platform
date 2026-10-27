@@ -118,6 +118,16 @@ describe('Aggregate selected parks (SCRUM-636)', () => {
   });
 });
 
+describe('Analytics drift selected parks (SCRUM-646)', () => {
+  it('declares dynamic authority and binds the read to the current operator and fresh grants', () => {
+    const route = routes.find(r => r.method === 'GET' && r.path === '/console/analytics/drift');
+    expect(route).toBeDefined();
+    expect(configs.get('GET /console/analytics/drift')?.dynamicPermission).toBe(true);
+    expect(reachesText(route!.handlerText, text => /auth\.operatorId/.test(text), functions)).toBe(true);
+    expect(reachesText(route!.handlerText, text => /req\.effectivePermissions\s*\(/.test(text), functions)).toBe(true);
+  });
+});
+
 describe('Staff summary selected park (SCRUM-634)', () => {
   it('declares dynamic authority and reaches owned operator metadata before any app read', () => {
     const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');
