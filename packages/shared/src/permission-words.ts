@@ -17,6 +17,9 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'console:integration:manage': 'Record when an integration credential expires, so it is flagged 30 and 7 days before.',
   'console:money:read': 'Read sales, refunds, cash days, settlement, wallet liability and costs for the parks you can reach, with every read recorded.',
   'console:money:investigate': 'Also read the money integrity checks and the record numbers that open each row in the support trace, with every read recorded.',
+  'console:support:lookup': 'Search the suite for one phone, band, receipt, booking, voucher, account or action, each app answering only what your own permissions allow; every search is recorded.',
+  'console:support:trace': 'Follow one sale, payment or action through every record it left, gaps shown; every trace is recorded.',
+  'console:support:impersonate': 'View an app as a chosen staff account for a short, recorded window, read-only unless a second administrator approves.',
   'hr:salary:view': 'View employee salary and pay details in the OTO App when platform access is enabled.',
 
   'admin:account:create': 'Invite a staff sign-in account with an allowed role and scope.',

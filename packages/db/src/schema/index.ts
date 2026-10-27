@@ -9,6 +9,8 @@ export * from './print';
 export * from './platform';
 export * from './console-configuration';
 export * from './suite-controls';
+// SCRUM-648: impersonation windows, after the suite controls whose approval they consume.
+export * from './support';
 export * from './ops';
 // Alert routing and fingerprint mutes (SCRUM-644): beside the alerts they route.
 export * from './alert-routing';

@@ -652,6 +652,13 @@
       "when": 1793162739280,
       "tag": "0092_integration_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1793132291530,
+      "tag": "0093_support_impersonation",
+      "breakpoints": true
     }
   ]
 }

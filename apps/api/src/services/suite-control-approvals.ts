@@ -1,16 +1,20 @@
 import { createHash } from 'node:crypto';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { account, operator, role, roleAssignment, rolePermission, suiteControlApproval,
-  FLAG_SCOPE_TYPES, SUITE_APP_KEYS, type Db } from '@oto/db';
-import { newId } from '@oto/shared';
+  FLAG_SCOPE_TYPES, IMPERSONATION_TARGET_APPS, SUITE_APP_KEYS, type Db, type SuiteControlApprovalAction } from '@oto/db';
+import { newId, type Permission } from '@oto/shared';
 import { z } from 'zod';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import { withTx, type OpContext, type Tx } from './tx';
 
-const permission = 'console:release:kill_switch';
+/** Each approvable operation is held to its own platform-only permission. */
+const PERMISSION_OF: Record<SuiteControlApprovalAction, Permission> = {
+  'kill_switch.set': 'console:release:kill_switch',
+  'impersonation.write': 'console:support:impersonate',
+};
 const requestLifetimeMs = 10 * 60_000;
-const operationSchema = z.object({
+const killSwitchSchema = z.object({
   schemaVersion: z.literal(1),
   action: z.literal('kill_switch.set'),
   key: z.string().min(1).max(128).regex(/^[a-z][a-z0-9_.-]*$/),
@@ -26,8 +30,27 @@ const operationSchema = z.object({
   ? op.scopeId === null && op.operatorId === null
   : op.scopeId !== null && op.operatorId !== null
     && (op.scopeType !== 'operator' || op.scopeId === op.operatorId));
+/**
+ * SCRUM-648: a write-allowed impersonation window (S2-23 dual control
+ * `impersonate_write`). Bound to one subject, one app, one reason and one
+ * reference; `expiresAt` is the last moment the window may be OPENED, never
+ * how long it lasts (that is IMPERSONATION_MAX_MIN, applied at the start).
+ */
+const impersonationSchema = z.object({
+  schemaVersion: z.literal(1),
+  action: z.literal('impersonation.write'),
+  subjectAccountId: z.string().uuid(),
+  targetApp: z.enum(IMPERSONATION_TARGET_APPS),
+  operatorId: z.string().uuid(),
+  reason: z.string().trim().min(1).max(1000),
+  reference: z.string().trim().min(1).max(200),
+  expiresAt: z.string().datetime(),
+}).strict();
+const operationSchema = z.union([killSwitchSchema, impersonationSchema]);
 const referenceSchema = z.object({ id: z.string().uuid(), expectedPayloadSha256: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
-export type SuiteControlOperation = z.infer<typeof operationSchema>;
+export type SuiteControlOperation = z.infer<typeof killSwitchSchema>;
+export type ImpersonationWriteOperation = z.infer<typeof impersonationSchema>;
+export type ApprovalOperation = z.infer<typeof operationSchema>;
 type ApprovalRow = typeof suiteControlApproval.$inferSelect;
 
 function conflict() { return errors.conflict('APPROVAL_CONTEXT_CHANGED', 'The reviewed approval is no longer valid.'); }
@@ -36,11 +59,11 @@ function actorOf(ctx: OpContext) {
   if (!parsed.success) throw errors.forbidden('A current platform administrator is required.');
   return parsed.data;
 }
-function digest(operation: SuiteControlOperation) {
+function digest(operation: ApprovalOperation) {
   // Parsing rebuilds the declared property order, independent of jsonb's key order.
   return createHash('sha256').update(JSON.stringify(operation)).digest('hex');
 }
-function view(row: ApprovalRow, operation: SuiteControlOperation) {
+function view<O extends ApprovalOperation>(row: ApprovalRow, operation: O) {
   return { id: row.id, state: row.state, payloadSha256: row.payloadSha256, operatorId: row.operatorId,
     requesterAccountId: row.requesterAccountId, approverAccountId: row.approverAccountId, operation,
     createdAt: row.createdAt.toISOString(), requestExpiresAt: row.requestExpiresAt.toISOString() };
@@ -59,7 +82,7 @@ function reference(input: unknown) {
 }
 
 /** Fresh canonical role checks; supplied effective-permission unions are never authority here. */
-export async function lockAdministrators(tx: Tx, ids: readonly string[], required: string = permission) {
+export async function lockAdministrators(tx: Tx, ids: readonly string[], required: string = PERMISSION_OF['kill_switch.set']) {
   const uniqueIds = [...new Set(ids)].sort();
   const accounts = await tx.select({ id: account.id, operatorId: account.operatorId, status: account.status,
     mustChangePassword: account.mustChangePassword }).from(account).where(inArray(account.id, uniqueIds))
@@ -108,12 +131,20 @@ async function expire(tx: Tx, ctx: OpContext, row: ApprovalRow, now: Date) {
 }
 
 export async function requestSuiteControlApproval(db: Db, ctx: OpContext, input: unknown) {
+  return requestApproval<SuiteControlOperation>(db, ctx, input);
+}
+/** SCRUM-648: ask a second platform administrator to approve one write-allowed impersonation. */
+export async function requestImpersonationApproval(db: Db, ctx: OpContext, input: ImpersonationWriteOperation) {
+  return requestApproval<ImpersonationWriteOperation>(db, ctx, input);
+}
+
+async function requestApproval<O extends ApprovalOperation>(db: Db, ctx: OpContext, input: unknown) {
   const actor = actorOf(ctx), parsed = operationSchema.safeParse(input);
   if (!parsed.success) throw errors.badRequest('A valid intended control operation is required.');
   const operation = parsed.data;
   const ownerCtx = { ...ctx, operatorId: operation.operatorId, branchId: null };
   return withTx(db, ownerCtx, 'suite_control.approval_request', async tx => {
-    await lockAdministrators(tx, [actor]);
+    await lockAdministrators(tx, [actor], PERMISSION_OF[operation.action]);
     const now = new Date();
     if (Date.parse(operation.expiresAt) <= now.getTime()) throw conflict();
     const [row] = await tx.insert(suiteControlApproval).values({ id: newId(), action: operation.action,
@@ -121,16 +152,24 @@ export async function requestSuiteControlApproval(db: Db, ctx: OpContext, input:
       requesterAccountId: actor, state: 'pending', createdAt: now, updatedAt: now,
       requestExpiresAt: new Date(now.getTime() + requestLifetimeMs) }).returning();
     await record(tx, ownerCtx, 'requested', row!);
-    return view(row!, operation);
+    return view(row!, operation as O);
   });
 }
 
 export async function approveSuiteControlApproval(db: Db, ctx: OpContext, input: unknown) {
+  return approveApproval<SuiteControlOperation>(db, ctx, input);
+}
+/** SCRUM-648: approve another administrator's write-allowed impersonation request. */
+export async function approveImpersonationApproval(db: Db, ctx: OpContext, input: unknown) {
+  return approveApproval<ImpersonationWriteOperation>(db, ctx, input);
+}
+
+async function approveApproval<O extends ApprovalOperation>(db: Db, ctx: OpContext, input: unknown) {
   const actor = actorOf(ctx), ref = reference(input), ownerCtx = { ...ctx };
   return withTx(db, ownerCtx, 'suite_control.approval_approve', async tx => {
-    const row = await lockedApproval(tx, ref.id, ownerCtx), operation = reviewed(row, ref.expectedPayloadSha256);
+    const row = await lockedApproval(tx, ref.id, ownerCtx), operation = reviewed(row, ref.expectedPayloadSha256) as O;
     if (actor === row.requesterAccountId) throw errors.forbidden('A different platform administrator must approve.');
-    await lockAdministrators(tx, [row.requesterAccountId, actor]);
+    await lockAdministrators(tx, [row.requesterAccountId, actor], PERMISSION_OF[operation.action]);
     const now = new Date(), current = await expire(tx, ownerCtx, row, now);
     if (current.state === 'expired') return view(current, operation);
     if (current.state === 'approved' && current.approverAccountId === actor) return view(current, operation);
@@ -155,12 +194,30 @@ export async function expireSuiteControlApproval(db: Db, ctx: OpContext, input: 
 /** The caller must commit the returned expiry outcome, or atomically commit consumption and its real effect. */
 export async function consumeSuiteControlApproval<T>(tx: Tx, ctx: OpContext, input: unknown,
   effect: (tx: Tx, operation: SuiteControlOperation) => Promise<T>) {
+  return consume<T, SuiteControlOperation>(tx, ctx, input, 'kill_switch.set', effect);
+}
+
+/**
+ * SCRUM-648: consume an approved write-allowed impersonation. Only the
+ * REQUESTER opens the window they asked for; the approver approved it for
+ * them and may not use it themselves.
+ */
+export async function consumeImpersonationApproval<T>(tx: Tx, ctx: OpContext, input: unknown,
+  effect: (tx: Tx, operation: ImpersonationWriteOperation) => Promise<T>) {
+  return consume<T, ImpersonationWriteOperation>(tx, ctx, input, 'impersonation.write', effect, true);
+}
+
+async function consume<T, O extends ApprovalOperation>(tx: Tx, ctx: OpContext, input: unknown, action: O['action'],
+  effect: (tx: Tx, operation: O) => Promise<T>, requesterOnly = false) {
   const actor = actorOf(ctx), ref = reference(input), ownerCtx = { ...ctx };
-  const row = await lockedApproval(tx, ref.id, ownerCtx), operation = reviewed(row, ref.expectedPayloadSha256);
-  if (actor !== row.requesterAccountId && actor !== row.approverAccountId)
-    throw errors.forbidden('Only the reviewed administrators may consume this approval.');
+  const row = await lockedApproval(tx, ref.id, ownerCtx), operation = reviewed(row, ref.expectedPayloadSha256) as O;
+  if (operation.action !== action) throw conflict();
+  if (actor !== row.requesterAccountId && (requesterOnly || actor !== row.approverAccountId))
+    throw errors.forbidden(requesterOnly ? 'Only the administrator who asked may open this window.'
+      : 'Only the reviewed administrators may consume this approval.');
   if (row.state === 'consumed') throw conflict();
-  await lockAdministrators(tx, [row.requesterAccountId, ...(row.approverAccountId ? [row.approverAccountId] : [])]);
+  await lockAdministrators(tx, [row.requesterAccountId, ...(row.approverAccountId ? [row.approverAccountId] : [])],
+    PERMISSION_OF[operation.action]);
   const now = new Date(), current = await expire(tx, ownerCtx, row, now);
   if (current.state === 'expired') return { approval: view(current, operation) };
   if (current.state !== 'approved' || Date.parse(operation.expiresAt) <= now.getTime()) throw conflict();

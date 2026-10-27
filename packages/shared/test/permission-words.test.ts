@@ -111,8 +111,10 @@ describe('suite controls permission boundaries (SCRUM-643)', () => {
     ['console:release:flag_manage', /change.*scoped feature flags/i],
     ['console:release:kill_switch', /emergency.*expiry.*reason.*confirmation/i],
   ] as const;
+  // SCRUM-648 adds impersonation to the platform-only set.
   const writes = new Set<string>([
     'console:app_registry:manage', 'console:release:flag_manage', 'console:release:kill_switch',
+    'console:support:impersonate',
   ]);
 
   it.each(entries)('declares %s exactly once with a distinct plain meaning', (permission, meaning) => {
@@ -125,7 +127,7 @@ describe('suite controls permission boundaries (SCRUM-643)', () => {
     expect([...ROLE_BUNDLES.platform_admin].sort()).toEqual([...PERMISSIONS].sort());
   });
 
-  it('gives operator administrators both reads while excluding exactly the three new writes', () => {
+  it('gives operator administrators both reads while excluding exactly the platform-only writes', () => {
     expect(ROLE_BUNDLES.operator_admin).toEqual(expect.arrayContaining([
       'console:app_registry:read', 'console:release:read',
     ]));
@@ -138,6 +140,28 @@ describe('suite controls permission boundaries (SCRUM-643)', () => {
     const suiteControls = new Set<string>(entries.map(([permission]) => permission));
     for (const role of ['branch_manager', 'reception', 'staff'] as const) {
       expect(ROLE_BUNDLES[role].filter(permission => suiteControls.has(permission)), role).toEqual([]);
+    }
+  });
+});
+
+describe('support tools permission boundaries (SCRUM-648)', () => {
+  it('declares lookup, trace and impersonate once each with plain words', () => {
+    for (const [permission, meaning] of [
+      ['console:support:lookup', /search.*recorded/i],
+      ['console:support:trace', /follow.*sale.*gaps.*recorded/i],
+      ['console:support:impersonate', /view an app as.*window.*second administrator/i],
+    ] as const) {
+      expect((PERMISSIONS as readonly string[]).filter(entry => entry === permission)).toEqual([permission]);
+      expect((PERMISSION_WORDS as Readonly<Record<string, string>>)[permission]).toMatch(meaning);
+    }
+  });
+
+  it('gives impersonation to the platform administrator only, and the two reads to operator administrators', () => {
+    expect(ROLE_BUNDLES.platform_admin).toContain('console:support:impersonate');
+    expect(ROLE_BUNDLES.operator_admin).not.toContain('console:support:impersonate');
+    expect(ROLE_BUNDLES.operator_admin).toEqual(expect.arrayContaining(['console:support:lookup', 'console:support:trace']));
+    for (const role of ['branch_manager', 'reception', 'staff'] as const) {
+      expect(ROLE_BUNDLES[role].filter(permission => permission.startsWith('console:support:')), role).toEqual([]);
     }
   });
 });

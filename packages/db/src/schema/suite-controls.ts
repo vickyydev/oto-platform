@@ -189,13 +189,17 @@ export const deployEvent = core.table('deploy_event', {
   check('deploy_event_status_check', sql`length(btrim(${t.status})) > 0`),
 ]);
 
+/** The operations a two-administrator approval can bind: SCRUM-643's kill switch and SCRUM-648's write-allowed impersonation. */
+export const SUITE_CONTROL_APPROVAL_ACTIONS = ['kill_switch.set', 'impersonation.write'] as const;
+export type SuiteControlApprovalAction = typeof SUITE_CONTROL_APPROVAL_ACTIONS[number];
+
 export const SUITE_CONTROL_APPROVAL_STATES = ['pending', 'approved', 'consumed', 'expired'] as const;
 export type SuiteControlApprovalState = typeof SUITE_CONTROL_APPROVAL_STATES[number];
 
 /** Two admins review one immutable operation; consumption and its effect share the caller's transaction. */
 export const suiteControlApproval = core.table('suite_control_approval', {
   id: idPk(),
-  action: text('action').$type<'kill_switch.set'>().notNull(),
+  action: text('action').$type<SuiteControlApprovalAction>().notNull(),
   operation: jsonb('operation').notNull(),
   payloadSha256: text('payload_sha256').notNull(),
   /** The original event owner, independent of the approving admin's working context. */
@@ -213,7 +217,7 @@ export const suiteControlApproval = core.table('suite_control_approval', {
   index('suite_control_approval_approver_idx').on(t.approverAccountId),
   index('suite_control_approval_operator_idx').on(t.operatorId),
   index('suite_control_approval_expiry_idx').on(t.state, t.requestExpiresAt),
-  check('suite_control_approval_action_check', sql`${t.action} = 'kill_switch.set'`),
+  check('suite_control_approval_action_check', sql`${t.action} in ('kill_switch.set', 'impersonation.write')`),
   check('suite_control_approval_operation_check', sql`jsonb_typeof(${t.operation}) = 'object'`),
   check('suite_control_approval_digest_check', sql`${t.payloadSha256} ~ '^[a-f0-9]{64}$'`),
   check('suite_control_approval_ten_minutes_check', sql`${t.requestExpiresAt} = ${t.createdAt} + interval '10 minutes'`),

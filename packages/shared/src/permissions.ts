@@ -44,6 +44,16 @@ export const PERMISSIONS = [
    * to its support trace. Read only; every read is audited.
    */
   'console:money:investigate',
+   * Support tools (SCRUM-648, S2-23 P5-6). `lookup` searches the suite for one
+   * phone, band, receipt, booking, voucher, account or action and answers each
+   * app's section through that app's own reader and permission; `trace`
+   * follows one sale or action through every record it left. Both are reads
+   * and every use is audited. `impersonate` opens an app as a chosen account
+   * for a short, marked, audited window: platform administrators only.
+   */
+  'console:support:lookup',
+  'console:support:trace',
+  'console:support:impersonate',
   /** Read employee pay in the OTO App when its legal entity enables platform access. */
   'hr:salary:view',
   /** Select a session's working operator; enforcement also requires a live platform-wide grant. */
@@ -419,8 +429,10 @@ export const SYSTEM_ROLES = [
 export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
 // Keep every existing operator-admin permission; only the new suite writers are platform-only.
+// SCRUM-648: viewing as another account is platform-only as well (S2-23 danger rules).
 const ALL = PERMISSIONS.filter(permission => permission !== 'console:app_registry:manage'
-  && permission !== 'console:release:flag_manage' && permission !== 'console:release:kill_switch');
+  && permission !== 'console:release:flag_manage' && permission !== 'console:release:kill_switch'
+  && permission !== 'console:support:impersonate');
 
 const READ_CATALOG: Permission[] = [
   'catalog:package:read',

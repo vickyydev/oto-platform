@@ -8,6 +8,7 @@ import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { branchReach } from '../services/access-control';
 import { opCtx, withTx, type Exec } from '../services/tx';
+import { maskPersonal as mask } from '../services/audit-mask';
 
 /**
  * SCRUM-14, extended in S2-03 — the audit read surface.
@@ -49,29 +50,6 @@ import { opCtx, withTx, type Exec } from '../services/tx';
  * name IS the outcome.
  */
 const FAILURE = sql`(${auditLog.action} ~ '[._](failed|denied|rejected)$' or ${auditLog.action} = 'auth.locked_out')`;
-
-/**
- * Keys whose values are personal. Masked by name rather than by row type
- * because the payload is free-form jsonb: a new route that audits a phone
- * number is covered on the day it is written, without anyone remembering to
- * come back here.
- */
-const SENSITIVE_KEY =
-  /^(phone|phone_?number|mobile|email|name|nickname|first_?name|last_?name|full_?name|address|allergies|allergy|medical_?notes|medical_?alert|dietary|food_?restrictions|notes?|date_?of_?birth|dob|age_?years|guardian_?name|password|token|secret)$/i;
-
-const MASK = '[redacted]';
-const MAX_DEPTH = 8;
-
-/** Replace the values of personal keys, keeping the shape of the change. */
-function mask(value: unknown, depth = 0): unknown {
-  if (depth >= MAX_DEPTH || value === null || typeof value !== 'object') return value;
-  if (Array.isArray(value)) return value.map((v) => mask(v, depth + 1));
-  const out: Record<string, unknown> = {};
-  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
-    out[key] = SENSITIVE_KEY.test(key) ? (v === null ? null : MASK) : mask(v, depth + 1);
-  }
-  return out;
-}
 
 /**
  * The cursor is the sort key itself — the timestamp and the id of the last

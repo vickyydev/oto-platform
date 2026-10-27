@@ -90,6 +90,14 @@ export const auditLog = core.table(
     targetApp: text('target_app'),
     reason: text('reason'),
     origin: text('origin'),
+    /**
+     * SCRUM-648 (S2-23 impersonation): `impersonated` on every row written
+     * inside a "view as" window, with `on_behalf_of` naming the subject whose
+     * session it was while `actor_account_id` names the person who was really
+     * there. Null on every other row. No foreign key, as for `target_app`.
+     */
+    actorType: text('actor_type'),
+    onBehalfOf: uuid('on_behalf_of'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => [
@@ -105,6 +113,7 @@ export const auditLog = core.table(
     index('audit_source_app_idx').on(t.sourceApp, t.createdAt),
     index('audit_target_app_idx').on(t.targetApp, t.createdAt),
     index('audit_category_idx').on(t.category, t.createdAt),
+    index('audit_on_behalf_of_idx').on(t.onBehalfOf),
   ],
 );
 
