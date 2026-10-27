@@ -13,6 +13,7 @@ import {
 import { core, idPk, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
 import { station } from './fleet';
+import { alertMute } from './alert-routing';
 
 // --- The operational record (schema `core`) --------------------------------
 //
@@ -346,11 +347,22 @@ export const alertDelivery = core.table(
     error: text('error'),
     durationMs: integer('duration_ms'),
     attemptedAt: timestamp('attempted_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    /**
+     * SCRUM-644: the fingerprint mute that held this delivery back, on a
+     * `muted` row. A muted alert is recorded as muted, never dropped.
+     */
+    muteId: uuid('mute_id').references(() => alertMute.id),
   },
   (t) => [
     index('alert_delivery_alert_idx').on(t.alertId, t.attemptedAt),
     index('alert_delivery_attempted_idx').on(t.attemptedAt),
+    index('alert_delivery_mute_idx').on(t.muteId),
     check('alert_delivery_event_check', sql`${t.event} in ('opened','reopened','resolved','test')`),
-    check('alert_delivery_status_check', sql`${t.status} in ('sent','failed')`),
+    /**
+     * `muted`: a fingerprint mute held it back. `unsupported`: a recipient row
+     * names a channel this build does not deliver to (SCRUM-644, Q25).
+     */
+    check('alert_delivery_status_check', sql`${t.status} in ('sent','failed','muted','unsupported')`),
+    check('alert_delivery_mute_check', sql`(${t.status} = 'muted') = (${t.muteId} is not null)`),
   ],
 );

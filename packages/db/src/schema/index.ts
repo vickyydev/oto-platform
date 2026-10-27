@@ -8,6 +8,8 @@ export * from './staff-token';
 export * from './print';
 export * from './platform';
 export * from './ops';
+// Alert routing and fingerprint mutes (SCRUM-644): beside the alerts they route.
+export * from './alert-routing';
 export * from './edge';
 export * from './sync';
 export * from './future';
