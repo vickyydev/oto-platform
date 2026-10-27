@@ -12,7 +12,8 @@ import {
 import { Backdrop } from '@/components/Backdrop';
 import { SuiteHeader } from '@/components/SuiteHeader';
 import { Button } from '@/components/ui/button';
-import { accountApi, type AuditEntry } from '@/api/platform';
+import { accountApi, type AuditEntry, type ImpersonationHistoryEntry } from '@/api/platform';
+import { ImpersonationHistoryList } from '@/components/ImpersonationHistory';
 import { findApp } from '@/suite/apps';
 import { clearOpened, openedApps } from '@/suite/handoff';
 import { useSession, displayName } from '@/auth/SessionContext';
@@ -71,7 +72,18 @@ export function Account() {
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [rejections, setRejections] = useState<AuditEntry[] | null>(null);
   const [revoking, setRevoking] = useState(false);
+  const [viewedAs, setViewedAs] = useState<ImpersonationHistoryEntry[] | null>(null);
   const opened = openedApps();
+
+  // SCRUM-648 — the person's own record of every view-as window opened as them.
+  useEffect(() => {
+    if (!accountId) return;
+    let cancelled = false;
+    void accountApi.impersonations()
+      .then(({ impersonations }) => { if (!cancelled) setViewedAs(impersonations); })
+      .catch(() => { if (!cancelled) setViewedAs(null); });
+    return () => { cancelled = true; };
+  }, [accountId]);
 
   const loadSessions = useCallback(async () => {
     if (!accountId || !canSeeSessions) return;
@@ -235,6 +247,15 @@ export function Account() {
                   </li>
                 ))}
               </ul>
+            </Panel>
+          )}
+
+          {viewedAs && (
+            <Panel
+              title="Viewed as you"
+              description="Times a support administrator opened an app as this account, and how each window ended."
+            >
+              <ImpersonationHistoryList entries={viewedAs} timezone={timezone} />
             </Panel>
           )}
 
