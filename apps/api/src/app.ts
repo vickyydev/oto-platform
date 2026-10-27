@@ -59,6 +59,7 @@ import { eventPricingRoutes } from './routes/event-pricing';
 import { partyRoutes } from './routes/parties';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
+import { opsAlertRoutingRoutes } from './routes/ops-alert-routing';
 import { analyticsRoutes } from './routes/analytics';
 import { consoleRoutes } from './routes/console';
 import { boxRoutes } from './routes/box';
@@ -529,6 +530,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(analyticsRoutes, { prefix: '/analytics' });
   await app.register(consoleRoutes);
   await app.register(opsRoutes, { prefix: '/ops' });
+  // SCRUM-644 (Q25): fingerprint mutes and alert recipients, beside the ops routes.
+  await app.register(opsAlertRoutingRoutes, { prefix: '/ops' });
   // S2-19 I2b — the Inbox's reads: list, thread, dashboard, the viewer, templates.
   await app.register(inboxReadRoutes, { prefix: '/inbox' });
   // S2-19 I2e — assignment, Divert, move, branch, Handled and reopen.

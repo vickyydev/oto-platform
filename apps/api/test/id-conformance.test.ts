@@ -316,6 +316,10 @@ const PLATFORM_NAMED: Record<string, string> = {
     'keyed by the press’s action id (unique per operator) the till sends; the resolution row id is the platform’s, online only',
   'POST /branches/:branchId/end-of-day/reprint':
     'a print job of a closed day, queued by the platform online; one press per Idempotency-Key',
+  // SCRUM-644 (Q25): a mute is a Console decision about a fingerprint, online
+  // only; a fresh decision supersedes the one in force, so no client names it.
+  'POST /ops/alert-mutes':
+    'a Console decision on a fingerprint, online only; a fresh mute supersedes the one in force, one press per Idempotency-Key',
   'POST /members/:id/tier-verification':
     'the evidence row behind a tier change; round 3 makes it the till’s `member.tier_changed` fact (plan §2.3, OD-11)',
   'POST /menu/categories': NEXT_PASS,

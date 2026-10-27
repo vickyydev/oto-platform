@@ -28110,390 +28110,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ops/alert-mutes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The fingerprint mutes in force: who muted what, why and until when, and how many deliveries each has held back (recorded, never dropped). At most 24 hours each */
-        get: {
-            parameters: {
-                query?: {
-                    fingerprint?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            mutes: {
-                                /** Format: uuid */
-                                id: string;
-                                fingerprint: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                reason: string;
-                                /** Format: date-time */
-                                startsAt: string;
-                                /** Format: date-time */
-                                mutedUntil: string;
-                                /** Format: uuid */
-                                createdByAccountId: string;
-                                createdByName: string | null;
-                                heldBack: number;
-                            }[];
-                            defaultMinutes: number;
-                            maxMinutes: number;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** @description Mute one alert fingerprint: a reason is required, one hour unless told otherwise, at most 24 hours. The alert is still raised and listed; its deliveries are recorded as muted. A fresh mute replaces the one in force */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        fingerprint: string;
-                        reason: string;
-                        /** @default 60 */
-                        minutes?: number;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            mute: {
-                                /** Format: uuid */
-                                id: string;
-                                fingerprint: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                reason: string;
-                                /** Format: date-time */
-                                startsAt: string;
-                                /** Format: date-time */
-                                mutedUntil: string;
-                                /** Format: uuid */
-                                createdByAccountId: string;
-                                createdByName: string | null;
-                                heldBack: number;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/alert-mutes/{muteId}/lift": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description End a fingerprint mute early. The mute row stays, with who lifted it and when */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    muteId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {boolean} */
-                            ok: true;
-                            mute: {
-                                /** Format: uuid */
-                                id: string;
-                                fingerprint: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                reason: string;
-                                /** Format: date-time */
-                                startsAt: string;
-                                /** Format: date-time */
-                                mutedUntil: string;
-                                /** Format: uuid */
-                                createdByAccountId: string;
-                                createdByName: string | null;
-                                heldBack: number;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/alert-recipients": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Alert recipients: category to channel and an address REFERENCE (an environment variable name). Says whether each name is set here, never its value. Delivery is console-only until a provider integration is its own ticket */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            recipients: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                /** Format: uuid */
-                                branchId: string | null;
-                                category: string;
-                                /** @enum {string} */
-                                channel: "console" | "email" | "webhook";
-                                addressRef: string | null;
-                                addressConfigured: boolean | null;
-                                delivered: boolean;
-                                label: string | null;
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                updatedAt: string;
-                            }[];
-                            deliveredChannels: ("console" | "email" | "webhook")[];
-                            deliveryNote: string;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** @description Add an alert recipient row. Email and webhook rows name an ALERT_ environment variable, never an address, and are recorded as not delivered until a provider integration exists */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        category: string;
-                        /** @enum {string} */
-                        channel: "console" | "email" | "webhook";
-                        addressRef?: string | null;
-                        label?: string | null;
-                        /** Format: uuid */
-                        branchId?: string | null;
-                        /**
-                         * @default operator
-                         * @enum {string}
-                         */
-                        scope?: "operator" | "platform";
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            recipient: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                /** Format: uuid */
-                                branchId: string | null;
-                                category: string;
-                                /** @enum {string} */
-                                channel: "console" | "email" | "webhook";
-                                addressRef: string | null;
-                                addressConfigured: boolean | null;
-                                delivered: boolean;
-                                label: string | null;
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                updatedAt: string;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ops/alert-recipients/{recipientId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** @description Change an alert recipient row: its category, channel, address reference or label */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    recipientId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        category?: string;
-                        /** @enum {string} */
-                        channel?: "console" | "email" | "webhook";
-                        addressRef?: string | null;
-                        label?: string | null;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            recipient: {
-                                /** Format: uuid */
-                                id: string;
-                                /** @enum {string} */
-                                scope: "operator" | "platform";
-                                /** Format: uuid */
-                                branchId: string | null;
-                                category: string;
-                                /** @enum {string} */
-                                channel: "console" | "email" | "webhook";
-                                addressRef: string | null;
-                                addressConfigured: boolean | null;
-                                delivered: boolean;
-                                label: string | null;
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                updatedAt: string;
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/ops/alert-recipients/{recipientId}/archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Archive an alert recipient row. Archived rows are kept and no longer consulted */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    recipientId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @enum {boolean} */
-                            ok: true;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/ops/health": {
         parameters: {
             query?: never;
@@ -28986,6 +28602,390 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/alert-mutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The fingerprint mutes in force: who muted what, why and until when, and how many deliveries each has held back (recorded, never dropped). At most 24 hours each */
+        get: {
+            parameters: {
+                query?: {
+                    fingerprint?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            mutes: {
+                                /** Format: uuid */
+                                id: string;
+                                fingerprint: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                reason: string;
+                                /** Format: date-time */
+                                startsAt: string;
+                                /** Format: date-time */
+                                mutedUntil: string;
+                                /** Format: uuid */
+                                createdByAccountId: string;
+                                createdByName: string | null;
+                                heldBack: number;
+                            }[];
+                            defaultMinutes: number;
+                            maxMinutes: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Mute one alert fingerprint: a reason is required, one hour unless told otherwise, at most 24 hours. The alert is still raised and listed; its deliveries are recorded as muted. A fresh mute replaces the one in force */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        fingerprint: string;
+                        reason: string;
+                        /** @default 60 */
+                        minutes?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            mute: {
+                                /** Format: uuid */
+                                id: string;
+                                fingerprint: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                reason: string;
+                                /** Format: date-time */
+                                startsAt: string;
+                                /** Format: date-time */
+                                mutedUntil: string;
+                                /** Format: uuid */
+                                createdByAccountId: string;
+                                createdByName: string | null;
+                                heldBack: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/alert-mutes/{muteId}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End a fingerprint mute early. The mute row stays, with who lifted it and when */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    muteId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            mute: {
+                                /** Format: uuid */
+                                id: string;
+                                fingerprint: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                reason: string;
+                                /** Format: date-time */
+                                startsAt: string;
+                                /** Format: date-time */
+                                mutedUntil: string;
+                                /** Format: uuid */
+                                createdByAccountId: string;
+                                createdByName: string | null;
+                                heldBack: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/alert-recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Alert recipients: category to channel and an address REFERENCE (an environment variable name). Says whether each name is set here, never its value. Delivery is console-only until a provider integration is its own ticket */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            recipients: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                /** Format: uuid */
+                                branchId: string | null;
+                                category: string;
+                                /** @enum {string} */
+                                channel: "console" | "email" | "webhook";
+                                addressRef: string | null;
+                                addressConfigured: boolean | null;
+                                delivered: boolean;
+                                label: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            }[];
+                            deliveredChannels: ("console" | "email" | "webhook")[];
+                            deliveryNote: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Add an alert recipient row. Email and webhook rows name an ALERT_ environment variable, never an address, and are recorded as not delivered until a provider integration exists */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        category: string;
+                        /** @enum {string} */
+                        channel: "console" | "email" | "webhook";
+                        addressRef?: string | null;
+                        label?: string | null;
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        /**
+                         * @default operator
+                         * @enum {string}
+                         */
+                        scope?: "operator" | "platform";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            recipient: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                /** Format: uuid */
+                                branchId: string | null;
+                                category: string;
+                                /** @enum {string} */
+                                channel: "console" | "email" | "webhook";
+                                addressRef: string | null;
+                                addressConfigured: boolean | null;
+                                delivered: boolean;
+                                label: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ops/alert-recipients/{recipientId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Change an alert recipient row: its category, channel, address reference or label */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    recipientId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        category?: string;
+                        /** @enum {string} */
+                        channel?: "console" | "email" | "webhook";
+                        addressRef?: string | null;
+                        label?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            recipient: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                scope: "operator" | "platform";
+                                /** Format: uuid */
+                                branchId: string | null;
+                                category: string;
+                                /** @enum {string} */
+                                channel: "console" | "email" | "webhook";
+                                addressRef: string | null;
+                                addressConfigured: boolean | null;
+                                delivered: boolean;
+                                label: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/ops/alert-recipients/{recipientId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Archive an alert recipient row. Archived rows are kept and no longer consulted */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    recipientId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };

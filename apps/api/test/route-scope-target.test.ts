@@ -244,6 +244,19 @@ const OPERATOR_WIDE_WRITES = [
   'PUT /benefits/templates/:role',
   'PUT /benefits/profiles/:employeeId',
   'PUT /me/session/operator', // SCRUM-640: service also requires a genuine null-scope switch assignment.
+  // SCRUM-644 (Q25): the audited export is an operator-wide grant (its rows are
+  // still narrowed by the admin:audit:read reach), and the alert mutes and
+  // recipients are managed operator-wide; platform rows also need a
+  // platform-wide caller, checked in the handler.
+  'GET /audit/export',
+  'HEAD /audit/export',
+  'GET /ops/alert-recipients',
+  'HEAD /ops/alert-recipients',
+  'POST /ops/alert-recipients',
+  'PATCH /ops/alert-recipients/:recipientId',
+  'POST /ops/alert-recipients/:recipientId/archive',
+  'POST /ops/alert-mutes',
+  'POST /ops/alert-mutes/:muteId/lift',
 ];
 // These platform-global reads require their named permission at operator scope.
 const PLATFORM_WIDE_READS = [
