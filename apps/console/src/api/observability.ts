@@ -16,8 +16,8 @@
  *     `admin:audit:read_sensitive` and deliberately asks for it. Unmasking is
  *     an action with a record of its own, never a page load.
  */
-import { api, ApiError, qs } from './client';
-import type { ApiResponse } from '@oto/api-types';
+import { api, ApiError, idemKey, qs } from './client';
+import type { ApiBody, ApiResponse } from '@oto/api-types';
 
 // ---------------------------------------------------------------------------
 // Activity — the audit log
@@ -59,11 +59,48 @@ export interface AuditFilters {
    * rather than showing a filtered-looking list that is not filtered.
    */
   requestId?: string;
-  category?: string;
+  /** SCRUM-644: `data_access` and `denial` are answered on the server for every row. */
+  category?: 'data_access' | 'denial';
+  /** SCRUM-644: the producer's app label, and the app a Console action reached into. */
+  app?: string;
+  targetApp?: string;
+}
+
+/** The filters an export carries: the read's own, without its paging. */
+export type ActivityExportFilters = Omit<AuditFilters, 'limit' | 'cursor' | 'requestId'>;
+
+/** One downloaded export page, and whether the trail holds more past it. */
+export interface ActivityExportFile {
+  blob: Blob;
+  filename: string | null;
+  rows: number | null;
+  masked: boolean | null;
+  /** Set when the page was full: the next page is a second, separately recorded export. */
+  nextCursor: string | null;
 }
 
 export const activityApi = {
   list: (filters: AuditFilters) => api.get<ApiResponse<'/audit/', 'get'>>(`/audit${qs({ ...filters })}`),
+  /**
+   * SCRUM-644: one bounded page of the trail as CSV or NDJSON, masked exactly
+   * as the list is. Every export is recorded against the person downloading.
+   */
+  exportFile: async (
+    filters: ActivityExportFilters,
+    format: 'csv' | 'ndjson',
+    opts: { limit?: number; cursor?: string } = {},
+  ): Promise<ActivityExportFile> => {
+    const file = await api.getFile(`/audit/export${qs({ ...filters, format, limit: opts.limit, cursor: opts.cursor })}`);
+    const rows = file.headers?.get('x-oto-export-rows');
+    const masked = file.headers?.get('x-oto-export-masked');
+    return {
+      blob: file.blob,
+      filename: file.filename,
+      rows: rows === null || rows === undefined ? null : Number(rows),
+      masked: masked === null || masked === undefined ? null : masked === 'true',
+      nextCursor: file.headers?.get('x-oto-next-cursor') ?? null,
+    };
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -125,6 +162,36 @@ export const failuresApi = {
   /** Re-runs one failed operation. `admin:ops:manage`. */
   retry: (runId: string) =>
     api.post<{ ok: true; runId?: string }>(`/ops/runs/${encodeURIComponent(runId)}/retry`),
+};
+
+// ---------------------------------------------------------------------------
+// Alert mutes and recipients (SCRUM-644, planner ruling Q25)
+// ---------------------------------------------------------------------------
+
+export type AlertMutePage = ApiResponse<'/ops/alert-mutes', 'get'>;
+export type AlertMute = AlertMutePage['mutes'][number];
+export type AlertRecipientPage = ApiResponse<'/ops/alert-recipients', 'get'>;
+export type AlertRecipient = AlertRecipientPage['recipients'][number];
+export type NewAlertRecipient = ApiBody<'/ops/alert-recipients', 'post'>;
+
+export const alertRoutingApi = {
+  /** The mutes in force. The Failures read door (`admin:health:read`). */
+  mutes: () => api.get<ApiResponse<'/ops/alert-mutes', 'get'>>('/ops/alert-mutes'),
+  /** Mute a fingerprint: reason required, at most 24 hours. `console:alert:manage`. */
+  mute: (body: ApiBody<'/ops/alert-mutes', 'post'>) =>
+    api.post<ApiResponse<'/ops/alert-mutes', 'post'>>('/ops/alert-mutes', body, { idempotencyKey: idemKey() }),
+  lift: (muteId: string) =>
+    api.post<ApiResponse<'/ops/alert-mutes/{muteId}/lift', 'post'>>(
+      `/ops/alert-mutes/${encodeURIComponent(muteId)}/lift`, undefined, { idempotencyKey: idemKey() }),
+  recipients: () => api.get<ApiResponse<'/ops/alert-recipients', 'get'>>('/ops/alert-recipients'),
+  addRecipient: (body: NewAlertRecipient) =>
+    api.post<ApiResponse<'/ops/alert-recipients', 'post'>>('/ops/alert-recipients', body, { idempotencyKey: idemKey() }),
+  updateRecipient: (id: string, body: ApiBody<'/ops/alert-recipients/{recipientId}', 'patch'>) =>
+    api.patch<ApiResponse<'/ops/alert-recipients/{recipientId}', 'patch'>>(
+      `/ops/alert-recipients/${encodeURIComponent(id)}`, body, { idempotencyKey: idemKey() }),
+  archiveRecipient: (id: string) =>
+    api.post<ApiResponse<'/ops/alert-recipients/{recipientId}/archive', 'post'>>(
+      `/ops/alert-recipients/${encodeURIComponent(id)}/archive`, undefined, { idempotencyKey: idemKey() }),
 };
 
 // ---------------------------------------------------------------------------

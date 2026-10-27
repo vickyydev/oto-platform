@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Archive, Loader2, RefreshCw, RotateCcw } from 'lucide-react';
 import { isMissingRoute } from '@/api/client';
-import { failuresApi, type FailureGroup, type OpsRun } from '@/api/observability';
+import { alertRoutingApi, failuresApi, type AlertMute, type FailureGroup, type OpsRun } from '@/api/observability';
 import { groupQuarantine, quarantineApi, type QuarantineGroup } from '@/api/sync';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
 import { Quarantine } from '@/components/failures/Quarantine';
+import { AlertRecipients } from '@/components/failures/AlertRecipients';
+import { MutedBadge, MuteForm, UnmuteButton } from '@/components/failures/MuteControls';
 import { EmptyState, ErrorNote, Fact, Loading, RouteUnavailable } from '@/components/Panel';
 import { Chip, StatusMark, StatusPill, toneForOutcome } from '@/components/Status';
 import { CommandBar } from '@/components/redesign/CommandBar';
@@ -23,6 +25,7 @@ import { useSession } from '@/auth/SessionContext';
 import { readReach, reachLabel, type Reach } from '@/lib/reach';
 import { quarantineWords } from '@/lib/syncWords';
 import { elapsed, formatExact, formatWhen, millis, timeAgo } from '@/lib/time';
+import { MUTE_MAX_MINUTES } from '@/lib/alertRouting';
 
 const WINDOWS = [
   { hours: 1, label: 'Last hour' },
@@ -80,6 +83,8 @@ export function Failures() {
   const { me, has } = useSession();
   const timezone = me?.branch?.timezone;
   const canManage = has('admin:ops:manage');
+  // SCRUM-644 (Q25): muting and the recipient list are their own grant.
+  const canManageAlerts = has('console:alert:manage');
 
   const [tab, setTab] = useState<'problems' | 'quarantine'>('problems');
   const [quarantineOpen, setQuarantineOpen] = useState<number | null>(null);
@@ -187,6 +192,7 @@ export function Failures() {
             <Problems
               timezone={timezone}
               canManage={canManage}
+              canMute={canManageAlerts}
               onReach={setReach}
               onCount={setProblemCount}
             />
@@ -301,6 +307,8 @@ export function Failures() {
               taken on the Quarantine list, with what it carried in front of you.
             </RailNote>
           </CardShell>
+
+          {canManageAlerts && <AlertRecipients />}
         </Rail>
       </PageGrid>
     </>
@@ -319,11 +327,14 @@ export function Failures() {
 function Problems({
   timezone,
   canManage,
+  canMute,
   onReach,
   onCount,
 }: {
   timezone?: string | null;
   canManage: boolean;
+  /** SCRUM-644: `console:alert:manage` — mute and unmute a fingerprint. */
+  canMute: boolean;
   /** SCRUM-299 — handed up so the line sits above both lists. */
   onReach: (reach: Reach | null) => void;
   /** The number of groups, for the command bar — null while it is not known. */
@@ -338,6 +349,36 @@ function Problems({
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<FailureGroup | null>(null);
+
+  /**
+   * SCRUM-644 — the fingerprint mutes in force, read through the page's own
+   * door. A muted group stays on the list with its badge; a failed read of
+   * the mutes says so rather than reading as "nothing is muted".
+   */
+  const [mutes, setMutes] = useState<{ byFingerprint: Map<string, AlertMute>; maxMinutes: number } | null>(null);
+  const [mutesError, setMutesError] = useState<string | null>(null);
+  const [muteTick, setMuteTick] = useState(0);
+  const [muting, setMuting] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setMutesError(null);
+    void alertRoutingApi
+      .mutes()
+      .then((page) => {
+        if (!active) return;
+        setMutes({ byFingerprint: new Map(page.mutes.map((m) => [m.fingerprint, m])), maxMinutes: page.maxMinutes });
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setMutes(null);
+        if (!isMissingRoute(err)) setMutesError(err instanceof Error ? err.message : 'Could not read the mutes');
+      });
+    return () => { active = false; };
+  }, [muteTick]);
+  const mutesChanged = useCallback(() => {
+    setMuting(null);
+    setMuteTick((n) => n + 1);
+  }, []);
 
   const scope = useMemo(() => ({ active: false, request: 0 }), [windowHours, kind]);
   const load = useCallback(async () => {
@@ -442,6 +483,12 @@ function Problems({
           />
         </div>
 
+        {mutesError && (
+          <p role="alert" className="text-xs text-muted-foreground">
+            Which of these are muted could not be read just now: {mutesError}
+          </p>
+        )}
+
         {missing ? (
           <RouteUnavailable
             what="The failure record"
@@ -468,6 +515,13 @@ function Problems({
                 canManage={canManage}
                 onOpen={() => setOpen(group)}
                 onRetried={() => void load()}
+                mute={mutes?.byFingerprint.get(group.fingerprint) ?? null}
+                canMute={canMute && mutes !== null}
+                muting={muting === group.fingerprint}
+                maxMinutes={mutes?.maxMinutes ?? MUTE_MAX_MINUTES}
+                onMute={() => setMuting(group.fingerprint)}
+                onMuteCancel={() => setMuting(null)}
+                onMuteChanged={mutesChanged}
               />
             ))}
           </ul>
@@ -509,12 +563,27 @@ function GroupCard({
   canManage,
   onOpen,
   onRetried,
+  mute = null,
+  canMute = false,
+  muting = false,
+  maxMinutes = MUTE_MAX_MINUTES,
+  onMute,
+  onMuteCancel,
+  onMuteChanged,
 }: {
   group: FailureGroup;
   timezone?: string | null;
   canManage: boolean;
   onOpen: () => void;
   onRetried: () => void;
+  /** SCRUM-644: the mute in force on this fingerprint, if any. */
+  mute?: AlertMute | null;
+  canMute?: boolean;
+  muting?: boolean;
+  maxMinutes?: number;
+  onMute?: () => void;
+  onMuteCancel?: () => void;
+  onMuteChanged?: () => void;
 }) {
   return (
     <li className="flex flex-col gap-2.5 rounded-2xl border border-status-warn/25 bg-status-warn/5 px-[18px] py-4">
@@ -541,6 +610,12 @@ function GroupCard({
         <p className="text-sm font-semibold line-clamp-2 break-words">{group.lastError}</p>
       )}
 
+      {mute && (
+        <span className="flex flex-wrap items-center gap-2">
+          <MutedBadge mute={mute} timezone={timezone} />
+        </span>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-[12.5px] text-muted-foreground">
         <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           <span>
@@ -554,8 +629,22 @@ function GroupCard({
             Details
           </Button>
           <RetryButton group={group} canManage={canManage} onRetried={onRetried} />
+          {canMute && mute && onMuteChanged && <UnmuteButton mute={mute} onDone={onMuteChanged} />}
+          {canMute && !mute && !muting && onMute && (
+            <button
+              type="button"
+              onClick={onMute}
+              className="rounded-full border bg-card px-3 py-1.5 text-xs font-bold"
+            >
+              Mute
+            </button>
+          )}
         </span>
       </div>
+
+      {canMute && muting && !mute && onMuteChanged && onMuteCancel && (
+        <MuteForm fingerprint={group.fingerprint} maxMinutes={maxMinutes} onDone={onMuteChanged} onCancel={onMuteCancel} />
+      )}
     </li>
   );
 }

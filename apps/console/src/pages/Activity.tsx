@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff, Loader2, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { Download, Eye, EyeOff, Loader2, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import {
   activityApi,
+  type ActivityExportFilters,
   type AuditEntry,
   type AuditFilters,
 } from '@/api/observability';
@@ -13,11 +14,12 @@ import { StatusMark, StatusPill, toneForOutcome } from '@/components/Status';
 import { DateTimeFilter, SelectFilter, TextFilter } from '@/components/Filters';
 import { RawRecord, RecordDiff, RecordFields, isMaskedValue } from '@/components/RecordView';
 import { CommandBar, placeName } from '@/components/redesign/CommandBar';
-import { CodeTag, FilterChip, Tag, TitleChip } from '@/components/redesign/chips';
+import { CodeTag, FilterChip, SelectChip, Tag, TitleChip } from '@/components/redesign/chips';
 import { CardShell, PageGrid, RailNote } from '@/components/redesign/layout';
 import { EmptyNote } from '@/components/redesign/StatTile';
 import { useSession } from '@/auth/SessionContext';
 import { formatExact, formatWhen } from '@/lib/time';
+import { canExportActivity } from '@/lib/alertRouting';
 
 const PAGE_SIZE = 50;
 
@@ -28,10 +30,23 @@ const PAGE_SIZE = 50;
  */
 const PRESETS = [
   { id: '', label: 'Everything', category: '' },
+  // SCRUM-644: answered on the server for every row — labelled, or classified
+  // from the action name (the named refusals; the unmasked reads and exports).
+  { id: 'data_access', label: 'Data access', category: 'data_access' },
+  { id: 'denial', label: 'Denials', category: 'denial' },
   { id: 'admin', label: 'Admin log', category: 'admin' },
   { id: 'staff', label: 'Staff log', category: 'staff' },
   { id: 'auth', label: 'Sign-in log', category: 'auth' },
 ];
+
+/** The presets the audit route filters on itself (SCRUM-644). */
+const SERVER_CATEGORIES = ['data_access', 'denial'] as const;
+type ServerCategory = (typeof SERVER_CATEGORIES)[number];
+const serverCategory = (preset: string): ServerCategory | undefined =>
+  (SERVER_CATEGORIES as readonly string[]).includes(preset) ? (preset as ServerCategory) : undefined;
+
+/** The most one export holds; the route refuses more (SCRUM-644). */
+const EXPORT_ROWS = 5000;
 
 /** The two the route's schema accepts; a refusal is a failure by action name. */
 const OUTCOMES = [
@@ -49,6 +64,9 @@ interface Filters {
   outcome: string;
   from: string;
   to: string;
+  /** SCRUM-644: the producer's app label, and the app a Console action reached into. */
+  app: string;
+  targetApp: string;
 }
 
 const EMPTY: Filters = {
@@ -61,7 +79,25 @@ const EMPTY: Filters = {
   outcome: '',
   from: '',
   to: '',
+  app: '',
+  targetApp: '',
 };
+
+/** The filters the server applies — what the list reads and what an export carries. */
+function serverFilters(filters: Filters): ActivityExportFilters {
+  return {
+    category: serverCategory(filters.preset),
+    action: filters.action.trim() || undefined,
+    actorAccountId: filters.actorAccountId || undefined,
+    branchId: filters.branchId || undefined,
+    entityType: filters.entityType.trim() || undefined,
+    outcome: (filters.outcome as AuditFilters['outcome']) || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+    app: filters.app.trim() || undefined,
+    targetApp: filters.targetApp.trim() || undefined,
+  };
+}
 
 /**
  * The audit log, made readable.
@@ -75,8 +111,9 @@ const EMPTY: Filters = {
  * belongs is indistinguishable from an empty field.
  */
 export function Activity() {
-  const { me } = useSession();
+  const { me, permissions } = useSession();
   const timezone = me?.branch?.timezone;
+  const canExport = canExportActivity(permissions);
 
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [entries, setEntries] = useState<AuditEntry[]>([]);
@@ -110,15 +147,8 @@ export function Activity() {
 
   const query = useCallback(
     (extra: Partial<AuditFilters> = {}): AuditFilters => ({
-      category: filters.preset || undefined,
-      action: filters.action.trim() || undefined,
-      actorAccountId: filters.actorAccountId || undefined,
-      branchId: filters.branchId || undefined,
-      entityType: filters.entityType.trim() || undefined,
+      ...serverFilters(filters),
       requestId: filters.requestId.trim() || undefined,
-      outcome: (filters.outcome as AuditFilters['outcome']) || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
       limit: PAGE_SIZE,
       ...extra,
     }),
@@ -202,7 +232,9 @@ export function Activity() {
       filters.requestId ||
       filters.outcome ||
       filters.from ||
-      filters.to,
+      filters.to ||
+      filters.app ||
+      filters.targetApp,
   );
 
   return (
@@ -232,6 +264,7 @@ export function Activity() {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Refresh
             </Button>
+            {canExport && <ExportControl filters={serverFilters(filters)} />}
           </>
         }
       />
@@ -319,6 +352,18 @@ export function Activity() {
               onChange={(v) => setFilters((f) => ({ ...f, from: v }))}
             />
             <DateTimeFilter label="To" value={filters.to} onChange={(v) => setFilters((f) => ({ ...f, to: v }))} />
+            <TextFilter
+              label="App"
+              value={filters.app}
+              onChange={(v) => setFilters((f) => ({ ...f, app: v }))}
+              placeholder="inbox"
+            />
+            <TextFilter
+              label="Target app"
+              value={filters.targetApp}
+              onChange={(v) => setFilters((f) => ({ ...f, targetApp: v }))}
+              placeholder="oto_app"
+            />
           </div>
 
           {narrowedHere.length > 0 && (
@@ -331,8 +376,9 @@ export function Activity() {
           )}
           {unavailableFilters.length > 0 && (
             <RailNote>
-              {unavailableFilters.join(' and ')} cannot be applied on this deployment: these rows carry no
-              category yet. The list is unfiltered — narrow it by action or actor instead.
+              {unavailableFilters.join(' and ')} cannot be applied on this deployment yet: only Data
+              access and Denials are filtered by the server. The list is unfiltered — narrow it by action
+              or actor instead.
             </RailNote>
           )}
           <RailNote className="mt-auto">
@@ -441,6 +487,7 @@ function EntryRow({
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {entry.entityType && <span className="truncate">{entry.entityType}</span>}
           {entry.app && <Tag>{entry.app}</Tag>}
+          {entry.targetApp && <Tag>→ {entry.targetApp}</Tag>}
           {entry.origin && <span className="text-xs text-muted-foreground">{entry.origin}</span>}
           {masked && (
             <span
@@ -539,6 +586,7 @@ function EntryDrawer({
         </Fact>
         <Fact label="When">{formatExact(entry.occurredAt ?? entry.createdAt, timezone)}</Fact>
         {entry.app && <Fact label="App">{entry.app}</Fact>}
+        {entry.targetApp && <Fact label="Target app">{entry.targetApp}</Fact>}
         {entry.origin && <Fact label="Origin">{entry.origin}</Fact>}
         {entry.category && <Fact label="Category">{entry.category}</Fact>}
         {entry.requestId && (
@@ -678,11 +726,98 @@ function applyUnsupportedFilters(
     narrowed.push('The request id');
   }
 
-  if (filters.preset && entries.length > 0 && entries.every((e) => !e.category)) {
+  // Data access and Denials are the server's (SCRUM-644). The other presets
+  // are not yet a server filter at all, so the list under them is unfiltered.
+  if (filters.preset && !serverCategory(filters.preset)) {
     unavailable.push('The log presets');
   }
 
   return { rows, narrowed, unavailable };
+}
+
+/**
+ * SCRUM-644 — the audited export of what the filters select.
+ *
+ * One bounded page (the newest 5000 rows), masked exactly as the list is,
+ * and recorded against the person pressing it. When the trail holds more, the
+ * note says so and offers the next page as a second export rather than ever
+ * fetching the whole log at once.
+ */
+export function ExportControl({ filters }: { filters: ActivityExportFilters }) {
+  const [format, setFormat] = useState<'csv' | 'ndjson'>('csv');
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [next, setNext] = useState<{ cursor: string; key: string } | null>(null);
+  const key = JSON.stringify(filters);
+  const active = useMemo(() => ({ key }), [key]);
+
+  useEffect(() => {
+    setNote(null);
+    setNext(null);
+  }, [key]);
+
+  const run = async (cursor?: string) => {
+    if (busy) return;
+    setBusy(true);
+    setNote(null);
+    const asked = active;
+    try {
+      const file = await activityApi.exportFile(filters, format, { limit: EXPORT_ROWS, cursor });
+      if (asked.key !== key) return;
+      const url = URL.createObjectURL(file.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.filename ?? `activity.${format}`;
+      try { link.click(); } finally { URL.revokeObjectURL(url); }
+      const rows = file.rows ?? 0;
+      setNext(file.nextCursor ? { cursor: file.nextCursor, key } : null);
+      setNote(
+        `Exported ${rows} row${rows === 1 ? '' : 's'}${file.masked ? ', personal fields hidden' : ''}. ` +
+          (file.nextCursor
+            ? 'More rows match: narrow the filters, or export the next page.'
+            : 'That is everything these filters match.'),
+      );
+    } catch (err) {
+      setNote(err instanceof Error ? err.message : 'The export failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <span className="flex flex-wrap items-center gap-2" aria-label="Export">
+      <SelectChip
+        label="Export format"
+        value={format}
+        onChange={(v) => setFormat(v === 'ndjson' ? 'ndjson' : 'csv')}
+        options={[
+          { value: 'csv', label: 'CSV' },
+          { value: 'ndjson', label: 'NDJSON' },
+        ]}
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-9 gap-2 rounded-full px-3.5"
+        onClick={() => void run()}
+        disabled={busy}
+        title="The newest 5000 rows these filters select, masked as shown here. Each export is recorded against your account."
+      >
+        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+        Export
+      </Button>
+      {next && next.key === key && (
+        <Button variant="outline" size="sm" className="h-9 rounded-full px-3.5" onClick={() => void run(next.cursor)} disabled={busy}>
+          Export the next page
+        </Button>
+      )}
+      {note && (
+        <span role="status" className="text-xs text-muted-foreground">
+          {note}
+        </span>
+      )}
+    </span>
+  );
 }
 
 /** Whether anything in this row's payloads came back masked. */

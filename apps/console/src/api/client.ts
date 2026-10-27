@@ -132,7 +132,8 @@ async function requestFile(path: string, signal?: AbortSignal) {
     const filename = disposition ? (/filename="([^"]+)"/.exec(disposition)?.[1] ?? /filename=([^;]+)/.exec(disposition)?.[1]?.trim() ?? null) : null;
     const blob = await whileCurrent(current, () => res.blob());
     current();
-    return { blob, filename, contentType: res.headers.get('content-type') };
+    // `headers`: an export's own answers about itself (SCRUM-644 — rows, masking, next cursor).
+    return { blob, filename, contentType: res.headers.get('content-type'), headers: res.headers };
 }
 
 export const api = {
