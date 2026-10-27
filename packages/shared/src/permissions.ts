@@ -32,6 +32,18 @@ export const PERMISSIONS = [
    */
   'console:integration:test',
   'console:integration:manage',
+  /**
+   * Money oversight (SCRUM-647): read the owner's money figures for the parks
+   * reached — sales, refunds and voids, discounts, cash days, settlement,
+   * wallet liability and costs. Read only; every read is audited.
+   */
+  'console:money:read',
+  /**
+   * Money oversight (SCRUM-647): additionally read the money integrity panel
+   * and the per-row identifiers (sale, refund and attempt ids) that link a row
+   * to its support trace. Read only; every read is audited.
+   */
+  'console:money:investigate',
   /** Read employee pay in the OTO App when its legal entity enables platform access. */
   'hr:salary:view',
   /** Select a session's working operator; enforcement also requires a live platform-wide grant. */

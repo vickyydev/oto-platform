@@ -26,6 +26,19 @@ describe('plain permission sentences (SCRUM-612)', () => {
     expect(words['console:analytics:rerun']).toMatch(/our own records/);
     expect(words['console:analytics:rerun']).toMatch(/never be rebuilt/);
     expect(Object.values(words).join(' ')).not.toMatch(/unfreeze/i);
+  it('gives Money oversight to administrators only, read-only and recorded (SCRUM-647)', () => {
+    for (const key of ['console:money:read', 'console:money:investigate'] as const) {
+      expect(PERMISSIONS).toContain(key);
+      expect(ROLE_BUNDLES.platform_admin).toContain(key);
+      expect(ROLE_BUNDLES.operator_admin).toContain(key);
+      for (const role of ['branch_manager', 'reception', 'staff'] as const) {
+        expect(ROLE_BUNDLES[role], `${role} ${key}`).not.toContain(key);
+      }
+      expect(PERMISSION_WORDS[key]).toMatch(/^(Read|Also read) /);
+      expect(PERMISSION_WORDS[key]).toMatch(/every read recorded/);
+      expect(PERMISSION_WORDS[key]).not.toMatch(/\b(change|edit|move|refund|void|settle|import)\b/i);
+    }
+    expect(PERMISSION_WORDS['console:money:investigate']).toMatch(/integrity checks/);
   });
 
   it('covers exactly the declared vocabulary through the public permissions module', () => {

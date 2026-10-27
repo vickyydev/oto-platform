@@ -15,6 +15,8 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'console:release:kill_switch': 'Use approved emergency controls with an expiry, reason and the required confirmation.',
   'console:integration:test': 'Run the harmless integration test checks, where this deployment allows test controls.',
   'console:integration:manage': 'Record when an integration credential expires, so it is flagged 30 and 7 days before.',
+  'console:money:read': 'Read sales, refunds, cash days, settlement, wallet liability and costs for the parks you can reach, with every read recorded.',
+  'console:money:investigate': 'Also read the money integrity checks and the record numbers that open each row in the support trace, with every read recorded.',
   'hr:salary:view': 'View employee salary and pay details in the OTO App when platform access is enabled.',
 
   'admin:account:create': 'Invite a staff sign-in account with an allowed role and scope.',
