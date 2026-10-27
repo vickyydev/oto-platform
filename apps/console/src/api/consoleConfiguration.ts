@@ -9,6 +9,11 @@ export type ConfigurationIndex = ApiResponse<'/console/configuration', 'get'>;
 export type ConfigurationEntry = ConfigurationIndex['entries'][number];
 export type SettingsTarget = NonNullable<ConfigurationEntry['openInApp']>;
 export type AnalyticsSummary = ApiResponse<'/analytics/summary', 'get'>;
+export type AnalyticsSources = ApiResponse<'/console/analytics/sources', 'get'>;
+export type AnalyticsParkSource = AnalyticsSources['branches'][number];
+export type AnalyticsSourcePreview = ApiResponse<'/console/analytics/sources/preview', 'get'>;
+export type AnalyticsSourceChoice = ApiBody<'/console/analytics/sources/{branchId}', 'put'>;
+export type AnalyticsRerun = ApiResponse<'/console/analytics/rerun', 'post'>;
 
 const SETTINGS_APPS: ReadonlySet<string> = new Set<SettingsTarget['app']>(['oto_app', 'radar', 'inbox']);
 
@@ -31,6 +36,21 @@ export const consoleConfigurationApi = {
     api.get<ApiResponse<'/console/analytics/drift', 'get'>>(`/console/analytics/drift${qs({ branches: branchList(branches) })}`),
   configuration: (branchId?: string | null) =>
     api.get<ApiResponse<'/console/configuration', 'get'>>(`/console/configuration${qs({ branchId: branchId || undefined })}`),
+  sources: (branches?: readonly string[]) =>
+    api.get<ApiResponse<'/console/analytics/sources', 'get'>>(`/console/analytics/sources${qs({ branches: branchList(branches) })}`),
+  /** Read-only: what the proposed whole-branch source would serve. Nothing is written. */
+  sourcePreview: (branchId: string, source: AnalyticsSourceChoice['source'], range: { from?: string; to?: string } = {}) =>
+    api.get<ApiResponse<'/console/analytics/sources/preview', 'get'>>(
+      `/console/analytics/sources/preview${qs({ branchId, source, from: range.from, to: range.to })}`),
+  /** The existing audited switch; one fresh key per confirmed save. */
+  switchSource: (branchId: string, choice: AnalyticsSourceChoice) =>
+    api.put<ApiResponse<'/console/analytics/sources/{branchId}', 'put'>>(`/console/analytics/sources/${encodeURIComponent(branchId)}`,
+      { source: choice.source, preference: choice.preference } satisfies ApiBody<'/console/analytics/sources/{branchId}', 'put'>,
+      { idempotencyKey: idemKey() }),
+  /** Marks our own POS days for the jobs process; the server refuses legacy and frozen days. */
+  rerun: (branchId: string, from: string, to: string) =>
+    api.post<ApiResponse<'/console/analytics/rerun', 'post'>>('/console/analytics/rerun',
+      { branchId, from, to } satisfies ApiBody<'/console/analytics/rerun', 'post'>, { idempotencyKey: idemKey() }),
   summary: (from: string, to: string, branches: readonly string[]) =>
     api.get<ApiResponse<'/analytics/summary', 'get'>>(`/analytics/summary${qs({ from, to, group: 'total', branches: branches.join(',') })}`),
   /**

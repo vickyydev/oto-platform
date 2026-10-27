@@ -82,6 +82,40 @@ describe('Configuration and drift client (SCRUM-646)', () => {
     expect(assign).not.toHaveBeenCalled();
   });
 
+  it('reads sources and the preview read-only, with only the given query', async () => {
+    answer({ branches: [] });
+    await consoleConfigurationApi.sources([PARK]);
+    let { url, options } = lastRequest();
+    expect(url.pathname).toBe('/api/console/analytics/sources');
+    expect([...url.searchParams]).toEqual([['branches', PARK]]);
+    expect(options?.method).toBe('GET');
+    answer({ days: 30 });
+    await consoleConfigurationApi.sourcePreview(PARK, 'pisell');
+    ({ url, options } = lastRequest());
+    expect(url.pathname).toBe('/api/console/analytics/sources/preview');
+    expect([...url.searchParams]).toEqual([['branchId', PARK], ['source', 'pisell']]);
+    expect(options?.method).toBe('GET');
+    expect(options?.body).toBeUndefined();
+  });
+
+  it('saves a confirmed switch and queues a re-run each under its own fresh key', async () => {
+    answer({ changed: true });
+    await consoleConfigurationApi.switchSource(PARK, { source: 'papaya', preference: 'both' });
+    const first = lastRequest();
+    expect(first.url.pathname).toBe(`/api/console/analytics/sources/${PARK}`);
+    expect(first.options?.method).toBe('PUT');
+    expect(JSON.parse(String(first.options?.body))).toEqual({ source: 'papaya', preference: 'both' });
+    answer({ days: 2 });
+    await consoleConfigurationApi.rerun(PARK, '2026-09-01', '2026-09-02');
+    const second = lastRequest();
+    expect(second.url.pathname).toBe('/api/console/analytics/rerun');
+    expect(second.options?.method).toBe('POST');
+    expect(JSON.parse(String(second.options?.body))).toEqual({ branchId: PARK, from: '2026-09-01', to: '2026-09-02' });
+    const keys = [first, second].map(call => (call.options?.headers as Record<string, string>)['idempotency-key']);
+    expect(keys.every(Boolean)).toBe(true);
+    expect(new Set(keys).size).toBe(2);
+  });
+
   it('accepts only Console page paths and known settings apps', () => {
     expect(consolePagePath('/catalogue/tax')).toBe('/catalogue/tax');
     for (const bad of [null, '', 'catalogue/tax', '//evil.example', '/\\evil', 'https://evil.example/', '/a b']) {
