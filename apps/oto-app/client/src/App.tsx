@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { QaReportLauncher } from "@/components/qa-report-launcher";
+import { ViewAsBanner } from "@/components/view-as-banner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BranchProvider } from "@/hooks/use-branch-context";
 import { ModeProvider, useMode } from "@/hooks/use-mode";
@@ -748,6 +749,8 @@ function App() {
                 <TooltipProvider>
                   <Toaster />
                   <GlobalUploadProgress />
+                  {/* SCRUM-648: a support administrator's view-as window, named over every page; never dismissible. */}
+                  <ViewAsBanner />
                   <Router />
                   <QaReportLauncher />
                 </TooltipProvider>

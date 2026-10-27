@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Express, NextFunction, Request, Response } from "express";
 import "express-session";
 import { storage } from "../storage";
-import { log } from "../lib/logger";
+import { log, requestContext } from "../lib/logger";
 import { readPreferencesUpdate, readUiPreferences, type UiPreferences } from "@shared/uiPreferences";
 import { readOtoAppRoleContext, type OtoAppRoleContext } from "@shared/platformRoleMapping";
 import { loadPlatformUserWithBranchAccess } from "../lib/platformRoleMapping";
@@ -545,6 +545,14 @@ export function registerPlatformSignOn(app: Express): void {
     if (!req.path.startsWith("/api")) return next();
 
     // SCRUM-648 — a view-as window never reaches payroll or contracts, and a read-only one writes nothing.
+    const mark = platform.impersonation;
+    if (mark) {
+      const store = requestContext.getStore();
+      if (store) store.viewAs = { id: mark.id, actorAccountId: mark.actorAccountId, subjectAccountId: mark.subjectAccountId };
+      // Every request in the window, in the app's own log: who was really there and as whom.
+      log().info({ viewAs: mark.id, actor: mark.actorAccountId, onBehalfOf: mark.subjectAccountId, method: req.method,
+        path: req.path, mode: mark.mode }, "view-as request");
+    }
     const refused = impersonationRefusal(req.path, platform.impersonation, req.method);
     if (refused) {
       log().warn({ viewAs: platform.impersonation?.id, path: req.path, reason: refused.reason }, "a view-as window was refused");

@@ -26,13 +26,17 @@ const MARK = {
 
 assert.equal(readImpersonationMark(undefined), null, "an ordinary sign-on carries no mark");
 assert.equal(readImpersonationMark(null), null, "an explicit null is no mark either");
-assert.deepEqual(readImpersonationMark({ ...MARK }), MARK, "a well-formed mark is kept field for field");
+assert.deepEqual(readImpersonationMark({ ...MARK }), { ...MARK, actorName: null, subjectName: null },
+  "a well-formed mark is kept field for field; names the platform did not send read as null");
+assert.deepEqual(readImpersonationMark({ ...MARK, actorName: "ZZ Admin", subjectName: null }),
+  { ...MARK, actorName: "ZZ Admin", subjectName: null }, "the banner's names are kept as sent");
 assert.deepEqual(readImpersonationMark({ ...MARK, mode: "write_allowed" })?.mode, "write_allowed");
 for (const broken of [
   { ...MARK, id: "not-a-uuid" },
   { ...MARK, actorAccountId: 7 },
   { ...MARK, mode: "admin" },
   { ...MARK, expiresAt: "soon" },
+  { ...MARK, actorName: 7 },
   "a string",
 ]) {
   assert.throws(() => readImpersonationMark(broken), /malformed/, `a malformed mark is unreadable: ${JSON.stringify(broken)}`);

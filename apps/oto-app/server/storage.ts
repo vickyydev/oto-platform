@@ -350,6 +350,8 @@ import {
 } from "./lib/parkGroupSettings";
 import { retiredShiftEndDate } from "./lib/shiftGroupRequired";
 import { setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
+import { currentViewAs } from "./lib/logger";
+import { viewAsMetadata } from "./lib/platformSession";
 
 /**
  * The database, or a transaction on it: the storage methods an offboarding
@@ -3913,9 +3915,11 @@ export class DatabaseStorage implements IStorage {
                                 (select id from tenants where slug = ${DEFAULT_TENANT_SLUG}),
                                 (select min(id::text)::uuid from tenants having count(*) = 1)
                         )`;
+                        // SCRUM-648 — a row written inside a view-as window names who was really there.
+                        const metadataJson = viewAsMetadata(log.metadataJson, currentViewAs());
                         const [newLog] = await executor
                                 .insert(activityLog)
-                                .values({ ...log, tenantId })
+                                .values({ ...log, ...(metadataJson !== log.metadataJson ? { metadataJson } : {}), tenantId })
                                 .returning();
                         return newLog;
                 } catch (error) {
