@@ -282,7 +282,13 @@ describe('SCRUM-640 expand-only session override and Q22 audit context migration
         where id = any($1::uuid[]) order by id`, [auditIds])).rows)
         .toEqual([...auditIds].sort().map(id => ({ id, home_operator_id: null, effective_operator_id: null })));
       const currentAudit = await Promise.all(auditIds.map(id => auditRowOf(c, id)));
+      // SCRUM-643 later adds three nullable audit context columns in the same chain; existing rows keep them empty.
+      expect(currentAudit.map(row => [row.target_app, row.reason, row.origin])).toEqual(auditIds.map(() => [null, null, null]));
+      // SCRUM-644 later adds two nullable audit labels in the same chain; existing rows keep them empty too.
+      expect(currentAudit.map(row => [row.source_app, row.category])).toEqual(auditIds.map(() => [null, null]));
       expect(currentAudit.map(row => { const original = { ...row }; delete original.home_operator_id; delete original.effective_operator_id;
+        delete original.target_app; delete original.reason; delete original.origin;
+        delete original.source_app; delete original.category;
         return fingerprint(original); })).toEqual(previousAudit.map(fingerprint));
     } finally {
       await c.end().catch(() => undefined);
