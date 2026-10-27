@@ -50,6 +50,12 @@ export const PERMISSIONS = [
   'admin:audit:read',
   /** Unmasked audit: child health notes, phones, terminal payloads (S2-03). */
   'admin:audit:read_sensitive',
+  /**
+   * SCRUM-644 (Q25): download a bounded page of the activity log as CSV or
+   * NDJSON. The export applies the same selection, reach and masking as the
+   * read, and every export is itself recorded as a data-access audit row.
+   */
+  'console:activity:export',
   // Admin console — the fleet: stations, the boxes that run them, the devices
   // bolted to each box (S2-04)
   'admin:station:read',
@@ -95,6 +101,12 @@ export const PERMISSIONS = [
   'admin:health:read',
   /** Retry a failed run, acknowledge an alert, resolve an expectation. */
   'admin:ops:manage',
+  /**
+   * SCRUM-644 (Q25): mute an alert fingerprint for a bounded time (reason
+   * required, at most 24 hours) and keep the alert recipient list. Delivery
+   * stays console-only until a provider integration is its own ticket.
+   */
+  'console:alert:manage',
   // POS — members & visits
   'pos:member:read',
   /**
