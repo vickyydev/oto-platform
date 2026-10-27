@@ -14,7 +14,8 @@
     "./handoff-target": "./src/handoff-target.ts",
     "./ids": "./src/ids.ts",
     "./assistant-limits": "./src/assistant-limits.ts",
-    "./ui-preferences": "./src/ui-preferences.ts"
+    "./ui-preferences": "./src/ui-preferences.ts",
+    "./impersonation": "./src/impersonation.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

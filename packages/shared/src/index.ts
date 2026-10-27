@@ -5,6 +5,7 @@ export * from './dates';
 export * from './business-date';
 export * from './pricing-mode';
 export * from './permissions';
+export * from './impersonation';
 export * from './catalog-shapes';
 export * from './menu-shapes';
 export * from './tier-proof';

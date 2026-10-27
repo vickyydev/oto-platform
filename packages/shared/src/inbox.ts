@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ImpersonationBannerSchema } from './impersonation';
 
 /**
  * THE UNIFIED INBOX'S RULES AND READ SHAPES (S2-19 I2b, SCRUM-581).
@@ -553,6 +554,13 @@ export const InboxMeSchema = z.object({
    * `/inbox/simulator/*` routes check. Its simulator channel accounts are the
    * ones a pretend customer can write to; none until the demo is played.
    */
+  /**
+   * SCRUM-648 — set when this session is a support administrator's audited
+   * view-as window: the Inbox shell shows a fixed banner naming both people
+   * until it ends. Null on every ordinary session; absent from an api that
+   * predates it.
+   */
+  impersonation: ImpersonationBannerSchema.nullable().optional(),
   simulator: z
     .object({
       channelAccounts: z.array(
