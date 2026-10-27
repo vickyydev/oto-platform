@@ -12,6 +12,8 @@ export * from './suite-controls';
 export * from './ops';
 // Alert routing and fingerprint mutes (SCRUM-644): beside the alerts they route.
 export * from './alert-routing';
+// SCRUM-645: owner-supplied credential expiry dates, beside the ops record.
+export * from './integration';
 export * from './edge';
 export * from './sync';
 export * from './future';
