@@ -5,11 +5,15 @@
 sha="$1"; max="${2:-70}"
 [ -n "$sha" ] || { echo "usage: watch-ci.sh <full-sha> [max-minutes]"; exit 2; }
 cd "$(git rev-parse --show-toplevel)" || exit 2
+# gh matches only the full 40-character SHA: a short one finds nothing and
+# would wait out the whole timeout. Expand it when this checkout knows it.
+full=$(git rev-parse --verify --quiet "$sha^{commit}") && sha="$full"
 i=0
 while [ "$i" -lt "$max" ]; do
   line=$(gh run list --branch main --commit "$sha" --limit 1 --json databaseId,status,conclusion,displayTitle --jq '.[0] | "\(.status) \(.conclusion) \(.databaseId) \(.displayTitle)"' 2>/dev/null)
   case "$line" in
-    completed*) echo "CI: $line"; exit 0 ;;
+    "completed success"*) echo "CI: $line"; exit 0 ;;
+    completed*) echo "CI FAILED: $line"; exit 1 ;;
     "") echo "no run yet for $sha" ;;
   esac
   i=$((i+1)); sleep 60
