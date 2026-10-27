@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CalendarClock, FlaskConical } from 'lucide-react';
-import { idemKey } from '@/api/client';
+import { idemKey, isMissingRoute } from '@/api/client';
 import {
   integrationsApi,
   type CredentialExpiry,
@@ -72,7 +72,8 @@ export function CredentialExpiryCard({
         <StripedList label="Credential expiry dates">
           {data.credentials.map((credential) => (
             <CredentialRow
-              key={credential.integration}
+              // Keyed on the saved date too, so the draft resets after a save or clear.
+              key={`${credential.integration}:${credential.expiresOn ?? ''}`}
               credential={credential}
               canManage={data.canManage}
               busy={busyKey === credential.integration}
@@ -137,6 +138,7 @@ function CredentialRow({
 export function CredentialExpiryPanel() {
   const [data, setData] = useState<CredentialExpiryList | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -145,6 +147,8 @@ export function CredentialExpiryPanel() {
       setData(await integrationsApi.credentials());
       setError(null);
     } catch (err) {
+      // A deployment without this route yet: no card, rather than an unread one.
+      if (isMissingRoute(err)) return setMissing(true);
       setError(err instanceof Error ? err.message : 'Could not read the recorded expiry dates');
     }
   }, []);
@@ -166,6 +170,7 @@ export function CredentialExpiryPanel() {
     }
   };
 
+  if (missing) return null;
   return (
     <>
       <CredentialExpiryCard data={data} error={error} busyKey={busyKey} onSave={(key, value) => void save(key, value)} />
@@ -256,6 +261,7 @@ export function IntegrationTestsCard({
 export function IntegrationTestsPanel({ timezone }: { timezone?: string | null }) {
   const [data, setData] = useState<IntegrationTests | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState(false);
   const [running, setRunning] = useState<string | null>(null);
   const [results, setResults] = useState<Partial<Record<string, IntegrationTestResult | string>>>({});
 
@@ -264,6 +270,7 @@ export function IntegrationTestsPanel({ timezone }: { timezone?: string | null }
       setData(await integrationsApi.tests());
       setError(null);
     } catch (err) {
+      if (isMissingRoute(err)) return setMissing(true);
       setError(err instanceof Error ? err.message : 'Could not read the integration tests');
     }
   }, []);
@@ -285,6 +292,7 @@ export function IntegrationTestsPanel({ timezone }: { timezone?: string | null }
     }
   };
 
+  if (missing) return null;
   return (
     <IntegrationTestsCard
       data={data}
