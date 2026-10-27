@@ -8,6 +8,8 @@ export * from './staff-token';
 export * from './print';
 export * from './platform';
 export * from './suite-controls';
+// SCRUM-648: impersonation windows, after the suite controls whose approval they consume.
+export * from './support';
 export * from './ops';
 export * from './edge';
 export * from './sync';

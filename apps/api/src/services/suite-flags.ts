@@ -294,7 +294,9 @@ export async function applyFlagClear(tx: Tx, ctx: OpContext, input: FlagClearInp
 export async function suiteFlagsOf(db: Db, settings: FlagSettings & { dualControl: boolean }, now = new Date()) {
   const rows = await db.select().from(featureFlag).orderBy(asc(featureFlag.key), asc(featureFlag.scopeType), asc(featureFlag.id));
   const approvals = await db.select().from(suiteControlApproval)
-    .where(and(inArray(suiteControlApproval.state, ['pending', 'approved']), sql`${suiteControlApproval.requestExpiresAt} > ${now}`))
+    .where(and(inArray(suiteControlApproval.state, ['pending', 'approved']), sql`${suiteControlApproval.requestExpiresAt} > ${now}`,
+      // SCRUM-648 shares the approval table; impersonation approvals belong to the Support page.
+      eq(suiteControlApproval.action, 'kill_switch.set')))
     .orderBy(asc(suiteControlApproval.createdAt), asc(suiteControlApproval.id));
   return {
     generatedAt: now.toISOString(),

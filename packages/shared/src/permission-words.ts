@@ -9,6 +9,9 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'console:release:read': 'Read app versions, deployment history, feature flags and kill switches.',
   'console:release:flag_manage': 'Change scoped feature flags after reviewing their effect and required safeguards.',
   'console:release:kill_switch': 'Use approved emergency controls with an expiry, reason and the required confirmation.',
+  'console:support:lookup': 'Search the suite for one phone, band, receipt, booking, voucher, account or action, each app answering only what your own permissions allow; every search is recorded.',
+  'console:support:trace': 'Follow one sale, payment or action through every record it left, gaps shown; every trace is recorded.',
+  'console:support:impersonate': 'View an app as a chosen staff account for a short, recorded window, read-only unless a second administrator approves.',
   'hr:salary:view': 'View employee salary and pay details in the OTO App when platform access is enabled.',
 
   'admin:account:create': 'Invite a staff sign-in account with an allowed role and scope.',

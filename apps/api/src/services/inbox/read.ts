@@ -5,6 +5,7 @@ import {
   isUnanswered,
   isoDateInTz,
   newId,
+  normalizePhone,
   tabsForRoles,
   type InboxConversationDetail,
   type InboxConversationList,
@@ -284,6 +285,11 @@ function filterSql(q: InboxConversationListQuery): SQL[] {
   if (q.status) where.push(eq(s.conversation.status, q.status));
   if (q.language) where.push(eq(s.conversation.language, q.language));
   if (q.unanswered === 'true') where.push(unansweredSql);
+  if (q.phone !== undefined) {
+    // SCRUM-648 (support lookup): the contact's stored E.164, never a partial match.
+    const phone = normalizePhone(q.phone);
+    where.push(phone ? eq(s.contact.phone, phone) : sql`false`);
+  }
   if (q.handledFrom) where.push(gte(s.conversation.handledAt, new Date(q.handledFrom)));
   if (q.handledTo) where.push(lte(s.conversation.handledAt, new Date(q.handledTo)));
   // The prototype applies "resolved by" in the archive only (:1071-1072).

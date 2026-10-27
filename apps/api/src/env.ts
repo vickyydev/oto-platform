@@ -399,6 +399,28 @@ const EnvSchema = z.object({
     value => typeof value === 'string' && value.trim() === '' ? undefined : value,
     z.coerce.number().int().min(1).max(10_080).default(1440),
   ),
+  /**
+   * SCRUM-648 (S2-23 support tools): the longest an impersonation ("view as")
+   * window may last, in minutes. It also ends at the actor's sign-out, and
+   * whichever comes first wins.
+   */
+  IMPERSONATION_MAX_MIN: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.coerce.number().int().min(1).max(240).default(15),
+  ),
+  /**
+   * SCRUM-648: the external trace link the support trace offers beside each
+   * request id, e.g. `https://observability.example/trace?request={requestId}`.
+   * Unset means no link is shown. Must be https and name `{requestId}`.
+   */
+  TRACE_URL_TEMPLATE: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().refine(value => {
+      try {
+        return new URL(value.replace('{requestId}', 'x')).protocol === 'https:' && value.includes('{requestId}');
+      } catch { return false; }
+    }, 'TRACE_URL_TEMPLATE must be an https URL containing {requestId}').optional(),
+  ),
   /** Morning branch status digest; separate from alert-channel delivery. */
   CONSOLE_DIGEST_ENABLED: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
   /** Private destination: never expose its value through status or error text. */

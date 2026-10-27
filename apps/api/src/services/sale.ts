@@ -5054,6 +5054,8 @@ export interface SaleListFilters {
   saleIds?: string[];
   /** S2-11 — every sale of any of these members (a phone can name more than one). */
   memberIds?: string[];
+  /** SCRUM-648 — the support lookup's receipt number, exact (unique per branch, so possibly one per park). */
+  receiptNumber?: string;
   status?: SaleStatus;
   from?: string;
   to?: string;
@@ -5103,6 +5105,7 @@ export async function listSales(
   if (filters.memberIds) {
     where.push(inArray(sale.memberId, filters.memberIds.length ? filters.memberIds : [NO_SALE]));
   }
+  if (filters.receiptNumber) where.push(eq(sale.receiptNumber, filters.receiptNumber));
   if (filters.status) where.push(eq(sale.status, filters.status));
   if (filters.from) where.push(gte(sale.businessDate, filters.from));
   if (filters.to) where.push(lte(sale.businessDate, filters.to));

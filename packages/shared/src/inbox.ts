@@ -260,6 +260,12 @@ export const InboxConversationListQuerySchema = z.object({
   q: z.string().max(200).optional(),
   /** Only the conversations a person still owes an answer (`isUnanswered`). */
   unanswered: TrueFalse.optional(),
+  /**
+   * SCRUM-648: only the conversations whose contact has this phone, in any
+   * format (normalised as every phone is). Visibility is unchanged; an
+   * unreadable number matches nothing rather than reading as no filter.
+   */
+  phone: z.string().trim().min(1).max(40).optional(),
   /** The archive's date range, on `handled_at`, inclusive (ISO instants). */
   handledFrom: z.string().datetime({ offset: true }).optional(),
   handledTo: z.string().datetime({ offset: true }).optional(),

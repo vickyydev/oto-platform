@@ -631,6 +631,13 @@
       "when": 1793112266220,
       "tag": "0089_suite_controls",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1793132291530,
+      "tag": "0093_support_impersonation",
+      "breakpoints": true
     }
   ]
 }

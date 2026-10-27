@@ -862,16 +862,17 @@ export async function saleRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Find sales by a band code or short code (`band`) or by a member phone in any format (`phone`) — one of the two. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is.',
+          'Find sales by a band code or short code (`band`), by a member phone in any format (`phone`) or by an exact receipt number (`receipt`, SCRUM-648) — one of the three. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is.',
         querystring: z
           .object({
             band: z.string().trim().min(1).max(80).optional(),
             phone: z.string().trim().min(1).max(40).optional(),
+            receipt: z.string().trim().min(1).max(64).optional(),
             branchId: z.string().uuid().optional(),
             limit: z.coerce.number().int().min(1).max(200).default(50),
           })
-          .refine((q) => Boolean(q.band) !== Boolean(q.phone), {
-            message: 'Search by a band or by a phone — one of the two',
+          .refine((q) => [q.band, q.phone, q.receipt].filter(Boolean).length === 1, {
+            message: 'Search by a band, a phone or a receipt number — one of the three',
           }),
       },
     },
@@ -889,6 +890,12 @@ export async function saleRoutes(app: App): Promise<void> {
         }
       }
       const scope = { branchId, branchIds, limit: req.query.limit, offset: 0 };
+      if (req.query.receipt) {
+        // Receipt numbers are printed upper-case; the series and sequence are unique per branch.
+        const receiptNumber = req.query.receipt.toUpperCase();
+        const found = await listSales(app.db, auth.operatorId, { ...scope, receiptNumber });
+        return { match: { by: 'receipt' as const, receiptNumber }, ...found };
+      }
       if (req.query.band) {
         const bands = await findBandsByCode(app.db, auth.operatorId, req.query.band);
         const found = await listSales(app.db, auth.operatorId, {
