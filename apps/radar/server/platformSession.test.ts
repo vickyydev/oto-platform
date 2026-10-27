@@ -127,3 +127,28 @@ test("SCRUM-653: the identity carries the account's preferences, and a write is 
     globalThis.fetch = realFetch;
   }
 });
+
+test("SCRUM-648: the identity carries the platform's view-as window, null on an ordinary session", async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    if (String(url).endsWith("/me/permissions")) {
+      return Response.json({ permissions: [{ permission: "app:radar:access", scopeType: "operator", scopeId: null }] });
+    }
+    const token = String(url).includes("window") ? "window" : "plain";
+    return Response.json({ account: { id: `acc-${token}` }, employee: { name: "Lek" }, branch: null,
+      impersonation: token === "window" ? {
+        id: "01964800-0000-7000-8000-0000000000c1", actor: { accountId: "a1", name: "ZZ Admin" },
+        subject: { accountId: "a2", name: "Lek" }, targetApp: "radar", mode: "read_only", expiresAt: "2026-10-28T03:05:00.000Z",
+      } : null });
+  }) as typeof fetch;
+  try {
+    const inWindow = await resolveIdentity("http://window.platform.test", "view-as-token");
+    assert.equal(inWindow.kind, "ok");
+    assert.deepEqual(inWindow.kind === "ok" ? inWindow.identity.viewAs : undefined, { id: "01964800-0000-7000-8000-0000000000c1",
+      actorName: "ZZ Admin", subjectName: "Lek", mode: "read_only", expiresAt: "2026-10-28T03:05:00.000Z" });
+    const plain = await resolveIdentity("http://plain.platform.test", "plain-token");
+    assert.equal(plain.kind === "ok" ? plain.identity.viewAs : undefined, null);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});

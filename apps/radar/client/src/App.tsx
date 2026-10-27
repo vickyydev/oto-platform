@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, useTheme } from "@/components/theme-provider";
 import { Loader2 } from "lucide-react";
+import { ViewAsBanner } from "@/components/view-as-banner";
 
 const IntelligenceDashboard = lazy(() => import("@/pages/funtopia-dashboard"));
 const VisitorSurveyPage = lazy(() => import("@/pages/visitor-survey"));
@@ -49,7 +50,8 @@ function SignedIn({ children }: { children: ReactNode }) {
     if (me.data?.status === 200) adoptPlatformTheme(me.data.body);
   }, [me.data, adoptPlatformTheme]);
   if (me.isLoading) return <PageLoader />;
-  if (me.data?.status === 200) return <>{children}</>;
+  // SCRUM-648 — a support administrator's view-as window, named above every private page; never dismissible.
+  if (me.data?.status === 200) return <><ViewAsBanner me={me.data.body} />{children}</>;
   const refusal = me.data?.body as { reason?: string; message?: string } | null | undefined;
   const launcherUrl = launcherUrlFrom(refusal);
   if (refusal?.reason === "no_access") {
