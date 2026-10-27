@@ -2496,6 +2496,8 @@
               "type": "string",
               "enum": [
                 "console:overview:read",
+                "console:money:read",
+                "console:money:investigate",
                 "hr:salary:view",
                 "platform:operator:switch",
                 "admin:account:create",
@@ -68501,6 +68503,2337 @@
                     "revision",
                     "updatedAt",
                     "updatedBy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/money/sales": {
+      "get": {
+        "description": "Sales per park, business date and revenue category, from the stored daily summary with its provisional and freshness marks. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "omitted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "branches",
+                        "omitted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "stored-daily-summary"
+                      ]
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "today": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "lastRolledUpAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "total": {
+                            "type": "object",
+                            "properties": {
+                              "businessDate": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "provisional": {
+                                "type": "boolean"
+                              },
+                              "rolledDays": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "computedAt": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "revenueSatang": {
+                                "type": "integer"
+                              },
+                              "ticketsSatang": {
+                                "type": "integer"
+                              },
+                              "fnbSatang": {
+                                "type": "integer"
+                              },
+                              "merchSatang": {
+                                "type": "integer"
+                              },
+                              "partiesSatang": {
+                                "type": "integer"
+                              },
+                              "dropoffSatang": {
+                                "type": "integer"
+                              },
+                              "refundsSatang": {
+                                "type": "integer"
+                              },
+                              "discountsSatang": {
+                                "type": "integer"
+                              },
+                              "compsSatang": {
+                                "type": "integer"
+                              },
+                              "txnCount": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "businessDate",
+                              "provisional",
+                              "rolledDays",
+                              "computedAt",
+                              "revenueSatang",
+                              "ticketsSatang",
+                              "fnbSatang",
+                              "merchSatang",
+                              "partiesSatang",
+                              "dropoffSatang",
+                              "refundsSatang",
+                              "discountsSatang",
+                              "compsSatang",
+                              "txnCount"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "days": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "businessDate": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                  "nullable": true
+                                },
+                                "provisional": {
+                                  "type": "boolean"
+                                },
+                                "rolledDays": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "computedAt": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "revenueSatang": {
+                                  "type": "integer"
+                                },
+                                "ticketsSatang": {
+                                  "type": "integer"
+                                },
+                                "fnbSatang": {
+                                  "type": "integer"
+                                },
+                                "merchSatang": {
+                                  "type": "integer"
+                                },
+                                "partiesSatang": {
+                                  "type": "integer"
+                                },
+                                "dropoffSatang": {
+                                  "type": "integer"
+                                },
+                                "refundsSatang": {
+                                  "type": "integer"
+                                },
+                                "discountsSatang": {
+                                  "type": "integer"
+                                },
+                                "compsSatang": {
+                                  "type": "integer"
+                                },
+                                "txnCount": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": [
+                                "businessDate",
+                                "provisional",
+                                "rolledDays",
+                                "computedAt",
+                                "revenueSatang",
+                                "ticketsSatang",
+                                "fnbSatang",
+                                "merchSatang",
+                                "partiesSatang",
+                                "dropoffSatang",
+                                "refundsSatang",
+                                "discountsSatang",
+                                "compsSatang",
+                                "txnCount"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "name",
+                          "source",
+                          "today",
+                          "lastRolledUpAt",
+                          "total",
+                          "days"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "total": {
+                      "type": "object",
+                      "properties": {
+                        "businessDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "nullable": true
+                        },
+                        "provisional": {
+                          "type": "boolean"
+                        },
+                        "rolledDays": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "computedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "revenueSatang": {
+                          "type": "integer"
+                        },
+                        "ticketsSatang": {
+                          "type": "integer"
+                        },
+                        "fnbSatang": {
+                          "type": "integer"
+                        },
+                        "merchSatang": {
+                          "type": "integer"
+                        },
+                        "partiesSatang": {
+                          "type": "integer"
+                        },
+                        "dropoffSatang": {
+                          "type": "integer"
+                        },
+                        "refundsSatang": {
+                          "type": "integer"
+                        },
+                        "discountsSatang": {
+                          "type": "integer"
+                        },
+                        "compsSatang": {
+                          "type": "integer"
+                        },
+                        "txnCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "businessDate",
+                        "provisional",
+                        "rolledDays",
+                        "computedAt",
+                        "revenueSatang",
+                        "ticketsSatang",
+                        "fnbSatang",
+                        "merchSatang",
+                        "partiesSatang",
+                        "dropoffSatang",
+                        "refundsSatang",
+                        "discountsSatang",
+                        "compsSatang",
+                        "txnCount"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "basis",
+                    "branches",
+                    "total"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/money/refunds": {
+      "get": {
+        "description": "Refunds (on their original sale’s business date) and voids, with the approving manager, the reason and the original sale. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "omitted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "branches",
+                        "omitted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "original-sale-business-date"
+                      ]
+                    },
+                    "refunds": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalSatang": {
+                          "type": "integer"
+                        },
+                        "truncated": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "number": {
+                                "type": "string"
+                              },
+                              "amountSatang": {
+                                "type": "integer"
+                              },
+                              "mode": {
+                                "type": "string"
+                              },
+                              "reason": {
+                                "type": "string"
+                              },
+                              "approvedBy": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "createdBy": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "pending": {
+                                "type": "boolean"
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              },
+                              "sale": {
+                                "type": "object",
+                                "properties": {
+                                  "receiptNumber": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "businessDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  },
+                                  "grossSatang": {
+                                    "type": "integer"
+                                  },
+                                  "status": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "receiptNumber",
+                                  "businessDate",
+                                  "grossSatang",
+                                  "status"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "refundId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "saleId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "trace": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "sale",
+                                      "refund",
+                                      "payment_attempt",
+                                      "receipt",
+                                      "wallet"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "href": {
+                                    "type": "string",
+                                    "pattern": "^\\/support\\?"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "href"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "number",
+                              "amountSatang",
+                              "mode",
+                              "reason",
+                              "approvedBy",
+                              "createdBy",
+                              "pending",
+                              "createdAt",
+                              "sale",
+                              "refundId",
+                              "saleId",
+                              "trace"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "count",
+                        "totalSatang",
+                        "truncated",
+                        "rows"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "voids": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalSatang": {
+                          "type": "integer"
+                        },
+                        "truncated": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "receiptNumber": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "businessDate": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              },
+                              "grossSatang": {
+                                "type": "integer"
+                              },
+                              "voidedAt": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "voidedBy": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "saleId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "trace": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "sale",
+                                      "refund",
+                                      "payment_attempt",
+                                      "receipt",
+                                      "wallet"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "href": {
+                                    "type": "string",
+                                    "pattern": "^\\/support\\?"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "id",
+                                  "href"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "receiptNumber",
+                              "businessDate",
+                              "grossSatang",
+                              "voidedAt",
+                              "voidedBy",
+                              "reason",
+                              "saleId",
+                              "trace"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "count",
+                        "totalSatang",
+                        "truncated",
+                        "rows"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "basis",
+                    "refunds",
+                    "voids"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/money/discounts": {
+      "get": {
+        "description": "Comps, manual discounts and promotions with the revenue given up, from the stored report facts. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "omitted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "branches",
+                        "omitted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "stored-report-facts"
+                      ]
+                    },
+                    "compSatang": {
+                      "type": "integer"
+                    },
+                    "manualDiscountSatang": {
+                      "type": "integer"
+                    },
+                    "promoSatang": {
+                      "type": "integer"
+                    },
+                    "freeItemBenefitSatang": {
+                      "type": "integer"
+                    },
+                    "foregoneSatang": {
+                      "type": "integer"
+                    },
+                    "promoByType": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "amountSatang": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "count",
+                          "amountSatang"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "byOperator": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appliedBy": {
+                            "type": "string"
+                          },
+                          "compCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "compTotalSatang": {
+                            "type": "integer"
+                          },
+                          "discountCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "discountTotalSatang": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "appliedBy",
+                          "compCount",
+                          "compTotalSatang",
+                          "discountCount",
+                          "discountTotalSatang"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "basis",
+                    "compSatang",
+                    "manualDiscountSatang",
+                    "promoSatang",
+                    "freeItemBenefitSatang",
+                    "foregoneSatang",
+                    "promoByType",
+                    "byOperator"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/money/cash": {
+      "get": {
+        "description": "Each park’s End of Day per business date as the POS reads it: float, paid-outs, safe drops and every line against the ฿1 tolerance. A day End of Day cannot read is not available, never zero. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "omitted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "branches",
+                        "omitted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "pos-end-of-day"
+                      ]
+                    },
+                    "toleranceSatang": {
+                      "type": "integer"
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "days": {
+                            "type": "array",
+                            "items": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "businessDate": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    },
+                                    "available": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        true
+                                      ]
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "open",
+                                        "closed"
+                                      ]
+                                    },
+                                    "verdict": {
+                                      "type": "string",
+                                      "enum": [
+                                        "pending",
+                                        "ok",
+                                        "off"
+                                      ]
+                                    },
+                                    "floatSatang": {
+                                      "type": "integer",
+                                      "nullable": true
+                                    },
+                                    "countedSatang": {
+                                      "type": "integer",
+                                      "nullable": true
+                                    },
+                                    "floatLeftSatang": {
+                                      "type": "integer",
+                                      "nullable": true
+                                    },
+                                    "paidOutSatang": {
+                                      "type": "integer"
+                                    },
+                                    "safeDropSatang": {
+                                      "type": "integer"
+                                    },
+                                    "totalExpectedSatang": {
+                                      "type": "integer"
+                                    },
+                                    "totalActualSatang": {
+                                      "type": "integer"
+                                    },
+                                    "totalDifferenceSatang": {
+                                      "type": "integer"
+                                    },
+                                    "linesOff": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "lines": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "channel": {
+                                            "type": "string"
+                                          },
+                                          "expectedSatang": {
+                                            "type": "integer"
+                                          },
+                                          "actualSatang": {
+                                            "type": "integer",
+                                            "nullable": true
+                                          },
+                                          "differenceSatang": {
+                                            "type": "integer"
+                                          },
+                                          "flag": {
+                                            "type": "string",
+                                            "enum": [
+                                              "pending",
+                                              "ok",
+                                              "off"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "channel",
+                                          "expectedSatang",
+                                          "actualSatang",
+                                          "differenceSatang",
+                                          "flag"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "closedBy": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "closedAt": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "provisionalBoxes": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    }
+                                  },
+                                  "required": [
+                                    "businessDate",
+                                    "available",
+                                    "status",
+                                    "verdict",
+                                    "floatSatang",
+                                    "countedSatang",
+                                    "floatLeftSatang",
+                                    "paidOutSatang",
+                                    "safeDropSatang",
+                                    "totalExpectedSatang",
+                                    "totalActualSatang",
+                                    "totalDifferenceSatang",
+                                    "linesOff",
+                                    "lines",
+                                    "closedBy",
+                                    "closedAt",
+                                    "provisionalBoxes"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "businessDate": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    },
+                                    "available": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        false
+                                      ]
+                                    },
+                                    "code": {
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "businessDate",
+                                    "available",
+                                    "code",
+                                    "reason"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "name",
+                          "days"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "basis",
+                    "toleranceSatang",
+                    "branches"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/money/settlement": {
+      "get": {
+        "description": "Settlement per terminal TID and the imported 2C2P file per business date, with unmatched lines and unmatched taken money. The 2C2P file is imported in its documented fixture format only. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "omitted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "branches",
+                        "omitted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "pos-settlement"
+                      ]
+                    },
+                    "gatewayFileFormat": {
+                      "type": "string",
+                      "enum": [
+                        "fixture_only"
+                      ]
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "days": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "businessDate": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "terminals": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "tid": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "provider": {
+                                        "type": "string",
+                                        "enum": [
+                                          "digio",
+                                          "ghl",
+                                          "simulator"
+                                        ]
+                                      },
+                                      "state": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "enum": [
+                                              "pending",
+                                              "matched",
+                                              "attention",
+                                              "failed",
+                                              "unsupported"
+                                            ]
+                                          },
+                                          {
+                                            "type": "string",
+                                            "enum": [
+                                              "not_run"
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "batches": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    },
+                                    "required": [
+                                      "tid",
+                                      "label",
+                                      "provider",
+                                      "state",
+                                      "batches"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "gateway": {
+                                  "type": "object",
+                                  "properties": {
+                                    "state": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "pending",
+                                            "matched",
+                                            "attention",
+                                            "failed",
+                                            "unsupported"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "no_file"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "files": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    }
+                                  },
+                                  "required": [
+                                    "state",
+                                    "files"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "matched": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "unmatchedLines": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "enum": [
+                                          "terminal",
+                                          "2c2p"
+                                        ]
+                                      },
+                                      "method": {
+                                        "type": "string",
+                                        "enum": [
+                                          "card",
+                                          "qr"
+                                        ]
+                                      },
+                                      "amountSatang": {
+                                        "type": "integer"
+                                      },
+                                      "tid": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "match": {
+                                        "type": "string"
+                                      },
+                                      "transactionType": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "attemptId": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                      },
+                                      "trace": {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "sale",
+                                              "refund",
+                                              "payment_attempt",
+                                              "receipt",
+                                              "wallet"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "href": {
+                                            "type": "string",
+                                            "pattern": "^\\/support\\?"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "href"
+                                        ],
+                                        "additionalProperties": false,
+                                        "nullable": true
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "method",
+                                      "amountSatang",
+                                      "tid",
+                                      "match",
+                                      "transactionType",
+                                      "attemptId",
+                                      "trace"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "unmatchedAttempts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "method": {
+                                        "type": "string",
+                                        "enum": [
+                                          "card",
+                                          "qr"
+                                        ]
+                                      },
+                                      "amountSatang": {
+                                        "type": "integer"
+                                      },
+                                      "tid": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "approved",
+                                          "awaiting_settlement"
+                                        ]
+                                      },
+                                      "attemptId": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                      },
+                                      "trace": {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "sale",
+                                              "refund",
+                                              "payment_attempt",
+                                              "receipt",
+                                              "wallet"
+                                            ]
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "href": {
+                                            "type": "string",
+                                            "pattern": "^\\/support\\?"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "href"
+                                        ],
+                                        "additionalProperties": false,
+                                        "nullable": true
+                                      }
+                                    },
+                                    "required": [
+                                      "method",
+                                      "amountSatang",
+                                      "tid",
+                                      "status",
+                                      "attemptId",
+                                      "trace"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "businessDate",
+                                "terminals",
+                                "gateway",
+                                "matched",
+                                "unmatchedLines",
+                                "unmatchedAttempts"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "name",
+                          "days"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "basis",
+                    "gatewayFileFormat",
+                    "branches"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/money/wallets": {
+      "get": {
+        "description": "Wallet liability per park and business date as the liability job wrote it, and the live balances beside their ledger. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "omitted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "branches",
+                        "omitted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "basis": {
+                      "type": "string",
+                      "enum": [
+                        "fact-wallet-liability-daily"
+                      ]
+                    },
+                    "outstanding": {
+                      "type": "object",
+                      "properties": {
+                        "projectionSatang": {
+                          "type": "integer"
+                        },
+                        "ledgerSatang": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "projectionSatang",
+                        "ledgerSatang"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "outstanding": {
+                            "type": "object",
+                            "properties": {
+                              "projectionSatang": {
+                                "type": "integer"
+                              },
+                              "ledgerSatang": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "projectionSatang",
+                              "ledgerSatang"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "days": {
+                            "type": "array",
+                            "items": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "businessDate": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    },
+                                    "written": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        true
+                                      ]
+                                    },
+                                    "grantedSatang": {
+                                      "type": "integer"
+                                    },
+                                    "spentSatang": {
+                                      "type": "integer"
+                                    },
+                                    "refundedSatang": {
+                                      "type": "integer"
+                                    },
+                                    "expiredSatang": {
+                                      "type": "integer"
+                                    },
+                                    "reactivatedSatang": {
+                                      "type": "integer"
+                                    },
+                                    "outstandingSatang": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "businessDate",
+                                    "written",
+                                    "grantedSatang",
+                                    "spentSatang",
+                                    "refundedSatang",
+                                    "expiredSatang",
+                                    "reactivatedSatang",
+                                    "outstandingSatang"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "businessDate": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    },
+                                    "written": {
+                                      "type": "boolean",
+                                      "enum": [
+                                        false
+                                      ]
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "day_not_ended",
+                                        "not_yet_written"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "businessDate",
+                                    "written",
+                                    "reason"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "name",
+                          "outstanding",
+                          "days"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "basis",
+                    "outstanding",
+                    "branches"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/money/costs": {
+      "get": {
+        "description": "Booth prize voucher cost and staff benefit relief, from their stored report facts. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "omitted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "branches",
+                        "omitted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "booths": {
+                      "type": "object",
+                      "properties": {
+                        "prizeCostSatang": {
+                          "type": "integer"
+                        },
+                        "prizeCostIncomplete": {
+                          "type": "boolean"
+                        },
+                        "vouchersIssued": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "vouchersRedeemed": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lastRolledUpAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "prizeCostSatang": {
+                                "type": "integer"
+                              },
+                              "prizeCostIncomplete": {
+                                "type": "boolean"
+                              },
+                              "vouchersIssued": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "vouchersRedeemed": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "branchId",
+                              "branchName",
+                              "prizeCostSatang",
+                              "prizeCostIncomplete",
+                              "vouchersIssued",
+                              "vouchersRedeemed"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "prizeCostSatang",
+                        "prizeCostIncomplete",
+                        "vouchersIssued",
+                        "vouchersRedeemed",
+                        "lastRolledUpAt",
+                        "rows"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "benefits": {
+                      "type": "object",
+                      "properties": {
+                        "totalReliefSatang": {
+                          "type": "integer"
+                        },
+                        "appliedSatang": {
+                          "type": "integer"
+                        },
+                        "compedSatang": {
+                          "type": "integer"
+                        },
+                        "freeItemsSatang": {
+                          "type": "integer"
+                        },
+                        "creditSatang": {
+                          "type": "integer"
+                        },
+                        "discountSatang": {
+                          "type": "integer"
+                        },
+                        "applications": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lastRolledUpAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "byRole": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "role": {
+                                "type": "string"
+                              },
+                              "appliedSatang": {
+                                "type": "integer"
+                              },
+                              "totalReliefSatang": {
+                                "type": "integer"
+                              },
+                              "applications": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "role",
+                              "appliedSatang",
+                              "totalReliefSatang",
+                              "applications"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "totalReliefSatang",
+                        "appliedSatang",
+                        "compedSatang",
+                        "freeItemsSatang",
+                        "creditSatang",
+                        "discountSatang",
+                        "applications",
+                        "lastRolledUpAt",
+                        "byRole"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "booths",
+                    "benefits"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/money/integrity": {
+      "get": {
+        "description": "The money integrity panel: receipt-number gaps per station and series (whole series history), sales with no settled payment, payments with no sale (after party and booking payments), attempts stuck past PAYMENT_PENDING_MIN (now), refunds exceeding their sale, and wallet balances that disagree with their ledger (now). Each row carries its identifiers and a support-trace link. Needs console:money:read and console:money:investigate at each park; none held is 403. Recorded in the audit log as console.money.investigate. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            },
+            "in": "query",
+            "name": "branches",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "branchId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "omitted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          }
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "branches",
+                        "omitted"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "pendingMinutes": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "generatedAt": {
+                      "type": "string"
+                    },
+                    "checks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "receipt_gaps",
+                              "sales_without_payment",
+                              "payments_without_sale",
+                              "stuck_attempts",
+                              "refunds_exceed_sale",
+                              "wallet_ledger_mismatch"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "window": {
+                            "type": "string",
+                            "enum": [
+                              "series_history",
+                              "business_dates",
+                              "now"
+                            ]
+                          },
+                          "truncated": {
+                            "type": "boolean"
+                          },
+                          "rows": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "branchId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "stationId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "stationName": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "detail": {
+                                  "type": "string"
+                                },
+                                "businessDate": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                  "nullable": true
+                                },
+                                "amountSatang": {
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "saleId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "attemptId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "actionId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "receiptNumber": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "walletId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "trace": {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "sale",
+                                        "refund",
+                                        "payment_attempt",
+                                        "receipt",
+                                        "wallet"
+                                      ]
+                                    },
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "href": {
+                                      "type": "string",
+                                      "pattern": "^\\/support\\?"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "id",
+                                    "href"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "branchId",
+                                "stationId",
+                                "stationName",
+                                "title",
+                                "detail",
+                                "businessDate",
+                                "amountSatang",
+                                "saleId",
+                                "attemptId",
+                                "actionId",
+                                "receiptNumber",
+                                "walletId",
+                                "trace"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "label",
+                          "window",
+                          "truncated",
+                          "rows"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "pendingMinutes",
+                    "generatedAt",
+                    "checks"
                   ],
                   "additionalProperties": false
                 }

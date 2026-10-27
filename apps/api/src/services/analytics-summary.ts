@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, lte, max, sql } from 'drizzle-orm';
-import { branch, dailySummary, dirtyDate, hourlySummary, opsRun, type Db } from '@oto/db';
+import { branch, dailySummary, dirtyDate, hourlySummary, opsRun } from '@oto/db';
 import {
   ANALYTICS_MERGE_PERMISSION,
   ANALYTICS_PLATFORM_SOURCE,
@@ -390,7 +390,8 @@ const businessDayStartLabel = (time: string): string => time.slice(0, 5);
  * for a branch on another.
  */
 export async function analyticsSummaryOf(
-  db: Db,
+  // Any executor: Money oversight (SCRUM-647) reads it inside its own read-only snapshot.
+  db: Exec,
   input: {
     branches: readonly SummaryBranch[];
     readable: readonly SummaryBranch[];

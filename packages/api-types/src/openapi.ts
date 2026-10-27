@@ -1638,7 +1638,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:money:read" | "console:money:investigate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -27608,6 +27608,751 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/money/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Sales per park, business date and revenue category, from the stored daily summary with its provisional and freshness marks. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        get: {
+            parameters: {
+                query: {
+                    branches?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            scope: {
+                                from: string;
+                                to: string;
+                                branches: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    name: string;
+                                }[];
+                                omitted: string[];
+                            };
+                            /** @enum {string} */
+                            basis: "stored-daily-summary";
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                source: string;
+                                today: string;
+                                lastRolledUpAt: string | null;
+                                total: {
+                                    businessDate: string | null;
+                                    provisional: boolean;
+                                    rolledDays: number;
+                                    computedAt: string | null;
+                                    revenueSatang: number;
+                                    ticketsSatang: number;
+                                    fnbSatang: number;
+                                    merchSatang: number;
+                                    partiesSatang: number;
+                                    dropoffSatang: number;
+                                    refundsSatang: number;
+                                    discountsSatang: number;
+                                    compsSatang: number;
+                                    txnCount: number;
+                                };
+                                days: {
+                                    businessDate: string | null;
+                                    provisional: boolean;
+                                    rolledDays: number;
+                                    computedAt: string | null;
+                                    revenueSatang: number;
+                                    ticketsSatang: number;
+                                    fnbSatang: number;
+                                    merchSatang: number;
+                                    partiesSatang: number;
+                                    dropoffSatang: number;
+                                    refundsSatang: number;
+                                    discountsSatang: number;
+                                    compsSatang: number;
+                                    txnCount: number;
+                                }[];
+                            }[];
+                            total: {
+                                businessDate: string | null;
+                                provisional: boolean;
+                                rolledDays: number;
+                                computedAt: string | null;
+                                revenueSatang: number;
+                                ticketsSatang: number;
+                                fnbSatang: number;
+                                merchSatang: number;
+                                partiesSatang: number;
+                                dropoffSatang: number;
+                                refundsSatang: number;
+                                discountsSatang: number;
+                                compsSatang: number;
+                                txnCount: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/money/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Refunds (on their original sale’s business date) and voids, with the approving manager, the reason and the original sale. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        get: {
+            parameters: {
+                query: {
+                    branches?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            scope: {
+                                from: string;
+                                to: string;
+                                branches: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    name: string;
+                                }[];
+                                omitted: string[];
+                            };
+                            /** @enum {string} */
+                            basis: "original-sale-business-date";
+                            refunds: {
+                                count: number;
+                                totalSatang: number;
+                                truncated: boolean;
+                                rows: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    number: string;
+                                    amountSatang: number;
+                                    mode: string;
+                                    reason: string;
+                                    approvedBy: string | null;
+                                    createdBy: string | null;
+                                    pending: boolean;
+                                    createdAt: string;
+                                    sale: {
+                                        receiptNumber: string | null;
+                                        businessDate: string;
+                                        grossSatang: number;
+                                        status: string;
+                                    };
+                                    /** Format: uuid */
+                                    refundId: string | null;
+                                    /** Format: uuid */
+                                    saleId: string | null;
+                                    trace: {
+                                        /** @enum {string} */
+                                        kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                                        id: string;
+                                        href: string;
+                                    } | null;
+                                }[];
+                            };
+                            voids: {
+                                count: number;
+                                totalSatang: number;
+                                truncated: boolean;
+                                rows: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    receiptNumber: string | null;
+                                    businessDate: string;
+                                    grossSatang: number;
+                                    voidedAt: string | null;
+                                    voidedBy: string | null;
+                                    reason: string | null;
+                                    /** Format: uuid */
+                                    saleId: string | null;
+                                    trace: {
+                                        /** @enum {string} */
+                                        kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                                        id: string;
+                                        href: string;
+                                    } | null;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/money/discounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Comps, manual discounts and promotions with the revenue given up, from the stored report facts. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        get: {
+            parameters: {
+                query: {
+                    branches?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            scope: {
+                                from: string;
+                                to: string;
+                                branches: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    name: string;
+                                }[];
+                                omitted: string[];
+                            };
+                            /** @enum {string} */
+                            basis: "stored-report-facts";
+                            compSatang: number;
+                            manualDiscountSatang: number;
+                            promoSatang: number;
+                            freeItemBenefitSatang: number;
+                            foregoneSatang: number;
+                            promoByType: {
+                                type: string;
+                                count: number;
+                                amountSatang: number;
+                            }[];
+                            byOperator: {
+                                appliedBy: string;
+                                compCount: number;
+                                compTotalSatang: number;
+                                discountCount: number;
+                                discountTotalSatang: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/money/cash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Each park’s End of Day per business date as the POS reads it: float, paid-outs, safe drops and every line against the ฿1 tolerance. A day End of Day cannot read is not available, never zero. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        get: {
+            parameters: {
+                query: {
+                    branches?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            scope: {
+                                from: string;
+                                to: string;
+                                branches: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    name: string;
+                                }[];
+                                omitted: string[];
+                            };
+                            /** @enum {string} */
+                            basis: "pos-end-of-day";
+                            toleranceSatang: number;
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                days: ({
+                                    businessDate: string;
+                                    /** @enum {boolean} */
+                                    available: true;
+                                    /** @enum {string} */
+                                    status: "open" | "closed";
+                                    /** @enum {string} */
+                                    verdict: "pending" | "ok" | "off";
+                                    floatSatang: number | null;
+                                    countedSatang: number | null;
+                                    floatLeftSatang: number | null;
+                                    paidOutSatang: number;
+                                    safeDropSatang: number;
+                                    totalExpectedSatang: number;
+                                    totalActualSatang: number;
+                                    totalDifferenceSatang: number;
+                                    linesOff: number;
+                                    lines: {
+                                        channel: string;
+                                        expectedSatang: number;
+                                        actualSatang: number | null;
+                                        differenceSatang: number;
+                                        /** @enum {string} */
+                                        flag: "pending" | "ok" | "off";
+                                    }[];
+                                    closedBy: string | null;
+                                    closedAt: string | null;
+                                    provisionalBoxes: number;
+                                } | {
+                                    businessDate: string;
+                                    /** @enum {boolean} */
+                                    available: false;
+                                    code: string;
+                                    reason: string;
+                                })[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/money/settlement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Settlement per terminal TID and the imported 2C2P file per business date, with unmatched lines and unmatched taken money. The 2C2P file is imported in its documented fixture format only. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        get: {
+            parameters: {
+                query: {
+                    branches?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            scope: {
+                                from: string;
+                                to: string;
+                                branches: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    name: string;
+                                }[];
+                                omitted: string[];
+                            };
+                            /** @enum {string} */
+                            basis: "pos-settlement";
+                            /** @enum {string} */
+                            gatewayFileFormat: "fixture_only";
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                days: {
+                                    businessDate: string;
+                                    terminals: {
+                                        tid: string | null;
+                                        label: string;
+                                        /** @enum {string} */
+                                        provider: "digio" | "ghl" | "simulator";
+                                        state: ("pending" | "matched" | "attention" | "failed" | "unsupported") | "not_run";
+                                        batches: number;
+                                    }[];
+                                    gateway: {
+                                        state: ("pending" | "matched" | "attention" | "failed" | "unsupported") | "no_file";
+                                        files: number;
+                                    };
+                                    matched: number;
+                                    unmatchedLines: {
+                                        /** @enum {string} */
+                                        source: "terminal" | "2c2p";
+                                        /** @enum {string} */
+                                        method: "card" | "qr";
+                                        amountSatang: number;
+                                        tid: string | null;
+                                        match: string;
+                                        transactionType: string | null;
+                                        /** Format: uuid */
+                                        attemptId: string | null;
+                                        trace: {
+                                            /** @enum {string} */
+                                            kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                                            id: string;
+                                            href: string;
+                                        } | null;
+                                    }[];
+                                    unmatchedAttempts: {
+                                        /** @enum {string} */
+                                        method: "card" | "qr";
+                                        amountSatang: number;
+                                        tid: string | null;
+                                        /** @enum {string} */
+                                        status: "approved" | "awaiting_settlement";
+                                        /** Format: uuid */
+                                        attemptId: string | null;
+                                        trace: {
+                                            /** @enum {string} */
+                                            kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                                            id: string;
+                                            href: string;
+                                        } | null;
+                                    }[];
+                                }[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/money/wallets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Wallet liability per park and business date as the liability job wrote it, and the live balances beside their ledger. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        get: {
+            parameters: {
+                query: {
+                    branches?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            scope: {
+                                from: string;
+                                to: string;
+                                branches: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    name: string;
+                                }[];
+                                omitted: string[];
+                            };
+                            /** @enum {string} */
+                            basis: "fact-wallet-liability-daily";
+                            outstanding: {
+                                projectionSatang: number;
+                                ledgerSatang: number;
+                            };
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                outstanding: {
+                                    projectionSatang: number;
+                                    ledgerSatang: number;
+                                };
+                                days: ({
+                                    businessDate: string;
+                                    /** @enum {boolean} */
+                                    written: true;
+                                    grantedSatang: number;
+                                    spentSatang: number;
+                                    refundedSatang: number;
+                                    expiredSatang: number;
+                                    reactivatedSatang: number;
+                                    outstandingSatang: number;
+                                } | {
+                                    businessDate: string;
+                                    /** @enum {boolean} */
+                                    written: false;
+                                    /** @enum {string} */
+                                    reason: "day_not_ended" | "not_yet_written";
+                                })[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/money/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Booth prize voucher cost and staff benefit relief, from their stored report facts. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        get: {
+            parameters: {
+                query: {
+                    branches?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            scope: {
+                                from: string;
+                                to: string;
+                                branches: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    name: string;
+                                }[];
+                                omitted: string[];
+                            };
+                            booths: {
+                                prizeCostSatang: number;
+                                prizeCostIncomplete: boolean;
+                                vouchersIssued: number;
+                                vouchersRedeemed: number;
+                                lastRolledUpAt: string | null;
+                                rows: {
+                                    name: string;
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    branchName: string;
+                                    prizeCostSatang: number;
+                                    prizeCostIncomplete: boolean;
+                                    vouchersIssued: number;
+                                    vouchersRedeemed: number;
+                                }[];
+                            };
+                            benefits: {
+                                totalReliefSatang: number;
+                                appliedSatang: number;
+                                compedSatang: number;
+                                freeItemsSatang: number;
+                                creditSatang: number;
+                                discountSatang: number;
+                                applications: number;
+                                lastRolledUpAt: string | null;
+                                byRole: {
+                                    role: string;
+                                    appliedSatang: number;
+                                    totalReliefSatang: number;
+                                    applications: number;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/money/integrity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The money integrity panel: receipt-number gaps per station and series (whole series history), sales with no settled payment, payments with no sale (after party and booking payments), attempts stuck past PAYMENT_PENDING_MIN (now), refunds exceeding their sale, and wallet balances that disagree with their ledger (now). Each row carries its identifiers and a support-trace link. Needs console:money:read and console:money:investigate at each park; none held is 403. Recorded in the audit log as console.money.investigate. Read only: the section runs in a read-only snapshot, and the read is recorded in the audit log (section and filters, never figures) before it is answered. Parks: the named ones, or every live park by default, held on console:money:read; requested own parks outside that reach are listed as omitted; foreign or unknown ids are 404; none readable is 403. from..to are business dates, at most 31 days. Satang integers throughout. Row identifiers and support-trace links appear only at parks where the caller also holds console:money:investigate. */
+        get: {
+            parameters: {
+                query: {
+                    branches?: string;
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            scope: {
+                                from: string;
+                                to: string;
+                                branches: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    name: string;
+                                }[];
+                                omitted: string[];
+                            };
+                            pendingMinutes: number;
+                            generatedAt: string;
+                            checks: {
+                                /** @enum {string} */
+                                key: "receipt_gaps" | "sales_without_payment" | "payments_without_sale" | "stuck_attempts" | "refunds_exceed_sale" | "wallet_ledger_mismatch";
+                                label: string;
+                                /** @enum {string} */
+                                window: "series_history" | "business_dates" | "now";
+                                truncated: boolean;
+                                rows: {
+                                    /** Format: uuid */
+                                    branchId: string;
+                                    /** Format: uuid */
+                                    stationId: string | null;
+                                    stationName: string | null;
+                                    title: string;
+                                    detail: string;
+                                    businessDate: string | null;
+                                    amountSatang: number | null;
+                                    /** Format: uuid */
+                                    saleId: string | null;
+                                    /** Format: uuid */
+                                    attemptId: string | null;
+                                    actionId: string | null;
+                                    receiptNumber: string | null;
+                                    /** Format: uuid */
+                                    walletId: string | null;
+                                    trace: {
+                                        /** @enum {string} */
+                                        kind: "sale" | "refund" | "payment_attempt" | "receipt" | "wallet";
+                                        id: string;
+                                        href: string;
+                                    };
+                                }[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;

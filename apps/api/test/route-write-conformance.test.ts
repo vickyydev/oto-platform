@@ -121,6 +121,27 @@ describe('Aggregate read registration (SCRUM-636)', () => {
   });
 });
 
+const MONEY_READS = [
+  '/console/money/sales', '/console/money/refunds', '/console/money/discounts', '/console/money/cash',
+  '/console/money/settlement', '/console/money/wallets', '/console/money/costs', '/console/money/integrity',
+];
+
+describe('Money oversight read registration (SCRUM-647)', () => {
+  it('registers exactly eight reads, each through the audited read-only door, with no route that writes money', () => {
+    const money = routes.filter(r => r.path.startsWith('/console/money'));
+    expect(money.map(r => `${r.method} ${r.path}`).sort()).toEqual(MONEY_READS.map(path => `GET ${path}`).sort());
+    const writers = /\b(?:refundSale|closeEndOfDay|recordMovement|import2c2pFixture|startTerminalSettlement|recordTerminalSettlement|reactivateWallet|writeWalletLiabilityFact|recoverMissingTerminalResult|pollPendingAttempts|flagPendingPayments|settleAttempt|openAttempt|resolveStranded|reprintEndOfDayReceipt)\s*\(/;
+    for (const route of money) {
+      expect(MUTATING.has(route.method), route.path).toBe(false);
+      expect(route.optionsText, route.path).not.toContain('body:');
+      expect(configs.get(`GET ${route.path}`)?.dynamicPermission, route.path).toBe(true);
+      expect(reachesText(route.handlerText, text => /\bauditedMoneyRead\s*\(/.test(text), functions), route.path).toBe(true);
+      expect(reachesText(route.handlerText, text => text.includes("accessMode: 'read only'"), functions), route.path).toBe(true);
+      expect(reachesText(route.handlerText, text => writers.test(text), functions), route.path).toBe(false);
+    }
+  });
+});
+
 describe('Staff summary read registration (SCRUM-634)', () => {
   it('keeps business reads separate from the audited temporary handoff', () => {
     const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');

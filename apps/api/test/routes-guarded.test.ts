@@ -34,6 +34,20 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('requires a session for every Money oversight read, none of them public or credentialed (SCRUM-647)', async () => {
+    const money = ctx.app.routeRegistry.filter(r => r.url.startsWith('/console/money') && r.method !== 'HEAD' && r.method !== 'OPTIONS');
+    expect(money.map(r => `${r.method} ${r.url}`).sort()).toEqual([
+      'GET /console/money/cash', 'GET /console/money/costs', 'GET /console/money/discounts', 'GET /console/money/integrity',
+      'GET /console/money/refunds', 'GET /console/money/sales', 'GET /console/money/settlement', 'GET /console/money/wallets',
+    ]);
+    for (const route of money) {
+      expect(route.config.dynamicPermission, route.url).toBe(true);
+      expect(route.config.public, route.url).not.toBe(true);
+      expect(route.config.credential, route.url).toBeUndefined();
+      expect((await ctx.app.inject({ method: 'GET', url: `${route.url}?from=2026-10-01&to=2026-10-01` })).statusCode, route.url).toBe(401);
+    }
+  });
+
   it('requires the operator-wide switch permission for the current native session (SCRUM-640)', async () => {
     const route = ctx.app.routeRegistry.find(r => r.method === 'PUT' && r.url === '/me/session/operator');
     expect(route?.config.permission).toBe('platform:operator:switch');

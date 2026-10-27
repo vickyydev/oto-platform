@@ -118,6 +118,18 @@ describe('Aggregate selected parks (SCRUM-636)', () => {
   });
 });
 
+describe('Money oversight selected parks (SCRUM-647)', () => {
+  it('declares dynamic authority and binds every read to the current operator and fresh grants', () => {
+    const money = routes.filter(r => r.path.startsWith('/console/money/'));
+    expect(money).toHaveLength(8);
+    for (const route of money) {
+      expect(configs.get(`GET ${route.path}`)?.dynamicPermission, route.path).toBe(true);
+      expect(reachesText(route.handlerText, text => /auth\.operatorId/.test(text), functions), route.path).toBe(true);
+      expect(reachesText(route.handlerText, text => /req\.effectivePermissions\s*\(/.test(text), functions), route.path).toBe(true);
+    }
+  });
+});
+
 describe('Staff summary selected park (SCRUM-634)', () => {
   it('declares dynamic authority and reaches owned operator metadata before any app read', () => {
     const route = routes.find(r => r.method === 'GET' && r.path === '/staff/summary');
