@@ -435,6 +435,35 @@ describe('runs of system pills in one line (customer-AI test night, W7)', () => 
     const classified = event({ id: 'c', kind: 'classified', actorKind: 'ai', payload: { turnId: 't', intent: 'hours' }, createdAt: at });
     expect(timeline([], [classified, silent], true, ctx).map((i) => i.kind)).toEqual(['pill', 'pill']);
   });
+
+  /** SCRUM-677: the hand-over commits at decision time; its bubbles are written a millisecond apart after it. */
+  const ms = (n: number) => new Date(Date.parse(at) + n).toISOString();
+  const asked = msg('q', later(-20), { body: 'do you have a nanny?' });
+  const bubbles = [0, 1, 2].map((i) => msg(`b${i}`, ms(i), { direction: 'outbound', authorKind: 'ai', body: `bubble ${i}` }));
+  const idOf = (i: ReturnType<typeof timeline>[number]) => (i.kind === 'message' ? i.message.id : i.id);
+
+  it('shows the hand-over after the reply bubbles of the same AI turn, its run of pills whole', () => {
+    const turn = handover.map((e) => (e.id === 'h' ? { ...e, payload: { ...e.payload, messageIds: ['b0', 'b1', 'b2'] } } : e));
+    const items = timeline([asked, ...bubbles], turn, true, ctx);
+    expect(items.map(idOf)).toEqual(['q', 'b0', 'b1', 'b2', 'group:c']);
+    // The pills keep the time they were written: only their place moves.
+    const g = items.at(-1)!;
+    expect(g.kind === 'group' && g.at).toBe(at);
+  });
+
+  it('moves only the hand-over’s own moment: a later pill, a person’s pill and an answer with no hand-over stay where they were', () => {
+    const turn = [
+      ...handover.map((e) => (e.id === 'h' ? { ...e, payload: { ...e.payload, messageIds: ['b0', 'b1'] } } : e)),
+      event({ id: 'p', kind: 'handled', actorKind: 'account', actorAccountId: GM, createdAt: at }),
+    ];
+    const items = timeline([asked, bubbles[0]!, bubbles[1]!], turn, true, ctx);
+    expect(items.map(idOf)).toEqual(['q', 'b0', 'p', 'b1', 'group:c']);
+    // An answer that hands over nothing: the classified pill before its bubbles, as before.
+    const answered = [event({ id: 'c2', kind: 'classified', actorKind: 'ai', payload: { turnId: 't2', intent: 'hours' }, createdAt: at })];
+    expect(timeline([asked, bubbles[0]!, bubbles[1]!], answered, true, ctx).map(idOf)).toEqual(['q', 'b0', 'c2', 'b1']);
+    // A hand-over whose bubbles are on an older page keeps its own time and written order.
+    expect(timeline([asked], turn, true, ctx).map(idOf)).toEqual(['q', 'group:c', 'p']);
+  });
 });
 
 describe('a message’s attachments (customer-AI test night, W7)', () => {
