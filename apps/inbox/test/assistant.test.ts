@@ -11,7 +11,7 @@ import { NOT_ON_YOUR_ACCESS, assistantCapabilities, notOnAccess, type AiExample,
 import type { InboxEvent, InboxMe, Message } from '@/api/inbox';
 import { ExampleCard, ExampleReview, WITHDRAW_EXAMPLE_LINE, WithdrawExampleConfirm } from '@/components/AssistantSettings';
 import { CorrectAssistant } from '@/components/CorrectAssistant';
-import { MessageBubble } from '@/components/MessageBubble';
+import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
 import {
   AI_MODE_OPTIONS,
   KB_BODY_MAX,
@@ -26,7 +26,7 @@ import {
   modeChangeNeedsConfirm,
   turnForCorrection,
 } from '@/lib/assistant';
-import { eventText, timeline, withdrawnNotes, withdrawnWhy } from '@/lib/view';
+import { RETHINK_READING_LABEL, eventText, timeline, withdrawnNotes, withdrawnWhy } from '@/lib/view';
 
 const T_BIRTHDAYS = '00000000-0000-7000-8000-0000000000b1';
 const me: Pick<InboxMe, 'people' | 'teams'> = {
@@ -145,6 +145,22 @@ describe('the withdrawn bubble (§A.3)', () => {
     expect(html).not.toContain('data-withdrawn');
     expect(html).not.toContain('<s ');
     expect(html).toContain('Correct the assistant');
+  });
+
+  it('SCRUM-678: the re-read row is never shown as a delivered message — muted, dashed, labelled, no ticks', () => {
+    const at = '2026-10-20T08:59:00.000Z';
+    const now = new Date('2026-10-20T09:00:00Z');
+    const reading = renderToStaticMarkup(createElement(ShadowBubble, { text: 'Asks whether a camp runs today', at, now, label: RETHINK_READING_LABEL }));
+    const sent = renderToStaticMarkup(createElement(MessageBubble, { m: { ...aiLine, providerStatus: 'sent' }, me, now }));
+    expect(reading).toContain('data-shadow="true"');
+    expect(reading).toContain(RETHINK_READING_LABEL);
+    expect(reading).toContain('not sent');
+    expect(reading).toContain('border-dashed');
+    // A sent bubble carries its delivery tick; the re-read row has none, and none of a sent bubble's markers.
+    expect(sent).toContain('lucide-check');
+    expect(reading).not.toMatch(/lucide-check|lucide-clock/);
+    expect(sent).not.toContain('data-shadow');
+    expect(sent).not.toContain('not sent');
   });
 
   it('offers no correction on a person’s line', () => {
