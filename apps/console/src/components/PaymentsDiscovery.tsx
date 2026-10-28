@@ -28,7 +28,7 @@ export function PaymentsDiscovery({ availablePaths, setupPaths }: { availablePat
     <div><h2 className="text-xl font-bold">Payments</h2>
       <p className="text-sm text-muted-foreground">Use the existing page for each task. Its park and edit permissions still apply.</p></div>
     <PageGrid>
-      <CardShell title="Set up" span={6}><Tag>Editable on the owning page</Tag>
+      <CardShell title="Set up" span={6}><Tag>Editable where permitted</Tag>
         {setups.length ? <ul className="space-y-3">{links(setups)}</ul> : <p className="text-sm text-muted-foreground">No setup destination is in this reading or navigation access.</p>}
       </CardShell>
       <CardShell title="Operate in POS" span={6}><Tag>Existing POS operations</Tag>

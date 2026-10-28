@@ -181,7 +181,7 @@ export function PaymentMethodsSectionWithPorts({ ports }: { ports: PaymentMethod
           <option value="all">All kinds</option>{KIND_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       </div>
-      <p className="mt-2 text-sm text-foreground/60">{visible.length} of {sorted.length} payment methods match the loaded-list filters. Order and history are unchanged.</p>
+      <p className="mt-2 text-sm text-foreground/60">{visible.length} of {sorted.length} payment methods match the loaded-list filters. Filters change only which methods are shown.</p>
       {visible.length === 0 && sorted.length > 0 && <p className="mt-2 text-sm text-foreground/60">No payment methods match these filters.</p>}
 
       {/* Add row */}

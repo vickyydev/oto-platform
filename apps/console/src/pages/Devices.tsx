@@ -81,6 +81,7 @@ import {
 } from '@/lib/fleetWords';
 import { elapsed, formatWhen, timeAgo } from '@/lib/time';
 import { cn } from '@/lib/utils';
+import { boxCardsForView, stationCardsForView, type FleetStatusFilter } from '@/lib/fleetFilters';
 
 /**
  * The views the chip row offers (SCRUM-474). Each shows one of the page's own
@@ -197,7 +198,11 @@ export function Devices() {
         : grant.scopeType === 'branch' && grant.scopeId === s.branchId)));
 
   const [view, setView] = useState<View>('all');
+  const [filter, setFilter] = useState('');
+  const [boxStatus, setBoxStatus] = useState<FleetStatusFilter>('all');
   const showing = (id: View) => view === 'all' || view === id;
+  const shownBoxes = boxCardsForView(fleet.boxes, filter, boxStatus);
+  const shownStations = stationCardsForView(stations, fleet.boxes, filter, boxStatus);
   const liveBoxes = fleet.boxes.filter((b) => !b.archived);
   const onlineBoxes = liveBoxes.filter((b) => b.status === 'online').length;
   const liveStations = fleet.stations.filter((s) => !s.archived).length;
@@ -253,6 +258,20 @@ export function Devices() {
         ))}
       </div>
 
+      {(showing('boxes') || showing('stations')) && <div className="min-w-0 space-y-2">
+        <div className="flex min-w-0 flex-wrap items-end gap-3">
+          <label className="w-full min-w-0 text-sm font-semibold sm:w-auto sm:flex-1">Filter boxes and stations
+            <TextInput value={filter} onChange={setFilter} placeholder="Name, identifier or type" className="mt-1 w-full" />
+          </label>
+          <SelectChip label="Box status" showLabel value={boxStatus} onChange={next => setBoxStatus(next as FleetStatusFilter)}
+            options={[{ value: 'all', label: 'All statuses' }, { value: 'online', label: 'Online' },
+              { value: 'offline', label: 'Offline' }, { value: 'unclaimed', label: 'Waiting to be claimed' }]} />
+          <Button variant="outline" size="sm" disabled={!filter && boxStatus === 'all'}
+            onClick={() => { setFilter(''); setBoxStatus('all'); }}>Clear box and station filters</Button>
+        </div>
+        <p className="text-xs text-muted-foreground">Filters refine loaded box and station cards in this park. Paired screens, card terminals and totals are unchanged.</p>
+      </div>}
+
       {fleet.error && <ErrorNote message={fleet.error} onRetry={fleet.reload} />}
 
       <PageGrid>
@@ -274,8 +293,10 @@ export function Devices() {
             ) : (
               <>
               {fleet.failures.boxes && fleet.readAt.boxes !== null && <StaleNote readAt={fleet.readAt.boxes} message={fleet.failures.boxes} onRetry={fleet.reload} />}
+              <p className="text-xs text-muted-foreground">{shownBoxes.length} of {fleet.boxes.length} loaded boxes</p>
+              {fleet.boxes.length > 0 && shownBoxes.length === 0 && <EmptyNote title="No boxes match these filters" detail="Clear or change the filters to see the other loaded boxes." />}
               <ul className="grid grid-cols-1 gap-5 @2xl:grid-cols-2 @4xl:grid-cols-3">
-                {fleet.boxes.map((box) => (
+                {shownBoxes.map((box) => (
                   <BoxCard
                     key={box.id}
                     box={box}
@@ -368,8 +389,10 @@ export function Devices() {
             ) : (
               <>
               {fleet.failures.stations && fleet.readAt.stations !== null && <StaleNote readAt={fleet.readAt.stations} message={fleet.failures.stations} onRetry={fleet.reload} />}
+              <p className="text-xs text-muted-foreground">{shownStations.length} of {stations.length} loaded stations</p>
+              {shownStations.length === 0 && <EmptyNote title="No stations match these filters" detail="Clear or change the filters to see the other loaded stations." />}
               <ul className="grid grid-cols-1 gap-5 @2xl:grid-cols-2 @4xl:grid-cols-3">
-                {stations.map((station) => (
+                {shownStations.map((station) => (
                   <StationCard
                     key={station.id}
                     station={station}
