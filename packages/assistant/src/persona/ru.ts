@@ -10,9 +10,9 @@ export const RU_PERSONA = {
   branchQuestion: 'Какой филиал вам удобнее, Central Floresta или Robinson Chalong?',
   /**
    * The playbook's branch-and-residency question in Russian. "Цены ниже"
-   * (lower prices) rather than "скидка": the Russian promise word would need
-   * a Russian price source to cite, and the knowledge's price rows are
-   * English until the translations land.
+   * (lower prices) rather than "скидка": a policy statement passes the
+   * promise guard either way (item F), but "цены ниже" is the park's own
+   * wording until the Russian price rows land.
    */
   branchResidencyQuestion:
     'Какой филиал вам удобнее, Central Floresta или Robinson Chalong? И вы в Пхукете в отпуске или живёте в Таиланде? Для резидентов в Central цены ниже 😊',

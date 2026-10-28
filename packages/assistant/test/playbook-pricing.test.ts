@@ -128,12 +128,16 @@ describe('E. the gate: any cited price, never a computed one', () => {
     ).toMatchObject({ action: 'silent', reason: 'GUARD_LINK' });
   });
 
-  it('the combined question\'s "discount" is allowed only because a cited price source says it', () => {
+  it('the combined question\'s "discount" states a policy and grants nothing, so it passes whatever is cited', () => {
     expect(
       pgate({ intent: 'ticket_prices', grounding: ['fact.prices.central', 'fact.prices.chalong'], bubbles: [EN_PERSONA.branchResidencyQuestion], askBranch: true }),
     ).toMatchObject({ action: 'answer', askBranch: true });
-    expect(traceabilityGuard([EN_PERSONA.branchResidencyQuestion], [chalong])).toMatchObject({ ok: false, rule: 'en:discount' });
+    // Item F (owner ruling, 28 Oct): its "discount" states a policy and grants nothing, so it passes whatever is cited.
+    expect(traceabilityGuard([EN_PERSONA.branchResidencyQuestion], [chalong])).toEqual({ ok: true });
     expect(traceabilityGuard([EN_PERSONA.branchResidencyQuestion], [central])).toEqual({ ok: true });
+    expect(traceabilityGuard([EN_PERSONA.branchResidencyQuestion], [])).toEqual({ ok: true });
+    // Granting it is another matter: no source, no grant.
+    expect(traceabilityGuard(["As a resident you'll get a discount at Central 😊"], [chalong])).toMatchObject({ ok: false, rule: 'en:discount' });
   });
 
   it('the Thai and Russian branch questions hold no promise word, so they need no source', () => {

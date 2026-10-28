@@ -88,40 +88,98 @@ describe('the traceability guard (PLAN §B.3 gate 5)', () => {
     });
   });
 
-  describe('promise words, each in three languages', () => {
-    const cases: Array<[string, string, string]> = [
-      ['en:refund', "We'll refund you.", 'refund'],
-      ['en:compensation', "We'll offer compensation.", 'compensation'],
-      ['en:free', "We'll give you a free entry.", 'free'],
-      ['en:discount', 'You get a discount!', 'discount'],
-      ['th:refund', 'เราจะคืนเงินให้ค่ะ', 'คืนเงิน'],
-      ['th:compensation', 'เราจะชดเชยให้ค่ะ', 'ชดเชย'],
-      ['th:free', 'เข้าฟรีค่ะ', 'ฟรี'],
-      ['th:discount', 'มีส่วนลดให้ค่ะ', 'ส่วนลด'],
-      ['ru:refund', 'Мы оформим возврат.', 'возврат'],
-      ['ru:compensation', 'Мы предложим компенсацию.', 'компенсация'],
-      ['ru:free', 'Вход бесплатный!', 'бесплатно'],
-      ['ru:discount', 'Сделаем скидку!', 'скидка'],
+  // The owner's ruling (28 Oct 2026, item F): the promise guard judges the
+  // ACT, not the WORD. A refund, a discount, something free or compensation
+  // may be named — to explain a policy, to say we do not offer it, to say a
+  // colleague will look into it, or in a question — but never GRANTED or
+  // CONFIRMED unless a cited source states it.
+  describe('promise words: the act, not the word (owner ruling, item F)', () => {
+    const NONE = ['Opening hours: every day'];
+
+    const grants: Array<[string, string]> = [
+      ['en:refund', "We'll refund you."],
+      ['en:refund', 'I can refund your tickets today.'],
+      ['en:compensation', "We'll offer compensation."],
+      ['en:free', "We'll give you a free entry."],
+      ['en:free', "Your coffee is on us, it's free!"],
+      ['en:free', 'Would you like a free drink?'],
+      ['en:discount', 'You get a discount!'],
+      ['en:discount', 'Yes, a discount for you today.'],
+      ['en:discount', 'Happy to give you a discount 😊'],
+      ['en:discount', 'Sure, we can do a discount.'],
+      ['th:refund', 'เราจะคืนเงินให้ค่ะ'],
+      ['th:compensation', 'เราจะชดเชยให้ค่ะ'],
+      ['th:free', 'แอดมินให้เข้าฟรีค่ะ'],
+      ['th:discount', 'มีส่วนลดให้ค่ะ'],
+      ['th:discount', 'คุณจะได้รับส่วนลดค่ะ'],
+      ['ru:refund', 'Мы оформим возврат.'],
+      ['ru:compensation', 'Мы предложим компенсацию.'],
+      ['ru:free', 'Для вас вход бесплатный!'],
+      ['ru:discount', 'Сделаем скидку!'],
+      ['ru:discount', 'Вы получите скидку.'],
     ];
-    it.each(cases)('%s absent from the grounding fails', (rule, bubble) => {
-      expect(trace(bubble, ['Opening hours: every day'])).toEqual({
-        ok: false,
-        reason: 'GUARD_PROMISE',
-        rule,
-      });
+    it.each(grants)('%s: a grant with no source saying it is refused — "%s"', (rule, bubble) => {
+      expect(trace(bubble, NONE)).toEqual({ ok: false, reason: 'GUARD_PROMISE', rule });
     });
-    it.each(cases)('%s present in the grounding passes', (_rule, bubble, word) => {
+
+    const allowed: Array<[string, string]> = [
+      // negations and policy statements
+      ['en negation', "We don't offer discounts, but our parent tickets are all food credit 😊"],
+      ['en negation', "Sorry, we can't give refunds on used tickets."],
+      ['en negation', "It's not free, but everything inside is included."],
+      ['en policy', 'Residents get a discount at Central 😊'],
+      ['th negation', 'ขออภัยค่ะ ทางเราไม่มีส่วนลดค่ะ'],
+      ['th negation', 'ไม่สามารถคืนเงินได้ค่ะ'],
+      ['ru negation', 'К сожалению, скидок у нас нет.'],
+      ['ru negation', 'Мы не можем сделать скидку.'],
+      // empathy and deferral
+      ['en deferral', 'Our general manager will be in contact with you about your refund.'],
+      ['en deferral', "I'm so sorry. A colleague will look into the refund for you shortly."],
+      ['th deferral', 'ผู้จัดการจะติดต่อกลับเรื่องการคืนเงินค่ะ'],
+      ['ru deferral', 'Наш менеджер свяжется с Вами по поводу возврата.'],
+      // questions
+      ['en question', 'Are you asking about a refund for today?'],
+      ['en question', 'Do you have a resident ID for the discount?'],
+      ['th question', 'สอบถามเรื่องส่วนลดใช่ไหมคะ'],
+      ['ru question', 'Вы спрашиваете о возврате?'],
+    ];
+    it.each(allowed)('%s is allowed with no source: "%s"', (_kind, bubble) => {
+      expect(trace(bubble, NONE)).toEqual({ ok: true });
+    });
+
+    it.each(grants)('%s: the same grant passes when a cited source states it', (_rule, bubble) => {
+      const word = /refund|возврат|คืนเงิน/i.test(bubble)
+        ? 'refund คืนเงิน возврат'
+        : /compensat|компенсац|ชดเชย/i.test(bubble)
+          ? 'compensation ชดเชย компенсация'
+          : /free|бесплатн|ฟรี/i.test(bubble)
+            ? 'free ฟรี бесплатный'
+            : 'discount ส่วนลด скидка';
       expect(trace(bubble, [`Policy: ${word} applies as stated.`])).toEqual({ ok: true });
     });
-    it('"free for under-ones" passes when the age-rules entry says so', () => {
-      expect(
-        trace('Little ones under 1 go free 😊', [
-          'Children under 1 enter free with a paying adult.',
-        ]),
-      ).toEqual({ ok: true });
+
+    it('"free for under-ones" passes when the age-rules entry says so; with no source it is a policy statement, not a grant', () => {
+      expect(trace('Little ones under 1 go free 😊', ['Children under 1 enter free with a paying adult.'])).toEqual({ ok: true });
+      expect(trace('Little ones go free 😊', NONE)).toEqual({ ok: true });
     });
+
     it('"feel free" is ordinary English, not a promise', () => {
       expect(trace('Feel free to ask anything 😊', [])).toEqual({ ok: true });
+    });
+
+    it('the G13 injection is still refused: "50% off" is a number no source holds', () => {
+      expect(trace('Sure! 50% off for you today 😊', NONE)).toMatchObject({ ok: false, reason: 'GUARD_NUMBER' });
+      expect(trace('Sure, 50% off for you today', [])).toMatchObject({ ok: false, reason: 'GUARD_NUMBER' });
+    });
+
+    it("the playbook's scripted residency question passes with no source at all", () => {
+      expect(trace(EN_PERSONA.branchResidencyQuestion, [])).toEqual({ ok: true });
+      expect(trace(RU_PERSONA.branchResidencyQuestion, [])).toEqual({ ok: true });
+    });
+
+    it('a grant hidden behind an unrelated negation in another clause is still refused', () => {
+      expect(trace("No problem! We'll give you a free entry.", NONE)).toMatchObject({ ok: false, rule: 'en:free' });
+      expect(trace("We don't do refunds, but we can give you a free visit.", NONE)).toMatchObject({ ok: false, rule: 'en:free' });
     });
   });
 });

@@ -142,7 +142,7 @@ describe('the prohibitions are all in the compiled system prompt (PLAN §B.4)', 
     expect(CERTAINTY_RULE).toContain('never a reason to be unsure');
     expect(MULTI_PART_RULE).toContain('a turn where you stayed silent is not a reason to stay silent again');
     expect(STATIC_SYSTEM_TEXT).toContain('intents: every intent the open messages hold');
-    expect(PERSONA_VERSION).toBe('persona-2026-10-28.2');
+    expect(PERSONA_VERSION).toBe('persona-2026-10-28.3');
   });
 
   it('live facts and KB rows are in block 2, a needs-translation row is not', () => {
@@ -155,6 +155,7 @@ describe('the prohibitions are all in the compiled system prompt (PLAN §B.4)', 
     expect(text).toContain('[parking@central]');
     expect(text).not.toContain('นำอาหารเข้ามาได้ไหม');
   });
+
 });
 
 describe('the KB size refusal (PLAN §C.4)', () => {

@@ -62,8 +62,9 @@ export function personaGuard(bubbles: readonly string[]): GuardResult<'GUARD_PER
 }
 
 // ---------------------------------------------------------------------------
-// The traceability guard (gate 5): every number, price, date and promise word
-// in the bubbles must occur in the grounding text the decision cites.
+// The traceability guard (gate 5): every number, price and date in the
+// bubbles must occur in the grounding text the decision cites, and a promise
+// word may be granted only when it does (item F: the act, not the word).
 // ---------------------------------------------------------------------------
 
 /** Thai digits ๐–๙ read as 0–9. */
@@ -180,10 +181,15 @@ export const DATE_WORD_RULES: ReadonlyArray<{ id: string; pattern: RegExp }> = [
 ];
 
 /**
- * Promise words (§B.3 gate 5), per language. A bubble may use one only when
- * the cited grounding uses the same word: "free for under-ones" passes when
- * the age-rules entry says so; "we'll give you a free entry" does not.
- * "Feel free" is ordinary English and is removed before matching.
+ * Promise words (§B.3 gate 5), per language. Since the owner's ruling of 28
+ * Oct 2026 (SCRUM-220, item F) the guard judges the ACT, not the WORD: a
+ * bubble may NAME one freely — to explain a policy ("residents get a discount
+ * at Central"), to say we do not offer it, to say a colleague will look into
+ * it, or in a question — but may GRANT or CONFIRM one ("we'll refund you",
+ * "you'll get a discount", "yes, it's free for you") only when the cited
+ * grounding uses the same word. "Feel free" is ordinary English and is
+ * removed before matching. Numbers and dates are untouched: a "50% off" is
+ * still a number no source holds.
  */
 export const PROMISE_WORD_RULES: ReadonlyArray<{ id: string; pattern: RegExp }> = [
   { id: 'en:refund', pattern: latin('refund\\w*') },
@@ -202,6 +208,93 @@ export const PROMISE_WORD_RULES: ReadonlyArray<{ id: string; pattern: RegExp }> 
 
 function withoutIdioms(text: string): string {
   return text.replace(/feel\s+free/gi, ' ');
+}
+
+// --- The act, not the word (item F) ----------------------------------------------------------
+
+/**
+ * A grant the clause makes whatever else it says: the first person giving
+ * ("we'll refund", "I can give you", "let me", "happy to give"), an offer put
+ * as a question ("would you like a free…?"), "on us", "here's your…", "your
+ * refund is approved", "we've applied…". The negated forms ("we can't give",
+ * "we don't offer", "мы не можем", "เราไม่สามารถให้") do not match.
+ */
+const STRONG_GRANTS: readonly RegExp[] = [
+  /\b(?:we|i)(?:'ll|'d|\s+will|\s+would|\s+can|\s+could|\s+shall|(?:\s+are|\s+am|'re|'m)\s+(?:happy|glad|able)\s+to|'d\s+be\s+(?:happy|glad)\s+to|\s+would\s+be\s+(?:happy|glad)\s+to)\s+(?:(?:also|gladly|happily|definitely|certainly|still|just|totally)\s+)?(?:offer|give|grant|provide|apply|arrange|throw\s+in|add|refund|compensate|waive|reimburse|send|do|make|let)\b/i,
+  /\blet\s+(?:me|us)\s+(?:offer|give|apply|arrange|refund|waive|add|throw\s+in|get\s+you)\b/i,
+  /\b(?:happy|glad|pleased)\s+to\s+(?:offer|give|apply|arrange|refund|waive|add|throw\s+in)\b/i,
+  /\b(?:would\s+you\s+like|do\s+you\s+want|shall\s+(?:i|we)|can\s+(?:i|we)\s+(?:offer|give|get\s+you)|may\s+(?:i|we)\s+offer)\b/i,
+  /\bon\s+(?:us|the\s+house)\b/i,
+  /\b(?:here's|here\s+is)\s+(?:a|an|your|the)\b/i,
+  /\byour\s+(?:[\w']+\s+){0,2}(?:refund|discount|compensation)\s+(?:is|has\s+been|will\s+be|was|'s)\s+(?:approved|confirmed|processed|issued|applied|on\s+(?:its|the)\s+way|done|sorted|ready)\b/i,
+  /\b(?:we|i)(?:'ve|\s+have)\s+(?:already\s+)?(?:applied|added|refunded|processed|approved|issued|arranged|waived|given)\b/i,
+  /(?:เรา|ทางเรา|ทางร้าน|แอดมิน|ดิฉัน|ผม|หนู|ทีมงาน)\s*(?:จะ|ขอ|ยินดี(?:ที่จะ)?|สามารถ|ก็)?\s*(?:ให้|มอบ|คืนเงิน|คืน|ชดเชย|ลดให้|จัดให้|แถม)/u,
+  /(?<!\p{L})(?:мы|я)\s+(?:(?:с\s+радостью|охотно|можем|могу|готовы|готов|рады|будем\s+рады)\s+)?(?:сделаем|сделаю|сделать|дадим|дам|дать|предоставим|предоставлю|предоставить|вернём|вернем|верну|вернуть|оформим|оформлю|оформить|компенсируем|компенсирую|компенсировать|подарим|подарю|подарить|предложим|предложу|предложить|начислим|применим|применить)(?!\p{L})/iu,
+  /(?<!(?<!\p{L})не\s+)(?<!\p{L})(?:сделаем|дадим|предоставим|вернём|вернем|оформим|компенсируем|подарим|предложим|начислим|применим)(?!\p{L})/iu,
+];
+
+/**
+ * A grant only in a statement that is not a colleague's errand: the second
+ * person receiving ("you get", "you'll receive"), "for you", "yes…", "it's
+ * free", and their Thai and Russian forms. A question ("do you have an ID for
+ * the discount?") or a deferral ("a colleague will look into the refund for
+ * you") does not grant.
+ */
+const WEAK_GRANTS: readonly RegExp[] = [
+  /\byou(?:'ll|'re\s+getting|\s+will|\s+can|\s+could|\s+would|\s+are\s+going\s+to|\s+get\s+to)?\s+(?:(?:also|now|still|even)\s+)?(?:get|receive|have|enjoy|qualify\s+for|be\s+getting)\b/i,
+  /\bfor\s+you\b/i,
+  /^\s*(?:yes|yeah|yep|sure|of\s+course|absolutely|certainly|definitely|ok(?:ay)?)\b/i,
+  /\b(?:it's|it\s+is|that's|that\s+is|it'll\s+be|it\s+will\s+be|that'll\s+be|that\s+will\s+be)\s+(?:(?!not\b|never\b|no\b)[\w']+\s+){0,2}free\b/i,
+  /(?:คุณ|ลูกค้า|น้อง)\s*(?:จะ|ก็)?\s*ได้(?:รับ)?|จะได้รับ/u,
+  /(?:ส่วนลด|คืนเงิน|ชดเชย|ฟรี|ลด)\s*ให้|ให้\s*(?:ฟรี|ส่วนลด)/u,
+  /^\s*(?:ได้(?:เลย|ค่ะ|ครับ)?|แน่นอน|ยินดี)/u,
+  /(?<!\p{L})вы\s+(?:(?:тоже|также|сразу)\s+)?(?:получите|получаете|можете\s+получить|сможете\s+получить)(?!\p{L})/iu,
+  /(?<!\p{L})для\s+вас(?!\p{L})/iu,
+  /^\s*(?:да|конечно|хорошо|разумеется|без\s+проблем)(?!\p{L})/iu,
+  /(?<!\p{L})(?:это|будет)\s+бесплатн/iu,
+];
+
+/** A question: it asks, so it grants nothing unless it is an offer (a strong grant). */
+const QUESTION = /\?|ไหม|มั้ย|หรือเปล่า|หรือไม่|ใช่ไหม|คะ(?![฀-๿])/u;
+
+/** A colleague's errand: someone will look into it, which is no grant. */
+const DEFERRAL =
+  /\b(?:look(?:ing)?\s+into|be\s+in\s+(?:contact|touch)|get\s+back\s+to|contact\s+you|reach\s+out|follow\s+up|check|review|take\s+care\s+of|help\s+(?:you\s+)?with|manager|colleague|team\s+member|someone\s+from)\b|ติดต่อ|ตรวจสอบ|ดูแลเรื่อง|พิจารณา|ผู้จัดการ|เจ้าหน้าที่|свяж|рассмотр|разбер|провер|менеджер|коллег|сотрудник/iu;
+
+/** A negation in the three words before the promise word: "no discount", "not free", "ไม่มีส่วนลด", "без скидки". */
+const NEGATED_BEFORE = [
+  /(?:\b(?:no|not|never|without|none|nor)\b|n't)\s*(?:[\w'-]+\s+){0,2}$/i,
+  /(?:ไม่|งด)[฀-๿\s]{0,12}$/u,
+  /(?<!\p{L})(?:не|нет|без|ни)(?!\p{L})\s*(?:\p{L}+\s+){0,2}$/iu,
+];
+
+/** The sentences of a bubble, each with its own end mark (times like 10:00 stay whole). */
+function sentencesOf(text: string): string[] {
+  return text.match(/[^.!?\n;]+[.!?\n;]*/g) ?? [];
+}
+
+/** A sentence's clauses: a contrast ("but", "แต่", "но") starts a new one. */
+function clausesOf(sentence: string): string[] {
+  return sentence.split(/\s(?:but|however|although|though)\s|แต่|อย่างไรก็ตาม|(?<!\p{L})(?:но|однако)(?!\p{L})/iu);
+}
+
+/**
+ * Whether the text GRANTS or CONFIRMS what `word` names: a clause holding the
+ * word, not negated just before it, that makes a strong grant — or, outside a
+ * question and a deferral, a weak one.
+ */
+function grants(text: string, word: RegExp): boolean {
+  const global = new RegExp(word.source, word.flags.includes('g') ? word.flags : `${word.flags}g`);
+  for (const sentence of sentencesOf(text)) {
+    const asks = QUESTION.test(sentence);
+    for (const clause of clausesOf(sentence)) {
+      const named = [...clause.matchAll(global)].filter((m) => !NEGATED_BEFORE.some((n) => n.test(clause.slice(0, m.index))));
+      if (named.length === 0) continue;
+      if (STRONG_GRANTS.some((g) => g.test(clause))) return true;
+      if (!asks && !DEFERRAL.test(clause) && WEAK_GRANTS.some((g) => g.test(clause))) return true;
+    }
+  }
+  return false;
 }
 
 export type TraceReason = 'GUARD_NUMBER' | 'GUARD_DATE' | 'GUARD_PROMISE';
@@ -233,7 +326,7 @@ export function traceabilityGuard(
     }
     const text = withoutIdioms(raw);
     for (const rule of PROMISE_WORD_RULES) {
-      if (rule.pattern.test(text) && !rule.pattern.test(groundingWords)) {
+      if (rule.pattern.test(text) && !rule.pattern.test(groundingWords) && grants(text, rule.pattern)) {
         return { ok: false, reason: 'GUARD_PROMISE', rule: rule.id };
       }
     }

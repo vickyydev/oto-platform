@@ -11,9 +11,9 @@ export const EN_PERSONA = {
   branchQuestion: 'Which branch are you thinking of, Central Floresta or Robinson Chalong?',
   /**
    * The playbook's one price question for a non-Thai customer: branch and
-   * residency together. Its "discount" is a promise word, so it passes the
-   * traceability guard only beside a cited price source that says it (the
-   * live price fact of a park with a resident tier does).
+   * residency together. Its "discount" states the park's policy and grants
+   * nothing, so the promise guard lets it through (item F: the act, not the
+   * word); the live price fact of a park with a resident tier says it too.
    */
   branchResidencyQuestion:
     'Which branch are you thinking of, Central Floresta or Robinson Chalong? And are you visiting Phuket or living in Thailand? Residents get a discount at Central 😊',

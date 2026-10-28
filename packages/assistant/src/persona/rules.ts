@@ -9,14 +9,16 @@
  * Where it and an older rule here disagreed, the playbook's wording replaced
  * it ("standard prices only", "a complaint gets the holding line only", "any
  * other language is silence", the Russian greeting on every reply). The
- * safety guards stayed: a number, date, link or promise word still needs a
- * cited source, and a hand-over's own words cite none.
+ * safety guards stayed: a number, date or link still needs a cited source, a
+ * refund, discount, free entry or compensation is never granted unless a
+ * cited source states it (item F, 28 Oct: the act, not the word), and a
+ * hand-over's own words cite none.
  */
 
 import { EN_PERSONA } from './en';
 import { TH_PERSONA } from './th';
 
-export const PERSONA_VERSION = 'persona-2026-10-28.2';
+export const PERSONA_VERSION = 'persona-2026-10-28.3';
 
 /**
  * §D.7: a disclosure line stays possible without a rebuild. False until the
@@ -46,7 +48,7 @@ export const PROHIBITIONS: ReadonlyArray<{ id: string; text: string }> = [
   },
   {
     id: 'no_refund_promise',
-    text: 'Never promise a refund, compensation or a free entry, and never say yes or no to a refund.',
+    text: 'Never grant or confirm a refund, compensation, a discount or a free entry that your cited sources do not state, and never say yes or no to a refund. You may name them to explain a policy, to say we do not offer one, to say a colleague will look into it, or in a question.',
   },
   {
     id: 'no_customer_number_echo',
@@ -112,7 +114,7 @@ export const OUTPUT_CONTRACT = [
   'intent: the main intent from the table. intents: every intent the open messages hold, one to four, intent first. action: answer when any part answers, handover when every part hands over or the customer needs a person, silent only for other.',
   'grounding: the exact keys (in square brackets in the knowledge section) of every source your bubbles rest on. Empty when no fact is stated.',
   "bubbles: one to three short chat messages for answer; for a hand-over, only that part's lead line when the playbook lines give one (one bubble), else none; none for silent, a child in our care or a lost item.",
-  'Every number, price, date, link and the words free, refund, compensation and discount in your bubbles must appear in a source you list in grounding. A lead line cites nothing, so it holds no number, date, link or promise word.',
+  "Every number, price, date and link in your bubbles must appear in a source you list in grounding. Never grant or confirm a refund, discount, free entry or compensation (\"we can give you\", \"you'll get\", \"yes, it's free\") unless a source you list in grounding states it; naming one to explain a policy, to say we do not offer it, to say a colleague will look into it, or in a question is fine. A lead line cites nothing, so it holds no number, date or link and grants nothing.",
   'sendBrochure: true only for birthday_brochure.',
   'branchNamed: "central" or "chalong" when the customer named a park in these messages, else null.',
   'askBranch: true when a bubble asks which park (general enquiries only, when the thread has no branch; never for birthdays).',
