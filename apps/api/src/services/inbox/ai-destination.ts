@@ -115,11 +115,13 @@ export function isUnclearHandover(intents: readonly AiIntent[], plan: AiHandover
 /**
  * The gate's reasons for WITHHOLDING a reply the model wrote (SCRUM-671, item
  * D, owner ruling 28 Oct: a customer never gets pure silence on a main
- * channel): its grounding refused, or a guard tripped. The model's own
- * silence, spam, an unsure model, a provider failure and the caps are not on
- * the list — nothing was written to withhold, or nothing should go.
+ * channel): its grounding refused, a guard tripped, or the model was unsure
+ * of its answer — the customer asked and would get nothing. The model CHOOSING
+ * silence (a "thanks, bye" needs no reply), spam, a provider failure (the
+ * thread stays visibly unanswered for staff) and the caps are not on the list.
  */
 export const WITHHELD_REPLY_REASONS: ReadonlySet<string> = new Set([
+  'UNSURE',
   'GROUNDING_MISSING',
   'GROUNDING_UNKNOWN',
   'GROUNDING_TOPIC',

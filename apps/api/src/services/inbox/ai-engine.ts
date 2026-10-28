@@ -875,7 +875,8 @@ function handoverOf(v: GateVerdict | undefined, silent: ReadonlySet<string> | nu
 /**
  * SCRUM-671, item D (owner ruling, 28 Oct 2026): a customer never gets pure
  * silence on a main channel. When the gate WITHHOLDS a reply the model wrote
- * (`WITHHELD_REPLY_REASONS`: a grounding refusal or a guard), the turn becomes
+ * (`WITHHELD_REPLY_REASONS`: a grounding refusal, a guard, or an unsure
+ * model), the turn becomes
  * the "Unclear or not covered" hand-over: the playbook's unclear line, and the
  * thread to the park when it is known, else the GM. None of the withheld words
  * go (`holdingBubbles` empty). A number whose silence policy covers the
