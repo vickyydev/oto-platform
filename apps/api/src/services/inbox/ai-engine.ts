@@ -1,11 +1,13 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import {
+  AI_REPLY_LANGUAGES,
   applyGates,
   buildPrompt,
   scheduleBubbles,
   type AiBranchKey,
   type AiDecision,
   type AiHandoverPlan,
+  type AiIntent,
   type AiReplyLanguage,
   type AssistantOutcome,
   type EpisodeMessage,
@@ -27,6 +29,7 @@ import {
   type Db,
   type InboxCategory,
   type InboxTeamKey,
+  type InboxTemplateKey,
 } from '@oto/db';
 import { isoDateInTz, newId, renderTemplate } from '@oto/shared';
 import type { FastifyBaseLogger } from 'fastify';
@@ -36,8 +39,10 @@ import { recordRun } from '../ops';
 import { withTx, type Exec, type Tx } from '../tx';
 import { assistantSettingOverridesOf } from '../assistant-settings';
 import type { InboxAiRuntime } from './ai-runtime';
+import { CLOSING_KEY_OF, destinationOf, planOwner, silencedBy, silentIntentsOf } from './ai-destination';
 import { loadTurnKnowledge, type TurnKnowledge } from './ai-knowledge';
 import { aiEligibility, dueAiMessageIds, type IneligibleReason } from './ai-turns';
+import { callingCodeOf } from './calling-code';
 import type { InboxChannels } from './channels';
 import { routeConversation } from './router';
 import { sendAfterCommit } from './send';
@@ -72,6 +77,19 @@ import { sendAfterCommit } from './send';
  *      NOTHING to the thread.
  *   5. SENDS the AI lines whose typing time is over, through the one send
  *      path (`send.ts`), so the 30-second sweeper's grain does not apply.
+ *
+ * THE PLAYBOOK (SCRUM-220, Tom's Inbox Bot Playbook — the first rule;
+ * `ai-destination.ts`): a hand-over goes where the playbook sends it (the GM
+ * queue for an online complaint or an influencer; the thread's park, else the
+ * GM, for an unclear message) and closes with that DESTINATION's line, the
+ * intent's own template when the destination has none. A number's SILENCE
+ * POLICY turns a hand-over it covers into a silent one: the thread routes and
+ * the assistant stops for the episode (`ai_handover`, `silent: true`), and no
+ * line goes; the turn says `SILENCE_POLICY`. A `silent_handover` the policy
+ * does not cover is a normal hand-over with the branch's line
+ * (`POLICY_MISSING`). Spam the model read and stayed silent on leaves the
+ * Unanswered queue, handled by the assistant (`SPAM_TIDIED`), unless an
+ * earlier line of the episode still waits for a person.
  *
  * FAILURE IS SILENCE, AND NOTHING LOGS TEXT (§D.1). A turn that throws is
  * logged by id and error class only (a database error can carry the values
@@ -272,15 +290,54 @@ async function loadEpisode(db: Exec, conv: ConversationRow, episodeStart: Date):
  * customer sent it, in whole seconds, so a line sent in the same second as
  * the park's last line, or in flight behind it, sorts before that line.
  */
-function burstOf(episode: readonly EpisodeRow[], triggerMessageId: string): EpisodeRow[] {
+function burstStart(episode: readonly EpisodeRow[], triggerMessageId: string): number {
   let lastPark = -1;
   let trigger = -1;
   for (let i = 0; i < episode.length; i += 1) {
     if (episode[i]!.from !== 'customer') lastPark = i;
     if (episode[i]!.id === triggerMessageId) trigger = i;
   }
-  const from = trigger === -1 ? lastPark + 1 : Math.min(lastPark + 1, trigger);
-  return episode.slice(from).filter((m) => m.from === 'customer');
+  return trigger === -1 ? lastPark + 1 : Math.min(lastPark + 1, trigger);
+}
+
+function burstOf(episode: readonly EpisodeRow[], triggerMessageId: string): EpisodeRow[] {
+  return episode.slice(burstStart(episode, triggerMessageId)).filter((m) => m.from === 'customer');
+}
+
+/**
+ * Nothing earlier in the episode waits for a person (SCRUM-220 spam tidy): no
+ * customer line before the burst that the assistant did not answer — a line
+ * out of hours, a question it left in silence — and no earlier turn of the
+ * episode that ended silent. Only then may spam mark the thread handled.
+ */
+async function quietBeforeBurst(
+  db: Exec,
+  conv: ConversationRow,
+  episode: readonly EpisodeRow[],
+  triggerMessageId: string,
+  episodeStart: Date,
+  turnId: string,
+): Promise<boolean> {
+  let waiting = false;
+  for (const m of episode.slice(0, burstStart(episode, triggerMessageId))) {
+    if (m.from === 'customer') waiting = true;
+    else if (m.from === 'ai') waiting = false;
+  }
+  if (waiting) return false;
+  const [silent] = await db
+    .select({ id: aiTurn.id })
+    .from(aiTurn)
+    .where(
+      and(
+        eq(aiTurn.operatorId, conv.operatorId),
+        eq(aiTurn.conversationId, conv.id),
+        eq(aiTurn.state, 'silent'),
+        gte(aiTurn.createdAt, episodeStart),
+        sql`${aiTurn.id} <> ${turnId}`,
+      ),
+    )
+    .limit(1);
+  return !silent;
 }
 
 interface EpisodeFacts {
@@ -348,6 +405,8 @@ interface TurnResult {
   usage?: TurnUsage | null;
   latencyMs?: number;
   knowledge?: TurnKnowledge;
+  /** Nothing earlier in the episode waits for a person: read only for a silence the spam tidy may close. */
+  quietBefore?: boolean;
 }
 
 async function recordModelRun(
@@ -445,6 +504,13 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
 
   const knowledge = await loadTurnKnowledge(db, turn.operatorId, now);
   const facts = await episodeFacts(db, conv, eligible.episodeStart, now);
+  // SCRUM-220 playbook: the calling code of the number the customer writes
+  // from (`66`, `7`), for the language and residency questions.
+  const [person] = await db
+    .select({ phone: contact.phone })
+    .from(contact)
+    .where(and(eq(contact.operatorId, conv.operatorId), eq(contact.id, conv.contactId)))
+    .limit(1);
   const built = buildPrompt({
     knowledge: knowledge.knowledge,
     episode,
@@ -452,6 +518,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
       now,
       threadBranch: conv.branchId ? (knowledge.keyOfBranch.get(conv.branchId) ?? null) : null,
       priceModeToday: knowledge.priceModeToday,
+      contactCountryCode: callingCodeOf(person?.phone),
       earlier: facts.earlier,
     },
   });
@@ -488,7 +555,11 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   };
   if (!outcome.ok) return { ...base, conv, silence: outcome.reason };
   const verdict = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: facts.state });
-  return { ...base, conv, decision: outcome.decision, verdict };
+  const quietBefore =
+    verdict.action === 'silent' && verdict.reason === 'INTENT_SILENT'
+      ? await quietBeforeBurst(db, conv, episode, turn.triggerMessageId, eligible.episodeStart, turn.id)
+      : undefined;
+  return { ...base, conv, decision: outcome.decision, verdict, ...(quietBefore === undefined ? {} : { quietBefore }) };
 }
 
 // --- 4. The commit ------------------------------------------------------------------------
@@ -524,7 +595,32 @@ async function usableTemplates(tx: Tx, conv: ConversationRow, account: AccountRo
     );
 }
 
-type HoldingLine = { kind: 'template' | 'persona' | 'none'; items: LineItem[]; templateId: string | null };
+type HoldingLine = {
+  kind: 'template' | 'persona' | 'none';
+  items: LineItem[];
+  templateId: string | null;
+  /** The destination's closing line that carried it (SCRUM-220 playbook); null when the intent's template or the model's words did. */
+  closingKey: InboxTemplateKey | null;
+};
+
+const NO_LINE: HoldingLine = { kind: 'none', items: [], templateId: null, closingKey: null };
+
+/** A template's line VERBATIM in the customer's language: the most specific usable row, translated, with nothing left to fill. */
+async function templateLine(
+  tx: Tx,
+  conv: ConversationRow,
+  account: AccountRow,
+  key: string,
+  language: AiReplyLanguage,
+): Promise<{ item: LineItem; templateId: string } | null> {
+  const rows = (await usableTemplates(tx, conv, account, key)).filter((t) => t.language === language);
+  const rank = (t: (typeof rows)[number]) => (t.channel ? 0 : 2) + (t.branchId ? 0 : 1);
+  const row = rows.sort((a, b) => rank(a) - rank(b))[0];
+  if (!row || row.needsTranslation) return null;
+  const rendered = renderTemplate(row.body, {});
+  if (rendered.missing.length > 0) return null;
+  return { item: { body: rendered.text, templateId: row.id }, templateId: row.id };
+}
 
 /**
  * The holding line (§C.5, owner G6 default): the template VERBATIM in the
@@ -540,17 +636,33 @@ async function holdingLine(
   language: AiReplyLanguage,
   modelWords: readonly string[],
 ): Promise<HoldingLine> {
-  const rows = (await usableTemplates(tx, conv, account, key)).filter((t) => t.language === language);
-  const rank = (t: (typeof rows)[number]) => (t.channel ? 0 : 2) + (t.branchId ? 0 : 1);
-  const row = rows.sort((a, b) => rank(a) - rank(b))[0];
-  if (row && !row.needsTranslation) {
-    const rendered = renderTemplate(row.body, {});
-    if (rendered.missing.length === 0) {
-      return { kind: 'template', items: [{ body: rendered.text, templateId: row.id }], templateId: row.id };
-    }
+  const line = await templateLine(tx, conv, account, key, language);
+  if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey: null };
+  if (modelWords.length > 0) return { kind: 'persona', items: modelWords.map((w) => ({ body: w })), templateId: null, closingKey: null };
+  return NO_LINE;
+}
+
+/**
+ * The line a hand-over closes with (SCRUM-220 playbook): the DESTINATION's
+ * closing template verbatim — the birthday manager, the general manager, the
+ * branch — and, where the destination has none (Marketing) or its row is
+ * missing, inactive or untranslated in this language, the intent's own
+ * holding line exactly as before.
+ */
+async function closingLine(
+  tx: Tx,
+  conv: ConversationRow,
+  account: AccountRow,
+  closingKey: InboxTemplateKey | null,
+  plan: AiHandoverPlan,
+  language: AiReplyLanguage,
+  modelWords: readonly string[],
+): Promise<HoldingLine> {
+  if (closingKey) {
+    const line = await templateLine(tx, conv, account, closingKey, language);
+    if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey };
   }
-  if (modelWords.length > 0) return { kind: 'persona', items: modelWords.map((w) => ({ body: w })), templateId: null };
-  return { kind: 'none', items: [], templateId: null };
+  return holdingLine(tx, conv, account, plan.templateKey, language, modelWords);
 }
 
 /**
@@ -706,50 +818,106 @@ interface Routing {
   reroutedTeamId: string | null;
 }
 
+/** The hand-over a verdict makes, as the engine reads it (SCRUM-220 playbook, `ai-destination.ts`). */
+interface Handover {
+  plan: AiHandoverPlan;
+  /** The intent whose hand-over it is; null for the cap's, a second identity question's, the model's call. */
+  owner: AiIntent | null;
+  /** The number's silence policy covers it: no line and no brochure; the thread still routes. */
+  silenced: boolean;
+  /** A `silent_handover` the policy does not cover: a normal hand-over with the branch's closing line. */
+  branchLine: boolean;
+}
+
+function handoverOf(v: GateVerdict | undefined, silent: ReadonlySet<string> | null): Handover | null {
+  if (!v || v.action === 'silent') return null;
+  const plan = v.action === 'answer' ? v.thenHandover : v.plan;
+  if (!plan) return null;
+  const owner = planOwner(v.intents, plan);
+  const silenced = silencedBy(silent, v.intents, owner, v.intent);
+  return { plan, owner, silenced, branchLine: v.action === 'silent_handover' && !silenced };
+}
+
+/** The turn's reason word once the number's policy has been read. */
+function handoverReason(h: Handover | null, reason: string): string {
+  if (h?.silenced) return 'SILENCE_POLICY';
+  if (h?.branchLine) return 'POLICY_MISSING';
+  return reason;
+}
+
+/** What the routing will do, read before anything is written: the closing line names where the thread ends up. */
+interface RoutingPlan {
+  /** The park the customer named, for a branchless general thread. */
+  branchSet: string | null;
+  move: { dest: typeof team.$inferSelect; category: InboxCategory; branchId: string | null } | null;
+  /** The thread's category once the routing is done. */
+  category: InboxCategory;
+}
+
 /**
- * The branch the customer named, and the category the intent belongs to
- * (§B.5): a branchless general thread takes the named park and that park's
- * reception; a handover whose category differs from the thread's moves it —
- * each only when no person has touched the routing.
+ * The branch the customer named, and the destination of the hand-over (§B.5,
+ * and since SCRUM-220 the playbook's: `destinationOf`): a branchless general
+ * thread takes the named park and that park's reception; a hand-over whose
+ * destination differs from the thread's category moves it — each only when
+ * no person has touched the routing. Read-only; `executeRouting` writes it.
  */
-async function applyRouting(
+async function planRouting(
   tx: Tx,
   conv: ConversationRow,
   branchNamed: AiBranchKey | null,
-  plan: AiHandoverPlan | null,
+  handover: Handover | null,
   knowledge: TurnKnowledge | undefined,
-  at: Date,
-): Promise<Routing> {
-  const out: Routing = { branchSet: null, reroutedTeamId: null };
-  if (!(await noPersonRouting(tx, conv))) return out;
+): Promise<RoutingPlan> {
+  const stay: RoutingPlan = { branchSet: null, move: null, category: conv.category };
+  if (!(await noPersonRouting(tx, conv))) return stay;
   let branchId = conv.branchId;
+  let branchSet: string | null = null;
   if (branchNamed && conv.category === 'general' && conv.branchId === null && knowledge) {
     const named = knowledge.branchOfKey.get(branchNamed) ?? null;
     if (named) {
       branchId = named;
-      out.branchSet = named;
-      await tx
-        .update(conversation)
-        .set({ branchId: named, updatedAt: at })
-        .where(and(eq(conversation.operatorId, conv.operatorId), eq(conversation.id, conv.id)));
-      await tx.insert(inboxEvent).values({
-        id: newId(),
-        operatorId: conv.operatorId,
-        conversationId: conv.id,
-        kind: 'branch_set',
-        actorKind: 'ai',
-        payload: { fromBranchId: null, toBranchId: named, byAi: true },
-        createdAt: at,
-      });
+      branchSet = named;
     }
   }
-  const target: InboxCategory = plan && plan.route !== 'keep' ? plan.route : conv.category;
-  if (target !== conv.category || out.branchSet) {
+  const target: InboxCategory = handover
+    ? destinationOf(handover.owner, handover.plan, { category: conv.category, branchKnown: branchId !== null })
+    : conv.category;
+  let move: RoutingPlan['move'] = null;
+  if (target !== conv.category || branchSet) {
     const dest = await teamFor(tx, conv.operatorId, target, branchId);
     if (dest && dest.id !== conv.teamId) {
-      const destBranch = dest.key === 'reception' ? dest.branchId : branchId;
-      out.reroutedTeamId = await aiMove(tx, { ...conv, branchId }, dest, target, destBranch, at);
+      move = { dest, category: target, branchId: dest.key === 'reception' ? dest.branchId : branchId };
     }
+  }
+  return { branchSet, move, category: move ? move.category : conv.category };
+}
+
+async function executeRouting(tx: Tx, conv: ConversationRow, plan: RoutingPlan, at: Date): Promise<Routing> {
+  const out: Routing = { branchSet: plan.branchSet, reroutedTeamId: null };
+  if (plan.branchSet) {
+    await tx
+      .update(conversation)
+      .set({ branchId: plan.branchSet, updatedAt: at })
+      .where(and(eq(conversation.operatorId, conv.operatorId), eq(conversation.id, conv.id)));
+    await tx.insert(inboxEvent).values({
+      id: newId(),
+      operatorId: conv.operatorId,
+      conversationId: conv.id,
+      kind: 'branch_set',
+      actorKind: 'ai',
+      payload: { fromBranchId: null, toBranchId: plan.branchSet, byAi: true },
+      createdAt: at,
+    });
+  }
+  if (plan.move) {
+    out.reroutedTeamId = await aiMove(
+      tx,
+      { ...conv, branchId: plan.branchSet ?? conv.branchId },
+      plan.move.dest,
+      plan.move.category,
+      plan.move.branchId,
+      at,
+    );
   }
   return out;
 }
@@ -771,9 +939,9 @@ async function closeTurn(
     state,
     reason,
     intent: v?.intent ?? d?.intent ?? null,
-    // `silent_handover` (SCRUM-220 playbook) is not emitted yet and the
-    // engine keeps it silent, so it is recorded as the silence it is today.
-    action: v ? (v.action === 'silent_handover' ? ('silent' as const) : v.action) : state === 'silent' ? ('silent' as const) : null,
+    // A `silent_handover` (SCRUM-220 playbook) routes the thread, silently or
+    // with the branch's line: it is a hand-over; the reason word says which.
+    action: v ? (v.action === 'silent_handover' ? ('handover' as const) : v.action) : state === 'silent' ? ('silent' as const) : null,
     certainty: d?.certainty ?? null,
     language: d?.language ?? null,
     model: r.model ?? null,
@@ -977,25 +1145,31 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
 
       const v = r.verdict;
       const reason = r.silence ?? (v ? v.reason : 'PROVIDER_ERROR');
+      // SCRUM-220 playbook: the hand-over this turn makes, with the number's
+      // silence policy read (`ai-destination.ts`).
+      const handover = handoverOf(v, silentIntentsOf(account.silencePolicy));
+      const finalReason = handoverReason(handover, reason);
 
       // SHADOW (§B.5): the decision on the turn, and nothing the customer
       // sees. Since the test night (2026-10-21, W5) what it WOULD have said —
-      // the answer, and the holding line a hand-over would have sent — is kept
+      // the answer, and the closing line a hand-over would have sent — is kept
       // as one `shadow` message row for staff, named by an `ai_shadow` pill;
       // the thread's routing, intent, language and last-message fields stay
-      // as they are. A silent decision keeps nothing: nothing would have gone.
+      // as they are. A silent decision keeps nothing: nothing would have gone;
+      // a hand-over the number's policy silences keeps only its answer, if any.
       if (account.aiMode === 'shadow') {
         let messageIds: string[] = [];
-        // `silent_handover` (SCRUM-220 playbook) is not emitted by the gate
-        // yet; until the playbook lane wires it, it keeps nothing, as silence.
-        if (v && v.action !== 'silent' && v.action !== 'silent_handover') {
-          const plan: AiHandoverPlan | null = v.action === 'handover' ? v.plan : v.thenHandover;
+        if (v && v.action !== 'silent') {
           const lines: string[] = v.action === 'answer' ? [...v.bubbles] : [];
-          let holdingKind: HoldingLine['kind'] = 'none';
-          if (plan) {
-            const holding = await holdingLine(tx, conv, account, plan.templateKey, v.language, v.action === 'handover' ? v.holdingBubbles : []);
-            holdingKind = holding.kind;
-            lines.push(...holding.items.flatMap((i) => (i.body ? [i.body] : [])));
+          let holding: HoldingLine = NO_LINE;
+          let destination: InboxCategory | null = null;
+          if (handover) {
+            destination = (await planRouting(tx, conv, v.branchNamed, handover, r.knowledge)).category;
+            if (!handover.silenced) {
+              const key = handover.branchLine ? 'closing_branch' : CLOSING_KEY_OF[destination];
+              holding = await closingLine(tx, conv, account, key, handover.plan, v.language, v.action === 'handover' ? v.holdingBubbles : []);
+              lines.push(...holding.items.flatMap((i) => (i.body ? [i.body] : [])));
+            }
           }
           const id = await writeShadowLine(tx, conv, v.language, lines, at);
           messageIds = id ? [id] : [];
@@ -1006,22 +1180,35 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
               intent: v.intent,
               intents: v.intents,
               language: v.language,
-              action: v.action,
-              templateKey: plan?.templateKey ?? null,
-              holdingLine: holdingKind,
-              brochure: plan?.brochure ?? false,
+              action: handover?.silenced ? 'silent_handover' : v.action === 'silent_handover' ? 'handover' : v.action,
+              templateKey: handover?.plan.templateKey ?? null,
+              closingKey: holding.closingKey,
+              destination,
+              holdingLine: holding.kind,
+              brochure: handover && !handover.silenced ? handover.plan.brochure : false,
             }, at),
           );
         }
-        await closeTurn(tx, turn, conv, 'shadowed', reason, r, at, messageIds);
+        await closeTurn(tx, turn, conv, 'shadowed', finalReason, r, at, messageIds);
         return 'shadowed';
       }
 
-      // `silent_handover` (SCRUM-220 playbook): not emitted by the gate yet;
-      // until the playbook lane wires its hand-over, the engine keeps it silent.
-      if (!v || v.action === 'silent' || v.action === 'silent_handover') {
-        await tx.insert(inboxEvent).values(event(conv, 'ai_silent', { turnId: turn.id, reason, intent: v?.intent ?? null }, at));
-        await closeTurn(tx, turn, conv, 'silent', reason, r, at);
+      if (!v || v.action === 'silent') {
+        // SCRUM-220 playbook, spam tidy: spam the model read — the burst all
+        // `other`, in a language it reads — leaves the Unanswered queue,
+        // handled by the assistant, unless an earlier line of the episode
+        // still waits for a person. The thread and its lines stay as they are.
+        const spam =
+          v?.action === 'silent' &&
+          v.reason === 'INTENT_SILENT' &&
+          v.intents.every((i) => i === 'other') &&
+          r.decision !== undefined &&
+          (AI_REPLY_LANGUAGES as readonly string[]).includes(r.decision.language) &&
+          r.quietBefore === true;
+        const silentReason = spam ? 'SPAM_TIDIED' : reason;
+        await tx.insert(inboxEvent).values(event(conv, 'ai_silent', { turnId: turn.id, reason: silentReason, intent: v?.intent ?? null }, at));
+        if (spam) await handleByAi(tx, conv, turn.id, at, 'SPAM');
+        await closeTurn(tx, turn, conv, 'silent', silentReason, r, at);
         return 'silent';
       }
 
@@ -1044,17 +1231,20 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       // birthday pair.
       const classified: ConversationRow = { ...conv, intent: v.intent, language: v.language };
 
-      const handover: AiHandoverPlan | null = v.action === 'handover' ? v.plan : v.thenHandover;
+      // Where the thread ends up is read first: the closing line names it.
+      const plan = await planRouting(tx, classified, v.branchNamed, handover, r.knowledge);
       const items: LineItem[] = v.action === 'answer' ? v.bubbles.map((b) => ({ body: b })) : [];
       let brochure: string[] = [];
-      let holding: HoldingLine = { kind: 'none', items: [], templateId: null };
-      if (handover) {
-        if (handover.brochure) brochure = await brochureFiles(tx, conv, account, v.language);
-        holding = await holdingLine(
+      let holding: HoldingLine = NO_LINE;
+      if (handover && !handover.silenced) {
+        if (handover.plan.brochure) brochure = await brochureFiles(tx, conv, account, v.language);
+        const key = handover.branchLine ? 'closing_branch' : CLOSING_KEY_OF[plan.category];
+        holding = await closingLine(
           tx,
           conv,
           account,
-          handover.templateKey,
+          key,
+          handover.plan,
           v.language,
           v.action === 'handover' ? v.holdingBubbles : [],
         );
@@ -1068,7 +1258,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         bubbleGapMaxMs: pace.bubbleGapMs ?? deps.runtime.config.pacing.bubbleGapMaxMs,
       };
       const messageIds = await writeLines(tx, conv, v.language, items, at, random, pacing);
-      const routing = await applyRouting(tx, classified, v.branchNamed, handover, r.knowledge, at);
+      const routing = await executeRouting(tx, classified, plan, at);
 
       if (v.action === 'answer') {
         await tx.insert(inboxEvent).values(
@@ -1088,8 +1278,11 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             turnId: turn.id,
             intent: v.intent,
             intents: v.intents,
-            reason: v.reason,
-            templateKey: handover.templateKey,
+            reason: handoverReason(handover, v.reason),
+            silent: handover.silenced,
+            destination: plan.category,
+            templateKey: handover.plan.templateKey,
+            closingKey: holding.closingKey,
             holdingLine: holding.kind,
             templateId: holding.templateId,
             brochureFileIds: brochure,
@@ -1110,7 +1303,10 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
           after: {
             turnId: turn.id,
             intent: v.intent,
-            templateKey: handover.templateKey,
+            silent: handover.silenced,
+            destination: plan.category,
+            templateKey: handover.plan.templateKey,
+            closingKey: holding.closingKey,
             holdingLine: holding.kind,
             brochureFileIds: brochure,
             reroutedTeamId: routing.reroutedTeamId,
@@ -1120,30 +1316,37 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       }
 
       // X7 / owner G4 default: a closing on an episode no person touched is handled by the assistant.
-      if (v.action === 'answer' && v.mayAutoHandle && !handover) {
-        await tx
-          .update(conversation)
-          .set({ status: 'handled', handledAt: at, handledByKind: 'ai', handledByAccountId: null, updatedAt: at })
-          .where(and(eq(conversation.operatorId, conv.operatorId), eq(conversation.id, conv.id)));
-        await tx.insert(inboxEvent).values(event(conv, 'handled', { handledByKind: 'ai', turnId: turn.id }, at));
-        await audit.record(tx, {
-          actorAccountId: null,
-          action: 'inbox.conversation.handle',
-          entityType: 'inbox.conversation',
-          entityId: conv.id,
-          operatorId: conv.operatorId,
-          branchId: conv.branchId,
-          requestId: null,
-          before: { status: 'active' },
-          after: { status: 'handled', handledAt: at.toISOString(), handledByKind: 'ai', turnId: turn.id },
-        });
-      }
+      if (v.action === 'answer' && v.mayAutoHandle && !handover) await handleByAi(tx, conv, turn.id, at, null);
 
       const state = handover ? 'handed_over' : 'answered';
-      await closeTurn(tx, turn, conv, state, reason, r, at, messageIds);
+      await closeTurn(tx, turn, conv, state, finalReason, r, at, messageIds);
       return state;
     },
   );
+}
+
+/**
+ * The assistant marks the thread handled (X7 / owner G4: a closing on an
+ * episode no person touched; SCRUM-220: spam it read). The customer's next
+ * message reopens it as a new episode.
+ */
+async function handleByAi(tx: Tx, conv: ConversationRow, turnId: string, at: Date, why: 'SPAM' | null): Promise<void> {
+  await tx
+    .update(conversation)
+    .set({ status: 'handled', handledAt: at, handledByKind: 'ai', handledByAccountId: null, updatedAt: at })
+    .where(and(eq(conversation.operatorId, conv.operatorId), eq(conversation.id, conv.id)));
+  await tx.insert(inboxEvent).values(event(conv, 'handled', { handledByKind: 'ai', turnId, ...(why ? { reason: why } : {}) }, at));
+  await audit.record(tx, {
+    actorAccountId: null,
+    action: 'inbox.conversation.handle',
+    entityType: 'inbox.conversation',
+    entityId: conv.id,
+    operatorId: conv.operatorId,
+    branchId: conv.branchId,
+    requestId: null,
+    before: { status: 'active' },
+    after: { status: 'handled', handledAt: at.toISOString(), handledByKind: 'ai', turnId, ...(why ? { reason: why } : {}) },
+  });
 }
 
 /** Claims, decides and commits one turn. Never throws for the model's reasons. */

@@ -97,7 +97,14 @@ let accountSeq = 0;
 /** A simulator WhatsApp number of the park's, with the assistant's mode as given. */
 export async function simAccount(
   w: AiWorld,
-  opts: { branchId: string | null; aiMode?: AiMode; openingHours?: unknown; defaultCategory?: 'general' | 'birthdays' | 'marketing' },
+  opts: {
+    branchId: string | null;
+    aiMode?: AiMode;
+    openingHours?: unknown;
+    defaultCategory?: 'general' | 'birthdays' | 'marketing' | 'gm';
+    /** The number's silence policy (SCRUM-220 playbook); absent = none. */
+    silentIntents?: string[];
+  },
 ): Promise<string> {
   const id = newId();
   accountSeq += 1;
@@ -114,6 +121,7 @@ export async function simAccount(
     status: 'active',
     aiMode: opts.aiMode ?? 'live',
     openingHours: (opts.openingHours ?? null) as never,
+    silencePolicy: opts.silentIntents ? { silentIntents: opts.silentIntents } : null,
   });
   return id;
 }
@@ -238,7 +246,7 @@ export async function activeSlots(w: AiWorld, conversationId: string) {
     .orderBy(asc(s.assignment.slotIndex));
 }
 
-export async function teamOf(w: AiWorld, key: 'birthdays' | 'reception' | 'marketing', branchId: string | null = null) {
+export async function teamOf(w: AiWorld, key: 'birthdays' | 'reception' | 'marketing' | 'gm', branchId: string | null = null) {
   const [t] = await w.ctx.db
     .select()
     .from(s.team)

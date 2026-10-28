@@ -294,8 +294,22 @@ describe('an answer (§B.5, §B.6)', () => {
   });
 });
 
+/**
+ * The playbook's closing line of a destination (SCRUM-220): since the playbook
+ * a hand-over closes with where the thread goes — the birthday manager, the
+ * general manager, the branch — not with the intent's own holding template.
+ */
+async function closingTemplate(key: 'closing_birthday' | 'closing_gm' | 'closing_branch', language: 'en' | 'th' | 'ru' = 'en') {
+  const [row] = await w.ctx.db
+    .select()
+    .from(s.template)
+    .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, key), eq(s.template.language, language)))
+    .limit(1);
+  return row!;
+}
+
 describe('a handover (§B.5, §C.5)', () => {
-  it('a birthday: the brochure, then the holding line verbatim, and the thread moves to Birthdays as the assistant', async () => {
+  it('a birthday: the brochure, then the birthday manager’s closing line verbatim, and the thread moves to Birthdays as the assistant', async () => {
     await drain();
     const fileId = newId();
     await w.ctx.db.insert(s.fileObject).values({
@@ -312,11 +326,8 @@ describe('a handover (§B.5, §C.5)', () => {
       .update(s.template)
       .set({ attachmentFileIds: [fileId] })
       .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_birthday'), eq(s.template.language, 'en')));
-    const [holding] = await w.ctx.db
-      .select()
-      .from(s.template)
-      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_birthday'), eq(s.template.language, 'en')))
-      .limit(1);
+    // The brochure still rides the birthday template; the line is the destination's (SCRUM-220 playbook).
+    const holding = await closingTemplate('closing_birthday');
 
     const conv = await customer(w, central, nextPhone(), `a birthday party for my son on the fourteenth ${SENTINEL}`);
     const reception = await teamOf(w, 'reception', w.central);
@@ -342,7 +353,15 @@ describe('a handover (§B.5, §C.5)', () => {
     expect(slots.every((a) => a.assignedByKind === 'ai' && a.assignedByAccountId === null)).toBe(true);
     const events = await eventsOf(w, conv.id);
     const handover = events.find((e) => e.kind === 'ai_handover');
-    expect(handover!.payload).toMatchObject({ intent: 'birthday_party', templateKey: 'handover_birthday', holdingLine: 'template', brochureFileIds: [fileId], reroutedTeamId: birthdays.id });
+    expect(handover!.payload).toMatchObject({
+      intent: 'birthday_party',
+      templateKey: 'handover_birthday',
+      closingKey: 'closing_birthday',
+      destination: 'birthdays',
+      holdingLine: 'template',
+      brochureFileIds: [fileId],
+      reroutedTeamId: birthdays.id,
+    });
     expect(events.some((e) => e.kind === 'moved_team' && e.actorKind === 'ai')).toBe(true);
 
     // The brochure leaves as media, through the send path, after its typing time.
@@ -379,27 +398,41 @@ describe('a handover (§B.5, §C.5)', () => {
     expect(handover!.payload).toMatchObject({ reroutedTeamId: null });
   });
 
-  it('a Thai complaint: the Thai template still needs translation, so the checked persona words go; it stays with reception', async () => {
+  it('a Thai complaint: the branch’s closing line and the complaint line both still need translation, so the checked persona words go; it stays with reception', async () => {
     await drain();
     // The premise, set here since the test night (SCRUM-220 R1) laid every
     // template in its own words: an operator whose Thai complaint line still
-    // carries the English source, marked for translation.
+    // carries the English source, marked for translation. Since the playbook
+    // (SCRUM-220) the destination's closing line comes first, so the branch's
+    // Thai closing line is put in the same state for this case, and restored.
     await w.ctx.db
       .update(s.template)
       .set({ body: INBOX_TEMPLATE_BODIES.handover_complaint_onsite, needsTranslation: true })
       .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_complaint_onsite'), eq(s.template.language, 'th')));
-    const conv = await customer(w, central, nextPhone(), `พนักงานไม่สุภาพเลยค่ะ ${SENTINEL}`);
-    const words = `ขอบคุณที่แจ้งนะคะ ทีมแอดมินจะติดต่อกลับโดยเร็วค่ะ ${SENTINEL}`;
-    w.fake.push({
-      kind: 'decision',
-      decision: decision({ language: 'th', intent: 'complaint_onsite', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [words] }),
-    });
-    expect((await tick(w, later(25_000))).handedOver).toBe(1);
-    const lines = await aiLines(w, conv.id);
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatchObject({ body: words, templateId: null, bodyLanguage: 'th' });
-    expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ holdingLine: 'persona' });
-    expect((await conversationRow(w, conv.id)).teamId).toBe(conv.teamId);
+    const branchTh = await closingTemplate('closing_branch', 'th');
+    await w.ctx.db
+      .update(s.template)
+      .set({ body: INBOX_TEMPLATE_BODIES.closing_branch, needsTranslation: true })
+      .where(eq(s.template.id, branchTh.id));
+    try {
+      const conv = await customer(w, central, nextPhone(), `พนักงานไม่สุภาพเลยค่ะ ${SENTINEL}`);
+      const words = `ขอบคุณที่แจ้งนะคะ ทีมแอดมินจะติดต่อกลับโดยเร็วค่ะ ${SENTINEL}`;
+      w.fake.push({
+        kind: 'decision',
+        decision: decision({ language: 'th', intent: 'complaint_onsite', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [words] }),
+      });
+      expect((await tick(w, later(25_000))).handedOver).toBe(1);
+      const lines = await aiLines(w, conv.id);
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toMatchObject({ body: words, templateId: null, bodyLanguage: 'th' });
+      expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ holdingLine: 'persona', closingKey: null });
+      expect((await conversationRow(w, conv.id)).teamId).toBe(conv.teamId);
+    } finally {
+      await w.ctx.db
+        .update(s.template)
+        .set({ body: branchTh.body, needsTranslation: branchTh.needsTranslation })
+        .where(eq(s.template.id, branchTh.id));
+    }
   });
 
   it('a park named on a branchless general thread: the branch is set and the thread goes to that park’s reception, as the assistant', async () => {
@@ -427,12 +460,9 @@ describe('a handover (§B.5, §C.5)', () => {
     const [turn] = await turnsOf(w, conv.id);
     expect(turn).toMatchObject({ state: 'handed_over', reason: 'OVERRULED_HANDOVER' });
     const lines = await aiLines(w, conv.id);
-    const [general] = await w.ctx.db
-      .select()
-      .from(s.template)
-      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_general'), eq(s.template.language, 'en')))
-      .limit(1);
-    expect(lines.map((l) => l.body)).toEqual([general!.body]);
+    // The thread stays with the park's reception: the branch's closing line (SCRUM-220 playbook).
+    const branchLine = await closingTemplate('closing_branch');
+    expect(lines.map((l) => l.body)).toEqual([branchLine.body]);
   });
 });
 
@@ -710,22 +740,21 @@ describe('the guards (§D.4)', () => {
     expect((await call<{ aiState: string }>(w, adminCookie, 'GET', `/inbox/conversations/${conv.id}`)).body.aiState).toBe('shadow');
   });
 
-  it('a shadow hand-over keeps the holding line it would have sent; a shadow silence keeps nothing', async () => {
+  it('a shadow hand-over keeps the closing line it would have sent; a shadow silence keeps nothing', async () => {
     await drain();
     const conv = await customer(w, shadow, nextPhone(), `can we get a discount ${SENTINEL}?`);
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'discount_negotiation', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
     expect((await tick(w, later(25_000))).shadowed).toBe(1);
-    const [general] = await w.ctx.db
-      .select()
-      .from(s.template)
-      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_general'), eq(s.template.language, 'en')))
-      .limit(1);
+    // The park's reception keeps it: the branch's closing line (SCRUM-220 playbook).
+    const branchLine = await closingTemplate('closing_branch');
     const lines = await aiLines(w, conv.id);
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatchObject({ providerStatus: 'shadow', body: general!.body });
+    expect(lines[0]).toMatchObject({ providerStatus: 'shadow', body: branchLine.body });
     expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_shadow')!.payload).toMatchObject({
       action: 'handover',
       templateKey: 'handover_general',
+      closingKey: 'closing_branch',
+      destination: 'general',
       holdingLine: 'template',
     });
     // Still with reception: a shadow turn moves nothing.
@@ -877,7 +906,7 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
     expect((await conversationRow(w, conv.id)).teamId).toBe(conv.teamId);
   });
 
-  it('hours and a party: the hours bubble, then the brochure and the holding line; no date, no price; Birthdays owns it', async () => {
+  it('hours and a party: the hours bubble, then the brochure and the birthday manager’s line; no date, no price; Birthdays owns it', async () => {
     await drain();
     await w.ctx.db
       .update(s.branch)
@@ -898,11 +927,8 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
       .update(s.template)
       .set({ attachmentFileIds: [fileId] })
       .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_birthday'), eq(s.template.language, 'en')));
-    const [holding] = await w.ctx.db
-      .select()
-      .from(s.template)
-      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_birthday'), eq(s.template.language, 'en')))
-      .limit(1);
+    // The brochure rides the birthday template; the line is the destination's (SCRUM-220 playbook).
+    const holding = await closingTemplate('closing_birthday');
 
     const conv = await customer(w, central, nextPhone(), `what are your hours and can I book a party for the 20th? ${SENTINEL}`);
     const hours = `We're open every day 10:00–20:00 😊 ${SENTINEL}`;
@@ -927,6 +953,7 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
       intent: 'hours',
       intents: ['hours', 'birthday_party'],
       templateKey: 'handover_birthday',
+      closingKey: 'closing_birthday',
       holdingLine: 'template',
       reroutedTeamId: birthdays.id,
     });
