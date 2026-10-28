@@ -21,3 +21,5 @@ The first post-deploy capture attempt returned native readiness and Health HTTP2
 Main adce7c4feac9f9989056e34ec42bc86f5c3da5a2 passed all six jobs in CI40716035735 and reached the bound API/Console deployments. Native Health generated 2026-10-28T15:57:29.012Z; observed state down, readiness ready. The three inspected screenshots are SCRUM-662-01-health-viewport.png, SCRUM-662-02-services-viewport.png, SCRUM-662-03-watchdog-regression.png. These are two explicitly partial native viewports and a labelled local-regression/staging-observation card. The original sign-in was revoked and its old cookie refused. No staging fault injection or manual watchdog invocation was performed.
 
 The updated candidate's three native API summaries total 5,783 passes, 401 inherited skips, five TODOs and zero failures across 407 files, separately bound in s662-candidate-api-counts.json.
+
+Jira SCRUM-662 verified Deployed at 2026-10-28T15:59:51.423Z; the three screenshots are attached and named in its plain-language outcome comment. See jira-closure.json. Done remains reserved for the owner.

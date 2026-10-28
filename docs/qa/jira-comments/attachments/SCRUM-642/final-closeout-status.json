@@ -1,0 +1,198 @@
+{
+  "checkedAt": "2026-10-28T16:00:40.720Z",
+  "rows": [
+    {
+      "key": "SCRUM-642",
+      "status": "Deployed",
+      "summary": "Super Admin Console P5 - the suite controls from S2-23"
+    },
+    {
+      "key": "SCRUM-643",
+      "status": "Deployed",
+      "summary": "P5-1 App registry, maintenance mode, feature flags and kill switches, Release controls"
+    },
+    {
+      "key": "SCRUM-644",
+      "status": "Deployed",
+      "summary": "P5-2 Activity and Failures extensions"
+    },
+    {
+      "key": "SCRUM-645",
+      "status": "Deployed",
+      "summary": "P5-3 Health and Integrations extensions"
+    },
+    {
+      "key": "SCRUM-646",
+      "status": "Deployed",
+      "summary": "P5-4 Analytics and sources page; Configuration index with the drift check"
+    },
+    {
+      "key": "SCRUM-647",
+      "status": "Deployed",
+      "summary": "P5-5 Money oversight with the integrity panel"
+    },
+    {
+      "key": "SCRUM-648",
+      "status": "Deployed",
+      "summary": "P5-6 Support tools: cross-app lookup, the one-action trace, audited impersonation"
+    },
+    {
+      "key": "SCRUM-662",
+      "status": "Deployed",
+      "summary": "Health watchdog acts on fallback values when a fleet supporting read fails"
+    },
+    {
+      "key": "SCRUM-663",
+      "status": "Deployed",
+      "summary": "Activity's Data access view should also list the Money oversight reads"
+    },
+    {
+      "key": "SCRUM-664",
+      "status": "Deployed",
+      "summary": "Till money figures followed the device locale instead of the fixed format"
+    },
+    {
+      "key": "SCRUM-649",
+      "status": "To Do",
+      "summary": "P5-7 Data tools: demo reset, seed profiles, retention, PDPA erasure, backup status, rehearsal"
+    },
+    {
+      "key": "SCRUM-672",
+      "status": "To Do",
+      "summary": "Record verified deployment events in Admin release history"
+    },
+    {
+      "key": "SCRUM-673",
+      "status": "To Do",
+      "summary": "Retain view-as actor attribution in OTO App schedule history"
+    },
+    {
+      "key": "SCRUM-674",
+      "status": "To Do",
+      "summary": "Add safe readers for the three missing Support lookup sections"
+    },
+    {
+      "key": "SCRUM-675",
+      "status": "To Do",
+      "summary": "Q27 Stage 2: dated analytics cutover after the legacy dump"
+    }
+  ],
+  "evidence": [
+    {
+      "key": "SCRUM-642",
+      "images": [
+        {
+          "id": "12100",
+          "name": "SCRUM-642-01-apps.png"
+        },
+        {
+          "id": "12101",
+          "name": "SCRUM-642-02-releases.png"
+        },
+        {
+          "id": "12102",
+          "name": "SCRUM-642-03-activity.png"
+        },
+        {
+          "id": "12103",
+          "name": "SCRUM-642-04-failures.png"
+        },
+        {
+          "id": "12104",
+          "name": "SCRUM-642-05-health.png"
+        },
+        {
+          "id": "12105",
+          "name": "SCRUM-642-07-analytics.png"
+        },
+        {
+          "id": "12106",
+          "name": "SCRUM-642-08-configuration.png"
+        },
+        {
+          "id": "12107",
+          "name": "SCRUM-642-09-money.png"
+        },
+        {
+          "id": "12108",
+          "name": "SCRUM-642-11-integrations.png"
+        },
+        {
+          "id": "12109",
+          "name": "SCRUM-642-12-support.png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-648",
+      "images": [
+        {
+          "id": "12077",
+          "name": "01-lookup.png"
+        },
+        {
+          "id": "12078",
+          "name": "02-trace.png"
+        },
+        {
+          "id": "12083",
+          "name": "SCRUM-648-03-privileged-subject-refused.png"
+        },
+        {
+          "id": "12085",
+          "name": "SCRUM-648-04-console-active-banner.png"
+        },
+        {
+          "id": "12086",
+          "name": "SCRUM-648-05-launcher-active-banner.png"
+        },
+        {
+          "id": "12084",
+          "name": "SCRUM-648-06-pos-read-only-banner.png"
+        },
+        {
+          "id": "12087",
+          "name": "SCRUM-648-07-subject-session-history.png"
+        },
+        {
+          "id": "12088",
+          "name": "SCRUM-648-08-window-ended.png"
+        },
+        {
+          "id": "12089",
+          "name": "SCRUM-648-09-subject-ended-history.png"
+        },
+        {
+          "id": "12090",
+          "name": "SCRUM-648-10-audit-and-read-only-proof.png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-662",
+      "images": [
+        {
+          "id": "12110",
+          "name": "SCRUM-662-01-health-viewport.png"
+        },
+        {
+          "id": "12111",
+          "name": "SCRUM-662-02-services-viewport.png"
+        },
+        {
+          "id": "12112",
+          "name": "SCRUM-662-03-watchdog-regression.png"
+        }
+      ]
+    },
+    {
+      "key": "SCRUM-664",
+      "images": [
+        {
+          "id": "12091",
+          "name": "SCRUM-664-04-end-of-day-de-DE.png"
+        }
+      ]
+    }
+  ]
+}

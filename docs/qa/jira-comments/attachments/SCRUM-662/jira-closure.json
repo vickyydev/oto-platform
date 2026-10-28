@@ -1,0 +1,19 @@
+{
+  "key": "SCRUM-662",
+  "before": {
+    "status": "Testing",
+    "summary": "Health watchdog acts on fallback values when a fleet supporting read fails"
+  },
+  "after": {
+    "status": "Deployed",
+    "summary": "Health watchdog acts on fallback values when a fleet supporting read fails"
+  },
+  "at": "2026-10-28T15:59:51.423Z",
+  "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+  "ciRunId": "40716035735",
+  "files": [
+    "SCRUM-662-01-health-viewport.png",
+    "SCRUM-662-02-services-viewport.png",
+    "SCRUM-662-03-watchdog-regression.png"
+  ]
+}
