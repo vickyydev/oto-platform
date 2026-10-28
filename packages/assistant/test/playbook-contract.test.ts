@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AI_ACTIONS, AI_INTENTS, type AiIntent } from '../src/intents';
+import { AI_ACTIONS, AI_INTENTS, INTENT_TABLE, type AiIntent } from '../src/intents';
 import { AI_OUTCOME_REASONS } from '../src/decision';
 import { applyGates, type GateVerdict } from '../src/gate';
 import type { TicketPackageFact, TurnContext } from '../src/prompt';
@@ -7,9 +7,10 @@ import { context, decision, episode, fixtureKnowledge } from './support';
 
 /**
  * SCRUM-220, the inbox playbook build — the TYPE SURFACE the playbook lanes
- * build on. Nothing here is behaviour: the gate never emits a silent
- * hand-over yet, and the prompt renders no country code and no tier price.
- * The lanes that wire them replace these pins with their own.
+ * build on. The assistant lane wired it: the gate emits a silent hand-over
+ * for exactly the playbook's silent-hand-over intents (a child in our care,
+ * lost and found), and the prompt renders the country code and the tier
+ * prices (`playbook-*.test.ts` pin the behaviour).
  */
 
 describe('the playbook contract in @oto/assistant (SCRUM-220)', () => {
@@ -27,14 +28,17 @@ describe('the playbook contract in @oto/assistant (SCRUM-220)', () => {
     expect(AI_OUTCOME_REASONS).toContain('SILENCE_POLICY');
   });
 
-  it('the gate never emits a silent hand-over yet, whatever the intent and the model action', () => {
+  it('the gate emits a silent hand-over for exactly the silent-hand-over intents, whatever the model action', () => {
     const grounding = fixtureKnowledge().grounding;
+    const silentHandover = AI_INTENTS.filter((i) => INTENT_TABLE[i].action === 'silent_handover');
+    expect([...silentHandover].sort()).toEqual(['drop_off_care', 'lost_item']);
     for (const intent of AI_INTENTS as readonly AiIntent[]) {
-      for (const action of AI_ACTIONS) {
+      for (const action of ['answer', 'handover', 'silent'] as const) {
         const v = applyGates({ decision: decision({ intent, action }), grounding, episode: episode() });
-        expect(v.action, `${intent}/${action}`).not.toBe('silent_handover');
+        expect(v.action === 'silent_handover', `${intent}/${action}`).toBe(silentHandover.includes(intent));
       }
     }
+    expect(AI_ACTIONS).toContain('silent_handover');
   });
 
   it('the turn context can carry the contact’s calling code, and a package its tier prices', () => {
