@@ -275,17 +275,20 @@ test('Devices filtered-zero retains stale failures and a new-park pending or fai
   await expect(page.getByText('No boxes match these filters', { exact: true })).toBeVisible();
   await expect(page.getByText('No box at this branch yet', { exact: true })).toHaveCount(0);
   failed = true; await page.locator('header').getByRole('button', { name: 'Refresh', exact: true }).click();
-  await expect(page.getByText('ZZ TEST box refresh refused', { exact: false }).first()).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: false }).first()).toBeVisible();
+  await expect(page.locator('body')).not.toContainText('ZZ TEST box refresh refused');
   await expect(page.getByText('No boxes match these filters', { exact: true })).toBeVisible();
   await expect(page.getByText('0 of 4 loaded boxes', { exact: true })).toBeVisible();
   try {
     await page.getByRole('combobox', { name: 'Branch', exact: true }).selectOption(OTHER);
     await expect.poll(() => held).toBe(true);
+    await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: false })).toHaveCount(0);
     await expect(page.getByText('No boxes match these filters', { exact: true })).toHaveCount(0);
     await expect(page.getByText('0 of 4 loaded boxes', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'ZZ TEST Entry counter', exact: true })).toHaveCount(0);
     release();
-    await expect(page.getByText('ZZ TEST other park box read refused', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: false }).first()).toBeVisible();
+    await expect(page.locator('body')).not.toContainText('ZZ TEST other park box read refused');
     await expect(page.getByText('No boxes match these filters', { exact: true })).toHaveCount(0);
     await expect(page.getByText('No box at this branch yet', { exact: true })).toHaveCount(0);
   } finally { release(); }
