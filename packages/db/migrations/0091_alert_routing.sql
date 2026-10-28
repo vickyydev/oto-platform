@@ -1,9 +1,3 @@
--- SCRUM-644 (planner ruling Q25): alert recipients, fingerprint mutes, muted
--- and unsupported delivery records, and the audit app/category labels.
--- Expand-only. PROVISIONAL NUMBER 0090: renumbered by the coordinator at landing.
--- target_app / reason / origin belong to SCRUM-643's own migration (0089 on its
--- branch); they are repeated here with IF NOT EXISTS only so this branch can be
--- tested alone, and the three statements are dropped when 643 lands first.
 CREATE TABLE "core"."alert_mute" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"fingerprint" text NOT NULL,
@@ -46,9 +40,6 @@ CREATE TABLE "core"."alert_recipient" (
 ALTER TABLE "core"."alert_delivery" DROP CONSTRAINT "alert_delivery_status_check";--> statement-breakpoint
 ALTER TABLE "core"."audit_log" ADD COLUMN "source_app" text;--> statement-breakpoint
 ALTER TABLE "core"."audit_log" ADD COLUMN "category" text;--> statement-breakpoint
-ALTER TABLE "core"."audit_log" ADD COLUMN IF NOT EXISTS "target_app" text;--> statement-breakpoint
-ALTER TABLE "core"."audit_log" ADD COLUMN IF NOT EXISTS "reason" text;--> statement-breakpoint
-ALTER TABLE "core"."audit_log" ADD COLUMN IF NOT EXISTS "origin" text;--> statement-breakpoint
 ALTER TABLE "core"."alert_delivery" ADD COLUMN "mute_id" uuid;--> statement-breakpoint
 ALTER TABLE "core"."alert_mute" ADD CONSTRAINT "alert_mute_operator_id_operator_id_fk" FOREIGN KEY ("operator_id") REFERENCES "core"."operator"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "core"."alert_mute" ADD CONSTRAINT "alert_mute_created_by_account_id_account_id_fk" FOREIGN KEY ("created_by_account_id") REFERENCES "core"."account"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

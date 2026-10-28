@@ -1638,7 +1638,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -27697,6 +27697,1477 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/console/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read retained analytics metadata for branches held on both console:analytics:read and analytics:read. Source and Radar preference remain separate; switchedAt is the edit timestamp. Formula counts include all retained daily/hourly rows, not the KPI date range. Queue depth counts rows including claimed rows. Default selection is live readable branches; requested own unreadable branches are omitted, foreign or unknown IDs are 404, and no readable selection is 403. This read never switches sources or runs a job. */
+        get: {
+            parameters: {
+                query?: {
+                    branches?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            basis: "stored-summary-metadata";
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                /** @enum {string} */
+                                source: "oto_pos" | "pisell" | "papaya";
+                                /** @enum {string} */
+                                preference: "oto_pos" | "legacy" | "both";
+                                /** Format: date-time */
+                                switchedAt: string | null;
+                                formulaRows: {
+                                    /** @enum {string} */
+                                    source: "oto_pos" | "pisell" | "papaya";
+                                    formulaVersion: number;
+                                    dailyRows: number;
+                                    hourlyRows: number;
+                                    frozenDailyRows: number;
+                                    provisionalDailyRows: number;
+                                }[];
+                                dirtyDates: {
+                                    total: number;
+                                    byKind: {
+                                        sales: number;
+                                        hourly: number;
+                                        booth: number;
+                                        wallet: number;
+                                    };
+                                    oldestBusinessDate: string | null;
+                                    /** Format: date-time */
+                                    newestMarkedAt: string | null;
+                                };
+                            }[];
+                            omitted: string[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/configuration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the settings index: which settings exist, the app that owns each and the page that edits it, for the caller's operator. Requires console:config:read; each entry is listed only where the caller holds the owning page's own permission, with branch entries narrowed to the named park (branchId) or to the live parks the index reaches. A foreign, unknown or archived park is 404; an own park outside the index reach is 403. Navigation targets are fixed in code, never read from storage; unsupported entries carry no navigation or edit offer. Metadata only: no setting value is returned, and the read never seeds or writes the catalogue. */
+        get: {
+            parameters: {
+                query?: {
+                    branchId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** Format: uuid */
+                            operatorId: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            }[];
+                            /** Format: uuid */
+                            selectedBranchId: string | null;
+                            entries: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                label: string;
+                                appOwner: string;
+                                editableHere: boolean;
+                                requiredPermission: string;
+                                url: string | null;
+                                openInApp: {
+                                    /** @enum {string} */
+                                    app: "oto_app" | "radar" | "inbox";
+                                    path: string;
+                                } | null;
+                                supported: boolean;
+                                /** @enum {string} */
+                                scope: "operator" | "branch";
+                                branchIds: string[];
+                                /** Format: date-time */
+                                lastChangedAt: string | null;
+                                /** @enum {string} */
+                                lastChangedAvailability: "available" | "not-recorded" | "unsupported";
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/drift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only drift between platform copies and their masters, for the parks the Analytics read selects (console:analytics:read and analytics:read; named foreign or unknown parks are 404, no readable park is 403). Three comparisons, each behind its own native read door: branch_names (platform is the record, admin:branch:read; app-only rows such as Head Office are intentional and never read), employees (the OTO App masters name, nickname, phone, email, owned branch and the LEFT archival rule, admin:account:read; park groups anchored to two operators are ambiguous) and app_accounts (the provisioning record and its ownership checks, admin:role:read with account dominance: the app user's stamp, its switch-off for an inactive account and the mapped role where the app's role context resolves). Only changed field names are returned, never values. An absent seam, a denied seam or read door and an ambiguous owner are reported as their own status, never as clean. Nothing is repaired, copied, audited or written. */
+        get: {
+            parameters: {
+                query?: {
+                    branches?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            basis: "read-only-comparison";
+                            branchIds: string[];
+                            omitted: string[];
+                            comparisons: {
+                                /** @enum {string} */
+                                key: "branch_names" | "employees" | "app_accounts";
+                                /** @enum {string} */
+                                master: "platform" | "oto_app";
+                                /** @enum {string} */
+                                status: "clean" | "drift" | "absent" | "denied" | "ambiguous";
+                                /** @enum {string|null} */
+                                reason: "seam_absent" | "seam_not_granted" | "permission" | "anchor_ambiguous" | "empty_source" | null;
+                                requiredPermission: string | null;
+                                compared: number;
+                                ambiguous: number;
+                                withheld: number;
+                                items: {
+                                    /** @enum {string} */
+                                    entity: "branch" | "employee" | "account";
+                                    /** Format: uuid */
+                                    platformId: string | null;
+                                    externalId: string | null;
+                                    /** Format: uuid */
+                                    branchId: string | null;
+                                    /** @enum {string} */
+                                    kind: "changed" | "missing" | "orphan";
+                                    fields: string[];
+                                }[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Each in-scope park's analytics source as the model really is: one serving source for every date (oto_pos, pisell or papaya), Radar's independent preference, and lastEditedAt — when the switch was last edited, never an effective business date. Parks come from the Analytics read (console:analytics:read and analytics:read; foreign or unknown 404, none readable 403). mayManageSource and mayRerun report the Console write doors per park. Read-only. */
+        get: {
+            parameters: {
+                query?: {
+                    branches?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            basis: "whole-branch-switch";
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                /** @enum {string} */
+                                source: "oto_pos" | "pisell" | "papaya";
+                                /** @enum {string} */
+                                preference: "oto_pos" | "legacy" | "both";
+                                /** Format: date-time */
+                                lastEditedAt: string | null;
+                                /** Format: uuid */
+                                lastEditedBy: string | null;
+                                mayManageSource: boolean;
+                                mayRerun: boolean;
+                            }[];
+                            omitted: string[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/sources/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only preview of switching one park to a proposed source. The switch is whole-branch: every date in the range is served from the proposed source; servedDays counts its stored days (a legacy source: its frozen days only) and emptyDays the days with no such row, which will show empty. newestWrittenAt is the newest write among the served rows. Never a date splice. Default range: the last 30 days ending on the park's current business date; at most 366 days. Analytics read door at the park; foreign or unknown park 404. No writes, no audit. */
+        get: {
+            parameters: {
+                query: {
+                    branchId: string;
+                    source: "oto_pos" | "pisell" | "papaya";
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            /** @enum {string} */
+                            currentSource: "oto_pos" | "pisell" | "papaya";
+                            /** @enum {string} */
+                            proposedSource: "oto_pos" | "pisell" | "papaya";
+                            unchanged: boolean;
+                            /** @enum {string} */
+                            effect: "whole-branch";
+                            from: string;
+                            to: string;
+                            days: number;
+                            servedDays: number;
+                            emptyDays: number;
+                            servesFrozenOnly: boolean;
+                            firstServedDate: string | null;
+                            lastServedDate: string | null;
+                            /** Format: date-time */
+                            newestWrittenAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/sources/{branchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Switch one park's whole-branch serving source and Radar preference through the existing audited switch: serialised per park, audited before and after, and a request for what the park already has changes and records nothing. console:analytics:manage_source at the park; requires Idempotency-Key; foreign park 404. lastEditedAt is the edit time, never an effective date. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    branchId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        source: "oto_pos" | "pisell" | "papaya";
+                        /** @enum {string} */
+                        preference: "oto_pos" | "legacy" | "both";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            name: string;
+                            /** @enum {string} */
+                            source: "oto_pos" | "pisell" | "papaya";
+                            /** @enum {string} */
+                            preference: "oto_pos" | "legacy" | "both";
+                            /** Format: date-time */
+                            lastEditedAt: string | null;
+                            /** Format: uuid */
+                            lastEditedBy: string | null;
+                            mayManageSource: boolean;
+                            mayRerun: boolean;
+                            changed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Queue one park's own POS days, from..to (at most 92 days, none in the future), for the existing jobs process: marks analytics.dirty_date (kind sales) only, never writes a summary row and never runs the rollup inline. It recomputes our POS figures from our own records and can never regenerate a legacy system's day: a park serving a legacy source is refused (409 ANALYTICS_RERUN_LEGACY_SOURCE), and so is a range holding frozen days of the serving source (409 ANALYTICS_RERUN_FROZEN_DAYS). Audited as analytics.rerun.request. console:analytics:rerun at the park; requires Idempotency-Key; foreign park 404. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        from: string;
+                        to: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            from: string;
+                            to: string;
+                            days: number;
+                            /** @enum {string} */
+                            kind: "sales";
+                            /** @enum {string} */
+                            source: "oto_pos";
+                            reason: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The current suite registry. Expired maintenance resolves to its saved tile state without a read changing storage. Only public HTTP(S) locations are returned; no provider is contacted. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            apps: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                key: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                name: string;
+                                purpose: string;
+                                origins: {
+                                    [key: string]: string;
+                                };
+                                schemaName: string;
+                                owningService: string;
+                                /** Format: uri */
+                                healthUrl: string | null;
+                                versionSource: string;
+                                requiredPermission: string;
+                                sortOrder: number;
+                                /** @enum {string} */
+                                storedState: "open" | "coming_soon" | "hidden" | "maintenance";
+                                /** @enum {string} */
+                                effectiveState: "open" | "coming_soon" | "hidden" | "maintenance";
+                                revision: number;
+                                maintenance: {
+                                    message: string;
+                                    /** Format: date-time */
+                                    expiresAt: string;
+                                } | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Recorded deployment history, newest recorded event first, with nullable unknown version/commit/actor/CI/deployment time. No inferred release or deploy action. Archived apps are excluded. */
+        get: {
+            parameters: {
+                query?: {
+                    app?: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                    limit?: number;
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            total: number;
+                            limit: number;
+                            offset: number;
+                            deployments: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                app: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                appName: string;
+                                version: string | null;
+                                commit: string | null;
+                                /** Format: uuid */
+                                actorAccountId: string | null;
+                                status: string;
+                                ciGreen: boolean | null;
+                                /** Format: date-time */
+                                deployedAt: string | null;
+                                /** Format: date-time */
+                                recordedAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/releases/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Current operator box agent versions and the existing fleet minimum. Both box and branch ownership are required; unknown versions remain unknown. No box action or policy change. */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** Format: uuid */
+                            operatorId: string;
+                            minimumSupportedVersion: string;
+                            total: number;
+                            limit: number;
+                            offset: number;
+                            agents: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                slot: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                branchName: string;
+                                agentVersion: string | null;
+                                /** Format: date-time */
+                                lastHeartbeatAt: string | null;
+                                belowMinimum: boolean | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/suite/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The launcher's read of the suite registry: the effective tile state and any maintenance message of each app the signed-in person already holds `app:<key>:access` for. No Console permission is needed and no origin or service detail is returned. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            apps: {
+                                /** @enum {string} */
+                                key: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                sortOrder: number;
+                                /** @enum {string} */
+                                state: "open" | "coming_soon" | "hidden" | "maintenance";
+                                maintenance: {
+                                    message: string;
+                                    /** Format: date-time */
+                                    expiresAt: string;
+                                } | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The typed flag and kill-switch catalogue (unsupported switches are listed but cannot be set), every stored override with whether it has expired, and the open two-admin approvals. Expired overrides already resolve to the catalogue default. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            maxTtlMinutes: number;
+                            defaultTtlMinutes: number;
+                            killSwitchDualControl: boolean;
+                            catalogue: {
+                                flagKey: string;
+                                /** @enum {string} */
+                                kind: "feature" | "kill_switch";
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                label: string;
+                                effect: string;
+                                /** @enum {string} */
+                                valueType: "boolean" | "enum";
+                                values: string[] | null;
+                                defaultValue: boolean | string;
+                                scopes: ("platform" | "operator" | "branch" | "station")[];
+                                supported: boolean;
+                            }[];
+                            overrides: {
+                                /** Format: uuid */
+                                id: string;
+                                flagKey: string;
+                                /** @enum {string} */
+                                kind: "feature" | "kill_switch";
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                scopeType: "platform" | "operator" | "branch" | "station";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                                /** Format: uuid */
+                                operatorId: string | null;
+                                value: boolean | string;
+                                /** Format: date-time */
+                                expiresAt: string | null;
+                                reason: string | null;
+                                /** Format: uuid */
+                                updatedBy: string | null;
+                                revision: number;
+                                /** Format: date-time */
+                                updatedAt: string;
+                                expired: boolean;
+                            }[];
+                            approvals: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                state: "pending" | "approved" | "consumed" | "expired";
+                                payloadSha256: string;
+                                /** Format: uuid */
+                                requesterAccountId: string;
+                                /** Format: uuid */
+                                approverAccountId: string | null;
+                                operation: {
+                                    [key: string]: unknown;
+                                };
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                requestExpiresAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        /** @description Set a supported flag at one scope after reviewing its preview. A kill switch carries an expiry (default 60 minutes, at most KILL_SWITCH_MAX_TTL_MIN) and, while CONSOLE_DUAL_CONTROL names kill_switch, is refused here with SECOND_APPROVAL_REQUIRED: request and apply it through /console/flags/approvals. Unknown and unsupported keys are refused. Typed confirmation of the key; requires Idempotency-Key. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        key: string;
+                        /** @enum {string} */
+                        scopeType: "platform" | "operator" | "branch" | "station";
+                        /** Format: uuid */
+                        scopeId: string | null;
+                        /** Format: uuid */
+                        operatorId: string | null;
+                        value: boolean | string;
+                        /** Format: date-time */
+                        expiresAt?: string | null;
+                        reason: string;
+                        expectedRevision: number;
+                        confirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            flag: {
+                                /** Format: uuid */
+                                id: string;
+                                flagKey: string;
+                                /** @enum {string} */
+                                kind: "feature" | "kill_switch";
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                scopeType: "platform" | "operator" | "branch" | "station";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                                /** Format: uuid */
+                                operatorId: string | null;
+                                value: boolean | string;
+                                /** Format: date-time */
+                                expiresAt: string | null;
+                                reason: string | null;
+                                /** Format: uuid */
+                                updatedBy: string | null;
+                                revision: number;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/flags/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Blast-radius preview: what setting this switch would change at every live park and station it reaches, computed by the same resolver enforcement uses, and how many staff sessions are open there. Writes nothing. */
+        get: {
+            parameters: {
+                query: {
+                    key: string;
+                    scopeType: "platform" | "operator" | "branch" | "station";
+                    scopeId?: string;
+                    operatorId?: string;
+                    value: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            flagKey: string;
+                            label: string;
+                            effect: string;
+                            /** @enum {string} */
+                            targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                            /** @enum {string} */
+                            scopeType: "platform" | "operator" | "branch" | "station";
+                            /** Format: uuid */
+                            scopeId: string | null;
+                            /** Format: uuid */
+                            operatorId: string | null;
+                            value: boolean | string;
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                /** Format: uuid */
+                                operatorId: string;
+                                current: boolean | string;
+                                after: boolean | string;
+                            }[];
+                            stations: {
+                                /** Format: uuid */
+                                stationId: string;
+                                name: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                current: boolean | string;
+                                after: boolean | string;
+                            }[];
+                            openSessions: number;
+                            changes: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/apps/{key}/maintenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Put one app into maintenance (or change its open window): the launcher tile shows the message and new hand-offs into this app are refused with APP_IN_MAINTENANCE. Existing sessions, platform sign-in and other apps are untouched. Platform administrator only; typed confirmation of the app key, a reason, and an expiry within KILL_SWITCH_MAX_TTL_MIN (default 60 minutes). Requires Idempotency-Key. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    key: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        message: string;
+                        /** Format: date-time */
+                        expiresAt?: string | null;
+                        reason: string;
+                        expectedRevision: number;
+                        confirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            app: {
+                                /** @enum {string} */
+                                appKey: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                tileState: "open" | "coming_soon" | "hidden" | "maintenance";
+                                maintenanceMessage: string | null;
+                                /** Format: date-time */
+                                maintenanceExpiresAt: string | null;
+                                /** @enum {string|null} */
+                                maintenanceRestoreState: "open" | "coming_soon" | "hidden" | "maintenance" | null;
+                                revision: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/apps/{key}/maintenance/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End an app's maintenance now and restore the tile state it replaced. Platform administrator only; typed confirmation of the app key and a reason. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    key: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        reason: string;
+                        expectedRevision: number;
+                        confirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            app: {
+                                /** @enum {string} */
+                                appKey: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                tileState: "open" | "coming_soon" | "hidden" | "maintenance";
+                                maintenanceMessage: string | null;
+                                /** Format: date-time */
+                                maintenanceExpiresAt: string | null;
+                                /** @enum {string|null} */
+                                maintenanceRestoreState: "open" | "coming_soon" | "hidden" | "maintenance" | null;
+                                revision: number;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/flags/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Return a flag at one scope to normal now; the catalogue default applies at once. Platform administrator only; typed confirmation of the key and a reason. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        key: string;
+                        /** @enum {string} */
+                        scopeType: "platform" | "operator" | "branch" | "station";
+                        /** Format: uuid */
+                        scopeId: string | null;
+                        /** Format: uuid */
+                        operatorId: string | null;
+                        expectedRevision: number;
+                        reason: string;
+                        confirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            flagKey: string;
+                            cleared: {
+                                /** Format: uuid */
+                                id: string;
+                                flagKey: string;
+                                /** @enum {string} */
+                                kind: "feature" | "kill_switch";
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                scopeType: "platform" | "operator" | "branch" | "station";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                                /** Format: uuid */
+                                operatorId: string | null;
+                                value: boolean | string;
+                                /** Format: date-time */
+                                expiresAt: string | null;
+                                reason: string | null;
+                                /** Format: uuid */
+                                updatedBy: string | null;
+                                revision: number;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/flags/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ask a second platform administrator to approve one exact kill-switch change. The change is validated now (catalogue, supported, scope lineage, value, expiry) and bound by its digest; a different administrator must approve it within ten minutes, and either of the two then applies it. Typed confirmation of the key; requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        key: string;
+                        /** @enum {string} */
+                        scopeType: "platform" | "operator" | "branch" | "station";
+                        /** Format: uuid */
+                        scopeId: string | null;
+                        /** Format: uuid */
+                        operatorId: string | null;
+                        value: boolean | string;
+                        /** Format: date-time */
+                        expiresAt?: string | null;
+                        reason: string;
+                        expectedRevision: number;
+                        confirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            state: "pending" | "approved" | "consumed" | "expired";
+                            payloadSha256: string;
+                            /** Format: uuid */
+                            operatorId: string | null;
+                            /** Format: uuid */
+                            requesterAccountId: string;
+                            /** Format: uuid */
+                            approverAccountId: string | null;
+                            operation: {
+                                /** @enum {number} */
+                                schemaVersion: 1;
+                                /** @enum {string} */
+                                action: "kill_switch.set";
+                                flagKey: string;
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                scopeType: "platform" | "operator" | "branch" | "station";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                                /** Format: uuid */
+                                operatorId: string | null;
+                                expectedRevision: number;
+                                value: boolean | number | string | ("null" | null);
+                                /** Format: date-time */
+                                expiresAt: string;
+                                reason: string;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            requestExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/flags/approvals/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Approve another platform administrator's exact reviewed kill-switch change within ten minutes of its request. The requester cannot approve their own, and an expired request is recorded as expired. Typed confirmation of the key; requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        expectedPayloadSha256: string;
+                        confirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            state: "pending" | "approved" | "consumed" | "expired";
+                            payloadSha256: string;
+                            /** Format: uuid */
+                            operatorId: string | null;
+                            /** Format: uuid */
+                            requesterAccountId: string;
+                            /** Format: uuid */
+                            approverAccountId: string | null;
+                            operation: {
+                                /** @enum {number} */
+                                schemaVersion: 1;
+                                /** @enum {string} */
+                                action: "kill_switch.set";
+                                flagKey: string;
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                scopeType: "platform" | "operator" | "branch" | "station";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                                /** Format: uuid */
+                                operatorId: string | null;
+                                expectedRevision: number;
+                                value: boolean | number | string | ("null" | null);
+                                /** Format: date-time */
+                                expiresAt: string;
+                                reason: string;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            requestExpiresAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/flags/approvals/{id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Apply an approved kill-switch change, by its requester or its approver, before the ten-minute approval and the switch's own expiry pass. Catalogue, lineage, value, revision and maximum expiry are checked again in the transaction that consumes the approval. Requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        expectedPayloadSha256: string;
+                        confirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            flag: {
+                                /** Format: uuid */
+                                id: string;
+                                flagKey: string;
+                                /** @enum {string} */
+                                kind: "feature" | "kill_switch";
+                                /** @enum {string} */
+                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                /** @enum {string} */
+                                scopeType: "platform" | "operator" | "branch" | "station";
+                                /** Format: uuid */
+                                scopeId: string | null;
+                                /** Format: uuid */
+                                operatorId: string | null;
+                                value: boolean | string;
+                                /** Format: date-time */
+                                expiresAt: string | null;
+                                reason: string | null;
+                                /** Format: uuid */
+                                updatedBy: string | null;
+                                revision: number;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                            approval: {
+                                /** Format: uuid */
+                                id: string;
+                                /** @enum {string} */
+                                state: "pending" | "approved" | "consumed" | "expired";
+                                payloadSha256: string;
+                                /** Format: uuid */
+                                operatorId: string | null;
+                                /** Format: uuid */
+                                requesterAccountId: string;
+                                /** Format: uuid */
+                                approverAccountId: string | null;
+                                operation: {
+                                    /** @enum {number} */
+                                    schemaVersion: 1;
+                                    /** @enum {string} */
+                                    action: "kill_switch.set";
+                                    flagKey: string;
+                                    /** @enum {string} */
+                                    targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                                    /** @enum {string} */
+                                    scopeType: "platform" | "operator" | "branch" | "station";
+                                    /** Format: uuid */
+                                    scopeId: string | null;
+                                    /** Format: uuid */
+                                    operatorId: string | null;
+                                    expectedRevision: number;
+                                    value: boolean | number | string | ("null" | null);
+                                    /** Format: date-time */
+                                    expiresAt: string;
+                                    reason: string;
+                                };
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                requestExpiresAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/deploy-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Record one deployment fact for the release history exactly as supplied, under a caller-minted id (the same event again answers the same; a different event under that id is refused). Starts no deploy and infers nothing: an unknown version, commit, CI result or time stays null. Platform administrator only; requires Idempotency-Key. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {string} */
+                        app: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
+                        status: string;
+                        version: string | null;
+                        commit: string | null;
+                        ciGreen: boolean | null;
+                        /** Format: date-time */
+                        deployedAt: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            replay: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/overview": {
         parameters: {
             query?: never;
@@ -31277,6 +32748,86 @@ export interface paths {
                             deidentifiedConfirmed: boolean;
                             createdAt: string;
                             updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/ai/examples/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Import 1–50 examples from outside the inbox — the park’s own chat history, de-identified before it is sent. Each names its intent (one of the assistant’s, else 409 INTENT_UNKNOWN), its language (th, en, ru), its verdict, the customer text (1–500) and, for should_answer, the good reply (1–800; else 409 GOOD_REPLY_REQUIRED). Each lands PROPOSED with no source links and waits in the examples queue: nothing reaches the assistant until a person approves it. All or nothing: an item whose text still looks like personal data — a phone number or another long number, an e-mail, a web address with a query string, a messaging handle such as "line: @x" — is refused 400 PERSONAL_DATA_FOUND naming its index and field, and nothing is saved. Ids are caller-named: an id already naming one of the caller’s examples is a replay of it (counted in `replayed`, nothing written); one naming any other record is 409 ID_IN_USE. Needs inbox:kb:manage with operator reach. Audited as inbox.ai_example.create per example and inbox.ai_example.import for the request (counts and ids — never the words). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        examples: {
+                            /** Format: uuid */
+                            id?: string;
+                            customerText: string;
+                            goodReply?: string | null;
+                            /** @enum {string} */
+                            verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                            intent: string;
+                            /** @enum {string} */
+                            language: "th" | "en" | "ru";
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            created: number;
+                            replayed: number;
+                            examples: {
+                                /** Format: uuid */
+                                id: string;
+                                intent: string;
+                                /** @enum {string} */
+                                language: "th" | "en" | "ru";
+                                customerText: string;
+                                goodReply: string | null;
+                                /** @enum {string} */
+                                verdict: "should_answer" | "should_handover" | "should_stay_silent";
+                                /** @enum {string} */
+                                status: "proposed" | "approved" | "rejected";
+                                /** Format: uuid */
+                                sourceMessageId: string | null;
+                                /** Format: uuid */
+                                sourceConversationId: string | null;
+                                /** Format: uuid */
+                                proposedByAccountId: string;
+                                /** Format: uuid */
+                                approvedByAccountId: string | null;
+                                approvedAt: string | null;
+                                deidentifiedConfirmed: boolean;
+                                createdAt: string;
+                                updatedAt: string;
+                            }[];
                         };
                     };
                 };
