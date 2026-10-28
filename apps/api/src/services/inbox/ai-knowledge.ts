@@ -227,7 +227,11 @@ export function priceFactText(parkName: string, rows: readonly PricedPackageRow[
     }
     if (sold.length === 0) continue;
     const label = tierLabel(tier);
-    const parts = [`${label}: ${sold.map((s) => `${s.name} ${s.kidText}`).join('; ')}.`];
+    // SCRUM-670 (A): the resident tier names itself a discount with ID, the
+    // playbook's own words, so a reply that cites the park's price fact (the
+    // scripted residency question among them) grounds the word it uses.
+    const heading = tier === 'expat' ? `${label} (discount with ID)` : label;
+    const parts = [`${heading}: ${sold.map((s) => `${s.name} ${s.kidText}`).join('; ')}.`];
 
     // Starts from: the lowest weekday child price (the weekend's when nothing sells on weekdays).
     const weekdays = sold.filter((s) => s.kid.weekday > 0);

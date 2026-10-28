@@ -647,7 +647,9 @@ describe('tier price facts (the playbook’s pricing flow)', () => {
   it('every tier on the packages, expat said as resident, a starts-from per tier, the adult rule', () => {
     const text = priceFactText('Central Floresta', PLAYBOOK_CENTRAL);
     expect(text).toContain('Tourist: 1 Hour Play ฿690 every day');
-    expect(text).toContain('Resident: 1 Hour Play ฿483 weekday, ฿552 weekend');
+    // SCRUM-670 (A): the resident line says "discount" itself, so a reply citing the park's price fact grounds the word.
+    expect(text).toContain('Resident (discount with ID): 1 Hour Play ฿483 weekday, ฿552 weekend');
+
     expect(text).toContain('Thai: 1 Hour Play ฿420 weekday, ฿520 weekend');
     expect(text).not.toMatch(/expat/i);
     expect(text).toContain('Tourist starts from ฿690 (1 Hour Play)');
@@ -656,8 +658,10 @@ describe('tier price facts (the playbook’s pricing flow)', () => {
     expect(text).toContain('Tourist adults: ฿350 weekday, ฿500 weekend (Food & Play ฿350 every day)');
     expect(text).toContain('Thai adults: first adult free, then ฿350 weekday, ฿500 weekend (Food & Play ฿350 every day)');
     // Tourist first, then resident, then Thai.
-    expect(text.indexOf('Tourist:')).toBeLessThan(text.indexOf('Resident:'));
-    expect(text.indexOf('Resident:')).toBeLessThan(text.indexOf('Thai:'));
+    expect(text.indexOf('Tourist:')).toBeLessThan(text.indexOf('Resident (discount with ID):'));
+    expect(text.indexOf('Resident (discount with ID):')).toBeLessThan(text.indexOf('Thai:'));
+    // "free" is already there, through the Thai tier's free adult.
+    expect(text).toMatch(/\bfree\b/);
   });
 
   it('a package with no weekend price is said to be not available on weekends', () => {
@@ -711,7 +715,7 @@ describe('tier price facts (the playbook’s pricing flow)', () => {
   it('the live knowledge reads every tier from the catalogue, and the model is given it', async () => {
     const known = await loadTurnKnowledge(w.ctx.db, w.oto, new Date());
     const centralPrices = known.knowledge.grounding.get('fact.prices.central')!.text;
-    expect(centralPrices).toContain('Resident:');
+    expect(centralPrices).toContain('Resident (discount with ID):');
     expect(centralPrices).toContain('Thai:');
     expect(centralPrices).toContain('starts from');
     const live = known.knowledge.text.slice(known.knowledge.text.indexOf('## Live facts'), known.knowledge.text.indexOf('## Approved answers'));
