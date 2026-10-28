@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-681",
+  "kind": "exact-source CI failure reproduction",
+  "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+  "command": "pnpm --filter @oto/api test --maxWorkers=1 --fileParallelism=false test/offline-selling.test.ts",
+  "startedAt": "2026-10-28T20:00:20.783Z",
+  "finishedAt": "2026-10-28T20:00:54.969Z",
+  "exitCode": 0,
+  "summaries": [
+    " Test Files  1 passed (1)",
+    "      Tests  10 passed (10)",
+    "   Duration  31.58s (transform 5.80s, setup 0ms, collect 13.47s, tests 17.68s, environment 0ms, prepare 197ms)"
+  ],
+  "passed": true,
+  "testSourceSha256": "44283325767a967bae784af5bdd122b7b78bee4ed654af08f7d2f54a42dabf5e",
+  "testUnchanged": true,
+  "rawLogSha256": "3a951925ac1f5a871d0e7572e8851cf1a083274ffb09ac4272fd14be2f03cdd1",
+  "rawLogNotPersisted": true,
+  "reason": "Receipt/printed-band data are not persisted or exposed by this helper.",
+  "privateEmbeddedDatabase": true,
+  "docker": false
+}

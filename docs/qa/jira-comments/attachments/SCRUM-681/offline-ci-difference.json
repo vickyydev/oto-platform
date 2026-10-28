@@ -1,0 +1,23 @@
+{
+  "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+  "runId": "40755193201",
+  "test": "test/offline-selling.test.ts:287:51",
+  "rawLogSha256": "b38044d75c8c4e9dfcc77751ff1e1d95576321969c0165181e2ff3c0c4ddeec5",
+  "rawLogNotPersisted": true,
+  "differences": [
+    {
+      "side": "expected",
+      "field": "dateTime",
+      "valueSha256": "4d4ad00bcd845ed4c113a540a189587ee7652da67f8c907c5c10d0d9a892fa02",
+      "valueBytes": 19,
+      "pattern": "contains-date"
+    },
+    {
+      "side": "received",
+      "field": "dateTime",
+      "valueSha256": "29551bba4fe4c14485204354e719f2f00280a5ac13b01b19f21615e0ede63807",
+      "valueBytes": 19,
+      "pattern": "contains-date"
+    }
+  ]
+}
