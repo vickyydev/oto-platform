@@ -297,11 +297,13 @@ export const FIXTURE_EXAMPLES: readonly ExampleInput[] = [
     verdict: 'should_answer',
   },
   {
+    // The playbook's deals flow: a price worry gets the right deal from the
+    // knowledge, never an invented discount and no hand-over on first ask.
     intent: 'discount_negotiation',
     language: 'th',
     customerText: 'ถ้ามากันหลายคน ลดราคาได้ไหมคะ',
-    goodReply: 'ขอบคุณที่สอบถามนะคะ แอดมินขอส่งต่อให้ทีมงานช่วยดูแลค่ะ 🙏',
-    verdict: 'should_handover',
+    goodReply: 'บัตรผู้ปกครองเป็นเครดิตอาหารเต็มจำนวนในร้านอาหารของเราเลยค่ะ 😊 และเรามีตั๋ว Food & Play ที่คุ้มมากสำหรับครอบครัวด้วยนะคะ',
+    verdict: 'should_answer',
   },
   {
     intent: 'socks',
