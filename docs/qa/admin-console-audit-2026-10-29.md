@@ -1,8 +1,8 @@
-# Admin Console audit and proposed repair plan
+# Admin Console audit and approved repair plan
 
-**SCRUM-679 — completed audit; implementation awaits owner approval.**
+**SCRUM-679 — audit complete; owner approved the full repair plan on 29 October 2026. Implementation is active.**
 
-The developed Console loads on staging, but its error and changing-selection paths need repairs. This audit found nine failing diagnostic assertions, plus output-contract debt and several usability improvements. No product fix, business rule, migration, provider setting or staging business record was changed.
+The developed Console loads on staging, but its error and changing-selection paths need repairs. This audit found nine failing diagnostic assertions, plus output-contract debt and several usability improvements. No product fix, business rule, migration, provider setting or staging business record was changed during the audit.
 
 The audit ran on 28 October UTC, finishing after midnight on **29 October 2026 in Bangkok**. Source checkout: `5da2fe226a3fec8f4d9c725deba9428d040275b0`; its product bytes match deployed `adce7c4feac9f9989056e34ec42bc86f5c3da5a2`. Main CI `40716035735` has six successful jobs on that full SHA. API deployment `dep-dbh1itp5efls73b84gmg` and Console deployment `dep-dbh1itp5efls73b84hog` were verified live before and after observation.
 
@@ -71,7 +71,7 @@ These are separate from the nine reproduced behavior failures.
 
 Known prior deferrals stay separate: SCRUM-649 data tools; SCRUM-672 deployment-event CI wiring; SCRUM-673 OTO App schedule-audit impersonation attribution; SCRUM-674 three Support readers; SCRUM-675/Q27 Stage 2 dated cutover and unfreeze awaiting the legacy dump; the Inbox/Radar/OTO App view-as banners recorded on SCRUM-648. This audit does not reopen their approved scope or declare them delivered.
 
-## Proposed work for approval
+## Approved work
 
 ### A. Correct the reproduced data and state problems first
 
@@ -110,13 +110,13 @@ Correct the removed Login Users destination and stale discount-usage banner. Exp
 - Offer **attention-only row views in Money** for unmatched/no-file settlement and cash differences/not-counted states. State that these refine the loaded date/park range; overview totals and differing report date bases remain unchanged.
 - Keep existing useful filters in Vouchers, Activity, reports and Teams/routing. Repair pagination/truncation claims before adding more filters. No blanket new filter on every page and no new cross-app settings writer.
 
-These are proposals, not implementation or a new business rule. The final UI matrix binds each route to an explicitly labelled family summary; controls listed for a family are not claimed to exist on every page in it. Check the actual target component before adding a filter so the approved work avoids duplication. No gateway credentials editor, new payment operation, emergency-switch integration or generic wallet-policy writer is included.
+These approved display/discovery changes preserve the existing business rules. The final UI matrix binds each route to an explicitly labelled family summary; controls listed for a family are not claimed to exist on every page in it. Check the actual target component before adding a filter so the approved work avoids duplication. No gateway credentials editor, new payment operation, emergency-switch integration or generic wallet-policy writer is included.
 
 ### D. Verify and deliver each approved unit
 
 Use fresh independent lanes, red-first regressions, current package compiler scripts, whole relevant suites, changed-file lint and generated-contract checks. Retain the four route guards. Broaden to the required release battery before landing, fetch/rebase and inspect the commit list, watch main CI by full SHA, verify automatic Render deployment, then capture post-deploy staging evidence and walk Jira only to Deployed. No test is weakened to pass. Migrations are not anticipated; any destructive need or changed original-app/payment behavior requires a separate ruling.
 
-Proposed implementation tickets are **SCRUM-680 (tax ownership/refusals), SCRUM-681 (page state and pagination), SCRUM-682 (messages and API contracts), and SCRUM-683 (payment discovery and filters)**. They remain **To Do / awaiting approval**. SCRUM-679 is **Testing / awaiting the owner's plan decision**. Existing delivered feature tickets remain Deployed. The next action is the owner's approval of A–D (or a chosen subset); no product work starts from this audit alone.
+Proposed implementation tickets are **SCRUM-680 (tax ownership/refusals), SCRUM-681 (page state and pagination), SCRUM-682 (messages and API contracts), and SCRUM-683 (payment discovery and filters)**. The owner approved A–D on 29 October 2026. **680 and681 are In Progress in independent lanes;682 and683 remain To Do until pickup.** Root integrates and lands in that order, with each unit proven through deployment. Existing delivered feature tickets remain Deployed. Original audit evidence remains the unchanged pre-approval snapshot; the newest STATUS block carries live implementation progress.
 
 ## Evidence and reproducibility
 
