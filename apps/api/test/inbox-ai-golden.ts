@@ -5,6 +5,7 @@ import {
   EPISODE_WINDOW_CAP,
   FakeCoherenceReviewer,
   INTENT_TABLE,
+  reviewOps,
   applyGates,
   bubbleGuard,
   personaGuard,
@@ -290,6 +291,28 @@ export const FIXTURE_KB: readonly KbRow[] = [
     question: 'Есть ли у вас акции?',
     body: 'Food & Play (fixture): игра на весь день и детское блюдо, ฿420 за ребёнка в обоих парках.',
   },
+  // SCRUM-677 (G19): the nanny service, at Central Floresta only. Fictional, like the rest.
+  {
+    key: 'nanny',
+    topic: 'faq',
+    language: 'en',
+    question: 'Do you have a nanny service?',
+    body: 'Our nanny service (fixture) is one-on-one care at Central Floresta for children from 3 years old. Please book ahead.',
+  },
+  {
+    key: 'nanny',
+    topic: 'faq',
+    language: 'th',
+    question: 'มีบริการพี่เลี้ยงเด็กไหม',
+    body: 'บริการพี่เลี้ยงเด็ก (fixture) ดูแลแบบตัวต่อตัวที่สาขา Central Floresta สำหรับน้องอายุ 3 ขวบขึ้นไป กรุณาจองล่วงหน้านะคะ',
+  },
+  {
+    key: 'nanny',
+    topic: 'faq',
+    language: 'ru',
+    question: 'Есть ли у вас услуга няни?',
+    body: 'Услуга няни (fixture) — индивидуальный присмотр в Central Floresta для детей от 3 лет. Пожалуйста, бронируйте заранее.',
+  },
 ];
 
 /** Approved examples, NEWEST FIRST (the order the loader reads them in). De-identified, fictional. */
@@ -422,14 +445,21 @@ export interface GoldenTurn {
 
 /** What should be on the thread after the golden's last turn (the live eval checks it). */
 export interface ThreadExpectation {
-  /** The team the thread ends with: moved to Birthdays or the GM queue, or left where it started. */
-  team: 'birthdays' | 'gm' | 'unchanged';
+  /** The team the thread ends with: moved to Birthdays or the GM queue, with Central's reception, or left where it started. */
+  team: 'birthdays' | 'gm' | 'central' | 'unchanged';
   /** AI media lines carrying a brochure. */
   brochures?: number;
   /** The holding line went verbatim from its template. */
   holdingFromTemplate?: boolean;
   /** The closing line went verbatim from this template (SCRUM-220 playbook: the destination's line). */
   closingKey?: InboxTemplateKey;
+  /**
+   * SCRUM-677: who follows up is said EXACTLY ONCE — the closing line went and
+   * no line of the model's promises the follow-up, or the coherence review
+   * left the closing out because a line of the model's already does. Holds
+   * whatever words a live model chooses.
+   */
+  followUpOnce?: { closingKey: InboxTemplateKey; modelSays: RegExp };
 }
 
 export interface LiveGolden {
@@ -451,6 +481,8 @@ const NO_FAULT = /our fault|we apologi[sz]e for|it was our|compensat|refund|\bfr
 /** A bubble asking which park (the playbook's branch question, alone or in its combined question). */
 const BRANCH_QUESTION = /which (?:park|branch)|central floresta (?:or|หรือ|или) (?:robinson )?chalong|สาขาไหน/i;
 const NO_PRICE_YET = /฿|บาท|baht/i;
+/** The live transcript's last line (29 Oct): the model's own promise of the booking follow-up. */
+const FOLLOW_UP_PROMISED = 'A colleague at Central Floresta will help you with the booking.';
 
 /** The playbook's destinations as the gate plans them (SCRUM-220). */
 const BIRTHDAYS_LINE = { templateKey: 'closing_birthday', route: 'birthdays', brochure: false } as const;
@@ -868,6 +900,42 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
       },
     ],
     thread: { team: 'birthdays', brochures: 0, closingKey: 'closing_birthday' },
+  },
+  // SCRUM-677, the live case of 29 Oct: a nanny booking on a thread with no
+  // park. The closing after the answer is the booking line, whatever the
+  // thread; when the model's own last line already promises the follow-up,
+  // the coherence review drops the booking line and nothing is lost.
+  // Recorded by hand like the rest: `ai:eval --record --only G19`.
+  {
+    id: 'G19',
+    setup: '12:00, operator-wide number, no park: a nanny booking',
+    account: 'wide',
+    turns: [
+      {
+        says: 'Hi, do you have a nanny service? I would like to book one',
+        expect: {
+          action: 'answer',
+          intent: 'nanny_booking',
+          language: 'en',
+          groundingAnyOf: ['nanny'],
+          thenHandover: { templateKey: 'closing_booking', route: 'general', brochure: false },
+          mustNotSay: [/safer/i, NO_DISCOUNT],
+        },
+        episode: { threadHasBranch: false },
+        rehearsal: d({
+          intent: 'nanny_booking',
+          reason: 'FACT_IN_KB',
+          grounding: ['nanny'],
+          bubbles: ['Yes! Our nanny service is one-on-one care at Central Floresta for children from 3 years old 😊', FOLLOW_UP_PROMISED],
+        }),
+        // The live transcript: the model's last line already promises the follow-up, so the booking line is dropped.
+        review: { kind: 'review', decision: reviewOps({ drop: [2] }) },
+      },
+    ],
+    thread: {
+      team: 'central',
+      followUpOnce: { closingKey: 'closing_booking', modelSays: /colleague|our team|in touch|will (?:help|message|contact|confirm|get back|reach)/i },
+    },
   },
 ];
 
@@ -1382,7 +1450,10 @@ export async function judgeThread(
 ): Promise<string[]> {
   const fails: string[] = [];
   const t = await threadState(w, conversationId);
-  if (expect.team === 'birthdays' || expect.team === 'gm') {
+  if (expect.team === 'central') {
+    const central = await teamIdOf(w, 'reception', w.central);
+    if (t.conv.teamId !== central || t.conv.category !== 'general') fails.push('thread not with Central Floresta’s reception');
+  } else if (expect.team === 'birthdays' || expect.team === 'gm') {
     const name = expect.team === 'gm' ? 'the GM queue' : 'Birthdays';
     const dest = await teamIdOf(w, expect.team);
     if (t.conv.teamId !== dest || t.conv.category !== expect.team) fails.push(`thread not moved to ${name}`);
@@ -1404,6 +1475,14 @@ export async function judgeThread(
     const closing = ai.filter((l) => l.mediaFileIds.length === 0).at(-1);
     const key = t.templateKeyOf(closing?.templateId ?? null);
     if (key !== expect.closingKey) fails.push(`the closing line is ${key ?? 'not a template line'}, expected ${expect.closingKey} verbatim`);
+  }
+  if (expect.followUpOnce) {
+    const { closingKey, modelSays } = expect.followUpOnce;
+    const sent = ai.filter((l) => (l.providerStatus as string) !== 'shadow');
+    const closingSent = sent.some((l) => t.templateKeyOf(l.templateId) === closingKey);
+    const modelPromised = sent.some((l) => !l.templateId && modelSays.test(l.body ?? ''));
+    if (closingSent && modelPromised) fails.push(`the follow-up is said twice: a line of the model's and ${closingKey}`);
+    if (!closingSent && !modelPromised) fails.push(`nobody says who follows up: ${closingKey} left out and no line of the model's says it`);
   }
   return fails;
 }
