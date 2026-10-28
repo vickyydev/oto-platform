@@ -5,6 +5,7 @@ import { assistantSettingsNavigation, canSeeArea, findArea, visibleNavigation, t
 import { CommandBar } from '@/components/redesign/CommandBar';
 import { Panel } from '@/components/Panel';
 import { filterPlatformHealthLinks, usePlatformAuthority } from '@/lib/platformAuthority';
+import { PaymentsDiscovery } from '@/components/PaymentsDiscovery';
 
 const POS_URL = import.meta.env.VITE_POS_URL?.trim();
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
@@ -37,7 +38,7 @@ export function AreaLandingContent({
     ? available.filter((entry) => entry.id !== 'overview').map((entry) => ({
       path: `/${entry.id}`, label: entry.label, description: entry.description,
     }))
-    : area.sections;
+    : area.sections.filter(link => area.id !== 'catalogue' || !['/catalogue/tenders', '/catalogue/tax'].includes(link.path));
   return (
     <>
       <CommandBar sectionId={area.id} />
@@ -53,6 +54,7 @@ export function AreaLandingContent({
           </a>
         )}
       </Panel>
+      {area.id === 'catalogue' && <PaymentsDiscovery availablePaths={available.flatMap(group => group.sections.map(section => section.path))} />}
       {links.length > 0 && (
         <div className="grid gap-3 @xl:grid-cols-2">
           {links.map((link) => (

@@ -100,6 +100,16 @@ const render = (data: MoneyData) => renderToStaticMarkup(createElement(Router, {
   children: createElement(MoneyOversightContent, { data, onRetry: () => undefined }) }));
 
 describe('Money oversight page (SCRUM-647)', () => {
+  it('offers explicitly loaded-row attention views without changing the overview totals or date bases', () => {
+    const html = render(full());
+    expect(html).toContain('Only cash days needing attention');
+    expect(html).toContain('Only settlement days needing attention');
+    expect(html).toContain('loaded park and date range');
+    expect(html).toContain('Money at a glance');
+    expect(html).toContain('฿1,234');
+    expect(html).toContain('original sale');
+  });
+
   it('is refused without console:money:read and lives under Reports at /money and /reports/money', () => {
     const refused = renderToStaticMarkup(createElement(MoneyOversight));
     expect(refused).toContain('This page is not on your access');

@@ -6,6 +6,31 @@ import { AreaLandingContent } from '@/pages/AreaLanding';
 import { findArea, visibleNavigation } from '@/components/consoleSections';
 
 describe('Admin area markup', () => {
+  it('groups existing payment doors by staff task without adding a navigation area', () => {
+    const available = visibleNavigation(() => true, true);
+    const area = available.find(entry => entry.id === 'catalogue')!;
+    const html = renderToStaticMarkup(createElement(Router, { ssrPath: '/catalogue',
+      children: createElement(AreaLandingContent, { area, available }) }));
+    expect(html).toContain('Payments');
+    for (const label of ['Set up', 'Operate in POS', 'Reconcile', 'Investigate']) expect(html).toContain(label);
+    for (const path of ['/catalogue/tenders', '/catalogue/tax', '/devices', '/watch/integrations', '/reports/money', '/watch/support']) {
+      expect(html, path).toContain(`href="${path}"`);
+    }
+    expect(html).toContain('Deployment-only');
+    expect(html).toContain('Not integrated');
+    expect(available).toHaveLength(10);
+  });
+
+  it('payment discovery never invents a destination absent from the existing available navigation', () => {
+    const available = visibleNavigation(permission => permission === 'catalog:menu:read' || permission === 'catalog:menu:manage', false);
+    const area = available.find(entry => entry.id === 'catalogue')!;
+    const html = renderToStaticMarkup(createElement(Router, { ssrPath: '/catalogue',
+      children: createElement(AreaLandingContent, { area, available }) }));
+    expect(html).not.toContain('href="/catalogue/tax"');
+    expect(html).not.toContain('href="/reports/money"');
+    expect(html).not.toContain('href="/watch/support"');
+  });
+
   it('offers only available areas on Overview, with working area links and no invented figures', () => {
     const available = visibleNavigation((permission) => permission === 'admin:audit:read', false);
     const html = renderToStaticMarkup(createElement(Router, { ssrPath: '/overview',

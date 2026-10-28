@@ -57,6 +57,16 @@ const card = (html: string, key: string) => {
 };
 
 describe('Configuration index markup (SCRUM-646)', () => {
+  it('offers loaded-index search and owner grouping alongside the existing park and destination gates', () => {
+    const html = render(index);
+    expect(html).toContain('Search settings');
+    expect(html).toContain('Settings by owner');
+    expect(html).toContain('6 of 6 settings');
+    expect(html).toContain('All parks in your reach');
+    expect(card(html, 'inbox_templates')).not.toContain('Open in Inbox');
+    expect(html).not.toContain('href="//evil.example/settings"');
+  });
+
   it('refuses the page without console:config:read and never shows the index', () => {
     const html = renderToStaticMarkup(createElement(Configuration));
     expect(html).toContain('This page is not on your access');

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { cashDaysForView, settlementDaysForView } from '@/lib/paymentViews';
 import { Link } from 'wouter';
 import { formatTHB } from '@oto/shared';
 import {
@@ -174,6 +175,8 @@ function Tile<T>({ slot, label, value, detail, tone }: { slot: Slot<T>; label: s
 }
 
 export function MoneyOversightContent({ data, onRetry }: { data: MoneyData; onRetry: () => void }) {
+  const [cashAttentionOnly, setCashAttentionOnly] = useState(false);
+  const [settlementAttentionOnly, setSettlementAttentionOnly] = useState(false);
   const head = headline(data);
   return <div className="flex min-w-0 flex-col gap-5" data-money-page>
     <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Money at a glance">
@@ -245,10 +248,14 @@ export function MoneyOversightContent({ data, onRetry }: { data: MoneyData; onRe
     </CardShell>
 
     <CardShell title="Cash days" note="Each park's End of Day as the POS reads it, against the ฿1 tolerance" id="money-cash">
+      <label className="flex min-w-0 items-center gap-2 text-sm"><input type="checkbox" checked={cashAttentionOnly}
+        onChange={event => setCashAttentionOnly(event.target.checked)} />Only cash days needing attention</label>
+      <p className="text-xs text-muted-foreground">This refines the loaded park and date range only. Differences, not-counted and unavailable days remain; overview totals are unchanged.</p>
       <SlotBody slot={data.cash} what="Cash days" onRetry={onRetry}>{(d) => d.branches.map((park) => <section key={park.branchId} className="min-w-0 rounded-2xl border p-4">
         <h3 className="font-bold break-words">{park.name}</h3>
+        <p className="text-xs text-muted-foreground">{cashDaysForView(park.days, cashAttentionOnly).length} of {park.days.length} loaded cash days</p>
         {park.days.length === 0 ? <EmptyNote title="No business day has started in these dates" /> : <ul className="divide-y divide-border">
-          {park.days.map((day) => <li key={day.businessDate} className="min-w-0 py-2 text-sm" data-cash-day={day.businessDate} data-available={String(day.available)}>
+          {cashDaysForView(park.days, cashAttentionOnly).map((day) => <li key={day.businessDate} className="min-w-0 py-2 text-sm" data-cash-day={day.businessDate} data-available={String(day.available)}>
             {day.available ? <>
               <p className="flex flex-wrap items-center gap-2 font-semibold">{day.businessDate}
                 <Tag>{day.status === 'closed' ? 'Closed' : 'Open'}</Tag>
@@ -260,15 +267,20 @@ export function MoneyOversightContent({ data, onRetry }: { data: MoneyData; onRe
               <span className="text-muted-foreground break-words">{day.reason}</span></p>}
           </li>)}
         </ul>}
+        {park.days.length > 0 && cashDaysForView(park.days, cashAttentionOnly).length === 0 && <EmptyNote title="No cash days need attention in this loaded range" />}
       </section>)}</SlotBody>
     </CardShell>
 
     <CardShell title="Settlement" note="Per terminal TID and the 2C2P reconciliation file, with unmatched lines either way" id="money-settlement">
+      <label className="flex min-w-0 items-center gap-2 text-sm"><input type="checkbox" checked={settlementAttentionOnly}
+        onChange={event => setSettlementAttentionOnly(event.target.checked)} />Only settlement days needing attention</label>
+      <p className="text-xs text-muted-foreground">This refines the loaded park and date range only. Unmatched evidence, no file and batches not matched remain; overview totals are unchanged.</p>
       <SlotBody slot={data.settlement} what="Settlement" onRetry={onRetry}>{(d) => <>
         <p className="text-sm text-muted-foreground">2C2P files are imported in their documented test format only; the real provider file is not mapped yet, so a day with no file is shown as such, never as settled.</p>
         {d.branches.map((park) => <section key={park.branchId} className="min-w-0 rounded-2xl border p-4">
           <h3 className="font-bold break-words">{park.name}</h3>
-          {park.days.map((day) => <div key={day.businessDate} className="min-w-0 space-y-1 border-t py-2 text-sm first:border-t-0" data-settlement-day={day.businessDate}>
+          <p className="text-xs text-muted-foreground">{settlementDaysForView(park.days, settlementAttentionOnly).length} of {park.days.length} loaded settlement days</p>
+          {settlementDaysForView(park.days, settlementAttentionOnly).map((day) => <div key={day.businessDate} className="min-w-0 space-y-1 border-t py-2 text-sm first:border-t-0" data-settlement-day={day.businessDate}>
             <p className="flex flex-wrap items-center gap-2 font-semibold">{day.businessDate}
               {day.terminals.map((t) => <Tag key={`${t.label}:${t.tid ?? ''}`}>{t.label} {t.tid ?? 'no TID'}: {t.state === 'not_run' ? 'not run' : t.state}</Tag>)}
               {day.gateway.state === 'no_file' ? <NotAvailable>No 2C2P file imported</NotAvailable> : <Tag>2C2P file: {day.gateway.state}</Tag>}
@@ -276,6 +288,7 @@ export function MoneyOversightContent({ data, onRetry }: { data: MoneyData; onRe
             {day.unmatchedLines.map((line, index) => <p key={`l${index}`} className="flex flex-wrap items-center gap-2">File line {line.method} {money(line.amountSatang)} · {line.match.replace(/_/g, ' ')} <TraceLink trace={line.trace} /></p>)}
             {day.unmatchedAttempts.map((attempt, index) => <p key={`a${index}`} className="flex flex-wrap items-center gap-2">Taken {attempt.method} {money(attempt.amountSatang)}{attempt.tid ? ` on ${attempt.tid}` : ''} · no settlement line yet <TraceLink trace={attempt.trace} /></p>)}
           </div>)}
+          {park.days.length > 0 && settlementDaysForView(park.days, settlementAttentionOnly).length === 0 && <EmptyNote title="No settlement days need attention in this loaded range" />}
         </section>)}
       </>}</SlotBody>
     </CardShell>

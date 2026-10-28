@@ -15,9 +15,10 @@ import { CardShell, PageGrid } from '@/components/redesign/layout';
 import { EmptyNote, UnreadNote } from '@/components/redesign/StatTile';
 import { formatExact } from '@/lib/time';
 import { useWorkingAuthority } from '@/lib/workingAuthority';
+import { configurationGroups, configurationOwnerName as ownerName } from '@/lib/paymentViews';
+import { visibleNavigation } from '@/components/consoleSections';
+import { PaymentsDiscovery } from '@/components/PaymentsDiscovery';
 
-const owners: Record<string, string> = { platform: 'Platform', pos: 'POS', oto_app: 'OTO App', radar: 'Radar', inbox: 'Inbox', booth: 'Booth' };
-const ownerName = (owner: string) => owners[owner] ?? owner;
 
 export function Configuration() {
   const { has } = useSession();
@@ -92,9 +93,13 @@ export function ConfigurationContent({ data, error, onRetry, onSelectPark, has, 
   opening: string | null;
   onOpenInApp: (entry: ConfigurationEntry, target: SettingsTarget) => void;
 }) {
+  const [search, setSearch] = useState('');
   if (error) return <><div role="alert"><ErrorNote message={error} onRetry={onRetry} /></div><UnreadNote what="Configuration index" /></>;
   if (!data) return <div role="status"><Loading what="configuration index" /></div>;
   const parkName = (id: string) => data.branches.find(park => park.id === id)?.name ?? 'Park not in this reading';
+  const groups = configurationGroups(data.entries, search), shown = groups.reduce((count, group) => count + group.entries.length, 0);
+  const setupPaths = data.entries.filter(entry => entry.supported).flatMap(entry => { const page = consolePagePath(entry.url); return page ? [page] : []; });
+  const availablePaths = visibleNavigation(has, false).flatMap(group => group.sections.map(section => section.path));
   return <>
     <p className="text-sm text-muted-foreground">Each setting belongs to its named owner and is changed only on its own page, which keeps that page’s access rules.</p>
     <div className="flex min-w-0 flex-wrap items-center gap-3">
@@ -103,10 +108,23 @@ export function ConfigurationContent({ data, error, onRetry, onSelectPark, has, 
         options={data.branches.map(park => ({ value: park.id, label: park.name }))} />
       <p className="text-sm text-muted-foreground">Read <time dateTime={data.generatedAt}>{formatExact(data.generatedAt, 'UTC')}</time>.</p>
     </div>
+    <PaymentsDiscovery availablePaths={availablePaths} setupPaths={setupPaths} />
+    <div className="min-w-0 space-y-2">
+      <label className="block text-sm font-semibold">Search settings
+        <input type="search" value={search} onChange={event => setSearch(event.target.value)}
+          className="mt-1 h-10 w-full rounded-xl border bg-card px-3 font-normal" placeholder="Name, setting key or owner app" />
+      </label>
+      <p className="text-sm text-muted-foreground">{shown} of {data.entries.length} settings in this loaded park selection.</p>
+    </div>
+    <h2 className="text-xl font-bold">Settings by owner</h2>
     {data.entries.length === 0
       ? <EmptyNote title="No settings in this reading" detail="No setting is on your access for this park selection." />
-      : <PageGrid>{data.entries.map(entry => <ConfigurationCard key={entry.id} entry={entry} parkName={parkName}
-        has={has} opening={opening} onOpenInApp={onOpenInApp} />)}</PageGrid>}
+      : shown === 0 ? <EmptyNote title="No settings match this search" detail="This search only refines the loaded index. Change or clear it to see the other entries." />
+        : groups.map(group => <section key={group.owner} className="min-w-0 space-y-3" data-setting-owner-group={group.owner}>
+          <h3 className="text-lg font-bold">{ownerName(group.owner)}</h3>
+          <PageGrid>{group.entries.map(entry => <ConfigurationCard key={entry.id} entry={entry} parkName={parkName}
+            has={has} opening={opening} onOpenInApp={onOpenInApp} />)}</PageGrid>
+        </section>)}
   </>;
 }
 

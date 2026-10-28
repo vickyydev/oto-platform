@@ -73,6 +73,14 @@ beforeEach(() => {
 });
 
 describe('native money confirmed writes', () => {
+  it('offers payment-method name, availability and kind refinements of the loaded list', () => {
+    const html = renderToStaticMarkup(createElement(PaymentMethodsSection));
+    expect(html).toContain('Search payment methods');
+    expect(html).toContain('Payment method availability');
+    expect(html).toContain('Filter payment method kind');
+    expect(html).toContain('1 of 1 payment methods');
+  });
+
   it('renames the existing discount in one update without deleting it before a refusal', async () => {
     const draft = { originalCode: 'ZZOLD', code: 'ZZNEW', label: 'ZZ TEST Renamed', type: 'percent', value: '10', target: { kind: 'everything' }, active: true };
     const deleteDiscount = vi.fn();
