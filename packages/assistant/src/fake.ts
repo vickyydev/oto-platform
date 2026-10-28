@@ -21,6 +21,7 @@ import {
   type TurnUsage,
 } from './client';
 import type { AiDecision } from './decision';
+import type { AiIntent } from './intents';
 import {
   interpretReviewReply,
   type CoherenceReviewer,
@@ -147,13 +148,15 @@ export function materialise(
 // ---------------------------------------------------------------------------
 
 /**
- * A scripted review: operations, keep-everything, an answer that never comes
- * (the deadline's case), or any failure shape the decision's fake has —
- * played through the same interpretation as the real reviewer's reply.
+ * A scripted review: operations, keep-everything, a reply that answers
+ * something else (SCRUM-678), an answer that never comes (the deadline's
+ * case), or any failure shape the decision's fake has — played through the
+ * same interpretation as the real reviewer's reply.
  */
 export type FakeReviewStep =
   | { kind: 'review'; decision: ReviewDecision }
   | { kind: 'keep_all' }
+  | { kind: 'wrong_topic'; reading: string; suggestedIntent?: AiIntent | null }
   | { kind: 'hang' }
   | Exclude<FakeStep, { kind: 'decision' }>;
 
@@ -163,9 +166,15 @@ export type FakeReviewScriptEntry = FakeReviewStep & {
   latencyMs?: number;
 };
 
-/** A review verdict from plain lists: the indices to drop, the merges to make. */
+/** A review verdict from plain lists: the indices to drop, the merges to make; the reply on topic. */
 export function reviewOps(ops: { drop?: readonly number[]; merge?: ReadonlyArray<{ index: number; joiner: ReviewJoiner }> }): ReviewDecision {
-  return { items: (ops.drop ?? []).map((index) => ({ index, keep: false })), merges: [...(ops.merge ?? [])] };
+  return {
+    items: (ops.drop ?? []).map((index) => ({ index, keep: false })),
+    merges: [...(ops.merge ?? [])],
+    topic: 'answers',
+    reading: null,
+    suggestedIntent: null,
+  };
 }
 
 export class FakeCoherenceReviewer implements CoherenceReviewer {
@@ -196,8 +205,13 @@ export class FakeCoherenceReviewer implements CoherenceReviewer {
     if (step.during) await step.during();
     if (step.kind === 'hang') return new Promise<ReviewOutcome>(() => undefined);
     const latency = step.latencyMs ?? 400;
-    if (step.kind === 'review' || step.kind === 'keep_all') {
-      const decision = step.kind === 'review' ? step.decision : reviewOps({});
+    if (step.kind === 'review' || step.kind === 'keep_all' || step.kind === 'wrong_topic') {
+      const decision: ReviewDecision =
+        step.kind === 'review'
+          ? step.decision
+          : step.kind === 'keep_all'
+            ? reviewOps({})
+            : { ...reviewOps({}), topic: 'wrong_topic', reading: step.reading, suggestedIntent: step.suggestedIntent ?? null };
       return interpretReviewReply(reply(this.model, 'end_turn', JSON.stringify(decision)), latency);
     }
     const made = materialise(step, this.model);

@@ -207,7 +207,7 @@ describe('B. the Russian voice: a warm greeting once, never a formal one on ever
   });
 
   it('the persona version moved with the words', () => {
-    expect(PERSONA_VERSION).toBe('persona-2026-10-28.3');
+    expect(PERSONA_VERSION).toBe('persona-2026-10-28.4');
     // Item F (owner ruling, 28 Oct): the prompt says the guard's rule in plain words — the act, not the word.
     expect(OUTPUT_CONTRACT).toContain('Never grant or confirm a refund, discount, free entry or compensation');
     expect(OUTPUT_CONTRACT).toContain('to say we do not offer it, to say a colleague will look into it, or in a question is fine');
