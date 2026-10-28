@@ -2,7 +2,6 @@ import {
   BY_BRANCH,
   INTENT_TABLE,
   resolvePlan,
-  type AiBranchKey,
   type AiHandoverPlan,
   type AiIntent,
   type AiPlanRef,
@@ -67,10 +66,12 @@ export const CLOSING_KEY_OF: Readonly<Record<InboxCategory, InboxTemplateKey | n
 
 /**
  * SCRUM-677: closing lines that belong to a PLAN, not to a destination. The
- * nanny answer's `closing_booking` names Central Floresta and the booking,
- * so it may go only when the thread really goes where the plan sends it
- * (`planHonoured`); anywhere else the destination's own line goes, and the
- * plan's line is never a fallback.
+ * nanny answer's `closing_booking` names Central Floresta and the booking;
+ * it goes whenever the plan carries it, whatever the thread's park or team
+ * (live case, 29 Oct: a parkless Facebook thread already with Central's
+ * reception got the generic branch line) — a nanny booking always ends at
+ * Central, the only park with the service. It is never a fallback for
+ * another plan.
  */
 export const PLAN_CLOSING_KEYS: ReadonlySet<InboxTemplateKey> = new Set<InboxTemplateKey>(['closing_booking']);
 
@@ -87,32 +88,17 @@ export interface ClosingHandover {
  * The closing keys a hand-over tries, in order (SCRUM-220 playbook): a
  * silent hand-over the policy does not cover, the branch's line; an
  * "Unclear or not covered" hand-over, the unclear line first (owner ruling,
- * 28 Oct); then the plan's own line when it has one and the thread goes
- * where the plan sends it (SCRUM-677, `ownLine`); then the destination's
- * line, when it has one.
+ * 28 Oct); then the plan's own line when it has one (SCRUM-677, keyed off
+ * the plan alone); then the destination's line, when it has one.
  */
-export function closingKeysOf(h: ClosingHandover, destination: InboxCategory, ownLine: boolean): InboxTemplateKey[] {
+export function closingKeysOf(h: ClosingHandover, destination: InboxCategory): InboxTemplateKey[] {
   if (h.branchLine) return ['closing_branch'];
   const keys: InboxTemplateKey[] = h.unclear ? [UNCLEAR_CLOSING_KEY] : [];
   const planKey = h.plan.templateKey as InboxTemplateKey;
-  if (ownLine && PLAN_CLOSING_KEYS.has(planKey)) keys.push(planKey);
+  if (PLAN_CLOSING_KEYS.has(planKey)) keys.push(planKey);
   const own = CLOSING_KEY_OF[destination];
   if (own && !keys.includes(own)) keys.push(own);
   return keys;
-}
-
-/**
- * The thread ends where the plan sends it: the plan's route, and the plan's
- * park when it names one (`keyOfBranch` maps a branch id to its key).
- */
-export function planHonoured(
-  plan: AiHandoverPlan,
-  end: { category: InboxCategory; endBranchId: string | null },
-  keyOfBranch: ReadonlyMap<string, AiBranchKey>,
-): boolean {
-  if (plan.route !== end.category) return false;
-  if (!plan.branch) return true;
-  return end.endBranchId !== null && keyOfBranch.get(end.endBranchId) === plan.branch;
 }
 
 const samePlan = (a: AiHandoverPlan, b: AiHandoverPlan): boolean =>
