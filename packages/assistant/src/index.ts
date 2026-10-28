@@ -25,7 +25,11 @@
  *   pacing.ts     typing time per bubble.
  *   client.ts     `AssistantClient`, the Anthropic implementation (logging
  *                 off; errors as class + status + request id only).
- *   fake.ts       `FakeAssistantClient`: scripted decisions, every failure.
+ *   fake.ts       `FakeAssistantClient`: scripted decisions, every failure;
+ *                 `FakeCoherenceReviewer`: scripted reviews (SCRUM-677).
+ *   review.ts     the coherence reviewer (SCRUM-677): operations only over
+ *                 a composed reply, the server's hard rules over them, the
+ *                 call within its deadline, fail-open.
  *
  * The internal assistant (Phase 3). The engine (I2) owns the routes, the
  * tool registry and adapters, caps, audit and the ask-log.
@@ -54,6 +58,7 @@ export * from './prompt';
 export * from './pacing';
 export * from './client';
 export * from './fake';
+export * from './review';
 export * from './internal-answer';
 export * from './internal-prompt';
 export * from './internal-guards';
