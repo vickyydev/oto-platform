@@ -1,0 +1,63 @@
+{
+  "ticket": "SCRUM-682",
+  "sourceSha": "f3a079d126228a3577a3718bfb801acb5517e9e4",
+  "runId": "40763664277",
+  "branch": "lane/admin682-release-20261029",
+  "event": "workflow_dispatch",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/40763664277",
+  "verifiedAt": "2026-10-28T20:51:13.502Z",
+  "green": true,
+  "jobs": [
+    {
+      "name": "oto-app",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T20:28:58Z",
+      "completedAt": "2026-10-28T20:40:35Z"
+    },
+    {
+      "name": "pos-tests",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T20:28:58Z",
+      "completedAt": "2026-10-28T20:31:13Z"
+    },
+    {
+      "name": "ci",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T20:28:58Z",
+      "completedAt": "2026-10-28T20:45:17Z"
+    },
+    {
+      "name": "api-tests (3)",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T20:28:58Z",
+      "completedAt": "2026-10-28T20:46:33Z",
+      "summaries": [
+        "Test Files  135 passed | 2 skipped (137)",
+        "Tests  1882 passed | 121 skipped | 1 todo (2004)",
+        "Duration  1008.38s (transform 6.31s, setup 0ms, collect 173.65s, tests 809.59s, environment 21ms, prepare 7.70s)"
+      ]
+    },
+    {
+      "name": "api-tests (1)",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T20:28:59Z",
+      "completedAt": "2026-10-28T20:50:29Z",
+      "summaries": [
+        "Test Files  135 passed | 2 skipped (137)",
+        "Tests  2016 passed | 106 skipped (2122)",
+        "Duration  1238.87s (transform 8.34s, setup 0ms, collect 233.01s, tests 972.37s, environment 31ms, prepare 11.08s)"
+      ]
+    },
+    {
+      "name": "api-tests (2)",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T20:28:58Z",
+      "completedAt": "2026-10-28T20:46:28Z",
+      "summaries": [
+        "Test Files  133 passed | 4 skipped (137)",
+        "Tests  1961 passed | 174 skipped | 4 todo (2139)",
+        "Duration  969.40s (transform 6.70s, setup 0ms, collect 180.80s, tests 763.94s, environment 24ms, prepare 7.86s)"
+      ]
+    }
+  ]
+}
