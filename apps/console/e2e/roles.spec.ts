@@ -261,13 +261,13 @@ test('failed catalogue, reverse lookup and account reads stay visibly failed ins
   await page.route('**/api/roles', (route) => route.fulfill({ status: 503,
     json: { error: { code: 'UNAVAILABLE', message: 'Role catalogue unavailable.' } } }));
   await page.goto('/people/roles');
-  await expect(page.getByText('Role catalogue unavailable.', { exact: true })).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(page.getByText('No matching roles', { exact: true })).toHaveCount(0);
   await page.unroute('**/api/roles');
   await page.route('**/api/roles/holders*', (route) => route.fulfill({ status: 503,
     json: { error: { code: 'UNAVAILABLE', message: 'Permission holders unavailable.' } } }));
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
-  await expect(page.getByText('Permission holders unavailable.', { exact: true })).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(page.getByText('No holders in your reach', { exact: true })).toHaveCount(0);
   await page.route(`**/api/accounts/${SOM}/permissions`, (route) => route.fulfill({ status: 503,
     json: { error: { code: 'UNAVAILABLE', message: 'Account permissions unavailable.' } } }));

@@ -121,7 +121,7 @@ test('pending or failed review does not invent six empty lists and retry can sho
   await expect(page.getByRole('status')).toContainText('Loading access review');
   await expect(page.getByRole('heading', { name: titles[0], exact: true })).toHaveCount(0);
   release!();
-  await expect(page.getByRole('alert')).toContainText('The access review did not answer.');
+  await expect(page.getByRole('alert')).toContainText('The service returned an unexpected error. Read the current state before trying again.');
   await expect(page.getByRole('heading', { name: titles[0], exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   for (const title of titles) {

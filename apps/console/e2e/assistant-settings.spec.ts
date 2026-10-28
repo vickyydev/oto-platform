@@ -236,7 +236,7 @@ test('loading and a failed read never fabricate editable defaults; retry is GET-
   const f = await fixture(page), held = pause(); f.control.holds.push({ method: 'GET', remaining: 1, promise: held.promise });
   f.control.getOutcomes.push({ status: 503 }); await page.goto(ADDRESS);
   await expect(page.getByText('Loading assistant settings…', { exact: true })).toBeVisible(); await expect(person(page)).toHaveCount(0);
-  await finishReply(page, held, 'GET'); await expect(page.getByRole('alert')).toContainText('ZZ TEST Source unavailable.'); await expect(person(page)).toHaveCount(0);
+  await finishReply(page, held, 'GET'); await expect(page.getByRole('alert')).toContainText('The service returned an unexpected error. Read the current state before trying again.'); await expect(person(page)).toHaveCount(0);
   await page.getByRole('button', { name: 'Try again', exact: true }).click(); await ready(page); expect(reads(f)).toHaveLength(2); expect(writes(f)).toEqual([]); clean(f);
 });
 
@@ -259,7 +259,7 @@ test('confirmed PUT response is the canonical readback and a later GET failure d
   f.control.getOutcomes.push({ status: 503, message: 'ZZ TEST Refresh unavailable.' }); await save(page).click();
   await expect(page.getByRole('status')).toContainText('Settings saved.'); await expect(person(page)).toHaveValue('44');
   expect(reads(f)).toHaveLength(1); await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('ZZ TEST Refresh unavailable.'); await expect(page.getByRole('status')).toContainText('Settings saved.');
+  await expect(page.getByRole('alert')).toContainText('The service returned an unexpected error. Read the current state before trying again.'); await expect(page.getByRole('status')).toContainText('Settings saved.');
   await expect(person(page)).toHaveValue('44'); expect(writes(f)).toHaveLength(1); clean(f);
 });
 

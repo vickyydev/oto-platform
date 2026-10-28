@@ -260,7 +260,7 @@ test('a failed unlinked-user search never becomes an empty account match', async
   await page.getByRole('button', { name: 'Link', exact: true }).click();
   const link = page.getByRole('dialog');
   await link.getByPlaceholder('Search name or phone…').fill('unavailable');
-  await expect(link.getByRole('alert')).toContainText('Staff search unavailable.');
+  await expect(link.getByRole('alert')).toContainText('The service returned an unexpected error. Read the current state before trying again.');
   await expect(link.getByText('No staff account matches.', { exact: true })).toHaveCount(0);
 });
 
@@ -270,7 +270,7 @@ test('a failed permission read never becomes a fictional app access state', asyn
   await page.goto('/people/app-access');
   await page.getByRole('row', { name: /ZZ TEST Som/ }).getByTitle('Apps', { exact: true }).click();
   const apps = page.getByRole('dialog');
-  await expect(apps.getByRole('alert')).toContainText('Permissions unavailable.');
+  await expect(apps.getByRole('alert')).toContainText('The service returned an unexpected error. Read the current state before trying again.');
   await expect(apps.getByText('not granted', { exact: true })).toHaveCount(0);
 });
 

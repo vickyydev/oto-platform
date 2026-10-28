@@ -24,7 +24,7 @@ const boom = {
 };
 
 /** The page's own ErrorNote: the read has settled, as a failure. */
-async function failed(page: Page, message = 'induced read failure') {
+async function failed(page: Page, message = 'The service returned an unexpected error. Read the current state before trying again.') {
   await expect(page.getByText(message).first()).toBeVisible({ timeout: 30_000 });
 }
 
@@ -55,7 +55,7 @@ test('Failures rail: a failed /ops/quarantine is not drawn as "Nothing is waitin
   await openSection(page, 'Failures');
   // The rail now says the read failed, with the reason and its one button.
   await expect(page.getByText('The quarantine list could not be read')).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText(/induced read failure/).first()).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.').first()).toBeVisible();
   await expect(page.getByText('Nothing is waiting on a decision')).toHaveCount(0);
   await expect(page.getByText('could not be read just now')).toBeVisible();
 });

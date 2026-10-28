@@ -94,7 +94,7 @@ test('source navigation is explicit, single-flight and retryable without changin
   await pending.dispatchEvent('click');
   expect(handoffs).toHaveLength(1);
   release!();
-  await expect(page.getByRole('alert')).toContainText('ZZ TEST source unavailable.');
+  await expect(page.getByRole('alert')).toContainText('The service returned an unexpected error. Read the current state before trying again.');
   await expect(page.getByRole('heading', { name: 'ZZ TEST Reception', exact: true })).toBeVisible();
   await expect(open).toBeEnabled();
   await open.click();
@@ -131,7 +131,7 @@ test('pending, failed, reachable-empty and search-empty department reads remain 
   await expect(page.getByRole('status')).toContainText('Loading departments');
   await expect(page.getByText('No departments in your reach', { exact: true })).toHaveCount(0);
   release!();
-  await expect(page.getByRole('alert')).toContainText('The department source did not answer.');
+  await expect(page.getByRole('alert')).toContainText('The service returned an unexpected error. Read the current state before trying again.');
   await expect(page.getByRole('list', { name: 'Departments', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ZZ TEST Reception', exact: true })).toBeVisible();

@@ -41,6 +41,26 @@ describe('SCRUM-682 native error metadata and route compatibility', () => {
       expect(html).not.toContain('ZZ TEST internal detail');
       expect(failure.message).not.toContain('ZZ TEST internal detail');
     });
+    for (const [code, reason] of [
+      ['BOOTH_NOT_ON_THIS_BOX', 'This booth is not running on this service.'],
+      ['STORAGE_NOT_CONFIGURED', 'File storage is not configured.'],
+      ['STORAGE_UNAVAILABLE', 'File storage is unavailable.'],
+      ['EVENTS_SEAM_NOT_GRANTED', 'Event data cannot be read because the service is missing required access.'],
+      ['EMPLOYEES_SEAM_NOT_GRANTED', 'Employee data cannot be read because the service is missing required access.'],
+      ['DISPLAY_PAIRING_BUSY', 'Screen pairing is busy.'],
+      ['KIOSK_PAIRING_BUSY', 'Kiosk pairing is busy.'],
+      ['OTO_APP_NOT_CONFIGURED', 'The OTO App connection is not configured.'],
+      ['OTO_APP_UNAVAILABLE', 'The OTO App is unavailable.'],
+    ]) it(`${name} keeps the fixed public reason for native503 ${code}`, async () => {
+      fetcher.mockResolvedValueOnce(new Response(JSON.stringify({ error: { code, message: 'ZZ TEST private-canary internal detail' } }),
+        { status: 503, headers: { 'x-request-id': 'zz-test-request-682' } }));
+      const failure = await invoke().catch(error => error);
+      expect(failure).toBeInstanceOf(ApiError);
+      expect(failure).toMatchObject({ status: 503, code, requestId: 'zz-test-request-682' });
+      if (!(failure instanceof ApiError)) throw new Error('Expected the native API error envelope.');
+      expect(failure.message).toContain(reason);
+      expect(failure.message).not.toContain('private-canary');
+    });
   }
   for (const [name, predicate, ErrorType] of [['Console', isMissingRoute, ApiError], ['POS', posMissing, PosError],
     ['lifted', liftedMissing, ApiError], ['app identities', identitiesMissing, ApiError]] as const) {

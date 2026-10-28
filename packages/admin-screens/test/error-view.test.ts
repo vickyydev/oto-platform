@@ -5,6 +5,52 @@ const fields = { '/rates/0/name': { label: 'Rate name', id: 'rate-name-0' }, '/c
 const validation = (path: string, issue: unknown) => ({ instancePath: path, params: { issue }, message: 'private-canary-detail' });
 
 describe('safe structural public error projection', () => {
+  for (const [code, reason] of [
+    ['BOOTH_NOT_ON_THIS_BOX', 'This booth is not running on this service.'],
+    ['STORAGE_NOT_CONFIGURED', 'File storage is not configured.'],
+    ['EVENTS_SEAM_NOT_GRANTED', 'Event data cannot be read because the service is missing required access.'],
+    ['EMPLOYEES_SEAM_NOT_GRANTED', 'Employee data cannot be read because the service is missing required access.'],
+  ]) for (const operation of ['read', 'write'] as const) it(`keeps native503 ${code} as a definite ${operation} refusal`, () => {
+    const view = errorView({ status: 503, code, message: 'ZZ TEST private-canary internal detail', requestId: 'zz-test-ref-682' }, { operation });
+    expect(view.message).toContain(reason);
+    expect(view.message).not.toContain('private-canary');
+    expect(view.supportReference).toBe('zz-test-ref-682');
+    expect(view.uncertain).toBe(false);
+    expect(view.requiresFreshRead).toBe(false);
+  });
+  it('names native storage failure without claiming that an interrupted write did not happen', () => {
+    const read = errorView({ status: 503, code: 'STORAGE_UNAVAILABLE', message: 'private-canary' });
+    expect(read.message).toContain('File storage is unavailable.');
+    expect(read.uncertain).toBe(false);
+    const write = errorView({ status: 503, code: 'STORAGE_UNAVAILABLE', message: 'private-canary' }, { operation: 'write' });
+    expect(write.message).toContain('File storage is unavailable.');
+    expect(write.message).toContain('may have been saved');
+    expect(write.uncertain).toBe(true);
+    expect(write.requiresFreshRead).toBe(true);
+    expect(write.message).not.toContain('private-canary');
+  });
+  it('does not trust another service code or a known refusal code at an unexpected status', () => {
+    for (const [status, code] of [[503, 'UNRECOGNISED_SERVICE_CODE'], [500, 'STORAGE_NOT_CONFIGURED'], [502, 'BOOTH_NOT_ON_THIS_BOX']] as const) {
+      const view = errorView({ status, code, message: 'ZZ TEST private-canary detail' }, { operation: 'write' });
+      expect(view.uncertain).toBe(true);
+      expect(view.requiresFreshRead).toBe(true);
+      expect(view.message).toContain('may have been saved');
+      expect(view.message).not.toContain('private-canary');
+    }
+  });
+  for (const [code, reason, uncertainWrite] of [
+    ['DISPLAY_PAIRING_BUSY', 'Screen pairing is busy.', true],
+    ['KIOSK_PAIRING_BUSY', 'Kiosk pairing is busy.', true],
+    ['OTO_APP_NOT_CONFIGURED', 'The OTO App connection is not configured.', false],
+    ['OTO_APP_UNAVAILABLE', 'The OTO App is unavailable.', true],
+  ] as const) for (const operation of ['read', 'write'] as const) it(`keeps fixed503 ${code} guidance for a ${operation}`, () => {
+    const view = errorView({ status: 503, code, message: 'private-canary', requestId: 'zz-test-ref-682' }, { operation });
+    expect(view.message).toContain(reason);
+    expect(view.message).not.toContain('private-canary');
+    expect(view.supportReference).toBe('zz-test-ref-682');
+    expect(view.uncertain).toBe(operation === 'write' && uncertainWrite);
+    expect(view.requiresFreshRead).toBe(operation === 'write' && uncertainWrite);
+  });
   for (const operation of ['read', 'write'] as const) {
     it(`preserves the native password403 refusal for a ${operation}`, () => {
       const view = errorView({ status: 403, code: 'MUST_CHANGE_PASSWORD', message: 'Password change required before continuing' }, { operation });

@@ -94,8 +94,8 @@ async function fixture(page: Page) {
 const card = (page: Page, title: string) => page.locator('section').filter({ has: page.getByRole('heading', { level: 2, name: title, exact: true }) });
 const command = (page: Page, title: string) => page.locator('header').filter({ has: page.getByRole('heading', { level: 1, name: title, exact: true }) });
 const refresh = (page: Page, title: string) => command(page, title).getByRole('button', { name: 'Refresh', exact: true }).click();
-const retryIntegrations = (page: Page) => page.getByText('ZZ TEST integrations unavailable', { exact: true })
-  .locator('..').getByRole('button', { name: 'Try again', exact: true }).click();
+const retryIntegrations = (page: Page) => page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })
+  .locator('xpath=ancestor::div[./button[normalize-space(.)="Try again"]][1]').getByRole('button', { name: 'Try again', exact: true }).click();
 
 test('Health refresh adopts current native box devices and sync facts rather than retaining its first fleet read', async ({ page }, testInfo) => {
   const f = await fixture(page);
@@ -154,7 +154,7 @@ test('a native down box prevents an all-healthy headline before the watchdog has
 test('an initial integration read failure is not a declaration that no services exist', async ({ page }) => {
   const f = await fixture(page); f.state.integrationStatus = 500;
   await page.goto('/watch/integrations');
-  await expect(page.getByText('ZZ TEST integrations unavailable', { exact: true })).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(page.getByText('No services declared', { exact: true })).toHaveCount(0);
   f.state.integrationStatus = 200; f.state.providers = [];
   await retryIntegrations(page);
@@ -169,7 +169,7 @@ test('a refused integration refresh cannot keep claiming that everything is curr
   await expect(card(page, 'Variables to provision')).toContainText('Everything is set');
   f.state.integrationStatus = 503;
   await refresh(page, 'Integrations');
-  await expect(page.getByText('ZZ TEST integrations unavailable', { exact: true })).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(page.getByText('Everything provisioned', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Everything is set', { exact: true })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('integrations-failed-read.png'), fullPage: true });
@@ -231,10 +231,10 @@ test('a failed canonical health refresh does not keep a green current verdict fr
   await page.goto('/watch/health');
   await expect(command(page, 'Health')).toContainText('Everything is healthy');
   available = false; await refresh(page, 'Health');
-  const message = page.getByText('ZZ TEST health read unavailable', { exact: true });
+  const message = page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true });
   await expect(message).toBeVisible();
   await expect(command(page, 'Health').getByText('Everything is healthy', { exact: true })).toHaveCount(0);
-  available = true; await message.locator('..').getByRole('button', { name: 'Try again', exact: true }).click();
+  available = true; await message.locator('xpath=ancestor::div[./button[normalize-space(.)="Try again"]][1]').getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(command(page, 'Health')).toContainText('Everything is healthy');
   expect(f.writes).toEqual([]);
 });
