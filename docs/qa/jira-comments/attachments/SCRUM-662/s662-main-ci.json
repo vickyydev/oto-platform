@@ -1,0 +1,71 @@
+{
+  "databaseId": 40716035735,
+  "headSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+  "headBranch": "main",
+  "status": "completed",
+  "conclusion": "success",
+  "createdAt": "2026-10-28T15:26:51Z",
+  "updatedAt": "2026-10-28T15:48:59Z",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/40716035735",
+  "monitoringStartedAt": "2026-10-28T15:27:47.428Z",
+  "terminalObservedAt": "2026-10-28T15:49:24.200Z",
+  "allSixSuccess": true,
+  "jobs": [
+    {
+      "databaseId": 122913857450,
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:26:54Z",
+      "completedAt": "2026-10-28T15:27:56Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40716035735/job/122913857450"
+    },
+    {
+      "databaseId": 122913857795,
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:26:54Z",
+      "completedAt": "2026-10-28T15:48:05Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40716035735/job/122913857795"
+    },
+    {
+      "databaseId": 122913857858,
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:26:54Z",
+      "completedAt": "2026-10-28T15:41:24Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40716035735/job/122913857858"
+    },
+    {
+      "databaseId": 122913857891,
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:26:54Z",
+      "completedAt": "2026-10-28T15:48:58Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40716035735/job/122913857891"
+    },
+    {
+      "databaseId": 122913857952,
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:26:54Z",
+      "completedAt": "2026-10-28T15:28:26Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40716035735/job/122913857952"
+    },
+    {
+      "databaseId": 122913857969,
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:26:54Z",
+      "completedAt": "2026-10-28T15:44:07Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40716035735/job/122913857969"
+    }
+  ],
+  "readOnly": true,
+  "rerunOrCancellationPerformed": false
+}

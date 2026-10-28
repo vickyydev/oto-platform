@@ -1,0 +1,197 @@
+{
+  "ticket": "SCRUM-662",
+  "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+  "ciRunId": "40716035735",
+  "startedAt": "2026-10-28T15:52:52.955Z",
+  "complete": false,
+  "acceptanceClaimed": false,
+  "helperSha256": "ed3ee75e35c62fc5a27dc82b3a2398cae2d20603f811347c098d387a5d09f1fb",
+  "planSha256": "44bf1baef4720e2773137327f7b3e6566e171f68d1f17d42efb034aeb8075d62",
+  "scope": "Read-only staging Health observation; failure-path regression is local, not injected on staging.",
+  "sourceInputs": [
+    {
+      "path": "scripts/agent/evidence.mjs",
+      "sha256": "8e928a28fcc85ba0df51ac841b4ac619605b05cd8f1a275090f74251bfcec695"
+    },
+    {
+      "path": "scripts/agent/env.mjs",
+      "sha256": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237"
+    }
+  ],
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-28T15:52:56.997Z",
+      "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+      "greenJobs": 6,
+      "deployments": [
+        {
+          "serviceName": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh1itp5efls73b84gmg",
+          "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+          "status": "live",
+          "finishedAt": "2026-10-28T15:52:27.177371Z"
+        },
+        {
+          "serviceName": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh1itp5efls73b84hog",
+          "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+          "status": "live",
+          "finishedAt": "2026-10-28T15:50:57.971675Z"
+        }
+      ]
+    }
+  ],
+  "reads": [
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": "2026-10-28T15:53:04.940Z"
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": "2026-10-28T15:53:05.602Z",
+      "bodySha256": "58f330024bb4046a34d15cc63238c1ce76b4937e9c68699262b32779fe114678"
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": "2026-10-28T15:53:06.113Z",
+      "bodySha256": "1209510c31f8089b40af4947244f6d89f26ce8e58d9f9b0bccd8b320802ad1f2"
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": "2026-10-28T15:53:07.188Z",
+      "bodySha256": "58f330024bb4046a34d15cc63238c1ce76b4937e9c68699262b32779fe114678"
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": "2026-10-28T15:53:07.689Z",
+      "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": "2026-10-28T15:53:07.750Z",
+      "bodySha256": "635dca25fa1c2b72b99c6ece1217340a10cb15dc623bc7df5528c3512ef2c61d"
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": "2026-10-28T15:53:07.751Z",
+      "bodySha256": "5a9c2d2a0ec501461ef5d19ebe0170fa974d0f3e2a241be78580ebdfb4fd1ca0"
+    },
+    {
+      "path": "/ops/kiosks",
+      "status": 200,
+      "at": "2026-10-28T15:53:08.125Z",
+      "bodySha256": "da76cb7c5bb7980392d27126dcd2d3aff55d6775b6ff5f0c1d1e3b9759c44098"
+    },
+    {
+      "path": "/ops/test-controls",
+      "status": 200,
+      "at": "2026-10-28T15:53:08.209Z",
+      "bodySha256": "7d39564eaf8447887eab6e2d7bb2beaa002b6954e444672a80981cbfe5d3e45c"
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": "2026-10-28T15:53:08.357Z",
+      "bodySha256": "6f9bf665712b2395e6e8f2974647a44daf502dcadbf7606bdf96eeaeaa6f7185"
+    },
+    {
+      "path": "/ops/kiosks",
+      "status": 200,
+      "at": "2026-10-28T15:53:08.861Z",
+      "bodySha256": "da76cb7c5bb7980392d27126dcd2d3aff55d6775b6ff5f0c1d1e3b9759c44098"
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": "2026-10-28T15:53:37.696Z",
+      "bodySha256": "c890dd8985ff14eb171a9201c5a1a7a366bdffcb6249700258deeebd3777a09a"
+    }
+  ],
+  "blocked": [],
+  "failedRequests": [],
+  "suppressed": {
+    "fonts": 2,
+    "images": 5
+  },
+  "screenshots": [],
+  "authIntents": [
+    {
+      "method": "POST",
+      "path": "/auth/sign-in",
+      "at": "2026-10-28T15:53:02.873Z"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/sign-out",
+      "at": "2026-10-28T15:53:37.507Z"
+    }
+  ],
+  "cleanup": [
+    {
+      "originalCookieObserved": true,
+      "signOutStatus": 200,
+      "originalCookieMeStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "authUnknown": false,
+  "nativePending": 1,
+  "authoritySha256": "91525c46e729cb5676bf2d778701da3c571aeefb9280d794ad14daa4f09c7a3a",
+  "readFailure": "NATIVE_RESPONSE_UNREADABLE",
+  "readiness": {
+    "status": "ready",
+    "httpStatus": 200,
+    "observedAt": "2026-10-28T15:53:37.696Z"
+  },
+  "health": {
+    "generatedAt": "2026-10-28T15:53:08.694Z",
+    "status": "down",
+    "boxes": 9,
+    "openAlerts": 14,
+    "evidence": [
+      {
+        "source": "watchdog",
+        "availability": "ok"
+      },
+      {
+        "source": "occupancy",
+        "availability": "ok"
+      },
+      {
+        "source": "jobs",
+        "availability": "ok"
+      },
+      {
+        "source": "fleet",
+        "availability": "ok"
+      },
+      {
+        "source": "alerts",
+        "availability": "ok"
+      }
+    ],
+    "watchdog": {
+      "name": "job:watchdog",
+      "status": "ok",
+      "lastRunAt": "2026-10-28T15:52:58.981Z",
+      "lastOutcome": "ok",
+      "expectedEverySeconds": 60
+    }
+  },
+  "failure": {
+    "phase": "HEALTH",
+    "code": "NATIVE_API_READS_DID_NOT_DRAIN"
+  },
+  "cleanupDrainFailed": true,
+  "finishedAt": "2026-10-28T15:54:39.331Z"
+}

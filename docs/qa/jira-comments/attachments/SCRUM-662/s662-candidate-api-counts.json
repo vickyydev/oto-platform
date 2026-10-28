@@ -1,0 +1,130 @@
+{
+  "ticket": "SCRUM-662",
+  "checkedAt": "2026-10-28T15:31:16.817Z",
+  "passed": true,
+  "runId": 40712080315,
+  "runAttempt": 1,
+  "sourceSha": "ae329681e4974ae3e47e3673d7930d701e52d35a",
+  "runStatus": "completed",
+  "runConclusion": "success",
+  "jobs": [
+    {
+      "shard": 1,
+      "id": 122899743417,
+      "name": "api-tests (1)",
+      "step": "Api tests (shard 1 of 3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:32Z",
+      "completedAt": "2026-10-28T15:25:15Z",
+      "logSha256": "e330ca9a8b2477062a58eddfde75d13943446572c81e4f0c94c04f1abf5b574b",
+      "logByteCount": 470092,
+      "terminalSummaryLines": [
+        "Test Files  134 passed | 2 skipped (136)",
+        "Tests  1991 passed | 106 skipped (2097)"
+      ],
+      "files": {
+        "passed": 134,
+        "failed": 0,
+        "skipped": 2,
+        "todo": 0,
+        "total": 136
+      },
+      "tests": {
+        "passed": 1991,
+        "failed": 0,
+        "skipped": 106,
+        "todo": 0,
+        "total": 2097
+      },
+      "failedSummaryLines": 0
+    },
+    {
+      "shard": 2,
+      "id": 122899743130,
+      "name": "api-tests (2)",
+      "step": "Api tests (shard 2 of 3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:32Z",
+      "completedAt": "2026-10-28T15:24:53Z",
+      "logSha256": "feb0d5c4084343e34478847df36e66477e91a85dc5d917b20e082d633c40af1c",
+      "logByteCount": 513879,
+      "terminalSummaryLines": [
+        "Test Files  132 passed | 4 skipped (136)",
+        "Tests  1956 passed | 174 skipped | 4 todo (2134)"
+      ],
+      "files": {
+        "passed": 132,
+        "failed": 0,
+        "skipped": 4,
+        "todo": 0,
+        "total": 136
+      },
+      "tests": {
+        "passed": 1956,
+        "failed": 0,
+        "skipped": 174,
+        "todo": 4,
+        "total": 2134
+      },
+      "failedSummaryLines": 0
+    },
+    {
+      "shard": 3,
+      "id": 122899743086,
+      "name": "api-tests (3)",
+      "step": "Api tests (shard 3 of 3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:31Z",
+      "completedAt": "2026-10-28T15:18:50Z",
+      "logSha256": "a54306040db07d230e48b3552131a59bd12c5099755358fa58f6fc6149dc16f9",
+      "logByteCount": 492628,
+      "terminalSummaryLines": [
+        "Test Files  133 passed | 2 skipped (135)",
+        "Tests  1836 passed | 121 skipped | 1 todo (1958)"
+      ],
+      "files": {
+        "passed": 133,
+        "failed": 0,
+        "skipped": 2,
+        "todo": 0,
+        "total": 135
+      },
+      "tests": {
+        "passed": 1836,
+        "failed": 0,
+        "skipped": 121,
+        "todo": 1,
+        "total": 1958
+      },
+      "failedSummaryLines": 0
+    }
+  ],
+  "totals": {
+    "files": {
+      "passed": 399,
+      "failed": 0,
+      "skipped": 8,
+      "todo": 0,
+      "total": 407
+    },
+    "tests": {
+      "passed": 5783,
+      "failed": 0,
+      "skipped": 401,
+      "todo": 5,
+      "total": 6189
+    }
+  },
+  "uniqueShardCount": 3,
+  "exactJobIds": true,
+  "rawLogsPersisted": false,
+  "rawLogsPrinted": false,
+  "readOnly": true,
+  "limits": [
+    "Counts are the three API shard terminal summaries from this exact successful candidate CI; no other CI job/test totals are added.",
+    "Raw gh job log output was held in memory only; SHA256 and bytecount bind the downloaded CLI representation."
+  ]
+}

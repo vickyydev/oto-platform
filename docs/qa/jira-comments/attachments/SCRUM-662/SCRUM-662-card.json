@@ -1,0 +1,7 @@
+{
+  "file": "SCRUM-662-03-watchdog-regression.png",
+  "capturedAt": "2026-10-28T15:58:42.583Z",
+  "sha256": "16ea7313f20bc374c2311b35a6b2b04b19fb8f3b86331720dd49aad853284028",
+  "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+  "label": "Local native regression plus post-deploy staging observations; no staging fault injection"
+}
