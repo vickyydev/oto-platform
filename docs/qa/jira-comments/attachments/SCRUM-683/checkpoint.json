@@ -1,0 +1,69 @@
+{
+  "ticket": "SCRUM-683",
+  "declaredHead": "4405a597d16e3aa94704a9274913aacbff40b6e0",
+  "sourceFiles": 3942,
+  "sourceBeforeSha256": "6ea6d919c1899bef70b015cda768ce7a0ccd52f7044b3a6568f0408f2c63a3e0",
+  "sourceAfterSha256": "00fb73d0286b1810f16c3e5f609cc6f38276f9a0e5e4d2a4655b54d623b8895e",
+  "changedTrackedPaths": [
+    "apps/console/e2e/payment-discovery-filters.spec.ts"
+  ],
+  "onlyAuthorisedTestCopyAndPrivacyAssertionsChanged": true,
+  "testFileSha256": "433528fa99720c73cbd732d4503c656889612228297361cc21543f1a8d9ded1c",
+  "checks": [
+    {
+      "name": "units-console-whole-v1",
+      "receiptSha256": "5d6d2c91f3c19c87986defd9fbb9eb5e29c24191bc346241bdb1da4418cbfbd5",
+      "logSha256": "aa89ba9f88970040497f108fab50b2ffac6390b302b1be182353823a7d57de71",
+      "exitCode": 0,
+      "passed": 556,
+      "files": 53,
+      "todo": 3
+    },
+    {
+      "name": "units-shared-screens-whole-v1",
+      "receiptSha256": "501c90ad6e6ea90337599ce1c143edca7c9e37dce630924e2c80b741848bdf07",
+      "logSha256": "04ac5ef8793c8cecc33a95cdaa2f7d1271ee8eaf36e9184ecbbcf2193691ec2e",
+      "exitCode": 0,
+      "passed": 157,
+      "files": 17,
+      "todo": 0
+    },
+    {
+      "name": "console-typecheck-v1",
+      "receiptSha256": "6c5c153fe9894b349552c4728eaadea358dfbde69c6f840ecf1121d6e4815272",
+      "logSha256": "279c0b41a80b1bda9dbdd224f2fa7147752de2fee9264b45a5b1c9dd993d3a28",
+      "exitCode": 0
+    },
+    {
+      "name": "screens-typecheck-v1",
+      "receiptSha256": "254a46c0cdea5a1e9dd4acd1107e91a6ef7b65b3f2dbe122baebe389de536a03",
+      "logSha256": "982684ba0bea0b6871c17a172e18a6319a2ee33f7c3958a1d4b8ba9b5704228d",
+      "exitCode": 0
+    },
+    {
+      "name": "lint-v1",
+      "receiptSha256": "23bed44d3cd184d698812224ad96383f81dc5119d91be8cae22f1567c54f2611",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    {
+      "name": "diff-check-v1",
+      "receiptSha256": "214687f02aec58b54da8dc8bf091e23de7d94aeaacecaf9404092ae366c6172d",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    }
+  ],
+  "unitPasses": 713,
+  "existingTodos": 3,
+  "consoleCompilerConfigs": 3,
+  "screensCompilerConfigs": 1,
+  "compilerDiagnostics": 0,
+  "lintTsFiles": 15,
+  "lintErrors": 0,
+  "browserStarted": false,
+  "databaseStarted": false,
+  "browserAcceptance": "Pending runtime slot; original345 remains separately bound in preintegration-reference.json.",
+  "productionEdited": false,
+  "committed": false,
+  "staging": false
+}

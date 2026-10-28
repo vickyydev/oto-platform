@@ -1,0 +1,11 @@
+# SCRUM-683 integrated local evidence
+
+The final source `f0b249edc1629c122ed5744643c2be562df945d3` passed **359 of 359 native Console browser cases**, with no failures or skips. Its 3,997 tracked non-documentation inputs were unchanged, both native child and worker exited zero, and the private database and embedded server were shut down independently. The later integration onto the documented SCRUM-682 candidate changes no product or test bytes.
+
+The [browser receipt](browser-all-v1.json) contains the actual run. The [frontend receipt](browser-all-v1-frontend.json), [manifest](browser-all-v1-frontend-source.json) and [descriptor](browser-all-v1-proof-descriptor.json) are explicitly derived bindings of that same run, not extra tests. They cover all 445 tracked Console/AdminScreens files and 38 actual browser specifications.
+
+The [package checkpoint](checkpoint.json) records 556 Console and 157 AdminScreens passes, with three inherited Console TODOs. The packages' own four compiler configurations and 15-file lint pass. The [small assertion amendment](amendment-v2.json) separately records repeated Console compilation and lint after requiring the old park's error to disappear during a held new-park read. The full 359-case run verifies that added assertion. All existing fixture, filter, scope, total and failed-empty assertions remain.
+
+Payments groups existing setup, POS operation, reconciliation and investigation destinations. Tenders refines the loaded methods by name, enabled state and kind. Devices refines loaded boxes/stations by text and the native box status without changing other device panels or totals. Configuration groups and searches its already-authorized entries. Money attention controls refine loaded cash/settlement rows while retaining source totals and their date bases. The existing permissions and payment rules remain unchanged.
+
+The earlier [345-case reference](preintegration-reference.json) remains explicitly pre-integration. The current acceptance basis is the combined 359-case run. These local results do not establish staging acceptance; exact main CI, automatic deployment and inspected post-deploy screenshots remain required. No migration, gateway editor, payment operation, emergency-switch integration or generic wallet-policy writer is included.

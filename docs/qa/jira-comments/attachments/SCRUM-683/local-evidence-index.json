@@ -1,0 +1,65 @@
+{
+  "ticket": "SCRUM-683",
+  "createdAt": "2026-10-28T20:26:56.431Z",
+  "testedSource": "f0b249edc1629c122ed5744643c2be562df945d3",
+  "currentSource": "5c1adc944b6100d2b7115d5a5896beb390e9c21a",
+  "productBytesIdentical": true,
+  "files": [
+    {
+      "file": "checkpoint.json",
+      "sha256": "8da98f36b57f59bd0c9c0af24ba6a04809af4d0d7eca6c411b1a8bc127b42f56"
+    },
+    {
+      "file": "amendment-v2.json",
+      "sha256": "0ef36a53b71c56d6fa6f2b3a4a30e13e2e382fa16cc7ca8f1966ec809d92ac85"
+    },
+    {
+      "file": "browser-all-v1.json",
+      "sha256": "0a2160a396b81d299587be8c5e9a90e7e4487b29f44bce3b2ae9ff9eb07bcadf"
+    },
+    {
+      "file": "browser-all-v1-frontend.json",
+      "sha256": "1556fcfa5f58fe139c18c45ade8deee253bd0f025a6d37e94b85bd6bc2676da1"
+    },
+    {
+      "file": "browser-all-v1-frontend-source.json",
+      "sha256": "c168e1423d0b476858132f5c4898d67907d0ba88572031f90fb4298aca7c0146"
+    },
+    {
+      "file": "browser-all-v1-proof-descriptor.json",
+      "sha256": "ff187bf87cafdeb13f6bb1efe16f0d7bd8259a7739974ed5d2dfaac825f6fccc"
+    },
+    {
+      "file": "units-console-whole-v1.json",
+      "sha256": "5d6d2c91f3c19c87986defd9fbb9eb5e29c24191bc346241bdb1da4418cbfbd5"
+    },
+    {
+      "file": "units-shared-screens-whole-v1.json",
+      "sha256": "501c90ad6e6ea90337599ce1c143edca7c9e37dce630924e2c80b741848bdf07"
+    },
+    {
+      "file": "console-typecheck-v1.json",
+      "sha256": "6c5c153fe9894b349552c4728eaadea358dfbde69c6f840ecf1121d6e4815272"
+    },
+    {
+      "file": "screens-typecheck-v1.json",
+      "sha256": "254a46c0cdea5a1e9dd4acd1107e91a6ef7b65b3f2dbe122baebe389de536a03"
+    },
+    {
+      "file": "lint-v1.json",
+      "sha256": "23bed44d3cd184d698812224ad96383f81dc5119d91be8cae22f1567c54f2611"
+    },
+    {
+      "file": "amendment-console-typecheck-v2.json",
+      "sha256": "c8ee242bc488e388ee7f0905fb2c593801d496c2e253055a475cfb46d940762d"
+    },
+    {
+      "file": "amendment-lint-v2.json",
+      "sha256": "298f18dd7953a66aee94835193f7e4c1a7f760466cfd667268d6455a82e02894"
+    },
+    {
+      "file": "preintegration-reference.json",
+      "sha256": "f28dd70a2df089bcfcf0938e9d623e28f201c2ccee562021ab87ced1f9f8a04a"
+    }
+  ]
+}
