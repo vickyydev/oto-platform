@@ -26,7 +26,7 @@ import {
   type KnowledgeInput,
   type OpeningHours,
 } from '@oto/assistant';
-import { schema as s } from '@oto/db';
+import { schema as s, type InboxTemplateKey } from '@oto/db';
 import { newId, type Satang } from '@oto/shared';
 import type { FileStorage } from '../src/services/files';
 import { runInboxAiJob, type AiSweep } from '../src/services/inbox/ai-engine';
@@ -411,12 +411,14 @@ export interface GoldenTurn {
 
 /** What should be on the thread after the golden's last turn (the live eval checks it). */
 export interface ThreadExpectation {
-  /** The team the thread ends with: moved to Birthdays, or left where it started. */
-  team: 'birthdays' | 'unchanged';
+  /** The team the thread ends with: moved to Birthdays or the GM queue, or left where it started. */
+  team: 'birthdays' | 'gm' | 'unchanged';
   /** AI media lines carrying a brochure. */
   brochures?: number;
   /** The holding line went verbatim from its template. */
   holdingFromTemplate?: boolean;
+  /** The closing line went verbatim from this template (SCRUM-220 playbook: the destination's line). */
+  closingKey?: InboxTemplateKey;
 }
 
 export interface LiveGolden {
@@ -435,7 +437,17 @@ const NO_TY_FORMS = /(?:^|[^а-яё])(?:ты|тебя|тебе|тобой|тво
 const NO_LOWER_VY = /(?:^|[^А-Яа-яЁё])(?:вы|вас|вам|вами|ваш\p{L}*)(?=[^А-Яа-яЁё]|$)/u;
 const NO_DATE_HELD = /14|fourteenth|พฤศจิกายน|november/i;
 const NO_FAULT = /our fault|we apologi[sz]e for|it was our|compensat|refund|\bfree\b/i;
-const NO_BRANCH_QUESTION = /which (?:park|branch)|central floresta or chalong|สาขาไหน/i;
+/** A bubble asking which park (the playbook's branch question, alone or in its combined question). */
+const BRANCH_QUESTION = /which (?:park|branch)|central floresta or (?:robinson )?chalong|สาขาไหน/i;
+const NO_PRICE_YET = /฿|บาท|baht/i;
+
+/** The playbook's destinations as the gate plans them (SCRUM-220). */
+const BIRTHDAYS_LINE = { templateKey: 'closing_birthday', route: 'birthdays', brochure: false } as const;
+const BROCHURE_REQUEST = { templateKey: 'handover_birthday', route: 'birthdays', brochure: true } as const;
+const GM_LINE = { templateKey: 'closing_gm', route: 'gm', brochure: false } as const;
+const UNCLEAR_AT_BRANCH = { templateKey: 'handover_general', route: 'general', brochure: false } as const;
+/** The episode a second turn sees: one answer before it. */
+const AFTER_ONE_ANSWER = { aiAnswers: 1, aiAnswersLast10Min: 1 } as const;
 
 const d = (over: Partial<AiDecision>): AiDecision => ({
   language: 'en',
@@ -476,6 +488,8 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
     setup: '14:00, operator-wide number, no branch',
     account: 'wide',
     turns: [
+      // The playbook answers first ("quick answers first"): the hours hold for
+      // both parks, so no park question is needed to answer them.
       {
         says: 'สวัสดีค่ะ OTO เปิดกี่โมงถึงกี่โมงคะ',
         expect: {
@@ -483,7 +497,8 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
           intent: 'hours',
           language: 'th',
           groundingAnyOf: ['fact.hours.central', 'fact.hours.chalong', 'hours-holidays'],
-          askBranch: true,
+          mustSay: [/10:00|20:00/],
+          mustNotSay: [NO_LANGUAGE_MENU],
         },
         episode: { threadHasBranch: false },
         rehearsal: d({
@@ -491,11 +506,31 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
           intent: 'hours',
           reason: 'FACT_IN_KB',
           grounding: ['fact.hours.central', 'fact.hours.chalong'],
+          bubbles: ['สวัสดีค่ะ 😊 ทั้งสองสาขาเปิดทุกวัน 10:00–20:00 น. ค่ะ'],
+        }),
+      },
+      // Prices are the exception: the one question comes BEFORE the prices,
+      // and a Thai customer gets its branch part only (the playbook's
+      // "Pricing conversations"). Asked once, citing both parks' price facts.
+      {
+        says: 'ราคาเท่าไหร่คะ',
+        expect: {
+          action: 'answer',
+          intent: 'ticket_prices',
+          language: 'th',
+          groundingAnyOf: ['fact.prices.central', 'fact.prices.chalong'],
           askBranch: true,
-          bubbles: [
-            'สวัสดีค่ะ 😊 OTO เปิดทุกวัน 10:00–20:00 น. ค่ะ',
-            'สะดวกมาสาขาไหนคะ Central Floresta หรือ Chalong คะ',
-          ],
+          mustSay: [BRANCH_QUESTION],
+          mustNotSay: [NO_PRICE_YET, NO_TOTAL, NO_DISCOUNT],
+        },
+        episode: { ...AFTER_ONE_ANSWER, threadHasBranch: false },
+        rehearsal: d({
+          language: 'th',
+          intent: 'ticket_prices',
+          reason: 'FACT_IN_KB',
+          grounding: ['fact.prices.central', 'fact.prices.chalong'],
+          askBranch: true,
+          bubbles: ['สะดวกมาสาขาไหนคะ Central Floresta หรือ Robinson Chalong คะ 😊'],
         }),
       },
     ],
@@ -521,7 +556,7 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
           intent: 'ticket_prices',
           reason: 'FACT_IN_KB',
           grounding: ['fact.prices.chalong'],
-          bubbles: ['On weekends a child ticket at Chalong is ฿490, and each child ticket includes one adult 😊'],
+          bubbles: ['On weekends a child ticket at Chalong is ฿490, and the first adult gets in free 😊'],
         }),
       },
     ],
@@ -552,31 +587,51 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
     ],
     thread: { team: 'unchanged' },
   },
+  // The playbook's birthday flow (owner D1): the warm open and ONE combined
+  // question first — dates, roughly how many people, which branch, skipping
+  // what was said — then, once the basics are in, the birthday manager's
+  // closing line and the Birthdays queue. The brochure goes only when asked.
   {
     id: 'G5',
-    setup: '13:00, operator-wide',
+    setup: '13:00, operator-wide, then the brochure asked for',
     account: 'wide',
     turns: [
       {
         says: "Hi, I'd like a birthday party for my son on 14 November, about 15 kids",
         expect: {
-          action: 'handover',
+          action: 'answer',
           intent: 'birthday_party',
           language: 'en',
-          plan: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
-          mustNotSay: [NO_DATE_HELD, NO_BRANCH_QUESTION],
+          thenHandover: null,
+          // The date and the headcount are in: the one question is the branch.
+          mustSay: [BRANCH_QUESTION],
+          mustNotSay: [NO_DATE_HELD],
         },
         episode: { threadHasBranch: false },
         rehearsal: d({
           intent: 'birthday_party',
-          action: 'handover',
-          reason: 'NEEDS_PERSON',
+          bubbles: ["Amazing, thank you! We'd love to organize a party for your son 🎈", 'Which branch would you like, Central Floresta or Robinson Chalong?'],
+        }),
+      },
+      {
+        says: 'Before we pick, can you send me your birthday packages?',
+        expect: {
+          action: 'answer',
+          intent: 'birthday_brochure',
+          language: 'en',
+          thenHandover: BROCHURE_REQUEST,
+          mustNotSay: [NO_DATE_HELD],
+        },
+        episode: { ...AFTER_ONE_ANSWER, threadHasBranch: false },
+        rehearsal: d({
+          intent: 'birthday_brochure',
           sendBrochure: true,
-          bubbles: ['Thank you! A colleague from our birthday team will be with you shortly 🎈'],
+          bubbles: ['Of course! Here are our birthday packages 🎂'],
         }),
       },
     ],
-    thread: { team: 'birthdays', brochures: 2, holdingFromTemplate: true },
+    // A branchless thread: both parks' brochures, then the birthday manager's line.
+    thread: { team: 'birthdays', brochures: 2, closingKey: 'closing_birthday' },
   },
   {
     id: 'G6',
@@ -586,24 +641,36 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
       {
         says: 'จองวันเสาร์ที่ 14 ให้หน่อยได้ไหมคะ ลูกสาวครบ 5 ขวบ',
         expect: {
-          action: 'handover',
+          action: 'answer',
           intent: 'birthday_party',
           language: 'th',
-          plan: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
-          mustNotSay: [NO_DATE_HELD, NO_BRANCH_QUESTION],
+          thenHandover: null,
+          mustNotSay: [NO_DATE_HELD],
         },
         rehearsal: d({
           language: 'th',
           intent: 'birthday_party',
-          action: 'handover',
-          reason: 'NEEDS_PERSON',
-          sendBrochure: true,
-          bubbles: ['ขอบคุณที่สนใจนะคะ ทีมงานวันเกิดจะติดต่อกลับโดยเร็วค่ะ 🎈'],
+          bubbles: ['ยินดีด้วยนะคะ 🎈 แอดมินยินดีช่วยจัดปาร์ตี้วันเกิดให้น้องเลยค่ะ', 'ประมาณกี่ท่านคะ และสนใจจัดที่สาขาไหน Central Floresta หรือ Robinson Chalong คะ'],
         }),
       },
+      {
+        says: 'ประมาณ 12 คนค่ะ จัดที่ Central Floresta ค่ะ',
+        expect: {
+          action: 'handover',
+          intent: 'birthday_details',
+          language: 'th',
+          plan: BIRTHDAYS_LINE,
+          mustNotSay: [NO_DATE_HELD],
+        },
+        episode: AFTER_ONE_ANSWER,
+        rehearsal: d({ language: 'th', intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON' }),
+      },
     ],
-    thread: { team: 'birthdays', brochures: 1, holdingFromTemplate: true },
+    thread: { team: 'birthdays', brochures: 0, closingKey: 'closing_birthday' },
   },
+  // The playbook's complaint: ONE sincere apology that never admits fault —
+  // the gate sends it as a lead line, an answer followed by the hand-over —
+  // then the general manager's closing line, and the GM queue.
   {
     id: 'G7',
     setup: '18:30, Chalong',
@@ -612,22 +679,26 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
       {
         says: 'Your staff were rude and my daughter got hurt today. Unacceptable.',
         expect: {
-          action: 'handover',
+          action: 'answer',
           intent: 'complaint_onsite',
           language: 'en',
-          plan: { templateKey: 'handover_complaint_onsite', route: 'general', brochure: false },
+          thenHandover: GM_LINE,
+          mustSay: [/sorry/i],
           mustNotSay: [NO_FAULT],
         },
         rehearsal: d({
           intent: 'complaint_onsite',
           action: 'handover',
           reason: 'NEEDS_PERSON',
-          bubbles: ['Thank you for telling us. A colleague will contact you shortly.'],
+          bubbles: ["We're so sorry to hear about your visit today."],
         }),
       },
     ],
-    thread: { team: 'unchanged', holdingFromTemplate: true },
+    thread: { team: 'gm', closingKey: 'closing_gm' },
   },
+  // The playbook's "that's expensive": the value line and the deal from the
+  // knowledge (its price is grounded in the cited deal), no hand-over; a
+  // customer who still pushes is handed over with the branch's line.
   {
     id: 'G8',
     setup: '12:00, Central, Russian',
@@ -636,22 +707,36 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
       {
         says: 'Можно скидку если придём с тремя детьми?',
         expect: {
-          action: 'handover',
+          action: 'answer',
           intent: 'discount_negotiation',
           language: 'ru',
-          plan: { templateKey: 'handover_general', route: 'keep', brochure: false },
-          mustNotSay: [/\d/, NO_DISCOUNT],
+          groundingAnyOf: ['deals'],
+          thenHandover: null,
+          mustSay: [/Food & Play/],
+          mustNotSay: [NO_DISCOUNT, /%/],
         },
         rehearsal: d({
           language: 'ru',
           intent: 'discount_negotiation',
-          action: 'handover',
-          reason: 'NEEDS_PERSON',
-          bubbles: ['Спасибо за вопрос! Коллега скоро ответит Вам.'],
+          reason: 'FACT_IN_KB',
+          grounding: ['deals'],
+          bubbles: ['Здравствуйте! Всё внутри уже включено 😊', 'А ещё есть Food & Play: игра на весь день и детское блюдо, ฿420 за ребёнка в обоих парках.'],
         }),
       },
+      {
+        says: 'Нет, всё равно хочу скидку.',
+        expect: {
+          action: 'handover',
+          intent: 'discount_insist',
+          language: 'ru',
+          plan: UNCLEAR_AT_BRANCH,
+          mustNotSay: [/\d/, /%/],
+        },
+        episode: AFTER_ONE_ANSWER,
+        rehearsal: d({ language: 'ru', intent: 'discount_insist', action: 'handover', reason: 'NEEDS_PERSON' }),
+      },
     ],
-    thread: { team: 'unchanged' },
+    thread: { team: 'unchanged', closingKey: 'closing_branch' },
   },
   {
     id: 'G9',
@@ -732,6 +817,7 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
     setup: '12:00, Central, the hours and a party in one message',
     account: 'central',
     turns: [
+      // Both parts answered: the hours, and the birthday question (the date is in).
       {
         says: 'what are your hours and can I book a party for the 20th?',
         expect: {
@@ -740,21 +826,33 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
           intentsInclude: ['hours', 'birthday_party'],
           language: 'en',
           groundingAnyOf: ['fact.hours.central', 'hours-holidays'],
-          thenHandover: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
-          // The hours are answered; the date is neither held nor named, and no price is quoted.
-          mustSay: [/10:00|20:00|10 ?(?:am|a\.m\.)|8 ?(?:pm|p\.m\.)/i],
-          mustNotSay: [/\b20th\b|twentieth|฿|baht|bath\b/i, NO_BRANCH_QUESTION, NO_DISCOUNT],
+          thenHandover: null,
+          // The hours answered and the headcount asked; the date neither held nor named, no price quoted.
+          mustSay: [/10:00|20:00|10 ?(?:am|a\.m\.)|8 ?(?:pm|p\.m\.)/i, /how many|people|guests|kids|children/i],
+          mustNotSay: [/\b20th\b|twentieth|฿|baht|bath\b/i, NO_DISCOUNT],
         },
         rehearsal: d({
           intent: 'hours',
           intents: ['hours', 'birthday_party'],
           reason: 'FACT_IN_KB',
           grounding: ['fact.hours.central'],
-          bubbles: ["We're open every day 10:00–20:00 😊"],
+          bubbles: ["We're open every day 10:00–20:00 😊", "And we'd love to organize a party for you! Roughly how many people, and which branch, Central Floresta or Robinson Chalong?"],
         }),
       },
+      {
+        says: 'about 12 kids, at Central Floresta',
+        expect: {
+          action: 'handover',
+          intent: 'birthday_details',
+          language: 'en',
+          plan: BIRTHDAYS_LINE,
+          mustNotSay: [/\b20th\b|twentieth|฿|baht/i],
+        },
+        episode: AFTER_ONE_ANSWER,
+        rehearsal: d({ intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON' }),
+      },
     ],
-    thread: { team: 'birthdays', brochures: 1, holdingFromTemplate: true },
+    thread: { team: 'birthdays', brochures: 0, closingKey: 'closing_birthday' },
   },
 ];
 
@@ -1226,7 +1324,7 @@ export async function threadState(w: GoldenWorld, conversationId: string) {
   return { conv: conv!, turns, lines, events, templateKeyOf: (id: string | null) => (id ? (keyOf.get(id) ?? null) : null) };
 }
 
-export async function teamIdOf(w: GoldenWorld, key: 'birthdays' | 'reception', branchId: string | null = null): Promise<string> {
+export async function teamIdOf(w: GoldenWorld, key: 'birthdays' | 'gm' | 'reception', branchId: string | null = null): Promise<string> {
   const [t] = await w.ctx.db
     .select({ id: s.team.id })
     .from(s.team)
@@ -1244,11 +1342,12 @@ export async function judgeThread(
 ): Promise<string[]> {
   const fails: string[] = [];
   const t = await threadState(w, conversationId);
-  if (expect.team === 'birthdays') {
-    const birthdays = await teamIdOf(w, 'birthdays');
-    if (t.conv.teamId !== birthdays || t.conv.category !== 'birthdays') fails.push('thread not moved to Birthdays');
+  if (expect.team === 'birthdays' || expect.team === 'gm') {
+    const name = expect.team === 'gm' ? 'the GM queue' : 'Birthdays';
+    const dest = await teamIdOf(w, expect.team);
+    if (t.conv.teamId !== dest || t.conv.category !== expect.team) fails.push(`thread not moved to ${name}`);
     const slots = await w.ctx.db.select().from(s.assignment).where(and(eq(s.assignment.conversationId, conversationId), isNull(s.assignment.releasedAt)));
-    if (slots.length === 0 || slots.some((a) => a.assignedByKind !== 'ai')) fails.push('Birthdays seats not assigned by the assistant');
+    if (slots.length === 0 || slots.some((a) => a.assignedByKind !== 'ai')) fails.push(`${name} seats not assigned by the assistant`);
   } else if (t.conv.teamId !== startTeamId) {
     fails.push('thread moved off its starting team');
   }
@@ -1260,6 +1359,11 @@ export async function judgeThread(
   if (expect.holdingFromTemplate) {
     const holding = ai.filter((l) => l.mediaFileIds.length === 0).at(-1);
     if (!holding || !holding.templateId) fails.push('the holding line did not go verbatim from its template');
+  }
+  if (expect.closingKey) {
+    const closing = ai.filter((l) => l.mediaFileIds.length === 0).at(-1);
+    const key = t.templateKeyOf(closing?.templateId ?? null);
+    if (key !== expect.closingKey) fails.push(`the closing line is ${key ?? 'not a template line'}, expected ${expect.closingKey} verbatim`);
   }
   return fails;
 }
