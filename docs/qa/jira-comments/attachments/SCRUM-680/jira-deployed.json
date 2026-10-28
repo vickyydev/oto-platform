@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-680",
+  "before": {
+    "status": "Testing",
+    "summary": "Check tax-override ownership and give useful reference refusals"
+  },
+  "after": {
+    "status": "Deployed",
+    "summary": "Check tax-override ownership and give useful reference refusals"
+  },
+  "parent": {
+    "status": "Testing",
+    "summary": "Audit Admin Console pages, API messages and payment settings"
+  },
+  "evidenceCommit": "9d0a6d57e216b7d1661436fb1f77ea12ba77bd90",
+  "sourceSha": "823ae0e9e83e5529d78cee0156cfb00743d0f1f3",
+  "screenshots": [
+    "SCRUM-680-01-tax-page.png",
+    "SCRUM-680-02-reference-refusals.png"
+  ],
+  "at": "2026-10-28T19:10:00.865Z"
+}
