@@ -31,7 +31,7 @@ import type { Db } from '../index';
 import * as s from '../schema/index';
 import type { InboxTeamKey } from '../schema/inbox';
 import { DemoDayRefusedError } from './demo-refusal';
-import { NAMED_RULE_PRIORITY, syncInboxSetup } from './inbox';
+import { NAMED_RULE_PRIORITY, layDefaultSilencePolicies, syncInboxSetup } from './inbox';
 import {
   DEMO_CHANNEL_ACCOUNTS,
   DEMO_CONVERSATIONS,
@@ -345,6 +345,9 @@ export async function seedInboxDemo(db: Db, opts: SeedInboxDemoOptions): Promise
     }
     channelAccounts[key] = { id, channel: ca.channel };
   }
+  // The park-bound twins take their park's silence policy (SCRUM-220
+  // playbook), as platform-sync would give them on the next deploy.
+  await layDefaultSilencePolicies(db, operatorId);
 
   const ctx: DemoContext = { operatorId, staff, channelAccounts, branches, teams };
   for (const conv of DEMO_CONVERSATIONS) {

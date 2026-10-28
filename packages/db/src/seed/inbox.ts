@@ -23,7 +23,10 @@
  *     has) takes its translation, see `backfillTranslations`;
  *   - one `console` channel account per notice channel (WhatsApp, LINE,
  *     Telegram) — the sender the check-in confirmation already goes through,
- *     which can never reply.
+ *     which can never reply;
+ *   - the playbook's default SILENCE POLICY on every park-bound number that
+ *     has none (SCRUM-220, `syncSilencePolicies`): the branch desk's own
+ *     matters, on which the assistant hands over without a word.
  *
  * THE RULE, as for the tenders beside it (`./tenders.ts`): the platform writes
  * the starting point, and the operator owns what it did next. Every write
@@ -42,7 +45,9 @@
  *     flagged `needs_translation` AND still equals the English source — an
  *     admin's own words, flagged or not, are never overwritten;
  *   - a console account exists by (operator, provider, external id),
- *     archived included.
+ *     archived included;
+ *   - a silence policy is laid only where the column is NULL (never set):
+ *     a saved policy, an empty list included, is the operator's.
  *
  * Migrations own structure and this owns data: `0078_inbox_schema` writes no
  * row. Nor does `0080_inbox_ai`, and nothing here sets a channel account's
@@ -61,7 +66,7 @@ import {
 } from '@oto/shared';
 import type { Db } from '../index';
 import * as s from '../schema/index';
-import type { InboxCategory, InboxChannel, InboxTeamKey, InboxTemplateKey } from '../schema/inbox';
+import type { ChannelSilencePolicy, InboxCategory, InboxChannel, InboxTeamKey, InboxTemplateKey } from '../schema/inbox';
 
 /** The operator-wide departments the Inbox adds. Reception reuses each branch's own. */
 export const INBOX_DEPARTMENTS = {
@@ -288,6 +293,8 @@ export interface InboxSyncCounts {
   /** TH or RU template rows that still carried the English source and took their translation. */
   translations: number;
   channelAccounts: number;
+  /** Park-bound numbers with no silence policy that took the playbook's default (SCRUM-220). */
+  silencePolicies: number;
 }
 
 const emptyCounts = (): InboxSyncCounts => ({
@@ -300,6 +307,7 @@ const emptyCounts = (): InboxSyncCounts => ({
   templates: 0,
   translations: 0,
   channelAccounts: 0,
+  silencePolicies: 0,
 });
 
 /**
@@ -565,6 +573,71 @@ async function syncConsoleAccounts(db: Db, operatorId: string, counts: InboxSync
 }
 
 /**
+ * THE PLAYBOOK'S DEFAULT SILENCE POLICY (SCRUM-220, Tom's Inbox Bot Playbook
+ * of 28 Oct 2026). A park's own number stays silent on the branch desk's
+ * matters — drop-off care, the nanny, lost and found — and hands the thread to
+ * the park's team without a word; the assistant engine reads the list
+ * (`apps/api/src/services/inbox/ai-destination.ts`). The words are the
+ * assistant's intent ids (`@oto/assistant` AI_INTENTS): the playbook's
+ * "nanny" is `nanny_booking`, its "lost and found" is `lost_item`.
+ *
+ * Central Floresta runs the nanny service; Robinson Chalong does not, so a
+ * nanny question there gets the branch's closing line instead. A park the
+ * playbook does not name takes the list without the nanny: drop-off and lost
+ * and found are every park's desk, the nanny only where it is offered.
+ */
+export const DEFAULT_SILENT_INTENTS = {
+  withNanny: ['drop_off_care', 'nanny_booking', 'lost_item'],
+  withoutNanny: ['drop_off_care', 'lost_item'],
+} as const;
+
+/** The default policy of a number bound to the park with this code. */
+export function defaultSilencePolicyFor(branchCode: string): ChannelSilencePolicy {
+  const nanny = branchCode.toLowerCase().includes('central');
+  return { silentIntents: [...(nanny ? DEFAULT_SILENT_INTENTS.withNanny : DEFAULT_SILENT_INTENTS.withoutNanny)] };
+}
+
+/**
+ * Every live, park-bound number of the operator whose policy was never set
+ * takes its park's default. Insert-if-absent on the column: a saved policy —
+ * an empty list included, which is how an operator turns the default off —
+ * is never overwritten. A number with no park (the main number, a page, a
+ * console sender) has no branch desk and is left without one.
+ */
+async function syncSilencePolicies(db: Db, operatorId: string, counts: InboxSyncCounts): Promise<void> {
+  const unset = await db
+    .select({ id: s.channelAccount.id, code: s.branch.code })
+    .from(s.channelAccount)
+    .innerJoin(s.branch, eq(s.branch.id, s.channelAccount.branchId))
+    .where(
+      and(
+        eq(s.channelAccount.operatorId, operatorId),
+        isNull(s.channelAccount.silencePolicy),
+        isNull(s.channelAccount.archivedAt),
+      ),
+    );
+  for (const number of unset) {
+    const laid = await db
+      .update(s.channelAccount)
+      .set({ silencePolicy: defaultSilencePolicyFor(number.code), updatedAt: new Date() })
+      .where(and(eq(s.channelAccount.id, number.id), isNull(s.channelAccount.silencePolicy)))
+      .returning({ id: s.channelAccount.id });
+    counts.silencePolicies += laid.length;
+  }
+}
+
+/**
+ * The same default for one operator, outside a full sync: the inbox demo lays
+ * its simulator numbers after its own sync, and gives them their park's
+ * policy here. Answers how many numbers took it.
+ */
+export async function layDefaultSilencePolicies(db: Db, operatorId: string): Promise<number> {
+  const counts = emptyCounts();
+  await syncSilencePolicies(db, operatorId, counts);
+  return counts.silencePolicies;
+}
+
+/**
  * Lay the Inbox's configuration for every operator that lacks it.
  *
  * Archived operators are included, as the tenders are: a park that trades
@@ -656,6 +729,7 @@ export async function syncInboxSetup(db: Db): Promise<InboxSyncCounts> {
     for (const team of teams) await syncRules(db, operatorId, team, counts);
     await syncTemplates(db, operatorId, counts);
     await syncConsoleAccounts(db, operatorId, counts);
+    await syncSilencePolicies(db, operatorId, counts);
     if (JSON.stringify(counts) !== before) counts.operators += 1;
   }
   return counts;
@@ -664,5 +738,5 @@ export async function syncInboxSetup(db: Db): Promise<InboxSyncCounts> {
 /** One line for the deploy log, or null when nothing was laid. */
 export function describeInboxSync(c: InboxSyncCounts): string | null {
   if (c.operators === 0) return null;
-  return `Inbox: laid ${c.roles} role(s), ${c.grants} late permission grant(s), ${c.departments} department(s), ${c.teams} team(s), ${c.rules} routing rule(s), ${c.templates} template(s), ${c.translations} template translation(s) and ${c.channelAccounts} console channel account(s) at ${c.operators} operator(s) — the rules' people are blank until somebody names them.`;
+  return `Inbox: laid ${c.roles} role(s), ${c.grants} late permission grant(s), ${c.departments} department(s), ${c.teams} team(s), ${c.rules} routing rule(s), ${c.templates} template(s), ${c.translations} template translation(s), ${c.channelAccounts} console channel account(s) and the default silence policy on ${c.silencePolicies} number(s) at ${c.operators} operator(s) — the rules' people are blank until somebody names them.`;
 }

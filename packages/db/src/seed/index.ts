@@ -102,11 +102,13 @@ export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
 /** The Inbox's configuration and its demo conversations (S2-19 I1, I1b). */
 export {
   CONSOLE_NOTICE_CHANNELS,
+  DEFAULT_SILENT_INTENTS,
   INBOX_DEPARTMENTS,
   INBOX_TEMPLATE_BODIES,
   INBOX_TEMPLATE_FORMER_BODIES,
   INBOX_TEMPLATE_TRANSLATIONS,
   consoleExternalId,
+  defaultSilencePolicyFor,
   describeInboxSync,
   syncInboxSetup,
   type InboxSyncCounts,

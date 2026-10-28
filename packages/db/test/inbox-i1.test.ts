@@ -442,6 +442,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
       templates: 0,
       translations: 0,
       channelAccounts: 0,
+      silencePolicies: 0,
     });
     expect(await inboxCounts()).toEqual(before);
     expect((await db.select().from(s.role)).length).toBe(rolesBefore);
