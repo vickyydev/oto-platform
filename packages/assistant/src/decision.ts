@@ -104,6 +104,9 @@ export const AI_OUTCOME_REASONS = [
   'GUARD_FAULT',
   'GUARD_FRAMING',
   'GUARD_LANGUAGE',
+  // SCRUM-669: the customer named one park and the reply cites another
+  // park's price source.
+  'GUARD_PARK',
   'OVERRULED_HANDOVER',
   'IDENTITY_SECOND_ASK',
   'CAP_EPISODE',
