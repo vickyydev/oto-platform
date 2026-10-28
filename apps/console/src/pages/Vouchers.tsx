@@ -306,7 +306,9 @@ export function Vouchers() {
                     Previous
                   </Button>
                   <span className="text-sm tabular-nums">
-                    {data.total ? offset + 1 : 0}–{offset + data.rows.length} of {data.total}
+                    {data.rows.length === 0 && data.total > 0
+                      ? `0 on this page · ${data.total} matching`
+                      : `${data.total ? offset + 1 : 0}–${offset + data.rows.length} of ${data.total}`}
                   </span>
                   <Button
                     size="sm"
@@ -325,7 +327,9 @@ export function Vouchers() {
               <EmptyNote
                 icon={Ticket}
                 title="No matching vouchers"
-                detail="Nothing was issued under these filters. Widen the days, or choose All above."
+                detail={data.total > 0
+                  ? 'This page is empty. Matching vouchers are on an earlier page; choose Previous.'
+                  : 'Nothing was issued under these filters. Widen the days, or choose All above.'}
               />
             ) : (
               <div role="table" aria-label="Vouchers" className="flex min-w-0 flex-col gap-1">

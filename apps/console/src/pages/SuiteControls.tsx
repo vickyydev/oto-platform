@@ -182,6 +182,12 @@ function MaintenanceDrawer({ open, authority, maxTtlMinutes, onClose, onDone }: 
   open: MaintenanceOpen; authority: Authority; maxTtlMinutes: number | null; onClose: () => void; onDone: (notice: string) => void;
 }) {
   const { app, mode } = open;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const current = () => mounted.current && authority.isCurrent();
   const now = useNow();
   const send = useKeyedSend();
   const [message, setMessage] = useState(app.maintenance?.message ?? '');
@@ -191,7 +197,7 @@ function MaintenanceDrawer({ open, authority, maxTtlMinutes, onClose, onDone }: 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submit = async (gateReady: boolean) => {
-    if (!gateReady || busy || !authority.isCurrent()) return;
+    if (!gateReady || busy || !current()) return;
     setBusy(true); setError(null);
     try {
       if (mode === 'set') {
@@ -199,16 +205,16 @@ function MaintenanceDrawer({ open, authority, maxTtlMinutes, onClose, onDone }: 
           message: message.trim(), expiresAt: new Date(Date.now() + (minutes ?? MAINTENANCE_DEFAULT_MINUTES) * 60_000).toISOString(),
           reason: reason.trim(), expectedRevision: app.revision, confirmation,
         }), (body, key) => authority.run(() => suiteControlsApi.setMaintenance(app.key, body, key)));
-        if (authority.isCurrent()) onDone(`${app.name} is in maintenance. The tile shows the message and new hand-offs are refused until it ends.`);
+        if (current()) onDone(`${app.name} is in maintenance. The tile shows the message and new hand-offs are refused until it ends.`);
       } else {
         await send(JSON.stringify([reason, confirmation]), () => ({ reason: reason.trim(), expectedRevision: app.revision, confirmation }),
           (body, key) => authority.run(() => suiteControlsApi.clearMaintenance(app.key, body, key)));
-        if (authority.isCurrent()) onDone(`${app.name} maintenance has ended.`);
+        if (current()) onDone(`${app.name} maintenance has ended.`);
       }
     } catch (failure) {
-      if (authority.isCurrent()) setError(messageOf(failure));
+      if (current()) setError(messageOf(failure));
     } finally {
-      if (authority.isCurrent()) setBusy(false);
+      if (current()) setBusy(false);
     }
   };
   if (mode === 'clear') {

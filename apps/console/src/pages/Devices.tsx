@@ -31,7 +31,7 @@ import {
 } from '@/api/fleet';
 import { directoryApi, type BranchRow } from '@/api/platform';
 import { Button } from '@/components/ui/button';
-import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
+import { ErrorNote, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { StatusMark, type Tone } from '@/components/Status';
 import { CommandBar } from '@/components/redesign/CommandBar';
 import {
@@ -148,6 +148,7 @@ export function Devices() {
   const [openBox, setOpenBox] = useState<BoxRow | null>(null);
   const [openStation, setOpenStation] = useState<StationRow | 'new' | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  useEffect(() => { setOpenBox(null); setOpenStation(null); }, [branchId]);
 
   const branchName = useCallback(
     (id: string | null | undefined): string | null =>
@@ -268,7 +269,11 @@ export function Devices() {
               />
             ) : fleet.loading && fleet.boxes.length === 0 ? (
               <Loading what="boxes" />
+            ) : fleet.failures.boxes && fleet.boxes.length === 0 ? (
+              <Unreadable what="The box register" message={fleet.failures.boxes} onRetry={fleet.reload} />
             ) : (
+              <>
+              {fleet.failures.boxes && fleet.readAt.boxes !== null && <StaleNote readAt={fleet.readAt.boxes} message={fleet.failures.boxes} onRetry={fleet.reload} />}
               <ul className="grid grid-cols-1 gap-5 @2xl:grid-cols-2 @4xl:grid-cols-3">
                 {fleet.boxes.map((box) => (
                   <BoxCard
@@ -300,6 +305,7 @@ export function Devices() {
                   </li>
                 ) : null}
               </ul>
+              </>
             )}
           </CardGroup>
         )}
@@ -346,6 +352,8 @@ export function Devices() {
               <RouteUnavailable what="The station register" />
             ) : fleet.loading && stations.length === 0 ? (
               <Loading what="stations" />
+            ) : fleet.failures.stations && stations.length === 0 ? (
+              <Unreadable what="The station register" message={fleet.failures.stations} onRetry={fleet.reload} />
             ) : stations.length === 0 ? (
               <DashedSlot
                 title="No stations yet"
@@ -358,6 +366,8 @@ export function Devices() {
                 }`}
               />
             ) : (
+              <>
+              {fleet.failures.stations && fleet.readAt.stations !== null && <StaleNote readAt={fleet.readAt.stations} message={fleet.failures.stations} onRetry={fleet.reload} />}
               <ul className="grid grid-cols-1 gap-5 @2xl:grid-cols-2 @4xl:grid-cols-3">
                 {stations.map((station) => (
                   <StationCard
@@ -368,6 +378,7 @@ export function Devices() {
                   />
                 ))}
               </ul>
+              </>
             )}
           </CardGroup>
         )}
@@ -377,6 +388,9 @@ export function Devices() {
             key={branchId}
             credentials={fleet.credentials}
             missing={fleet.missing.credentials}
+            loading={fleet.loading}
+            error={fleet.failures.credentials}
+            readAt={fleet.readAt.credentials}
             stations={fleet.stations.filter((s) => !s.archived)}
             displayStations={displayStations}
             kioskStations={kioskStations}
@@ -412,7 +426,7 @@ export function Devices() {
         )}
       </PageGrid>
 
-      {openBox && (
+      {openBox && openBox.branchId === branchId && (
         <BoxDrawer
           // The row as the last reload read it, so taking a box out of service
           // shows in the drawer's own header (SCRUM-378); the row as opened
@@ -436,7 +450,7 @@ export function Devices() {
         />
       )}
 
-      {openStation && (
+      {openStation && (openStation === 'new' || openStation.branchId === branchId) && (
         <StationDrawer
           station={openStation === 'new' ? null : openStation}
           branchId={branchId}
@@ -474,6 +488,8 @@ interface Fleet {
   missing: { boxes: boolean; stations: boolean; credentials: boolean };
   /** Per list: the last read for this branch answered, so its rows are a reading. */
   read: { boxes: boolean; stations: boolean; credentials: boolean };
+  failures: { boxes: string | null; stations: string | null; credentials: string | null };
+  readAt: { boxes: number | null; stations: number | null; credentials: number | null };
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -494,6 +510,17 @@ function useFleet(branchId: string): Fleet {
   const [read, setRead] = useState(NOTHING_READ);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [failures, setFailures] = useState<Fleet['failures']>({ boxes: null, stations: null, credentials: null });
+  const [readAt, setReadAt] = useState<Fleet['readAt']>({ boxes: null, stations: null, credentials: null });
+  const [dataBranch, setDataBranch] = useState(branchId);
+  const branchOwner = useRef({ id: branchId });
+  if (branchOwner.current.id !== branchId) branchOwner.current = { id: branchId };
+  const requests = useRef(0);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; requests.current++; };
+  }, []);
 
   /**
    * Which read is the newest one asked for, per box.
@@ -510,16 +537,17 @@ function useFleet(branchId: string): Fleet {
 
   const readDevices = useCallback(async (boxId: string) => {
     if (!working.isCurrent()) return;
+    const owner = branchOwner.current;
     reads.current += 1;
     const ticket = reads.current;
     newestRead.current.set(boxId, ticket);
     setDeviceLists((held) => ({ ...held, [boxId]: readingDevices(held[boxId]) }));
     try {
       const { devices } = await working.run(() => fleetApi.boxDevices(boxId));
-      if (!working.isCurrent() || newestRead.current.get(boxId) !== ticket) return;
+      if (!working.isCurrent() || !mounted.current || branchOwner.current !== owner || newestRead.current.get(boxId) !== ticket) return;
       setDeviceLists((held) => ({ ...held, [boxId]: devicesRead(devices) }));
     } catch (err) {
-      if (!working.isCurrent() || newestRead.current.get(boxId) !== ticket) return;
+      if (!working.isCurrent() || !mounted.current || branchOwner.current !== owner || newestRead.current.get(boxId) !== ticket) return;
       const message = readFailureMessage(err);
       setDeviceLists((held) => ({ ...held, [boxId]: devicesFailed(held[boxId], message) }));
     }
@@ -531,10 +559,19 @@ function useFleet(branchId: string): Fleet {
     newestRead.current.clear();
     setDeviceLists({});
     setRead(NOTHING_READ);
+    setBoxes([]);
+    setStations([]);
+    setCredentials([]);
+    setFailures({ boxes: null, stations: null, credentials: null });
+    setReadAt({ boxes: null, stations: null, credentials: null });
   }, [branchId]);
 
   const load = useCallback(async () => {
     if (!working.isCurrent()) return;
+    const owner = branchOwner.current;
+    if (owner.id !== branchId) return;
+    const request = ++requests.current;
+    const current = () => working.isCurrent() && mounted.current && branchOwner.current === owner && owner.id === branchId && requests.current === request;
     if (!branchId) {
       setLoading(false);
       return;
@@ -551,8 +588,10 @@ function useFleet(branchId: string): Fleet {
       working.run(() => fleetApi.credentials(branchId, true)),
     ]);
 
-    if (!working.isCurrent()) return;
+    if (!current()) return;
+    setDataBranch(branchId);
     const failures: string[] = [];
+    const perList: Fleet['failures'] = { boxes: null, stations: null, credentials: null };
     const absent = { boxes: false, stations: false, credentials: false };
     const answered = { ...NOTHING_READ };
 
@@ -564,15 +603,16 @@ function useFleet(branchId: string): Fleet {
       if (result.status === 'fulfilled') {
         apply(result.value);
         answered[key] = true;
+        setReadAt(held => ({ ...held, [key]: Date.now() }));
         return;
       }
       if (isMissingRoute(result.reason)) {
         absent[key] = true;
         return;
       }
-      failures.push(
-        result.reason instanceof Error ? result.reason.message : `Could not read the ${key}`,
-      );
+      const message = result.reason instanceof Error ? result.reason.message : `Could not read the ${key}`;
+      failures.push(message);
+      perList[key] = message;
     };
 
     let loadedBoxes: BoxRow[] = [];
@@ -595,9 +635,10 @@ function useFleet(branchId: string): Fleet {
     // check a box that was fine. `readDevices` carries the difference.
     await Promise.all(loadedBoxes.map((box) => readDevices(box.id)));
 
-    if (!working.isCurrent()) return;
+    if (!current()) return;
     setMissing(absent);
     setRead(answered);
+    setFailures(perList);
     setError(failures[0] ?? null);
     setLoading(false);
   }, [branchId, readDevices, working.run, working.isCurrent]);
@@ -619,16 +660,18 @@ function useFleet(branchId: string): Fleet {
   );
 
   return {
-    boxes,
-    stations,
-    devices,
+    boxes: dataBranch === branchId ? boxes : [],
+    stations: dataBranch === branchId ? stations : [],
+    devices: dataBranch === branchId ? devices : [],
     deviceList,
     retryDevices: (boxId: string) => void readDevices(boxId),
-    credentials,
-    missing,
-    read,
-    loading,
-    error,
+    credentials: dataBranch === branchId ? credentials : [],
+    missing: dataBranch === branchId ? missing : { boxes: false, stations: false, credentials: false },
+    read: dataBranch === branchId ? read : NOTHING_READ,
+    failures: dataBranch === branchId ? failures : { boxes: null, stations: null, credentials: null },
+    readAt: dataBranch === branchId ? readAt : { boxes: null, stations: null, credentials: null },
+    loading: dataBranch !== branchId || loading,
+    error: dataBranch === branchId ? error : null,
     reload: () => void load(),
   };
 }
@@ -993,6 +1036,9 @@ function StationCard({
 function PairedScreens({
   credentials,
   missing,
+  loading,
+  error,
+  readAt,
   stations,
   displayStations,
   kioskStations,
@@ -1008,6 +1054,9 @@ function PairedScreens({
 }: {
   credentials: CredentialRow[];
   missing: boolean;
+  loading: boolean;
+  error: string | null;
+  readAt: number | null;
   stations: StationRow[];
   displayStations: StationRow[];
   /** S2-20 K2 — kiosk stations a self-service kiosk can be paired to here. */
@@ -1091,8 +1140,13 @@ function PairedScreens({
         ) : undefined
       }
     >
+      {error && credentials.length > 0 && readAt !== null && <StaleNote readAt={readAt} message={error} onRetry={onChanged} />}
       {missing ? (
         <RouteUnavailable what="Pairing" />
+      ) : loading && credentials.length === 0 ? (
+        <Loading what="paired screens" />
+      ) : error && credentials.length === 0 ? (
+        <Unreadable what="The paired screen register" message={error} onRetry={onChanged} />
       ) : shown.length === 0 ? (
         <EmptyNote
           className="py-3"

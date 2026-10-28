@@ -121,8 +121,24 @@ export function Booths() {
   const [branchId, setBranchId] = useState(me?.branch?.id ?? '');
   const branch = branches?.find((b) => b.id === branchId);
   const timezone = branch?.timezone ?? me?.branch?.timezone;
-  const [booths, setBooths] = useState<Read<BoothListRow[]>>(() => unread<BoothListRow[]>([]));
+  const [boothList, setBoothList] = useState(() => ({ branchId, read: unread<BoothListRow[]>([]) }));
+  const booths = boothList.branchId === branchId ? boothList.read : unread<BoothListRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const branchOwner = useRef({ id: branchId });
+  if (branchOwner.current.id !== branchId) branchOwner.current = { id: branchId };
+  const selectionOwner = useRef({ branchId, id: selectedId });
+  if (selectionOwner.current.branchId !== branchId || selectionOwner.current.id !== selectedId) selectionOwner.current = { branchId, id: selectedId };
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const captureSelection = useCallback((id: string) => {
+    const owner = selectionOwner.current;
+    return () => working.isCurrent() && mounted.current && selectionOwner.current === owner && owner.id === id;
+  }, [working.isCurrent]);
+  const listSequence = useRef(0);
+  const detailSequence = useRef(0);
   const [draft, setDraft] = useState<Read<BoothDraft | null>>(() =>
     unread<BoothDraft | null>(null),
   );
@@ -209,23 +225,25 @@ export function Booths() {
   const loadBooths = useCallback(async (branch: string) => {
     if (!working.isCurrent()) return;
     if (!branch) return;
-    setBooths((held) => reading(held));
+    const owner = branchOwner.current;
+    const sequence = ++listSequence.current;
+    const current = () => working.isCurrent() && mounted.current && branchOwner.current === owner && owner.id === branch && listSequence.current === sequence;
+    if (!current()) return;
+    setBoothList(held => ({ branchId: branch, read: reading(held.branchId === branch ? held.read : unread<BoothListRow[]>([])) }));
     try {
       const answer = await working.run(() => boothApi.list(branch));
-      if (!working.isCurrent()) return;
-      setBooths(readOk(answer.booths));
+      if (!current()) return;
+      setBoothList({ branchId: branch, read: readOk(answer.booths) });
       setSelectedId((current) =>
         current && answer.booths.some((b) => b.id === current)
           ? current
           : (answer.booths[0]?.id ?? null),
       );
     } catch (reason) {
-      if (!working.isCurrent()) return;
-      setBooths((held) =>
-        isMissingRoute(reason)
+      if (!current()) return;
+      setBoothList((held) => ({ branchId: branch, read: isMissingRoute(reason)
           ? readAbsent<BoothListRow[]>([])
-          : readFailed(held, readFailureMessage(reason), []),
-      );
+          : readFailed(held.branchId === branch ? held.read : unread<BoothListRow[]>([]), readFailureMessage(reason), []) }));
     }
   }, [working.isCurrent, working.run]);
 
@@ -233,16 +251,18 @@ export function Booths() {
   const draftReadSequence = useRef(0);
   const readDraft = useCallback(async (id: string) => {
     if (!working.isCurrent()) return;
+    const current = captureSelection(id);
+    if (!current()) return;
     const sequence = ++draftReadSequence.current;
     setDraft((held) => reading(held));
     await working.run(() => boothApi
       .draft(id, showArchivedRef.current))
       .then((d) => {
-        if (!working.isCurrent()) return;
+        if (!current()) return;
         if (sequence === draftReadSequence.current) setDraft(readOk<BoothDraft | null>(d));
       })
       .catch((reason: unknown) => {
-        if (!working.isCurrent()) return;
+        if (!current()) return;
         if (sequence !== draftReadSequence.current) return;
         setDraft((held) =>
           isMissingRoute(reason)
@@ -251,10 +271,14 @@ export function Booths() {
         );
       });
     if (!working.isCurrent()) return;
-  }, [working.isCurrent, working.run]);
+  }, [working.isCurrent, working.run, captureSelection]);
 
   const loadBooth = useCallback(async (id: string) => {
     if (!working.isCurrent()) return;
+    const ownsSelection = captureSelection(id);
+    const sequence = ++detailSequence.current;
+    const current = () => ownsSelection() && detailSequence.current === sequence;
+    if (!current()) return;
     setVersions((held) => reading(held));
     setStatus((held) => reading(held));
     setStaff((held) => reading(held));
@@ -264,9 +288,9 @@ export function Booths() {
       readDraft(id),
       working.run(() => boothApi
         .status(id))
-        .then((s) => { if (!working.isCurrent()) return; return setStatus(readOk<BoothStatus | null>(s)); })
+        .then((s) => { if (!current()) return; return setStatus(readOk<BoothStatus | null>(s)); })
         .catch((reason: unknown) =>
-          { if (!working.isCurrent()) return; return setStatus((held) =>
+          { if (!current()) return; return setStatus((held) =>
             isMissingRoute(reason)
               ? readAbsent<BoothStatus | null>(null)
               : readFailed(held, readFailureMessage(reason), null),
@@ -274,9 +298,9 @@ export function Booths() {
         ),
       working.run(() => boothApi
         .versions(id))
-        .then((v) => { if (!working.isCurrent()) return; return setVersions(readOk(v.versions)); })
+        .then((v) => { if (!current()) return; return setVersions(readOk(v.versions)); })
         .catch((reason: unknown) =>
-          { if (!working.isCurrent()) return; return setVersions((held) =>
+          { if (!current()) return; return setVersions((held) =>
             isMissingRoute(reason)
               ? readAbsent<BoothVersionRow[]>([])
               : readFailed(held, readFailureMessage(reason), []),
@@ -284,9 +308,9 @@ export function Booths() {
         ),
       working.run(() => boothApi
         .screens(id))
-        .then((r) => { if (!working.isCurrent()) return; return setScreens(readOk(r.screens)); })
+        .then((r) => { if (!current()) return; return setScreens(readOk(r.screens)); })
         .catch((reason: unknown) =>
-          { if (!working.isCurrent()) return; return setScreens((held) =>
+          { if (!current()) return; return setScreens((held) =>
             isMissingRoute(reason)
               ? readAbsent<BoothScreenRow[]>([])
               : readFailed(held, readFailureMessage(reason), []),
@@ -294,9 +318,9 @@ export function Booths() {
         ),
       working.run(() => boothApi
         .staff(id))
-        .then((r) => { if (!working.isCurrent()) return; return setStaff(readOk(r.staff)); })
+        .then((r) => { if (!current()) return; return setStaff(readOk(r.staff)); })
         .catch((reason: unknown) =>
-          { if (!working.isCurrent()) return; return setStaff((held) =>
+          { if (!current()) return; return setStaff((held) =>
             isMissingRoute(reason)
               ? readAbsent<BoothStaffRow[]>([])
               : readFailed(held, readFailureMessage(reason), []),
@@ -304,7 +328,7 @@ export function Booths() {
         ),
     ]);
     if (!working.isCurrent()) return;
-  }, [readDraft, working.isCurrent, working.run]);
+  }, [readDraft, working.isCurrent, working.run, captureSelection]);
 
   /** Tick or untick "Show archived prizes", and read the draft again to match. */
   const toggleArchived = (next: boolean) => {
@@ -344,6 +368,12 @@ export function Booths() {
     // Another booth's staff list is not this booth's while the read is out:
     // who may sign in where is exactly the thing not to show under a wrong name.
     setStaff(unread<BoothStaffRow[]>([]));
+    setVersions(unread<BoothVersionRow[]>([]));
+    setScreens(unread<BoothScreenRow[]>([]));
+    setStatus(unread<BoothStatus | null>(null));
+    setLastPublished(null);
+    setWriteError(null);
+    setBusy(false);
     if (selectedId) void loadBooth(selectedId);
     // A code is for one booth. Selecting another must not leave six digits on
     // screen under a different booth's name.
@@ -362,23 +392,25 @@ export function Booths() {
    * A prize list that drifts from the rows behind it is how somebody publishes
    * a version they did not see.
    */
-  const run = async (where: WriteSite, write: () => Promise<unknown>) => {
+  const run = async (where: WriteSite, write: (current: () => boolean) => Promise<unknown>) => {
     if (!working.isCurrent()) return;
     if (!selectedId) return;
+    const current = captureSelection(selectedId);
+    if (!current()) return;
     setBusy(true);
     setWriteError(null);
     try {
-      await working.run(write);
-      if (!working.isCurrent()) return;
+      await working.run(() => write(current));
+      if (!current()) return;
       setWriteUnavailable(false);
       await loadBooth(selectedId);
-      if (!working.isCurrent()) return;
+      if (!current()) return;
     } catch (reason) {
-      if (!working.isCurrent()) return;
+      if (!current()) return;
       if (isMissingRoute(reason)) setWriteUnavailable(true);
       else setWriteError({ where, message: readFailureMessage(reason) });
     } finally {
-      if (working.isCurrent()) {
+      if (current()) {
         setBusy(false);
       }
     }
@@ -393,23 +425,25 @@ export function Booths() {
    * PIN, a moment before this press — so it is said in the staff card, and
    * the list is read again either way so the card shows what is now true.
    */
-  const runStaff = async (write: () => Promise<unknown>): Promise<boolean> => {
+  const runStaff = async (write: (current: () => boolean) => Promise<unknown>): Promise<boolean> => {
     if (!working.isCurrent()) return false;
     if (!selectedId) return false;
+    const current = captureSelection(selectedId);
+    if (!current()) return false;
     setBusy(true);
     setWriteError(null);
     try {
-      await working.run(write);
-      if (!working.isCurrent()) return false;
+      await working.run(() => write(current));
+      if (!current()) return false;
       return true;
     } catch (reason) {
-      if (!working.isCurrent()) return false;
+      if (!current()) return false;
       setWriteError({ where: 'staff', message: readFailureMessage(reason) });
       return false;
     } finally {
-      if (working.isCurrent()) {
+      if (current()) {
         await loadBooth(selectedId);
-        if (working.isCurrent()) setBusy(false);
+        if (current()) setBusy(false);
       }
     }
   };
@@ -718,8 +752,8 @@ export function Booths() {
                   lastPublished={lastPublished}
                   timezone={timezone}
                   onPublish={(note, expectedBundleHash) =>
-                    void run('publish', async () => {
-                      if (!working.isCurrent()) return;
+                    void run('publish', async (current) => {
+                      if (!current()) return;
                       const answer = await working.run(() => boothApi.publish(selected.booth.id, {
                         note: note.trim() === '' ? null : note.trim(),
                         // Sent only when the draft had one: the API treats it
@@ -728,10 +762,10 @@ export function Booths() {
                         // not a licence to overwrite.
                         ...(expectedBundleHash ? { expectedBundleHash } : {}),
                       }));
-                      if (!working.isCurrent()) return;
+                      if (!current()) return;
                       setLastPublished({ version: answer.version.version });
                       await loadBooths(branchId);
-                      if (!working.isCurrent()) return;
+                      if (!current()) return;
                     })
                   }
                 />
@@ -774,12 +808,12 @@ export function Booths() {
                 onSetPin={async (accountId, input) => {
                   if (!working.isCurrent()) return null;
                   let result: BoothPinResult | null = null;
-                  await runStaff(async () => {
-                    if (!working.isCurrent()) return null;
+                  const saved = await runStaff(async (current) => {
+                    if (!current()) return null;
                     result = await working.run(() => boothApi.setPin(selected.booth.id, accountId, input));
-                    if (!working.isCurrent()) return null;
+                    if (!current()) return null;
                   });
-                  if (!working.isCurrent()) return null;
+                  if (!saved) return null;
                   return result;
                 }}
                 onClearPin={(accountId) =>
@@ -820,24 +854,24 @@ export function Booths() {
                 error={errorAt('screens')}
                 timezone={timezone}
                 onMint={() =>
-                  void run('screens', async () => {
-                    if (!working.isCurrent()) return;
+                  void run('screens', async (current) => {
+                    if (!current()) return;
                     // The answer is the only copy of the code there will ever be,
                     // so it is put on screen before anything else can throw.
                     const issued = await working.run(() => boothApi.mintPairingCode(selected.booth.id, 'Booth television'));
-                    if (!working.isCurrent()) return;
+                    if (!current()) return;
                     setMintedCode(issued);
                   })
                 }
                 onUnpair={(screen) =>
-                  void run('screens', async () => {
-                    if (!working.isCurrent()) return;
+                  void run('screens', async (current) => {
+                    if (!current()) return;
                     await working.run(() => boothApi.unpairScreen(
                       selected.booth.id,
                       screen.id,
                       'unpaired from the Console',
                     ));
-                    if (!working.isCurrent()) return;
+                    if (!current()) return;
                     setMintedCode(null);
                   })
                 }
@@ -932,19 +966,19 @@ export function Booths() {
           error={errorAt('prizes')}
           onClose={() => setEditing(null)}
           onSave={(next) =>
-            void run('prizes', async () => {
-              if (!working.isCurrent()) return;
+            void run('prizes', async (current) => {
+              if (!current()) return;
               if (next.id === '') await working.run(() => boothApi.createPrize(selected.booth.id, toInput(next)));
               else await working.run(() => boothApi.savePrize(selected.booth.id, next.id, toInput(next)));
-              if (!working.isCurrent()) return;
+              if (!current()) return;
               setEditing(null);
             })
           }
           onArchive={(p) =>
-            void run('prizes', async () => {
-              if (!working.isCurrent()) return;
+            void run('prizes', async (current) => {
+              if (!current()) return;
               await working.run(() => boothApi.archivePrize(selected.booth.id, p.id));
-              if (!working.isCurrent()) return;
+              if (!current()) return;
               setEditing(null);
             })
           }
@@ -964,10 +998,10 @@ export function Booths() {
           error={errorAt('settings')}
           onClose={() => setSettingsOpen(false)}
           onSave={(settings: BoothSettingsEdit) =>
-            void run('settings', async () => {
-              if (!working.isCurrent()) return;
+            void run('settings', async (current) => {
+              if (!current()) return;
               await working.run(() => boothApi.saveSettings(selected.booth.id, settings));
-              if (!working.isCurrent()) return;
+              if (!current()) return;
               setSettingsOpen(false);
             })
           }
@@ -985,10 +1019,10 @@ export function Booths() {
           error={errorAt('slip')}
           onClose={() => setSlipOpen(false)}
           onSave={(slip) =>
-            void run('slip', async () => {
-              if (!working.isCurrent()) return;
+            void run('slip', async (current) => {
+              if (!current()) return;
               await working.run(() => boothApi.saveSettings(selected.booth.id, slip));
-              if (!working.isCurrent()) return;
+              if (!current()) return;
               setSlipOpen(false);
             })
           }

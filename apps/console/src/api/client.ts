@@ -24,12 +24,12 @@ export class ApiError extends Error {
  *
  * The console ships ahead of parts of the observability API it reads, and the
  * pages are written to say "not on this deployment yet" for a missing route
- * rather than to show an error a reader cannot act on. A 404 is the only
- * status that means that: every other failure is a real failure and is shown
- * as one.
+ * rather than to show an error a reader cannot act on. The legacy unstructured
+ * UNKNOWN404 keeps that fallback; a structured missing-record reason is a
+ * real refusal and must remain visible.
  */
 export function isMissingRoute(err: unknown): boolean {
-  return err instanceof ApiError && err.status === 404;
+  return err instanceof ApiError && err.status === 404 && err.code === 'UNKNOWN';
 }
 
 type RequestAuthority = { capture: () => number | null; isCurrent: (epoch: number) => boolean };
