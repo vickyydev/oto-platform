@@ -1638,7 +1638,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -27609,6 +27609,464 @@ export interface paths {
             };
         };
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read retained analytics metadata for branches held on both console:analytics:read and analytics:read. Source and Radar preference remain separate; switchedAt is the edit timestamp. Formula counts include all retained daily/hourly rows, not the KPI date range. Queue depth counts rows including claimed rows. Default selection is live readable branches; requested own unreadable branches are omitted, foreign or unknown IDs are 404, and no readable selection is 403. This read never switches sources or runs a job. */
+        get: {
+            parameters: {
+                query?: {
+                    branches?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            basis: "stored-summary-metadata";
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                /** @enum {string} */
+                                source: "oto_pos" | "pisell" | "papaya";
+                                /** @enum {string} */
+                                preference: "oto_pos" | "legacy" | "both";
+                                /** Format: date-time */
+                                switchedAt: string | null;
+                                formulaRows: {
+                                    /** @enum {string} */
+                                    source: "oto_pos" | "pisell" | "papaya";
+                                    formulaVersion: number;
+                                    dailyRows: number;
+                                    hourlyRows: number;
+                                    frozenDailyRows: number;
+                                    provisionalDailyRows: number;
+                                }[];
+                                dirtyDates: {
+                                    total: number;
+                                    byKind: {
+                                        sales: number;
+                                        hourly: number;
+                                        booth: number;
+                                        wallet: number;
+                                    };
+                                    oldestBusinessDate: string | null;
+                                    /** Format: date-time */
+                                    newestMarkedAt: string | null;
+                                };
+                            }[];
+                            omitted: string[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/configuration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the settings index: which settings exist, the app that owns each and the page that edits it, for the caller's operator. Requires console:config:read; each entry is listed only where the caller holds the owning page's own permission, with branch entries narrowed to the named park (branchId) or to the live parks the index reaches. A foreign, unknown or archived park is 404; an own park outside the index reach is 403. Navigation targets are fixed in code, never read from storage; unsupported entries carry no navigation or edit offer. Metadata only: no setting value is returned, and the read never seeds or writes the catalogue. */
+        get: {
+            parameters: {
+                query?: {
+                    branchId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** Format: uuid */
+                            operatorId: string;
+                            branches: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            }[];
+                            /** Format: uuid */
+                            selectedBranchId: string | null;
+                            entries: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                label: string;
+                                appOwner: string;
+                                editableHere: boolean;
+                                requiredPermission: string;
+                                url: string | null;
+                                openInApp: {
+                                    /** @enum {string} */
+                                    app: "oto_app" | "radar" | "inbox";
+                                    path: string;
+                                } | null;
+                                supported: boolean;
+                                /** @enum {string} */
+                                scope: "operator" | "branch";
+                                branchIds: string[];
+                                /** Format: date-time */
+                                lastChangedAt: string | null;
+                                /** @enum {string} */
+                                lastChangedAvailability: "available" | "not-recorded" | "unsupported";
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/drift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only drift between platform copies and their masters, for the parks the Analytics read selects (console:analytics:read and analytics:read; named foreign or unknown parks are 404, no readable park is 403). Three comparisons, each behind its own native read door: branch_names (platform is the record, admin:branch:read; app-only rows such as Head Office are intentional and never read), employees (the OTO App masters name, nickname, phone, email, owned branch and the LEFT archival rule, admin:account:read; park groups anchored to two operators are ambiguous) and app_accounts (the provisioning record and its ownership checks, admin:role:read with account dominance: the app user's stamp, its switch-off for an inactive account and the mapped role where the app's role context resolves). Only changed field names are returned, never values. An absent seam, a denied seam or read door and an ambiguous owner are reported as their own status, never as clean. Nothing is repaired, copied, audited or written. */
+        get: {
+            parameters: {
+                query?: {
+                    branches?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            basis: "read-only-comparison";
+                            branchIds: string[];
+                            omitted: string[];
+                            comparisons: {
+                                /** @enum {string} */
+                                key: "branch_names" | "employees" | "app_accounts";
+                                /** @enum {string} */
+                                master: "platform" | "oto_app";
+                                /** @enum {string} */
+                                status: "clean" | "drift" | "absent" | "denied" | "ambiguous";
+                                /** @enum {string|null} */
+                                reason: "seam_absent" | "seam_not_granted" | "permission" | "anchor_ambiguous" | "empty_source" | null;
+                                requiredPermission: string | null;
+                                compared: number;
+                                ambiguous: number;
+                                withheld: number;
+                                items: {
+                                    /** @enum {string} */
+                                    entity: "branch" | "employee" | "account";
+                                    /** Format: uuid */
+                                    platformId: string | null;
+                                    externalId: string | null;
+                                    /** Format: uuid */
+                                    branchId: string | null;
+                                    /** @enum {string} */
+                                    kind: "changed" | "missing" | "orphan";
+                                    fields: string[];
+                                }[];
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Each in-scope park's analytics source as the model really is: one serving source for every date (oto_pos, pisell or papaya), Radar's independent preference, and lastEditedAt — when the switch was last edited, never an effective business date. Parks come from the Analytics read (console:analytics:read and analytics:read; foreign or unknown 404, none readable 403). mayManageSource and mayRerun report the Console write doors per park. Read-only. */
+        get: {
+            parameters: {
+                query?: {
+                    branches?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            basis: "whole-branch-switch";
+                            branches: {
+                                /** Format: uuid */
+                                branchId: string;
+                                name: string;
+                                /** @enum {string} */
+                                source: "oto_pos" | "pisell" | "papaya";
+                                /** @enum {string} */
+                                preference: "oto_pos" | "legacy" | "both";
+                                /** Format: date-time */
+                                lastEditedAt: string | null;
+                                /** Format: uuid */
+                                lastEditedBy: string | null;
+                                mayManageSource: boolean;
+                                mayRerun: boolean;
+                            }[];
+                            omitted: string[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/sources/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only preview of switching one park to a proposed source. The switch is whole-branch: every date in the range is served from the proposed source; servedDays counts its stored days (a legacy source: its frozen days only) and emptyDays the days with no such row, which will show empty. newestWrittenAt is the newest write among the served rows. Never a date splice. Default range: the last 30 days ending on the park's current business date; at most 366 days. Analytics read door at the park; foreign or unknown park 404. No writes, no audit. */
+        get: {
+            parameters: {
+                query: {
+                    branchId: string;
+                    source: "oto_pos" | "pisell" | "papaya";
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            /** @enum {string} */
+                            currentSource: "oto_pos" | "pisell" | "papaya";
+                            /** @enum {string} */
+                            proposedSource: "oto_pos" | "pisell" | "papaya";
+                            unchanged: boolean;
+                            /** @enum {string} */
+                            effect: "whole-branch";
+                            from: string;
+                            to: string;
+                            days: number;
+                            servedDays: number;
+                            emptyDays: number;
+                            servesFrozenOnly: boolean;
+                            firstServedDate: string | null;
+                            lastServedDate: string | null;
+                            /** Format: date-time */
+                            newestWrittenAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/sources/{branchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Switch one park's whole-branch serving source and Radar preference through the existing audited switch: serialised per park, audited before and after, and a request for what the park already has changes and records nothing. console:analytics:manage_source at the park; requires Idempotency-Key; foreign park 404. lastEditedAt is the edit time, never an effective date. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    branchId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        source: "oto_pos" | "pisell" | "papaya";
+                        /** @enum {string} */
+                        preference: "oto_pos" | "legacy" | "both";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            name: string;
+                            /** @enum {string} */
+                            source: "oto_pos" | "pisell" | "papaya";
+                            /** @enum {string} */
+                            preference: "oto_pos" | "legacy" | "both";
+                            /** Format: date-time */
+                            lastEditedAt: string | null;
+                            /** Format: uuid */
+                            lastEditedBy: string | null;
+                            mayManageSource: boolean;
+                            mayRerun: boolean;
+                            changed: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/console/analytics/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Queue one park's own POS days, from..to (at most 92 days, none in the future), for the existing jobs process: marks analytics.dirty_date (kind sales) only, never writes a summary row and never runs the rollup inline. It recomputes our POS figures from our own records and can never regenerate a legacy system's day: a park serving a legacy source is refused (409 ANALYTICS_RERUN_LEGACY_SOURCE), and so is a range holding frozen days of the serving source (409 ANALYTICS_RERUN_FROZEN_DAYS). Audited as analytics.rerun.request. console:analytics:rerun at the park; requires Idempotency-Key; foreign park 404. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId: string;
+                        from: string;
+                        to: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            from: string;
+                            to: string;
+                            days: number;
+                            /** @enum {string} */
+                            kind: "sales";
+                            /** @enum {string} */
+                            source: "oto_pos";
+                            reason: string;
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
