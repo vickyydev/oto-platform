@@ -34,6 +34,8 @@ Worktrees: Codex works in `C:/w/<lane>` worktrees on `lane/<topic>` branches as 
 
 ### Questions and standing authorizations (owner directive 2026-10-23)
 
+**28 October 2026 delivery state (supersedes the historical pause below):** The planner integrated and deployed the saved P5 work; Q24-Q27 are ruled. Jira 643-648 and 663/664 are Deployed. The parent walkthrough is verified in [SCRUM-642 evidence](../../../qa/jira-comments/attachments/SCRUM-642/README.md), with its Jira acceptance next. The owner explicitly descoped 649 from this run: Data tools is NOT BUILT and remains To Do. Q27 Stage 2 waits on the legacy dump and is excluded from this acceptance. Known delivery limits remain the three missing app banners, three lookup readers, OTO App schedule-audit attribution and deploy-event CI wiring. The watchdog fallback defect is tracked and being repaired as SCRUM-662. Do not resume the old 27 October lanes.
+
 **27 October 2026, PAUSED AT THE OWNER'S REQUEST — RESUME FROM SCRUM-646 WIP:** Implementation and tests are stopped. Nineteen source/test files are saved in clean local commit fde93f67353e0a9296a9b76c3b1f3ae1cdc7481b on lane/admin-analytics-config at C:/w/admin-analytics-config. It is intentionally not pushed: Analytics still has nine failing native cases (HTTP500 on successful reads), Configuration backend/migration/generated paths are not built, and the two screen drafts are unverified. Actual missing-route/table/page baselines, separate API compiler/lint passes and shared776/typecheck/lint are preserved honestly. No P5 source is on main or staging.
 
 [Exact pause and resume instructions](PAUSE_2026-10-27.md) record every file boundary, confirmed DTO, failure, resource and next step; [evidence index](../../../qa/jira-comments/attachments/SCRUM-646/20261027-pause/index.json) binds the saved source and terminal receipts. On resume, fetch planner updates, preserve the clean WIP and existing partial branches, diagnose Analytics without weakening its17 cases, finish Configuration and generated contracts, then UI/native gates and reviewed drift. Q24-Q27 were still pending in the latest refs and Jira; no new owner question is needed. Prior643/644/645 branches remain published partial work,647-649 preparation only, P1-P4 Deployed. Jira642-646 stays In Progress, not Deployed.
@@ -500,6 +502,8 @@ What this plan takes from it, and what the 2026-10-21 approval changes:
 - **SCRUM-221** stays open as the design reference and is linked to this epic's stories; it closes when P5 lands.
 
 ## 14. P5 — the suite controls from S2-23 (Codex, after P4)
+
+**28 October 2026 delivery state (supersedes the historical pause below):** The planner integrated and deployed the saved P5 work; Q24-Q27 are ruled. Jira 643-648 and 663/664 are Deployed. The parent walkthrough is verified in [SCRUM-642 evidence](../../../qa/jira-comments/attachments/SCRUM-642/README.md), with its Jira acceptance next. The owner explicitly descoped 649 from this run: Data tools is NOT BUILT and remains To Do. Q27 Stage 2 waits on the legacy dump and is excluded from this acceptance. Known delivery limits remain the three missing app banners, three lookup readers, OTO App schedule-audit attribution and deploy-event CI wiring. The watchdog fallback defect is tracked and being repaired as SCRUM-662. Do not resume the old 27 October lanes.
 
 | Ticket | Deliverable |
 |---|---|

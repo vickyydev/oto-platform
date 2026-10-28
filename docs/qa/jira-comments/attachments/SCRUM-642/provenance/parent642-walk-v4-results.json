@@ -1,0 +1,970 @@
+{
+  "ticket": "SCRUM-642",
+  "expectedSha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+  "startedAt": "2026-10-28T14:41:43.388Z",
+  "walkComplete": false,
+  "acceptanceClaimed": false,
+  "helperSha256": "326d6c7036ed8e53fbc43183b3b686be0466519d07e48c750022640dc514604c",
+  "sourceInputs": [
+    {
+      "path": "scripts/agent/evidence.mjs",
+      "sha256": "8e928a28fcc85ba0df51ac841b4ac619605b05cd8f1a275090f74251bfcec695"
+    },
+    {
+      "path": "scripts/agent/env.mjs",
+      "sha256": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237"
+    },
+    {
+      "path": "scripts/agent/render.mjs",
+      "sha256": "38c0624969c762a5d93de2a0ab0675e98c7a265e8dde750a51c25d1a5a9826b7"
+    }
+  ],
+  "checks": [
+    "Exact latest-live API/Console pair and original committed helper bytes verified.",
+    "Normal seeded ADMIN is in the home operator, with no view-as/lock/password state and the actual native read grants.",
+    "Activity native Denials and Data access presets settled; no export, unmask or detail action.",
+    "Support looked up only the seeded ADMIN account; personal row values are masked. Trace/impersonation child actions are not repeated."
+  ],
+  "pages": [
+    {
+      "area": 1,
+      "id": "apps",
+      "path": "/organisation/apps",
+      "heading": "Apps",
+      "file": "SCRUM-642-01-apps.png",
+      "sha256": "11db5f6bac35da9f6f279280b62b37a798eda3355c0836d450899e737b79135c",
+      "capturedAt": "2026-10-28T14:41:52.758Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 6
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 2
+      },
+      "requiredReads": [
+        {
+          "path": "/console/apps",
+          "responses": 1
+        },
+        {
+          "path": "/console/flags",
+          "responses": 1
+        }
+      ]
+    },
+    {
+      "area": 1,
+      "id": "releases",
+      "path": "/watch/releases",
+      "heading": "Releases",
+      "file": "SCRUM-642-02-releases.png",
+      "sha256": "756828f8a61b4ae2e1c1ef54f6a8e25fec5f7647a985deee9e57d3d1a6f36043",
+      "capturedAt": "2026-10-28T14:41:57.775Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 26
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/console/flags",
+          "responses": 1
+        },
+        {
+          "path": "/console/releases",
+          "responses": 1
+        },
+        {
+          "path": "/console/releases/agents",
+          "responses": 1
+        }
+      ]
+    },
+    {
+      "area": 2,
+      "id": "activity",
+      "path": "/watch/activity",
+      "heading": "Activity",
+      "file": "SCRUM-642-03-activity.png",
+      "sha256": "68ec1aea68d1b64bff608953ad216b4e10d51ec853514dee409b3aaf9c7e8030",
+      "capturedAt": "2026-10-28T14:42:05.400Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 2
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/audit",
+          "responses": 3
+        }
+      ]
+    },
+    {
+      "area": 2,
+      "id": "failures",
+      "path": "/watch/failures",
+      "heading": "Failures",
+      "file": "SCRUM-642-04-failures.png",
+      "sha256": "7aeeeea88103aa4998d156e7954ab22c0d557e46ed0f40699a0c4e78745e84db",
+      "capturedAt": "2026-10-28T14:42:09.465Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 3
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/ops/failures",
+          "responses": 2
+        },
+        {
+          "path": "/ops/alert-mutes",
+          "responses": 1
+        },
+        {
+          "path": "/ops/alert-recipients",
+          "responses": 1
+        }
+      ]
+    },
+    {
+      "area": 3,
+      "id": "health",
+      "path": "/watch/health",
+      "heading": "Health",
+      "file": "SCRUM-642-05-health.png",
+      "sha256": "2d2bbd81a522abc24aa439ae61c5248f37b5d342007d85eba91169dc19d6e7dc",
+      "capturedAt": "2026-10-28T14:42:14.557Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 8
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/ready",
+          "responses": 1
+        },
+        {
+          "path": "/ops/health",
+          "responses": 1
+        }
+      ]
+    },
+    {
+      "area": 3,
+      "id": "integrations",
+      "path": "/watch/integrations",
+      "heading": "Integrations",
+      "file": "SCRUM-642-06-integrations.png",
+      "sha256": "704ec3759076a2021c7084dccbeb14097d2b993884ab908088fed3eafb959a81",
+      "capturedAt": "2026-10-28T14:42:19.861Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 12
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/ops/integrations",
+          "responses": 1
+        },
+        {
+          "path": "/ops/integrations/credentials",
+          "responses": 1
+        },
+        {
+          "path": "/ops/integrations/tests",
+          "responses": 1
+        }
+      ]
+    },
+    {
+      "area": 4,
+      "id": "analytics",
+      "path": "/reports/analytics",
+      "heading": "Analytics & sources",
+      "file": "SCRUM-642-07-analytics.png",
+      "sha256": "6429332e84c44e3a7ae96c99c09021a39d4db2f3cfb36a8170e02f6abd06c91e",
+      "capturedAt": "2026-10-28T14:42:24.674Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 16
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/console/analytics",
+          "responses": 1
+        },
+        {
+          "path": "/console/analytics/sources",
+          "responses": 1
+        },
+        {
+          "path": "/console/analytics/drift",
+          "responses": 1
+        },
+        {
+          "path": "/analytics/summary",
+          "responses": 1
+        }
+      ]
+    },
+    {
+      "area": 4,
+      "id": "configuration",
+      "path": "/organisation/configuration",
+      "heading": "Configuration",
+      "file": "SCRUM-642-08-configuration.png",
+      "sha256": "a88dc1e2c01ccc635dfbca6cabfc2f93a18ef24bd2b4889742faece00a680214",
+      "capturedAt": "2026-10-28T14:42:28.766Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 8
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 2
+      },
+      "requiredReads": [
+        {
+          "path": "/console/configuration",
+          "responses": 1
+        }
+      ]
+    },
+    {
+      "area": 5,
+      "id": "money",
+      "path": "/reports/money",
+      "heading": "Money oversight",
+      "file": "SCRUM-642-09-money.png",
+      "sha256": "bbcad480f527e23d74ace4e298e10488d5a491a99e306ef427df4e61366d83b9",
+      "capturedAt": "2026-10-28T14:42:33.954Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 24,
+        "notBuilt": 0,
+        "headings": 26
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 2
+      },
+      "requiredReads": [
+        {
+          "path": "/console/money/sales",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/refunds",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/discounts",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/cash",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/settlement",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/wallets",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/costs",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/integrity",
+          "responses": 1
+        }
+      ]
+    }
+  ],
+  "reads": [
+    {
+      "path": "/me",
+      "status": 401,
+      "at": 1793198506206
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198507546
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198508243
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198509514
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198510379
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198511271
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198511820
+    },
+    {
+      "path": "/console/flags",
+      "status": 200,
+      "at": 1793198511825
+    },
+    {
+      "path": "/console/apps",
+      "status": 200,
+      "at": 1793198511827
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198511975
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198512123
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198513148
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198514596
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198515255
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198515777
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198516311
+    },
+    {
+      "path": "/console/releases",
+      "status": 200,
+      "at": 1793198516318
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198516340
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198516352
+    },
+    {
+      "path": "/console/flags",
+      "status": 200,
+      "at": 1793198516655
+    },
+    {
+      "path": "/console/releases/agents",
+      "status": 200,
+      "at": 1793198516862
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198517241
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198519486
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198520185
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198520714
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198521268
+    },
+    {
+      "path": "/branches",
+      "status": 200,
+      "at": 1793198521298
+    },
+    {
+      "path": "/audit",
+      "status": 200,
+      "at": 1793198521305
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198521315
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198521515
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198522284
+    },
+    {
+      "path": "/audit",
+      "status": 200,
+      "at": 1793198522809
+    },
+    {
+      "path": "/audit",
+      "status": 200,
+      "at": 1793198524462
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198526634
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198527144
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198527670
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198528222
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198528223
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198528257
+    },
+    {
+      "path": "/ops/alert-recipients",
+      "status": 200,
+      "at": 1793198528262
+    },
+    {
+      "path": "/ops/alert-mutes",
+      "status": 200,
+      "at": 1793198528318
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198528525
+    },
+    {
+      "path": "/ops/quarantine",
+      "status": 200,
+      "at": 1793198528617
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198528815
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198530642
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198531954
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198532543
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198533065
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198533087
+    },
+    {
+      "path": "/ops/test-controls",
+      "status": 200,
+      "at": 1793198533091
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198533381
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198533587
+    },
+    {
+      "path": "/ops/kiosks",
+      "status": 200,
+      "at": 1793198534126
+    },
+    {
+      "path": "/ops/kiosks",
+      "status": 200,
+      "at": 1793198534656
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198536454
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198536976
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198537510
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198538040
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198538048
+    },
+    {
+      "path": "/branches",
+      "status": 200,
+      "at": 1793198538057
+    },
+    {
+      "path": "/ops/integrations/credentials",
+      "status": 200,
+      "at": 1793198538110
+    },
+    {
+      "path": "/webhooks/2c2p/simulator",
+      "status": 200,
+      "at": 1793198538112
+    },
+    {
+      "path": "/ops/integrations/tests",
+      "status": 200,
+      "at": 1793198538128
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198538308
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198538889
+    },
+    {
+      "path": "/ops/integrations",
+      "status": 200,
+      "at": 1793198538919
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198541145
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198541760
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198542665
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198543209
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198543219
+    },
+    {
+      "path": "/console/analytics",
+      "status": 200,
+      "at": 1793198543234
+    },
+    {
+      "path": "/console/analytics/sources",
+      "status": 200,
+      "at": 1793198543265
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198543266
+    },
+    {
+      "path": "/console/analytics/drift",
+      "status": 200,
+      "at": 1793198543346
+    },
+    {
+      "path": "/analytics/summary",
+      "status": 200,
+      "at": 1793198543821
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198543850
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198546194
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198546710
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198547284
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198547803
+    },
+    {
+      "path": "/console/configuration",
+      "status": 200,
+      "at": 1793198547855
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198548135
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198548156
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198550041
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198551069
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198551985
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198552523
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198552536
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198552549
+    },
+    {
+      "path": "/console/money/refunds",
+      "status": 200,
+      "at": 1793198552611
+    },
+    {
+      "path": "/console/money/integrity",
+      "status": 200,
+      "at": 1793198552636
+    },
+    {
+      "path": "/console/money/sales",
+      "status": 200,
+      "at": 1793198552694
+    },
+    {
+      "path": "/console/money/costs",
+      "status": 200,
+      "at": 1793198552694
+    },
+    {
+      "path": "/console/money/wallets",
+      "status": 200,
+      "at": 1793198552708
+    },
+    {
+      "path": "/console/money/settlement",
+      "status": 200,
+      "at": 1793198552743
+    },
+    {
+      "path": "/console/money/discounts",
+      "status": 200,
+      "at": 1793198552770
+    },
+    {
+      "path": "/console/money/cash",
+      "status": 200,
+      "at": 1793198553009
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198553068
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198555911
+    },
+    {
+      "path": "/me/permissions",
+      "status": 200,
+      "at": 1793198556516
+    },
+    {
+      "path": "/me",
+      "status": 200,
+      "at": 1793198557059
+    },
+    {
+      "path": "/ready",
+      "status": 200,
+      "at": 1793198557581
+    },
+    {
+      "path": "/ops/failures",
+      "status": 200,
+      "at": 1793198557594
+    },
+    {
+      "path": "/operators",
+      "status": 200,
+      "at": 1793198557664
+    },
+    {
+      "path": "/console/support/impersonations",
+      "status": 200,
+      "at": 1793198557665
+    },
+    {
+      "path": "/ops/health",
+      "status": 200,
+      "at": 1793198558373
+    },
+    {
+      "path": "/console/support/lookup",
+      "status": 200,
+      "at": 1793198560887
+    }
+  ],
+  "blockedRequests": [
+    {
+      "method": "GET",
+      "sameOrigin": true,
+      "path": "[unlisted or prohibited route]"
+    },
+    {
+      "method": "GET",
+      "sameOrigin": true,
+      "path": "[unlisted or prohibited route]"
+    }
+  ],
+  "cleanup": [
+    {
+      "signOutStatus": 200,
+      "meAfterSignOutStatus": 401,
+      "hadSignedIn": true
+    }
+  ],
+  "scope": {
+    "deliveredAreas": [
+      "Apps and releases",
+      "Activity and failures",
+      "Health and integrations",
+      "Analytics and configuration",
+      "Money",
+      "Support"
+    ],
+    "dataTools": {
+      "ticket": "SCRUM-649",
+      "status": "NOT BUILT",
+      "scope": "Descoped by the current owner instruction; stays To Do. No Data tools feature page is built or claimed."
+    },
+    "q27Stage2": "Follow-up when the frozen legacy dump arrives: dated source history/cutover, spliced summary/preview, narrow unfreeze with reason and Radar contract re-check.",
+    "retainedFollowUps": [
+      "SCRUM-662 watchdog fallback",
+      "Deploy-event CI wiring",
+      "OTO App schedule_audit_log impersonation marking",
+      "Support lookup sections named Not built",
+      "Inbox/Radar/OTO App banner gap"
+    ],
+    "supportTrace": {
+      "repeated": false,
+      "proof": "Reuse the completed SCRUM-648 child trace proof; exact accepted filenames are bound by the coordinator in parent acceptance."
+    }
+  },
+  "privacy": {
+    "policy": "Mask staff identity, audit actors, personal/contact/account identifiers, Support lookup values and trace links, and QR/receipt images. Retain native headings, actions, errors, availability, totals and public operational metadata.",
+    "hiddenTypes": [
+      "Personal/contact/secret text identified from native read fields",
+      "Activity actor cells",
+      "Support lookup value cells and trace links",
+      "Non-date text-input values",
+      "Triggered-by/person/session facts",
+      "Sensitive identifier/receipt/trace table cells",
+      "Failure request/action identifiers",
+      "Canvases, data/file images and QR/inline-grid renderings"
+    ],
+    "rawBodiesSaved": false,
+    "rawDomSaved": false,
+    "authMaterialSaved": false
+  },
+  "limits": [
+    "Read-only native walkthrough. Auth and native read-audit rows/session touches occur; this is not a claim of zero database writes.",
+    "No maintenance, flag preview/apply, approval, retry/replay/discard, mute, recipient edit, export/unmask, provider test, source switch, rerun, repair, handoff, impersonation, payment or equipment action.",
+    "Thin native data can prove availability and honest missing states, not populated business reconciliation.",
+    "No synthetic Data tools page is captured. This helper does not transition Jira or authorize parent acceptance."
+  ],
+  "before": {
+    "oto-api-staging": {
+      "id": "dep-dbh0fbp42hec739fdoug",
+      "sha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+      "status": "live",
+      "createdAt": "2026-10-28T14:33:19.843739Z",
+      "finishedAt": "2026-10-28T14:37:06.424116Z"
+    },
+    "oto-console-staging": {
+      "id": "dep-dbh0fc142hec739fdq1g",
+      "sha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+      "status": "live",
+      "createdAt": "2026-10-28T14:33:20.111683Z",
+      "finishedAt": "2026-10-28T14:34:12.53553Z"
+    }
+  },
+  "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+  "failure": {
+    "phase": "PAGE_SUPPORT",
+    "name": "Error",
+    "code": "NATIVE_STEP_FAILED"
+  },
+  "finishedAt": "2026-10-28T14:42:54.292Z"
+}

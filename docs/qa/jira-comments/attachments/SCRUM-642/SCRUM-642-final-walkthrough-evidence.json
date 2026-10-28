@@ -1,0 +1,721 @@
+{
+  "ticket": "SCRUM-642",
+  "assembledAt": "2026-10-28T15:03:11.159Z",
+  "evidenceType": "Composite native staging walkthrough with explicit per-attempt provenance",
+  "screenshotEvidenceComplete": true,
+  "acceptedImageCount": 10,
+  "deliveredAreaCount": 6,
+  "singleAttemptWalkClaimed": false,
+  "acceptanceClaimed": false,
+  "expectedSha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+  "ci": {
+    "runId": "40703694046",
+    "sha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+    "sixJobsSuccess": true,
+    "verificationSource": "Root independently verified all six jobs and authorized this exact SHA before the walkthrough."
+  },
+  "deploymentBinding": {
+    "before": {
+      "oto-api-staging": {
+        "id": "dep-dbh0fbp42hec739fdoug",
+        "sha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+        "status": "live",
+        "createdAt": "2026-10-28T14:33:19.843739Z",
+        "finishedAt": "2026-10-28T14:37:06.424116Z"
+      },
+      "oto-console-staging": {
+        "id": "dep-dbh0fc142hec739fdq1g",
+        "sha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+        "status": "live",
+        "createdAt": "2026-10-28T14:33:20.111683Z",
+        "finishedAt": "2026-10-28T14:34:12.53553Z"
+      }
+    },
+    "after": {
+      "oto-console-staging": {
+        "id": "dep-dbh0fc142hec739fdq1g",
+        "sha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+        "status": "live",
+        "createdAt": "2026-10-28T14:33:20.111683Z",
+        "finishedAt": "2026-10-28T14:34:12.53553Z"
+      },
+      "oto-api-staging": {
+        "id": "dep-dbh0fbp42hec739fdoug",
+        "sha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+        "status": "live",
+        "createdAt": "2026-10-28T14:33:19.843739Z",
+        "finishedAt": "2026-10-28T14:37:06.424116Z"
+      }
+    },
+    "afterCheckedAt": "2026-10-28T15:03:11.134Z",
+    "sameDeploymentIds": true,
+    "allImagesAfterLatestDeployment": true
+  },
+  "images": [
+    {
+      "area": 1,
+      "id": "apps",
+      "path": "/organisation/apps",
+      "heading": "Apps",
+      "file": "SCRUM-642-01-apps.png",
+      "sha256": "11db5f6bac35da9f6f279280b62b37a798eda3355c0836d450899e737b79135c",
+      "capturedAt": "2026-10-28T14:41:52.758Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 6
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 2
+      },
+      "requiredReads": [
+        {
+          "path": "/console/apps",
+          "responses": 1
+        },
+        {
+          "path": "/console/flags",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-01-apps.png",
+      "attempt": "parent642-walk-v4",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 1,
+      "id": "releases",
+      "path": "/watch/releases",
+      "heading": "Releases",
+      "file": "SCRUM-642-02-releases.png",
+      "sha256": "756828f8a61b4ae2e1c1ef54f6a8e25fec5f7647a985deee9e57d3d1a6f36043",
+      "capturedAt": "2026-10-28T14:41:57.775Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 26
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/console/flags",
+          "responses": 1
+        },
+        {
+          "path": "/console/releases",
+          "responses": 1
+        },
+        {
+          "path": "/console/releases/agents",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-02-releases.png",
+      "attempt": "parent642-walk-v4",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 2,
+      "id": "activity",
+      "path": "/watch/activity",
+      "heading": "Activity",
+      "file": "SCRUM-642-03-activity.png",
+      "sha256": "68ec1aea68d1b64bff608953ad216b4e10d51ec853514dee409b3aaf9c7e8030",
+      "capturedAt": "2026-10-28T14:42:05.400Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 2
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/audit",
+          "responses": 3
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-03-activity.png",
+      "attempt": "parent642-walk-v4",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 2,
+      "id": "failures",
+      "path": "/watch/failures",
+      "heading": "Failures",
+      "file": "SCRUM-642-04-failures.png",
+      "sha256": "7aeeeea88103aa4998d156e7954ab22c0d557e46ed0f40699a0c4e78745e84db",
+      "capturedAt": "2026-10-28T14:42:09.465Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 3
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/ops/failures",
+          "responses": 2
+        },
+        {
+          "path": "/ops/alert-mutes",
+          "responses": 1
+        },
+        {
+          "path": "/ops/alert-recipients",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-04-failures.png",
+      "attempt": "parent642-walk-v4",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 3,
+      "id": "health",
+      "path": "/watch/health",
+      "heading": "Health",
+      "file": "SCRUM-642-05-health.png",
+      "sha256": "2d2bbd81a522abc24aa439ae61c5248f37b5d342007d85eba91169dc19d6e7dc",
+      "capturedAt": "2026-10-28T14:42:14.557Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 8
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/ready",
+          "responses": 1
+        },
+        {
+          "path": "/ops/health",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-05-health.png",
+      "attempt": "parent642-walk-v4",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 3,
+      "id": "integrations",
+      "path": "/watch/integrations",
+      "heading": "Integrations",
+      "file": "SCRUM-642-11-integrations.png",
+      "sha256": "990592bf25b6081f065c7224dd47f645b2dc223ce5d1a43ad418655820b125c7",
+      "capturedAt": "2026-10-28T14:53:15.790Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 12
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 4
+      },
+      "requiredReads": [
+        {
+          "path": "/ops/integrations",
+          "responses": 1
+        },
+        {
+          "path": "/ops/integrations/credentials",
+          "responses": 1
+        },
+        {
+          "path": "/ops/integrations/tests",
+          "responses": 1
+        },
+        {
+          "path": "/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/settlements",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-recovery-v1/SCRUM-642-11-integrations.png",
+      "attempt": "parent642-walk-recovery-v1",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 4,
+      "id": "analytics",
+      "path": "/reports/analytics",
+      "heading": "Analytics & sources",
+      "file": "SCRUM-642-07-analytics.png",
+      "sha256": "6429332e84c44e3a7ae96c99c09021a39d4db2f3cfb36a8170e02f6abd06c91e",
+      "capturedAt": "2026-10-28T14:42:24.674Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 16
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/console/analytics",
+          "responses": 1
+        },
+        {
+          "path": "/console/analytics/sources",
+          "responses": 1
+        },
+        {
+          "path": "/console/analytics/drift",
+          "responses": 1
+        },
+        {
+          "path": "/analytics/summary",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-07-analytics.png",
+      "attempt": "parent642-walk-v4",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 4,
+      "id": "configuration",
+      "path": "/organisation/configuration",
+      "heading": "Configuration",
+      "file": "SCRUM-642-08-configuration.png",
+      "sha256": "a88dc1e2c01ccc635dfbca6cabfc2f93a18ef24bd2b4889742faece00a680214",
+      "capturedAt": "2026-10-28T14:42:28.766Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 8
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 2
+      },
+      "requiredReads": [
+        {
+          "path": "/console/configuration",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-08-configuration.png",
+      "attempt": "parent642-walk-v4",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 5,
+      "id": "money",
+      "path": "/reports/money",
+      "heading": "Money oversight",
+      "file": "SCRUM-642-09-money.png",
+      "sha256": "bbcad480f527e23d74ace4e298e10488d5a491a99e306ef427df4e61366d83b9",
+      "capturedAt": "2026-10-28T14:42:33.954Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 24,
+        "notBuilt": 0,
+        "headings": 26
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 2
+      },
+      "requiredReads": [
+        {
+          "path": "/console/money/sales",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/refunds",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/discounts",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/cash",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/settlement",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/wallets",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/costs",
+          "responses": 1
+        },
+        {
+          "path": "/console/money/integrity",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-09-money.png",
+      "attempt": "parent642-walk-v4",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    },
+    {
+      "area": 6,
+      "id": "support",
+      "path": "/watch/support",
+      "heading": "Support",
+      "file": "SCRUM-642-12-support.png",
+      "sha256": "3565b4c57a28b3a5494a47ef188ff9fcd179db5a25e38e7f4893034b5adcc5f1",
+      "capturedAt": "2026-10-28T14:58:14.165Z",
+      "availability": {
+        "unknown": 0,
+        "notAvailable": 0,
+        "notBuilt": 0,
+        "headings": 8
+      },
+      "captionOutsideMain": true,
+      "settling": {
+        "scope": "Required native page reads and actual visible loading state",
+        "ignoredUnrelatedPending": 1
+      },
+      "requiredReads": [
+        {
+          "path": "/console/support/impersonations",
+          "responses": 1
+        }
+      ],
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-support-recovery-v1/SCRUM-642-12-support.png",
+      "attempt": "parent642-walk-support-recovery-v1",
+      "inspectedByCapturingAgent": true,
+      "independentlyInspectedByRoot": true,
+      "rawBytesPreserved": true
+    }
+  ],
+  "provenance": [
+    {
+      "name": "parent642-walk-v1",
+      "receipt": "provenance/parent642-walk-v1-results.json",
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v1/SCRUM-642-walkthrough-results.json",
+      "sha256": "0287b2f0bcf9d44e98cda7c88d0ae32db87b69d8ebbc28e25ee0e3c19f73aa9a",
+      "expectedSha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+      "startedAt": "2026-10-28T14:31:24.898Z",
+      "finishedAt": "2026-10-28T14:32:26.665Z",
+      "walkComplete": false,
+      "failure": {
+        "phase": "PAGE_APPS",
+        "name": "Error",
+        "code": "NATIVE_READS_DID_NOT_SETTLE"
+      },
+      "screenshotCount": 0,
+      "helperSha256": "801a85920dee9d48892e8c9ac6cd48ff736890d32944d8188b27c2ad256ef2d8",
+      "cleanup": [
+        {
+          "signOutStatus": 200,
+          "meAfterSignOutStatus": 401,
+          "hadSignedIn": true
+        }
+      ],
+      "blockedRequestCount": 0
+    },
+    {
+      "name": "parent642-walk-v2",
+      "receipt": "provenance/parent642-walk-v2-results.json",
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v2/SCRUM-642-walkthrough-results.json",
+      "sha256": "c7002be6562d0888380d1ffaa733a17f9656d27c1a3033988d363bdff794c0c9",
+      "expectedSha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+      "startedAt": "2026-10-28T14:34:57.850Z",
+      "finishedAt": "2026-10-28T14:34:59.012Z",
+      "walkComplete": false,
+      "failure": {
+        "phase": "PREFLIGHT",
+        "name": "Error",
+        "code": "EXACT_LATEST_LIVE_PAIR_REQUIRED"
+      },
+      "screenshotCount": 0,
+      "helperSha256": "d0783747ee695d23e7efa6028d69c5a401fd7b36f8ac7aaff63bd85933f444ea",
+      "cleanup": [],
+      "blockedRequestCount": 0
+    },
+    {
+      "name": "parent642-walk-v3",
+      "receipt": "provenance/parent642-walk-v3-results.json",
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v3/SCRUM-642-walkthrough-results.json",
+      "sha256": "c3793ddef225fa4c9e1a9a07902f1cb8f7d3c2428e38bfbe56bcfd8fe80fdc51",
+      "expectedSha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+      "startedAt": "2026-10-28T14:38:31.326Z",
+      "finishedAt": "2026-10-28T14:39:40.561Z",
+      "walkComplete": false,
+      "failure": {
+        "phase": "PAGE_APPS",
+        "name": "Error",
+        "code": "NATIVE_READS_DID_NOT_SETTLE"
+      },
+      "screenshotCount": 0,
+      "helperSha256": "d0783747ee695d23e7efa6028d69c5a401fd7b36f8ac7aaff63bd85933f444ea",
+      "cleanup": [
+        {
+          "signOutStatus": 200,
+          "meAfterSignOutStatus": 401,
+          "hadSignedIn": true
+        }
+      ],
+      "blockedRequestCount": 0
+    },
+    {
+      "name": "parent642-walk-v4",
+      "receipt": "provenance/parent642-walk-v4-results.json",
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-walkthrough-results.json",
+      "sha256": "fd9a8de2e6cf8fce379e8e87d1881571e6471249e56cd6f742354aa80bb8f757",
+      "expectedSha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+      "startedAt": "2026-10-28T14:41:43.388Z",
+      "finishedAt": "2026-10-28T14:42:54.292Z",
+      "walkComplete": false,
+      "failure": {
+        "phase": "PAGE_SUPPORT",
+        "name": "Error",
+        "code": "NATIVE_STEP_FAILED"
+      },
+      "screenshotCount": 9,
+      "helperSha256": "326d6c7036ed8e53fbc43183b3b686be0466519d07e48c750022640dc514604c",
+      "cleanup": [
+        {
+          "signOutStatus": 200,
+          "meAfterSignOutStatus": 401,
+          "hadSignedIn": true
+        }
+      ],
+      "blockedRequestCount": 2
+    },
+    {
+      "name": "parent642-walk-recovery-v1",
+      "receipt": "provenance/parent642-walk-recovery-v1-results.json",
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-recovery-v1/SCRUM-642-walkthrough-results.json",
+      "sha256": "59f3ed0d88cc00b52c65051fa2534284135b5b876426fbdc030529fa635b7a49",
+      "expectedSha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+      "startedAt": "2026-10-28T14:53:01.478Z",
+      "finishedAt": "2026-10-28T14:53:27.860Z",
+      "walkComplete": false,
+      "failure": {
+        "phase": "CAPTURE_SUPPORT",
+        "name": "Error",
+        "code": "NATIVE_STEP_FAILED"
+      },
+      "screenshotCount": 1,
+      "helperSha256": "44a10f9f4ca852263bf949f81386267726006524b802d4962d62f91fd55f799d",
+      "cleanup": [
+        {
+          "signOutStatus": 200,
+          "meAfterSignOutStatus": 401,
+          "hadSignedIn": true
+        }
+      ],
+      "blockedRequestCount": 0
+    },
+    {
+      "name": "parent642-walk-support-recovery-v1",
+      "receipt": "provenance/parent642-walk-support-recovery-v1-results.json",
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-support-recovery-v1/SCRUM-642-walkthrough-results.json",
+      "sha256": "67a10af43dda321b6ec0a9c0b83d985fda820a1ace00190abeef0fa65ec67bcf",
+      "expectedSha": "0ab063a4ca2d2c5c177759d42cd5e337d0d7d7fa",
+      "startedAt": "2026-10-28T14:58:02.756Z",
+      "finishedAt": "2026-10-28T14:58:15.878Z",
+      "walkComplete": false,
+      "failure": {
+        "phase": "READ_AUDIT_CHECK",
+        "name": "Error",
+        "code": "FRESH_MONEY_DATA_ACCESS_REQUIRED"
+      },
+      "screenshotCount": 1,
+      "helperSha256": "23904d72f2ae36e3a4f4421268f1d1e4bb9e5d3e626e3ae26d5d5171d3063761",
+      "cleanup": [
+        {
+          "signOutStatus": 200,
+          "meAfterSignOutStatus": 401,
+          "hadSignedIn": true
+        }
+      ],
+      "blockedRequestCount": 0
+    }
+  ],
+  "excludedImages": [
+    {
+      "originalPath": "C:/oto-lanes/proof-tools/parent642-walk-v4/SCRUM-642-06-integrations.png",
+      "reason": "Helper omitted the native own-branch settlement GET; this frame contains a helper-induced fetch refusal. Replaced by recovered image11."
+    }
+  ],
+  "historicalFailures": [
+    "v1: global settling barrier held unrelated bootstrap activity; no image accepted.",
+    "v2: automatic source rollout failed the exact deployment pre-auth gate; no auth session.",
+    "v3: required Apps read200 and no visible loader, but unrelated pending /me failed the old global barrier.",
+    "v4: nine captures, two own-branch settlement GETs denied by the helper, and Support capture failed. Only eight unaffected frames accepted.",
+    "Focused recovery: clean Integrations capture; Support large historical-session layout failed capture.",
+    "Focused Support recovery: privacy-limited Support capture succeeded; an additional fresh-money-data-access assertion failed afterward. The attempt remains incomplete; no fresh-tour audit assertion is claimed."
+  ],
+  "nativeDataAccessEvidence": {
+    "image": "SCRUM-642-03-activity.png",
+    "preset": "Data access",
+    "observedActions": [
+      "console.money.read",
+      "console.money.investigate"
+    ],
+    "freshTourAuditAssertionPassed": false,
+    "limit": "The accepted image proves native visibility, not that these records were generated by this walkthrough."
+  },
+  "supportLookup": {
+    "status": 200,
+    "ownAccountQuery": true,
+    "kindQuery": "account",
+    "kinds": [
+      "account"
+    ],
+    "sections": [
+      {
+        "app": "platform",
+        "key": "platform.account_sessions",
+        "status": "found",
+        "rowCount": 2452
+      },
+      {
+        "app": "platform",
+        "key": "platform.account_roles",
+        "status": "found",
+        "rowCount": 3
+      },
+      {
+        "app": "oto_app",
+        "key": "oto_app.identity",
+        "status": "found",
+        "rowCount": 1
+      }
+    ],
+    "dom": {
+      "containerCount": 1,
+      "sectionCount": 3,
+      "emptyNoteCount": 0
+    },
+    "limit": "Historical session records are included. Counts do not mean every session is active. All lookup record li rows are removed from image layout; native counts and statuses remain."
+  },
+  "scope": {
+    "deliveredAreas": [
+      "Apps and releases",
+      "Activity and failures",
+      "Health and integrations",
+      "Analytics and configuration",
+      "Money",
+      "Support"
+    ],
+    "dataTools": {
+      "ticket": "SCRUM-649",
+      "status": "NOT BUILT",
+      "scope": "Descoped by the current owner instruction; stays To Do. No Data tools feature page is built or claimed."
+    },
+    "q27Stage2": "Follow-up when the frozen legacy dump arrives: dated source history/cutover, spliced summary/preview, narrow unfreeze with reason and Radar contract re-check.",
+    "retainedFollowUps": [
+      "SCRUM-662 watchdog fallback",
+      "Deploy-event CI wiring",
+      "OTO App schedule_audit_log impersonation marking",
+      "Support lookup sections named Not built",
+      "Inbox/Radar/OTO App banner gap"
+    ],
+    "supportTrace": {
+      "repeated": false,
+      "proof": "Reuse the completed SCRUM-648 child trace proof; exact accepted filenames are bound by the coordinator in parent acceptance."
+    }
+  },
+  "privacy": {
+    "policy": "Mask staff identity, audit actors, personal/contact/account identifiers, Support lookup values and trace links, and QR/receipt images. Retain native headings, actions, errors, availability, totals and public operational metadata.",
+    "hiddenTypes": [
+      "Personal/contact/secret text identified from native read fields",
+      "Activity actor cells",
+      "Support lookup value cells and trace links",
+      "Non-date text-input values",
+      "Triggered-by/person/session facts",
+      "Sensitive identifier/receipt/trace table cells",
+      "Failure request/action identifiers",
+      "Canvases, data/file images and QR/inline-grid renderings",
+      "All lookup record li rows removed from layout, including late arrivals; native section counts and statuses remain visible."
+    ],
+    "rawBodiesSaved": false,
+    "rawDomSaved": false,
+    "authMaterialSaved": false
+  },
+  "limits": [
+    "Read-only native walkthrough. Auth and native read-audit rows/session touches occur; this is not a claim of zero database writes.",
+    "No maintenance, flag preview/apply, approval, retry/replay/discard, mute, recipient edit, export/unmask, provider test, source switch, rerun, repair, handoff, impersonation, payment or equipment action.",
+    "Thin native data can prove availability and honest missing states, not populated business reconciliation.",
+    "No synthetic Data tools page is captured. This helper does not transition Jira or authorize parent acceptance.",
+    "The seeded ADMIN lookup includes historical session rows; its native count is not a claim that every listed session is active.",
+    "Existing child SCRUM-648 trace/impersonation evidence is reused by the coordinator; those actions were not repeated.",
+    "Native warnings, unavailable values and existing failures remain visible; this tour does not assert every delivered service is healthy.",
+    "No new business data, payment, settlement, cash, equipment, provider, handoff, SMS or app mutation was dispatched. Native auth/read-audit/session touches may occur."
+  ],
+  "cleanup": {
+    "authenticatedAttempts": 5,
+    "preAuthRejectedAttempts": 1,
+    "allOwnSignOuts200": true,
+    "allOwnMeAfterSignOut401": true,
+    "ownedBrowsersClosed": true
+  },
+  "originalHelperInputHashes": [
+    {
+      "path": "scripts/agent/evidence.mjs",
+      "sha256": "8e928a28fcc85ba0df51ac841b4ac619605b05cd8f1a275090f74251bfcec695"
+    },
+    {
+      "path": "scripts/agent/env.mjs",
+      "sha256": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237"
+    },
+    {
+      "path": "scripts/agent/render.mjs",
+      "sha256": "38c0624969c762a5d93de2a0ab0675e98c7a265e8dde750a51c25d1a5a9826b7"
+    }
+  ]
+}

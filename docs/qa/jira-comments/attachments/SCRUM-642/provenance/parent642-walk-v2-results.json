@@ -1,0 +1,82 @@
+{
+  "ticket": "SCRUM-642",
+  "expectedSha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+  "startedAt": "2026-10-28T14:34:57.850Z",
+  "walkComplete": false,
+  "acceptanceClaimed": false,
+  "helperSha256": "d0783747ee695d23e7efa6028d69c5a401fd7b36f8ac7aaff63bd85933f444ea",
+  "sourceInputs": [
+    {
+      "path": "scripts/agent/evidence.mjs",
+      "sha256": "8e928a28fcc85ba0df51ac841b4ac619605b05cd8f1a275090f74251bfcec695"
+    },
+    {
+      "path": "scripts/agent/env.mjs",
+      "sha256": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237"
+    },
+    {
+      "path": "scripts/agent/render.mjs",
+      "sha256": "38c0624969c762a5d93de2a0ab0675e98c7a265e8dde750a51c25d1a5a9826b7"
+    }
+  ],
+  "checks": [],
+  "pages": [],
+  "reads": [],
+  "blockedRequests": [],
+  "cleanup": [],
+  "scope": {
+    "deliveredAreas": [
+      "Apps and releases",
+      "Activity and failures",
+      "Health and integrations",
+      "Analytics and configuration",
+      "Money",
+      "Support"
+    ],
+    "dataTools": {
+      "ticket": "SCRUM-649",
+      "status": "NOT BUILT",
+      "scope": "Descoped from this run; stays To Do. Parent acceptance needs the owner’s actual descope acceptance."
+    },
+    "q27Stage2": "Follow-up when the frozen legacy dump arrives: dated source history/cutover, spliced summary/preview, narrow unfreeze with reason and Radar contract re-check.",
+    "retainedFollowUps": [
+      "SCRUM-662 watchdog fallback",
+      "Deploy-event CI wiring",
+      "OTO App schedule_audit_log impersonation marking",
+      "Support lookup sections named Not built",
+      "Inbox/Radar/OTO App banner gap"
+    ],
+    "supportTrace": {
+      "repeated": false,
+      "proof": "Reuse the completed SCRUM-648 child trace proof; exact accepted filenames are bound by the coordinator in parent acceptance."
+    }
+  },
+  "privacy": {
+    "policy": "Mask staff identity, audit actors, personal/contact/account identifiers, Support lookup values and trace links, and QR/receipt images. Retain native headings, actions, errors, availability, totals and public operational metadata.",
+    "hiddenTypes": [
+      "Personal/contact/secret text identified from native read fields",
+      "Activity actor cells",
+      "Support lookup value cells and trace links",
+      "Non-date text-input values",
+      "Triggered-by/person/session facts",
+      "Sensitive identifier/receipt/trace table cells",
+      "Failure request/action identifiers",
+      "Canvases, data/file images and QR/inline-grid renderings"
+    ],
+    "rawBodiesSaved": false,
+    "rawDomSaved": false,
+    "authMaterialSaved": false
+  },
+  "limits": [
+    "Read-only native walkthrough. Auth and native read-audit rows/session touches occur; this is not a claim of zero database writes.",
+    "No maintenance, flag preview/apply, approval, retry/replay/discard, mute, recipient edit, export/unmask, provider test, source switch, rerun, repair, handoff, impersonation, payment or equipment action.",
+    "Thin native data can prove availability and honest missing states, not populated business reconciliation.",
+    "No synthetic Data tools page is captured. This helper does not transition Jira or authorize parent acceptance."
+  ],
+  "failure": {
+    "phase": "PREFLIGHT",
+    "name": "Error",
+    "code": "EXACT_LATEST_LIVE_PAIR_REQUIRED"
+  },
+  "finishedAt": "2026-10-28T14:34:59.012Z"
+}
