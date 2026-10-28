@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-682",
+  "phase": "guards",
+  "command": "pnpm --filter @oto/api test --maxWorkers=1 --fileParallelism=false test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts",
+  "helperSha256": "a36ae816f800f2ba56174cda8d09620362dafbf4a76a183a81343269321c783d",
+  "startedAt": "2026-10-28T19:21:45.010Z",
+  "sourceHead": "aa22b28c02d8625f1d3d1d5de1954885c1513a9d",
+  "sourceManifestSha256": "77643bdc43c08e2621790f8a41fb7e2ac50e28c0f89da5331d2bb6a2d13744d0",
+  "sourceInputs": 3981,
+  "terminal": true,
+  "nodeVersion": "v22.17.1",
+  "privateEmbeddedPostgres": true,
+  "inheritedDatabaseOrProviderEnvironment": false,
+  "docker": false,
+  "completedAt": "2026-10-28T19:22:42.106Z",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "sourceUnchanged": true,
+  "logPath": "C:\\oto-lanes\\admin682-release-evidence-20261029\\guards.log",
+  "logSha256": "cccec2f9b8022eb8f5bef0b1ebae9e7baa99da6a5beef87036464d059d2c65ed",
+  "logBytes": 11317,
+  "logSanitizedInRamBeforeDisk": true,
+  "redactions": {
+    "databaseUrls": 0,
+    "jwt": 0,
+    "bearer": 0,
+    "cookies": 0,
+    "quotedSecrets": 0,
+    "syntheticAuthCode": 0
+  },
+  "summaries": [
+    " Test Files  4 passed (4)",
+    "      Tests  102 passed (102)",
+    "   Start at  02:21:47",
+    "   Duration  54.81s (transform 6.27s, setup 0ms, collect 20.45s, tests 32.87s, environment 1ms, prepare 548ms)"
+  ],
+  "semanticPass": true,
+  "passed": true
+}

@@ -1,0 +1,30 @@
+{
+  "ticket": "SCRUM-682",
+  "headSha": "30e90eb3257a05ab3f59411a7c6f70b65adb328b",
+  "startedAt": "2026-10-28T20:09:47.041Z",
+  "finishedAt": "2026-10-28T20:15:34.222Z",
+  "nativeExitCode": 0,
+  "workerExitCode": 0,
+  "workerResult": {
+    "nativeChildExitCode": 0,
+    "databaseDropped": true,
+    "embeddedStopped": true,
+    "cleanupFailure": false,
+    "setupFailureName": null,
+    "exitCode": 0
+  },
+  "discovered": 351,
+  "passed": 351,
+  "failed": 0,
+  "skipped": 0,
+  "countsReconciled": true,
+  "sourceFiles": 3985,
+  "sourceBeforeSha256": "10db1ed809b5604676ead6e7b22901538eb5c6bdc57fb43260d11d5e413bfdf6",
+  "sourceAfterSha256": "10db1ed809b5604676ead6e7b22901538eb5c6bdc57fb43260d11d5e413bfdf6",
+  "sourceBytesUnchanged": true,
+  "gitStillClean": true,
+  "headUnchanged": true,
+  "logSha256": "ef974c9fba56a44adaf1e5861bc0d24488e1bbac769fa4dcb23220e3a9a9f024",
+  "staging": false,
+  "docker": false
+}

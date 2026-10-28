@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-682",
+  "phase": "seam",
+  "command": "pnpm --filter @oto/api-types test",
+  "helperSha256": "a36ae816f800f2ba56174cda8d09620362dafbf4a76a183a81343269321c783d",
+  "startedAt": "2026-10-28T19:19:54.585Z",
+  "sourceHead": "aa22b28c02d8625f1d3d1d5de1954885c1513a9d",
+  "sourceManifestSha256": "77643bdc43c08e2621790f8a41fb7e2ac50e28c0f89da5331d2bb6a2d13744d0",
+  "sourceInputs": 3981,
+  "terminal": true,
+  "nodeVersion": "v22.17.1",
+  "privateEmbeddedPostgres": true,
+  "inheritedDatabaseOrProviderEnvironment": false,
+  "docker": false,
+  "completedAt": "2026-10-28T19:20:03.123Z",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "sourceUnchanged": true,
+  "logPath": "C:\\oto-lanes\\admin682-release-evidence-20261029\\seam.log",
+  "logSha256": "a97f0ad6b300ff80f7b4fb3911f92146301cc4ebe801aecaeca95abdffbbd277",
+  "logBytes": 397,
+  "logSanitizedInRamBeforeDisk": true,
+  "redactions": {
+    "databaseUrls": 0,
+    "jwt": 0,
+    "bearer": 0,
+    "cookies": 0,
+    "quotedSecrets": 0,
+    "syntheticAuthCode": 0
+  },
+  "summaries": [
+    " Test Files  1 passed (1)",
+    "      Tests  10 passed (10)",
+    "   Start at  02:19:57",
+    "   Duration  5.71s (transform 731ms, setup 0ms, collect 4.88s, tests 47ms, environment 0ms, prepare 293ms)"
+  ],
+  "semanticPass": true,
+  "passed": true
+}

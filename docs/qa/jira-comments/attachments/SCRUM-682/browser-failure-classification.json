@@ -1,0 +1,314 @@
+{
+  "ticket": "SCRUM-682",
+  "reviewedAt": "2026-10-28T19:50:46.458Z",
+  "kind": "read-only independent first-failure classification",
+  "sourceCommit": "677b5896700b4bd9b9864559fa19ea05b100fb91",
+  "log": {
+    "path": "C:/oto-lanes/admin682-evidence/browser-readback-v2-all.log",
+    "sha256": "dc534b143e019ccd060de1c193657e2d4b0b02b309dc4f487a53241a93ee42bb",
+    "bytes": 121654
+  },
+  "receipt": {
+    "path": "C:/oto-lanes/admin682-evidence/browser-readback-v2-all.json",
+    "sha256": "4f7cf6c3f51dbcdeb2c8af4771a402d9c4d149aecab377b2a2a6a13bc14d4c98",
+    "passed": 321,
+    "failed": 25,
+    "sourceBeforeSha256": "7b979b44b11d09d947eeec738f847a79853f8cf9053b2297f43afb2b43d884b1",
+    "sourceAfterSha256": "7b979b44b11d09d947eeec738f847a79853f8cf9053b2297f43afb2b43d884b1",
+    "cleanup": {
+      "nativeChildExitCode": 1,
+      "databaseDropped": true,
+      "embeddedStopped": true,
+      "cleanupFailure": false,
+      "setupFailureName": null,
+      "exitCode": 1
+    }
+  },
+  "summary": {
+    "obsoleteUnexpected5xxSentinelCopy": 24,
+    "http500": 8,
+    "http503": 16,
+    "obsolete409copyAndRecoveryWorkflow": 1,
+    "newlyRequiredTaxReadFirstCause": 0,
+    "confirmedBehaviorRegressionFirstCause": 0,
+    "invalidFixtureSchemaFirstCause": 0,
+    "resourceOrSetupFirstCause": 0
+  },
+  "cases": [
+    {
+      "number": 1,
+      "specAndTestLocation": "e2e/access-review.spec.ts:108:1 › pending or failed review does not invent six empty lists and retry can show genuine empty results ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 116,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 2,
+      "specAndTestLocation": "e2e/app-access.spec.ts:256:1 › a failed unlinked-user search never becomes an empty account match ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 258,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again.",
+      "notes": "The actual alert also retains the Staff accounts could not be read prefix."
+    },
+    {
+      "number": 3,
+      "specAndTestLocation": "e2e/app-access.spec.ts:267:1 › a failed permission read never becomes a fictional app access state ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 269,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again.",
+      "notes": "The actual alert also retains the Apps could not be read prefix."
+    },
+    {
+      "number": 4,
+      "specAndTestLocation": "e2e/assistant-settings.spec.ts:235:1 › loading and a failed read never fabricate editable defaults; retry is GET-only ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 237,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 5,
+      "specAndTestLocation": "e2e/assistant-settings.spec.ts:257:1 › confirmed PUT response is the canonical readback and a later GET failure does not turn the save into failure ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 259,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 6,
+      "specAndTestLocation": "e2e/departments.spec.ts:73:1 › source navigation is explicit, single-flight and retryable without changing the directory ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 82,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 7,
+      "specAndTestLocation": "e2e/departments.spec.ts:118:1 › pending, failed, reachable-empty and search-empty department reads remain separate and retryable ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 126,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 8,
+      "specAndTestLocation": "e2e/employees.spec.ts:100:1 › a pending or failed directory stays distinct from empty and retry refreshes the real source ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 108,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 9,
+      "specAndTestLocation": "e2e/health-integrations-review.spec.ts:154:1 › an initial integration read failure is not a declaration that no services exist ",
+      "testName": "",
+      "fixtureStatus": 500,
+      "fixtureLine": 155,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 10,
+      "specAndTestLocation": "e2e/health-integrations-review.spec.ts:165:1 › a refused integration refresh cannot keep claiming that everything is currently provisioned ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 170,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 11,
+      "specAndTestLocation": "e2e/health-integrations-review.spec.ts:227:1 › a failed canonical health refresh does not keep a green current verdict from the previous snapshot ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 230,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 12,
+      "specAndTestLocation": "e2e/money.spec.ts:155:1 › tax save refusal cannot report Saved and retry preserves fractions plus the hidden stored-value rule ",
+      "testName": "",
+      "fixtureStatus": 409,
+      "fixtureLine": 49,
+      "firstFailureCategory": "obsolete409copy-and-explicit-read-workflow",
+      "actualPublicMessage": "ZZ TEST Keep this money draft. Read the current settings before trying again.",
+      "notes": "DOM has retained3.75 draft, disabled Save and Read current settings. Frozenfixturealready includescatalog:tax:read."
+    },
+    {
+      "number": 13,
+      "specAndTestLocation": "e2e/observability-lifetime.spec.ts:161:1 › Activity related-read refusal is not an assertion that this was the only row ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 164,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 14,
+      "specAndTestLocation": "e2e/observability-lifetime.spec.ts:178:1 › Failures run-history refusal is not an assertion that no individual runs exist ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 181,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 15,
+      "specAndTestLocation": "e2e/organisation.spec.ts:289:59 › an accepted branch switch removes stale authority while its canonical me read is pending or fails ",
+      "testName": "",
+      "fixtureStatus": 500,
+      "fixtureLine": 297,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 16,
+      "specAndTestLocation": "e2e/organisation.spec.ts:289:59 › an accepted branch switch removes stale authority while its canonical permissions read is pending or fails ",
+      "testName": "",
+      "fixtureStatus": 500,
+      "fixtureLine": 297,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 17,
+      "specAndTestLocation": "e2e/platform.spec.ts:250:3 › native Platform pages › a failed register read stays a failure until a deliberate successful retry ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 104,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "This could not be loaded because the service had a problem. Try reading it again; share the reference if it keeps failing."
+    },
+    {
+      "number": 18,
+      "specAndTestLocation": "e2e/read-failures.spec.ts:31:1 › Health: a failed /ops/health is not drawn as \"Nothing needs you right now\" ",
+      "testName": "",
+      "fixtureStatus": 500,
+      "fixtureLine": 20,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 19,
+      "specAndTestLocation": "e2e/read-failures.spec.ts:39:1 › Failures: a failed /ops/failures is not drawn as \"Nothing failed in the last 24 hours\" ",
+      "testName": "",
+      "fixtureStatus": 500,
+      "fixtureLine": 20,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 20,
+      "specAndTestLocation": "e2e/read-failures.spec.ts:50:1 › Failures rail: a failed /ops/quarantine is not drawn as \"Nothing is waiting on a decision\" ",
+      "testName": "",
+      "fixtureStatus": 500,
+      "fixtureLine": 20,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again.",
+      "notes": "Quarantine also retains the not-an-all-clear explanation."
+    },
+    {
+      "number": 21,
+      "specAndTestLocation": "e2e/read-failures.spec.ts:63:1 › Devices: a failed box read is not drawn as \"0 boxes · 0 online\" ",
+      "testName": "",
+      "fixtureStatus": 500,
+      "fixtureLine": 20,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again.",
+      "notes": "The unreadable register also retains the current-contents-unavailable explanation."
+    },
+    {
+      "number": 22,
+      "specAndTestLocation": "e2e/read-failures.spec.ts:92:1 › Quarantine list: a failed read is not drawn as \"Nothing is waiting on a decision\" ",
+      "testName": "",
+      "fixtureStatus": 500,
+      "fixtureLine": 20,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again.",
+      "notes": "Quarantine also retains the not-an-all-clear explanation."
+    },
+    {
+      "number": 23,
+      "specAndTestLocation": "e2e/roles.spec.ts:259:1 › failed catalogue, reverse lookup and account reads stay visibly failed instead of empty ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 261,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 24,
+      "specAndTestLocation": "e2e/suite-controls.spec.ts:128:1 › failed reads have a retry and do not claim an empty registry or release history ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 130,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    },
+    {
+      "number": 25,
+      "specAndTestLocation": "e2e/suite-controls.spec.ts:245:1 › agent versions keep nullable facts, independent read errors and honest empty-page pagination ",
+      "testName": "",
+      "fixtureStatus": 503,
+      "fixtureLine": 270,
+      "firstFailureCategory": "obsoleteUnexpected5xxSentinelCopy",
+      "actualPublicMessage": "The service returned an unexpected error. Read the current state before trying again."
+    }
+  ],
+  "sourceAnchors": {
+    "constructorSanitization": {
+      "file": "apps/console/src/api/client.ts",
+      "line": 22
+    },
+    "typedUnexpectedRead": {
+      "file": "packages/admin-screens/src/lib/errorView.ts",
+      "line": 100
+    },
+    "conflictGuidance": {
+      "file": "packages/admin-screens/src/lib/errorView.ts",
+      "line": 106
+    },
+    "taxReadFence": {
+      "file": "packages/admin-screens/src/lifted/components/admin/tax/TaxPanel.tsx",
+      "line": 268
+    },
+    "taxExplicitReadRetainsDraft": {
+      "file": "packages/admin-screens/src/lifted/components/admin/tax/TaxPanel.tsx",
+      "line": 312
+    },
+    "taxFixturePermissionPresent": {
+      "file": "apps/console/e2e/money.spec.ts",
+      "line": 10,
+      "hasExplicitTaxRead": true
+    }
+  },
+  "evidence": {
+    "new409NativeRecoveryControlPassed": true,
+    "resourceFaultMarkers": 0,
+    "snapshotsChecked": "Actual public error paragraphs in all25 failure snapshots; no raw private payload copied."
+  },
+  "recommendedBoundary": [
+    "Update only obsolete expected public messages and retry locators; retain all state/context/draft/count/no-false-empty assertions.",
+    "Platform typed-error case17 has a different safe read message from the legacy.message consumers; do not blindly substituteoneexacttext everywhere.",
+    "For Tax retain the3.75/fractions/hiddenstored-value/nativebody assertions; expect409guidance, assertSave disabled, perform the explicitGET, then resubmit and preserve request/key/commit counts.",
+    "Do not removeTaxread permission or loosen5xx sanitization to satisfy syntheticUNAVAILABLE/ZZ_TEST codes.",
+    "Review later phases ofmulti-stageRoles/Suite-controls/Integrations tests for the same obsolete text, without changing their data or recovery assertions."
+  ],
+  "limitations": [
+    "This classifies each first actual failure. Assertions and later phases after that failure were not executed and require the native rerun.",
+    "No blanketfullGREEN or absence-of-all-regressions claim.",
+    "No source/test/runtime/Git/docs/Jira changes or test reruns bythis review."
+  ]
+}
