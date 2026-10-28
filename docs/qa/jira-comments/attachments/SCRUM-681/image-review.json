@@ -1,0 +1,56 @@
+{
+  "ticket": "SCRUM-681",
+  "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+  "inspected": true,
+  "reviewedAt": "2026-10-28T20:44:26.880Z",
+  "images": [
+    {
+      "file": "SCRUM-681-01-devices.png",
+      "sha256": "5ff626fd5a1cc56d2d87a108119d83ad9218b376740ea5efa56101c630ee0936",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-681-02-booths.png",
+      "sha256": "826c81d95d09adc1f36ed358061ca54e3328e62ceed4e27c849ee7d09e3ac89b",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-681-03-vouchers.png",
+      "sha256": "fedee0b7e12f87522902b2bdc1183b889fc0c23539294167e59dfe012385d886",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-681-04-activity.png",
+      "sha256": "10dd22f77673a61c00b4a075d80c51ea35f5889edea74f5905ae18ce7c73f072",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-681-05-releases.png",
+      "sha256": "797d4904d40a0515930f6b06cab7c3b548f43dc52d5b9f977d512c1c111b4d39",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-681-06-local-regressions.png",
+      "sha256": "6d1e153814bd7684e4ff77f9781dcba204a5e8b583d68c11f57d44c8f1f9e96d",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    }
+  ],
+  "observations": [
+    "All six actual PNGs inspected after capture; labels and timestamps are legible.",
+    "Native Devices, Booths, Vouchers, Activity and Releases pages are shown with identities and codes masked.",
+    "The sixth frame explicitly labels 337 local browser passes and does not imply live fault injection.",
+    "Screenshots are partial viewports; private inputs and QR/media are hidden."
+  ]
+}

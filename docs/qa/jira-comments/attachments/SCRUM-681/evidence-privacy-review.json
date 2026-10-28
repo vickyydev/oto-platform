@@ -1,0 +1,70 @@
+{
+  "ticket": "SCRUM-681",
+  "kind": "offline-privacy-helper-repair",
+  "reviewedAt": "2026-10-28T20:40:40.657Z",
+  "passed": true,
+  "bindings": {
+    "prove681.mjs": "506cf3a4627f5247c47273b299cdafa41aed534380bbc00f7308dc1b87948b21",
+    "prove681-before-privacy-v2.mjs": "506cf3a4627f5247c47273b299cdafa41aed534380bbc00f7308dc1b87948b21",
+    "prove681-v2.mjs": "f39bf6963f639c4db40325c19845ddda5e17603b08f1f3fbd4ad753cf3fb8107",
+    "privacy-v2.test.mjs": "262d101c183fe0cb8e557791334ebf4c16a62c946de252dc09385091e3745a93"
+  },
+  "originalHelperUnchanged": true,
+  "applicationSourceChanged": false,
+  "actualV1CauseConfirmed": false,
+  "actualV1Receipt": {
+    "path": "C:/oto-lanes/admin681-staging-proof-v1/receipt.json",
+    "sha256": "6d1267d69324873d8d1241af6bd18b477efdf8256487bcdb0134f2871bbc205d",
+    "failure": "PRIVACY_OR_CAPTION_CHECK_FAILED",
+    "readsAll200": 75,
+    "screenshots": 3,
+    "cleanup": {
+      "signOutStatus": 200,
+      "oldCookieMeStatus": 401,
+      "confirmed": true
+    }
+  },
+  "offlineEvidence": {
+    "actualCallbackExtracted": true,
+    "syntheticMinimalDomOnly": true,
+    "tests": 8,
+    "pass": 8,
+    "fail": 0,
+    "observedToolChunk": "f24a04",
+    "syntaxExitCode": 0
+  },
+  "changes": [
+    "Collision-safe visible block marker used for all private/email/number replacements; every private value including short values remains checked.",
+    "Sensitive primitive array values are collected.",
+    "Per-capture safe diagnostics are saved before the unchanged strict assertion: condition booleans, numeric caption rectangle, remaining-value count and SHA256/length only."
+  ],
+  "preserved": [
+    "Source/CI/deployment/auth/read allowlists unchanged.",
+    "Exact original-cookie independent cleanup unchanged.",
+    "Cross-node visible remnants still fail; no private value is skipped.",
+    "No raw value or response body is added to receipts."
+  ],
+  "counterpartReview": {
+    "sameMarkerCollisionPresentIn": [
+      "C:/oto-lanes/admin682-proof-tools/prove682.mjs",
+      "C:/oto-lanes/admin683-proof-tools/prove683.mjs",
+      "C:/oto-lanes/admin679-final-proof-tools/prove679-final.mjs"
+    ],
+    "counterpartsEdited": false
+  },
+  "beforeExecution": [
+    "Root review the v1-to-v2 diff.",
+    "Update reviewed local-proof.json helperSha256 to the v2 hash.",
+    "Use a fresh attempt output directory; retain v1 receipt/images as failed history."
+  ],
+  "limits": [
+    "The v1 receipt lacks failed-check booleans, so the actual cause is unconfirmed.",
+    "Offline DOM fixtures do not prove live layout, caption geometry or screenshot acceptance."
+  ],
+  "execution": {
+    "networkCalls": 0,
+    "authCalls": 0,
+    "browserStarted": false,
+    "stagingCalls": 0
+  }
+}
