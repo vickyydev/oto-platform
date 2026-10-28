@@ -26,6 +26,8 @@ describe('plain permission sentences (SCRUM-612)', () => {
     expect(words['console:analytics:rerun']).toMatch(/our own records/);
     expect(words['console:analytics:rerun']).toMatch(/never be rebuilt/);
     expect(Object.values(words).join(' ')).not.toMatch(/unfreeze/i);
+  });
+
   it('gives Money oversight to administrators only, read-only and recorded (SCRUM-647)', () => {
     for (const key of ['console:money:read', 'console:money:investigate'] as const) {
       expect(PERMISSIONS).toContain(key);

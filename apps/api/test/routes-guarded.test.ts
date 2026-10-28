@@ -63,6 +63,9 @@ describe('route guards (S2-01b)', () => {
       expect(route?.config.target, url).toEqual(target);
       expect(route?.config.public, url).not.toBe(true);
       expect(route?.config.credential, url).toBeUndefined();
+    }
+  });
+
   it('requires a session for every Money oversight read, none of them public or credentialed (SCRUM-647)', async () => {
     const money = ctx.app.routeRegistry.filter(r => r.url.startsWith('/console/money') && r.method !== 'HEAD' && r.method !== 'OPTIONS');
     expect(money.map(r => `${r.method} ${r.url}`).sort()).toEqual([

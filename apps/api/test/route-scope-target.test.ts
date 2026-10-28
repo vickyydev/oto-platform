@@ -142,6 +142,10 @@ describe('Analytics sources panel park ownership (SCRUM-646 Q27)', () => {
     for (const [method, path] of [['PUT', '/console/analytics/sources/:branchId'], ['POST', '/console/analytics/rerun']] as const) {
       const route = routes.find(r => r.method === method && r.path === path)!;
       expect(reachesText(route.handlerText, text => /auth\.operatorId/.test(text), functions), path).toBe(true);
+    }
+  });
+});
+
 describe('Money oversight selected parks (SCRUM-647)', () => {
   it('declares dynamic authority and binds every read to the current operator and fresh grants', () => {
     const money = routes.filter(r => r.path.startsWith('/console/money/'));
