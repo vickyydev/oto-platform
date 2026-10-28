@@ -282,12 +282,50 @@ describe('the GM queue (playbook routing)', () => {
     }
   });
 
-  it('the unclear line is for unclear only: a request the knowledge does not cover keeps the destination’s line', async () => {
-    await drain();
-    const conv = await customer(w, central, nextPhone(), 'can you host a dog show?');
-    w.fake.push({ kind: 'decision', decision: decision({ intent: 'custom_request', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
-    expect((await tick(w, later(25_000))).handedOver).toBe(1);
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_branch]);
+  // The playbook's routing row is "Unclear or not covered": a request the
+  // knowledge does not cover, and the model handing over on its own, take the
+  // unclear line too, to whichever queue the thread goes.
+  for (const c of [
+    { name: 'a request the knowledge does not cover', turnReason: 'OK', decide: () => decision({ intent: 'custom_request', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) },
+    { name: 'the model handing over on its own', turnReason: 'MODEL_HANDOVER', decide: () => decision({ intent: 'hours', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) },
+  ]) {
+    it(`${c.name}: the unclear line, word for word, to the park and to the GM`, async () => {
+      const gm = await teamOf(w, 'gm');
+      const reception = await teamOf(w, 'reception', w.central);
+      for (const [number, team, category] of [
+        [central, reception, 'general'],
+        [wide, gm, 'gm'],
+      ] as const) {
+        await drain();
+        const conv = await customer(w, number, nextPhone(), 'can you host a dog show for us?');
+        w.fake.push({ kind: 'decision', decision: c.decide() });
+        expect((await tick(w, later(25_000))).handedOver, category).toBe(1);
+        expect(await conversationRow(w, conv.id), category).toMatchObject({ category, teamId: team.id });
+        expect((await aiLines(w, conv.id)).map((l) => l.body), category).toEqual([UNCLEAR_LINE]);
+        expect((await handoverEvent(conv.id))!.payload, category).toMatchObject({ destination: category, closingKey: 'closing_unclear' });
+        expect((await turnsOf(w, conv.id))[0], category).toMatchObject({ state: 'handed_over', reason: c.turnReason });
+      }
+    });
+  }
+
+  it('the discount pusher is the deals path, not the unclear row: the destination’s line, to the park and to the GM', async () => {
+    const pushes = [
+      () => decision({ intent: 'discount_insist', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }),
+      // an objection the model hands over: its own fallback, the same deals path
+      () => decision({ intent: 'discount_negotiation', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }),
+    ];
+    for (const push of pushes) {
+      for (const [number, line] of [
+        [central, INBOX_TEMPLATE_BODIES.closing_branch],
+        [wide, INBOX_TEMPLATE_BODIES.closing_gm],
+      ] as const) {
+        await drain();
+        const conv = await customer(w, number, nextPhone(), 'still too expensive, give me a discount');
+        w.fake.push({ kind: 'decision', decision: push() });
+        expect((await tick(w, later(25_000))).handedOver).toBe(1);
+        expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([line]);
+      }
+    }
   });
 
   it('a birthday closes with the birthday manager’s line, in the customer’s language, once the basics are in', async () => {
@@ -327,8 +365,8 @@ describe('the GM queue (playbook routing)', () => {
 
   it('a table route of gm is honoured as is, whatever the intent', async () => {
     await drain();
-    const conv = await customer(w, central, nextPhone(), 'something only the manager can sort out');
-    w.fake.push({ kind: 'decision', decision: decision({ intent: 'custom_request', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
+    const conv = await customer(w, central, nextPhone(), 'can I talk to a manager please');
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'human_requested', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
     seen.reshape = (v) => {
       const verdict = v as GateVerdict;
       return verdict.action === 'handover' ? { ...verdict, plan: { ...verdict.plan, route: 'gm' } } : verdict;

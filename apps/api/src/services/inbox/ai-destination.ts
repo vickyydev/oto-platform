@@ -88,17 +88,28 @@ export function planOwner(intents: readonly AiIntent[], plan: AiHandoverPlan): A
 }
 
 /**
- * The playbook's unclear line (owner ruling, 28 Oct 2026): an unclear or
- * emotional message's hand-over says "Thanks for your message! A team member
- * will be with you shortly." whichever queue it goes to — the park's when it
- * is known, else the GM's. It wins over the destination's line, for unclear
- * only: a request the knowledge does not cover keeps the destination's.
+ * The playbook's unclear line (owner ruling, 28 Oct 2026): its routing row is
+ * "Unclear or not covered", and that hand-over says "Thanks for your message!
+ * A team member will be with you shortly." whichever queue it goes to — the
+ * park's when it is known, else the GM's. It wins over the destination's
+ * line for that row only: an unclear or emotional message, a request the
+ * knowledge does not cover, and the model handing over on its own. The
+ * discount pusher goes the same way but is the deals path, and keeps the
+ * destination's line.
  */
 export const UNCLEAR_CLOSING_KEY = 'closing_unclear' satisfies InboxTemplateKey;
 
-/** The hand-over is the unclear part's: `emotional_or_unclear` is in the burst and the plan is its `BY_BRANCH` one. */
-export function isUnclearHandover(intents: readonly AiIntent[], plan: AiHandoverPlan): boolean {
-  return intents.includes('emotional_or_unclear') && planMatches(BY_BRANCH, plan);
+/** The intents of the playbook's "Unclear or not covered" row. */
+const UNCLEAR_ROW: ReadonlySet<AiIntent> = new Set<AiIntent>(['emotional_or_unclear', 'custom_request']);
+
+/**
+ * The hand-over is the "Unclear or not covered" row's: its plan is the
+ * `BY_BRANCH` one, and an unclear or not-covered part is in the burst, or the
+ * model handed over on its own (`byModel`: the gate's `MODEL_HANDOVER`, no
+ * part of the burst owning a hand-over).
+ */
+export function isUnclearHandover(intents: readonly AiIntent[], plan: AiHandoverPlan, byModel: boolean): boolean {
+  return planMatches(BY_BRANCH, plan) && (byModel || intents.some((i) => UNCLEAR_ROW.has(i)));
 }
 
 /**

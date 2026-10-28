@@ -852,7 +852,7 @@ interface Handover {
   silenced: boolean;
   /** A `silent_handover` the policy does not cover: a normal hand-over with the branch's closing line. */
   branchLine: boolean;
-  /** The unclear part's hand-over: the playbook's unclear line, whichever queue it goes to. */
+  /** The playbook's "Unclear or not covered" hand-over: its unclear line, whichever queue it goes to. */
   unclear: boolean;
 }
 
@@ -863,14 +863,16 @@ function handoverOf(v: GateVerdict | undefined, silent: ReadonlySet<string> | nu
   const owner = planOwner(v.intents, plan);
   const silenced = silencedBy(silent, v.intents, owner, v.intent);
   const branchLine = v.action === 'silent_handover' && !silenced;
-  return { plan, owner, silenced, branchLine, unclear: !branchLine && isUnclearHandover(v.intents, plan) };
+  const byModel = v.action === 'handover' && v.reason === 'MODEL_HANDOVER';
+  return { plan, owner, silenced, branchLine, unclear: !branchLine && isUnclearHandover(v.intents, plan, byModel) };
 }
 
 /**
  * The closing keys a hand-over tries, in order (SCRUM-220 playbook): a
- * silent hand-over the policy does not cover, the branch's line; an unclear
- * hand-over, the unclear line first (owner ruling, 28 Oct), then the
- * destination's; any other, the destination's line, when it has one.
+ * silent hand-over the policy does not cover, the branch's line; an
+ * "Unclear or not covered" hand-over, the unclear line first (owner ruling,
+ * 28 Oct), then the destination's; any other, the destination's line, when
+ * it has one.
  */
 function closingKeysOf(h: Handover, destination: InboxCategory): InboxTemplateKey[] {
   if (h.branchLine) return ['closing_branch'];
