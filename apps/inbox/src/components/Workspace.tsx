@@ -14,7 +14,7 @@ import { ConversationList } from '@/components/ConversationList';
 import { Dashboard, DashboardStrip } from '@/components/Dashboard';
 import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
 import { Rail, viewerRoleLabel } from '@/components/Rail';
-import { SimulatorDialog } from '@/components/Simulator';
+import { SimulatorBody, SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
 import { mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
@@ -225,6 +225,15 @@ export function Workspace({ me }: { me: InboxMe }) {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
+  // Temporary testing aid (Tom, 2026-10-28): the simulator pinned beside the
+  // inbox so a test message is one click away. Per-browser convenience only.
+  const [simPane, setSimPane] = useState(() => {
+    try { return localStorage.getItem('oto.simPane') !== '0'; } catch { return true; }
+  });
+  const toggleSimPane = (next: boolean) => {
+    setSimPane(next);
+    try { localStorage.setItem('oto.simPane', next ? '1' : '0'); } catch { /* per-browser only */ }
+  };
   /** The settings page in place of the workspace card: templates (I3b) or the assistant (SCRUM-590 A3); in the URL as `?settings=` (U11). */
   const [settings, setSettings] = useState<SettingsPage | null>(arrival.settings);
   /** The assistant page's tab; null is its default, the first the viewer may see (F2). */
@@ -596,7 +605,17 @@ export function Workspace({ me }: { me: InboxMe }) {
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6">
+    <div className="flex items-start gap-0 xl:gap-4 xl:px-4">
+      {me.simulator && !simPane && (
+        <button
+          type="button"
+          onClick={() => toggleSimPane(true)}
+          className="fixed bottom-5 right-5 z-40 hidden xl:block rounded-full bg-indigo-600 px-4 py-2 text-[12.5px] font-semibold text-white shadow-lg hover:bg-indigo-500"
+        >
+          Show simulator
+        </button>
+      )}
+    <div className="mx-auto min-w-0 max-w-[1400px] flex-1 space-y-5 px-4 py-5 sm:px-6">
       {/* HEADER */}
       <header className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -788,6 +807,25 @@ export function Workspace({ me }: { me: InboxMe }) {
         onChange={patchFilters}
         onClear={() => setFilters((f) => ({ ...EMPTY_FILTERS, q: f.q, archiveRange: f.archiveRange, resolvedBy: f.resolvedBy }))}
       />
+    </div>
+      {me.simulator && simPane && (
+        <aside className="sticky top-0 hidden h-screen w-[420px] shrink-0 overflow-y-auto border-l border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 xl:block">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <div className="text-[13px] font-bold text-slate-900 dark:text-slate-100">Simulator · test only</div>
+              <div className="text-[11.5px] text-slate-500 dark:text-slate-400">Temporary side panel for testing. Nothing reaches a real customer.</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSimPane(false)}
+              className="rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Hide
+            </button>
+          </div>
+          <SimulatorBody me={me} onChanged={refresh} onReloadMe={reload} />
+        </aside>
+      )}
     </div>
   );
 }

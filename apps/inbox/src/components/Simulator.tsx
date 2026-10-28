@@ -30,15 +30,11 @@ function said(err: unknown, fallback: string): string {
  * deployment running the simulator (never production) and for a viewer who
  * holds `inbox:channel:manage`. Nothing here reaches a real customer.
  */
-export function SimulatorDialog({
-  open,
-  onClose,
+export function SimulatorBody({
   me,
   onChanged,
   onReloadMe,
 }: {
-  open: boolean;
-  onClose: () => void;
   me: InboxMe;
   /** After a press: re-read the list and the open thread. */
   onChanged: () => Promise<void>;
@@ -130,15 +126,6 @@ export function SimulatorDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      icon={FlaskConical}
-      iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
-      title="Simulator"
-      subtitle="Pretend customers, through the real webhook. Local and staging only — nothing reaches a real customer."
-      wide
-    >
       <div className="space-y-5">
         <Section title="Demo conversations">
           <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
@@ -227,6 +214,34 @@ export function SimulatorDialog({
         )}
         {error && <Refusal text={error} />}
       </div>
+  );
+}
+
+/** The settings-dialog wrapper kept for the existing entry point. */
+export function SimulatorDialog({
+  open,
+  onClose,
+  me,
+  onChanged,
+  onReloadMe,
+}: {
+  open: boolean;
+  onClose: () => void;
+  me: InboxMe;
+  onChanged: () => Promise<void>;
+  onReloadMe: () => Promise<void>;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      icon={FlaskConical}
+      iconTint="bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+      title="Simulator"
+      subtitle="Pretend customers, through the real webhook. Local and staging only — nothing reaches a real customer."
+      wide
+    >
+      <SimulatorBody me={me} onChanged={onChanged} onReloadMe={onReloadMe} />
     </Dialog>
   );
 }
