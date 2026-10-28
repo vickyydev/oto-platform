@@ -197,7 +197,7 @@ function hintOf(v: unknown): ClassificationHint | null {
   if (!isObject(v)) return null;
   const hint: ClassificationHint = {};
   const category = v['category'];
-  if (category === 'birthdays' || category === 'general' || category === 'marketing')
+  if (category === 'birthdays' || category === 'general' || category === 'marketing' || category === 'gm')
     hint.category = category;
   const intent = str(v['intent']);
   if (intent) hint.intent = intent;

@@ -62,6 +62,18 @@ describe('the round trip: a customer message in', () => {
     ]);
   });
 
+  it('carries the GM queue as a hint category (SCRUM-220 playbook), and drops a category it does not know', () => {
+    const s = sim();
+    const gm = s.inbound({ from: '66800000001', text: 'I want to complain', hint: { category: 'gm' } });
+    expect(s.parseWebhook(gm.webhook)).toEqual([expect.objectContaining({ kind: 'message', hint: { category: 'gm' } })]);
+    const unknown = s.inbound({
+      from: '66800000001',
+      text: 'hi',
+      hint: { category: 'ceo' as never, language: 'en' },
+    });
+    expect(s.parseWebhook(unknown.webhook)).toEqual([expect.objectContaining({ kind: 'message', hint: { language: 'en' } })]);
+  });
+
   it('is the WhatsApp envelope: the live parser reads it too, minus the hint', () => {
     const s = sim();
     const live = new WhatsAppCloudChannel({

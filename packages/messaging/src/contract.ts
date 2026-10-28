@@ -133,7 +133,8 @@ export type WebhookVerdict =
  * present and the channel account's defaults otherwise.
  */
 export interface ClassificationHint {
-  category?: 'birthdays' | 'general' | 'marketing';
+  /** `gm`: the GM queue (SCRUM-220 playbook). */
+  category?: 'birthdays' | 'general' | 'marketing' | 'gm';
   intent?: string;
   language?: string;
   branchId?: string;
