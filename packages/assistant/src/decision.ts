@@ -123,6 +123,10 @@ export const AI_OUTCOME_REASONS = [
   // decided by the engine (A2), listed so the vocabulary is one list
   'CAP_DAILY',
   'CIRCUIT_OPEN',
+  // SCRUM-678: the coherence reviewer read the reply as answering something
+  // else, and the one rethink did not produce a reply it could send: the
+  // turn became the unclear hand-over.
+  'WRONG_TOPIC',
   // SCRUM-220 playbook ("Message sources"): the turn is a silent hand-over
   // (`GateVerdict` `silent_handover`) — a child currently in our care, or
   // lost and found. The gate emits it from the intent table; the engine

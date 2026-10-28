@@ -8,6 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AnthropicCoherenceReviewer,
+  MAX_READING_CHARS,
   REVIEW_SYSTEM_TEXT,
   REVIEW_TIMEOUT_MS,
   REVIEW_VERSION,
@@ -15,6 +16,7 @@ import {
   buildReviewPrompt,
   isMixedOrigin,
   joinReviewed,
+  readTopic,
   reviewItemsOf,
   reviewWithDeadline,
   type ReviewDecision,
@@ -47,7 +49,14 @@ const lines = [
   { origin: 'template' as const, text: CLOSING, templateKey: 'closing_branch' },
 ];
 const items = reviewItemsOf(lines);
-const decision = (over: Partial<ReviewDecision> = {}): ReviewDecision => ({ items: [], merges: [], ...over });
+const decision = (over: Partial<ReviewDecision> = {}): ReviewDecision => ({
+  items: [],
+  merges: [],
+  topic: 'answers',
+  reading: null,
+  suggestedIntent: null,
+  ...over,
+});
 
 describe('which sends are reviewed', () => {
   it('only a send that mixes the writer’s words and a fixed line', () => {
@@ -124,6 +133,46 @@ describe('the operations, as the server enforces them', () => {
   });
 });
 
+describe('SCRUM-678: the reply that answers something else', () => {
+  it('a wrong-topic verdict carries the reviewer’s reading, cut to 200 characters, and an intent from the table or none', () => {
+    expect(readTopic(decision())).toEqual({ kind: 'answers' });
+    expect(readTopic(decision({ topic: 'answers', reading: 'ignored', suggestedIntent: 'faq' }))).toEqual({ kind: 'answers' });
+    expect(readTopic(decision({ topic: 'wrong_topic', reading: ' Asks whether a kids’ camp runs today ', suggestedIntent: 'special_event' }))).toEqual({
+      kind: 'wrong_topic',
+      reading: 'Asks whether a kids’ camp runs today',
+      suggestedIntent: 'special_event',
+    });
+    const long = readTopic(decision({ topic: 'wrong_topic', reading: 'x'.repeat(500), suggestedIntent: null }));
+    expect(long).toMatchObject({ kind: 'wrong_topic', suggestedIntent: null });
+    expect(long.kind === 'wrong_topic' && [...long.reading].length).toBe(MAX_READING_CHARS);
+    expect(MAX_READING_CHARS).toBe(200);
+    // A wrong topic with nothing read is no valid verdict: the reply goes as composed.
+    expect(readTopic(decision({ topic: 'wrong_topic', reading: '   ', suggestedIntent: null }))).toEqual({ kind: 'invalid' });
+    expect(readTopic(decision({ topic: 'wrong_topic', reading: null, suggestedIntent: 'faq' }))).toEqual({ kind: 'invalid' });
+  });
+
+  it('the schema refuses an intent outside the table', async () => {
+    const fake = new FakeCoherenceReviewer([{ kind: 'invalid_shape', value: { items: [], merges: [], topic: 'wrong_topic', reading: 'x', suggestedIntent: 'weather' } }]);
+    expect(await fake.review({ thread: [], items, language: 'en' })).toMatchObject({ ok: false, reason: 'MALFORMED' });
+  });
+
+  it('the fake scripts a wrong topic once, through the real interpretation', async () => {
+    const fake = new FakeCoherenceReviewer([{ kind: 'wrong_topic', reading: 'Asks about a camp today', suggestedIntent: 'special_event' }, { kind: 'keep_all' }]);
+    const req = { thread: [], items, language: 'en' as const };
+    const first = await fake.review(req);
+    expect(first.ok && readTopic(first.decision)).toEqual({ kind: 'wrong_topic', reading: 'Asks about a camp today', suggestedIntent: 'special_event' });
+    const second = await fake.review(req);
+    expect(second.ok && readTopic(second.decision)).toEqual({ kind: 'answers' });
+  });
+
+  it('the prompt asks for the topic judgement in the reviewer’s own words, never for words to send', () => {
+    expect(REVIEW_SYSTEM_TEXT).toContain('wrong_topic');
+    expect(REVIEW_SYSTEM_TEXT).toContain('reading');
+    expect(REVIEW_SYSTEM_TEXT).toContain('suggestedIntent');
+    expect(REVIEW_VERSION).toBe('review-2026-10-28.2');
+  });
+});
+
 describe('the reviewer’s prompt', () => {
   const request: ReviewRequest = {
     thread: [
@@ -186,7 +235,7 @@ describe('FakeCoherenceReviewer', () => {
     ]);
     const req = { thread: [], items, language: 'en' as const };
     expect(await fake.review(req)).toMatchObject({ ok: true, decision: { items: [{ index: 1, keep: false }], merges: [] } });
-    expect(await fake.review(req)).toMatchObject({ ok: true, decision: { items: [], merges: [] } });
+    expect(await fake.review(req)).toMatchObject({ ok: true, decision: { items: [], merges: [], topic: 'answers' } });
     expect(await fake.review(req)).toMatchObject({ ok: false, reason: 'MALFORMED' });
     expect(await fake.review(req)).toMatchObject({ ok: false, reason: 'MALFORMED' });
     expect(await fake.review(req)).toMatchObject({ ok: false, reason: 'PROVIDER_UNAVAILABLE' });
