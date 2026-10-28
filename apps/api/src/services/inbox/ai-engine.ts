@@ -6,8 +6,10 @@ import {
   REVIEW_VERSION,
   applyGates,
   applyReview,
+  intentPartsOf,
   isMixedOrigin,
   joinReviewed,
+  readTopic,
   resolvePlan,
   buildPrompt,
   reviewItemsOf,
@@ -19,11 +21,14 @@ import {
   type AiIntent,
   type AiReplyLanguage,
   type AppliedReview,
+  type AssistantClient,
   type AssistantOutcome,
+  type BuiltPrompt,
   type EpisodeMessage,
   type EpisodeState,
   type GateVerdict,
   type PacingConfig,
+  type PromptInput,
   type ProviderFailure,
   type ReviewOrigin,
   type ReviewOutcome,
@@ -449,6 +454,12 @@ interface TurnResult {
   quietBefore?: boolean;
   /** SCRUM-677: what the coherence review left for the commit. */
   review?: ReviewState;
+  /** SCRUM-678: the turn was decided again after a WRONG_TOPIC review. */
+  rethink?: Rethink;
+  /** SCRUM-678: the verdict is the unclear hand-over a rethink ended in (item D's machinery). */
+  withheld?: boolean;
+  /** The turn's reason word when the engine, not the gate, decided it (`WRONG_TOPIC`). */
+  turnReason?: string;
 }
 
 async function recordModelRun(
@@ -556,7 +567,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     .limit(1);
   const contactCountryCode = callingCodeOf(person?.phone);
   const facts = await episodeFacts(db, conv, eligible.episodeStart, now, contactCountryCode);
-  const built = buildPrompt({
+  const promptInput: PromptInput = {
     knowledge: knowledge.knowledge,
     episode,
     context: {
@@ -566,29 +577,14 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
       contactCountryCode,
       earlier: facts.earlier,
     },
-  });
+  };
+  const built = buildPrompt(promptInput);
   if (!built.ok) return { conv, silence: built.reason, kbVersion: knowledge.knowledge.version, knowledge };
 
   const client = deps.runtime.client;
   if (!client) return { conv, silence: 'NO_CLIENT', kbVersion: built.prompt.kbVersion, personaVersion: built.prompt.personaVersion };
 
-  const startedAt = new Date();
-  let outcome: AssistantOutcome;
-  try {
-    outcome = await client.decide({ prompt: built.prompt });
-  } catch (err) {
-    // The client never throws by contract; a throw is classified, never logged.
-    outcome = {
-      ok: false,
-      reason: 'PROVIDER_ERROR',
-      error: { errorClass: errorName(err), status: null, requestId: null },
-      usage: null,
-      model: null,
-      requestId: null,
-      latencyMs: Date.now() - startedAt.getTime(),
-    };
-  }
-  await recordModelRun(db, turn, conv, outcome, startedAt);
+  const outcome = await askModel(db, client, turn, conv, built.prompt);
 
   const base: TurnResult = {
     model: outcome.model ?? client.model,
@@ -607,13 +603,193 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   const decided: TurnResult = { ...base, decision: outcome.decision, verdict, ...(quietBefore === undefined ? {} : { quietBefore }) };
   // SCRUM-677: the coherence review, before anything is scheduled.
   const reviewed = await reviewStage(db, deps, turn, conv, account, episode, decided);
-  return {
-    ...decided,
+  const first: TurnResult & { conv: ConversationRow } = { ...withReview(decided, reviewed), conv };
+  if (reviewed.state.kind !== 'wrong_topic') return first;
+  // SCRUM-678: the reply answers something else; the turn is decided once more.
+  return rethinkTurn({
+    db,
+    deps,
+    turn,
     conv,
+    account,
+    episode,
+    client,
+    promptInput,
+    episodeState: facts.state,
+    first,
+    topic: reviewed.state,
+    now,
+  });
+}
+
+/** One model call for a turn, recorded as its ops run. The client never throws; a throw is classified, never logged. */
+async function askModel(db: Db, client: AssistantClient, turn: TurnRow, conv: ConversationRow, prompt: BuiltPrompt): Promise<AssistantOutcome> {
+  const startedAt = new Date();
+  let outcome: AssistantOutcome;
+  try {
+    outcome = await client.decide({ prompt });
+  } catch (err) {
+    outcome = {
+      ok: false,
+      reason: 'PROVIDER_ERROR',
+      error: { errorClass: errorName(err), status: null, requestId: null },
+      usage: null,
+      model: null,
+      requestId: null,
+      latencyMs: Date.now() - startedAt.getTime(),
+    };
+  }
+  await recordModelRun(db, turn, conv, outcome, startedAt);
+  return outcome;
+}
+
+/** A decided turn with its review: the review's state, its tokens and its time added to the turn's. */
+function withReview(r: TurnResult, reviewed: { state: ReviewState; outcome: ReviewOutcome | null }): TurnResult {
+  return {
+    ...r,
     review: reviewed.state,
-    usage: addUsage(decided.usage, reviewed.outcome?.usage),
-    latencyMs: (decided.latencyMs ?? 0) + Math.max(0, Math.round(reviewed.outcome?.latencyMs ?? 0)),
+    usage: addUsage(r.usage, reviewed.outcome?.usage),
+    latencyMs: (r.latencyMs ?? 0) + Math.max(0, Math.round(reviewed.outcome?.latencyMs ?? 0)),
   };
+}
+
+// --- 3b. The rethink (SCRUM-678) ------------------------------------------------------------
+
+/** The word a claimed turn carries once its rethink began: a re-claim never rethinks twice. */
+const RETHINK_MARK = 'RETHINK';
+
+/** One round of a rethink, as the turn records it: words, never text. */
+interface RoundRecord {
+  intent: AiIntent | null;
+  action: string | null;
+  reason: string;
+  /** What the reviewer said of the round's reply; null when it was not reviewed. */
+  topic: 'answers' | 'wrong_topic' | null;
+}
+
+interface Rethink {
+  why: 'WRONG_TOPIC';
+  /** The reviewer's reading: text, so it is written only where message text lives (`writeShadowLine`), never on a record. */
+  reading: string;
+  suggestedIntent: AiIntent | null;
+  rounds: RoundRecord[];
+}
+
+const roundOf = (v: GateVerdict, topic: RoundRecord['topic']): RoundRecord => ({ intent: v.intent, action: v.action, reason: v.reason, topic });
+
+/** What a review said of a reply's topic, for the round's record. */
+function topicOf(state: ReviewState): RoundRecord['topic'] {
+  if (state.kind === 'wrong_topic') return 'wrong_topic';
+  if (state.kind === 'reviewed' || (state.kind === 'ignored' && state.why !== 'NO_READING')) return 'answers';
+  return null;
+}
+
+/**
+ * The unclear hand-over a rethink ends in when it cannot send a reply (the
+ * owner's item D machinery): the playbook's unclear line, the thread to its
+ * park when it is known, else the GM; a number whose silence policy covers
+ * the intent keeps true silence. Nothing the model wrote goes.
+ */
+function unclearAfterRethink(d: AiDecision, threadHasBranch: boolean): GateVerdict {
+  const intents = intentPartsOf(d);
+  const language = (AI_REPLY_LANGUAGES as readonly string[]).includes(d.language) ? (d.language as AiReplyLanguage) : 'en';
+  return {
+    action: 'handover',
+    reason: 'OVERRULED_HANDOVER',
+    intent: intents[0]!,
+    intents,
+    language,
+    plan: resolvePlan(BY_BRANCH, threadHasBranch || d.branchNamed !== null),
+    holdingBubbles: [],
+    droppedHoldingRule: 'wrong_topic',
+    branchNamed: d.branchNamed,
+  };
+}
+
+/**
+ * The turn's one claim on a rethink, in one statement: the turn still ours
+ * (deciding, this attempt), marked so a re-claim after a lost lease never
+ * rethinks again, and its lease renewed for the second round.
+ */
+async function markRethink(db: Db, turn: TurnRow, now: Date): Promise<boolean> {
+  const at = new Date(Math.max(now.getTime(), Date.now()));
+  const rows = await db
+    .update(aiTurn)
+    .set({ reason: RETHINK_MARK, leaseUntil: new Date(at.getTime() + AI_LEASE_MS), updatedAt: at })
+    .where(
+      and(
+        eq(aiTurn.operatorId, turn.operatorId),
+        eq(aiTurn.id, turn.id),
+        eq(aiTurn.state, 'deciding'),
+        eq(aiTurn.attempts, turn.attempts),
+      ),
+    )
+    .returning({ id: aiTurn.id });
+  return rows.length === 1;
+}
+
+/**
+ * THE RETHINK: the reviewer read the reply as answering something else
+ * (WRONG_TOPIC). It never rewrites: its operations are discarded and the turn
+ * goes through the WHOLE pipeline once more — the prompt rebuilt with the
+ * reviewer's reading beside the customer's words (`RethinkHint`), a fresh
+ * decision, the gate and every guard, and the review again. HARD BOUND: one
+ * rethink per burst. A second WRONG_TOPIC, a provider failure, or a second
+ * pass that would say nothing ends in the unclear hand-over; a second reply
+ * the gate withholds takes item D's own path. Never a third round.
+ */
+async function rethinkTurn(a: {
+  db: Db;
+  deps: AiEngineDeps;
+  turn: TurnRow;
+  conv: ConversationRow;
+  account: AccountRow;
+  episode: readonly EpisodeRow[];
+  client: AssistantClient;
+  promptInput: PromptInput;
+  episodeState: EpisodeState;
+  first: TurnResult & { conv: ConversationRow };
+  topic: Extract<ReviewState, { kind: 'wrong_topic' }>;
+  now: Date;
+}): Promise<TurnResult & { conv: ConversationRow }> {
+  const { first, topic } = a;
+  const rethink: Rethink = {
+    why: 'WRONG_TOPIC',
+    reading: topic.reading,
+    suggestedIntent: topic.suggestedIntent,
+    rounds: [roundOf(first.verdict!, 'wrong_topic')],
+  };
+  const unclear = (r: TurnResult, round?: RoundRecord): TurnResult & { conv: ConversationRow } => ({
+    ...r,
+    conv: a.conv,
+    verdict: unclearAfterRethink(r.decision ?? first.decision!, a.conv.branchId !== null),
+    withheld: true,
+    turnReason: 'WRONG_TOPIC',
+    review: { kind: 'not_mixed' },
+    rethink: { ...rethink, rounds: round ? [...rethink.rounds, round] : rethink.rounds },
+  });
+  if (a.turn.reason === RETHINK_MARK) return unclear(first);
+  // No longer this claim's (a person acted, or the lease was lost): the commit finds it so and writes nothing.
+  if (!(await markRethink(a.db, a.turn, a.now))) return first;
+  const built = buildPrompt({ ...a.promptInput, rethink: { reading: topic.reading, suggestedIntent: topic.suggestedIntent } });
+  if (!built.ok) return unclear(first, { intent: null, action: null, reason: built.reason, topic: null });
+  const outcome = await askModel(a.db, a.client, a.turn, a.conv, built.prompt);
+  const spent: TurnResult = {
+    ...first,
+    model: outcome.model ?? first.model ?? null,
+    usage: addUsage(first.usage, outcome.usage),
+    latencyMs: (first.latencyMs ?? 0) + Math.max(0, Math.round(outcome.latencyMs)),
+  };
+  if (!outcome.ok) return unclear(spent, { intent: null, action: null, reason: outcome.reason, topic: null });
+  const verdict = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: a.episodeState });
+  // The first round's spam reading (`quietBefore`) is never read again: a second silence is the unclear line below.
+  const second: TurnResult = { ...spent, decision: outcome.decision, verdict };
+  // Silence the customer asked for nothing of is no answer to a rethought question.
+  if (verdict.action === 'silent' && !WITHHELD_REPLY_REASONS.has(verdict.reason)) return unclear(second, roundOf(verdict, null));
+  const reviewed = await reviewStage(a.db, a.deps, a.turn, a.conv, a.account, a.episode, second);
+  const sent = withReview(second, reviewed);
+  if (reviewed.state.kind === 'wrong_topic') return unclear(sent, roundOf(verdict, 'wrong_topic'));
+  return { ...sent, conv: a.conv, rethink: { ...rethink, rounds: [...rethink.rounds, roundOf(verdict, topicOf(reviewed.state))] } };
 }
 
 // --- 4. The commit ------------------------------------------------------------------------
@@ -1067,8 +1243,9 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
   const fallback = withheldReplyFallback(r.verdict, r.decision, silentSet, conv.branchId !== null);
   const v = fallback ?? r.verdict;
   // SCRUM-220 playbook: the hand-over this turn makes, with the number's
-  // silence policy read (`ai-destination.ts`).
-  const handover = handoverOf(v, silentSet, fallback !== null);
+  // silence policy read (`ai-destination.ts`); a rethink's unclear hand-over
+  // (SCRUM-678) is a withheld reply's.
+  const handover = handoverOf(v, silentSet, fallback !== null || r.withheld === true);
   const none: ComposedReply = { v, fallback: fallback !== null, handover, routing: null, replied: false, brochure: [], holding: NO_LINE, lines: [] };
   if (!v || v.action === 'silent') return none;
   // Where the thread ends up is read first: the closing line names it.
@@ -1106,8 +1283,11 @@ type ReviewState =
   | { kind: 'none' }
   | { kind: 'not_mixed' }
   | { kind: 'failed'; reason: ProviderFailure }
-  | { kind: 'ignored'; why: ReviewRefusal }
-  | { kind: 'reviewed'; fingerprint: string; applied: Extract<AppliedReview, { ok: true }> };
+  /** Not valid operations (`ReviewRefusal`), or a wrong topic with nothing read (`NO_READING`). */
+  | { kind: 'ignored'; why: ReviewRefusal | 'NO_READING' }
+  | { kind: 'reviewed'; fingerprint: string; applied: Extract<AppliedReview, { ok: true }> }
+  /** SCRUM-678: the reply answers something else; never reaches the commit (the rethink resolves it). */
+  | { kind: 'wrong_topic'; reading: string; suggestedIntent: AiIntent | null };
 
 /**
  * What the turn's audit and timeline say the review did: ids, counts and
@@ -1166,6 +1346,10 @@ async function reviewStage(
   );
   await recordReviewRun(db, turn, conv, outcome, startedAt);
   if (!outcome.ok) return { state: { kind: 'failed', reason: outcome.reason }, outcome };
+  // SCRUM-678: a reply on the wrong topic discards the operations; the turn is decided again.
+  const topic = readTopic(outcome.decision);
+  if (topic.kind === 'invalid') return { state: { kind: 'ignored', why: 'NO_READING' }, outcome };
+  if (topic.kind === 'wrong_topic') return { state: { kind: 'wrong_topic', reading: topic.reading, suggestedIntent: topic.suggestedIntent }, outcome };
   const applied = applyReview(items, outcome.decision);
   if (!applied.ok) return { state: { kind: 'ignored', why: applied.why }, outcome };
   return { state: { kind: 'reviewed', fingerprint: fingerprintOf(composed.lines), applied }, outcome };
@@ -1212,6 +1396,7 @@ function settleReview(lines: readonly OutLine[], review: ReviewState | undefined
   if (review.kind === 'not_mixed') return as({ state: 'stale', reason: 'CHANGED', version: REVIEW_VERSION });
   if (review.kind === 'failed') return as({ state: 'failed', reason: review.reason, version: REVIEW_VERSION });
   if (review.kind === 'ignored') return as({ state: 'ignored', reason: review.why, version: REVIEW_VERSION });
+  if (review.kind === 'wrong_topic') return as({ state: 'ignored', reason: 'WRONG_TOPIC', version: REVIEW_VERSION });
   if (fingerprintOf(lines) !== review.fingerprint) return as({ state: 'stale', reason: 'CHANGED', version: REVIEW_VERSION });
   const { groups, dropped, merged } = review.applied;
   const bodies = lines.map((l) => l.body);
@@ -1235,6 +1420,32 @@ function settleReview(lines: readonly OutLine[], review: ReviewState | undefined
   };
 }
 
+/** SCRUM-678: a rethink as the turn's audit and timeline keep it — ids and words, never the reading. */
+interface RethinkRecord {
+  rethought: true;
+  why: 'WRONG_TOPIC';
+  suggestedIntent: AiIntent | null;
+  /** The never-sent `shadow` row holding the reviewer's reading, for staff. */
+  readingMessageId: string | null;
+  /** How the turn ended: a reply, the unclear hand-over, or a silence the number's policy chose. */
+  ended: 'reply' | 'unclear' | 'silent';
+  rounds: RoundRecord[];
+}
+
+/**
+ * The reviewer's reading is words about the customer's message, so it lives
+ * where message text lives — one `shadow` message row (never sent, skipped by
+ * the episode, reached by the erasure and the retention sweep), a moment
+ * before the reply — and the record names it by id.
+ */
+async function rethinkRecordOf(tx: Tx, conv: ConversationRow, r: TurnResult, composed: ComposedReply, at: Date): Promise<RethinkRecord> {
+  const rethink = r.rethink!;
+  const readingMessageId = await writeShadowLine(tx, conv, 'en', [rethink.reading], new Date(at.getTime() - 1));
+  const v = composed.v;
+  const ended = !v || v.action === 'silent' || composed.handover?.silenced ? 'silent' : composed.fallback || r.withheld ? 'unclear' : 'reply';
+  return { rethought: true, why: rethink.why, suggestedIntent: rethink.suggestedIntent, readingMessageId, ended, rounds: rethink.rounds };
+}
+
 /** Two calls' usage as the turn's: the daily token cap counts the review too. */
 function addUsage(a: TurnUsage | null | undefined, b: TurnUsage | null | undefined): TurnUsage | null {
   if (!a && !b) return null;
@@ -1256,7 +1467,7 @@ async function closeTurn(
   r: TurnResult,
   at: Date,
   messageIds: string[] = [],
-  coherence: CoherenceRecord | null = null,
+  records: { coherence?: CoherenceRecord | null; rethink?: RethinkRecord | null } = {},
 ): Promise<void> {
   const v = r.verdict;
   const d = r.decision;
@@ -1304,7 +1515,9 @@ async function closeTurn(
       intents: v?.intents ?? d?.intents ?? null,
       cacheWriteTokens: r.usage?.cacheWriteTokens ?? null,
       // SCRUM-677: what the coherence review did to the reply; null when nothing was sent.
-      coherence,
+      coherence: records.coherence ?? null,
+      // SCRUM-678: the turn was decided again, why, and both rounds; null when it was not.
+      rethink: records.rethink ?? null,
     },
   });
 }
@@ -1473,7 +1686,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       const gated = r.verdict;
       // The gate's own word stays the turn's reason, also when a withheld
       // reply turns into the unclear hand-over (item D).
-      const reason = r.silence ?? (gated ? gated.reason : 'PROVIDER_ERROR');
+      const reason = r.silence ?? r.turnReason ?? (gated ? gated.reason : 'PROVIDER_ERROR');
       // The reply as the verdict composes it on the thread as it now stands
       // (SCRUM-677: the same composition the review read, read again under
       // the lock), and the review's operations over it when it still matches.
@@ -1482,6 +1695,9 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       const turnResult: TurnResult = composed.fallback ? { ...r, verdict: v } : r;
       const finalReason = handoverReason(handover, reason);
       const settled = settleReview(composed.lines, r.review);
+      // SCRUM-678: a rethought turn keeps the reviewer's reading for staff, and says how it ended.
+      const rethink = r.rethink ? await rethinkRecordOf(tx, conv, r, composed, at) : null;
+      const records = { coherence: settled.record, rethink };
 
       // SHADOW (§B.5): the decision on the turn, and nothing the customer
       // sees. Since the test night (2026-10-21, W5) what it WOULD have said —
@@ -1511,10 +1727,11 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
               holdingLine: holding.kind,
               brochure: handover && !handover.silenced ? handover.plan.brochure : false,
               coherence: settled.record,
+              rethink,
             }, at),
           );
         }
-        await closeTurn(tx, turn, conv, 'shadowed', finalReason, turnResult, at, messageIds, settled.record);
+        await closeTurn(tx, turn, conv, 'shadowed', finalReason, turnResult, at, messageIds, records);
         return 'shadowed';
       }
 
@@ -1531,9 +1748,11 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
           (AI_REPLY_LANGUAGES as readonly string[]).includes(r.decision.language) &&
           r.quietBefore === true;
         const silentReason = spam ? 'SPAM_TIDIED' : reason;
-        await tx.insert(inboxEvent).values(event(conv, 'ai_silent', { turnId: turn.id, reason: silentReason, intent: v?.intent ?? null }, at));
+        await tx.insert(inboxEvent).values(
+          event(conv, 'ai_silent', { turnId: turn.id, reason: silentReason, intent: v?.intent ?? null, ...(rethink ? { rethink } : {}) }, at),
+        );
         if (spam) await handleByAi(tx, conv, turn.id, at, 'SPAM');
-        await closeTurn(tx, turn, conv, 'silent', silentReason, r, at);
+        await closeTurn(tx, turn, conv, 'silent', silentReason, r, at, [], records);
         return 'silent';
       }
 
@@ -1583,6 +1802,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             languageOffer: v.languageOffer,
             // SCRUM-677: what the coherence review removed or joined, by place and origin.
             coherence: settled.record,
+            rethink,
           }, at),
         );
       }
@@ -1606,6 +1826,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             reroutedTeamId: routing.reroutedTeamId,
             branchId: routing.branchSet,
             coherence: settled.record,
+            rethink,
           }, at),
         );
         await audit.record(tx, {
@@ -1636,7 +1857,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       if (v.action === 'answer' && v.mayAutoHandle && !handover) await handleByAi(tx, conv, turn.id, at, null);
 
       const state = handover ? 'handed_over' : 'answered';
-      await closeTurn(tx, turn, conv, state, finalReason, turnResult, at, messageIds, settled.record);
+      await closeTurn(tx, turn, conv, state, finalReason, turnResult, at, messageIds, records);
       return state;
     },
   );

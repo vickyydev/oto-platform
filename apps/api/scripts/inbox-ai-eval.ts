@@ -24,7 +24,8 @@
  * the real reviewer with the same key and model; with `--fake`, each such
  * turn's scripted `review`. A turn that reaches the reviewer without one, or
  * scripts one it never reaches, fails. Reviews are not recorded: the replay
- * suite replays the decision alone.
+ * suite replays the decision alone. No golden reply is off its topic, so a
+ * review that sends a turn back to be decided again (SCRUM-678) fails it.
  *
  * THE KEY. `ANTHROPIC_API_KEY` from the environment, else from `apps/api/.env`.
  * It is handed to the client's constructor and nowhere else: it is never
@@ -227,6 +228,21 @@ async function main(): Promise<void> {
         const call = client.calls[before];
         for (const r of reviewer.calls.slice(reviewsBefore)) console.log(`  review     ${countReview(r.outcome)}`);
         const reviewed = reviewer.calls.length - reviewsBefore;
+        if (client.calls.length - before > 1) {
+          console.log('  rethink    the reviewer read the reply as off its topic; the turn was decided again');
+          for (const again of client.calls.slice(before + 1)) {
+            calls += 1;
+            const u = again.outcome.usage;
+            if (u) {
+              totals.inputTokens += u.inputTokens;
+              totals.outputTokens += u.outputTokens;
+              totals.cacheReadTokens += u.cacheReadTokens;
+              totals.cacheWriteTokens += u.cacheWriteTokens;
+              cost += costOf(again.outcome.model ?? args.model, u) ?? 0;
+            }
+          }
+          why.push(`turn ${i + 1}: the coherence reviewer sent an on-topic golden reply back (WRONG_TOPIC)`);
+        }
         if (args.fake && reviewed !== (turn.review ? 1 : 0)) {
           why.push(`turn ${i + 1}: ${reviewed} coherence review(s), the golden scripts ${turn.review ? 'one' : 'none'}`);
         }
