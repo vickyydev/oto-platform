@@ -113,6 +113,32 @@ export function isUnclearHandover(intents: readonly AiIntent[], plan: AiHandover
 }
 
 /**
+ * The gate's reasons for WITHHOLDING a reply the model wrote (SCRUM-671, item
+ * D, owner ruling 28 Oct: a customer never gets pure silence on a main
+ * channel): its grounding refused, or a guard tripped. The model's own
+ * silence, spam, an unsure model, a provider failure and the caps are not on
+ * the list — nothing was written to withhold, or nothing should go.
+ */
+export const WITHHELD_REPLY_REASONS: ReadonlySet<string> = new Set([
+  'GROUNDING_MISSING',
+  'GROUNDING_UNKNOWN',
+  'GROUNDING_TOPIC',
+  'GUARD_NUMBER',
+  'GUARD_DATE',
+  'GUARD_PROMISE',
+  'GUARD_PERSONA',
+  'GUARD_BUBBLES',
+  'GUARD_SHAPE',
+  'GUARD_BUSY',
+  'GUARD_LINK',
+  'GUARD_FAULT',
+  'GUARD_FRAMING',
+  'GUARD_LANGUAGE',
+  'GUARD_PARK',
+  'LANGUAGE',
+]);
+
+/**
  * The category the thread is handed to: the playbook's route for the owning
  * intent, else the plan's; `keep` is the thread's own category. `branchKnown`
  * is whether the thread has a park (or this turn gave it one).

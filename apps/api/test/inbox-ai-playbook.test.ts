@@ -649,7 +649,6 @@ describe('tier price facts (the playbook’s pricing flow)', () => {
     expect(text).toContain('Tourist: 1 Hour Play ฿690 every day');
     // SCRUM-670 (A): the resident line says "discount" itself, so a reply citing the park's price fact grounds the word.
     expect(text).toContain('Resident (discount with ID): 1 Hour Play ฿483 weekday, ฿552 weekend');
-
     expect(text).toContain('Thai: 1 Hour Play ฿420 weekday, ฿520 weekend');
     expect(text).not.toMatch(/expat/i);
     expect(text).toContain('Tourist starts from ฿690 (1 Hour Play)');
@@ -771,21 +770,23 @@ describe('the caller’s country code', () => {
     expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([offer]);
     expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({ languageOffer: 'ru' });
 
-    // The same episode: the offer was made, so the model is told and the gate refuses another.
+    // The same episode: the offer was made, so the model is told and the gate refuses another —
+    // and since item D a withheld reply on a main channel is the unclear line, never dead air.
     await customer(w, central, phone, 'hello again');
     w.fake.push({ kind: 'decision', decision: decision({ bubbles: [offer] }) });
-    expect((await tick(w, later(25_000))).silent).toBe(1);
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
     expect((seen.contexts.at(-1) as TurnContext).earlier.languageOffered).toBe(true);
-    expect((await turnsOf(w, conv.id))[1]).toMatchObject({ state: 'silent', reason: 'GUARD_LANGUAGE' });
-    expect(await aiLines(w, conv.id)).toHaveLength(1);
+    expect((await turnsOf(w, conv.id))[1]).toMatchObject({ state: 'handed_over', reason: 'GUARD_LANGUAGE' });
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([offer, UNCLEAR_LINE]);
   });
 
   it('a +66 number is never made the Russian offer', async () => {
     await drain();
     const conv = await customer(w, central, nextPhone(), 'hi');
     w.fake.push({ kind: 'decision', decision: decision({ bubbles: ['Hi there! Would you like to continue in English or Russian?'] }) });
-    expect((await tick(w, later(25_000))).silent).toBe(1);
-    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'silent', reason: 'GUARD_LANGUAGE' });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', reason: 'GUARD_LANGUAGE' });
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([UNCLEAR_LINE]);
   });
 });
 
@@ -835,6 +836,127 @@ describe('spam tidy', () => {
     expect((await conversationRow(w, conv.id)).status).toBe('active');
     const turns = await turnsOf(w, conv.id);
     expect(turns.map((t) => t.reason)).toEqual(['UNSURE', 'INTENT_SILENT']);
+  });
+});
+
+// --- The guarded-reply fallback (SCRUM-671, item D) -------------------------------------------
+
+describe('a reply the gate withholds is never dead air on a main channel (owner ruling, item D)', () => {
+  // A socks answer with a price no source holds: the number guard withholds it.
+  const tripped = () =>
+    decision({ intent: 'socks', grounding: ['socks'], reason: 'FACT_IN_KB', bubbles: [`Grip socks are 79 baht at reception ${SENTINEL}`] });
+
+  it('on a park number with no policy: the unclear line goes, the park keeps the thread, the turn names the guard', async () => {
+    await drain();
+    const conv = await customer(w, central, nextPhone(), 'do we need socks and how much are they?');
+    w.fake.push({ kind: 'decision', decision: tripped() });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([UNCLEAR_LINE]);
+    const reception = await teamOf(w, 'reception', w.central);
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id });
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', reason: 'GUARD_NUMBER', intent: 'socks' });
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ reason: 'GUARD_NUMBER', closingKey: 'closing_unclear', silent: false });
+    // Nothing of the withheld words reached the thread.
+    expect((await aiLines(w, conv.id)).some((l) => (l.body ?? '').includes('79'))).toBe(false);
+  });
+
+  it('on a main number with no park: the unclear line goes and the GM queue has it', async () => {
+    await drain();
+    const conv = await customer(w, wide, nextPhone(), 'do we need socks and how much are they?');
+    w.fake.push({ kind: 'decision', decision: tripped() });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([UNCLEAR_LINE]);
+    const gm = await teamOf(w, 'gm');
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'gm', teamId: gm.id });
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', reason: 'GUARD_NUMBER' });
+  });
+
+  it('on a branch number whose silence policy covers the intent: true silence, as before', async () => {
+    await drain();
+    const policyNumber = await simAccount(w, { branchId: w.central, silentIntents: ['socks'] });
+    const conv = await customer(w, policyNumber, nextPhone(), 'do we need socks and how much are they?');
+    w.fake.push({ kind: 'decision', decision: tripped() });
+    expect((await tick(w, later(25_000))).silent).toBe(1);
+    expect(await aiLines(w, conv.id)).toHaveLength(0);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'silent', reason: 'GUARD_NUMBER' });
+    expect((await eventsOf(w, conv.id)).some((e) => e.kind === 'ai_handover')).toBe(false);
+  });
+
+  it('a park mismatch (SCRUM-669) on a main number: the unclear line, the guard named on the turn', async () => {
+    await drain();
+    const conv = await customer(w, wide, nextPhone(), 'how much at Chalong?');
+    w.fake.push({
+      kind: 'decision',
+      decision: decision({
+        intent: 'ticket_prices',
+        branchNamed: 'chalong',
+        grounding: ['fact.prices.central'],
+        reason: 'FACT_IN_KB',
+        bubbles: ['Prices start from ฿690 per child 😊'],
+      }),
+    });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([UNCLEAR_LINE]);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', reason: 'GUARD_PARK' });
+    expect((await aiLines(w, conv.id)).some((l) => (l.body ?? '').includes('690'))).toBe(false);
+  });
+
+  it('the model choosing silence, or spam, is not a withheld reply: no line', async () => {
+    await drain();
+    const conv = await customer(w, central, nextPhone(), 'buy followers cheap');
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'other', action: 'silent', reason: 'OUT_OF_SCOPE', bubbles: [] }) });
+    expect((await tick(w, later(25_000))).silent).toBe(1);
+    expect(await aiLines(w, conv.id)).toHaveLength(0);
+  });
+});
+
+// --- Staging-shaped knowledge: English rows flagged for translation (SCRUM-670, SCRUM-671 E) -----
+
+describe('the playbook entries as staging holds them: English, flagged for their translations', () => {
+  beforeAll(async () => {
+    await kb(w, approver, {
+      key: 'pb.ages',
+      topic: 'age_rules',
+      language: 'en',
+      needsTranslation: true,
+      question: 'Is there an age limit?',
+      body: 'Our play park is for children up to 12 years old. Children under 1 get free entry with a paying adult. The nanny service (one-on-one, from age 3) is 330 baht per hour, and drop-off (from age 5) is 225 baht per visit, both at Central Floresta.',
+    });
+    await kb(w, approver, {
+      key: 'pb.deal-dinner-promo',
+      topic: 'prices_note',
+      language: 'en',
+      needsTranslation: true,
+      question: 'Is there an evening deal at Chalong?',
+      body: 'The Dinner Promo at Robinson Chalong applies after 6pm. Weekdays: 1,080 baht, all of it food and drink credit, plus free entry for 3 people.',
+    });
+  });
+
+  it('E: "is there any age limit" on a main channel is ANSWERED from the cited entry, "free entry" and all', async () => {
+    await drain();
+    const conv = await customer(w, wide, nextPhone(), 'is there any age limit');
+    const answer = `Our park is for kids up to 12 years old, and little ones under 1 get free entry 😊 ${SENTINEL}`;
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'age_rules', grounding: ['pb.ages'], reason: 'FACT_IN_KB', bubbles: [answer] }) });
+    expect((await tick(w, later(25_000))).answered).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([answer]);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'answered', reason: 'OK', intent: 'age_rules' });
+    // The entry reached the model's knowledge, citable by its key.
+    const prompt = w.fake.requests.at(-1)!.prompt;
+    expect(prompt.system[1].text).toContain('[pb.ages] (age_rules, en)');
+  });
+
+  it('SCRUM-670: "too expensive" at Chalong is answered with the Dinner Promo, not handed over', async () => {
+    await drain();
+    const chalongNumber = await simAccount(w, { branchId: w.chalong });
+    const conv = await customer(w, chalongNumber, nextPhone(), 'that is too expensive');
+    const deal = 'Everything inside is included 😊 And at Robinson Chalong the Dinner Promo after 6pm is ฿1,080 on weekdays, plus free entry for 3 people.';
+    w.fake.push({
+      kind: 'decision',
+      decision: decision({ intent: 'discount_negotiation', grounding: ['pb.deal-dinner-promo'], reason: 'FACT_IN_KB', bubbles: [deal] }),
+    });
+    expect((await tick(w, later(25_000))).answered).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([deal]);
+    expect((await eventsOf(w, conv.id)).some((e) => e.kind === 'ai_handover')).toBe(false);
   });
 });
 

@@ -318,7 +318,16 @@ export async function call<T = Record<string, unknown>>(
 export async function kb(
   w: AiWorld,
   approver: string,
-  entry: { key: string; topic: typeof s.kbEntry.$inferInsert.topic; language: 'en' | 'th' | 'ru'; question: string; body: string; branchId?: string | null },
+  entry: {
+    key: string;
+    topic: typeof s.kbEntry.$inferInsert.topic;
+    language: 'en' | 'th' | 'ru';
+    question: string;
+    body: string;
+    branchId?: string | null;
+    /** As staging's playbook entries were loaded: English rows flagged for their translations (SCRUM-670). */
+    needsTranslation?: boolean;
+  },
 ): Promise<void> {
   await w.ctx.db.insert(s.kbEntry).values({
     id: newId(),
@@ -332,6 +341,7 @@ export async function kb(
     status: 'approved',
     approvedByAccountId: approver,
     approvedAt: new Date(),
+    needsTranslation: entry.needsTranslation ?? false,
   });
 }
 

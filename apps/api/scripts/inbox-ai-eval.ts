@@ -36,6 +36,7 @@ import {
   type GateVerdict,
   type TurnUsage,
 } from '@oto/assistant';
+import { WITHHELD_REPLY_REASONS } from '../src/services/inbox/ai-destination';
 import { loadTurnKnowledge } from '../src/services/inbox/ai-knowledge';
 import { teardownAll } from '../test/helpers';
 import {
@@ -121,6 +122,9 @@ function costOf(model: string, u: TurnUsage): number | null {
  */
 function stateOf(v: GateVerdict): string {
   if (v.action === 'answer') return v.thenHandover ? 'handed_over' : 'answered';
+  // A reply the gate withheld becomes the unclear hand-over on a number with no
+  // silence policy, which every golden number is (SCRUM-671, item D).
+  if (v.action === 'silent' && WITHHELD_REPLY_REASONS.has(v.reason)) return 'handed_over';
   return v.action === 'handover' ? 'handed_over' : 'silent';
 }
 
