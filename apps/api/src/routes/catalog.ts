@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, asc, count, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, isNull, or } from 'drizzle-orm';
 import {
   branch,
   branchHoliday,
@@ -66,6 +66,14 @@ async function loadBranch(app: App, branchId: string, operatorId: string) {
 }
 
 const BranchParams = z.object({ branchId: z.string().uuid() });
+const TaxOverrideBodySchema = z.object({
+  /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+  id: ClientIdSchema.optional(),
+  categoryId: z.string().uuid().nullable().optional(),
+  productId: z.string().uuid().nullable().optional(),
+  vatRateBp: z.number().int().min(0).max(10000).nullable().optional(),
+  serviceChargeBp: z.number().int().min(0).max(10000).nullable().optional(),
+}).refine((b) => b.categoryId || b.productId, { message: 'categoryId or productId required' });
 const HolidayListSchema = z.object({ holidays: z.array(z.object({
   id: z.string().uuid(), name: z.string(), startsOn: z.string(), endsOn: z.string(),
   pricedSales: z.number().int().nonnegative(),
@@ -489,7 +497,7 @@ export async function catalogRoutes(app: App): Promise<void> {
     {
       config: { permission: 'catalog:menu:manage', target: { operator: true } },
       schema: {
-        description: 'Remove a tender; refused once money has been taken in it',
+        description: 'Archive a tender, including one already used; recorded payment history keeps its code',
         params: MethodCodeParams,
         response: { 200: CatalogueOkResponseSchema },
       },
@@ -1046,22 +1054,21 @@ export async function catalogRoutes(app: App): Promise<void> {
     '/branches/:branchId/tax-overrides',
     {
       config: { permission: 'catalog:tax:manage', target: { branchId: 'params.branchId' } },
+      preValidation: async (req) => {
+        // Malformed requests keep the native validation response, before any UUID lookup.
+        const params = BranchParams.safeParse(req.params);
+        if (!params.success || !TaxOverrideBodySchema.safeParse(req.body).success) return;
+        // Recheck current authority before the global idempotency hook can replay an answer.
+        await req.requirePermission('catalog:tax:manage', { branchId: params.data.branchId });
+      },
       schema: {
         description:
           'Add a tax override (category- or product-scoped). An optional body id names it ' +
           '(SCRUM-270): the same id again answers with that override under x-oto-replay; an id ' +
           'naming another record is refused 409 ID_IN_USE.',
         params: BranchParams,
-        body: z
-          .object({
-            /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
-            id: ClientIdSchema.optional(),
-            categoryId: z.string().uuid().nullable().optional(),
-            productId: z.string().uuid().nullable().optional(),
-            vatRateBp: z.number().int().min(0).max(10000).nullable().optional(),
-            serviceChargeBp: z.number().int().min(0).max(10000).nullable().optional(),
-          })
-          .refine((b) => b.categoryId || b.productId, { message: 'categoryId or productId required' }),
+        body: TaxOverrideBodySchema,
+        response: { 200: z.object({ id: z.string().uuid() }) },
       },
     },
     async (req, reply) => {
@@ -1080,6 +1087,19 @@ export async function catalogRoutes(app: App): Promise<void> {
       }
       const id = claim.id;
       return withTx(app.db, opCtx(req), 'tax_override.create', async (tx) => {
+        if (req.body.categoryId) {
+          const [category] = await tx.select({ id: productCategory.id }).from(productCategory)
+            .where(and(eq(productCategory.id, req.body.categoryId), eq(productCategory.operatorId, auth.operatorId)))
+            .limit(1);
+          if (!category) throw errors.notFound('Category not found');
+        }
+        if (req.body.productId) {
+          const [item] = await tx.select({ id: product.id }).from(product)
+            .where(and(eq(product.id, req.body.productId), eq(product.operatorId, auth.operatorId),
+              or(eq(product.branchId, req.params.branchId), isNull(product.branchId))))
+            .limit(1);
+          if (!item) throw errors.notFound('Product not found');
+        }
         await tx.insert(taxOverride).values({
           id,
           branchId: req.params.branchId,

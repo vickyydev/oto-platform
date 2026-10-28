@@ -5292,7 +5292,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Remove a tender; refused once money has been taken in it */
+        /** @description Archive a tender, including one already used; recorded payment history keeps its code */
         delete: {
             parameters: {
                 query?: never;
@@ -6104,7 +6104,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
                 };
             };
         };

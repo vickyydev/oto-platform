@@ -10622,7 +10622,7 @@
         }
       },
       "delete": {
-        "description": "Remove a tender; refused once money has been taken in it",
+        "description": "Archive a tender, including one already used; recorded payment history keeps its code",
         "parameters": [
           {
             "schema": {
@@ -12207,7 +12207,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
