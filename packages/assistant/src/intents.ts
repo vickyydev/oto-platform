@@ -84,7 +84,8 @@ export type AiAction = (typeof AI_ACTIONS)[number];
  * `INBOX_TEMPLATE_KEYS` handover keys, `handover_general` (migration
  * `0080_inbox_ai`, rails change R1), and the playbook's closing lines
  * (`0094_inbox_playbook`): three keyed by destination, and the unclear
- * line the engine sends for an unclear or emotional hand-over. Kept here as
+ * line the engine sends for an unclear or emotional hand-over; and one
+ * plan's own line, `closing_booking` (SCRUM-677). Kept here as
  * a literal list because this package has no database dependency; the
  * engine reads the template rows by this key.
  */
@@ -100,6 +101,7 @@ export const AI_HOLDING_TEMPLATE_KEYS = [
   'closing_gm',
   'closing_branch',
   'closing_unclear',
+  'closing_booking',
 ] as const;
 export type AiHoldingTemplateKey = (typeof AI_HOLDING_TEMPLATE_KEYS)[number];
 
@@ -166,6 +168,14 @@ export const GM_PLAN: AiHandoverPlan = { templateKey: 'closing_gm', route: 'gm',
 export const BRANCH_PLAN: AiHandoverPlan = { templateKey: 'closing_branch', route: 'general', brochure: false };
 /** Nanny bookings go to the Central inbox (the only park with the service). */
 export const CENTRAL_PLAN: AiHandoverPlan = { ...BRANCH_PLAN, branch: 'central' };
+/**
+ * SCRUM-677: after a nanny ANSWER, Central's desk takes the booking, and the
+ * closing says so — its own line, not the branch's "shortly". A nanny
+ * question the model hands over unanswered keeps `CENTRAL_PLAN`: no booking
+ * was discussed. The engine sends a plan's own line only when the thread
+ * goes where the plan sends it (`ai-destination.ts` `closingKeysOf`).
+ */
+export const NANNY_BOOKING_PLAN: AiHandoverPlan = { ...CENTRAL_PLAN, templateKey: 'closing_booking' };
 /** Unclear or not covered, the branch known: "Thanks for your message! A team member will be with you shortly." */
 export const UNCLEAR_BRANCH_PLAN: AiHandoverPlan = { templateKey: 'handover_general', route: 'general', brochure: false };
 /** Unclear or not covered, the branch unknown: the same line, to the GM. */
@@ -312,7 +322,7 @@ export const INTENT_TABLE: Readonly<Record<AiIntent, AiIntentRule>> = {
   special_tickets_buy: handover(BIRTHDAYS_PLAN, { lead: true }),
   events_groups: handover(BIRTHDAYS_PLAN, { lead: true }),
   // The facts, then Central takes the booking.
-  nanny_booking: answer(SERVICE_TOPICS, { thenHandover: CENTRAL_PLAN, fallback: { plan: CENTRAL_PLAN, lead: false } }),
+  nanny_booking: answer(SERVICE_TOPICS, { thenHandover: NANNY_BOOKING_PLAN, fallback: { plan: CENTRAL_PLAN, lead: false } }),
   drop_off_service: answer(SERVICE_TOPICS, { general: true }),
   drop_off_care: silentHandover(BRANCH_PLAN),
   lost_item: silentHandover(BRANCH_PLAN),

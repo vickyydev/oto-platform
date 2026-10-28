@@ -666,6 +666,13 @@
       "when": 1793175675990,
       "tag": "0094_inbox_playbook",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1793202677105,
+      "tag": "0095_inbox_booking_closing",
+      "breakpoints": true
     }
   ]
 }

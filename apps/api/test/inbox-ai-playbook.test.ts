@@ -1,10 +1,10 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { GateVerdict, TurnContext } from '@oto/assistant';
+import { INTENT_TABLE, type GateVerdict, type TurnContext } from '@oto/assistant';
 import { schema as s } from '@oto/db';
 import { DEFAULT_SILENT_INTENTS, INBOX_TEMPLATE_BODIES, defaultSilencePolicyFor, syncInboxSetup } from '@oto/db/seed';
 import { isUnanswered, newId, satangFromBaht as b } from '@oto/shared';
-import { CLOSING_KEY_OF, PLAYBOOK_ROUTE, silencedBy, silentIntentsOf } from '../src/services/inbox/ai-destination';
+import { CLOSING_KEY_OF, PLAYBOOK_ROUTE, closingKeysOf, planHonoured, silencedBy, silentIntentsOf } from '../src/services/inbox/ai-destination';
 import { knowledgeWithTierPrices, loadTurnKnowledge, packageFact, priceFactText, type PricedPackageRow } from '../src/services/inbox/ai-knowledge';
 import { callingCodeOf } from '../src/services/inbox/calling-code';
 import { teardownAll } from './helpers';
@@ -425,6 +425,9 @@ describe('the nanny (the playbook’s "Ages, nanny and drop-off")', () => {
   const nanny = () =>
     decision({ intent: 'nanny_booking', grounding: ['nanny'], reason: 'FACT_IN_KB', bubbles: [facts] });
 
+  /** SCRUM-677: after a nanny answer the closing says WHY someone will write: to confirm the booking. */
+  const BOOKING_LINE = 'Our Central Floresta team will message you to confirm the booking 😊';
+
   it('answered from the knowledge, then Central Floresta’s reception takes the booking, whatever number it came in on', async () => {
     await drain();
     const chalongNumber = await simAccount(w, { branchId: w.chalong });
@@ -432,10 +435,48 @@ describe('the nanny (the playbook’s "Ages, nanny and drop-off")', () => {
     expect(conv.branchId).toBe(w.chalong);
     w.fake.push({ kind: 'decision', decision: nanny() });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([facts, INBOX_TEMPLATE_BODIES.closing_branch]);
+    expect(INBOX_TEMPLATE_BODIES.closing_booking).toBe(BOOKING_LINE);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([facts, BOOKING_LINE]);
     const receptionCentral = await teamOf(w, 'reception', w.central);
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: receptionCentral.id, branchId: w.central });
-    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'general', closingKey: 'closing_branch', reroutedTeamId: receptionCentral.id });
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'general', closingKey: 'closing_booking', reroutedTeamId: receptionCentral.id });
+  });
+
+  it('the booking line in Thai waits for its translator: until then the branch line in Thai goes, never English', async () => {
+    await drain();
+    expect(await templateRow('closing_booking', 'th')).toMatchObject({ body: BOOKING_LINE, needsTranslation: true });
+    expect(await templateRow('closing_booking', 'ru')).toMatchObject({ body: BOOKING_LINE, needsTranslation: true });
+    const conv = await customer(w, central, nextPhone(), 'มีพี่เลี้ยงเด็กไหมคะ');
+    w.fake.push({ kind: 'decision', decision: { ...nanny(), language: 'th', bubbles: ['มีบริการพี่เลี้ยงเด็กแบบตัวต่อตัวที่ Central Floresta ค่ะ 😊'] } });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).at(-1)!.body).toBe((await templateRow('closing_branch', 'th')).body);
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ closingKey: 'closing_branch' });
+  });
+
+  it('the plan’s own line goes only where the plan sends the thread: a thread a person routed elsewhere gets the destination’s', () => {
+    const rule = INTENT_TABLE.nanny_booking;
+    expect(rule.action === 'answer' && rule.thenHandover).toMatchObject({ templateKey: 'closing_booking', route: 'general', branch: 'central' });
+    // The fallback (no answer given) keeps the branch's own line.
+    expect(rule.action === 'answer' && rule.fallback?.plan).toMatchObject({ templateKey: 'closing_branch', branch: 'central' });
+    const plan = { templateKey: 'closing_booking', route: 'general', brochure: false, branch: 'central' } as const;
+    const h = { plan, owner: 'nanny_booking', silenced: false, branchLine: false, unclear: false } as const;
+    const central = new Map([[w.central, 'central' as const], [w.chalong, 'chalong' as const]]);
+    expect(planHonoured(plan, { category: 'general', endBranchId: w.central }, central)).toBe(true);
+    expect(planHonoured(plan, { category: 'general', endBranchId: w.chalong }, central)).toBe(false);
+    expect(planHonoured(plan, { category: 'birthdays', endBranchId: w.central }, central)).toBe(false);
+    expect(closingKeysOf(h, 'general', true)).toEqual(['closing_booking', 'closing_branch']);
+    expect(closingKeysOf(h, 'general', false)).toEqual(['closing_branch']);
+    // A destination's own line is never doubled by the rung.
+    expect(closingKeysOf({ ...h, plan: { templateKey: 'closing_branch', route: 'general', brochure: false } }, 'general', true)).toEqual(['closing_branch']);
+  });
+
+  it('a nanny question the model hands over without answering keeps the branch line: no booking was discussed', async () => {
+    await drain();
+    const chalongNumber = await simAccount(w, { branchId: w.chalong });
+    const conv = await customer(w, chalongNumber, nextPhone(), 'nanny?');
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'nanny_booking', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_branch]);
   });
 
   it('on Central’s own number, whose policy names the nanny, nothing is said — not even the answer — and the desk has it', async () => {

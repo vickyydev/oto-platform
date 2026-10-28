@@ -8,6 +8,7 @@ import {
   BRANCH_PLAN,
   BY_BRANCH,
   CENTRAL_PLAN,
+  NANNY_BOOKING_PLAN,
   GM_PLAN,
   INTENT_TABLE,
   resolvePlan,
@@ -317,7 +318,7 @@ describe('D. nanny and drop-off', () => {
   it('a nanny question is answered from the facts, then Central takes the booking', () => {
     expect(pgate({ intent: 'nanny_booking', grounding: ['pb.nanny'], bubbles: [nanny] })).toMatchObject({
       action: 'answer',
-      thenHandover: CENTRAL_PLAN,
+      thenHandover: NANNY_BOOKING_PLAN,
     });
   });
 

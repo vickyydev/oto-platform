@@ -14,10 +14,11 @@
  *   - the routing rules for the IT Brief's defaults, every person BLANK
  *     (`primary_kind = 'team'`, owner Q20), plus one catch-all per team so
  *     routing can never leave a conversation unowned;
- *   - the fourteen template keys (`handover_general` joined with SCRUM-590,
- *     `follow_up` with the SCRUM-220 test night, the four `closing_*`
- *     lines with the SCRUM-220 playbook) in English, Thai and
- *     Russian, each language in its own words — and the one UPDATE this file
+ *   - the fifteen template keys (`handover_general` joined with SCRUM-590,
+ *     `follow_up` with the SCRUM-220 test night, four `closing_*` lines
+ *     with the SCRUM-220 playbook, `closing_booking` with SCRUM-677) in
+ *     English, Thai and Russian, each language in its own words but for a
+ *     key still waiting for its translator — and the one UPDATE this file
  *     makes: a TH or RU row that still carries the English source marked
  *     `needs_translation` (as every operator synced before the test night
  *     has) takes its translation, see `backfillTranslations`;
@@ -161,7 +162,25 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   // message's hand-over sends it whichever queue the thread goes to (the
   // park's when it is known, else the GM's) — it wins over the destination's.
   closing_unclear: 'Thanks for your message! A team member will be with you shortly.',
+  // SCRUM-677 (`0095_inbox_booking_closing`): after a nanny answer the line
+  // says why Central Floresta will write, instead of the branch's "shortly".
+  // Its Thai and Russian rows wait for a translator (`INBOX_TEMPLATE_AWAITING_TRANSLATION`).
+  closing_booking: 'Our Central Floresta team will message you to confirm the booking 😊',
 };
+
+/**
+ * Keys whose Thai and Russian rows are laid with the English source and
+ * marked `needs_translation`: the engine never sends such a row, so a Thai
+ * or Russian customer gets the next line of the closing ladder in their own
+ * language until a translator words it. Its words join
+ * `INBOX_TEMPLATE_TRANSLATIONS` then, and `backfillTranslations` lays them
+ * over every row still flagged and still English.
+ */
+export const INBOX_TEMPLATE_AWAITING_TRANSLATION = ['closing_booking'] as const satisfies readonly InboxTemplateKey[];
+type AwaitingTranslationKey = (typeof INBOX_TEMPLATE_AWAITING_TRANSLATION)[number];
+type TranslatedTemplateKey = Exclude<InboxTemplateKey, AwaitingTranslationKey>;
+const awaitsTranslation = (key: InboxTemplateKey): key is AwaitingTranslationKey =>
+  (INBOX_TEMPLATE_AWAITING_TRANSLATION as readonly InboxTemplateKey[]).includes(key);
 
 /**
  * The same lines in Thai and Russian (SCRUM-220 test night, rails plan "Test
@@ -174,7 +193,7 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
  * the placeholders its English source does, and no number the English source
  * does not: the out-of-hours line's 10:00–20:00 is the source's own.
  */
-export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<InboxTemplateKey, string>> = {
+export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<TranslatedTemplateKey, string>> = {
   th: {
     welcome: 'สวัสดีค่ะ 👋 ยินดีต้อนรับสู่ OTO Play Park ค่ะ วันนี้ให้เราช่วยอะไรดีคะ',
     handover_birthday:
@@ -219,9 +238,13 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Inbo
   },
 };
 
-/** The words a template row is laid with: the English source, or that language's own line. */
+/** The words a template row is laid with: the English source, or that language's own line once it has one. */
 export const templateBodyFor = (key: InboxTemplateKey, language: InboxTemplateLanguage): string =>
-  language === 'en' ? INBOX_TEMPLATE_BODIES[key] : INBOX_TEMPLATE_TRANSLATIONS[language][key];
+  language === 'en' || awaitsTranslation(key) ? INBOX_TEMPLATE_BODIES[key] : INBOX_TEMPLATE_TRANSLATIONS[language][key];
+
+/** A Thai or Russian row laid with the English source, for a translator to word. */
+export const templateNeedsTranslation = (key: InboxTemplateKey, language: InboxTemplateLanguage): boolean =>
+  language !== 'en' && awaitsTranslation(key);
 
 /**
  * English wordings this file laid BEFORE the current ones (SCRUM-220 test
@@ -498,8 +521,8 @@ async function syncTemplates(db: Db, operatorId: string, counts: InboxSyncCounts
         branchId: null,
         body: templateBodyFor(key, language),
         approvalStatus: 'not_required' as const,
-        // Every language is laid in its own words; nothing waits for a translator.
-        needsTranslation: false,
+        // Every language in its own words, but for a key still waiting for its translator.
+        needsTranslation: templateNeedsTranslation(key, language),
         active: true,
       });
     }
@@ -525,6 +548,7 @@ async function syncTemplates(db: Db, operatorId: string, counts: InboxSyncCounts
  */
 async function backfillTranslations(db: Db, operatorId: string, counts: InboxSyncCounts): Promise<void> {
   for (const key of Object.keys(INBOX_TEMPLATE_BODIES) as InboxTemplateKey[]) {
+    if (awaitsTranslation(key)) continue;
     for (const language of INBOX_TEMPLATE_LANGUAGES) {
       if (language === 'en') continue;
       const translated = await db

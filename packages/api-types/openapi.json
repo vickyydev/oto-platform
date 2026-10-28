@@ -82963,7 +82963,8 @@
                       "closing_birthday",
                       "closing_gm",
                       "closing_branch",
-                      "closing_unclear"
+                      "closing_unclear",
+                      "closing_booking"
                     ]
                   },
                   "language": {
@@ -85141,7 +85142,8 @@
                 "closing_birthday",
                 "closing_gm",
                 "closing_branch",
-                "closing_unclear"
+                "closing_unclear",
+                "closing_booking"
               ]
             },
             "in": "query",

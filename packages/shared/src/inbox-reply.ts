@@ -39,6 +39,8 @@ import { InboxChannelSchema, InboxMessageSchema, InboxTemplateSchema } from './i
  * playbook, `0094_inbox_playbook`) are the playbook's closing lines: three
  * keyed by destination (birthday manager, general manager, a branch), and
  * `closing_unclear`, the unclear line that wins over the destination's.
+ * `closing_booking` (SCRUM-677, `0095_inbox_booking_closing`) is a plan's own
+ * line: after a nanny answer, why Central Floresta will write.
  */
 export const INBOX_TEMPLATE_KEY_NAMES = [
   'welcome',
@@ -55,6 +57,7 @@ export const INBOX_TEMPLATE_KEY_NAMES = [
   'closing_gm',
   'closing_branch',
   'closing_unclear',
+  'closing_booking',
 ] as const;
 export type InboxTemplateKeyName = (typeof INBOX_TEMPLATE_KEY_NAMES)[number];
 

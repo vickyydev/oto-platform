@@ -2,6 +2,7 @@ import { hash } from '@node-rs/argon2';
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { INBOX_TEMPLATE_KEYS, schema as s } from '@oto/db';
+import { INBOX_TEMPLATE_AWAITING_TRANSLATION } from '@oto/db/seed';
 import type { RawWebhook, SimulatorChannel } from '@oto/messaging';
 import {
   INBOX_TEMPLATE_KEY_NAMES,
@@ -391,7 +392,9 @@ describe('outside the 24-hour window (I2f)', () => {
     expect(details.qualifyingTemplates.every((t) => typeof t.key === 'string' && typeof t.needsTranslation === 'boolean')).toBe(true);
     const flagged = details.qualifyingTemplates.filter((t) => t.needsTranslation);
     expect(flagged.map((t) => t.id)).toContain(thRow!.id);
-    expect(flagged.map((t) => [t.key, t.language])).toEqual([['out_of_hours', 'th']]);
+    // The fixture's flagged row, and the lines still waiting for their translator by design (SCRUM-677).
+    const awaiting = INBOX_TEMPLATE_AWAITING_TRANSLATION.flatMap((key) => [[key, 'ru'], [key, 'th']]);
+    expect(flagged.map((t) => [t.key, t.language]).sort()).toEqual([...awaiting, ['out_of_hours', 'th']].sort());
     expect(details.qualifyingTemplates.find((t) => t.key === 'welcome' && t.language === 'en')).toMatchObject({ needsTranslation: false });
     // The fixture back: the Thai row in its own words.
     await ctx.db.update(s.template).set({ body: thRow!.body, needsTranslation: false }).where(thaiOutOfHours);

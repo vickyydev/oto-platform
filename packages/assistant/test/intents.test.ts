@@ -8,6 +8,7 @@ import {
   BRANCH_PLAN,
   BY_BRANCH,
   CENTRAL_PLAN,
+  NANNY_BOOKING_PLAN,
   GM_PLAN,
   INTENT_TABLE,
   resolvePlan,
@@ -102,7 +103,10 @@ describe('the intent table (PLAN §B.2, SCRUM-220 playbook)', () => {
     expect(plan('human_requested')).toEqual({ templateKey: 'handover_general', route: 'keep', brochure: false });
     const nanny = INTENT_TABLE.nanny_booking;
     if (nanny.action !== 'answer') throw new Error('nanny_booking');
-    expect(nanny.thenHandover).toEqual(CENTRAL_PLAN);
+    // SCRUM-677: after the answer, the plan's own booking line; unanswered, Central's branch line.
+    expect(nanny.thenHandover).toEqual(NANNY_BOOKING_PLAN);
+    expect(NANNY_BOOKING_PLAN).toEqual({ ...CENTRAL_PLAN, templateKey: 'closing_booking' });
+    expect(nanny.fallback?.plan).toEqual(CENTRAL_PLAN);
     for (const i of handoverIntents) {
       for (const known of [true, false]) expect(AI_HOLDING_TEMPLATE_KEYS).toContain(resolvePlan(plan(i), known).templateKey);
     }

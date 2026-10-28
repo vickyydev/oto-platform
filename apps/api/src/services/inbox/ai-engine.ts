@@ -42,11 +42,12 @@ import { withTx, type Exec, type Tx } from '../tx';
 import { assistantSettingOverridesOf } from '../assistant-settings';
 import type { InboxAiRuntime } from './ai-runtime';
 import {
-  CLOSING_KEY_OF,
-  UNCLEAR_CLOSING_KEY,
+  PLAN_CLOSING_KEYS,
   WITHHELD_REPLY_REASONS,
+  closingKeysOf,
   destinationOf,
   isUnclearHandover,
+  planHonoured,
   planOwner,
   silencedBy,
   silentIntentsOf,
@@ -680,8 +681,9 @@ async function closingLine(
     const line = await templateLine(tx, conv, account, closingKey, language);
     if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey };
   }
+  // A plan's own line (SCRUM-677) goes only through its rung, never as a fallback.
   const fallbacks = new Set<string>([plan.templateKey, 'handover_general']);
-  for (const key of closingKeys) fallbacks.delete(key);
+  for (const key of [...closingKeys, ...PLAN_CLOSING_KEYS]) fallbacks.delete(key);
   for (const key of fallbacks) {
     const line = await templateLine(tx, conv, account, key, language);
     if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey: null };
@@ -906,21 +908,6 @@ function withheldReplyFallback(
   };
 }
 
-/**
- * The closing keys a hand-over tries, in order (SCRUM-220 playbook): a
- * silent hand-over the policy does not cover, the branch's line; an
- * "Unclear or not covered" hand-over, the unclear line first (owner ruling,
- * 28 Oct), then the destination's; any other, the destination's line, when
- * it has one.
- */
-function closingKeysOf(h: Handover, destination: InboxCategory): InboxTemplateKey[] {
-  if (h.branchLine) return ['closing_branch'];
-  const keys: InboxTemplateKey[] = h.unclear ? [UNCLEAR_CLOSING_KEY] : [];
-  const own = CLOSING_KEY_OF[destination];
-  if (own) keys.push(own);
-  return keys;
-}
-
 /** The turn's reason word once the number's policy has been read. */
 function handoverReason(h: Handover | null, reason: string): string {
   if (h?.silenced) return 'SILENCE_POLICY';
@@ -979,6 +966,13 @@ async function planRouting(
     }
   }
   return { branchSet, move, category: move ? move.category : conv.category };
+}
+
+/** The thread ends where the hand-over's plan sends it, so the plan's own closing line may go (SCRUM-677). */
+function ownLineGoes(h: Handover, routing: RoutingPlan, conv: ConversationRow, knowledge: TurnKnowledge | undefined): boolean {
+  if (!knowledge) return false;
+  const endBranchId = routing.move ? routing.move.branchId : (routing.branchSet ?? conv.branchId);
+  return planHonoured(h.plan, { category: routing.category, endBranchId }, knowledge.keyOfBranch);
 }
 
 async function executeRouting(tx: Tx, conv: ConversationRow, plan: RoutingPlan, at: Date): Promise<Routing> {
@@ -1259,9 +1253,10 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
           let holding: HoldingLine = NO_LINE;
           let destination: InboxCategory | null = null;
           if (handover) {
-            destination = (await planRouting(tx, conv, v.branchNamed, handover, r.knowledge)).category;
+            const routed = await planRouting(tx, conv, v.branchNamed, handover, r.knowledge);
+            destination = routed.category;
             if (!handover.silenced) {
-              const keys = closingKeysOf(handover, destination);
+              const keys = closingKeysOf(handover, destination, ownLineGoes(handover, routed, conv, r.knowledge));
               holding = await closingLine(tx, conv, account, keys, handover.plan, v.language, v.action === 'handover' ? v.holdingBubbles : []);
               lines.push(...holding.items.flatMap((i) => (i.body ? [i.body] : [])));
             }
@@ -1340,7 +1335,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
           tx,
           conv,
           account,
-          closingKeysOf(handover, plan.category),
+          closingKeysOf(handover, plan.category, ownLineGoes(handover, plan, conv, r.knowledge)),
           handover.plan,
           v.language,
           v.action === 'handover' ? v.holdingBubbles : [],
