@@ -1,0 +1,22 @@
+{
+  "classification": "Original 345-case pre-682-integration result, preserved separately; not a current combined browser result.",
+  "passed": 345,
+  "failed": 0,
+  "artifacts": [
+    {
+      "path": "C:\\oto-lanes\\admin683-evidence-20261029\\browser-devices-v2-all.json",
+      "bytes": 755,
+      "sha256": "00f300351559550d07c2ab19134c5bcfc7c7962222f67d1ed33c48feebd93762"
+    },
+    {
+      "path": "C:\\oto-lanes\\admin683-evidence-20261029\\browser-devices-v2-all.log",
+      "bytes": 62444,
+      "sha256": "db5879902e6b4641a8ec7967e2578f6932ee932f571c9a6e6dbc8122ae497b5d"
+    },
+    {
+      "path": "C:\\oto-lanes\\admin683-evidence-20261029\\browser-devices-v2-all-source.json",
+      "bytes": 40368,
+      "sha256": "6f1e5649763aec4ec654543e5a270d0c27ebcaf79de0ae67d9c3443cf5160167"
+    }
+  ]
+}

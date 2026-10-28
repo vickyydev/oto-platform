@@ -1,0 +1,43 @@
+{
+  "ticket": "SCRUM-683",
+  "priorCheckpointPath": "C:\\oto-lanes\\admin683-integrated-evidence-20261029\\checkpoint.json",
+  "priorCheckpointSha256": "8da98f36b57f59bd0c9c0af24ba6a04809af4d0d7eca6c411b1a8bc127b42f56",
+  "priorCheckpointUnchanged": true,
+  "amendment": "One added assertion: prior generic error is absent while the new park request remains held. Every v1 assertion and fixture preserved.",
+  "testFile": "apps/console/e2e/payment-discovery-filters.spec.ts",
+  "testFileSha256": "9dba95858798103b176094e81d0060f8bd6d6854a7112e826094c996bbdb1859",
+  "sourceFiles": 3942,
+  "sourceBeforeSha256": "00fb73d0286b1810f16c3e5f609cc6f38276f9a0e5e4d2a4655b54d623b8895e",
+  "sourceAfterSha256": "bb68e91d1f77c964e869eb4cd583a12268e24bd6d76d0c188ed4d43b13b84ba3",
+  "sourceAfterFileSha256": "90d2ed4075649d8c900b7de965c487b3a766283d959879fe99271ca694464221",
+  "productionChanged": false,
+  "checks": [
+    {
+      "name": "console-typecheck",
+      "receiptSha256": "c8ee242bc488e388ee7f0905fb2c593801d496c2e253055a475cfb46d940762d",
+      "logSha256": "279c0b41a80b1bda9dbdd224f2fa7147752de2fee9264b45a5b1c9dd993d3a28",
+      "exitCode": 0
+    },
+    {
+      "name": "lint",
+      "receiptSha256": "298f18dd7953a66aee94835193f7e4c1a7f760466cfd667268d6455a82e02894",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    {
+      "name": "diff-check",
+      "receiptSha256": "5d772bfb13963a190ac53cc2a4cad7195599f15a216c8a16a9dcb03face89936",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    }
+  ],
+  "consoleCompilerConfigs": 3,
+  "compilerDiagnostics": 0,
+  "lintFiles": 1,
+  "lintErrors": 0,
+  "unitsNotRepeated": "Only the uncollected e2e assertion changed; v1 whole unit results remain separately bound.",
+  "browserStarted": false,
+  "databaseStarted": false,
+  "browserAcceptance": "Pending root slot and full combined359 run; no GREEN claimed for the new assertion.",
+  "staging": false
+}

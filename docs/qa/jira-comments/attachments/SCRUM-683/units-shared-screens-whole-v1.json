@@ -1,0 +1,34 @@
+{
+  "ticket": "SCRUM-683",
+  "package": "shared-screens",
+  "phase": "whole",
+  "startedAt": "2026-10-28T20:11:36.573Z",
+  "completedAt": "2026-10-28T20:11:54.508Z",
+  "exitCode": 0,
+  "errorCode": null,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\oto-lanes\\admin683-payments-20261029\\packages\\admin-screens\\node_modules\\vitest\\vitest.mjs",
+      "run",
+      "--maxWorkers=1",
+      "--no-file-parallelism"
+    ],
+    "cwd": "C:\\oto-lanes\\admin683-payments-20261029\\packages\\admin-screens"
+  },
+  "beforeSourceSha256": "19efa55815eeddd3d5afd4983ca6b4ff715ba16f61414064a0f8a6a8dca98236",
+  "afterSourceSha256": "19efa55815eeddd3d5afd4983ca6b4ff715ba16f61414064a0f8a6a8dca98236",
+  "sourceUnchanged": true,
+  "logSha256": "04ac5ef8793c8cecc33a95cdaa2f7d1271ee8eaf36e9184ecbbcf2193691ec2e",
+  "summaryLines": [
+    " Test Files  17 passed (17)",
+    "      Tests  157 passed (157)",
+    "   Duration  16.87s (transform 1.44s, setup 0ms, collect 10.92s, tests 1.46s, environment 3ms, prepare 1.97s)"
+  ],
+  "databaseEnvironmentRemoved": [
+    "DATABASE_URL",
+    "TEST_DATABASE_URL"
+  ],
+  "docker": false,
+  "staging": false
+}

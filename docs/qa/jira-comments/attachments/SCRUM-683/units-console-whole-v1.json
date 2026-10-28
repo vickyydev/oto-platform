@@ -1,0 +1,34 @@
+{
+  "ticket": "SCRUM-683",
+  "package": "console",
+  "phase": "whole",
+  "startedAt": "2026-10-28T20:11:02.178Z",
+  "completedAt": "2026-10-28T20:11:36.183Z",
+  "exitCode": 0,
+  "errorCode": null,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\oto-lanes\\admin683-payments-20261029\\apps\\console\\node_modules\\vitest\\vitest.mjs",
+      "run",
+      "--maxWorkers=1",
+      "--no-file-parallelism"
+    ],
+    "cwd": "C:\\oto-lanes\\admin683-payments-20261029\\apps\\console"
+  },
+  "beforeSourceSha256": "19efa55815eeddd3d5afd4983ca6b4ff715ba16f61414064a0f8a6a8dca98236",
+  "afterSourceSha256": "19efa55815eeddd3d5afd4983ca6b4ff715ba16f61414064a0f8a6a8dca98236",
+  "sourceUnchanged": true,
+  "logSha256": "aa89ba9f88970040497f108fab50b2ffac6390b302b1be182353823a7d57de71",
+  "summaryLines": [
+    " Test Files  53 passed (53)",
+    "      Tests  556 passed | 3 todo (559)",
+    "   Duration  32.13s (transform 1.74s, setup 0ms, collect 16.59s, tests 2.45s, environment 8ms, prepare 5.80s)"
+  ],
+  "databaseEnvironmentRemoved": [
+    "DATABASE_URL",
+    "TEST_DATABASE_URL"
+  ],
+  "docker": false,
+  "staging": false
+}
