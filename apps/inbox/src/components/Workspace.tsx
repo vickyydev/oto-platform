@@ -437,6 +437,19 @@ export function Workspace({ me }: { me: InboxMe }) {
     return () => window.clearInterval(t);
   }, [loadList, loadDashboard, loadThread, selectedKey, rowCount]);
 
+  // While the simulator pane is up (staging and local only), test replies
+  // land in seconds — poll the open thread fast so Tom sees them without
+  // switching chats. Production has no simulator, so no extra load there.
+  useEffect(() => {
+    if (!me.simulator || !simPane) return;
+    const fast = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      if (selectedKey) void loadThread(selectedKey, true);
+      void loadList({ refresh: true, limit: Math.min(PAGE_MAX, Math.max(PAGE, rowCount)) });
+    }, 3000);
+    return () => window.clearInterval(fast);
+  }, [me.simulator, simPane, selectedKey, loadThread, loadList, rowCount]);
+
   // After a write: the list, the dashboard and the open thread, read again.
   const refresh = useCallback(async () => {
     await Promise.all([
