@@ -12420,7 +12420,8 @@
                               "parties",
                               "addons",
                               "merch",
-                              "stored_value"
+                              "stored_value",
+                              null
                             ],
                             "nullable": true
                           },
@@ -12429,7 +12430,8 @@
                             "enum": [
                               "kitchen",
                               "bar",
-                              "none"
+                              "none",
+                              null
                             ],
                             "nullable": true
                           },
@@ -12443,7 +12445,8 @@
                               "parties",
                               "addons",
                               "merch",
-                              "stored_value"
+                              "stored_value",
+                              null
                             ],
                             "nullable": true
                           },
@@ -12452,7 +12455,8 @@
                             "enum": [
                               "kitchen",
                               "bar",
-                              "none"
+                              "none",
+                              null
                             ],
                             "nullable": true
                           },
@@ -12679,7 +12683,8 @@
                             "enum": [
                               "kitchen",
                               "bar",
-                              "none"
+                              "none",
+                              null
                             ],
                             "nullable": true
                           },
@@ -12693,7 +12698,8 @@
                               "parties",
                               "addons",
                               "merch",
-                              "stored_value"
+                              "stored_value",
+                              null
                             ],
                             "nullable": true
                           },
@@ -22579,7 +22585,8 @@
                           "lastRejectedCode": {
                             "type": "string",
                             "enum": [
-                              "DISPLAY_UNPAIRED"
+                              "DISPLAY_UNPAIRED",
+                              null
                             ],
                             "nullable": true
                           },
@@ -70115,7 +70122,8 @@
                               "seam_not_granted",
                               "permission",
                               "anchor_ambiguous",
-                              "empty_source"
+                              "empty_source",
+                              null
                             ],
                             "nullable": true
                           },
