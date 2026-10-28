@@ -828,14 +828,16 @@ describe('spam tidy', () => {
     await drain();
     const phone = nextPhone();
     const conv = await customer(w, central, phone, 'can I bring my own cake?');
-    w.fake.push({ kind: 'decision', decision: decision({ intent: 'faq', certainty: 'unsure', bubbles: ['Maybe'] }) });
+    // The model left the question to a person (its own silence: since item D an
+    // UNSURE model on a main channel sends the unclear line and hands over instead).
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'faq', action: 'silent', certainty: 'unsure', reason: 'UNCLEAR', bubbles: [] }) });
     expect((await tick(w, later(25_000))).silent).toBe(1);
     await customer(w, central, phone, 'buy crypto now');
     w.fake.push({ kind: 'decision', decision: spam() });
     expect((await tick(w, later(25_000))).silent).toBe(1);
     expect((await conversationRow(w, conv.id)).status).toBe('active');
     const turns = await turnsOf(w, conv.id);
-    expect(turns.map((t) => t.reason)).toEqual(['UNSURE', 'INTENT_SILENT']);
+    expect(turns.map((t) => t.reason)).toEqual(['MODEL_SILENT', 'INTENT_SILENT']);
   });
 });
 
@@ -907,6 +909,34 @@ describe('a reply the gate withholds is never dead air on a main channel (owner 
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'other', action: 'silent', reason: 'OUT_OF_SCOPE', bubbles: [] }) });
     expect((await tick(w, later(25_000))).silent).toBe(1);
     expect(await aiLines(w, conv.id)).toHaveLength(0);
+  });
+
+  it('an unsure model: the customer asked and gets the unclear line — the park when it is known, else the GM', async () => {
+    const unsure = () => decision({ intent: 'faq', certainty: 'unsure', reason: 'UNCLEAR', bubbles: ['Maybe, I think so'] });
+    const gm = await teamOf(w, 'gm');
+    const reception = await teamOf(w, 'reception', w.central);
+    for (const [number, team, category] of [
+      [central, reception, 'general'],
+      [wide, gm, 'gm'],
+    ] as const) {
+      await drain();
+      const conv = await customer(w, number, nextPhone(), 'can I bring my own cake?');
+      w.fake.push({ kind: 'decision', decision: unsure() });
+      expect((await tick(w, later(25_000))).handedOver, category).toBe(1);
+      expect((await aiLines(w, conv.id)).map((l) => l.body), category).toEqual([UNCLEAR_LINE]);
+      expect(await conversationRow(w, conv.id), category).toMatchObject({ category, teamId: team.id });
+      expect((await turnsOf(w, conv.id))[0], category).toMatchObject({ state: 'handed_over', reason: 'UNSURE' });
+      expect((await handoverEvent(conv.id))!.payload, category).toMatchObject({ reason: 'UNSURE', closingKey: 'closing_unclear' });
+    }
+  });
+
+  it('a message that needs no reply ("thanks, bye"): the model chooses silence and the customer gets nothing', async () => {
+    await drain();
+    const conv = await customer(w, wide, nextPhone(), 'thanks, bye');
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'thanks_closing', action: 'silent', reason: 'CLOSING', bubbles: [] }) });
+    expect((await tick(w, later(25_000))).silent).toBe(1);
+    expect(await aiLines(w, conv.id)).toHaveLength(0);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'silent', reason: 'MODEL_SILENT' });
   });
 });
 
