@@ -169,7 +169,24 @@ describe('SCRUM-678: the reply that answers something else', () => {
     expect(REVIEW_SYSTEM_TEXT).toContain('wrong_topic');
     expect(REVIEW_SYSTEM_TEXT).toContain('reading');
     expect(REVIEW_SYSTEM_TEXT).toContain('suggestedIntent');
-    expect(REVIEW_VERSION).toBe('review-2026-10-28.2');
+  });
+});
+
+describe('SCRUM-677 live case (29 Oct): a fixed line whose job a writer line already does', () => {
+  it('is redundant and dropped, judged by its function, with the live transcript as the example', () => {
+    expect(REVIEW_VERSION).toBe('review-2026-10-29.1');
+    // The criterion: the job, not the wording — closing, or promising a follow-up.
+    expect(REVIEW_SYSTEM_TEXT).toContain('whose job');
+    expect(REVIEW_SYSTEM_TEXT).toMatch(/closing the conversation, or promising that someone will follow up/);
+    expect(REVIEW_SYSTEM_TEXT).toMatch(/drop the fixed line, even when its words are different or more specific/i);
+    // The live transcript, word for word, as the one example; and the booking-specific line judged the same way.
+    expect(REVIEW_SYSTEM_TEXT).toContain('A colleague at Central Floresta will help you with the booking.');
+    expect(REVIEW_SYSTEM_TEXT).toContain("Thanks! We'll be back to you shortly.");
+    expect(REVIEW_SYSTEM_TEXT).toContain('Our Central Floresta team will message you to confirm the booking');
+    // A fixed line that says what no writer item says is still kept.
+    expect(REVIEW_SYSTEM_TEXT).toMatch(/Keep a fixed line only when it tells the customer something no writer item says/);
+    // The old wording that let the live reviewer keep the duplicate is gone.
+    expect(REVIEW_SYSTEM_TEXT).not.toContain('When a fixed line says who will follow up and why, and no writer item says it, keep the fixed line');
   });
 });
 

@@ -57,7 +57,7 @@ import { AI_INTENTS, type AiIntent } from './intents';
 import { inertJson, type EpisodeAuthor } from './prompt';
 
 /** Bump with any change to the reviewer's words or schema: the turn's record names it. */
-export const REVIEW_VERSION = 'review-2026-10-28.2';
+export const REVIEW_VERSION = 'review-2026-10-29.1';
 /** The hard cap on the review: past it the reply goes as composed. */
 export const REVIEW_TIMEOUT_MS = 6_000;
 export const REVIEW_MAX_OUTPUT_TOKENS = 600;
@@ -227,7 +227,7 @@ export const REVIEW_SYSTEM_TEXT = [
   '- items: keep or drop an item by its index. An item you do not list is kept.',
   '- merges: join an item with the next one, with a single space or a newline, when two short bubbles read better as one.',
   '',
-  'Drop an item only when another kept item already says the same thing: a second goodbye, a second thanks, a second "someone will be in touch". When a fixed line says who will follow up and why, and no writer item says it, keep the fixed line; if the writer\'s own sign-off would then read as a doubled goodbye, drop the sign-off instead. Never drop an item marked locked. Never drop everything. Never merge an attachment, and never merge items that are not next to each other. When the sequence already reads as one message, keep everything and merge nothing.',
+  'Drop an item only when another kept item already does its job: a second goodbye, a second thanks, a second "someone will be in touch". Judge a fixed line by its job, not its words. A fixed line whose job — closing the conversation, or promising that someone will follow up — is already done by a writer item in the same reply is redundant: drop the fixed line, even when its words are different or more specific, because nothing is lost. Example: the writer\'s last item says "A colleague at Central Floresta will help you with the booking." and the fixed line after it says "Thanks! We\'ll be back to you shortly." (or "Our Central Floresta team will message you to confirm the booking"): drop the fixed line. Keep a fixed line only when it tells the customer something no writer item says, such as who will follow up and why; if the writer\'s own sign-off would then read as a doubled goodbye, drop the sign-off instead. Never drop an item marked locked. Never drop everything. Never merge an attachment, and never merge items that are not next to each other. When the sequence already reads as one message, keep everything and merge nothing.',
   '',
   'Then judge one more thing: does the reply answer what the customer asked in their newest messages? topic "answers" when it does, or when you cannot tell. topic "wrong_topic" only when the reply is clearly about something else than what was asked (a group deal for a question about a camp today, opening hours for a question about prices). Then give reading: one plain English sentence, at most 200 characters, of what the customer is asking, in your own words; and suggestedIntent: the one intent of this list that fits what they ask, or null: ' + AI_INTENTS.join(', ') + '. With "wrong_topic" your operations are ignored. With "answers", reading and suggestedIntent are null.',
   '',
