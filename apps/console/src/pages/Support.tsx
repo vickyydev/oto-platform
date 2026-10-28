@@ -67,13 +67,13 @@ function LookupCard() {
   const working = useWorkingAuthority();
   const [q, setQ] = useState('');
   const [kind, setKind] = useState<'' | SupportQueryKind>('');
-  const [state, setState] = useState<{ busy: boolean; answer: SupportLookup | null; error: string | null }>({ busy: false, answer: null, error: null });
+  const [state, setState] = useState<{ busy: boolean; answer: SupportLookup | null; error: unknown }>({ busy: false, answer: null, error: null });
   const search = () => {
     if (!q.trim()) return;
     setState({ busy: true, answer: null, error: null });
     void working.run(() => supportApi.lookup(q.trim(), kind || undefined))
       .then(answer => setState({ busy: false, answer, error: null }))
-      .catch(failure => setState({ busy: false, answer: null, error: messageOf(failure) }));
+      .catch(failure => setState({ busy: false, answer: null, error: failure ?? new Error('The request did not answer.') }));
   };
   return <CardShell title="Find anything" icon={Search} as="section"
     note="A phone, band, receipt number, booking reference, voucher code, account id or action id. Every search is recorded.">
@@ -84,7 +84,7 @@ function LookupCard() {
     </form>
     <div className="mt-4">
       {state.busy && <Loading what="the suite" />}
-      {state.error && <ErrorNote message={state.error} />}
+      {state.error !== null && <ErrorNote error={state.error} />}
       {state.answer && <LookupResults answer={state.answer} />}
     </div>
   </CardShell>;
@@ -95,13 +95,15 @@ function TraceCard() {
   const linked = traceFromSearch(useSearch());
   const [id, setId] = useState(linked?.id ?? '');
   const [kind, setKind] = useState<TraceKind>(linked?.kind ?? 'action');
-  const [state, setState] = useState<{ busy: boolean; trace: SupportTrace | null; error: string | null }>({ busy: false, trace: null, error: null });
+  const [state, setState] = useState<{ busy: boolean; trace: SupportTrace | null; error: unknown }>({ busy: false, trace: null, error: null });
   const open = useCallback((target: { id: string; kind: TraceKind }) => {
     setState({ busy: true, trace: null, error: null });
     void working.run(() => supportApi.trace(target.id, target.kind))
       .then(trace => setState({ busy: false, trace, error: null }))
       .catch(failure => setState({ busy: false, trace: null, error: failure instanceof ApiError && failure.code === 'TRACE_NOT_FOUND'
-        ? 'Nothing in this park group carries that key.' : messageOf(failure) }));
+        ? new ApiError(failure.status, failure.code, 'Nothing in this park group carries that key.', failure.details,
+          failure.requestId, failure.retryAfterSeconds)
+        : failure ?? new Error('The request did not answer.') }));
   }, [working.run]);
   // A Money oversight link lands here with the record named: open it at once.
   const linkedKey = linked ? `${linked.kind}:${linked.id}` : null;
@@ -116,7 +118,7 @@ function TraceCard() {
     </form>
     <div className="mt-4">
       {state.busy && <Loading what="the trace" />}
-      {state.error && <ErrorNote message={state.error} />}
+      {state.error !== null && <ErrorNote error={state.error} />}
       {state.trace && <TraceView trace={state.trace} />}
     </div>
   </CardShell>;
