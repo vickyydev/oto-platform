@@ -1,0 +1,585 @@
+{
+  "ticket": "SCRUM-648",
+  "walk": {
+    "ticket": "SCRUM-648",
+    "attempt": "v5",
+    "purpose": "Post-fix staging acceptance of the approved read-only view-as controls",
+    "expectedSha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+    "startedAt": "2026-10-28T14:18:30.783Z",
+    "checks": [
+      {
+        "name": "live_oto-api-staging",
+        "ok": true
+      },
+      {
+        "name": "live_oto-console-staging",
+        "ok": true
+      },
+      {
+        "name": "live_oto-pos-staging",
+        "ok": true
+      },
+      {
+        "name": "live_oto-launcher-staging",
+        "ok": true
+      },
+      {
+        "name": "sign_in_ADMIN",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "me_ADMIN",
+        "ok": true
+      },
+      {
+        "name": "sign_in_RECEPTION",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "me_RECEPTION",
+        "ok": true
+      },
+      {
+        "name": "sign_in_MANAGER",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "me_MANAGER",
+        "ok": true
+      },
+      {
+        "name": "console_capable_subject_refused",
+        "ok": true,
+        "status": 403,
+        "code": "IMPERSONATION_SUBJECT_PRIVILEGED"
+      },
+      {
+        "name": "refusal_and_draft_retained",
+        "ok": true
+      },
+      {
+        "name": "read_only_window_started",
+        "ok": true
+      },
+      {
+        "name": "window_is_read_only",
+        "ok": true
+      },
+      {
+        "name": "window_at_most_15_minutes",
+        "ok": true
+      },
+      {
+        "name": "pos_banner",
+        "ok": true
+      },
+      {
+        "name": "subject_history_has_active_window",
+        "ok": true
+      },
+      {
+        "name": "pos_live_mark",
+        "ok": true
+      },
+      {
+        "name": "read_only_mutation_refused",
+        "ok": true,
+        "status": 403,
+        "code": "IMPERSONATION_READ_ONLY"
+      },
+      {
+        "name": "end_now",
+        "ok": true
+      },
+      {
+        "name": "ended_window_rejected",
+        "ok": true,
+        "status": 401
+      },
+      {
+        "name": "subject_history_has_ended_window",
+        "ok": true
+      },
+      {
+        "name": "stable_deploy_oto-api-staging",
+        "ok": true
+      },
+      {
+        "name": "stable_deploy_oto-console-staging",
+        "ok": true
+      },
+      {
+        "name": "stable_deploy_oto-pos-staging",
+        "ok": true
+      },
+      {
+        "name": "stable_deploy_oto-launcher-staging",
+        "ok": true
+      }
+    ],
+    "screenshots": [
+      {
+        "file": "SCRUM-648-03-privileged-subject-refused.png",
+        "at": "2026-10-28T14:18:42.001Z",
+        "sha256": "20b8250f251e59ecc968064973c8972eb4cb58be3f44024d33b2fb829d8f2e17"
+      },
+      {
+        "file": "SCRUM-648-06-pos-read-only-banner.png",
+        "at": "2026-10-28T14:18:51.092Z",
+        "sha256": "7d5b8d854ed3bac4909f687ef9fb8d5770d26e27fbc8285e908dc04ca8e89109"
+      },
+      {
+        "file": "SCRUM-648-04-console-active-banner.png",
+        "at": "2026-10-28T14:18:51.135Z",
+        "sha256": "f44a39897e18483f75b42916735d8ecfbfc0c769db6e79ff3c8af46ee52b0f6c"
+      },
+      {
+        "file": "SCRUM-648-05-launcher-active-banner.png",
+        "at": "2026-10-28T14:18:53.693Z",
+        "sha256": "5edd3ace34239077a8dcba4ce0f91c4f09b2915da0c50b620fc3b2f429ad2b10"
+      },
+      {
+        "file": "SCRUM-648-07-subject-session-history.png",
+        "at": "2026-10-28T14:18:56.546Z",
+        "sha256": "95f3998802e8ac8cb60b8ac5e78cfc55becdecc8aaf32775659a4d91291e1cf1"
+      },
+      {
+        "file": "SCRUM-648-08-window-ended.png",
+        "at": "2026-10-28T14:19:01.968Z",
+        "sha256": "ac1229c19ebf693d9b73dd40bad602c5b4217a7c9cec228a18358ae57ca65a88"
+      },
+      {
+        "file": "SCRUM-648-09-subject-ended-history.png",
+        "at": "2026-10-28T14:19:04.745Z",
+        "sha256": "a04ad2fac9ca99b1428329b78a46a20af33ee2074a202c38525120049a4fe6e4"
+      }
+    ],
+    "deploys": [
+      {
+        "service": "oto-api-staging",
+        "id": "dep-dbh045p5efls73b5j030",
+        "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+        "finishedAt": "2026-10-28T14:12:53.983213Z"
+      },
+      {
+        "service": "oto-console-staging",
+        "id": "dep-dbh045p5efls73b5j16g",
+        "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+        "finishedAt": "2026-10-28T14:10:12.754233Z"
+      },
+      {
+        "service": "oto-pos-staging",
+        "id": "dep-dbh045p5efls73b5j11g",
+        "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+        "finishedAt": "2026-10-28T14:10:13.416273Z"
+      },
+      {
+        "service": "oto-launcher-staging",
+        "id": "dep-dbh04615efls73b5j1d0",
+        "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+        "finishedAt": "2026-10-28T14:10:07.517502Z"
+      }
+    ],
+    "cleanup": [
+      {
+        "action": "end_exact_owned_window",
+        "status": 200
+      },
+      {
+        "action": "sign_out_exact_ADMIN",
+        "status": 200,
+        "after": 401
+      },
+      {
+        "action": "sign_out_exact_RECEPTION",
+        "status": 200,
+        "after": 401
+      },
+      {
+        "action": "sign_out_exact_MANAGER",
+        "status": 200,
+        "after": 401
+      }
+    ],
+    "responses": [
+      {
+        "path": "/api/console/support/impersonations",
+        "status": 403
+      }
+    ],
+    "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "subjectId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+    "privilegedId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+    "window": {
+      "id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+      "mode": "read_only",
+      "startedAt": "2026-10-28T14:18:42.829Z",
+      "expiresAt": "2026-10-28T14:33:42.829Z"
+    },
+    "posHeadings": [
+      "Which station are you on?"
+    ],
+    "complete": true,
+    "completedAt": "2026-10-28T14:19:12.867Z"
+  },
+  "audit": {
+    "ticket": "SCRUM-648",
+    "jobId": "job-dbh0908u01pc73b7fv80",
+    "jobStatus": "succeeded",
+    "windowId": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+    "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "subjectId": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+    "startedAt": "2026-10-28T14:19:45.005Z",
+    "completedAt": "2026-10-28T14:20:47.266Z",
+    "readOnly": true,
+    "pass": true,
+    "rows": [
+      {
+        "id": "01a182e0-a510-786b-ac9b-58bc1ba0c730",
+        "created_at": "2026-10-28T14:18:42.827Z",
+        "action": "console.impersonation.start",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": null,
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "expiresAt": "2026-10-28T14:33:42.829Z",
+          "reference": null,
+          "targetApp": "pos",
+          "approvalId": null,
+          "maxMinutes": 15,
+          "subjectAccountId": "01a0bbdc-8c87-74ca-81c1-61489e34f834"
+        }
+      },
+      {
+        "id": "01a182e0-aa15-7a28-8e48-4ad98830b864",
+        "created_at": "2026-10-28T14:18:44.117Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/me",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-ae01-71d6-9d31-7df9fbd2b0aa",
+        "created_at": "2026-10-28T14:18:45.122Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/me/permissions",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b04e-7e7a-97a1-3a743bb82e07",
+        "created_at": "2026-10-28T14:18:45.710Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/branches",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b260-7044-bff3-52316c8766bc",
+        "created_at": "2026-10-28T14:18:46.241Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/payment-methods",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b4cc-7eb8-be4a-42e93044741d",
+        "created_at": "2026-10-28T14:18:46.861Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/branches/:branchId/tax-config",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b4cd-78b2-8bb5-c4b16b889a95",
+        "created_at": "2026-10-28T14:18:46.861Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/branches/:branchId/holidays",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b4d9-7f0a-a20a-2f99977bda29",
+        "created_at": "2026-10-28T14:18:46.873Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/branches/:branchId/ticket-packages",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b57f-75ba-8c5c-2af712b29eeb",
+        "created_at": "2026-10-28T14:18:47.040Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/tiers",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b6dd-76a2-b25b-76538cee3e1a",
+        "created_at": "2026-10-28T14:18:47.390Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/branches/:branchId/pricing-mode",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b931-7ad7-af0d-f6e9ea9c702f",
+        "created_at": "2026-10-28T14:18:47.986Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/branches/:branchId/menu",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-b937-7865-aa68-2bdd9be2d277",
+        "created_at": "2026-10-28T14:18:47.991Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/menu/discounts",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-be87-79c0-b8ed-79cb44192d1f",
+        "created_at": "2026-10-28T14:18:49.351Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/branches/:branchId/stock/sellable",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-c0da-79f6-9670-a3d69847e9e5",
+        "created_at": "2026-10-28T14:18:49.946Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/me/stations",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-ddc8-7b65-b13c-d7efb987e5cd",
+        "created_at": "2026-10-28T14:18:57.352Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/me",
+          "method": "GET",
+          "status": 200
+        }
+      },
+      {
+        "id": "01a182e0-dff5-7fb3-9cc0-5274b938d5e3",
+        "created_at": "2026-10-28T14:18:57.909Z",
+        "action": "impersonation.request",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": "impersonated",
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "mode": "read_only",
+          "route": "/me",
+          "method": "PATCH",
+          "status": 403
+        }
+      },
+      {
+        "id": "01a182e0-e1e8-7866-973d-680c09f8c434",
+        "created_at": "2026-10-28T14:18:58.405Z",
+        "action": "console.impersonation.end",
+        "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "actor_type": null,
+        "on_behalf_of": "01a0bbdc-8c87-74ca-81c1-61489e34f834",
+        "entity_id": "01a182e0-a50e-7c1a-8112-82b42230dab6",
+        "target_app": "pos",
+        "after": {
+          "endedAt": "2026-10-28T14:18:58.406Z",
+          "expired": false,
+          "endReason": "ended"
+        }
+      }
+    ]
+  },
+  "card": {
+    "file": "SCRUM-648-10-audit-and-read-only-proof.png",
+    "capturedAt": "2026-10-28T14:21:36.315Z",
+    "sha256": "a422c89cefbbde7861da98ee9e018bd705e2b1dc7067c270a12e05e88884c1a3",
+    "label": "staging evidence card",
+    "readOnlyJob": "job-dbh0908u01pc73b7fv80",
+    "rows": 15
+  },
+  "deploy": {
+    "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+    "startedAt": "2026-10-28T14:08:47.959Z",
+    "verifiedAt": "2026-10-28T14:13:22.860Z",
+    "rows": [
+      {
+        "name": "oto-api-staging",
+        "id": "dep-dbh045p5efls73b5j030",
+        "status": "live",
+        "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+        "finishedAt": "2026-10-28T14:12:53.983213Z"
+      },
+      {
+        "name": "oto-console-staging",
+        "id": "dep-dbh045p5efls73b5j16g",
+        "status": "live",
+        "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+        "finishedAt": "2026-10-28T14:10:12.754233Z"
+      },
+      {
+        "name": "oto-pos-staging",
+        "id": "dep-dbh045p5efls73b5j11g",
+        "status": "live",
+        "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+        "finishedAt": "2026-10-28T14:10:13.416273Z"
+      },
+      {
+        "name": "oto-launcher-staging",
+        "id": "dep-dbh04615efls73b5j1d0",
+        "status": "live",
+        "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+        "finishedAt": "2026-10-28T14:10:07.517502Z"
+      }
+    ]
+  },
+  "ci": {
+    "sha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+    "runId": 40699675499,
+    "conclusion": "success"
+  },
+  "imageReview": {
+    "reviewedAt": "2026-10-28T14:23:38.849Z",
+    "allEightInspected": true,
+    "files": [
+      "SCRUM-648-03-privileged-subject-refused.png",
+      "SCRUM-648-06-pos-read-only-banner.png",
+      "SCRUM-648-04-console-active-banner.png",
+      "SCRUM-648-05-launcher-active-banner.png",
+      "SCRUM-648-07-subject-session-history.png",
+      "SCRUM-648-08-window-ended.png",
+      "SCRUM-648-09-subject-ended-history.png",
+      "SCRUM-648-10-audit-and-read-only-proof.png"
+    ],
+    "notes": "Settled native screens; seeded identities only; no credentials or benefit QR. POS shows its ordinary station picker with the banner; no station was taken. Card10 is explicitly a staging database evidence card."
+  },
+  "earlierAttempts": {
+    "v1": "Refusal disappeared; no window opened.",
+    "v2": "Same actual refusal UI defect; all exact sign-ins revoked.",
+    "v3": "Pre-fix diagnostic of remaining controls; not acceptance.",
+    "v4": "Native controls passed; POS and end screenshots caught loading transitions. Retained externally and replaced by settled v5 proof."
+  }
+}
