@@ -22,6 +22,7 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
+import { nullableResponseEnumTransform } from '../lib/nullable-response-enum';
 import { audit } from '../services/audit';
 import {
   assertCategoryCodeFree,
@@ -224,7 +225,8 @@ export async function menuRoutes(app: App): Promise<void> {
   app.get(
     '/branches/:branchId/menu',
     {
-      config: { permission: 'catalog:menu:read', target: { branchId: 'params.branchId' } },
+      config: { permission: 'catalog:menu:read', target: { branchId: 'params.branchId' },
+        swaggerTransform: nullableResponseEnumTransform('menu') },
       schema: {
         description: 'The branch menu: categories, items and the modifier library',
         params: BranchParams,
