@@ -4,7 +4,7 @@ import { INTENT_TABLE, type GateVerdict, type TurnContext } from '@oto/assistant
 import { schema as s } from '@oto/db';
 import { DEFAULT_SILENT_INTENTS, INBOX_TEMPLATE_BODIES, defaultSilencePolicyFor, syncInboxSetup } from '@oto/db/seed';
 import { isUnanswered, newId, satangFromBaht as b } from '@oto/shared';
-import { CLOSING_KEY_OF, PLAYBOOK_ROUTE, closingKeysOf, planHonoured, silencedBy, silentIntentsOf } from '../src/services/inbox/ai-destination';
+import { CLOSING_KEY_OF, PLAYBOOK_ROUTE, closingKeysOf, silencedBy, silentIntentsOf } from '../src/services/inbox/ai-destination';
 import { knowledgeWithTierPrices, loadTurnKnowledge, packageFact, priceFactText, type PricedPackageRow } from '../src/services/inbox/ai-knowledge';
 import { callingCodeOf } from '../src/services/inbox/calling-code';
 import { teardownAll } from './helpers';
@@ -453,21 +453,32 @@ describe('the nanny (the playbook’s "Ages, nanny and drop-off")', () => {
     expect((await handoverEvent(conv.id))!.payload).toMatchObject({ closingKey: 'closing_branch' });
   });
 
-  it('the plan’s own line goes only where the plan sends the thread: a thread a person routed elsewhere gets the destination’s', () => {
+  it('the live case (staging, 29 Oct): a nanny answer on a thread with no park closes with the booking line, not the branch’s', async () => {
+    await drain();
+    const conv = await customer(w, wide, nextPhone(), 'Hi, do you have a nanny service? I would like to book one');
+    // As staging had it: no park named, the thread with Central's reception by the router's fallback.
+    const receptionCentral = await teamOf(w, 'reception', w.central);
+    expect(await conversationRow(w, conv.id)).toMatchObject({ branchId: null, teamId: receptionCentral.id });
+    w.fake.push({ kind: 'decision', decision: nanny() });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([facts, BOOKING_LINE]);
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ closingKey: 'closing_booking', branchId: null });
+  });
+
+  it('the plan’s own line is keyed off the PLAN: whatever the thread’s park or team, a nanny booking ends at Central', () => {
     const rule = INTENT_TABLE.nanny_booking;
     expect(rule.action === 'answer' && rule.thenHandover).toMatchObject({ templateKey: 'closing_booking', route: 'general', branch: 'central' });
     // The fallback (no answer given) keeps the branch's own line.
     expect(rule.action === 'answer' && rule.fallback?.plan).toMatchObject({ templateKey: 'closing_branch', branch: 'central' });
     const plan = { templateKey: 'closing_booking', route: 'general', brochure: false, branch: 'central' } as const;
-    const h = { plan, owner: 'nanny_booking', silenced: false, branchLine: false, unclear: false } as const;
-    const central = new Map([[w.central, 'central' as const], [w.chalong, 'chalong' as const]]);
-    expect(planHonoured(plan, { category: 'general', endBranchId: w.central }, central)).toBe(true);
-    expect(planHonoured(plan, { category: 'general', endBranchId: w.chalong }, central)).toBe(false);
-    expect(planHonoured(plan, { category: 'birthdays', endBranchId: w.central }, central)).toBe(false);
-    expect(closingKeysOf(h, 'general', true)).toEqual(['closing_booking', 'closing_branch']);
-    expect(closingKeysOf(h, 'general', false)).toEqual(['closing_branch']);
-    // A destination's own line is never doubled by the rung.
-    expect(closingKeysOf({ ...h, plan: { templateKey: 'closing_branch', route: 'general', brochure: false } }, 'general', true)).toEqual(['closing_branch']);
+    const h = { plan, branchLine: false, unclear: false } as const;
+    for (const destination of ['general', 'birthdays', 'gm', 'marketing'] as const) {
+      expect(closingKeysOf(h, destination)[0], destination).toBe('closing_booking');
+    }
+    expect(closingKeysOf(h, 'general')).toEqual(['closing_booking', 'closing_branch']);
+    // A destination's own line is never doubled, and a plan without a line of its own is untouched.
+    expect(closingKeysOf({ ...h, plan: { templateKey: 'closing_branch', route: 'general', brochure: false } }, 'general')).toEqual(['closing_branch']);
+    expect(closingKeysOf({ ...h, plan: { templateKey: 'closing_gm', route: 'gm', brochure: false } }, 'gm')).toEqual(['closing_gm']);
   });
 
   it('a nanny question the model hands over without answering keeps the branch line: no booking was discussed', async () => {

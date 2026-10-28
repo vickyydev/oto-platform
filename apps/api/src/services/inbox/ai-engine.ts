@@ -64,7 +64,6 @@ import {
   closingKeysOf,
   destinationOf,
   isUnclearHandover,
-  planHonoured,
   planOwner,
   silencedBy,
   silentIntentsOf,
@@ -1177,12 +1176,6 @@ async function planRouting(
   return { branchSet, move, category: move ? move.category : conv.category };
 }
 
-/** The thread ends where the hand-over's plan sends it, so the plan's own closing line may go (SCRUM-677). */
-function ownLineGoes(h: Handover, routing: RoutingPlan, conv: ConversationRow, knowledge: TurnKnowledge | undefined): boolean {
-  if (!knowledge) return false;
-  const endBranchId = routing.move ? routing.move.branchId : (routing.branchSet ?? conv.branchId);
-  return planHonoured(h.plan, { category: routing.category, endBranchId }, knowledge.keyOfBranch);
-}
 
 async function executeRouting(tx: Tx, conv: ConversationRow, plan: RoutingPlan, at: Date): Promise<Routing> {
   const out: Routing = { branchSet: plan.branchSet, reroutedTeamId: null };
@@ -1268,7 +1261,7 @@ async function composeReply(exec: Exec, conv: ConversationRow, account: AccountR
       exec,
       conv,
       account,
-      closingKeysOf(handover, routing.category, ownLineGoes(handover, routing, conv, r.knowledge)),
+      closingKeysOf(handover, routing.category),
       handover.plan,
       v.language,
       v.action === 'handover' ? v.holdingBubbles : [],
