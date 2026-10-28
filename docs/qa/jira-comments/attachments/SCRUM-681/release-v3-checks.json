@@ -1,0 +1,55 @@
+{
+  "ticket": "SCRUM-681",
+  "before": {
+    "apps/console/src/pages/Booths.tsx": "3f4ca3cd1536c93e2942f1fb528d992ab69b794b355c14d97990fd148ce06213",
+    "apps/console/src/pages/Devices.tsx": "399b11e456f90a309867b1ca2548c4fc502efe56979215bf1135b0b1734f21b6",
+    "apps/console/src/pages/Vouchers.tsx": "51e2d326beada15b399c5ba4587a945192b6884e23357b408f822d698cb4616c",
+    "apps/console/src/pages/Activity.tsx": "b64630a3b96b16c9bad785625deadb7e5f1c6e28045b2d9151b008e6c8ae62b5",
+    "apps/console/src/pages/SuiteControls.tsx": "a1c22f802df3d3bffa6da2e783ac64c256a6f4c1701ac9ed1d19fbe869fb1db3",
+    "apps/console/src/api/client.ts": "d839d8c3c98f4fcd4ab10f023504db769869bf2f2e8adc448b7c0e651ee43d50",
+    "apps/console/e2e/page-state-review.spec.ts": "438be336f36c26f87526ffa18677930a3620efe5020a50f126202e7c1bda384f",
+    "apps/console/e2e/page-state-candidates.spec.ts": "e39d88db956dbd21e75f31b1b7b303cc2d3d52ccb3c199c0088dc51623b65b07",
+    "apps/console/test/missing-route.test.ts": "6c686a93d2cdf19aa3a4e049d427d1234c18aa925fa9910bce5666336ac126d7"
+  },
+  "after": {
+    "apps/console/src/pages/Booths.tsx": "3f4ca3cd1536c93e2942f1fb528d992ab69b794b355c14d97990fd148ce06213",
+    "apps/console/src/pages/Devices.tsx": "399b11e456f90a309867b1ca2548c4fc502efe56979215bf1135b0b1734f21b6",
+    "apps/console/src/pages/Vouchers.tsx": "51e2d326beada15b399c5ba4587a945192b6884e23357b408f822d698cb4616c",
+    "apps/console/src/pages/Activity.tsx": "b64630a3b96b16c9bad785625deadb7e5f1c6e28045b2d9151b008e6c8ae62b5",
+    "apps/console/src/pages/SuiteControls.tsx": "a1c22f802df3d3bffa6da2e783ac64c256a6f4c1701ac9ed1d19fbe869fb1db3",
+    "apps/console/src/api/client.ts": "d839d8c3c98f4fcd4ab10f023504db769869bf2f2e8adc448b7c0e651ee43d50",
+    "apps/console/e2e/page-state-review.spec.ts": "438be336f36c26f87526ffa18677930a3620efe5020a50f126202e7c1bda384f",
+    "apps/console/e2e/page-state-candidates.spec.ts": "e39d88db956dbd21e75f31b1b7b303cc2d3d52ccb3c199c0088dc51623b65b07",
+    "apps/console/test/missing-route.test.ts": "6c686a93d2cdf19aa3a4e049d427d1234c18aa925fa9910bce5666336ac126d7"
+  },
+  "inputsUnchanged": true,
+  "results": [
+    {
+      "name": "units",
+      "command": "pnpm --filter @oto/console test --fileParallelism=false --maxWorkers=1",
+      "startedAt": "2026-10-28T18:55:18.710Z",
+      "finishedAt": "2026-10-28T18:56:04.747Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin681-evidence/release-v3-units.log",
+      "logSha256": "0898d435ec55845dd0f3e9141bd6136168f3dcefb3fc790ae9ca821cd2649acb"
+    },
+    {
+      "name": "typecheck",
+      "command": "pnpm --filter @oto/console typecheck",
+      "startedAt": "2026-10-28T18:56:04.750Z",
+      "finishedAt": "2026-10-28T18:56:25.203Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin681-evidence/release-v3-typecheck.log",
+      "logSha256": "c2e3fd9851e1a0c025812da8cbe74ea192decd6c9d55cdc2e7c4383a8cfb4e6c"
+    },
+    {
+      "name": "lint",
+      "command": "pnpm exec eslint apps/console/src/pages/Booths.tsx apps/console/src/pages/Devices.tsx apps/console/src/pages/Vouchers.tsx apps/console/src/pages/Activity.tsx apps/console/src/pages/SuiteControls.tsx apps/console/src/api/client.ts apps/console/e2e/page-state-review.spec.ts apps/console/e2e/page-state-candidates.spec.ts apps/console/test/missing-route.test.ts",
+      "startedAt": "2026-10-28T18:56:25.203Z",
+      "finishedAt": "2026-10-28T18:56:50.480Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin681-evidence/release-v3-lint.log",
+      "logSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  ]
+}
