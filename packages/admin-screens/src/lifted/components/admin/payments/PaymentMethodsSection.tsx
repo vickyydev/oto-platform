@@ -57,6 +57,9 @@ export function PaymentMethodsSectionWithPorts({ ports }: { ports: PaymentMethod
    */
   const [draft, setDraft] = useState<{ id: string; label: string } | null>(null);
   const [newKind, setNewKind] = useState<PaymentMethodKind>('other');
+  const [search, setSearch] = useState('');
+  const [availability, setAvailability] = useState('all');
+  const [kind, setKind] = useState('all');
   const canManage = ports.canManage !== false;
   const manageRef = useRef(canManage);
   manageRef.current = canManage;
@@ -86,6 +89,11 @@ export function PaymentMethodsSectionWithPorts({ ports }: { ports: PaymentMethod
   };
 
   const sorted = [...paymentMethods].sort((a, b) => a.sortOrder - b.sortOrder);
+  // Hidden neighbours still determine native order, code allocation and archive history.
+  const visible = sorted.map((method, index) => ({ method, index })).filter(({ method }) =>
+    (!search.trim() || `${method.label} ${method.id}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+    && (availability === 'all' || method.enabled === (availability === 'enabled'))
+    && (kind === 'all' || method.kind === kind));
 
   const add = async () => {
     const label = newLabel.trim();
@@ -162,6 +170,19 @@ export function PaymentMethodsSectionWithPorts({ ports }: { ports: PaymentMethod
       </div>
       {ports.authorityMessage && <p className="mt-3 text-sm text-foreground/60">{ports.authorityMessage}</p>}
       {writeError && <p role="alert" className="mt-3 text-sm text-destructive">{writeError}</p>}
+      <div className="mt-4 grid min-w-0 gap-2 sm:grid-cols-3">
+        <TextInput aria-label="Search payment methods" placeholder="Search payment methods" value={search} onChange={event => setSearch(event.target.value)} />
+        <select aria-label="Payment method availability" value={availability} onChange={event => setAvailability(event.target.value)}
+          className="h-10 min-w-0 rounded-xl border border-foreground/10 bg-background px-3 text-sm">
+          <option value="all">All availability</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option>
+        </select>
+        <select aria-label="Filter payment method kind" value={kind} onChange={event => setKind(event.target.value)}
+          className="h-10 min-w-0 rounded-xl border border-foreground/10 bg-background px-3 text-sm">
+          <option value="all">All kinds</option>{KIND_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
+      </div>
+      <p className="mt-2 text-sm text-foreground/60">{visible.length} of {sorted.length} payment methods match the loaded-list filters. Order and history are unchanged.</p>
+      {visible.length === 0 && sorted.length > 0 && <p className="mt-2 text-sm text-foreground/60">No payment methods match these filters.</p>}
 
       {/* Add row */}
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -208,7 +229,7 @@ export function PaymentMethodsSectionWithPorts({ ports }: { ports: PaymentMethod
             No payment methods yet. Add one above.
           </p>
         )}
-        {sorted.map((m, i) => {
+        {visible.map(({ method: m, index: i }) => {
           const Icon = paymentMethodIcon(m.kind);
           return (
             <div
