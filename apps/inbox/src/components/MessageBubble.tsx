@@ -79,7 +79,7 @@ export function AttachmentChip({ attachment: a, muted }: { attachment: Attachmen
  * test night, W5: staff saw nothing and could not judge it). Staff-only, never
  * sent: a muted, dashed bubble under the AI chip, labelled so.
  */
-export function ShadowBubble({ text, at, now }: { text: string; at: string; now: Date }) {
+export function ShadowBubble({ text, at, now, label = SHADOW_LABEL }: { text: string; at: string; now: Date; label?: string }) {
   return (
     <div className="flex justify-end" data-shadow="true">
       <div className="flex min-w-0 max-w-[80%] flex-col items-end gap-1">
@@ -88,7 +88,7 @@ export function ShadowBubble({ text, at, now }: { text: string; at: string; now:
             <Bot className="h-2.5 w-2.5" /> AI Assistant
           </span>
           <span className="inline-flex items-center gap-1 normal-case tracking-normal text-slate-400">
-            <EyeOff className="h-3 w-3" /> {SHADOW_LABEL}
+            <EyeOff className="h-3 w-3" /> {label}
           </span>
         </div>
         <div className="max-w-full whitespace-pre-line break-words rounded-2xl rounded-tr-sm border border-dashed border-indigo-200 dark:border-indigo-500/40 bg-indigo-50/40 dark:bg-indigo-500/10 px-3.5 py-2 text-[13.5px] leading-relaxed text-indigo-900/70 dark:text-indigo-200/70">
