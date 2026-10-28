@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Eye, EyeOff, Loader2, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import {
   activityApi,
@@ -528,12 +528,14 @@ function EntryDrawer({
 }) {
   const [tab, setTab] = useState<Tab>('changes');
   const [related, setRelated] = useState<AuditEntry[] | null>(null);
+  const [relatedMore, setRelatedMore] = useState(false);
   const [relatedError, setRelatedError] = useState<string | null>(null);
   const [relatedTick, setRelatedTick] = useState(0);
 
   useEffect(() => {
     setTab('changes');
     setRelated(null);
+    setRelatedMore(false);
     setRelatedError(null);
   }, [entry]);
 
@@ -549,6 +551,7 @@ function EntryDrawer({
       .list({ requestId: entry.requestId, limit: 200 })
       .then((page) => {
         if (!active) return;
+        setRelatedMore(Boolean(page.nextCursor));
         setRelated(
           page.entries.filter((e) => e.id !== entry.id && e.requestId === entry.requestId),
         );
@@ -663,8 +666,11 @@ function EntryDrawer({
         ) : related === null ? (
           <Loading what="related rows" />
         ) : related.length === 0 ? (
-          <EmptyState title="This was the only row for that request" />
+          <EmptyState title={relatedMore ? 'No related rows found on this page' : 'This was the only row for that request'}
+            detail={relatedMore ? 'Only the latest 200 audit rows were checked. Older related rows may exist.' : undefined} />
         ) : (
+          <>
+          {relatedMore && <p className="text-sm text-muted-foreground">Only the latest 200 audit rows were checked. Older related rows may exist.</p>}
           <ul className="flex flex-col divide-y">
             {related.map((row) => (
               <li key={row.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 first:pt-0 last:pb-0">
@@ -676,6 +682,7 @@ function EntryDrawer({
               </li>
             ))}
           </ul>
+          </>
         ))}
     </Drawer>
   );
@@ -750,6 +757,14 @@ export function ExportControl({ filters }: { filters: ActivityExportFilters }) {
   const [next, setNext] = useState<{ cursor: string; key: string } | null>(null);
   const key = JSON.stringify(filters);
   const active = useMemo(() => ({ key }), [key]);
+  const latest = useRef(active);
+  latest.current = active;
+  const mounted = useRef(true);
+  const pending = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   useEffect(() => {
     setNote(null);
@@ -757,13 +772,15 @@ export function ExportControl({ filters }: { filters: ActivityExportFilters }) {
   }, [key]);
 
   const run = async (cursor?: string) => {
-    if (busy) return;
+    if (pending.current) return;
+    pending.current = true;
     setBusy(true);
     setNote(null);
     const asked = active;
+    const current = () => mounted.current && latest.current === asked;
     try {
       const file = await activityApi.exportFile(filters, format, { limit: EXPORT_ROWS, cursor });
-      if (asked.key !== key) return;
+      if (!current()) return;
       const url = URL.createObjectURL(file.blob);
       const link = document.createElement('a');
       link.href = url;
@@ -778,9 +795,10 @@ export function ExportControl({ filters }: { filters: ActivityExportFilters }) {
             : 'That is everything these filters match.'),
       );
     } catch (err) {
-      setNote(err instanceof Error ? err.message : 'The export failed');
+      if (current()) setNote(err instanceof Error ? err.message : 'The export failed');
     } finally {
-      setBusy(false);
+      pending.current = false;
+      if (mounted.current) setBusy(false);
     }
   };
 
