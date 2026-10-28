@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-683",
+  "before": {
+    "status": "Testing",
+    "summary": "Make existing payment settings and long Console lists easier to find"
+  },
+  "after": {
+    "status": "Deployed",
+    "summary": "Make existing payment settings and long Console lists easier to find"
+  },
+  "evidenceCommit": "a9868f39669c4988f7a7b5e64dceab7017f810fc",
+  "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "screenshots": [
+    "SCRUM-683-01-catalogue.png",
+    "SCRUM-683-02-tenders.png",
+    "SCRUM-683-03-devices.png",
+    "SCRUM-683-04-config.png",
+    "SCRUM-683-05-money-cash-attention.png",
+    "SCRUM-683-06-money-settlement-attention.png"
+  ],
+  "commentId": "12683",
+  "at": "2026-10-28T22:16:42.328Z"
+}
