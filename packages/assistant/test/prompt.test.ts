@@ -156,6 +156,24 @@ describe('the prohibitions are all in the compiled system prompt (PLAN §B.4)', 
     expect(text).not.toContain('นำอาหารเข้ามาได้ไหม');
   });
 
+  it('an English row is the source and is never held back for its translations (SCRUM-670)', () => {
+    // A row loaded in English with needs_translation set (its Thai and Russian
+    // rows still to come) is what the model must speak from; only a Thai or
+    // Russian row still waiting for its translator is held back.
+    const deal = {
+      key: 'pb.deal-dinner-promo',
+      topic: 'prices_note' as const,
+      language: 'en' as const,
+      branch: null,
+      question: 'Is there an evening deal at Chalong?',
+      body: 'The Dinner Promo at Robinson Chalong applies after 6pm, plus free entry for 3 people.',
+      needsTranslation: true,
+    };
+    const knowledge = buildKnowledge({ ...FIXTURE_KNOWLEDGE_INPUT, kb: [...FIXTURE_KB, deal] });
+    expect(knowledge.text).toContain('[pb.deal-dinner-promo] (prices_note, en)');
+    expect(knowledge.grounding.get('pb.deal-dinner-promo')?.text).toContain('free entry for 3 people');
+    expect(knowledge.text).not.toContain('นำอาหารเข้ามาได้ไหม');
+  });
 });
 
 describe('the KB size refusal (PLAN §C.4)', () => {

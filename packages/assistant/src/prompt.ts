@@ -454,7 +454,12 @@ export function buildKnowledge(input: KnowledgeInput): KnowledgeBlock {
   }
 
   lines.push('', '## Approved answers');
-  const usable = input.kb.filter((e) => !e.needsTranslation).sort(compareKb);
+  // `needs_translation` marks a Thai or Russian row still waiting for its
+  // translator (`inbox.kb_entry`); it never holds back an English row, which
+  // is the source the others are translated from (SCRUM-670: the playbook's
+  // entries were loaded in English flagged for their translations, and the
+  // model could cite none of them).
+  const usable = input.kb.filter((e) => !e.needsTranslation || e.language === 'en').sort(compareKb);
   for (const e of usable) {
     const key = kbCitation(e);
     const text = `Q: ${e.question}\nA: ${e.body}`;
