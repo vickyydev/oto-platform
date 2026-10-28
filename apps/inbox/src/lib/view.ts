@@ -591,6 +591,31 @@ function shadowTurnId(events: readonly InboxEvent[], messageId: string): string 
 }
 
 /**
+ * Where an AI hand-over's pills sit (SCRUM-677). The api writes the hand-over
+ * — and the routing it causes — at the moment the turn is decided, and the
+ * turn's bubbles a millisecond apart after it, so by time the "AI handed
+ * over" line landed between the bubbles. The event times are the audit's and
+ * stay as written: only the PLACE moves. Every pill of the hand-over's moment
+ * (same instant, not a person's) is placed after the last loaded bubble the
+ * hand-over names (`messageIds`). Event id → the time to sort it by.
+ */
+function handoverPlaces(messages: readonly Message[], events: readonly InboxEvent[]): Map<string, string> {
+  const at = new Map(messages.map((m) => [m.id, m.createdAt]));
+  const out = new Map<string, string>();
+  for (const h of events) {
+    if (h.kind !== 'ai_handover' || !Array.isArray(h.payload.messageIds)) continue;
+    let last: string | null = null;
+    for (const id of h.payload.messageIds) {
+      const t = typeof id === 'string' ? at.get(id) : undefined;
+      if (t !== undefined && (last === null || t > last)) last = t;
+    }
+    if (last === null || last <= h.createdAt) continue;
+    for (const e of events) if (e.createdAt === h.createdAt && e.actorKind !== 'account') out.set(e.id, last);
+  }
+  return out;
+}
+
+/**
  * Messages and system pills in one column, oldest first (the prototype keeps
  * them in one array, :2017). Only the newest page of messages is loaded at
  * first, so a pill older than the oldest loaded message waits until that
@@ -613,10 +638,12 @@ export function timeline(
     const text = eventText(e, ctx);
     if (text !== null) items.push({ kind: 'pill', at: e.createdAt, id: e.id, text, event: e.kind });
   }
+  const placed = handoverPlaces(messages, events);
+  const keyOf = (item: TimelineItem) => (item.kind === 'pill' ? (placed.get(item.id) ?? item.at) : item.at);
   // Stable on ties: a pill written in the same instant as its message follows it.
   const sorted = items
-    .map((item, i) => ({ item, i }))
-    .sort((a, b) => (a.item.at < b.item.at ? -1 : a.item.at > b.item.at ? 1 : a.i - b.i))
+    .map((item, i) => ({ item, i, key: keyOf(item) }))
+    .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : a.i - b.i))
     .map(({ item }) => item);
   return collapsePills(sorted, new Map(events.map((e) => [e.id, e])), ctx);
 }
