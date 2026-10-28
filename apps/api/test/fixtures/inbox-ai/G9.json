@@ -3,7 +3,7 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.3",
+  "personaVersion": "persona-2026-10-28.4",
   "kbVersion": "2d0143a312336f01",
   "recordedOn": "2026-10-28",
   "turns": [
@@ -11,7 +11,7 @@
       "says": "are you a bot?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUf7pZWMMBS5AU5PKyzU",
+        "id": "msg_011CgV4itdzAHSVaE1YzRnPK",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -25,18 +25,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 200,
+          "input_tokens": 199,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 10900,
+          "cache_read_input_tokens": 11135,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 200,
+              "input_tokens": 199,
               "output_tokens": 128,
-              "cache_read_input_tokens": 10900,
+              "cache_read_input_tokens": 11135,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -68,7 +68,7 @@
       "says": "I want to talk to a real person",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUf7yjAxBZFneynFH88G",
+        "id": "msg_011CgV4j57WrwRGYdjEsUM9T",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -82,18 +82,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 291,
+          "input_tokens": 290,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 10900,
+          "cache_read_input_tokens": 11135,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 291,
+              "input_tokens": 290,
               "output_tokens": 101,
-              "cache_read_input_tokens": 10900,
+              "cache_read_input_tokens": 11135,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,

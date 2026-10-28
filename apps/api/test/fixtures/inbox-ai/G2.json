@@ -3,7 +3,7 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.3",
+  "personaVersion": "persona-2026-10-28.4",
   "kbVersion": "2d0143a312336f01",
   "recordedOn": "2026-10-28",
   "turns": [
@@ -11,13 +11,13 @@
       "says": "สวัสดีค่ะ OTO เปิดกี่โมงถึงกี่โมงคะ",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUf5BBQZmKM1xJXgurVm",
+        "id": "msg_011CgV4fVtBCTPde2DNWMYpx",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"th\",\"intent\":\"hours\",\"intents\":[\"hours\",\"greeting\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\",\"fact.hours.chalong\",\"hours-holidays\"],\"bubbles\":[\"สวัสดีค่ะ 😊 ทั้งสองสาขา Central Floresta และ Robinson Chalong เปิดทุกวัน 10:00–20:00 น. ค่ะ\",\"รอบเข้าสุดท้ายหนึ่งชั่วโมงก่อนปิดนะคะ\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"th\",\"intent\":\"hours\",\"intents\":[\"hours\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\",\"fact.hours.chalong\"],\"bubbles\":[\"สวัสดีค่ะ 😊 ทั้งสองสาขา Central Floresta และ Robinson Chalong เปิดทุกวัน 10:00–20:00 น. ค่ะ\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -25,18 +25,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 230,
+          "input_tokens": 229,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 10900,
+          "cache_read_input_tokens": 11135,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 230,
-              "output_tokens": 235,
-              "cache_read_input_tokens": 10900,
+              "input_tokens": 229,
+              "output_tokens": 184,
+              "cache_read_input_tokens": 11135,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 235,
+          "output_tokens": 184,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
@@ -68,14 +68,14 @@
       "says": "ราคาเท่าไหร่คะ",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUf5Psf2sTyjWddPZMLj",
+        "id": "msg_011CgV4fgmmiEvaf8EX35s66",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "thinking",
             "thinking": "",
-            "signature": "CAQSrAgKEAgTGAI4AUIIdGhpbmtpbmcSDJIbkUVJOD1sPUO+ABoMKwjowu4+yug1uQcOIjCNWSO8bNApQvfrCacaQzBD41KwcxOlvBAaAymS3j8Ij2IMrkSpKvFgEbOA57EmjdMqyQe+99AIHJ6TnNTNB12nxIHjKYcgJqyHgFuyJhViWfagtiwfa36Nmdidp+2ej5J3a9fLPyibVgY8+jQq2+8f3cVrmTmxxFb8AeUiyOGFarFAynT6DW8W7EuNtRYQI9L6IMMniYEQT2qSwzKZwQxbGDJlbKeAgfZFH03SUk25hzFjk7LjX0M0o95+sdiAs2cXRvfTXDNBg1Ly1GKVtLT0jQjcaZsOWt9VgI1TpGCDtw7t6Nj9y6sea5Ru9QDIRhPtrtVrcnJ35fk3YTe82+gvHzOXyvHdIPP9SordSE7qm1aUWS1PDfPlHou607QnBGI9yLePC8jrayw4Q2qFF5RASSL1Y2N+mo5iWq+nKO8gTg2hLypseE0qHd7Q3WK59V1t5y6abohlYWhPtUyKTzJawfoBvxUyM2GNwf30hLyxoRhoAJXD+yG8Bb8KoIQ98nCgeO8suI0D0MA9L/8ZhR6f2J0ziib0AjQ8E2Gfzd5w1CGxPMo7aUj9110We19gbu+dDGuN467fw8/0pi559HkFUoVkRWwNdMmWm7rjR+ikGE7he9Th651VOXgxiWMDkoHV38qnR+RCPxQQhbkE2keeExdjR+SlFUZsrsUVAIQZjrSZP3JmlANuGftK5HUorPzbPlZqcApksEmGqQk44PLbU40PkB3ajBgETMGeA1QIRfrHxRD/k6SPeyVGSmX3oF6Qj+qZQ/GpnhH2i9WHPYqMSYB8MBe5LyUzM3waUPHC3hmEG0b5rl6V5PvVtr/0I02fUiQ1JD2OqK7eUDUPN6eqnZE2fbDQ45RLKCP9FUuFNQpKg2r89HUXlMrxurOfmmtFqJ7HDok+LPdnt7q/xzTcKveQtiSdiqZwr/LJZw2pcP0v+XgIv9NJcTNvci540kRXP4xtailvGxAHaw86baVTEJfyNEhM6s9Jgyyk7zA4Qn1j6FqA1UIeBTeY93+wkS1CiQYywYorM+mGzb1FCSb5EWWV9PKwIfX8zM6EBZYof7Kikp00a+IlfJ+x5SY0qW71qdWL1I0kJ+JElZIhHT4LVyrq2RVw4BNhSj0oJC3X6LwcJLQx3C5KUdhxoIb3ZLuw19ujyJ74woubs+NrezHjsFFIc++ObUB2kyraCu0OF4l1Zf6xYB/9sg5MXp0PbyA80AbKBD3a+5i7xsD6+JizD+G+3oJIWwQ8ETAMdu0g+zZLOMWOfo6irnkHL5bYoSJUFgx9D7ZmWjrQhKeHNVF4rLevi0njumK0m8hcYY9kSTCoBC4/XLw6MxxHPqvrtx5pQxjFw9NaEWD1CaoYAQ=="
+            "signature": "CAQSowYKEAgTGAI4AUIIdGhpbmtpbmcSDP1cJh4f5ICN4bTJJxoMHfePkJzLFXeNo/EcIjBXRQGaJ1D9kTMqwMWAfCXS+AchAV8wpJcghr82Co+H9D4/p2tJL+m/6iTvcX0MPn4qwAU5uAnhfBUKi0vXZctYK3MmrjF7faDQJU0byABmo4YHog1Vsn7U8V7TDc/LaInOE3BnDdzVAbiP4cdZnn3A7LNZE0isgYfHgHUgajdf9k58YzrXJ0vcynVz/FELmd1eKrm2Y1HxuGL4TWom3AAjlhpbLrJ0W3YaW2XECx21tAhdl1oRuEInH+Jjv7UL6/xytqKLW8SpppDpwYngTBgqXqt7uljWlfpKdSL/MeFfF/6irjJaqcVnH4p/bRgHJrn3JFFnK1C48/vP56M8Ecjbm1yjEDQ1ZwxPG/9YaxCJxVQaDBC4fsnmdMOHiVoC2XjGfnwXTXxvtOGWZN/C0/vY6DPR6pK+gE8Yi2TYUFnfi0lTTwLFjNgRdCE6zR0r2me8QrknyShBPEaE4Pn731/w3IriE7WFhy9/v/kQRyXMeKOuMAVuWCQ6naJVvUKp1jJ7HbvlGjjjxZyir05IMRkp8cMtL0fqMpP0B5ltPJq9rs7HVgU0GGMR81u48VHPbn9qaMohpMk6weDHr7GxM67FvtHw68RXnVJWCDKGXQGvLrH9RyuUfVWpQbNVV73Zb8zFafamdKsU4I+SHOc84/1LkeEkTv9PUcBcgT4xAvFuxpTh7fV2QARFpTdFeor28vjBWPP+djPFObgvmDy0VAyqdYFW5jue/xkls7ZlYp7Jgs4YOyyT9tYftIvvo9Z3N2dEUdr5OOtp/y/2DlfRXf2hlYzdPVXyHCAj/pRVvKSg3yToFfzBCv+516LrCelcLJgGpA+rYI/2zU/HbM+v79EOhCd1ojq23kD11ih45bQ3Gh2aBqNcQkl909AFU1QuEETrg1S/R5PQQwpkqENUu7dlFPcr9hQgBsx8ZvIbAEHT2TMR8GKgUgIRcl331tGL0+oAwx8pFoyIikBYyAbHjmtxVA7DgRC6BOxQtcBKxPpmg3hBvxgB"
           },
           {
             "type": "text",
@@ -87,18 +87,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 437,
+          "input_tokens": 369,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 10900,
+          "cache_read_input_tokens": 11135,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 437,
-              "output_tokens": 327,
-              "cache_read_input_tokens": 10900,
+              "input_tokens": 369,
+              "output_tokens": 236,
+              "cache_read_input_tokens": 11135,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -108,9 +108,9 @@
               "model": null
             }
           ],
-          "output_tokens": 327,
+          "output_tokens": 236,
           "output_tokens_details": {
-            "thinking_tokens": 163
+            "thinking_tokens": 72
           },
           "service_tier": "standard",
           "inference_geo": "global",
