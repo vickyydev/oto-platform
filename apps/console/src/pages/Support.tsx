@@ -150,9 +150,22 @@ function ImpersonationPanel() {
   const gate = useMemo(() => startGate(draft, { dualControl: card?.dualControl ?? true, approvals: card?.approvals ?? [] }), [draft, card]);
   const act = async (work: () => Promise<unknown>) => {
     setBusy(true); setRefusal(null);
+    let reconcileSession = true;
     try { await work(); } catch (failure) {
-      setRefusal(failure instanceof ApiError ? { code: failure.code, message: failure.message } : { message: messageOf(failure) });
-    } finally { setBusy(false); reload(); void refreshSession().catch(() => undefined); }
+      // A definite refusal leaves this session intact. Refreshing it would
+      // remount the page and erase the refusal and the person's draft.
+      reconcileSession = !(failure instanceof ApiError && failure.status >= 400 && failure.status < 500);
+      if (working.isCurrent()) {
+        setRefusal(failure instanceof ApiError ? { code: failure.code, message: failure.message } : { message: messageOf(failure) });
+      }
+    } finally {
+      if (working.isCurrent()) {
+        setBusy(false);
+        reload();
+        // Success and uncertain outcomes still reconcile the session banner.
+        if (reconcileSession) void refreshSession().catch(() => undefined);
+      }
+    }
   };
   const start = () => act(async () => {
     const approval = draft.mode === 'write_allowed' ? matchingApproval(draft, card?.approvals ?? []) : null;
