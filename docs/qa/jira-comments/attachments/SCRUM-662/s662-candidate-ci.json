@@ -1,0 +1,1018 @@
+{
+  "runId": 40712080315,
+  "expectedSha": "ae329681e4974ae3e47e3673d7930d701e52d35a",
+  "headSha": "ae329681e4974ae3e47e3673d7930d701e52d35a",
+  "expectedBranch": "lane/admin662-release-20261028",
+  "headBranch": "lane/admin662-release-20261028",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315",
+  "createdAt": "2026-10-28T15:03:28Z",
+  "updatedAt": "2026-10-28T15:25:16Z",
+  "monitoringStartedAt": "2026-10-28T15:16:02.408Z",
+  "terminalObservedAt": "2026-10-28T15:25:34.135Z",
+  "status": "completed",
+  "conclusion": "success",
+  "allSixSuccess": true,
+  "jobCount": 6,
+  "jobs": [
+    {
+      "id": 122899742785,
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:32Z",
+      "completedAt": "2026-10-28T15:16:08Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+      "activeSteps": [],
+      "failedSteps": []
+    },
+    {
+      "id": 122899743086,
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:31Z",
+      "completedAt": "2026-10-28T15:18:50Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+      "activeSteps": [],
+      "failedSteps": []
+    },
+    {
+      "id": 122899743113,
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:31Z",
+      "completedAt": "2026-10-28T15:14:26Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+      "activeSteps": [],
+      "failedSteps": []
+    },
+    {
+      "id": 122899743130,
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:32Z",
+      "completedAt": "2026-10-28T15:24:53Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+      "activeSteps": [],
+      "failedSteps": []
+    },
+    {
+      "id": 122899743195,
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:32Z",
+      "completedAt": "2026-10-28T15:04:55Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+      "activeSteps": [],
+      "failedSteps": []
+    },
+    {
+      "id": 122899743417,
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T15:03:32Z",
+      "completedAt": "2026-10-28T15:25:15Z",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+      "activeSteps": [],
+      "failedSteps": []
+    }
+  ],
+  "observations": [
+    {
+      "observedAt": "2026-10-28T15:16:04.399Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [
+            "Console end-to-end"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [
+            "Api tests (shard 3 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:16:56.097Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [
+            "Api tests (shard 3 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:17:48.221Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [
+            "Api tests (shard 3 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:18:39.878Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [
+            "Api tests (shard 3 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:19:31.854Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:18:50Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:20:23.731Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:18:50Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:21:15.431Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:18:50Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:22:07.064Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:18:50Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:22:58.931Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:18:50Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:23:50.615Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:18:50Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:24:42.298Z",
+      "status": "in_progress",
+      "conclusion": "",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:18:50Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [
+            "Api tests (shard 2 of 3)"
+          ],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "in_progress",
+          "conclusion": "",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [
+            "Api tests (shard 1 of 3)"
+          ],
+          "failedSteps": []
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-28T15:25:34.135Z",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 122899742785,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:16:08Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899742785",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743086,
+          "name": "api-tests (3)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:18:50Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743086",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743113,
+          "name": "oto-app",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:31Z",
+          "completedAt": "2026-10-28T15:14:26Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743113",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743130,
+          "name": "api-tests (2)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:24:53Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743130",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743195,
+          "name": "pos-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:04:55Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743195",
+          "activeSteps": [],
+          "failedSteps": []
+        },
+        {
+          "id": 122899743417,
+          "name": "api-tests (1)",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-28T15:03:32Z",
+          "completedAt": "2026-10-28T15:25:15Z",
+          "url": "https://github.com/vickyydev/oto-platform/actions/runs/40712080315/job/122899743417",
+          "activeSteps": [],
+          "failedSteps": []
+        }
+      ]
+    }
+  ],
+  "readOnly": true,
+  "rerunOrCancellationPerformed": false
+}
