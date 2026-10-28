@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { FileText, Filter, Info, Loader2 } from 'lucide-react';
+import { FileText, Filter, Info, Layers, Loader2 } from 'lucide-react';
 import type { InboxStatusKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Template } from '@/api/inbox';
 import { Eyebrow, TranslationNote } from '@/components/atoms';
 import { FIELD } from '@/components/CorrectAssistant';
 import { Dialog } from '@/components/Dialog';
-import { FilterFields } from '@/components/Rail';
+import { FilterFields, InboxViews } from '@/components/Rail';
 import { PendingControl } from '@/components/writes';
+import { sourceLabel, type SourceOption } from '@/lib/inboxes';
 import type { Filters } from '@/lib/query';
 import {
   CATEGORY_LABEL,
@@ -80,6 +81,8 @@ export function DetailsDialog({
     // A Facebook or Instagram id reads like a phone number (test night U9).
     [handleLabel(row.channel) ?? 'Handle', row.contact.handle],
     ['Phone', row.contact.phone ?? '—'],
+    // The number it came in on (SCRUM-220 playbook), the channel on its own line.
+    ['Source', sourceLabel(row.channel, row.channelAccountName)],
     ['Channel', CHANNEL_LABEL[row.channel]],
     ['Language', langLabel(row.language)],
     ['Category', CATEGORY_LABEL[row.category]],
@@ -252,12 +255,13 @@ export function TemplatesDialog({
   );
 }
 
-/** The rail's filters, at phone width where the rail is hidden. */
+/** The rail's named inboxes and filter chips, at phone width where the rail is hidden. */
 export function FiltersDialog({
   open,
   onClose,
   me,
   filters,
+  sources = [],
   onChange,
   onClear,
 }: {
@@ -265,6 +269,7 @@ export function FiltersDialog({
   onClose: () => void;
   me: InboxMe;
   filters: Filters;
+  sources?: readonly SourceOption[];
   onChange: (next: Partial<Filters>) => void;
   onClear: () => void;
 }) {
@@ -293,7 +298,14 @@ export function FiltersDialog({
         </>
       }
     >
-      <FilterFields me={me} filters={filters} onChange={onChange} />
+      <div className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+        <Layers className="h-3 w-3" /> Inboxes
+      </div>
+      <InboxViews me={me} filters={filters} onChange={onChange} />
+      <div className="mb-2 mt-3 flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-800 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+        <Filter className="h-3 w-3" /> Filters
+      </div>
+      <FilterFields me={me} filters={filters} onChange={onChange} sources={sources} />
     </Dialog>
   );
 }

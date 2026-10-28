@@ -29,6 +29,7 @@ import { DetailsDialog, type DetailsActions } from '@/components/dialogs';
 import { MessageBubble, ShadowBubble } from '@/components/MessageBubble';
 import { SlotPicker } from '@/components/SlotPicker';
 import { PendingControl } from '@/components/writes';
+import { sourceLabel } from '@/lib/inboxes';
 import {
   CHANNEL_LABEL,
   EVENT_ORDERS_REASON,
@@ -334,7 +335,10 @@ export function ChatPanel({
           <div className="flex min-w-0 items-center gap-2">
             <div className="truncate text-[14px] font-semibold text-slate-900 dark:text-slate-100">{name}</div>
             <span className="text-[11px] text-slate-400">·</span>
-            <span className="shrink-0 text-[11px] text-slate-500 dark:text-slate-400">{CHANNEL_LABEL[conv.channel]}</span>
+            {/* The number it came in on (SCRUM-220 playbook), not the bare channel. */}
+            <span className="min-w-0 truncate text-[11px] text-slate-500 dark:text-slate-400" title={CHANNEL_LABEL[conv.channel]}>
+              {sourceLabel(conv.channel, conv.channelAccountName)}
+            </span>
           </div>
           <div className="mt-0.5 flex min-w-0 items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
             <span className="truncate">{idLabel ? `${idLabel} ${conv.contact.handle}` : conv.contact.handle}</span>
