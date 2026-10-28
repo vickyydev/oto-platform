@@ -3,21 +3,26 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-21.1",
-  "kbVersion": "630ba0a0a51c4082",
-  "recordedOn": "2026-10-20",
+  "personaVersion": "persona-2026-10-28.2",
+  "kbVersion": "2d0143a312336f01",
+  "recordedOn": "2026-10-28",
   "turns": [
     {
       "says": "Hi, I'd like a birthday party for my son on 14 November, about 15 kids",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgEMUoNWwkQtyDToRCcSF",
+        "id": "msg_011CgUY1dewu8VoCrPKQvcwP",
         "type": "message",
         "role": "assistant",
         "content": [
           {
+            "type": "thinking",
+            "thinking": "",
+            "signature": "CAQSigcKEAgTGAI4AUIIdGhpbmtpbmcSDOgbpG1Zk4T0ftl/ihoMo7348pLcWeNHC3CYIjAfZmy9C9A5vkYGj84DG5hpuzb3kFT4YohT6IYTmu2q99bM6oWe75OGvpI+edpXhpgqpwbQPOmKcVzZX89v0ZTR+CKW3+Ou9/FIMLlPBEoPWIB3vURJPNzCOYubPZ7HugKsUFoxTgkqIDAbUPevjEXc7nB5LBWreg42jqzrA/WqaHVnmmrPobk7oGoZfkQltKizZeWGgLPSDiY1BniDuXFgCD/pTPd6MU416fvVp9GWOXmZ63AbiANI5B4Eoo3lpPi6GHnTmv6s3xiHE6dvzXRo6vdakmd2KiIWvjwrtp1b2LuvCZMY+Z5Hx5f7VgVgix6kQIOFz+XW2Ifoa66J/mPRP42mBr0vf755o7zW56JNNf/elbRGsxrqq3ixfjxXv3qFJdW8/zoAQzn517dpbwWefVOkA5YeUL9BSXzFnrK2ukUMYY8wogkzkSOysNHOW5W2W28LcPu6xUcWjPcuphOZM0nuj4isoazWzRkpHwcSv+zmAFUuxk6mqr9oW0sfQHkeenueWmlNzzWsy9hjiXTYDY/dsZ1Lfoar/1ddnKmd9y5OnK04TuB4Nodod8RJqYeeJOGTPCzebJ5dDWixk1LYuL9tnV8SHeZ5i+zKPAAv/71ia1CB9L4dgDQaSeeR7iZO4OxoA6R9dvo+HPlrXamfntIIqqQGFDjHrggFXK2wmDFMg8j+KolPZLCm1BsLQfeJ61UsVCe7v8Ri7/zUJOI4+BuKMalwym3dtCjzWeQZ5pqlHnmg/UZYMvA8pgGqM8WDId+Yw/OixDB/F8CiACmxOWk8XSbpBYv9V292Ott8WqauxbKrJDe1faSDeSo5V+qLXIvxTEhWwcnDK0Leo2foQM+nWfPgwaj6vyj0kekC7ICa6D8ejJD5zxkBeHKGVLoTBkNl9UZ48K9cB2gV1NW3Xv6J6+rPwn5g8B7bXyIL/BdZmV1aaR8bG6mU3MIqJzMlukRlI6MXeW4phx5saLzZps8ue1iljQHJXAl3mQKf8LT/uUrBmfhFTxJVL48QPNWSTG2b9Ie/XemS8JXPgSOVb+K3x1GgAVmn+x5wPE9sA8HnkR//9k91/VpSaaEjlmVThtgtD/rlNZmmwvzug0w8+6f3LwjZ/Uumcu1Sr6lMetVupFso9hCfYZcYAQ=="
+          },
+          {
             "type": "text",
-            "text": "{\"language\":\"en\",\"intent\":\"birthday_party\",\"intents\":[\"birthday_party\"],\"certainty\":\"sure\",\"action\":\"handover\",\"grounding\":[],\"bubbles\":[\"Thanks so much, that sounds like a lovely celebration 🎈 A colleague from our party team will get back to you shortly.\"],\"sendBrochure\":true,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"NEEDS_PERSON\"}"
+            "text": "{\"language\":\"en\",\"intent\":\"birthday_party\",\"intents\":[\"birthday_party\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[],\"bubbles\":[\"Amazing, thank you! We'd love to organize a party for your son 🎈\",\"Which branch would you like it at, Central Floresta or Robinson Chalong?\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"CLEAR_INTENT\"}"
           }
         ],
         "container": null,
@@ -25,18 +30,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 202,
+          "input_tokens": 222,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 6941,
+          "cache_read_input_tokens": 10765,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 202,
-              "output_tokens": 144,
-              "cache_read_input_tokens": 6941,
+              "input_tokens": 222,
+              "output_tokens": 264,
+              "cache_read_input_tokens": 10765,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +51,64 @@
               "model": null
             }
           ],
-          "output_tokens": 144,
+          "output_tokens": 264,
+          "output_tokens_details": {
+            "thinking_tokens": 108
+          },
+          "service_tier": "standard",
+          "inference_geo": "global",
+          "speed": "standard"
+        },
+        "diagnostics": null
+      },
+      "recorded": {
+        "action": "answer",
+        "reason": "OK",
+        "intent": "birthday_party",
+        "pass": true,
+        "failures": []
+      }
+    },
+    {
+      "says": "Before we pick, can you send me your birthday packages?",
+      "response": {
+        "model": "claude-opus-5-5",
+        "id": "msg_011CgUY1rrwd4USoycKRNAdW",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"language\":\"en\",\"intent\":\"birthday_brochure\",\"intents\":[\"birthday_brochure\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[],\"bubbles\":[\"Of course! Here are our birthday packages 🎈\"],\"sendBrochure\":true,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"CLEAR_INTENT\"}"
+          }
+        ],
+        "container": null,
+        "stop_reason": "end_turn",
+        "stop_sequence": null,
+        "stop_details": null,
+        "usage": {
+          "input_tokens": 374,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 10765,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "iterations": [
+            {
+              "input_tokens": 374,
+              "output_tokens": 125,
+              "cache_read_input_tokens": 10765,
+              "cache_creation_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "type": "message",
+              "model": null
+            }
+          ],
+          "output_tokens": 125,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
@@ -57,9 +119,9 @@
         "diagnostics": null
       },
       "recorded": {
-        "action": "handover",
+        "action": "answer",
         "reason": "OK",
-        "intent": "birthday_party",
+        "intent": "birthday_brochure",
         "pass": true,
         "failures": []
       }

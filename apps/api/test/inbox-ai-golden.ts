@@ -438,7 +438,7 @@ const NO_LOWER_VY = /(?:^|[^А-Яа-яЁё])(?:вы|вас|вам|вами|ва�
 const NO_DATE_HELD = /14|fourteenth|พฤศจิกายน|november/i;
 const NO_FAULT = /our fault|we apologi[sz]e for|it was our|compensat|refund|\bfree\b/i;
 /** A bubble asking which park (the playbook's branch question, alone or in its combined question). */
-const BRANCH_QUESTION = /which (?:park|branch)|central floresta or (?:robinson )?chalong|สาขาไหน/i;
+const BRANCH_QUESTION = /which (?:park|branch)|central floresta (?:or|หรือ|или) (?:robinson )?chalong|สาขาไหน/i;
 const NO_PRICE_YET = /฿|บาท|baht/i;
 
 /** The playbook's destinations as the gate plans them (SCRUM-220). */
