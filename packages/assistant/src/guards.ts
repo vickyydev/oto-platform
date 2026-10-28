@@ -242,12 +242,194 @@ export function traceabilityGuard(
 }
 
 // ---------------------------------------------------------------------------
+// Links (SCRUM-220 playbook, owner D4: never guess a customer-facing URL).
+// ---------------------------------------------------------------------------
+
+/**
+ * A link as a customer would read one: a scheme URL, a `www.` address, or a
+ * bare domain on a common top-level domain (with or without a path).
+ */
+const LINK_PATTERN =
+  /(?:\bhttps?:\/\/|\bwww\.)[^\s<>"'`)\]}]+|\b(?:[a-z0-9-]+\.)+(?:com|co|net|org|th|ru|io|app|me|info|link|ly|page)\b(?:\/[^\s<>"'`)\]}]*)?/gi;
+
+/** The links a text holds, scheme removed and trailing punctuation dropped. */
+export function linksIn(text: string): string[] {
+  return [...text.matchAll(LINK_PATTERN)].map((m) => m[0].replace(/[.,;:!?]+$/, '').replace(/^https?:\/\//i, ''));
+}
+
+/**
+ * Every link in the bubbles must occur, character for character (the scheme
+ * aside), in a source the decision cites: the calculator, menu and booking
+ * links the knowledge holds pass; a link with a changed parameter, or one no
+ * source holds, is refused.
+ */
+export function linkGuard(bubbles: readonly string[], groundingTexts: readonly string[]): GuardResult<'GUARD_LINK'> {
+  const grounding = groundingTexts.join('\n');
+  for (const bubble of bubbles) {
+    for (const link of linksIn(bubble)) {
+      if (!grounding.includes(link)) return { ok: false, reason: 'GUARD_LINK', rule: 'link' };
+    }
+  }
+  return { ok: true };
+}
+
+/** The text with its links taken out (a link's own `?` is not a question). */
+function withoutLinks(text: string): string {
+  return text.replace(LINK_PATTERN, ' ');
+}
+
+// ---------------------------------------------------------------------------
+// Never busy (SCRUM-220 playbook, "Voice and golden rules": "Never say the
+// park is busy. Walk-ins are always welcome").
+// ---------------------------------------------------------------------------
+
+/**
+ * Busy words, per language. Like the promise words, a bubble may use one
+ * only when a cited source uses the same word ("for kids who find busy
+ * places hard, weekday mornings are the calmest time" is the special-needs
+ * entry's own). Thai แน่นอน ("certainly") is not แน่น ("packed").
+ */
+export const BUSY_WORD_RULES: ReadonlyArray<{ id: string; pattern: RegExp }> = [
+  { id: 'en:busy', pattern: latin('bus(?:y|ier|iest)') },
+  { id: 'en:crowded', pattern: latin('(?:over)?crowded') },
+  { id: 'en:full', pattern: latin('full(?:y booked)?') },
+  { id: 'th:crowded', pattern: thai('แน่น(?!อน)') },
+  { id: 'th:many_people', pattern: thai('คนเยอะ') },
+  { id: 'ru:crowded', pattern: cyrillic('многолюдн\\p{L}*') },
+  { id: 'ru:busy', pattern: cyrillic('заняты') },
+];
+
+/** "Full day", "full-day", "full food credit", "full-service restaurant": the products, not a full park. */
+const FULL_IDIOMS =
+  /(?<![A-Za-z])full[\s-]*(?:days?|food|service|price|prices|menu|kitchen|credit|details?|amount|access|list|range|meals?)(?![A-Za-z])/gi;
+
+function withoutBusyIdioms(text: string): string {
+  return text.replace(FULL_IDIOMS, ' ');
+}
+
+export function busyGuard(bubbles: readonly string[], groundingTexts: readonly string[]): GuardResult<'GUARD_BUSY'> {
+  const grounding = withoutBusyIdioms(groundingTexts.join('\n'));
+  for (const raw of bubbles) {
+    const text = withoutBusyIdioms(raw);
+    for (const rule of BUSY_WORD_RULES) {
+      if (rule.pattern.test(text) && !rule.pattern.test(grounding)) {
+        return { ok: false, reason: 'GUARD_BUSY', rule: rule.id };
+      }
+    }
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// No admission of fault (SCRUM-220 playbook, "Hand-offs": a complaint gets a
+// sincere apology that "never admits fault, offers compensation or argues").
+// Applied to the words that ride a hand-over; compensation is the promise
+// guard's.
+// ---------------------------------------------------------------------------
+
+export const FAULT_WORD_RULES: ReadonlyArray<{ id: string; pattern: RegExp }> = [
+  { id: 'en:fault', pattern: latin('(?:our|my) (?:fault|mistake|error)') },
+  { id: 'en:we_wrong', pattern: latin('we (?:were|are|have been) (?:wrong|at fault|to blame|negligent)') },
+  { id: 'en:we_mistake', pattern: latin('we (?:made|have made) (?:a |an )?(?:mistake|error)') },
+  { id: 'en:blame', pattern: latin('we (?:take|accept) (?:full )?(?:responsibility|the blame|blame)') },
+  { id: 'th:fault', pattern: thai('ความผิด(?:พลาด)?ของ(?:เรา|ทางเรา|ร้าน|สวนสนุก)') },
+  { id: 'th:we_wrong', pattern: thai('(?:ทาง)?เราผิด(?!หวัง)') },
+  { id: 'ru:fault', pattern: cyrillic('(?:наша|моя) (?:вина|ошибка)') },
+  { id: 'ru:we_wrong', pattern: cyrillic('(?:мы|я) виноват\\p{L}*') },
+  { id: 'ru:by_us', pattern: cyrillic('по нашей вине') },
+];
+
+export function faultGuard(bubbles: readonly string[]): GuardResult<'GUARD_FAULT'> {
+  for (const bubble of bubbles) {
+    for (const rule of FAULT_WORD_RULES) {
+      if (rule.pattern.test(bubble)) return { ok: false, reason: 'GUARD_FAULT', rule: rule.id };
+    }
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// The care services are never framed as "safer" (SCRUM-220 playbook, "Ages,
+// nanny and drop-off": "Never frame it as 'safer'; the whole park is safe").
+// No source exemption: the knowledge's own nanny entry quotes the word to
+// forbid it.
+// ---------------------------------------------------------------------------
+
+export const SAFER_FRAMING_RULES: ReadonlyArray<{ id: string; pattern: RegExp }> = [
+  { id: 'en:safer', pattern: latin('safer|safest|more safe') },
+  { id: 'th:safer', pattern: thai('ปลอดภัยกว่า|ปลอดภัยที่สุด') },
+  { id: 'ru:safer', pattern: cyrillic('безопаснее|надёжнее|надежнее') },
+];
+
+export function framingGuard(bubbles: readonly string[]): GuardResult<'GUARD_FRAMING'> {
+  for (const bubble of bubbles) {
+    for (const rule of SAFER_FRAMING_RULES) {
+      if (rule.pattern.test(bubble)) return { ok: false, reason: 'GUARD_FRAMING', rule: rule.id };
+    }
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Languages (SCRUM-220 playbook, "Languages").
+// ---------------------------------------------------------------------------
+
+/** The playbook's one offer, in English: Russian or Thai beside English. */
+const OFFER_RU = /(?<![A-Za-z])(?:English or Russian|Russian or English)(?![A-Za-z])/i;
+const OFFER_TH = /(?<![A-Za-z])(?:English or Thai|Thai or English)(?![A-Za-z])/i;
+/** A language menu: never allowed. */
+const LANGUAGE_MENU: readonly RegExp[] = [
+  /(?<![A-Za-z])(?:which|what|preferred|another|other) language(?![A-Za-z])/i,
+  /(?<![A-Za-z])language (?:do|would) you(?![A-Za-z])/i,
+  /ภาษา(?:อะไร|ไหน)/u,
+  /(?<!\p{L})(?:на каком языке|како[йм] язык\p{L}*)(?!\p{L})/iu,
+];
+
+/**
+ * Whether the bubbles offer a choice of language, and which: the playbook's
+ * Russian (`ru`) or Thai (`th`) offer, a general `menu`, or none. The offer
+ * is read in the context of a choice ("continue in English or Russian?",
+ * "chat in Russian or English?"), so "Thai families get special prices"
+ * is no offer.
+ */
+export function languageOfferIn(bubbles: readonly string[]): 'ru' | 'th' | 'menu' | null {
+  const offers = new Set<'ru' | 'th'>();
+  for (const bubble of bubbles) {
+    if (LANGUAGE_MENU.some((p) => p.test(bubble))) return 'menu';
+    if (OFFER_RU.test(bubble)) offers.add('ru');
+    if (OFFER_TH.test(bubble)) offers.add('th');
+  }
+  // Russian AND Thai offered is a menu, not the playbook's one offer.
+  if (offers.size > 1) return 'menu';
+  return [...offers][0] ?? null;
+}
+
+/** Any letter outside the Latin script (Thai, Cyrillic, Han, Arabic...). */
+const NON_LATIN_LETTER = /(?!\p{Script=Latin})\p{L}/u;
+
+/** Whether the bubbles are written in the Latin script only: what an English reply to another language must be. */
+export function latinScriptOnly(bubbles: readonly string[]): boolean {
+  return bubbles.every((b) => !NON_LATIN_LETTER.test(b));
+}
+
+// ---------------------------------------------------------------------------
 // Gate 7: bubble count, length, and chat shape (no lists, no headings).
 // ---------------------------------------------------------------------------
 
 /** Markdown structure a person at a chat desk never types (§B.4 "no bullet lists, no headings"). */
 const LIST_OR_HEADING = /^\s*(?:[-*•]\s|\d+[.)]\s|#{1,6}\s)|\*\*/m;
 
+/** A question mark in any script's form. */
+const QUESTION_MARK = /[?？¿]/;
+
+/**
+ * Gate 7, and since SCRUM-220 the playbook's "one question per reply",
+ * enforced mechanically: at most ONE bubble may hold a question mark (a
+ * link's own query string aside). The playbook's combined questions — branch
+ * and residency, or dates, headcount and branch — are one bubble, so two
+ * marks inside one bubble pass. A Thai question with คะ or ไหม and no mark is
+ * the prompt's rule (`ONE_QUESTION_RULE`).
+ */
 export function bubbleGuard(
   bubbles: readonly string[],
   min: number,
@@ -256,13 +438,16 @@ export function bubbleGuard(
     return { ok: false, reason: 'GUARD_BUBBLES', rule: 'count' };
   }
   let total = 0;
+  let asking = 0;
   for (const b of bubbles) {
     if (b.trim().length === 0) return { ok: false, reason: 'GUARD_BUBBLES', rule: 'empty' };
     if (b.length > MAX_BUBBLE_CHARS)
       return { ok: false, reason: 'GUARD_BUBBLES', rule: 'bubble_length' };
     if (LIST_OR_HEADING.test(b)) return { ok: false, reason: 'GUARD_SHAPE', rule: 'markdown' };
+    if (QUESTION_MARK.test(withoutLinks(b))) asking += 1;
     total += b.length;
   }
   if (total > MAX_TOTAL_CHARS) return { ok: false, reason: 'GUARD_BUBBLES', rule: 'total_length' };
+  if (asking > 1) return { ok: false, reason: 'GUARD_SHAPE', rule: 'one_question' };
   return { ok: true };
 }

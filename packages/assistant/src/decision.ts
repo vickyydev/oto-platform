@@ -9,7 +9,11 @@
 import { z } from 'zod/v4';
 import { AI_INTENTS, MAX_INTENTS } from './intents';
 
-/** Languages the model may report. Anything but th/en/ru is silence (gate 3, G8). */
+/**
+ * Languages the model may report. Until the playbook anything but th/en/ru
+ * was silence (gate 3, G8); since SCRUM-220 (Tom's playbook, "Languages")
+ * `other` is answered in ENGLISH: the gate replies with language `en`.
+ */
 export const AI_LANGUAGES = ['th', 'en', 'ru', 'other'] as const;
 export type AiLanguage = (typeof AI_LANGUAGES)[number];
 export const AI_REPLY_LANGUAGES = ['th', 'en', 'ru'] as const;
@@ -92,6 +96,14 @@ export const AI_OUTCOME_REASONS = [
   'GUARD_PERSONA',
   'GUARD_BUBBLES',
   'GUARD_SHAPE',
+  // SCRUM-220 playbook guards: a busy word no cited source uses, a link no
+  // cited source holds, an apology that admits fault, the nanny service
+  // framed as "safer", a language menu outside the one +7/+66 offer.
+  'GUARD_BUSY',
+  'GUARD_LINK',
+  'GUARD_FAULT',
+  'GUARD_FRAMING',
+  'GUARD_LANGUAGE',
   'OVERRULED_HANDOVER',
   'IDENTITY_SECOND_ASK',
   'CAP_EPISODE',
@@ -108,8 +120,10 @@ export const AI_OUTCOME_REASONS = [
   // decided by the engine (A2), listed so the vocabulary is one list
   'CAP_DAILY',
   'CIRCUIT_OPEN',
-  // SCRUM-220 playbook: the number's silence policy turned the turn into a
-  // silent hand-over (`GateVerdict` `silent_handover`). Not emitted yet.
+  // SCRUM-220 playbook ("Message sources"): the turn is a silent hand-over
+  // (`GateVerdict` `silent_handover`) — a child currently in our care, or
+  // lost and found. The gate emits it from the intent table; the engine
+  // decides from the number's policy whether the branch line still goes.
   'SILENCE_POLICY',
 ] as const;
 export type AiOutcomeReason = (typeof AI_OUTCOME_REASONS)[number];

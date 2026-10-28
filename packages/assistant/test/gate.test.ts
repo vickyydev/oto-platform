@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyGates, EPISODE_ANSWER_CAP, EPISODE_WINDOW_CAP } from '../src/gate';
-import { INTENT_TABLE, intentPartsOf } from '../src/intents';
+import { BIRTHDAYS_PLAN, GM_PLAN, INTENT_TABLE, intentPartsOf, resolvePlan, UNCLEAR_GM_PLAN } from '../src/intents';
 import { decision, episode, fixtureKnowledge } from './support';
 
 const knowledge = fixtureKnowledge();
@@ -70,11 +70,12 @@ describe('the answer gates (PLAN §B.3)', () => {
     expect(gate({ certainty: 'unsure' })).toMatchObject({ action: 'silent', reason: 'UNSURE' });
   });
 
-  it('a language other than th/en/ru is silence, even for a handover (G8)', () => {
-    expect(gate({ language: 'other' })).toMatchObject({ action: 'silent', reason: 'LANGUAGE' });
-    expect(gate({ language: 'other', intent: 'complaint_onsite' })).toMatchObject({
-      action: 'silent',
-      reason: 'LANGUAGE',
+  it('a language other than th/en/ru is answered in English (G8, superseded by the SCRUM-220 playbook)', () => {
+    expect(gate({ language: 'other' })).toMatchObject({ action: 'answer', language: 'en' });
+    expect(gate({ language: 'other', intent: 'complaint_onsite', action: 'handover', bubbles: [] })).toMatchObject({
+      action: 'handover',
+      language: 'en',
+      plan: GM_PLAN,
     });
   });
 
@@ -105,10 +106,11 @@ describe('the answer gates (PLAN §B.3)', () => {
       action: 'silent',
       reason: 'MODEL_SILENT',
     });
+    // SCRUM-220 playbook: "unclear or not covered" goes to the branch when known, else the GM.
     expect(gate({ intent: 'hours', action: 'handover', bubbles: [] })).toMatchObject({
       action: 'handover',
       reason: 'MODEL_HANDOVER',
-      plan: { templateKey: 'handover_general', route: 'keep' },
+      plan: UNCLEAR_GM_PLAN,
     });
   });
 
@@ -160,17 +162,16 @@ describe('the answer gates (PLAN §B.3)', () => {
 });
 
 describe('handovers (PLAN §B.3, §B.4)', () => {
-  it('G7: an on-site complaint hands over to reception with the holding line only', () => {
-    const v = gate({
-      intent: 'complaint_onsite',
-      action: 'handover',
-      bubbles: [
-        'Thank you for letting us know. Please hold on, our reception team will be with you right away.',
-      ],
+  it('G7 (SCRUM-220 playbook): an on-site complaint gets one sincere apology, then the GM closing line and the GM queue', () => {
+    const apology = "I'm so sorry to hear that, thank you for telling us 🙏";
+    expect(gate({ intent: 'complaint_onsite', action: 'handover', bubbles: [apology] })).toMatchObject({
+      action: 'answer',
+      bubbles: [apology],
+      thenHandover: GM_PLAN,
     });
-    expect(v).toMatchObject({
+    expect(gate({ intent: 'complaint_onsite', action: 'handover', bubbles: [] })).toMatchObject({
       action: 'handover',
-      plan: { templateKey: 'handover_complaint_onsite', route: 'general' },
+      plan: GM_PLAN,
     });
   });
 
@@ -185,7 +186,7 @@ describe('handovers (PLAN §B.3, §B.4)', () => {
       action: 'handover',
       holdingBubbles: [],
       droppedHoldingRule: expect.any(String),
-      plan: { templateKey: 'handover_complaint_onsite' },
+      plan: { templateKey: 'closing_gm' },
     });
     expect(
       gate({
@@ -201,19 +202,22 @@ describe('handovers (PLAN §B.3, §B.4)', () => {
     });
   });
 
-  it('G13: "50% off" can never ride a discount handover', () => {
+  it('G13: "50% off" can never reach the customer — overruled into the unclear hand-over', () => {
+    // SCRUM-220 playbook: a price objection is answered from the knowledge;
+    // an ungrounded one is handed over, never sent.
     expect(
       gate({ intent: 'discount_negotiation', action: 'answer', bubbles: ['OK, 50% off for you!'] }),
     ).toMatchObject({
       action: 'handover',
       reason: 'OVERRULED_HANDOVER',
       holdingBubbles: [],
-      droppedHoldingRule: 'number',
       plan: { templateKey: 'handover_general' },
     });
-    expect(gate({ intent: 'discount_negotiation', action: 'answer', bubbles: [] })).toMatchObject({
+    expect(gate({ intent: 'discount_insist', action: 'answer', bubbles: ['OK, 50% off for you!'] })).toMatchObject({
       action: 'handover',
       reason: 'OVERRULED_HANDOVER',
+      holdingBubbles: [],
+      droppedHoldingRule: 'number',
       plan: { templateKey: 'handover_general' },
     });
   });
@@ -222,6 +226,13 @@ describe('handovers (PLAN §B.3, §B.4)', () => {
     expect(
       gate({
         intent: 'birthday_party',
+        action: 'answer',
+        bubbles: ['Lovely! 14 November is booked for you 🎈'],
+      }),
+    ).toMatchObject({ action: 'silent', reason: 'GUARD_NUMBER' });
+    expect(
+      gate({
+        intent: 'birthday_details',
         action: 'handover',
         bubbles: ['Lovely! 14 November is booked for you 🎈'],
       }),
@@ -229,11 +240,11 @@ describe('handovers (PLAN §B.3, §B.4)', () => {
       action: 'handover',
       holdingBubbles: [],
       droppedHoldingRule: 'number',
-      plan: { templateKey: 'handover_birthday', route: 'birthdays' },
+      plan: BIRTHDAYS_PLAN,
     });
-    expect(gate({ intent: 'birthday_party', action: 'handover', bubbles: [] })).toMatchObject({
+    expect(gate({ intent: 'birthday_details', action: 'handover', bubbles: [] })).toMatchObject({
       action: 'handover',
-      plan: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
+      plan: BIRTHDAYS_PLAN,
     });
   });
 
@@ -324,10 +335,10 @@ describe('a burst with several parts (test night 2026-10-21, D1a, W2)', () => {
     });
   });
 
-  it('hours and a party: the hours are answered, then the brochure and the birthday holding line, routed to Birthdays', () => {
+  it('hours and the party basics: the hours are answered, then the birthday closing line, routed to Birthdays', () => {
     const v = gate({
       intent: 'hours',
-      intents: ['hours', 'birthday_party'],
+      intents: ['hours', 'birthday_details'],
       grounding: ['fact.hours.central'],
       bubbles: ["We're open every day 10:00–20:00 😊"],
       reason: 'FACT_IN_KB',
@@ -336,12 +347,26 @@ describe('a burst with several parts (test night 2026-10-21, D1a, W2)', () => {
       action: 'answer',
       reason: 'OK',
       intent: 'hours',
-      intents: ['hours', 'birthday_party'],
-      sendBrochure: true,
+      intents: ['hours', 'birthday_details'],
+      sendBrochure: false,
       askBranch: false,
-      thenHandover: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
+      thenHandover: BIRTHDAYS_PLAN,
       mayAutoHandle: false,
     });
+  });
+
+  it('hours and a party request: both answered (the open and the one birthday question), no hand-over yet', () => {
+    expect(
+      gate({
+        intent: 'hours',
+        intents: ['hours', 'birthday_party'],
+        grounding: ['fact.hours.central'],
+        bubbles: [
+          "We're open every day 10:00–20:00 😊",
+          "And we'd love to organize a party for you! What date(s), roughly how many people, and which branch, Central Floresta or Robinson Chalong?",
+        ],
+      }),
+    ).toMatchObject({ action: 'answer', thenHandover: null, sendBrochure: false });
   });
 
   it('a date or a price in the answer part is still refused by the guards, over the whole reply', () => {
@@ -385,17 +410,17 @@ describe('a burst with several parts (test night 2026-10-21, D1a, W2)', () => {
       action: 'handover',
       reason: 'OVERRULED_HANDOVER',
       intents: ['complaint_onsite', 'hours'],
-      plan: { templateKey: 'handover_complaint_onsite', route: 'general' },
+      plan: GM_PLAN,
       holdingBubbles: [],
     });
     expect(v.action === 'handover' && v.droppedHoldingRule).toBeFalsy();
-    for (const alone of ['emotional_or_unclear', 'human_requested', 'complaint_online'] as const) {
+    for (const alone of ['emotional_or_unclear', 'human_requested', 'complaint_online', 'refund_request'] as const) {
       const rule = INTENT_TABLE[alone];
       if (rule.action !== 'handover') throw new Error(alone);
       expect(rule.answerAlongside).toBe(false);
       expect(gate({ intent: 'hours', intents: ['hours', alone], grounding: ['fact.hours.central'], bubbles: ['10:00–20:00'] })).toMatchObject({
         action: 'handover',
-        plan: rule.plan,
+        plan: resolvePlan(rule.plan, false),
         holdingBubbles: [],
       });
     }
@@ -415,29 +440,29 @@ describe('a burst with several parts (test night 2026-10-21, D1a, W2)', () => {
   it('every part hands over: the first part’s plan, the model’s words as the holding line', () => {
     expect(
       gate({
-        intent: 'birthday_party',
-        intents: ['birthday_party', 'discount_negotiation'],
+        intent: 'birthday_details',
+        intents: ['birthday_details', 'discount_insist'],
         action: 'handover',
         bubbles: ['Lovely, one moment please 🎈'],
       }),
     ).toMatchObject({
       action: 'handover',
       reason: 'OK',
-      intents: ['birthday_party', 'discount_negotiation'],
-      plan: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
+      intents: ['birthday_details', 'discount_insist'],
+      plan: BIRTHDAYS_PLAN,
       holdingBubbles: ['Lovely, one moment please 🎈'],
     });
   });
 
   it('the model choosing silent or handover on a burst with an answerable part is honoured, with the burst’s own plan', () => {
-    expect(gate({ intent: 'hours', intents: ['hours', 'birthday_party'], action: 'silent', bubbles: [] })).toMatchObject({
+    expect(gate({ intent: 'hours', intents: ['hours', 'birthday_details'], action: 'silent', bubbles: [] })).toMatchObject({
       action: 'silent',
       reason: 'MODEL_SILENT',
     });
-    expect(gate({ intent: 'hours', intents: ['hours', 'birthday_party'], action: 'handover', bubbles: [] })).toMatchObject({
+    expect(gate({ intent: 'hours', intents: ['hours', 'birthday_details'], action: 'handover', bubbles: [] })).toMatchObject({
       action: 'handover',
       reason: 'OK',
-      plan: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
+      plan: BIRTHDAYS_PLAN,
     });
   });
 
@@ -460,13 +485,13 @@ describe('a burst with several parts (test night 2026-10-21, D1a, W2)', () => {
   it('the cap on a mixed burst hands over with the burst’s own plan', () => {
     expect(
       gate(
-        { intent: 'hours', intents: ['hours', 'birthday_party'], grounding: ['fact.hours.central'], bubbles: ['10:00–20:00'] },
+        { intent: 'hours', intents: ['hours', 'birthday_details'], grounding: ['fact.hours.central'], bubbles: ['10:00–20:00'] },
         { aiAnswers: 8, aiAnswersLast10Min: 8 },
       ),
     ).toMatchObject({
       action: 'handover',
       reason: 'CAP_EPISODE',
-      plan: { templateKey: 'handover_birthday', route: 'birthdays', brochure: true },
+      plan: BIRTHDAYS_PLAN,
     });
   });
 

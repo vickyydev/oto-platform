@@ -1,4 +1,4 @@
-/** The Thai voice (PLAN §B.4). Thai is first: most of the park's chat is Thai. */
+/** The Thai voice (PLAN §B.4; SCRUM-220, Tom's playbook). Thai is first: most of the park's chat is Thai. */
 
 export const TH_PERSONA = {
   language: 'th',
@@ -10,6 +10,8 @@ export const TH_PERSONA = {
   ].join('\n'),
   /** §B.4, "Are you a bot?" — the first ask; the second ask is a handover. */
   identityLine: 'แอดมินทีม OTO ดูแลแชทนี้อยู่ค่ะ 😊 มีอะไรให้แอดมินช่วยเพิ่มเติมไหมคะ',
-  branchQuestion:
-    'สะดวกมาสาขาไหนคะ Central Floresta หรือ Chalong คะ แอดมินจะได้แจ้งข้อมูลให้ตรงสาขานะคะ',
+  /** The playbook's branch question; a Thai customer gets the branch part only, never residency. */
+  branchQuestion: 'สนใจมาสาขาไหนคะ Central Floresta หรือ Robinson Chalong คะ',
+  /** The playbook's opener for a Thai customer's price question. */
+  thaiOpener: 'ครอบครัวคนไทยได้ราคาพิเศษนะคะ!',
 } as const;
