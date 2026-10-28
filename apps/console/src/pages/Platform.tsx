@@ -22,7 +22,7 @@ type Page = 'system-roles' | 'platform-alerts' | 'platform-jobs' | 'platform-env
 function usePlatformRead<T>(read: () => Promise<T>, kind: 'roles' | 'health') {
   const authority = usePlatformAuthority(kind === 'roles' ? 'admin:role:read' : 'admin:health:read', kind === 'health');
   const [retry, setRetry] = useState(0);
-  const [state, setState] = useState<{ key: string; read: () => Promise<T>; answer: T | null; error: string | null } | null>(null);
+  const [state, setState] = useState<{ key: string; read: () => Promise<T>; answer: T | null; error: unknown } | null>(null);
   const currentRead = useRef(read);
   currentRead.current = read;
   useEffect(() => {
@@ -33,7 +33,7 @@ function usePlatformRead<T>(read: () => Promise<T>, kind: 'roles' | 'health') {
       if (active && currentRead.current === read && authority.isCurrent()) setState({ key: authority.key, read, answer, error: null });
     }).catch((failure: unknown) => {
       if (active && currentRead.current === read && authority.isCurrent()) setState({ key: authority.key, read, answer: null,
-        error: failure instanceof Error ? failure.message : 'The platform read failed.' });
+        error: failure });
     });
     return () => { active = false; };
   }, [read, retry, authority.allowed, authority.key, authority.isCurrent]);
@@ -59,7 +59,7 @@ function SystemRoles() {
   if (!allowed) return <PermissionRequired permission="admin:role:read (platform-wide)" />;
   return <>
     <CommandBar sectionId="system-roles" />
-    {error ? <ErrorNote message={error} onRetry={refresh} /> : !answer ? <Loading what="system roles" /> :
+    {error ? <ErrorNote error={error} onRetry={refresh} /> : !answer ? <Loading what="system roles" /> :
       <CardShell title="System catalogue" icon={Shield} note="System roles are maintained by the platform. Their permissions are read-only here.">
         <div className="divide-y">
           {answer.roles.filter((role) => role.system === true).map((role) => <details key={role.id} className="py-3">
@@ -92,7 +92,7 @@ function PlatformAlerts() {
         <option value="open">Open</option><option value="resolved">Resolved</option><option value="all">All</option>
       </select>
     </label>} />
-    {error ? <ErrorNote message={error} onRetry={refresh} /> : !answer ? <Loading what="platform alerts" /> :
+    {error ? <ErrorNote error={error} onRetry={refresh} /> : !answer ? <Loading what="platform alerts" /> :
       <CardShell title="Platform alert register" icon={BellRing} note={`Read at ${formatWhen(answer.generatedAt)}. Platform records only.`}>
         {answer.alerts.length === 0 ? <EmptyNote title="No platform alerts in this view." /> :
           <ul className="divide-y">{answer.alerts.map((row) => <li key={row.id} className="min-w-0 py-3 space-y-2">
@@ -117,7 +117,7 @@ function PlatformJobs() {
   if (!allowed) return <PermissionRequired permission="admin:health:read (operator-wide, platform-wide account)" />;
   return <>
     <CommandBar sectionId="platform-jobs" />
-    {error ? <ErrorNote message={error} onRetry={refresh} /> : !answer ? <Loading what="the platform job register" /> :
+    {error ? <ErrorNote error={error} onRetry={refresh} /> : !answer ? <Loading what="the platform job register" /> :
       <CardShell title="Persisted job status" icon={Server} note={`Read at ${formatWhen(answer.generatedAt)}. Opening this page does not start a job.`}>
         {answer.jobs.length === 0 ? <EmptyNote title="No jobs were returned." /> : <ul className="divide-y">
           {answer.jobs.map((job) => {
@@ -146,7 +146,7 @@ function PlatformEnvironment() {
   if (!allowed) return <PermissionRequired permission="admin:health:read (operator-wide, platform-wide account)" />;
   return <>
     <CommandBar sectionId="platform-environment" />
-    {error ? <ErrorNote message={error} onRetry={refresh} /> : !answer ? <Loading what="environment presence" /> :
+    {error ? <ErrorNote error={error} onRetry={refresh} /> : !answer ? <Loading what="environment presence" /> :
       <CardShell title="Variable presence" icon={SlidersHorizontal} note={`Read at ${formatWhen(answer.generatedAt)}. Names and presence only; configuration values are never displayed.`}>
         {answer.variables.length === 0 ? <EmptyNote title="No variable metadata was returned." /> :
           <ul className="divide-y">{answer.variables.map((variable) => <li key={variable.name} className="min-w-0 py-3 space-y-2">

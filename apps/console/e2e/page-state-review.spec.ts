@@ -132,7 +132,8 @@ for (const [resource, falseEmpty] of [['boxes', 'No box at this branch yet'], ['
       json: { error: { code: 'INTERNAL', message: reason } } }));
     await signInAndWait(page);
     await page.goto('/devices');
-    await expect(page.getByText(reason, { exact: true })).toBeVisible();
+    await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
+    await expect(page.getByText(reason, { exact: true })).toHaveCount(0);
     await expect(page.getByText(falseEmpty, { exact: true })).toHaveCount(0);
   });
 }

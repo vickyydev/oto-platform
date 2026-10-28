@@ -26,10 +26,10 @@ export const OTO_APP_ROLES = [
   { value: 'staff', label: 'Staff' },
 ] as const satisfies ReadonlyArray<{ value: OtoAppRole; label: string }>;
 
-/** An unrouted Fastify 404 has UNKNOWN; named resource errors keep their actual reason. */
+/** Explicit route absence and legacy Fastify UNKNOWN404; named records retain their real reason. */
 export const isMissingRoute = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && 'status' in error && error.status === 404 &&
-  'code' in error && error.code === 'UNKNOWN';
+  'code' in error && (error.code === 'UNKNOWN' || error.code === 'ROUTE_NOT_FOUND');
 
 const key = () => crypto.randomUUID();
 const accountPath = (app: AppKey, accountId: string) =>

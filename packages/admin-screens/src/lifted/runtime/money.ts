@@ -66,6 +66,8 @@ export interface TaxPanelPorts extends MoneyAuthorityPorts {
     engineTaxConfig: (config: TaxConfig) => ReturnType<CartWireHelpers['engineTaxConfig']>;
   };
   updateTaxConfig: CatalogueMutation<TaxConfig>;
+  /** A read only recovery check; hosts without it must require reopening the page. */
+  readCurrent?: () => Promise<TaxConfig | null>;
 }
 
 export interface EventsPanelPorts extends MoneyAuthorityPorts {

@@ -132,7 +132,7 @@ function Section({ id, children }: { id: string; children: ReactElement }) {
   const { has, me } = useSession();
   const section = findSection(id);
   if (!section) return <Redirect to={`/${DEFAULT_SECTION}`} />;
-  if (section.platformWide && !me?.isPlatformAdmin) return <PermissionRequired permission={section.permission ?? 'app:console:access'} />;
+  if (section.platformWide && !me?.isPlatformAdmin) return <PermissionRequired permission={section.permission ?? 'app:console:access'} platformWide />;
   if (section.permission && !has(section.permission)) return <PermissionRequired permission={section.permission} />;
   return children;
 }
