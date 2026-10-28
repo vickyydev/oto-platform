@@ -357,7 +357,7 @@ describe('SCRUM-515 — the demo wristbands only where the deployment is a playg
       .mockResolvedValueOnce({ available: false, confirmationPhrase: 'x', playground: false });
     expect(await demoControlsShown()).toBe(false);
     resetDemoControls();
-    status.mockResolvedValueOnce({ available: false, confirmationPhrase: 'x' });
+    status.mockResolvedValueOnce({ available: false, confirmationPhrase: 'x', playground: false });
     expect(await demoControlsShown()).toBe(false);
     resetDemoControls();
     status.mockRejectedValueOnce(new NetworkError('offline')).mockResolvedValueOnce({ available: false, confirmationPhrase: 'x', playground: true });

@@ -2,16 +2,11 @@
  * Everything the console reads about how the platform is running: the audit
  * log, failed operation runs, health and the outside services we depend on.
  *
- * WHY IT IS ALL IN ONE FILE. The API half of S2-03 is being built beside this
- * app, so these paths and shapes are the contract rather than a description of
- * something already deployed. Keeping them in one module means retargeting a
- * path is one edit here, not a hunt through four pages — and every field the
- * API has not grown yet is optional, so the console renders correctly against
- * today's API and fills in as the routes land.
+ * The response aliases come from the API's registered output schemas. Keeping
+ * the calls together also gives the pages one place for their query vocabulary.
  *
  * Two rules the pages depend on:
- *   - a 404 means "this deployment does not have that route yet" and the page
- *     says so (see isMissingRoute); anything else is a real failure;
+ *   - isMissingRoute distinguishes an absent endpoint from a missing record;
  *   - personal data arrives MASKED unless the caller holds
  *     `admin:audit:read_sensitive` and deliberately asks for it. Unmasking is
  *     an action with a record of its own, never a page load.
@@ -110,58 +105,18 @@ export const activityApi = {
 /** The kinds of thing that can fail quietly and therefore write an ops_run. */
 export type OpsKind = 'job' | 'http' | 'client' | 'device' | 'integration' | 'process' | 'sync';
 
-export interface FailureGroup {
-  /** Stable hash of the error's shape — what makes sixty failures one problem. */
-  fingerprint: string;
-  kind: OpsKind | string;
-  /** The operation that failed: a job name, a route pattern, an adapter. */
-  name: string;
-  count: number;
-  firstSeenAt: string;
-  lastSeenAt: string;
-  lastError: string | null;
-  /** The newest run in the group — what a retry re-runs. */
-  lastRunId: string | null;
-  /** False for anything whose re-run is not safe to start from here. */
-  retryable?: boolean;
-  branchId?: string | null;
-  stationId?: string | null;
-  actionId?: string | null;
-  requestId?: string | null;
-}
-
-export interface FailurePage {
-  groups: FailureGroup[];
-  nextCursor?: string | null;
-  /** Failures in the window whose group could not be worked out. */
-  ungrouped?: number;
-}
-
-export interface OpsRun {
-  id: string;
-  kind: OpsKind | string;
-  name: string;
-  outcome: string;
-  startedAt: string;
-  finishedAt: string | null;
-  durationMs?: number | null;
-  error: string | null;
-  fingerprint?: string | null;
-  requestId?: string | null;
-  actionId?: string | null;
-  branchId?: string | null;
-  stationId?: string | null;
-  attempt?: number | null;
-}
+export type FailurePage = ApiResponse<'/ops/failures', 'get'>;
+export type FailureGroup = FailurePage['groups'][number];
+export type OpsRun = ApiResponse<'/ops/runs', 'get'>['runs'][number];
 
 export const failuresApi = {
   groups: (params: { windowHours?: number; kind?: string; cursor?: string; limit?: number }) =>
-    api.get<FailurePage>(`/ops/failures${qs({ ...params })}`),
+    api.get<ApiResponse<'/ops/failures', 'get'>>(`/ops/failures${qs({ ...params })}`),
   runs: (fingerprint: string, limit = 20) =>
-    api.get<{ runs: OpsRun[] }>(`/ops/runs${qs({ fingerprint, limit })}`),
+    api.get<ApiResponse<'/ops/runs', 'get'>>(`/ops/runs${qs({ fingerprint, limit })}`),
   /** Re-runs one failed operation. `admin:ops:manage`. */
   retry: (runId: string) =>
-    api.post<{ ok: true; runId?: string }>(`/ops/runs/${encodeURIComponent(runId)}/retry`),
+    api.post<ApiResponse<'/ops/runs/{runId}/retry', 'post'>>(`/ops/runs/${encodeURIComponent(runId)}/retry`),
 };
 
 // ---------------------------------------------------------------------------
@@ -263,7 +218,7 @@ export const healthApi = {
   },
   snapshot: () => api.get<ApiResponse<'/ops/health', 'get'>>('/ops/health'),
   acknowledgeAlert: (id: string) =>
-    api.post<{ ok: true }>(`/ops/alerts/${encodeURIComponent(id)}/acknowledge`),
+    api.post<ApiResponse<'/ops/alerts/{alertId}/acknowledge', 'post'>>(`/ops/alerts/${encodeURIComponent(id)}/acknowledge`),
 };
 
 // ---------------------------------------------------------------------------
@@ -312,18 +267,12 @@ export const integrationsApi = {
  * the section without every page load recording a denial against the staff who
  * will never see it.
  */
-export interface TestControl {
-  key: string;
-  label: string;
-  description?: string | null;
-  /** True for anything whose effect outlives the press — stopping the watchdog. */
-  sticky?: boolean;
-}
+export type TestControl = ApiResponse<'/ops/test-controls', 'get'>['controls'][number];
 
 export const testControlsApi = {
-  list: () => api.get<{ available: boolean; controls: TestControl[] }>('/ops/test-controls'),
+  list: () => api.get<ApiResponse<'/ops/test-controls', 'get'>>('/ops/test-controls'),
   run: (key: string) =>
-    api.post<{ ok: true; message?: string }>(`/ops/test-controls/${encodeURIComponent(key)}`),
+    api.post<ApiResponse<'/ops/test-controls/{key}', 'post'>>(`/ops/test-controls/${encodeURIComponent(key)}`),
 };
 
 /** A refusal the console can act on, told apart from a route that is simply absent. */

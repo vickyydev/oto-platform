@@ -31266,7 +31266,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
                 };
             };
         };
@@ -31303,7 +31308,35 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            groups: {
+                                fingerprint: string;
+                                kind: string;
+                                name: string;
+                                count: number;
+                                firstSeenAt: string;
+                                lastSeenAt: string;
+                                lastError: string | null;
+                                lastRunId: string | null;
+                                retryable: boolean;
+                                branchId: string | null;
+                                stationId: string | null;
+                                actionId: string | null;
+                                requestId: string | null;
+                            }[];
+                            nextCursor: string | null;
+                            ungrouped?: number;
+                            reach: {
+                                /** @enum {string} */
+                                scope: "operator" | "branch";
+                                branches: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -31340,7 +31373,25 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            runs: {
+                                id: string;
+                                kind: string;
+                                name: string;
+                                outcome: string;
+                                startedAt: string;
+                                finishedAt: string | null;
+                                durationMs: number | null;
+                                error: string | null;
+                                fingerprint: string | null;
+                                requestId: string | null;
+                                actionId: string | null;
+                                branchId: string | null;
+                                stationId: string | null;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -31378,7 +31429,24 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            /** @enum {string} */
+                            outcome: "ok" | "failed";
+                            /** @enum {string} */
+                            syncState: "synced" | "pending" | "failed";
+                            sent: number;
+                            synced: number;
+                            waiting: number;
+                        } | {
+                            /** @enum {boolean} */
+                            ok: true;
+                            /** @enum {string} */
+                            outcome: "ok" | "failed" | "not_due";
+                        };
+                    };
                 };
             };
         };
@@ -31416,7 +31484,38 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            events: {
+                                id: string;
+                                boxId: string;
+                                boxName: string;
+                                slot: string;
+                                eventId: string;
+                                journalEpoch: number;
+                                boxSeq: number;
+                                type: string | null;
+                                schemaVersion: number | null;
+                                reason: string;
+                                status: string;
+                                errorCode: string | null;
+                                errorMessage: string | null;
+                                payloadHash: string | null;
+                                existingPayloadHash: string | null;
+                                occurredAt: string | null;
+                                receivedAt: string;
+                                actionId: string | null;
+                                batchId: string | null;
+                                alertKey: string | null;
+                                resolvedAt: string | null;
+                                resolvedByAccountId: string | null;
+                                resolutionNote: string | null;
+                                replayedEventId: string | null;
+                            }[];
+                            nextCursor: string | null;
+                            openCount: number | null;
+                        };
+                    };
                 };
             };
         };
@@ -31455,7 +31554,32 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            anomalies: {
+                                id: string;
+                                boxId: string;
+                                boxName: string | null;
+                                kind: string;
+                                eventId: string | null;
+                                relatedEventId: string | null;
+                                detail: {
+                                    [key: string]: unknown;
+                                } | null;
+                                actionId: string | null;
+                                detectedAt: string;
+                            }[];
+                            nextCursor: string | null;
+                            reach: {
+                                /** @enum {string} */
+                                scope: "operator" | "branch";
+                                branches: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -31493,7 +31617,31 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            /** @enum {string} */
+                            status: "replayed" | "open";
+                            eventId: string;
+                            errorCode: string | null;
+                            errorMessage: string | null;
+                            /** @enum {string} */
+                            result: "applied" | "duplicate" | "quarantined" | "rejected";
+                            outcome: {
+                                eventId: string;
+                                boxSeq: number;
+                                /** @enum {string} */
+                                result: "applied" | "duplicate" | "quarantined" | "rejected";
+                                /** @enum {string} */
+                                reason?: "conflict" | "poison" | "epoch_regressed" | "sequence_gap" | "unknown_type" | "schema_too_new" | "actor_unknown" | "signature_invalid" | "apply_failed";
+                                businessDate?: string;
+                                /** @enum {string} */
+                                businessDateSource?: "occurred_at" | "received_at";
+                                errorCode?: string;
+                            };
+                            message: string;
+                        };
+                    };
                 };
             };
         };
@@ -31535,7 +31683,14 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            /** @enum {string} */
+                            status: "discarded";
+                        };
+                    };
                 };
             };
         };
@@ -31628,7 +31783,17 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            available: boolean;
+                            controls: {
+                                key: string;
+                                label: string;
+                                description: string;
+                                sticky: boolean;
+                            }[];
+                        };
+                    };
                 };
             };
         };
@@ -31666,7 +31831,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                            message: string;
+                        };
+                    };
                 };
             };
         };
@@ -31698,7 +31869,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            available: boolean;
+                            confirmationPhrase: string;
+                            playground: boolean;
+                        };
+                    };
                 };
             };
         };
@@ -31724,7 +31901,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            deleted: {
+                                [key: string]: number;
+                            };
+                        };
+                    };
                 };
             };
         };

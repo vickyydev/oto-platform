@@ -815,7 +815,6 @@ function GroupDrawer({
               <li key={run.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 first:pt-0 last:pb-0">
                 <StatusPill tone={toneForOutcome(run.outcome)}>{run.outcome}</StatusPill>
                 <span className="text-sm text-muted-foreground">{formatWhen(run.startedAt, timezone)}</span>
-                {run.attempt ? <Chip>attempt {run.attempt}</Chip> : null}
                 <span className="text-sm text-muted-foreground ml-auto tabular-nums">
                   {run.durationMs !== null && run.durationMs !== undefined
                     ? millis(run.durationMs)

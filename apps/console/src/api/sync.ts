@@ -9,12 +9,8 @@
  * nothing there can be retried; the decision is here, and it is a decision
  * about a real thing that happened at the park.
  *
- * WHY IT IS A CONTRACT. The API half of S2-05 is being built beside this page,
- * so what follows is what the console asks for rather than a description of
- * something already deployed. Same two rules as observability.ts and fleet.ts:
- * a 404 means "this deployment does not have that route yet" and the page says
- * so, and every field the API has not grown yet is optional so the tab renders
- * correctly today and fills in as the routes land.
+ * The shapes below are aliases of the API's registered output schemas. Missing
+ * records remain distinct from endpoints absent on a deployment.
  *
  * WHY `/ops/…`. Quarantine is a tab of the Failures page, reached by the same
  * people holding the same permissions, so it sits beside `/ops/failures` and
@@ -22,6 +18,7 @@
  * the platform running", one guard family, one place to look.
  */
 import { api, idemKey, qs } from './client';
+import type { ApiResponse } from '@oto/api-types';
 import type { SyncAnomalyKind, SyncQuarantineReason, SyncQuarantineStatus } from '@oto/shared';
 
 export type { SyncAnomalyKind, SyncQuarantineReason, SyncQuarantineStatus };
@@ -30,99 +27,12 @@ export type { SyncAnomalyKind, SyncQuarantineReason, SyncQuarantineStatus };
 // Shapes
 // ---------------------------------------------------------------------------
 
-/**
- * One event the cloud refused, as `edge.sync_quarantine` holds it.
- *
- * `payload` is the event whole, because that is the only way to answer the
- * question the page exists for: what was this, and does the park still need
- * it? A discarded event is gone, so the payload has to be readable before the
- * button is pressed rather than after.
- */
-export interface QuarantineRow {
-  id: string;
-  /** The box-minted id of the event itself — what ties it to the box's own log. */
-  eventId: string;
-  boxId: string;
-  /** Denormalised by the API; a box id alone names nothing to a person on call. */
-  boxName?: string | null;
-  journalEpoch: number;
-  boxSeq: number;
-  /** `entity.verb` — `member.created`, `visit.opened`. Null on an event too broken to read. */
-  type?: string | null;
-  schemaVersion?: number | null;
-  reason: SyncQuarantineReason | string;
-  status: SyncQuarantineStatus | string;
-  errorCode?: string | null;
-  errorMessage?: string | null;
-  payload?: Record<string, unknown> | null;
-  payloadHash?: string | null;
-  /** Set on a `conflict`: the hash of the event already stored under this id. */
-  existingPayloadHash?: string | null;
-  occurredAt?: string | null;
-  receivedAt: string;
-  /** `x-oto-action-id` — the one string that links the till line, the box log and the audit row. */
-  actionId?: string | null;
-  /** The push's `ops_run`, so the whole batch can be found from one of its events. */
-  batchId?: string | null;
-  /** What the watchdog raised its alert under; also what groups these rows. */
-  alertKey?: string | null;
-  resolvedAt?: string | null;
-  resolvedByAccountId?: string | null;
-  resolvedByName?: string | null;
-  resolutionNote?: string | null;
-  /** Set when a replay succeeded: the `sync_event` it finally became. */
-  replayedEventId?: string | null;
-}
-
-export interface QuarantinePage {
-  events: QuarantineRow[];
-  nextCursor?: string | null;
-  /**
-   * How many are open across the WHOLE table, not just this page. The tab shows
-   * it as a badge, and "quarantine non-empty" is a watchdog rule, so the number
-   * has to be the true one rather than the length of the first fifty rows.
-   */
-  openCount?: number | null;
-}
-
-/** What the API says came of a replay. */
-export interface ReplayResult {
-  ok: true;
-  /** `replayed` when it applied; `open` when it was refused again. */
-  status: SyncQuarantineStatus | string;
-  /** The `sync_event` it became, on success. */
-  eventId?: string | null;
-  /** Why it was refused a second time. Shown as it arrives — it is the ledger's own words. */
-  errorCode?: string | null;
-  errorMessage?: string | null;
-}
-
-/**
- * An event that WAS applied, with something worth recording about how.
- *
- * Kept on this tab rather than on its own because the two answer one question
- * in sequence — what did not go in, and what went in with a caveat — but they
- * are never mixed into one list: an anomaly needs nobody's decision, and
- * folding them together would inflate the count the watchdog alerts on.
- */
-export interface AnomalyRow {
-  id: string;
-  boxId: string;
-  boxName?: string | null;
-  kind: SyncAnomalyKind | string;
-  /** The event it is about, and the other one where the kind involves two (`merge`). */
-  eventId?: string | null;
-  relatedEventId?: string | null;
-  /** Whatever that kind of anomaly needs to be understandable months later. */
-  detail?: Record<string, unknown> | null;
-  actionId?: string | null;
-  detectedAt: string;
-}
-
-export interface AnomalyPage {
-  anomalies: AnomalyRow[];
-  nextCursor?: string | null;
-}
+/** Event metadata only; the native read does not expose the stored payload. */
+export type QuarantinePage = ApiResponse<'/ops/quarantine', 'get'>;
+export type QuarantineRow = QuarantinePage['events'][number];
+export type ReplayResult = ApiResponse<'/ops/quarantine/{quarantineId}/replay', 'post'>;
+export type AnomalyPage = ApiResponse<'/ops/anomalies', 'get'>;
+export type AnomalyRow = AnomalyPage['anomalies'][number];
 
 // ---------------------------------------------------------------------------
 // Calls
@@ -135,7 +45,7 @@ export const quarantineApi = {
     boxId?: string;
     limit?: number;
     cursor?: string;
-  }) => api.get<QuarantinePage>(`/ops/quarantine${qs({ ...params })}`),
+  }) => api.get<ApiResponse<'/ops/quarantine', 'get'>>(`/ops/quarantine${qs({ ...params })}`),
 
   /**
    * Puts the stored event back through the ledger, exactly as the box sent it.
@@ -146,7 +56,7 @@ export const quarantineApi = {
    * answer — not apply the event twice.
    */
   replay: (id: string) =>
-    api.post<ReplayResult>(`/ops/quarantine/${encodeURIComponent(id)}/replay`, undefined, {
+    api.post<ApiResponse<'/ops/quarantine/{quarantineId}/replay', 'post'>>(`/ops/quarantine/${encodeURIComponent(id)}/replay`, undefined, {
       idempotencyKey: idemKey(),
     }),
 
@@ -156,14 +66,14 @@ export const quarantineApi = {
    * a thing somebody may have to explain later.
    */
   discard: (id: string, note: string) =>
-    api.post<{ ok: true; status: SyncQuarantineStatus | string }>(
+    api.post<ApiResponse<'/ops/quarantine/{quarantineId}/discard', 'post'>>(
       `/ops/quarantine/${encodeURIComponent(id)}/discard`,
       { note },
       { idempotencyKey: idemKey() },
     ),
 
   anomalies: (params: { kind?: string; boxId?: string; limit?: number; cursor?: string }) =>
-    api.get<AnomalyPage>(`/ops/anomalies${qs({ ...params })}`),
+    api.get<ApiResponse<'/ops/anomalies', 'get'>>(`/ops/anomalies${qs({ ...params })}`),
 };
 
 // ---------------------------------------------------------------------------
