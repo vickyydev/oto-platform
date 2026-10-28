@@ -21,6 +21,14 @@ import {
   type TurnUsage,
 } from './client';
 import type { AiDecision } from './decision';
+import {
+  interpretReviewReply,
+  type CoherenceReviewer,
+  type ReviewDecision,
+  type ReviewJoiner,
+  type ReviewOutcome,
+  type ReviewRequest,
+} from './review';
 
 export type FakeStep =
   | { kind: 'decision'; decision: AiDecision }
@@ -131,6 +139,64 @@ export function materialise(
       return { error: step.error };
     case 'raw':
       return { reply: step.reply };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The coherence reviewer's fake (SCRUM-677)
+// ---------------------------------------------------------------------------
+
+/**
+ * A scripted review: operations, keep-everything, an answer that never comes
+ * (the deadline's case), or any failure shape the decision's fake has —
+ * played through the same interpretation as the real reviewer's reply.
+ */
+export type FakeReviewStep =
+  | { kind: 'review'; decision: ReviewDecision }
+  | { kind: 'keep_all' }
+  | { kind: 'hang' }
+  | Exclude<FakeStep, { kind: 'decision' }>;
+
+export type FakeReviewScriptEntry = FakeReviewStep & { latencyMs?: number };
+
+/** A review verdict from plain lists: the indices to drop, the merges to make. */
+export function reviewOps(ops: { drop?: readonly number[]; merge?: ReadonlyArray<{ index: number; joiner: ReviewJoiner }> }): ReviewDecision {
+  return { items: (ops.drop ?? []).map((index) => ({ index, keep: false })), merges: [...(ops.merge ?? [])] };
+}
+
+export class FakeCoherenceReviewer implements CoherenceReviewer {
+  readonly model: string;
+  /** Every request received, in order (held in memory only, never logged). */
+  readonly requests: ReviewRequest[] = [];
+  private readonly script: FakeReviewScriptEntry[];
+
+  constructor(script: FakeReviewScriptEntry[] = [], model: string = DEFAULT_MODEL) {
+    this.script = [...script];
+    this.model = model;
+  }
+
+  push(...steps: FakeReviewScriptEntry[]): this {
+    this.script.push(...steps);
+    return this;
+  }
+
+  get remaining(): number {
+    return this.script.length;
+  }
+
+  /** Plays the next step. An exhausted script throws: a test-authoring error, which the deadline turns into fail-open. */
+  async review(request: ReviewRequest): Promise<ReviewOutcome> {
+    this.requests.push(request);
+    const step = this.script.shift();
+    if (!step) throw new Error('FakeCoherenceReviewer: the script has no step left for this call');
+    if (step.kind === 'hang') return new Promise<ReviewOutcome>(() => undefined);
+    const latency = step.latencyMs ?? 400;
+    if (step.kind === 'review' || step.kind === 'keep_all') {
+      const decision = step.kind === 'review' ? step.decision : reviewOps({});
+      return interpretReviewReply(reply(this.model, 'end_turn', JSON.stringify(decision)), latency);
+    }
+    const made = materialise(step, this.model);
+    return 'reply' in made ? interpretReviewReply(made.reply, latency) : interpretError(made.error, latency);
   }
 }
 

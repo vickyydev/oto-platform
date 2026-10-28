@@ -119,14 +119,27 @@ function usageOf(reply: ModelReply): TurnUsage {
   };
 }
 
+/** A failed call, in the one shape every structured call of this package reports. */
+export type ProviderFailureOutcome = Extract<AssistantOutcome, { ok: false }>;
+
+/** A structured call's reply, read: the value its schema parsed, or a failure word. */
+export type StructuredOutcome<T> =
+  | { ok: true; value: T; usage: TurnUsage; model: string; requestId: string | null; latencyMs: number }
+  | ProviderFailureOutcome;
+
 /**
  * Stop reason first: a refused or truncated reply is never parsed, so a
- * truncated JSON is MAX_TOKENS, not MALFORMED.
+ * truncated JSON is MAX_TOKENS, not MALFORMED. Shared by the decision and
+ * the coherence review (SCRUM-677), so both are classified by one reading.
  */
-export function interpretReply(reply: ModelReply, latencyMs: number): AssistantOutcome {
+export function interpretStructuredReply<T>(
+  reply: ModelReply,
+  latencyMs: number,
+  schema: { safeParse(value: unknown): { success: true; data: T } | { success: false } },
+): StructuredOutcome<T> {
   const usage = usageOf(reply);
   const requestId = reply._request_id ?? null;
-  const fail = (reason: ProviderFailure): AssistantOutcome => ({
+  const fail = (reason: ProviderFailure): ProviderFailureOutcome => ({
     ok: false,
     reason,
     error: null,
@@ -148,9 +161,16 @@ export function interpretReply(reply: ModelReply, latencyMs: number): AssistantO
   } catch {
     return fail('MALFORMED');
   }
-  const parsed = AiDecisionSchema.safeParse(json);
+  const parsed = schema.safeParse(json);
   if (!parsed.success) return fail('MALFORMED');
-  return { ok: true, decision: parsed.data, usage, model: reply.model, requestId, latencyMs };
+  return { ok: true, value: parsed.data, usage, model: reply.model, requestId, latencyMs };
+}
+
+export function interpretReply(reply: ModelReply, latencyMs: number): AssistantOutcome {
+  const read = interpretStructuredReply(reply, latencyMs, AiDecisionSchema);
+  if (!read.ok) return read;
+  const { value, ...rest } = read;
+  return { ...rest, decision: value };
 }
 
 function errorClassOf(err: unknown): string {
@@ -183,7 +203,7 @@ export function classifyError(err: unknown): ProviderFailure {
   return 'PROVIDER_ERROR';
 }
 
-export function interpretError(err: unknown, latencyMs: number): AssistantOutcome {
+export function interpretError(err: unknown, latencyMs: number): ProviderFailureOutcome {
   const error = errorInfo(err);
   return {
     ok: false,
