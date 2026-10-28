@@ -104,6 +104,7 @@ const TEAM_OF_CATEGORY: Record<InboxCategory, InboxTeamKey> = {
   birthdays: 'birthdays',
   general: 'reception',
   marketing: 'marketing',
+  gm: 'gm',
 };
 
 export interface AiEngineDeps {
@@ -770,7 +771,9 @@ async function closeTurn(
     state,
     reason,
     intent: v?.intent ?? d?.intent ?? null,
-    action: v?.action ?? (state === 'silent' ? ('silent' as const) : null),
+    // `silent_handover` (SCRUM-220 playbook) is not emitted yet and the
+    // engine keeps it silent, so it is recorded as the silence it is today.
+    action: v ? (v.action === 'silent_handover' ? ('silent' as const) : v.action) : state === 'silent' ? ('silent' as const) : null,
     certainty: d?.certainty ?? null,
     language: d?.language ?? null,
     model: r.model ?? null,
@@ -983,7 +986,9 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       // as they are. A silent decision keeps nothing: nothing would have gone.
       if (account.aiMode === 'shadow') {
         let messageIds: string[] = [];
-        if (v && v.action !== 'silent') {
+        // `silent_handover` (SCRUM-220 playbook) is not emitted by the gate
+        // yet; until the playbook lane wires it, it keeps nothing, as silence.
+        if (v && v.action !== 'silent' && v.action !== 'silent_handover') {
           const plan: AiHandoverPlan | null = v.action === 'handover' ? v.plan : v.thenHandover;
           const lines: string[] = v.action === 'answer' ? [...v.bubbles] : [];
           let holdingKind: HoldingLine['kind'] = 'none';
@@ -1012,7 +1017,9 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         return 'shadowed';
       }
 
-      if (!v || v.action === 'silent') {
+      // `silent_handover` (SCRUM-220 playbook): not emitted by the gate yet;
+      // until the playbook lane wires its hand-over, the engine keeps it silent.
+      if (!v || v.action === 'silent' || v.action === 'silent_handover') {
         await tx.insert(inboxEvent).values(event(conv, 'ai_silent', { turnId: turn.id, reason, intent: v?.intent ?? null }, at));
         await closeTurn(tx, turn, conv, 'silent', reason, r, at);
         return 'silent';

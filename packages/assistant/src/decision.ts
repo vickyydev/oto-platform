@@ -108,5 +108,8 @@ export const AI_OUTCOME_REASONS = [
   // decided by the engine (A2), listed so the vocabulary is one list
   'CAP_DAILY',
   'CIRCUIT_OPEN',
+  // SCRUM-220 playbook: the number's silence policy turned the turn into a
+  // silent hand-over (`GateVerdict` `silent_handover`). Not emitted yet.
+  'SILENCE_POLICY',
 ] as const;
 export type AiOutcomeReason = (typeof AI_OUTCOME_REASONS)[number];

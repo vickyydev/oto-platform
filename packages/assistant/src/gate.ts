@@ -113,7 +113,25 @@ export type GateVerdict =
       droppedHoldingRule?: string;
       branchNamed: AiBranchKey | null;
     }
-  | { action: 'silent'; reason: AiOutcomeReason; rule?: string; intent: AiIntent | null; intents: AiIntent[] };
+  | { action: 'silent'; reason: AiOutcomeReason; rule?: string; intent: AiIntent | null; intents: AiIntent[] }
+  | {
+      /**
+       * SCRUM-220 playbook, TYPE ONLY — the gate never emits it yet. A
+       * number's silence policy (`inbox.channel_account.silence_policy`)
+       * names this intent: nothing is said to the customer (no answer, no
+       * holding line, no brochure), and the thread is handed to the team the
+       * plan routes to. The engine treats it as silence until the playbook
+       * lane wires the hand-over.
+       */
+      action: 'silent_handover';
+      reason: 'SILENCE_POLICY';
+      intent: AiIntent;
+      intents: AiIntent[];
+      language: AiReplyLanguage;
+      /** Where the thread goes; its template is never sent. */
+      plan: AiHandoverPlan;
+      branchNamed: AiBranchKey | null;
+    };
 
 export interface GateInput {
   decision: AiDecision;

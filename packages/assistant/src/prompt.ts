@@ -63,6 +63,23 @@ export interface TicketPackageFact {
   adultWeekend: Satang;
   includedAdults: number;
   overflowAdult: Satang | null;
+  /**
+   * SCRUM-220 playbook, TYPE ONLY: the package's prices for the customer
+   * tiers beside the standard one (Thai, resident), in satang. Not rendered
+   * yet: the pricing lane renders them and fills them from the catalogue's
+   * `tier_pricing`.
+   */
+  tierPrices?: readonly TierPriceFact[];
+}
+
+/** One customer tier's prices on a package (SCRUM-220 playbook, type only). */
+export interface TierPriceFact {
+  /** `crm.tier.code`, e.g. `thai`, `expat`. */
+  tierCode: string;
+  kidWeekday: Satang;
+  kidWeekend: Satang;
+  adultWeekday: Satang;
+  adultWeekend: Satang;
 }
 
 export interface BranchFacts {
@@ -113,6 +130,13 @@ export interface TurnContext {
   threadBranch: AiBranchKey | null;
   /** Today's price mode per branch (weekend detection + `branch_holiday`, computed by the caller). */
   priceModeToday: Partial<Record<AiBranchKey, 'weekday' | 'weekend'>>;
+  /**
+   * SCRUM-220 playbook, TYPE ONLY: the calling code of the contact's phone
+   * (`66` Thailand, `7` Russia), without the plus, when it is known. Not
+   * rendered yet: the playbook lanes decide what it changes (the residency
+   * question, the language when the message says nothing).
+   */
+  contactCountryCode?: string | null;
   /** What the AI already did this episode. */
   earlier: {
     answered: number;
@@ -168,6 +192,7 @@ const INTENT_MEANING: Readonly<Record<AiIntent, string>> = {
   complaint_online: 'an online or brand complaint',
   influencer_marketing: 'influencer, partnership or media request',
   nanny_booking: 'nanny booking',
+  drop_off_care: 'drop-off care: leaving a child in the care of the park staff',
   lost_item: 'a lost item',
   special_tickets: 'special event tickets',
   human_requested: 'asks for a real person or a staff member',

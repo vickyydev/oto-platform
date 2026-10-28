@@ -28,6 +28,10 @@ export const AI_INTENTS = [
   'complaint_online',
   'influencer_marketing',
   'nanny_booking',
+  // SCRUM-220 playbook: drop-off care, the branch desk's own matter. A
+  // placeholder that hands over exactly as `nanny_booking` does, so the
+  // engine and the playbook lanes can name it; the playbook lane refines it.
+  'drop_off_care',
   'lost_item',
   'special_tickets',
   'human_requested',
@@ -190,6 +194,8 @@ export const INTENT_TABLE: Readonly<Record<AiIntent, AiIntentRule>> = {
   complaint_online: alone('handover_complaint_online', 'marketing'),
   influencer_marketing: handover('handover_marketing', 'marketing'),
   nanny_booking: handover('handover_general', 'general'),
+  // SCRUM-220 playbook placeholder: the nanny hand-over, until the lane refines it.
+  drop_off_care: handover('handover_general', 'general'),
   lost_item: handover('handover_lost_found', 'general'),
   special_tickets: handover('handover_events', 'birthdays'),
   human_requested: alone('handover_general', 'keep'),

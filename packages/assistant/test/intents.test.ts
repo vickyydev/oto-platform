@@ -52,10 +52,16 @@ describe('the intent table (PLAN §B.2)', () => {
         'influencer_marketing',
         'lost_item',
         'nanny_booking',
+        'drop_off_care',
         'special_tickets',
       ].sort(),
     );
     expect(AI_INTENTS.filter((i) => INTENT_TABLE[i].action === 'silent')).toEqual(['other']);
+  });
+
+  it('drop_off_care (SCRUM-220 playbook) starts as exactly the nanny hand-over, for the playbook lane to refine', () => {
+    expect(AI_INTENTS).toContain('drop_off_care');
+    expect(INTENT_TABLE.drop_off_care).toEqual(INTENT_TABLE.nanny_booking);
   });
 
   it('routes and templates each handover as the plan says', () => {

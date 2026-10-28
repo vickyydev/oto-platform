@@ -134,6 +134,9 @@ function verdictWords(v: GateVerdict): string {
   if (v.action === 'handover') {
     return `handover ${v.intent}/${v.language}${parts} ${v.reason} -> ${v.plan.templateKey}/${v.plan.route}${v.plan.brochure ? ' +brochure' : ''}`;
   }
+  if (v.action === 'silent_handover') {
+    return `silent_handover ${v.intent}/${v.language}${parts} ${v.reason} -> ${v.plan.route}`;
+  }
   return `silent ${v.reason}${v.rule ? `/${v.rule}` : ''} (intent ${v.intent ?? 'none'}${parts})`;
 }
 
