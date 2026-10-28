@@ -18,6 +18,8 @@ const inbox = z.object({
   debounceMaxSeconds: z.number().int().min(0).max(3600),
   firstBubbleMs: z.number().int().min(0).max(120000),
   bubbleGapMs: z.number().int().min(0).max(60000),
+  // SCRUM-677: the coherence review of a mixed reply; native default on.
+  coherenceReview: z.boolean(),
 }).strict();
 export const AssistantOverridesSchema = z.object({ internal: internal.partial(), inbox: inbox.partial() }).strict();
 export type AssistantOverrides = z.infer<typeof AssistantOverridesSchema>;

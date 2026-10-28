@@ -7,7 +7,7 @@ import {
 } from '../services/assistant-settings';
 import { opCtx } from '../services/tx';
 
-/** Operator settings only; all eleven fields retain native env units/defaults. */
+/** Operator settings only; the eleven numeric fields retain native env units/defaults, the coherence review is on by default. */
 export async function assistantSettingsRoutes(app: App): Promise<void> {
   const defaults = (): AssistantDefaults => ({
     internal: {
@@ -19,6 +19,8 @@ export async function assistantSettingsRoutes(app: App): Promise<void> {
       dailyTurnCap: app.env.INBOX_AI_DAILY_TURN_CAP, dailyTokenCap: app.env.INBOX_AI_DAILY_TOKEN_CAP,
       debounceSeconds: app.env.INBOX_AI_DEBOUNCE_S, debounceMaxSeconds: app.env.INBOX_AI_DEBOUNCE_MAX_S,
       firstBubbleMs: app.env.INBOX_AI_FIRST_BUBBLE_MS, bubbleGapMs: app.env.INBOX_AI_BUBBLE_GAP_MS,
+      // SCRUM-677: no environment variable; the review is on unless an operator switches it off.
+      coherenceReview: true,
     },
   });
   app.get('/assistant-settings', {
@@ -46,7 +48,7 @@ export async function assistantSettingsRoutes(app: App): Promise<void> {
       if (typeof key !== 'string' || key.length === 0 || key.length > 200) throw errors.badRequest('An Idempotency-Key is required');
     },
     schema: {
-      description: 'Atomically replace sparse numeric overrides and append USD rate versions at the expected revision. Requires Idempotency-Key; saved rate history is immutable.',
+      description: 'Atomically replace sparse numeric overrides (and the coherence review switch) and append USD rate versions at the expected revision. Requires Idempotency-Key; saved rate history is immutable.',
       querystring: z.object({}).strict(), body: AssistantSettingsWriteSchema,
       response: { 200: AssistantSettingsReadSchema },
     },

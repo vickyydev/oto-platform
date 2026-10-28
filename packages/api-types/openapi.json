@@ -69012,6 +69012,9 @@
                               "type": "integer",
                               "minimum": 0,
                               "maximum": 60000
+                            },
+                            "coherenceReview": {
+                              "type": "boolean"
                             }
                           },
                           "additionalProperties": false
@@ -69137,6 +69140,9 @@
                               "type": "integer",
                               "minimum": 0,
                               "maximum": 60000
+                            },
+                            "coherenceReview": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -69145,7 +69151,8 @@
                             "debounceSeconds",
                             "debounceMaxSeconds",
                             "firstBubbleMs",
-                            "bubbleGapMs"
+                            "bubbleGapMs",
+                            "coherenceReview"
                           ],
                           "additionalProperties": false
                         }
@@ -69199,7 +69206,7 @@
         }
       },
       "put": {
-        "description": "Atomically replace sparse numeric overrides and append USD rate versions at the expected revision. Requires Idempotency-Key; saved rate history is immutable.",
+        "description": "Atomically replace sparse numeric overrides (and the coherence review switch) and append USD rate versions at the expected revision. Requires Idempotency-Key; saved rate history is immutable.",
         "requestBody": {
           "required": true,
           "content": {
@@ -69284,6 +69291,9 @@
                             "type": "integer",
                             "minimum": 0,
                             "maximum": 60000
+                          },
+                          "coherenceReview": {
+                            "type": "boolean"
                           }
                         },
                         "additionalProperties": false
@@ -69432,6 +69442,9 @@
                               "type": "integer",
                               "minimum": 0,
                               "maximum": 60000
+                            },
+                            "coherenceReview": {
+                              "type": "boolean"
                             }
                           },
                           "additionalProperties": false
@@ -69557,6 +69570,9 @@
                               "type": "integer",
                               "minimum": 0,
                               "maximum": 60000
+                            },
+                            "coherenceReview": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -69565,7 +69581,8 @@
                             "debounceSeconds",
                             "debounceMaxSeconds",
                             "firstBubbleMs",
-                            "bubbleGapMs"
+                            "bubbleGapMs",
+                            "coherenceReview"
                           ],
                           "additionalProperties": false
                         }

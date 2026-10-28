@@ -2,20 +2,32 @@ import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'driz
 import {
   AI_REPLY_LANGUAGES,
   BY_BRANCH,
+  REVIEW_THREAD_LINES,
+  REVIEW_VERSION,
   applyGates,
+  applyReview,
+  isMixedOrigin,
+  joinReviewed,
   resolvePlan,
   buildPrompt,
+  reviewItemsOf,
+  reviewWithDeadline,
   scheduleBubbles,
   type AiBranchKey,
   type AiDecision,
   type AiHandoverPlan,
   type AiIntent,
   type AiReplyLanguage,
+  type AppliedReview,
   type AssistantOutcome,
   type EpisodeMessage,
   type EpisodeState,
   type GateVerdict,
   type PacingConfig,
+  type ProviderFailure,
+  type ReviewOrigin,
+  type ReviewOutcome,
+  type ReviewRefusal,
   type TurnUsage,
 } from '@oto/assistant';
 import {
@@ -435,6 +447,8 @@ interface TurnResult {
   knowledge?: TurnKnowledge;
   /** Nothing earlier in the episode waits for a person: read only for a silence the spam tidy may close. */
   quietBefore?: boolean;
+  /** SCRUM-677: what the coherence review left for the commit. */
+  review?: ReviewState;
 }
 
 async function recordModelRun(
@@ -590,7 +604,16 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     verdict.action === 'silent' && verdict.reason === 'INTENT_SILENT'
       ? await quietBeforeBurst(db, conv, episode, turn.triggerMessageId, eligible.episodeStart, turn.id)
       : undefined;
-  return { ...base, conv, decision: outcome.decision, verdict, ...(quietBefore === undefined ? {} : { quietBefore }) };
+  const decided: TurnResult = { ...base, decision: outcome.decision, verdict, ...(quietBefore === undefined ? {} : { quietBefore }) };
+  // SCRUM-677: the coherence review, before anything is scheduled.
+  const reviewed = await reviewStage(db, deps, turn, conv, account, episode, decided);
+  return {
+    ...decided,
+    conv,
+    review: reviewed.state,
+    usage: addUsage(decided.usage, reviewed.outcome?.usage),
+    latencyMs: (decided.latencyMs ?? 0) + Math.max(0, Math.round(reviewed.outcome?.latencyMs ?? 0)),
+  };
 }
 
 // --- 4. The commit ------------------------------------------------------------------------
@@ -609,7 +632,7 @@ function previewOf(text: string | null): string | null {
 }
 
 /** The templates that may carry a line on this thread: active, live, its channel or any, its branch or any. */
-async function usableTemplates(tx: Tx, conv: ConversationRow, account: AccountRow, key: string) {
+async function usableTemplates(tx: Exec, conv: ConversationRow, account: AccountRow, key: string) {
   const branchId = conv.branchId ?? account.branchId;
   return tx
     .select()
@@ -632,13 +655,15 @@ type HoldingLine = {
   templateId: string | null;
   /** The destination's closing line that carried it (SCRUM-220 playbook); null when the intent's template or the model's words did. */
   closingKey: InboxTemplateKey | null;
+  /** The template that carried it, whichever rung (SCRUM-677: the review's locks and record); null for the model's words. */
+  templateKey: InboxTemplateKey | null;
 };
 
-const NO_LINE: HoldingLine = { kind: 'none', items: [], templateId: null, closingKey: null };
+const NO_LINE: HoldingLine = { kind: 'none', items: [], templateId: null, closingKey: null, templateKey: null };
 
 /** A template's line VERBATIM in the customer's language: the most specific usable row, translated, with nothing left to fill. */
 async function templateLine(
-  tx: Tx,
+  tx: Exec,
   conv: ConversationRow,
   account: AccountRow,
   key: string,
@@ -669,7 +694,7 @@ async function templateLine(
  * owns the thread.
  */
 async function closingLine(
-  tx: Tx,
+  tx: Exec,
   conv: ConversationRow,
   account: AccountRow,
   closingKeys: readonly InboxTemplateKey[],
@@ -679,16 +704,18 @@ async function closingLine(
 ): Promise<HoldingLine> {
   for (const closingKey of closingKeys) {
     const line = await templateLine(tx, conv, account, closingKey, language);
-    if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey };
+    if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey, templateKey: closingKey };
   }
   // A plan's own line (SCRUM-677) goes only through its rung, never as a fallback.
   const fallbacks = new Set<string>([plan.templateKey, 'handover_general']);
   for (const key of [...closingKeys, ...PLAN_CLOSING_KEYS]) fallbacks.delete(key);
   for (const key of fallbacks) {
     const line = await templateLine(tx, conv, account, key, language);
-    if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey: null };
+    if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey: null, templateKey: key as InboxTemplateKey };
   }
-  if (modelWords.length > 0) return { kind: 'persona', items: modelWords.map((w) => ({ body: w })), templateId: null, closingKey: null };
+  if (modelWords.length > 0) {
+    return { kind: 'persona', items: modelWords.map((w) => ({ body: w })), templateId: null, closingKey: null, templateKey: null };
+  }
   return NO_LINE;
 }
 
@@ -697,7 +724,7 @@ async function closingLine(
  * template — the thread's park's when it has one, both parks' on a branchless
  * thread — one message per file, through the send path (media, rails R4).
  */
-async function brochureFiles(tx: Tx, conv: ConversationRow, account: AccountRow, language: AiReplyLanguage): Promise<string[]> {
+async function brochureFiles(tx: Exec, conv: ConversationRow, account: AccountRow, language: AiReplyLanguage): Promise<string[]> {
   const rows = await tx
     .select()
     .from(template)
@@ -730,7 +757,7 @@ async function brochureFiles(tx: Tx, conv: ConversationRow, account: AccountRow,
 }
 
 /** No person seated anyone on this thread: every active slot is the system's or the assistant's. */
-async function noPersonRouting(tx: Tx, conv: ConversationRow): Promise<boolean> {
+async function noPersonRouting(tx: Exec, conv: ConversationRow): Promise<boolean> {
   const [row] = await tx
     .select({ id: assignment.id })
     .from(assignment)
@@ -823,7 +850,7 @@ async function aiMove(
   return dest.id;
 }
 
-async function teamFor(tx: Tx, operatorId: string, category: InboxCategory, branchId: string | null) {
+async function teamFor(tx: Exec, operatorId: string, category: InboxCategory, branchId: string | null) {
   const key = TEAM_OF_CATEGORY[category];
   const [t] = await tx
     .select()
@@ -935,7 +962,7 @@ interface RoutingPlan {
  * routing. Read-only; `executeRouting` writes it.
  */
 async function planRouting(
-  tx: Tx,
+  tx: Exec,
   conv: ConversationRow,
   branchNamed: AiBranchKey | null,
   handover: Handover | null,
@@ -1005,6 +1032,220 @@ async function executeRouting(tx: Tx, conv: ConversationRow, plan: RoutingPlan, 
   return out;
 }
 
+// --- The reply, composed and reviewed (SCRUM-677) -----------------------------------------------
+
+/** One line of the reply as composed, with where it came from. */
+interface OutLine extends LineItem {
+  origin: ReviewOrigin;
+  /** The template a fixed line came from; null for the model's words. */
+  templateKey: InboxTemplateKey | null;
+}
+
+/** The reply a verdict makes on this thread, and everything the commit needs to send it. */
+interface ComposedReply {
+  /** The verdict the turn acts on: the gate's, or the unclear hand-over a withheld reply became (item D). */
+  v: GateVerdict | undefined;
+  fallback: boolean;
+  handover: Handover | null;
+  /** Where the thread ends up; null for a silent verdict, which routes nothing. */
+  routing: RoutingPlan | null;
+  replied: boolean;
+  brochure: string[];
+  holding: HoldingLine;
+  lines: OutLine[];
+}
+
+/**
+ * The reply, composed: the answer's bubbles (unless the number's policy
+ * silences the hand-over), then the brochure and the closing line. READ-ONLY,
+ * so the decide phase composes exactly what the commit will, with no
+ * transaction open, for the review to read; the commit composes again under
+ * the thread lock and sends that.
+ */
+async function composeReply(exec: Exec, conv: ConversationRow, account: AccountRow, r: TurnResult): Promise<ComposedReply> {
+  const silentSet = silentIntentsOf(account.silencePolicy);
+  const fallback = withheldReplyFallback(r.verdict, r.decision, silentSet, conv.branchId !== null);
+  const v = fallback ?? r.verdict;
+  // SCRUM-220 playbook: the hand-over this turn makes, with the number's
+  // silence policy read (`ai-destination.ts`).
+  const handover = handoverOf(v, silentSet, fallback !== null);
+  const none: ComposedReply = { v, fallback: fallback !== null, handover, routing: null, replied: false, brochure: [], holding: NO_LINE, lines: [] };
+  if (!v || v.action === 'silent') return none;
+  // Where the thread ends up is read first: the closing line names it.
+  const routing = await planRouting(exec, { ...conv, intent: v.intent, language: v.language }, v.branchNamed, handover, r.knowledge);
+  // A hand-over the number's policy silences says nothing at all, its
+  // answer included (the nanny on Central's own number is the desk's).
+  const replied = v.action === 'answer' && !handover?.silenced;
+  const lines: OutLine[] = replied ? v.bubbles.map((b) => ({ body: b, origin: 'model', templateKey: null })) : [];
+  let brochure: string[] = [];
+  let holding: HoldingLine = NO_LINE;
+  if (handover && !handover.silenced) {
+    if (handover.plan.brochure) brochure = await brochureFiles(exec, conv, account, v.language);
+    holding = await closingLine(
+      exec,
+      conv,
+      account,
+      closingKeysOf(handover, routing.category, ownLineGoes(handover, routing, conv, r.knowledge)),
+      handover.plan,
+      v.language,
+      v.action === 'handover' ? v.holdingBubbles : [],
+    );
+    const fixed = holding.kind === 'template';
+    const key = holding.templateKey;
+    lines.push(
+      ...brochure.map((f): OutLine => ({ body: null, mediaFileIds: [f], origin: 'template', templateKey: 'handover_birthday' })),
+      ...holding.items.map((i): OutLine => ({ ...i, origin: fixed ? 'template' : 'model', templateKey: fixed ? key : null })),
+    );
+  }
+  return { ...none, routing, replied, brochure, holding, lines };
+}
+
+/** What the decide phase's review left for the commit. */
+type ReviewState =
+  | { kind: 'off' }
+  | { kind: 'none' }
+  | { kind: 'not_mixed' }
+  | { kind: 'failed'; reason: ProviderFailure }
+  | { kind: 'ignored'; why: ReviewRefusal }
+  | { kind: 'reviewed'; fingerprint: string; applied: Extract<AppliedReview, { ok: true }> };
+
+/**
+ * What the turn's audit and timeline say the review did: ids, counts and
+ * words, never a line's text. `dropped` names each removed item by its place,
+ * its origin and the template it came from.
+ */
+type CoherenceRecord =
+  | { state: 'skipped'; reason: 'SWITCHED_OFF' | 'NOT_MIXED' | 'NO_REVIEWER' }
+  | { state: 'failed' | 'ignored'; reason: string; version: string }
+  | { state: 'stale'; reason: 'CHANGED'; version: string }
+  | {
+      state: 'reviewed';
+      version: string;
+      items: number;
+      sent: number;
+      merged: number;
+      dropped: Array<{ index: number; origin: ReviewOrigin; key: InboxTemplateKey | null }>;
+    };
+
+/** The composed lines as the review saw them: the commit applies its verdict only to this very reply. */
+function fingerprintOf(lines: readonly OutLine[]): string {
+  return JSON.stringify(lines.map((l) => [l.origin, l.body, l.templateId ?? null, l.mediaFileIds ?? [], l.templateKey]));
+}
+
+const reviewItemsOfLines = (lines: readonly OutLine[]) =>
+  reviewItemsOf(lines.map((l) => ({ origin: l.origin, text: l.body, templateKey: l.templateKey })));
+
+/**
+ * THE REVIEW STAGE, in the decide phase with no transaction open: after the
+ * gate, on a send that mixes the model's words and a fixed line, one call to
+ * the reviewer within its cap (`@oto/assistant` review.ts). The operator's
+ * switch is read fresh, like the caps. Never throws for the reviewer's
+ * reasons and never blocks the reply: anything but valid operations leaves
+ * the reply as composed.
+ */
+async function reviewStage(
+  db: Db,
+  deps: AiEngineDeps,
+  turn: TurnRow,
+  conv: ConversationRow,
+  account: AccountRow,
+  episode: readonly EpisodeRow[],
+  r: TurnResult,
+): Promise<{ state: ReviewState; outcome: ReviewOutcome | null }> {
+  if ((await assistantSettingOverridesOf(db, turn.operatorId)).inbox.coherenceReview === false) return { state: { kind: 'off' }, outcome: null };
+  const reviewer = deps.runtime.reviewer;
+  if (!reviewer) return { state: { kind: 'none' }, outcome: null };
+  const composed = await composeReply(db, conv, account, r);
+  const items = reviewItemsOfLines(composed.lines);
+  if (!composed.v || composed.v.action === 'silent' || !isMixedOrigin(items)) return { state: { kind: 'not_mixed' }, outcome: null };
+  const startedAt = new Date();
+  const outcome = await reviewWithDeadline(
+    reviewer,
+    { thread: episode.slice(-REVIEW_THREAD_LINES).map((m) => ({ from: m.from, text: m.text })), items, language: composed.v.language },
+    deps.runtime.config.reviewTimeoutMs,
+  );
+  await recordReviewRun(db, turn, conv, outcome, startedAt);
+  if (!outcome.ok) return { state: { kind: 'failed', reason: outcome.reason }, outcome };
+  const applied = applyReview(items, outcome.decision);
+  if (!applied.ok) return { state: { kind: 'ignored', why: applied.why }, outcome };
+  return { state: { kind: 'reviewed', fingerprint: fingerprintOf(composed.lines), applied }, outcome };
+}
+
+/** One ops run per review call: ids, the outcome word, latency and tokens. Never a line. */
+async function recordReviewRun(db: Db, turn: TurnRow, conv: ConversationRow, outcome: ReviewOutcome, startedAt: Date): Promise<void> {
+  const reason = outcome.ok ? null : outcome.reason;
+  await recordRun(db, {
+    kind: 'adapter',
+    name: 'adapter:inbox.ai.review',
+    outcome: outcome.ok ? 'ok' : 'failed',
+    startedAt,
+    operatorId: turn.operatorId,
+    branchId: conv.branchId,
+    detail: {
+      turnId: turn.id,
+      conversationId: turn.conversationId,
+      outcome: outcome.ok ? 'ok' : reason,
+      version: REVIEW_VERSION,
+      model: outcome.model,
+      latencyMs: Math.max(0, Math.round(outcome.latencyMs)),
+      inputTokens: outcome.usage?.inputTokens ?? null,
+      outputTokens: outcome.usage?.outputTokens ?? null,
+      providerRequestId: outcome.requestId,
+      errorClass: outcome.ok ? null : (outcome.error?.errorClass ?? null),
+      status: outcome.ok ? null : (outcome.error?.status ?? null),
+    },
+    ...(reason ? { error: opsError(reason) } : {}),
+  });
+}
+
+/**
+ * The commit's reading of the review: its operations over the lines the
+ * commit composed — only when they are the very lines the reviewer saw
+ * (else `stale`, sent as composed) — and the record the turn keeps.
+ */
+function settleReview(lines: readonly OutLine[], review: ReviewState | undefined): { lines: LineItem[]; record: CoherenceRecord | null } {
+  if (lines.length === 0) return { lines: [], record: null };
+  const as = (record: CoherenceRecord) => ({ lines: [...lines] as LineItem[], record });
+  if (review?.kind === 'off') return as({ state: 'skipped', reason: 'SWITCHED_OFF' });
+  if (!isMixedOrigin(reviewItemsOfLines(lines))) return as({ state: 'skipped', reason: 'NOT_MIXED' });
+  if (!review || review.kind === 'none') return as({ state: 'skipped', reason: 'NO_REVIEWER' });
+  if (review.kind === 'not_mixed') return as({ state: 'stale', reason: 'CHANGED', version: REVIEW_VERSION });
+  if (review.kind === 'failed') return as({ state: 'failed', reason: review.reason, version: REVIEW_VERSION });
+  if (review.kind === 'ignored') return as({ state: 'ignored', reason: review.why, version: REVIEW_VERSION });
+  if (fingerprintOf(lines) !== review.fingerprint) return as({ state: 'stale', reason: 'CHANGED', version: REVIEW_VERSION });
+  const { groups, dropped, merged } = review.applied;
+  const bodies = lines.map((l) => l.body);
+  const out = groups.map((g): LineItem => {
+    if (g.indices.length === 1) return lines[g.indices[0]!]!;
+    // A merged line is its items' words joined, nothing added; no template
+    // carried it verbatim, so it names none.
+    const [body] = joinReviewed(bodies, [g]);
+    return { body: body ?? null, templateId: null, mediaFileIds: [] };
+  });
+  return {
+    lines: out,
+    record: {
+      state: 'reviewed',
+      version: REVIEW_VERSION,
+      items: lines.length,
+      sent: out.length,
+      merged,
+      dropped: dropped.map((index) => ({ index, origin: lines[index]!.origin, key: lines[index]!.templateKey })),
+    },
+  };
+}
+
+/** Two calls' usage as the turn's: the daily token cap counts the review too. */
+function addUsage(a: TurnUsage | null | undefined, b: TurnUsage | null | undefined): TurnUsage | null {
+  if (!a && !b) return null;
+  return {
+    inputTokens: (a?.inputTokens ?? 0) + (b?.inputTokens ?? 0),
+    outputTokens: (a?.outputTokens ?? 0) + (b?.outputTokens ?? 0),
+    cacheReadTokens: (a?.cacheReadTokens ?? 0) + (b?.cacheReadTokens ?? 0),
+    cacheWriteTokens: (a?.cacheWriteTokens ?? 0) + (b?.cacheWriteTokens ?? 0),
+  };
+}
+
 /** Writes the turn's final row and its decide audit. */
 async function closeTurn(
   tx: Tx,
@@ -1015,6 +1256,7 @@ async function closeTurn(
   r: TurnResult,
   at: Date,
   messageIds: string[] = [],
+  coherence: CoherenceRecord | null = null,
 ): Promise<void> {
   const v = r.verdict;
   const d = r.decision;
@@ -1061,6 +1303,8 @@ async function closeTurn(
       // keeps the primary in `intent`; the audit keeps them all.
       intents: v?.intents ?? d?.intents ?? null,
       cacheWriteTokens: r.usage?.cacheWriteTokens ?? null,
+      // SCRUM-677: what the coherence review did to the reply; null when nothing was sent.
+      coherence,
     },
   });
 }
@@ -1230,14 +1474,14 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       // The gate's own word stays the turn's reason, also when a withheld
       // reply turns into the unclear hand-over (item D).
       const reason = r.silence ?? (gated ? gated.reason : 'PROVIDER_ERROR');
-      const silentSet = silentIntentsOf(account.silencePolicy);
-      const fallback = withheldReplyFallback(gated, r.decision, silentSet, conv.branchId !== null);
-      const v = fallback ?? gated;
-      const turnResult: TurnResult = fallback ? { ...r, verdict: fallback } : r;
-      // SCRUM-220 playbook: the hand-over this turn makes, with the number's
-      // silence policy read (`ai-destination.ts`).
-      const handover = handoverOf(v, silentSet, fallback !== null);
+      // The reply as the verdict composes it on the thread as it now stands
+      // (SCRUM-677: the same composition the review read, read again under
+      // the lock), and the review's operations over it when it still matches.
+      const composed = await composeReply(tx, conv, account, r);
+      const { v, handover } = composed;
+      const turnResult: TurnResult = composed.fallback ? { ...r, verdict: v } : r;
       const finalReason = handoverReason(handover, reason);
+      const settled = settleReview(composed.lines, r.review);
 
       // SHADOW (§B.5): the decision on the turn, and nothing the customer
       // sees. Since the test night (2026-10-21, W5) what it WOULD have said —
@@ -1249,18 +1493,8 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       if (account.aiMode === 'shadow') {
         let messageIds: string[] = [];
         if (v && v.action !== 'silent') {
-          const lines: string[] = v.action === 'answer' && !handover?.silenced ? [...v.bubbles] : [];
-          let holding: HoldingLine = NO_LINE;
-          let destination: InboxCategory | null = null;
-          if (handover) {
-            const routed = await planRouting(tx, conv, v.branchNamed, handover, r.knowledge);
-            destination = routed.category;
-            if (!handover.silenced) {
-              const keys = closingKeysOf(handover, destination, ownLineGoes(handover, routed, conv, r.knowledge));
-              holding = await closingLine(tx, conv, account, keys, handover.plan, v.language, v.action === 'handover' ? v.holdingBubbles : []);
-              lines.push(...holding.items.flatMap((i) => (i.body ? [i.body] : [])));
-            }
-          }
+          const holding = composed.holding;
+          const lines = settled.lines.flatMap((l) => (l.body ? [l.body] : []));
           const id = await writeShadowLine(tx, conv, v.language, lines, at);
           messageIds = id ? [id] : [];
           await tx.insert(inboxEvent).values(
@@ -1273,13 +1507,14 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
               action: handover?.silenced ? 'silent_handover' : v.action === 'silent_handover' ? 'handover' : v.action,
               templateKey: handover?.plan.templateKey ?? null,
               closingKey: holding.closingKey,
-              destination,
+              destination: handover ? (composed.routing?.category ?? null) : null,
               holdingLine: holding.kind,
               brochure: handover && !handover.silenced ? handover.plan.brochure : false,
+              coherence: settled.record,
             }, at),
           );
         }
-        await closeTurn(tx, turn, conv, 'shadowed', finalReason, turnResult, at, messageIds);
+        await closeTurn(tx, turn, conv, 'shadowed', finalReason, turnResult, at, messageIds, settled.record);
         return 'shadowed';
       }
 
@@ -1320,28 +1555,10 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       // to when the channel sent no hint — a Thai birthday went to the EN/RU
       // birthday pair.
       const classified: ConversationRow = { ...conv, intent: v.intent, language: v.language };
-
-      // Where the thread ends up is read first: the closing line names it.
-      const plan = await planRouting(tx, classified, v.branchNamed, handover, r.knowledge);
-      // A hand-over the number's policy silences says nothing at all, its
-      // answer included (the nanny on Central's own number is the desk's).
-      const replied = v.action === 'answer' && !handover?.silenced;
-      const items: LineItem[] = replied ? v.bubbles.map((b) => ({ body: b })) : [];
-      let brochure: string[] = [];
-      let holding: HoldingLine = NO_LINE;
-      if (handover && !handover.silenced) {
-        if (handover.plan.brochure) brochure = await brochureFiles(tx, conv, account, v.language);
-        holding = await closingLine(
-          tx,
-          conv,
-          account,
-          closingKeysOf(handover, plan.category, ownLineGoes(handover, plan, conv, r.knowledge)),
-          handover.plan,
-          v.language,
-          v.action === 'handover' ? v.holdingBubbles : [],
-        );
-        items.push(...brochure.map((f) => ({ body: null, mediaFileIds: [f] })), ...holding.items);
-      }
+      // Composed above, before anything was written; a non-silent verdict always has its routing read.
+      const plan = composed.routing!;
+      const { replied, brochure, holding } = composed;
+      const items = settled.lines;
       // SCRUM-638: the operator's saved typing pace, the same fresh-read rule
       // as the caps; the document's two fields map onto the native ceilings.
       const pace = (await assistantSettingOverridesOf(tx, conv.operatorId)).inbox;
@@ -1352,7 +1569,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       const messageIds = await writeLines(tx, conv, v.language, items, at, random, pacing);
       const routing = await executeRouting(tx, classified, plan, at);
 
-      if (replied) {
+      if (replied && v.action === 'answer') {
         await tx.insert(inboxEvent).values(
           event(conv, 'ai_replied', {
             turnId: turn.id,
@@ -1364,6 +1581,8 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             // SCRUM-220 playbook: the one language offer, so the next turn's
             // gate refuses a second (`episodeFacts`).
             languageOffer: v.languageOffer,
+            // SCRUM-677: what the coherence review removed or joined, by place and origin.
+            coherence: settled.record,
           }, at),
         );
       }
@@ -1386,6 +1605,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             messageIds,
             reroutedTeamId: routing.reroutedTeamId,
             branchId: routing.branchSet,
+            coherence: settled.record,
           }, at),
         );
         await audit.record(tx, {
@@ -1416,7 +1636,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       if (v.action === 'answer' && v.mayAutoHandle && !handover) await handleByAi(tx, conv, turn.id, at, null);
 
       const state = handover ? 'handed_over' : 'answered';
-      await closeTurn(tx, turn, conv, state, finalReason, turnResult, at, messageIds);
+      await closeTurn(tx, turn, conv, state, finalReason, turnResult, at, messageIds, settled.record);
       return state;
     },
   );
