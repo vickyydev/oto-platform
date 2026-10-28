@@ -90,12 +90,15 @@ function RoutingHost({ canAt, isCurrent }: { canAt: (branchId: string | null) =>
   </>;
 }
 
+const OPERATOR_WIDE_TEAM_LABEL = { birthdays: 'Birthdays & events', marketing: 'Marketing', gm: 'GM' } as const;
+
 export function missingTeamIdentities(data: RoutingTeams): TeamIdentity[] {
   const held = (key: TeamCreate['key'], branchId: string | null) =>
     data.teamReferences.some(team => team.key === key && team.branchId === branchId);
   return [
-    ...(data.operatorWide ? (['birthdays', 'marketing'] as const).filter(key => !held(key, null))
-      .map(key => ({ key, branchId: null, label: `${key === 'birthdays' ? 'Birthdays & events' : 'Marketing'} · Operator-wide` })) : []),
+    // `gm`: the playbook's GM team (SCRUM-220), operator-wide like Birthdays & events and Marketing.
+    ...(data.operatorWide ? (['birthdays', 'marketing', 'gm'] as const).filter(key => !held(key, null))
+      .map(key => ({ key, branchId: null, label: `${OPERATOR_WIDE_TEAM_LABEL[key]} · Operator-wide` })) : []),
     ...data.branches.filter(branch => !held('reception', branch.id))
       .map(branch => ({ key: 'reception' as const, branchId: branch.id, label: `Reception · ${branch.name}` })),
   ];
@@ -173,7 +176,7 @@ export function TeamsRoutingContent({ data, metadata = null, error, scope, archi
 }
 
 function categoryLabel(category: RuleCreate['category']) {
-  return { birthdays: 'Birthdays & events', general: 'General enquiries', marketing: 'Marketing' }[category];
+  return { birthdays: 'Birthdays & events', general: 'General enquiries', marketing: 'Marketing', gm: 'GM' }[category];
 }
 
 async function perform(intent: Intent, key: string) {
@@ -301,7 +304,7 @@ function RuleEditor({ rule, directory, onClose, onSaved, isCurrent }: {
     <Field label="Team"><Select value={teamId} onChange={setTeamId} disabled={write.disabled} placeholder="Choose a team"
       options={directory.teamReferences.map(team => ({ value: team.id, label: `${team.name} · ${team.branchId === null ? 'Operator-wide' : directory.branches.find(branch => branch.id === team.branchId)?.name ?? 'Park team'}` }))} /></Field>
     <Field label="Category"><Select value={category} onChange={value => setCategory(value as RuleCreate['category'])} disabled={write.disabled}
-      options={(['birthdays', 'general', 'marketing'] as const).map(value => ({ value, label: categoryLabel(value) }))} /></Field>
+      options={(['birthdays', 'general', 'marketing', 'gm'] as const).map(value => ({ value, label: categoryLabel(value) }))} /></Field>
     <Field label="Language" hint="Leave blank for any language. Existing language text is retained; matching ignores case."><TextInput value={language} onChange={setLanguage} disabled={write.disabled} /></Field>
     <Field label="Park" hint="Any park is an operator-wide wildcard."><Select value={branchId} onChange={setBranchId} disabled={write.disabled}
       placeholder={directory.operatorWide ? 'Any park' : undefined} options={directory.branches.map(branch => ({ value: branch.id, label: branch.name }))} /></Field>

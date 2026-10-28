@@ -10,6 +10,7 @@
  * `@oto/shared/inbox`, which the api counts with too.
  */
 import {
+  INBOX_CATEGORY_KEYS,
   INBOX_DAY_TIMEZONE,
   INBOX_TAB_LABELS,
   teamDestOf,
@@ -35,13 +36,19 @@ export const CATEGORY_LABEL: Record<InboxCategoryKey, string> = {
   birthdays: 'Birthdays & Events',
   general: 'General',
   marketing: 'Marketing',
+  /** The playbook's general-manager queue (SCRUM-220). */
+  gm: 'GM',
 };
 
-/** violet = Birthdays & Events, sky = General / reception, pink = Marketing. */
+/**
+ * violet = Birthdays & Events, sky = General / reception, pink = Marketing;
+ * amber = the GM queue (SCRUM-220 playbook), the GM team's seeded colour.
+ */
 export const CATEGORY_TINT: Record<InboxCategoryKey, string> = {
   birthdays: 'bg-violet-50 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-violet-200 dark:ring-violet-500/30',
   general: 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-200 dark:ring-sky-500/30',
   marketing: 'bg-pink-50 dark:bg-pink-500/15 text-pink-700 dark:text-pink-300 ring-pink-200 dark:ring-pink-500/30',
+  gm: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
 };
 
 /** The stacked bar's segments (`CategoryMixCard`, :1825-1827). */
@@ -49,6 +56,7 @@ export const CATEGORY_BAR: Record<InboxCategoryKey, string> = {
   birthdays: 'bg-violet-500',
   general: 'bg-sky-500',
   marketing: 'bg-pink-500',
+  gm: 'bg-amber-500',
 };
 
 /** The IT Brief's two statuses; the prototype stores Active as "new". */
@@ -84,8 +92,12 @@ export const LANGUAGE_OPTIONS: [string, string][] = [
   ['th', 'Thai'],
 ];
 
-/** The filter's categories and statuses (`FilterSelect` options, :1447-1455), from the colour code's labels. */
-export const CATEGORY_OPTIONS: [InboxCategoryKey, string][] = (['birthdays', 'general', 'marketing'] as const).map(
+/**
+ * The filter's categories and statuses (`FilterSelect` options, :1447-1455),
+ * from the colour code's labels; every category the api names, the GM queue
+ * (SCRUM-220 playbook) among them.
+ */
+export const CATEGORY_OPTIONS: [InboxCategoryKey, string][] = INBOX_CATEGORY_KEYS.map(
   (k): [InboxCategoryKey, string] => [k, CATEGORY_LABEL[k]],
 );
 export const STATUS_OPTIONS: [InboxStatusKey, string][] = (['active', 'handled'] as const).map(
@@ -777,6 +789,9 @@ export function moveOptions(me: Pick<InboxMe, 'teams'>): MoveOption[] {
   }
   const marketing = me.teams.find((t) => t.kind === 'marketing');
   if (marketing) out.push({ value: 'marketing', label: marketing.name, dest: { kind: 'marketing' } });
+  // The playbook's GM queue (SCRUM-220), operator-wide: after the prototype's four.
+  const gm = me.teams.find((t) => t.kind === 'gm');
+  if (gm) out.push({ value: 'gm', label: gm.name, dest: { kind: 'gm' } });
   return out;
 }
 

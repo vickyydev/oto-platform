@@ -40,6 +40,7 @@ const row: ConversationRow = {
   id: CONV,
   channel: 'whatsapp',
   channelAccountId: '0192f0a0-1234-7abc-8def-0123456789ad',
+  channelAccountName: 'Reception · Central Floresta',
   canReply: true,
   contact: { id: CONTACT, channel: 'whatsapp', handle: '66900000001', displayName: 'Liam Demo', phone: null, language: 'en', erased: false },
   category: 'general',
@@ -165,7 +166,7 @@ describe('the dark palette on the key surfaces', () => {
       scope: 'all',
       population: 'active',
       day: '2026-10-22',
-      byCategory: { birthdays: 1, general: 2, marketing: 0 },
+      byCategory: { birthdays: 1, general: 2, marketing: 0, gm: 0 },
     };
     const html = renderToStaticMarkup(
       createElement(Dashboard, { data, error: null, unansweredOnly: false, onToggleUnanswered: noop }),

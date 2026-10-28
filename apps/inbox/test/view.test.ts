@@ -152,6 +152,26 @@ describe('the write controls’ choices (I3b)', () => {
     expect(moveValue({ category: 'birthdays', branchId: CHALONG }, me)).toBe('birthdays');
   });
 
+  it('the move badge offers the GM queue last when the operator has the GM team (SCRUM-220 playbook)', () => {
+    const withGm = {
+      teams: [
+        ...me.teams,
+        { id: 'tm', kind: 'marketing' as const, name: 'Marketing', colour: 'pink', branchId: null, member: false },
+        { id: 'tg', kind: 'gm' as const, name: 'GM', colour: 'amber', branchId: null, member: false },
+      ],
+    };
+    expect(moveOptions(withGm).map((o) => [o.value, o.label])).toEqual([
+      ['birthdays', 'Birthdays & Events'],
+      [`reception:${CENTRAL}`, 'Reception · Central'],
+      [`reception:${CHALONG}`, 'Reception · Chalong'],
+      ['marketing', 'Marketing'],
+      ['gm', 'GM'],
+    ]);
+    expect(moveOptions(withGm).at(-1)!.dest).toEqual({ kind: 'gm' });
+    // A gm thread sits with the GM team, whatever its park.
+    expect(moveValue({ category: 'gm', branchId: CHALONG }, me)).toBe('gm');
+  });
+
   it('a slot picker never offers someone already on the thread; only the primary offers the desks', () => {
     const row = { assignments: [assignee({ accountId: ALINA })] };
     expect(slotOptions(row, me, 'support').map((o) => o.label)).toEqual(['Hanna']);

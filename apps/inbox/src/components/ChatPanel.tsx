@@ -17,7 +17,7 @@ import {
   Repeat,
   X,
 } from 'lucide-react';
-import type { InboxCategoryKey } from '@oto/shared/inbox';
+import { INBOX_CATEGORY_KEYS, type InboxCategoryKey } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
 import { assistantApi } from '@/api/assistant';
 import { inboxApi, type ConversationDetail, type ConversationRow, type InboxMe, type Message } from '@/api/inbox';
@@ -75,7 +75,8 @@ export interface Thread {
 
 type Busy = 'primary' | 'support' | 'divert' | 'move' | 'branch' | 'reopen' | 'ai' | null;
 
-const CATEGORY_KEYS: readonly InboxCategoryKey[] = ['birthdays', 'general', 'marketing'];
+// Every category the api names, the playbook's GM queue (SCRUM-220) among them.
+const CATEGORY_KEYS: readonly InboxCategoryKey[] = INBOX_CATEGORY_KEYS;
 const categoryOf = (v: unknown): InboxCategoryKey | null =>
   CATEGORY_KEYS.includes(v as InboxCategoryKey) ? (v as InboxCategoryKey) : null;
 

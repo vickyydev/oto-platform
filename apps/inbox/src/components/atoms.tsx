@@ -4,7 +4,7 @@
 // `CategoryBadge`, `ChannelDot`, `MetricCard`, `CategoryMixCard`,
 // `FilterSelect`, `EmptyState`.
 import type { ReactNode } from 'react';
-import { Building2, ChevronDown, Megaphone, PartyPopper, TrendingUp, type LucideIcon } from 'lucide-react';
+import { Briefcase, Building2, ChevronDown, Megaphone, PartyPopper, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { InboxCategoryKey, InboxChannelKey, InboxStatusKey } from '@oto/shared/inbox';
 import {
   CATEGORY_BAR,
@@ -183,11 +183,13 @@ const CATEGORY_ICON: Record<InboxCategoryKey, LucideIcon> = {
   birthdays: PartyPopper,
   general: Building2,
   marketing: Megaphone,
+  gm: Briefcase,
 };
 const CATEGORY_ICON_INK: Record<InboxCategoryKey, string> = {
   birthdays: 'text-violet-500 dark:text-violet-400',
   general: 'text-sky-500',
   marketing: 'text-pink-500',
+  gm: 'text-amber-500',
 };
 
 /** "By category": the stacked violet / sky / pink bar with its icon-and-count legend (:1813-1836). */
@@ -202,8 +204,8 @@ export function CategoryMixCard({
   /** Present, each legend entry filters the list to its category (a second press clears it). */
   onPick?: (category: InboxCategoryKey) => void;
 }) {
-  const keys: InboxCategoryKey[] = ['birthdays', 'general', 'marketing'];
-  const total = Math.max(1, data.birthdays + data.general + data.marketing);
+  const keys: InboxCategoryKey[] = ['birthdays', 'general', 'marketing', 'gm'];
+  const total = Math.max(1, data.birthdays + data.general + data.marketing + data.gm);
   const w = (n: number) => `${Math.round((n / total) * 100)}%`;
   return (
     <div className="min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">

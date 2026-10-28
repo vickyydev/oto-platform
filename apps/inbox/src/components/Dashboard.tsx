@@ -91,7 +91,7 @@ export function Dashboard({
         hint={scope ?? undefined}
       />
       <CategoryMixCard
-        data={data?.byCategory ?? { birthdays: 0, general: 0, marketing: 0 }}
+        data={data?.byCategory ?? { birthdays: 0, general: 0, marketing: 0, gm: 0 }}
         selected={category}
         {...(onPickCategory ? { onPick: onPickCategory } : {})}
       />

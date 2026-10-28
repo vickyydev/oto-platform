@@ -211,6 +211,8 @@ export const CATEGORY_DEFAULT_INTENT: Record<InboxCategoryKey, AiIntent> = {
   birthdays: 'birthday_party',
   general: 'faq',
   marketing: 'influencer_marketing',
+  // The playbook's GM queue (SCRUM-220): its most common matter, as the api's default.
+  gm: 'complaint_online',
 };
 
 export function defaultExampleIntent(threadIntent: string | null, category: InboxCategoryKey): AiIntent | '' {

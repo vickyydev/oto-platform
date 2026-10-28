@@ -198,7 +198,7 @@ describe('F3 — the phone shows the list first', () => {
     active: 12,
     averageFirstResponseSeconds: 754,
     population: 'active',
-    byCategory: { birthdays: 5, general: 4, marketing: 3 },
+    byCategory: { birthdays: 5, general: 4, marketing: 3, gm: 0 },
     day: '2026-10-22',
   };
 

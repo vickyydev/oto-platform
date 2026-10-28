@@ -14,6 +14,7 @@ const directory = (): RoutingTeams & RoutingRules => ({
     { id: 'zz-reception', key: 'reception', name: 'ZZ TEST Reception', branchId: 'zz-park' },
     { id: 'zz-birthdays', key: 'birthdays', name: 'ZZ TEST Birthdays', branchId: null },
     { id: 'zz-marketing', key: 'marketing', name: 'ZZ TEST Marketing', branchId: null },
+    { id: 'zz-gm', key: 'gm', name: 'ZZ TEST GM', branchId: null },
   ],
   teams: [{ id: 'zz-reception', key: 'reception', name: 'ZZ TEST Reception', branchId: 'zz-park', branchName: 'ZZ TEST Park',
     departmentId: 'zz-department', departmentName: 'ZZ TEST Reception department', colour: 'sky', sortOrder: -2, createdAt: NOW, updatedAt: NOW }],
@@ -71,6 +72,16 @@ describe('Teams & routing read and offer states', () => {
     expect(missingTeamIdentities(data).map(identity => [identity.key, identity.branchId])).toEqual([
       ['reception', 'zz-new-park'],
     ]);
+  });
+
+  it('offers the playbook GM team (SCRUM-220) as an operator-wide identity when it is missing', () => {
+    const data = directory();
+    data.teamReferences = data.teamReferences.filter(team => team.key !== 'gm');
+    expect(missingTeamIdentities(data).map(identity => [identity.key, identity.branchId, identity.label])).toEqual([
+      ['gm', null, 'GM · Operator-wide'],
+    ]);
+    data.operatorWide = false;
+    expect(missingTeamIdentities(data)).toEqual([]);
   });
 
   it('filters display by selected scope without turning a park selection into a wildcard', () => {

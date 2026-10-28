@@ -102,6 +102,7 @@ function row(over: Partial<ConversationRow> = {}): ConversationRow {
     id: CONV,
     channel: 'facebook',
     channelAccountId: CHANNEL_ACCOUNT,
+    channelAccountName: 'Facebook page',
     canReply: true,
     contact: { id: CONTACT, channel: 'facebook', handle: '939562181554109', displayName: 'Liam Demo', phone: null, language: 'en', erased: false },
     category: 'general',
@@ -460,7 +461,7 @@ describe('the wording (U9)', () => {
       averageFirstResponseSeconds: 252,
       scope: 'mine',
       population: 'active',
-      byCategory: { birthdays: 0, general: 0, marketing: 0 },
+      byCategory: { birthdays: 0, general: 0, marketing: 0, gm: 0 },
     };
     const card = (d: DashboardData) =>
       renderToStaticMarkup(createElement(Dashboard, { data: d, error: null, unansweredOnly: false, onToggleUnanswered: noop }));
