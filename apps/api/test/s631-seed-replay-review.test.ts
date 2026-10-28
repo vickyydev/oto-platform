@@ -69,12 +69,13 @@ describe('SCRUM-631 department mirror and normal platform seed replay', () => {
     await syncInboxSetup(ctx.db);
     const departments = await departmentsFor(operatorId);
     const desks = await teamsFor(operatorId);
-    expect(departments).toHaveLength(3);
+    // Birthdays, Marketing, the GM queue (SCRUM-220 playbook) and Reception.
+    expect(departments).toHaveLength(4);
     expect(departments.every(row => row.externalId === null)).toBe(true);
     expect(departments.filter(row => row.branchId === null).map(row => row.name).sort())
-      .toEqual([INBOX_DEPARTMENTS.birthdays, INBOX_DEPARTMENTS.marketing].sort());
+      .toEqual([INBOX_DEPARTMENTS.birthdays, INBOX_DEPARTMENTS.marketing, INBOX_DEPARTMENTS.gm].sort());
     expect(departments.find(row => row.branchId === branchId)?.name).toBe('reception');
-    expect(desks).toHaveLength(3);
+    expect(desks).toHaveLength(4);
     await syncInboxSetup(ctx.db);
     expect(await departmentsFor(operatorId)).toEqual(departments);
     expect(await teamsFor(operatorId)).toEqual(desks);
@@ -91,10 +92,10 @@ describe('SCRUM-631 department mirror and normal platform seed replay', () => {
     const renamed = await departmentsFor(operatorId);
     await syncInboxSetup(ctx.db);
     const after = await departmentsFor(operatorId);
-    expect(after).toHaveLength(beforeDepartments.length + 3);
+    expect(after).toHaveLength(beforeDepartments.length + 4);
     for (const row of renamed) expect(after.find(candidate => candidate.id === row.id)).toEqual(row);
     expect(after.filter(row => !renamed.some(original => original.id === row.id)).map(row => row.name).sort())
-      .toEqual([INBOX_DEPARTMENTS.birthdays, INBOX_DEPARTMENTS.marketing, 'reception'].sort());
+      .toEqual([INBOX_DEPARTMENTS.birthdays, INBOX_DEPARTMENTS.marketing, INBOX_DEPARTMENTS.gm, 'reception'].sort());
     for (const original of beforeDepartments) {
       expect(after.some(row => row.name === original.name && row.branchId === original.branchId && row.externalId === null)).toBe(true);
     }
