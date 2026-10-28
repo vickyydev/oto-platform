@@ -1,0 +1,63 @@
+{
+  "ticket": "SCRUM-680",
+  "sourceSha": "823ae0e9e83e5529d78cee0156cfb00743d0f1f3",
+  "runId": "40747151509",
+  "branch": "main",
+  "event": "push",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/40747151509",
+  "verifiedAt": "2026-10-28T19:04:08.139Z",
+  "green": true,
+  "jobs": [
+    {
+      "name": "ci",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T18:39:30Z",
+      "completedAt": "2026-10-28T18:57:23Z"
+    },
+    {
+      "name": "pos-tests",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T18:39:29Z",
+      "completedAt": "2026-10-28T18:42:50Z"
+    },
+    {
+      "name": "oto-app",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T18:39:30Z",
+      "completedAt": "2026-10-28T18:43:46Z"
+    },
+    {
+      "name": "api-tests (3)",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T18:39:30Z",
+      "completedAt": "2026-10-28T18:56:41Z",
+      "summaries": [
+        "Test Files  134 passed | 2 skipped (136)",
+        "Tests  1871 passed | 121 skipped | 1 todo (1993)",
+        "Duration  839.58s (transform 5.36s, setup 0ms, collect 131.06s, tests 687.18s, environment 17ms, prepare 6.11s)"
+      ]
+    },
+    {
+      "name": "api-tests (1)",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T18:39:30Z",
+      "completedAt": "2026-10-28T19:01:46Z",
+      "summaries": [
+        "Test Files  135 passed | 2 skipped (137)",
+        "Tests  2014 passed | 106 skipped (2120)",
+        "Duration  1067.95s (transform 8.52s, setup 0ms, collect 214.74s, tests 824.29s, environment 29ms, prepare 9.69s)"
+      ]
+    },
+    {
+      "name": "api-tests (2)",
+      "conclusion": "success",
+      "startedAt": "2026-10-28T18:39:30Z",
+      "completedAt": "2026-10-28T19:02:22Z",
+      "summaries": [
+        "Test Files  133 passed | 4 skipped (137)",
+        "Tests  1950 passed | 174 skipped | 4 todo (2128)",
+        "Duration  1173.99s (transform 7.84s, setup 0ms, collect 222.34s, tests 919.62s, environment 30ms, prepare 10.55s)"
+      ]
+    }
+  ]
+}

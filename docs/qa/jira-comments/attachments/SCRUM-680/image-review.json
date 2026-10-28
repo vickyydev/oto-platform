@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-680",
+  "inspected": true,
+  "reviewedAt": "2026-10-28T19:09:21.630Z",
+  "sourceSha": "823ae0e9e83e5529d78cee0156cfb00743d0f1f3",
+  "images": [
+    {
+      "file": "SCRUM-680-01-tax-page.png",
+      "sha256": "eb7286558b50b0eeab10e9c2e5f69a5ea593b67453d6545841d9fbabb9500fa0",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-680-02-reference-refusals.png",
+      "sha256": "8117ddc4668725af1a6d318f1564fbe0f908479a797b145d8eb96482cbaf21cc",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    }
+  ],
+  "observations": [
+    "Native Tax page renders after deployment.",
+    "Labelled response card shows both exact missing-reference refusals and distinguishes local regressions from staging.",
+    "Caption and source timestamp are legible; identity text is masked."
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "ticket": "SCRUM-680",
+  "sourceSha": "823ae0e9e83e5529d78cee0156cfb00743d0f1f3",
+  "ciRunId": "40747151509",
+  "startedAt": "2026-10-28T19:07:29.389Z",
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-28T19:07:32.356Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "id": "dep-dbh4dkp7lnhs738jv12g",
+          "sourceSha": "823ae0e9e83e5529d78cee0156cfb00743d0f1f3",
+          "status": "live",
+          "finishedAt": "2026-10-28T19:06:08.623391Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "id": "dep-dbh4dkp7lnhs738jv2jg",
+          "sourceSha": "823ae0e9e83e5529d78cee0156cfb00743d0f1f3",
+          "status": "live",
+          "finishedAt": "2026-10-28T19:03:40.273257Z"
+        }
+      ],
+      "ciGreenJobs": 6
+    },
+    {
+      "stage": "after-proof",
+      "at": "2026-10-28T19:07:48.794Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "id": "dep-dbh4dkp7lnhs738jv12g",
+          "sourceSha": "823ae0e9e83e5529d78cee0156cfb00743d0f1f3",
+          "status": "live",
+          "finishedAt": "2026-10-28T19:06:08.623391Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "id": "dep-dbh4dkp7lnhs738jv2jg",
+          "sourceSha": "823ae0e9e83e5529d78cee0156cfb00743d0f1f3",
+          "status": "live",
+          "finishedAt": "2026-10-28T19:03:40.273257Z"
+        }
+      ],
+      "ciGreenJobs": 6
+    }
+  ],
+  "checks": [
+    {
+      "case": "Missing category",
+      "method": "POST",
+      "path": "/branches/:branchId/tax-overrides",
+      "status": 404,
+      "code": "NOT_FOUND",
+      "message": "Category not found",
+      "requestReference": "8d7e8a48-41fe-4fa3-b222-b86a18722625",
+      "at": "2026-10-28T19:07:36.668Z"
+    },
+    {
+      "case": "Missing product",
+      "method": "POST",
+      "path": "/branches/:branchId/tax-overrides",
+      "status": 404,
+      "code": "NOT_FOUND",
+      "message": "Product not found",
+      "requestReference": "8555fe57-7e4a-41c7-89d6-9f7aec301335",
+      "at": "2026-10-28T19:07:37.194Z"
+    },
+    {
+      "case": "No override created or changed",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "at": "2026-10-28T19:07:37.664Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "SCRUM-680-01-tax-page.png",
+      "capturedAt": "2026-10-28T19:07:45.678Z",
+      "sha256": "eb7286558b50b0eeab10e9c2e5f69a5ea593b67453d6545841d9fbabb9500fa0",
+      "privacyApplied": true,
+      "labelledCard": false
+    },
+    {
+      "file": "SCRUM-680-02-reference-refusals.png",
+      "capturedAt": "2026-10-28T19:07:45.787Z",
+      "sha256": "8117ddc4668725af1a6d318f1564fbe0f908479a797b145d8eb96482cbaf21cc",
+      "privacyApplied": true,
+      "labelledCard": true
+    }
+  ],
+  "limitations": [
+    "Staging exercises missing-reference refusals only. Foreign/operator/branch isolation, cached permission, audit rollback and valid-reference controls are local native API regressions, not live fault injection.",
+    "No tax override editor exists. The response card is labelled test evidence over the real Tax page."
+  ],
+  "cleanup": {
+    "cookieObserved": true,
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "before": {
+    "count": 0,
+    "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "after": {
+    "count": 0,
+    "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "page": {
+    "path": "/catalogue/tax",
+    "reads": [
+      {
+        "path": "/api/me",
+        "status": 200,
+        "at": "2026-10-28T19:07:41.910Z"
+      },
+      {
+        "path": "/api/me/permissions",
+        "status": 200,
+        "at": "2026-10-28T19:07:42.415Z"
+      },
+      {
+        "path": "/api/me",
+        "status": 200,
+        "at": "2026-10-28T19:07:42.956Z"
+      },
+      {
+        "path": "/api/branches",
+        "status": 200,
+        "at": "2026-10-28T19:07:43.449Z"
+      },
+      {
+        "path": "/api/operators",
+        "status": 200,
+        "at": "2026-10-28T19:07:43.710Z"
+      },
+      {
+        "path": "/api/ready",
+        "status": 200,
+        "at": "2026-10-28T19:07:43.852Z"
+      },
+      {
+        "path": "/api/branches/:id/tax-config",
+        "status": 200,
+        "at": "2026-10-28T19:07:44.044Z"
+      },
+      {
+        "path": "/api/ops/failures",
+        "status": 200,
+        "at": "2026-10-28T19:07:44.075Z"
+      },
+      {
+        "path": "/api/branches",
+        "status": 200,
+        "at": "2026-10-28T19:07:44.193Z"
+      },
+      {
+        "path": "/api/ops/health",
+        "status": 200,
+        "at": "2026-10-28T19:07:44.378Z"
+      }
+    ],
+    "blocked": [],
+    "errors": [],
+    "networkFailures": []
+  },
+  "finishedAt": "2026-10-28T19:07:49.907Z",
+  "complete": true
+}
