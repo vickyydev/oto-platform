@@ -236,17 +236,15 @@ export function DiscountCodesSectionWithPorts({ ports }: { ports: DiscountCodesS
 
   return (
     <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
-      {/* The code, its window, its caps and its target are
-          `discount_definition` columns and save (SCRUM-204). What a code has
-          TAKEN is not a counter here — `pos.sale_discount` records the amount
-          on each sale — so the usage figures below are this tab's own until a
-          report reads them back (SCRUM-230). */}
+      {/* Usage counts distinct persisted finalised sales for this operator
+          and code since the definition was created. Report value windows and
+          park filters are separate; manual reasons remain tab-local. */}
       <div className="mb-5">
         <AdminNoticeBanner>
-          <strong className="font-semibold">Usage counts are this tab only — SCRUM-230.</strong>{' '}
-          The codes themselves save to the database; how many times each has been
-          redeemed is counted from the sales that used it, and that report is not
-          built yet.
+          <strong className="font-semibold">Usage counts are saved across this operator.</strong>{' '}
+          Each count is the number of distinct finalised sales that used the code since
+          its definition was created, across all parks. Report date and park filters
+          describe separate report results.
         </AdminNoticeBanner>
       </div>
 

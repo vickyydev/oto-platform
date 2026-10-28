@@ -135,6 +135,8 @@ describe('native money confirmed writes', () => {
       mutators: { updateTaxConfig: () => pending.promise }, setSaved,
       manageRef: { current: true }, busyRef: { current: false }, mounted: { current: true }, draftEpoch: { current: 0 }, setSaving: vi.fn(), setWriteError: vi.fn(),
       confirmedConfig: { current: null },
+      recoveryRef: { current: { needsRead: false, reading: false, waitUntil: 0, readError: null, notice: null } },
+      setRecovery: vi.fn(), setCopyNote: vi.fn(),
     }) as () => Promise<void> | void;
     const outcome = handleSave();
     expect(setSaved).not.toHaveBeenCalledWith(true);

@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { errorView } from '@oto/admin-screens/error-view';
 import { Loader2, Lock, PlugZap, TriangleAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,7 +55,19 @@ export function EmptyState({ title, detail }: { title: string; detail?: string }
 }
 
 /** A real failure on this page. Distinct from the two "expected absences" below. */
-export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () => void }) {
+export function ErrorNote({ message, error, context, onRetry }: { message?: string; error?: unknown; context?: string; onRetry?: () => void }) {
+  const view = errorView(error ?? message);
+  const [copyNote, setCopyNote] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now);
+  const wait = useMemo(() => ({ startedAt: Date.now(), seconds: view.retryAfterSeconds }), [error, message, view.retryAfterSeconds]);
+  const waitUntil = wait.startedAt + (wait.seconds ?? 0) * 1000;
+  useEffect(() => { setCopyNote(null); }, [error, message]);
+  useEffect(() => {
+    if (wait.seconds === undefined || wait.seconds === 0) return;
+    const timer = setInterval(() => { const at = Date.now(); setNow(at); if (at >= waitUntil) clearInterval(timer); }, 1000);
+    return () => clearInterval(timer);
+  }, [waitUntil, wait.seconds]);
+  const waiting = Math.max(0, Math.ceil((waitUntil - Math.max(now, wait.startedAt)) / 1000));
   return (
     <div
       className="rounded-xl border px-4 py-3 text-sm flex flex-wrap items-center gap-x-3 gap-y-2"
@@ -65,10 +78,21 @@ export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () 
       }}
     >
       <TriangleAlert className="w-4 h-4 shrink-0" />
-      <span className="flex-1 min-w-0">{message}</span>
+      <div className="flex-1 min-w-0 break-words">
+        <p>{context && <>{errorView(context).message} </>}{view.message}</p>
+        {view.supportReference && <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          <span>Reference: <code>{view.supportReference}</code></span>
+          <button type="button" className="font-semibold underline underline-offset-4" onClick={() => {
+            if (!navigator.clipboard) { setCopyNote('Copy is unavailable. Select and copy the reference above.'); return; }
+            void navigator.clipboard.writeText(view.supportReference!).then(() => setCopyNote('Reference copied.'),
+              () => setCopyNote('Copy did not work. Select and copy the reference above.'));
+          }}>Copy reference</button>
+          {copyNote && <span role="status">{copyNote}</span>}
+        </div>}
+      </div>
       {onRetry && (
-        <button type="button" onClick={onRetry} className="font-semibold underline underline-offset-4">
-          Try again
+        <button type="button" onClick={onRetry} disabled={waiting > 0} className="font-semibold underline underline-offset-4 disabled:opacity-60">
+          {waiting > 0 ? `Try again in ${waiting}s` : 'Try again'}
         </button>
       )}
     </div>
@@ -105,8 +129,7 @@ export function Unreadable({
       <TriangleAlert className="w-5 h-5 mx-auto mb-2" style={{ color: 'hsl(var(--status-warn))' }} />
       <p className="font-semibold">{what} could not be read</p>
       <p className="mt-1 text-sm text-muted-foreground break-words">
-        {message ? `${message} ` : ''}That is a request that did not answer, not a fact about this
-        box — it may have everything it had a minute ago.
+        {message ? `${errorView(message).message} ` : ''}The current contents are unavailable. Read this list again before relying on it.
       </p>
       {onRetry && (
         <button
@@ -148,7 +171,7 @@ export function StaleNote({
   const at = new Date(readAt).toLocaleTimeString();
   // The message is a sentence from the API or the fetch and usually ends in a
   // full stop; this sentence ends in one too, and two of them read as a typo.
-  const reason = message?.trim().replace(/\.+$/, '');
+  const reason = message ? errorView(message).message.replace(/\.+$/, '') : undefined;
   return (
     <p
       className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-2 text-xs"
@@ -196,14 +219,16 @@ export function RouteUnavailable({ what, detail }: { what: string; detail?: stri
 }
 
 /** Reached by typing the address; the nav would not have offered it. */
-export function PermissionRequired({ permission }: { permission: string }) {
+export function PermissionRequired({ permission, platformWide = false }: { permission: string; platformWide?: boolean }) {
+  const global = platformWide || permission.includes('platform-wide');
   return (
     <div className="rounded-xl border border-dashed px-4 py-10 text-center">
       <Lock className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
       <p className="font-semibold">This page is not on your access</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        It needs <code className="font-mono text-xs">{permission}</code>. A manager can grant it from
-        the Login Users panel.
+        {global && <>This page requires a platform-wide account; park or operator access alone is not enough. </>}
+        It needs <code className="font-mono text-xs">{permission}</code>. Ask someone authorised to manage access in
+        People &amp; access → Accounts or Roles &amp; scopes.
       </p>
     </div>
   );

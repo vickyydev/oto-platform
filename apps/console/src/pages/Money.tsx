@@ -60,7 +60,7 @@ export function Money({ page }: { page: MoneyPage }) {
   const owner = me?.account.id, operatorId = me?.operatorContext.effectiveOperatorId;
   const authority = permissions.map(grant => [grant.permission, grant.scopeType, grant.scopeId].join(':')).sort().join('|');
   const [parks, setParks] = useState<Park[] | null>(null), [parkId, setParkId] = useState('');
-  const [storedSnapshot, setSnapshot] = useState<Snapshot | null>(null), [error, setError] = useState<string | null>(null);
+  const [storedSnapshot, setSnapshot] = useState<Snapshot | null>(null), [error, setError] = useState<{ failure: unknown; saved: boolean } | null>(null);
   const [parksError, setParksError] = useState<string | null>(null), [refresh, setRefresh] = useState(0);
   const [reasons, setReasons] = useState<string[]>([]);
   const mounted = useRef(false), requests = useRef(0);
@@ -148,7 +148,7 @@ export function Money({ page }: { page: MoneyPage }) {
         if (live()) setSnapshot(enriched);
       })();
     } catch (failure) {
-      if (live()) { setSnapshot(null); setError((saved ? 'Saved, but the money settings could not be refreshed. ' : '') + messageOf(failure)); }
+      if (live()) { setSnapshot(null); setError({ failure, saved }); }
       throw failure;
     }
   }, [allowed, parkRequired, parkId, page, current, can, version, working.isCurrent, working.api]);
@@ -176,7 +176,7 @@ export function Money({ page }: { page: MoneyPage }) {
       onChange={id => { if (id !== parkId) { requests.current++; setSnapshot(null); setParkId(id); } }}
       options={parks.map(park => ({ value: park.id, label: park.name }))} /> : undefined} />
     {parksError && <ErrorNote message={parksError} onRetry={() => setRefresh(value => value + 1)} />}
-    {error && <ErrorNote message={error} onRetry={() => void reload().catch(() => {})} />}
+    {error && <ErrorNote error={error.failure} context={error.saved ? 'Saved, but the money settings could not be refreshed.' : undefined} onRetry={() => void reload().catch(() => {})} />}
     {snapshot?.notice && <ErrorNote message={snapshot.notice} onRetry={() => void reload().catch(() => {})} />}
     {parkRequired && parks?.length === 0 ? <EmptyNote title="No parks here" detail="There is no reachable park to show these settings for." /> :
       snapshot ? <div key={contextKey} className="flex flex-col gap-6">
@@ -202,6 +202,12 @@ export function Money({ page }: { page: MoneyPage }) {
           {snapshot.taxConfig === null && <p className="text-sm text-muted-foreground">No tax configuration is stored for this park. This is the original unsaved template; Save changes records it.</p>}
           <TaxPanelWithPorts ports={{ taxConfig: snapshot.taxConfig ?? unsavedTaxConfig, taxEngine,
             canManage: can('catalog:tax:manage', parkId), updateTaxConfig: config => mutate(() => snapshot.api.catalogApi.putTaxConfig(parkId, config)),
+            readCurrent: async () => {
+              if (!current()) throw new Error('The money settings changed. Open the editor again.');
+              const answer = await snapshot.api.catalogApi.taxConfig(parkId);
+              if (!current()) throw new Error('The money settings changed. Open the editor again.');
+              return answer.config;
+            },
           }} />
         </>}
         {page === 'event-pricing' && <EventsPanelWithPorts ports={{ pricing: snapshot.pricing,

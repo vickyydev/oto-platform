@@ -11,3 +11,4 @@ export { createAppIdentitiesApi, APP_KEYS, OTO_APP_ROLES, type AppIdentity, type
 export { scopeWords } from './roles/presentation';
 export type { LiftedAdminApi, AdminFile, LiftedRequestOptions } from './api/lifted-api';
 export { toast as adminToast } from './hooks/use-toast';
+export { errorView, supportReference, retryAfterSeconds, type ErrorView, type ErrorField } from './lib/errorView';

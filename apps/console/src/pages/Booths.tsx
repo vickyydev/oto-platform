@@ -778,7 +778,7 @@ export function Booths() {
                 >
                   <p className="text-sm text-muted-foreground">
                     Publishing needs <code className="font-mono text-xs">admin:booth:publish</code>. A
-                    manager can grant it from the Login Users panel.
+                    person authorised to manage access can help in People &amp; access → Accounts or Roles &amp; scopes.
                   </p>
                 </CardShell>
               )}

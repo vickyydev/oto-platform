@@ -4,7 +4,7 @@ export function isApiError(error: unknown): error is Error & { status: number; c
 }
 
 export function isMissingRoute(error: unknown): boolean {
-  return isApiError(error) && error.status === 404 && error.code === 'UNKNOWN';
+  return isApiError(error) && error.status === 404 && (error.code === 'UNKNOWN' || error.code === 'ROUTE_NOT_FOUND');
 }
 
 export const idemKey = (): string => crypto.randomUUID();

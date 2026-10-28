@@ -4,6 +4,7 @@
 // own and no CORS is involved.
 
 import { API_PREFIX, apiUrl } from './url';
+import { retryAfterSeconds, supportReference } from '@oto/admin-screens/error-view';
 
 export { apiUrl };
 
@@ -13,8 +14,12 @@ export class ApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly details?: unknown,
+    public readonly requestId?: string,
+    public readonly retryAfterSeconds?: number,
   ) {
-    super(message);
+    // Legacy callers may keep only .message. Unexpected server diagnostics
+    // must already be safe before that structural metadata is discarded.
+    super(status >= 500 ? 'The service returned an unexpected error. Read the current state before trying again.' : message);
     this.name = 'ApiError';
   }
 }
@@ -25,11 +30,11 @@ export class ApiError extends Error {
  * The console ships ahead of parts of the observability API it reads, and the
  * pages are written to say "not on this deployment yet" for a missing route
  * rather than to show an error a reader cannot act on. The legacy unstructured
- * UNKNOWN404 keeps that fallback; a structured missing-record reason is a
+ * UNKNOWN404 keeps that fallback alongside ROUTE_NOT_FOUND; a missing-record reason is a
  * real refusal and must remain visible.
  */
 export function isMissingRoute(err: unknown): boolean {
-  return err instanceof ApiError && err.status === 404 && err.code === 'UNKNOWN';
+  return err instanceof ApiError && err.status === 404 && (err.code === 'UNKNOWN' || err.code === 'ROUTE_NOT_FOUND');
 }
 
 type RequestAuthority = { capture: () => number | null; isCurrent: (epoch: number) => boolean };
@@ -113,7 +118,8 @@ async function request<T>(
     // 423: the session is alive but locked, by the till or another tab. The
     // password re-opens the same session from either side.
     sessionEvents(method, path, res.status);
-    throw new ApiError(res.status, err?.code ?? 'UNKNOWN', err?.message ?? res.statusText, err?.details);
+    throw new ApiError(res.status, err?.code ?? 'UNKNOWN', err?.message ?? res.statusText, err?.details,
+      supportReference(res.headers.get('x-request-id')), retryAfterSeconds(res.headers.get('retry-after')));
   }
   return data as T;
 }
@@ -126,7 +132,8 @@ async function requestFile(path: string, signal?: AbortSignal) {
       const data = await res.json().catch(() => null) as { error?: { code: string; message: string; details?: unknown } } | null;
       current();
       sessionEvents('GET', path, res.status);
-      throw new ApiError(res.status, data?.error?.code ?? 'UNKNOWN', data?.error?.message ?? res.statusText, data?.error?.details);
+      throw new ApiError(res.status, data?.error?.code ?? 'UNKNOWN', data?.error?.message ?? res.statusText, data?.error?.details,
+        supportReference(res.headers.get('x-request-id')), retryAfterSeconds(res.headers.get('retry-after')));
     }
     const disposition = res.headers.get('content-disposition');
     const filename = disposition ? (/filename="([^"]+)"/.exec(disposition)?.[1] ?? /filename=([^;]+)/.exec(disposition)?.[1]?.trim() ?? null) : null;
@@ -145,10 +152,11 @@ export const api = {
       headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
     current();
     if (!response.ok) {
-      const answer = await response.json().catch(() => null) as { error?: { code: string; message: string } } | null;
+      const answer = await response.json().catch(() => null) as { error?: { code: string; message: string; details?: unknown } } | null;
       current();
       sessionEvents('POST', path, response.status);
-      throw new ApiError(response.status, answer?.error?.code ?? 'UNKNOWN', answer?.error?.message ?? response.statusText);
+      throw new ApiError(response.status, answer?.error?.code ?? 'UNKNOWN', answer?.error?.message ?? response.statusText, answer?.error?.details,
+        supportReference(response.headers.get('x-request-id')), retryAfterSeconds(response.headers.get('retry-after')));
     }
     const blob = await whileCurrent(current, () => response.blob());
     current();

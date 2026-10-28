@@ -11,6 +11,7 @@ import { Label } from "../../ui/label";
 import { Switch } from "../../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { useMoneyCapabilities, type TaxPanelPorts } from '../../../runtime/money';
+import { errorView, type ErrorField } from '../../../../lib/errorView';
 
 // Human labels for each taxable area. 'stored_value' is intentionally omitted
 // from the editor — credit loads are never taxed at load (taxed on spend).
@@ -47,6 +48,7 @@ const EXAMPLE_CATEGORIES: { value: TaxableCategory; label: string }[] = [
 ];
 
 type ServiceDraft = Record<string, string>;
+type Recovery = { needsRead: boolean; reading: boolean; waitUntil: number; readError: unknown; notice: string | null; saved?: TaxConfig | null };
 
 const serviceDraftFrom = (rules: CategoryTaxRule[]): ServiceDraft =>
   Object.fromEntries(
@@ -101,7 +103,12 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
   manageRef.current = canManage;
   const [saving, setSaving] = useState(false);
   const busyRef = useRef(false);
-  const [writeError, setWriteError] = useState<string | null>(null);
+  const [writeError, setWriteError] = useState<unknown>(null);
+  const [recovery, setRecovery] = useState<Recovery>({ needsRead: false, reading: false, waitUntil: 0, readError: null, notice: null });
+  const recoveryRef = useRef(recovery);
+  recoveryRef.current = recovery;
+  const [now, setNow] = useState(Date.now);
+  const [copyNote, setCopyNote] = useState<string | null>(null);
   const confirmedConfig = useRef<TaxConfig | null>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -125,6 +132,36 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
     setDiscountPlacement(taxConfig.discountPlacement);
     setSaved(confirmedConfig.current !== null && configKey(confirmedConfig.current) === configKey(taxConfig));
   }, [editableRules, taxConfig]);
+
+  const fields = useMemo(() => {
+    const result: Record<string, ErrorField> = {};
+    rates.forEach((_, index) => {
+      result[`/rates/${index}/name`] = { label: 'Rate name', id: `tax-rate-name-${index}` };
+      result[`/rates/${index}/percent`] = { label: 'Rate percent', id: `tax-rate-percent-${index}` };
+      result[`/rates/${index}/defaultMode`] = { label: 'Rate default mode', id: `tax-rate-default-${index}` };
+    });
+    rules.forEach((rule, index) => {
+      const label = CATEGORY_LABELS[rule.category] ?? 'Tax area';
+      result[`/categoryRules/${index}/serviceChargePercent`] = { label: `${label} service charge`, id: `tax-svc-${rule.category}` };
+      result[`/categoryRules/${index}/taxMode`] = { label: `${label} tax mode`, id: `tax-mode-${rule.category}` };
+      result[`/categoryRules/${index}/taxRateId`] = { label: `${label} tax rate`, id: `tax-rate-${rule.category}` };
+    });
+    return result;
+  }, [rates, rules]);
+  const failure = writeError === null ? null : errorView(writeError, { operation: 'write', fields });
+  const readFailure = recovery.readError === null ? null : errorView(recovery.readError);
+  const focusId = failure?.fieldIssues[0]?.id;
+  useEffect(() => {
+    if (!saving && focusId) document.getElementById(focusId)?.focus();
+  }, [writeError, saving, focusId]);
+  useEffect(() => {
+    if (!recovery.waitUntil || Date.now() >= recovery.waitUntil) return;
+    const timer = setInterval(() => { const at = Date.now(); setNow(at); if (at >= recovery.waitUntil) clearInterval(timer); }, 250);
+    return () => clearInterval(timer);
+  }, [recovery.waitUntil]);
+  const waiting = Math.max(0, Math.ceil((recovery.waitUntil - now) / 1000));
+  const invalid = (id: string) => failure?.fieldIssues.some(issue => issue.id === id)
+    ? { 'aria-invalid': true as const, 'aria-describedby': `error-${id}` } : {};
 
   // ── derived: which categories reference a given rate ────────────────────
   const rateUsers = useMemo(() => {
@@ -228,7 +265,7 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
 
   // ── save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (busyRef.current || !manageRef.current) return;
+    if (busyRef.current || !manageRef.current || recoveryRef.current.needsRead || recoveryRef.current.reading || Date.now() < recoveryRef.current.waitUntil) return;
     const mergedEditable = rules.map((r) => {
       const raw = service[r.category];
       const num = Number(raw);
@@ -243,6 +280,10 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
     confirmedConfig.current = null;
     setSaving(true);
     setWriteError(null);
+    setCopyNote(null);
+    const reset = { ...recoveryRef.current, readError: null, notice: null, saved: undefined };
+    recoveryRef.current = reset;
+    setRecovery(reset);
     try {
       await mutators.updateTaxConfig(submitted);
       if (mounted.current && manageRef.current) {
@@ -253,7 +294,14 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
       if (mounted.current) {
         confirmedConfig.current = null;
         setSaved(false);
-        setWriteError(err instanceof Error ? err.message : 'The tax settings were not saved.');
+        const view = errorView(err, { operation: 'write' });
+        const at = Date.now();
+        const next = { needsRead: view.requiresFreshRead, reading: false,
+          waitUntil: view.retryAfterSeconds === undefined ? 0 : at + view.retryAfterSeconds * 1000, readError: null, notice: null };
+        recoveryRef.current = next;
+        setRecovery(next);
+        setNow(at);
+        setWriteError(err ?? new Error('The save could not be confirmed.'));
       }
     } finally {
       busyRef.current = false;
@@ -261,10 +309,58 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
     }
   };
 
+  const readCurrent = async () => {
+    if (!ports.readCurrent || !manageRef.current || !recoveryRef.current.needsRead || recoveryRef.current.reading || busyRef.current) return;
+    const pending = { ...recoveryRef.current, reading: true, readError: null, notice: null };
+    recoveryRef.current = pending; setRecovery(pending);
+    try {
+      const saved = await ports.readCurrent();
+      if (!mounted.current || !manageRef.current) return;
+      const next = { ...recoveryRef.current, needsRead: false, reading: false, readError: null, saved,
+        notice: 'Current settings were read. Review your retained draft before saving.' };
+      recoveryRef.current = next; setRecovery(next); setWriteError(null); setCopyNote(null);
+    } catch (error) {
+      if (!mounted.current || !manageRef.current) return;
+      const next = { ...recoveryRef.current, reading: false, readError: error ?? new Error('The current settings could not be read.') };
+      recoveryRef.current = next; setRecovery(next);
+    } finally {
+      if (mounted.current && recoveryRef.current.reading) {
+        const next = { ...recoveryRef.current, reading: false };
+        recoveryRef.current = next; setRecovery(next);
+      }
+    }
+  };
+
+  const copyReference = (reference: string) => {
+    if (!navigator.clipboard) { setCopyNote('Copy is unavailable. Select and copy the reference.'); return; }
+    void navigator.clipboard.writeText(reference).then(() => setCopyNote('Reference copied.'),
+      () => setCopyNote('Copy did not work. Select and copy the reference.'));
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {ports.authorityMessage && <p className="text-sm text-foreground/60">{ports.authorityMessage}</p>}
-      {writeError && <p role="alert" className="text-sm text-destructive">{writeError}</p>}
+      {failure && <div role="alert" className="flex flex-col gap-2 text-sm text-destructive">
+        <p>{failure.message}</p>
+        {failure.fieldIssues.length > 0 && <ul className="list-disc pl-5">{failure.fieldIssues.map(issue =>
+          <li key={issue.path} id={issue.id ? `error-${issue.id}` : undefined}><strong>{issue.label}:</strong> {issue.message}</li>)}</ul>}
+        {failure.supportReference && <p className="flex flex-wrap items-center gap-2 text-xs">
+          <span>Reference: <code>{failure.supportReference}</code></span>
+          <button type="button" className="underline" onClick={() => copyReference(failure.supportReference!)}>Copy reference</button>
+        </p>}
+        {waiting > 0 && <p>{waiting}s remaining before saving again.</p>}
+        {recovery.needsRead && (ports.readCurrent
+          ? <Button type="button" variant="outline" className="self-start" disabled={recovery.reading || !canManage} onClick={() => void readCurrent()}>
+            {recovery.reading ? 'Reading current settings…' : 'Read current settings'}</Button>
+          : <p>Reload this page to read the current settings before saving again. Your draft is kept here until you leave.</p>)}
+        {readFailure && <div><p>{readFailure.message}</p>{readFailure.supportReference && <p className="flex flex-wrap items-center gap-2 text-xs">
+          <span>Read reference: <code>{readFailure.supportReference}</code></span>
+          <button type="button" className="underline" onClick={() => copyReference(readFailure.supportReference!)}>Copy read reference</button>
+        </p>}</div>}
+      </div>}
+      {copyNote && <p role="status" className="text-sm">{copyNote}</p>}
+      {recovery.notice && <p role="status" className="text-sm text-foreground/60">{recovery.notice}</p>}
+      {recovery.saved !== undefined && <SavedTaxSettings config={recovery.saved} draft={draftConfig} />}
 
       {/* ── 1. Global rates ──────────────────────────────────────────────── */}
       <fieldset disabled={!canManage || saving} className="min-w-0 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
@@ -275,13 +371,15 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
         </p>
 
         <div className="mt-4 flex flex-col gap-3">
-          {rates.map((rate) => {
+          {rates.map((rate, index) => {
             const users = rateUsers.get(rate.id) ?? [];
             const isPendingDelete = pendingDeleteId === rate.id;
             return (
               <div key={rate.id} className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <Input
+                    id={`tax-rate-name-${index}`}
+                    {...invalid(`tax-rate-name-${index}`)}
                     aria-label="Rate name"
                     value={rate.name}
                     onChange={(e) => updateRate(rate.id, { name: e.target.value })}
@@ -289,6 +387,8 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
                     placeholder="VAT"
                   />
                   <Input
+                    id={`tax-rate-percent-${index}`}
+                    {...invalid(`tax-rate-percent-${index}`)}
                     aria-label="Rate percent"
                     type="number"
                     min={0}
@@ -312,7 +412,7 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
                         })
                       }
                     >
-                      <SelectTrigger aria-label="Rate default mode" className="h-9">
+                      <SelectTrigger id={`tax-rate-default-${index}`} {...invalid(`tax-rate-default-${index}`)} aria-label="Rate default mode" className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -432,7 +532,7 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
                       });
                     }}
                   >
-                    <SelectTrigger id={`tax-mode-${r.category}`}>
+                    <SelectTrigger id={`tax-mode-${r.category}`} {...invalid(`tax-mode-${r.category}`)}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -469,7 +569,7 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
                       });
                     }}
                   >
-                    <SelectTrigger id={`tax-rate-${r.category}`}>
+                    <SelectTrigger id={`tax-rate-${r.category}`} {...invalid(`tax-rate-${r.category}`)}>
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
@@ -490,6 +590,7 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
                   </Label>
                   <Input
                     id={`tax-svc-${r.category}`}
+                    {...invalid(`tax-svc-${r.category}`)}
                     type="number"
                     inputMode="numeric"
                     min={0}
@@ -655,7 +756,7 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
 
       {/* ── Save ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={() => void handleSave()} disabled={!canManage || saving}>
+        <Button onClick={() => void handleSave()} disabled={!canManage || saving || recovery.needsRead || recovery.reading || waiting > 0}>
           <Check className="w-4 h-4" />
           Save changes
         </Button>
@@ -676,6 +777,37 @@ export function TaxPanelWithPorts({ ports }: { ports: TaxPanelPorts }) {
 }
 
 // ── Live example breakdown display ─────────────────────────────────────────
+
+/** Recorded values from the recovery read, beside the unchanged editor draft. */
+function SavedTaxSettings({ config, draft }: { config: TaxConfig | null; draft: TaxConfig }) {
+  const matches = config !== null && configKey(config) === configKey(draft);
+  const mode = (value: TaxMode | undefined) => TAX_MODE_OPTIONS.find(option => option.value === value)?.label ?? 'Not recorded';
+  const rate = (id: string | undefined) => {
+    if (!id) return 'None';
+    const saved = config?.rates.find(value => value.id === id);
+    return saved ? `${saved.name} (${saved.percent}%)` : 'Unavailable rate';
+  };
+  return <section aria-label="Saved tax settings" className="rounded-xl border border-foreground/15 p-4 text-sm">
+    <h3 className="font-semibold">Saved settings from the recovery read</h3>
+    <p className="mt-1">{config === null ? 'No tax settings are stored for this park. Your draft is retained.'
+      : matches ? 'This draft matches the saved settings.' : 'This draft differs from the saved settings. Your draft is retained for review.'}</p>
+    {config && <details open={!matches} className="mt-2">
+      <summary className="cursor-pointer font-medium">Inspect saved values</summary>
+      <div className="mt-2 flex flex-col gap-3">
+        <div><h4 className="font-medium">Rates</h4>{config.rates.length === 0 ? <p>No saved rates.</p> : <ul>{config.rates.map(value =>
+          <li key={value.id}>{value.name}: <span>{value.percent}%</span>{value.defaultMode ? ` · ${mode(value.defaultMode)}` : ' · No default'}</li>)}</ul>}</div>
+        <ul className="flex flex-col gap-2">{config.categoryRules.map(value => <li key={value.category}>
+          <p className="font-medium">{value.category === 'stored_value' ? 'Stored value (read only)' : CATEGORY_LABELS[value.category] ?? 'Other tax area'}</p>
+          <p>{mode(value.taxMode)} · Rate: {rate(value.taxRateId)}</p>
+          <p>Service charge: <span>{value.serviceChargePercent === undefined ? 'Not recorded' : `${value.serviceChargePercent}%`}</span>
+            {' · '}Tax on service charge: {value.taxOnServiceCharge === undefined ? 'Not recorded' : value.taxOnServiceCharge ? 'Yes' : 'No'}</p>
+          {value.secondaryTaxRateId && <p>Additional rate: {rate(value.secondaryTaxRateId)} · {mode(value.secondaryTaxMode)}</p>}
+        </li>)}</ul>
+        <p>Discount placement: {config.discountPlacement === 'before_tax' ? 'Before tax' : config.discountPlacement === 'after_tax' ? 'After tax' : 'Not recorded'}</p>
+      </div>
+    </details>}
+  </section>;
+}
 
 interface ExampleBreakdownProps {
   category: TaxableCategory;
