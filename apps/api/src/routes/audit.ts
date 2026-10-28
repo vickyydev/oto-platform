@@ -98,7 +98,11 @@ const DENIAL_ACTIONS = [
   'auth.locked_out',
   'auth.handoff_rejected',
 ] as const;
-const DATA_ACCESS_ACTIONS = ['audit.read_sensitive', 'audit.export'] as const;
+const DATA_ACCESS_ACTIONS = [
+  'audit.read_sensitive', 'audit.export',
+  // SCRUM-663: the Money oversight reads are data access and belong in the preset.
+  'console.money.read', 'console.money.investigate',
+] as const;
 
 const listOf = (values: readonly string[]) => sql.join(values.map((v) => sql`${v}`), sql`, `);
 const EFFECTIVE_CATEGORY = sql`coalesce(${auditLog.category}, case

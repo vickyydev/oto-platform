@@ -82,6 +82,8 @@ beforeAll(async () => {
     row('console', 'zz.test644.console_write', { sourceApp: 'console', targetApp: 'oto_app', branchId: central }, 2),
     row('unlabelled', 'zz.test644.unlabelled', { branchId: chalong }, 3),
     row('sensitive', 'audit.read_sensitive', { branchId: central }, 4),
+    // SCRUM-663: a Money oversight read classifies as data access by its action.
+    row('moneyRead', 'console.money.read', { branchId: central }, 4.5),
     row('labelledAccess', 'zz.test644.child_note_read', { category: 'data_access', branchId: central }, 5),
     row('denied', 'access.denied', { branchId: central }, 6),
     row('permissionDenied', 'auth.permission_denied', { branchId: chalong }, 7),
@@ -121,9 +123,9 @@ describe('server-side Activity filters (SCRUM-644)', () => {
     expect(keysOf(await page(admin, 'targetApp=oto_app'))).toEqual(['console']);
   });
 
-  it('F3 data access is the labelled rows plus the sensitive reads, never anything else', async () => {
+  it('F3 data access is the labelled rows plus the sensitive and money reads, never anything else', async () => {
     const p = await page(admin, 'category=data_access');
-    expect(keysOf(p)).toEqual(['labelledAccess', 'sensitive']);
+    expect(keysOf(p)).toEqual(['labelledAccess', 'moneyRead', 'sensitive']);
     expect(p.entries.every((e) => e.category === 'data_access')).toBe(true);
   });
 

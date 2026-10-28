@@ -44,6 +44,7 @@ export const PERMISSIONS = [
    * to its support trace. Read only; every read is audited.
    */
   'console:money:investigate',
+  /**
    * Support tools (SCRUM-648, S2-23 P5-6). `lookup` searches the suite for one
    * phone, band, receipt, booking, voucher, account or action and answers each
    * app's section through that app's own reader and permission; `trace`
