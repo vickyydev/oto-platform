@@ -40,6 +40,8 @@ let w: AiWorld;
 let reviewer: FakeCoherenceReviewer;
 let central: string;
 let chalong: string;
+/** An operator-wide number: a thread with no park (the live case of 29 Oct). */
+let wide: string;
 let adminCookie: string;
 
 const BOOKING_LINE = INBOX_TEMPLATE_BODIES.closing_booking;
@@ -57,6 +59,7 @@ beforeAll(async () => {
   w.ctx.app.inboxAi.reviewer = reviewer;
   central = await simAccount(w, { branchId: w.central });
   chalong = await simAccount(w, { branchId: w.chalong });
+  wide = await simAccount(w, { branchId: null });
   const receptionCentral = await teamOf(w, 'reception', w.central);
   const [approver] = await staff(w, '+66810009301', 'Coherence Test Approver', 'inbox_agent', {
     scopeType: 'department',
@@ -145,6 +148,24 @@ describe('the owner’s case: a nanny answer that wraps up, and the closing line
     expect(tpl!.key).toBe('closing_booking');
     expect(t.events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({
       coherence: { state: 'reviewed', dropped: [{ index: 1, origin: 'model', key: null }] },
+    });
+  });
+
+  it('the live case (29 Oct): the model’s last line already promises the follow-up, so the booking line after it goes', async () => {
+    await fresh({ kind: 'review', decision: reviewOps({ drop: [2] }) });
+    const LIVE = 'A colleague at Central Floresta will help you with the booking.';
+    const t = await nannyTurn([FACTS, LIVE], wide);
+    // On the parkless thread the appended line is the booking one, and the reviewer is shown it after the model's promise.
+    expect(reviewer.requests[0]!.items.map((i) => [i.origin, i.text, i.locked])).toEqual([
+      ['model', FACTS, false],
+      ['model', LIVE, false],
+      ['template', BOOKING_LINE, false],
+    ]);
+    // Dropped: the follow-up is said once, in the model's own words; nothing is lost.
+    expect(t.lines.map((l) => l.body)).toEqual([FACTS, LIVE]);
+    expect(t.events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({
+      closingKey: 'closing_booking',
+      coherence: { state: 'reviewed', sent: 2, dropped: [{ index: 2, origin: 'template', key: 'closing_booking' }] },
     });
   });
 
