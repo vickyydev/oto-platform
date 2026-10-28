@@ -114,12 +114,12 @@ function PerformanceFigures({
           size="lg"
           icon={<Banknote className="w-5 h-5" />}
           label="Revenue"
-          value={`฿${report.netRevenueTHB.toLocaleString()}`}
+          value={`฿${report.netRevenueTHB.toLocaleString('en-US')}`}
           sub={
             <span>
               {report.txnCount} {report.txnCount === 1 ? 'transaction' : 'transactions'}
               {report.creditPaidTHB > 0 && (
-                <> · excl. ฿{report.creditPaidTHB.toLocaleString()} paid via credit</>
+                <> · excl. ฿{report.creditPaidTHB.toLocaleString('en-US')} paid via credit</>
               )}
             </span>
           }
@@ -127,7 +127,7 @@ function PerformanceFigures({
         <StatCard
           icon={<Users className="w-5 h-5" />}
           label="Guests checked in"
-          value={totalGuests.toLocaleString()}
+          value={totalGuests.toLocaleString('en-US')}
           sub={`${guests.kids} kids · ${guests.adults} adults`}
         />
       </div>
@@ -137,13 +137,13 @@ function PerformanceFigures({
         <StatCard
           icon={<PartyPopper className="w-5 h-5" />}
           label={isToday ? 'Parties today' : 'Parties'}
-          value={report.partiesToday.toLocaleString()}
+          value={report.partiesToday.toLocaleString('en-US')}
           sub={report.partiesToday === 0 ? 'None booked' : 'Booked for this day'}
         />
         <StatCard
           icon={<Baby className="w-5 h-5" />}
           label="Drop-off kids in park"
-          value={dropOffInPark === null ? '—' : dropOffInPark.toLocaleString()}
+          value={dropOffInPark === null ? '—' : dropOffInPark.toLocaleString('en-US')}
           sub="In the park right now"
         />
       </div>

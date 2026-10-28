@@ -295,6 +295,6 @@ export function resolveRateToday(price: WeekdayWeekendPrice | undefined): number
  */
 export function formatWWPrice(price: WeekdayWeekendPrice | undefined): string {
   if (!price) return '฿0';
-  if (price.weekday === price.weekend) return `฿${price.weekday.toLocaleString()}`;
-  return `฿${price.weekday.toLocaleString()} / ฿${price.weekend.toLocaleString()} wknd`;
+  if (price.weekday === price.weekend) return `฿${price.weekday.toLocaleString('en-US')}`;
+  return `฿${price.weekday.toLocaleString('en-US')} / ฿${price.weekend.toLocaleString('en-US')} wknd`;
 }

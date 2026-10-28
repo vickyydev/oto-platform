@@ -219,7 +219,7 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
           <div className="rounded-xl bg-muted/50 px-4 py-3">
             <div className="text-sm text-muted-foreground">Cash to bank tonight</div>
             <div className="text-lg font-bold tabular-nums">
-              {banked === null ? '—' : `฿${banked.toLocaleString()}`}
+              {banked === null ? '—' : `฿${banked.toLocaleString('en-US')}`}
             </div>
             <div className="text-xs text-muted-foreground">counted − float left</div>
           </div>

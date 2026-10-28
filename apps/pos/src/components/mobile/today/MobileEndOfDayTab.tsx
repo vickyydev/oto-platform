@@ -110,7 +110,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
             <span className="font-semibold">Day closed.</span>{' '}
             <span className="text-muted-foreground">
               Locked by {record.closedBy}
-              {closedAt && ` · ${closedAt.toLocaleString()}`}. Read-only.
+              {closedAt && ` · ${closedAt.toLocaleString('en-US')}`}. Read-only.
             </span>
           </div>
         </Card>
@@ -152,7 +152,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
             const diffText =
               line.actualTHB === null
                 ? '—'
-                : `${line.differenceTHB > 0 ? '+' : line.differenceTHB < 0 ? '-' : ''}฿${Math.abs(line.differenceTHB).toLocaleString()}`;
+                : `${line.differenceTHB > 0 ? '+' : line.differenceTHB < 0 ? '-' : ''}฿${Math.abs(line.differenceTHB).toLocaleString('en-US')}`;
 
             return (
               <div key={line.channel} className="rounded-xl bg-muted/40 p-3 space-y-2">
@@ -166,7 +166,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                   <div>
                     <div>Expected</div>
                     <div className="text-base font-bold tabular-nums text-foreground">
-                      ฿{line.expectedTHB.toLocaleString()}
+                      ฿{line.expectedTHB.toLocaleString('en-US')}
                     </div>
                   </div>
                   <div>
@@ -175,7 +175,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                       <div className="text-base font-bold tabular-nums text-foreground">
                         {line.actualTHB === null
                           ? 'from count'
-                          : `฿${line.actualTHB.toLocaleString()}`}
+                          : `฿${line.actualTHB.toLocaleString('en-US')}`}
                       </div>
                     ) : (
                       <AmountInput
@@ -218,7 +218,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                 className="h-11 rounded-xl bg-muted/30 border border-border/60 px-4 flex items-center justify-end text-base text-foreground tabular-nums"
                 aria-label="Start-of-day float"
               >
-                ฿{(record.cashCount.floatTHB ?? 0).toLocaleString()}
+                ฿{(record.cashCount.floatTHB ?? 0).toLocaleString('en-US')}
               </div>
               <span className="text-xs">{floatSourceLabel}</span>
             </div>
@@ -239,14 +239,14 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
                     <div className="text-muted-foreground">Income</div>
                     <div className="text-base font-bold tabular-nums">
-                      {income === null ? '—' : `฿${income.toLocaleString()}`}
+                      {income === null ? '—' : `฿${income.toLocaleString('en-US')}`}
                     </div>
                     <div className="text-[10px] text-muted-foreground">counted − float</div>
                   </div>
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
                     <div className="text-muted-foreground">Expected</div>
                     <div className="text-base font-bold tabular-nums">
-                      ฿{expectedCash.toLocaleString()}
+                      ฿{expectedCash.toLocaleString('en-US')}
                     </div>
                     <div className="text-[10px] text-muted-foreground">from POS</div>
                   </div>
@@ -262,7 +262,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
                     >
                       {diff === null
                         ? '—'
-                        : `${diff > 0 ? '+' : diff < 0 ? '-' : ''}฿${Math.abs(diff).toLocaleString()}`}
+                        : `${diff > 0 ? '+' : diff < 0 ? '-' : ''}฿${Math.abs(diff).toLocaleString('en-US')}`}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
                       {cashFlag === 'ok' ? 'balanced' : cashFlag === 'off' ? 'over/short' : '—'}
@@ -338,7 +338,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
           <div className="rounded-xl bg-muted/50 px-4 py-3">
             <div className="text-sm text-muted-foreground">Cash to bank tonight</div>
             <div className="text-xl font-bold tabular-nums">
-              {banked === null ? '—' : `฿${banked.toLocaleString()}`}
+              {banked === null ? '—' : `฿${banked.toLocaleString('en-US')}`}
             </div>
             <div className="text-xs text-muted-foreground">counted − float left</div>
           </div>

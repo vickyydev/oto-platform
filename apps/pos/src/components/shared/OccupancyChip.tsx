@@ -69,7 +69,7 @@ export function OccupancyChip() {
           className="rounded-md h-9 px-3 flex items-center gap-2 bg-muted hover:bg-muted/80 text-sm font-semibold transition-colors shrink-0"
         >
           <Users className="w-4 h-4 text-primary" />
-          <span className="tabular-nums">{total.toLocaleString()}</span>
+          <span className="tabular-nums">{total.toLocaleString('en-US')}</span>
           {/* Hide the word on the tightest widths; the icon + number stay legible.
               In the station header that is now below xl as well as the phone
               bar (SCRUM-505; see `StationHeader`). */}
@@ -96,19 +96,19 @@ export function OccupancyChip() {
               <User className="w-4 h-4 text-muted-foreground" />
               Adults
             </span>
-            <span className="text-lg font-bold tabular-nums">{adults.toLocaleString()}</span>
+            <span className="text-lg font-bold tabular-nums">{adults.toLocaleString('en-US')}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-sm">
               <Baby className="w-4 h-4 text-muted-foreground" />
               Kids
             </span>
-            <span className="text-lg font-bold tabular-nums">{kids.toLocaleString()}</span>
+            <span className="text-lg font-bold tabular-nums">{kids.toLocaleString('en-US')}</span>
           </div>
           <div className="flex items-center justify-between border-t pt-2 mt-2">
             <span className="text-sm font-semibold">Total</span>
             <span className="text-lg font-bold tabular-nums text-primary">
-              {total.toLocaleString()}
+              {total.toLocaleString('en-US')}
             </span>
           </div>
         </div>

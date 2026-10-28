@@ -24,7 +24,7 @@ export function CashMovementList({ movements }: { movements: readonly CashMoveme
                 — {m.actor.name ?? 'Unknown'}, {secondWord} {second?.name ?? 'Unknown'}
               </span>
             </span>
-            <span className="shrink-0 tabular-nums font-semibold text-foreground">−฿{(m.amountSatang / 100).toLocaleString()}</span>
+            <span className="shrink-0 tabular-nums font-semibold text-foreground">−฿{(m.amountSatang / 100).toLocaleString('en-US')}</span>
           </div>
         );
       })}

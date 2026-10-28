@@ -217,7 +217,7 @@ function IssuedCards({ answer }: { answer: KioskRedeemAnswer }) {
         <div className="flex items-center gap-4 bg-foreground/5 rounded-2xl p-4 border border-foreground/10">
           <Wallet className="w-8 h-8 text-primary shrink-0" />
           <div className="text-2xl font-bold text-left" data-testid="kiosk-credit">
-            {t('kiosk.done.credit', { amount: (answer.walletCreditSatang / 100).toLocaleString() })}
+            {t('kiosk.done.credit', { amount: (answer.walletCreditSatang / 100).toLocaleString('en-US') })}
           </div>
         </div>
       )}

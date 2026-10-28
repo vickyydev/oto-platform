@@ -82,12 +82,12 @@ export function MobilePerformanceView({
         size="lg"
         icon={<Banknote className="w-5 h-5" />}
         label="Revenue"
-        value={`฿${report.netRevenueTHB.toLocaleString()}`}
+        value={`฿${report.netRevenueTHB.toLocaleString('en-US')}`}
         sub={
           <span>
             {report.txnCount} {report.txnCount === 1 ? 'transaction' : 'transactions'}
             {report.creditPaidTHB > 0 && (
-              <> · excl. ฿{report.creditPaidTHB.toLocaleString()} via credit</>
+              <> · excl. ฿{report.creditPaidTHB.toLocaleString('en-US')} via credit</>
             )}
           </span>
         }
@@ -97,7 +97,7 @@ export function MobilePerformanceView({
       <StatCard
         icon={<Users className="w-5 h-5" />}
         label="Guests checked in"
-        value={totalGuests.toLocaleString()}
+        value={totalGuests.toLocaleString('en-US')}
         sub={`${guests.kids} kids · ${guests.adults} adults`}
       />
 
@@ -108,7 +108,7 @@ export function MobilePerformanceView({
       <StatCard
         icon={<PartyPopper className="w-5 h-5" />}
         label={isToday ? 'Parties today' : 'Parties'}
-        value={report.partiesToday.toLocaleString()}
+        value={report.partiesToday.toLocaleString('en-US')}
         sub={report.partiesToday === 0 ? 'None booked' : 'Booked for this day'}
       />
 
@@ -116,7 +116,7 @@ export function MobilePerformanceView({
       <StatCard
         icon={<Baby className="w-5 h-5" />}
         label="Drop-off kids in park"
-        value={dropOffInPark === null ? '—' : dropOffInPark.toLocaleString()}
+        value={dropOffInPark === null ? '—' : dropOffInPark.toLocaleString('en-US')}
         sub="In the park right now"
       />
 

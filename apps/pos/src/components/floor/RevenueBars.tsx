@@ -30,7 +30,7 @@ export function RevenueBars({ buckets }: { buckets: FloorRevenueBucket[] }) {
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className="text-sm font-medium">{b.label}</span>
                 <span className="text-sm tabular-nums">
-                  <span className="font-semibold">฿{b.amountTHB.toLocaleString()}</span>
+                  <span className="font-semibold">฿{b.amountTHB.toLocaleString('en-US')}</span>
                   <span className="text-muted-foreground ml-2">{pct}%</span>
                 </span>
               </div>

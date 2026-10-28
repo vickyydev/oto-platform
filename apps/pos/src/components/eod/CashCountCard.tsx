@@ -57,7 +57,7 @@ export function CashCountCard({
             className="h-11 rounded-xl bg-muted/30 border border-border/60 px-4 flex items-center justify-end text-base text-foreground tabular-nums"
             aria-label="Start-of-day float (carried over)"
           >
-            ฿{(cashCount.floatTHB ?? 0).toLocaleString()}
+            ฿{(cashCount.floatTHB ?? 0).toLocaleString('en-US')}
           </div>
           <span className="text-xs text-muted-foreground">{floatSourceLabel}</span>
         </div>
@@ -67,13 +67,13 @@ export function CashCountCard({
         <div className="rounded-xl bg-muted/50 px-4 py-3">
           <div className="text-muted-foreground">Cash income</div>
           <div className="text-lg font-bold tabular-nums">
-            {income === null ? '—' : `฿${income.toLocaleString()}`}
+            {income === null ? '—' : `฿${income.toLocaleString('en-US')}`}
           </div>
           <div className="text-xs text-muted-foreground">counted − float</div>
         </div>
         <div className="rounded-xl bg-muted/50 px-4 py-3">
           <div className="text-muted-foreground">Expected cash</div>
-          <div className="text-lg font-bold tabular-nums">฿{expectedCashTHB.toLocaleString()}</div>
+          <div className="text-lg font-bold tabular-nums">฿{expectedCashTHB.toLocaleString('en-US')}</div>
           <div className="text-xs text-muted-foreground">from POS</div>
         </div>
         <div className="rounded-xl bg-muted/50 px-4 py-3">
@@ -88,7 +88,7 @@ export function CashCountCard({
           >
             {diff === null
               ? '—'
-              : `${diff > 0 ? '+' : diff < 0 ? '-' : ''}฿${Math.abs(diff).toLocaleString()}`}
+              : `${diff > 0 ? '+' : diff < 0 ? '-' : ''}฿${Math.abs(diff).toLocaleString('en-US')}`}
           </div>
           <div className="text-xs text-muted-foreground">
             {flag === 'ok' ? 'balanced' : flag === 'off' ? 'over / short' : 'awaiting count'}

@@ -71,7 +71,7 @@ const view = (row: AnalyticsSummaryRow, updatedAt: string | null = '2026-10-06T0
   error: null,
 });
 
-const baht = (satang: number) => (satang / 100).toLocaleString();
+const baht = (satang: number) => (satang / 100).toLocaleString('en-US');
 
 describe('review — Performance in the prototype’s words, from the stored row', () => {
   const row = awkwardRow();

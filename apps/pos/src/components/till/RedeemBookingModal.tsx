@@ -367,7 +367,7 @@ export function RedeemBookingModal({
                         </div>
                       </div>
                       <Badge variant="secondary" className="shrink-0 text-xs">
-                        ฿{(b.totalSatang / 100).toLocaleString()}
+                        ฿{(b.totalSatang / 100).toLocaleString('en-US')}
                       </Badge>
                     </button>
                   ))}
@@ -420,7 +420,7 @@ export function RedeemBookingModal({
                   </div>
                 )}
                 <div className="text-right font-semibold text-foreground">
-                  ฿{foundBooking.total.toLocaleString()} {notPaid ? 'not paid' : 'paid'}
+                  ฿{foundBooking.total.toLocaleString('en-US')} {notPaid ? 'not paid' : 'paid'}
                 </div>
               </div>
             </div>
@@ -435,7 +435,7 @@ export function RedeemBookingModal({
                   <li>• {foundBooking.willIssue.adultBracelets} adult wristband{foundBooking.willIssue.adultBracelets !== 1 ? 's' : ''}</li>
                 )}
                 {foundBooking.willIssue.creditTotalTHB > 0 && (
-                  <li>• ฿{foundBooking.willIssue.creditTotalTHB.toLocaleString()} credit</li>
+                  <li>• ฿{foundBooking.willIssue.creditTotalTHB.toLocaleString('en-US')} credit</li>
                 )}
                 {dropOffChildren.length > 0 && (
                   <li>• Drop-off check-in for {dropOffChildren.join(', ')}</li>

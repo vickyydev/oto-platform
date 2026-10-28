@@ -169,7 +169,7 @@ function CashMovementDialog({
         ...(kind === 'paid_out' ? { approverAccountId: secondId } : { witnessAccountId: secondId }),
         actionId,
       });
-      setDone(`${kind === 'paid_out' ? 'Paid out' : 'Safe drop'} of ฿${(answer.movement.amountSatang / 100).toLocaleString()} recorded.`);
+      setDone(`${kind === 'paid_out' ? 'Paid out' : 'Safe drop'} of ฿${(answer.movement.amountSatang / 100).toLocaleString('en-US')} recorded.`);
       setAmountSatang(null);
       setReason('');
       setSecondId(null);

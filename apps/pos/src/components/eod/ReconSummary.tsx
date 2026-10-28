@@ -20,7 +20,7 @@ export function ReconSummary({ record }: { record: EndOfDay }) {
   }[verdict];
 
   const { Icon } = styles;
-  const overText = `${over > 0 ? '+' : over < 0 ? '-' : ''}฿${Math.abs(over).toLocaleString()}`;
+  const overText = `${over > 0 ? '+' : over < 0 ? '-' : ''}฿${Math.abs(over).toLocaleString('en-US')}`;
 
   return (
     <Card className={cn('p-5 border', styles.ring)}>
@@ -33,13 +33,13 @@ export function ReconSummary({ record }: { record: EndOfDay }) {
           <div className="text-right">
             <div className="text-muted-foreground">Expected</div>
             <div className="text-lg font-bold tabular-nums">
-              ฿{record.totalExpectedTHB.toLocaleString()}
+              ฿{record.totalExpectedTHB.toLocaleString('en-US')}
             </div>
           </div>
           <div className="text-right">
             <div className="text-muted-foreground">Actual</div>
             <div className="text-lg font-bold tabular-nums">
-              ฿{record.totalActualTHB.toLocaleString()}
+              ฿{record.totalActualTHB.toLocaleString('en-US')}
             </div>
           </div>
           <div className="text-right">
