@@ -27,16 +27,21 @@ import { ImpersonationBannerSchema } from './impersonation';
 
 // --- Vocabulary ----------------------------------------------------------------
 
-/** The three categories of the IT Brief (the same list as `@oto/db` INBOX_CATEGORIES, pinned by a test). */
-export const INBOX_CATEGORY_KEYS = ['birthdays', 'general', 'marketing'] as const;
+/**
+ * The categories (the same list as `@oto/db` INBOX_CATEGORIES, pinned by a
+ * test): the IT Brief's three, and `gm` — the playbook's general-manager queue
+ * (SCRUM-220, `0094_inbox_playbook`): complaints, influencers, jobs,
+ * photography, refunds.
+ */
+export const INBOX_CATEGORY_KEYS = ['birthdays', 'general', 'marketing', 'gm'] as const;
 export type InboxCategoryKey = (typeof INBOX_CATEGORY_KEYS)[number];
 
 /** IT Brief: Active and Handled only. The prototype stores Active as "new" (:63, :181). */
 export const INBOX_STATUS_KEYS = ['active', 'handled'] as const;
 export type InboxStatusKey = (typeof INBOX_STATUS_KEYS)[number];
 
-/** A team's kind (`@oto/db` INBOX_TEAM_KEYS). */
-export const INBOX_TEAM_KINDS = ['birthdays', 'reception', 'marketing'] as const;
+/** A team's kind (`@oto/db` INBOX_TEAM_KEYS). `gm` is the playbook's GM team, operator-wide (SCRUM-220). */
+export const INBOX_TEAM_KINDS = ['birthdays', 'reception', 'marketing', 'gm'] as const;
 export type InboxTeamKind = (typeof INBOX_TEAM_KINDS)[number];
 
 /** Every channel a contact can be on (`@oto/db` INBOX_CHANNELS). */
@@ -60,9 +65,11 @@ export const INBOX_TAB_LABELS: Record<InboxTab, string> = {
  * tabs. `staff` is the platform's name for the manual-only people (the
  * entertainment coordinator; `Staff.manualOnly`, :74) — the prototype gives
  * them no view of their own, so `tabsForRole` treats them as its default arm
- * does every non-owner, non-reception view.
+ * does every non-owner, non-reception view. `gm` is a person in the
+ * playbook's GM team (SCRUM-220): no prototype view either, so the default
+ * arm too.
  */
-export const INBOX_VIEW_ROLES = ['owner', 'events', 'reception', 'marketing', 'staff'] as const;
+export const INBOX_VIEW_ROLES = ['owner', 'events', 'reception', 'marketing', 'staff', 'gm'] as const;
 export type InboxViewRole = (typeof INBOX_VIEW_ROLES)[number];
 
 /**
@@ -166,11 +173,13 @@ export function isUnanswered(c: InboxUnansweredFacts): boolean {
  * Chalong's reception if its branch is Chalong, and to Central's otherwise
  * (including "all"). On the platform a park is a branch id, so "otherwise" is
  * the operator's FIRST reception branch (`defaultReceptionBranchId`, the
- * teams' sort order), which is Central for OTO.
+ * teams' sort order), which is Central for OTO. A `gm` conversation goes to
+ * the operator's one GM team, whatever its branch (SCRUM-220).
  */
 export type InboxTeamDest =
   | { kind: 'birthdays' }
   | { kind: 'marketing' }
+  | { kind: 'gm' }
   | { kind: 'reception'; branchId: string | null };
 
 export function teamDestOf(
@@ -179,6 +188,7 @@ export function teamDestOf(
 ): InboxTeamDest {
   if (c.category === 'birthdays') return { kind: 'birthdays' };
   if (c.category === 'marketing') return { kind: 'marketing' };
+  if (c.category === 'gm') return { kind: 'gm' };
   return { kind: 'reception', branchId: c.branchId ?? defaultReceptionBranchId };
 }
 
@@ -259,6 +269,12 @@ export const InboxConversationListQuerySchema = z.object({
   language: z.string().min(1).max(16).optional(),
   /** Search across customer, intent and last message. */
   q: z.string().max(200).optional(),
+  /**
+   * The number a conversation came in on (SCRUM-220 playbook, the named
+   * inboxes): only that channel account's conversations. Visibility is
+   * unchanged.
+   */
+  channelAccountId: Uuid.optional(),
   /** Only the conversations a person still owes an answer (`isUnanswered`). */
   unanswered: TrueFalse.optional(),
   /**
@@ -306,6 +322,13 @@ export const InboxConversationRowSchema = z.object({
   id: Uuid,
   channel: InboxChannelSchema,
   channelAccountId: Uuid,
+  /**
+   * The number's display name — "Reception · Central Floresta", "Counter
+   * WhatsApp" — as `inbox.channel_account.display_name` holds it (SCRUM-220
+   * playbook: every conversation labelled with its source). Null only when
+   * the row cannot be read.
+   */
+  channelAccountName: z.string().nullable(),
   /** False on a check-in notice thread (the console sender): it cannot carry a reply. */
   canReply: z.boolean(),
   contact: InboxContactSchema,
@@ -490,8 +513,14 @@ export const InboxDashboardSchema = z.object({
    * Active of 12.
    */
   population: z.enum(INBOX_DASHBOARD_POPULATIONS),
-  /** Active visible conversations by category; the three add up to `active`. */
-  byCategory: z.object({ birthdays: z.number().int(), general: z.number().int(), marketing: z.number().int() }),
+  /** Active visible conversations by category; the four add up to `active`. */
+  byCategory: z.object({
+    birthdays: z.number().int(),
+    general: z.number().int(),
+    marketing: z.number().int(),
+    /** The GM queue (SCRUM-220 playbook). */
+    gm: z.number().int(),
+  }),
   /** The Bangkok day "today" means, `YYYY-MM-DD`. */
   day: z.string(),
 });

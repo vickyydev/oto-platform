@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { INBOX_TEMPLATE_KEY_NAMES } from '../src/inbox-reply';
 import {
+  INBOX_CATEGORY_KEYS,
+  INBOX_TEAM_KINDS,
+  INBOX_VIEW_ROLES,
+  InboxConversationListQuerySchema,
+  InboxConversationRowSchema,
+  InboxDashboardSchema,
   inTab,
   isUnanswered,
   isVisibleTo,
@@ -29,6 +36,8 @@ describe('tabsForRole (:705-710), as coded', () => {
     ['marketing', ['mine', 'team', 'handled']],
     // No prototype view: the default arm.
     ['staff', ['mine', 'team', 'handled']],
+    // The playbook's GM team (SCRUM-220): no prototype view either, so the default arm.
+    ['gm', ['mine', 'team', 'handled']],
   ] as const)('%s → %j', (role, tabs) => {
     expect(tabsForRole(role)).toEqual(tabs);
   });
@@ -97,6 +106,9 @@ describe('teamDestOf (:965-969)', () => {
     [{ category: 'general', branchId: CENTRAL }, { kind: 'reception', branchId: CENTRAL }],
     // The prototype's "all" goes to Central: the operator's first park here.
     [{ category: 'general', branchId: null }, { kind: 'reception', branchId: CENTRAL }],
+    // The playbook's GM queue (SCRUM-220): operator-wide, whatever the branch.
+    [{ category: 'gm', branchId: CHALONG }, { kind: 'gm' }],
+    [{ category: 'gm', branchId: null }, { kind: 'gm' }],
   ] as const)('%j → %j', (c, dest) => {
     expect(teamDestOf(c, CENTRAL)).toEqual(dest);
   });
@@ -138,5 +150,69 @@ describe('the filters (:1066, :1079-1085)', () => {
     expect(matchesSearch(c, '14th')).toBe(true);
     expect(matchesSearch(c, 'socks')).toBe(false);
     expect(matchesSearch(c, '  ')).toBe(true);
+  });
+});
+
+describe('the playbook contract (SCRUM-220): the GM queue, the closing lines, the source number', () => {
+  const ACCOUNT = '00000000-0000-7000-8000-0000000000aa';
+
+  it('names the GM as a category, a team kind and a view', () => {
+    expect(INBOX_CATEGORY_KEYS).toContain('gm');
+    expect(INBOX_TEAM_KINDS).toContain('gm');
+    expect(INBOX_VIEW_ROLES).toContain('gm');
+  });
+
+  it('names the three destination-keyed closing lines as template keys', () => {
+    for (const key of ['closing_birthday', 'closing_gm', 'closing_branch']) {
+      expect(INBOX_TEMPLATE_KEY_NAMES).toContain(key);
+    }
+  });
+
+  it('the list filters by the number a conversation came in on', () => {
+    expect(InboxConversationListQuerySchema.parse({ channelAccountId: ACCOUNT }).channelAccountId).toBe(ACCOUNT);
+    expect(InboxConversationListQuerySchema.safeParse({ channelAccountId: 'reception' }).success).toBe(false);
+  });
+
+  it('a row names its number: the id and the display name, which may be unknown', () => {
+    const row = {
+      id: '00000000-0000-7000-8000-000000000001',
+      channel: 'whatsapp',
+      channelAccountId: ACCOUNT,
+      channelAccountName: 'Reception · Central Floresta',
+      canReply: true,
+      contact: {
+        id: '00000000-0000-7000-8000-000000000002',
+        channel: 'whatsapp',
+        handle: '66800000000',
+        displayName: null,
+        phone: null,
+        language: null,
+        erased: false,
+      },
+      category: 'gm',
+      intent: null,
+      language: null,
+      branchId: null,
+      teamId: null,
+      status: 'active',
+      handledAt: null,
+      handledByKind: null,
+      lastMessageAt: null,
+      lastMessagePreview: null,
+      unanswered: false,
+      unread: 0,
+      mine: false,
+      assignments: [],
+      createdAt: '2026-10-28T03:00:00.000Z',
+    };
+    expect(InboxConversationRowSchema.parse(row).channelAccountName).toBe('Reception · Central Floresta');
+    expect(InboxConversationRowSchema.parse({ ...row, channelAccountName: null }).channelAccountName).toBeNull();
+    const { channelAccountName: _omitted, ...withoutName } = row;
+    expect(InboxConversationRowSchema.safeParse(withoutName).success).toBe(false);
+  });
+
+  it('the dashboard counts the GM queue beside the other three', () => {
+    const shape = InboxDashboardSchema.shape.byCategory.shape;
+    expect(Object.keys(shape).sort()).toEqual([...INBOX_CATEGORY_KEYS].sort());
   });
 });
