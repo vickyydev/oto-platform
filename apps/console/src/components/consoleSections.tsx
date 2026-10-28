@@ -273,10 +273,9 @@ export const consoleNav: ConsoleNavGroup[] = [
   },
   {
     id: 'organisation', label: 'Organisation', icon: Building2,
-    description: 'Operators, branches, their connection to the OTO App and ticket-pricing holidays.',
-    gate: { any: ['admin:branch:read', 'console:config:read'] }, sections: pages('operators', 'branches', 'holidays', 'config'),
-    description: 'Operators, branches, their connection to the OTO App, ticket-pricing holidays and the suite app registry.',
-    gate: { any: ['admin:branch:read', 'console:app_registry:read'] }, sections: pages('operators', 'branches', 'holidays', 'apps'),
+    description: 'Operators, branches, their connection to the OTO App, ticket-pricing holidays, configuration and the suite app registry.',
+    gate: { any: ['admin:branch:read', 'console:config:read', 'console:app_registry:read'] },
+    sections: pages('operators', 'branches', 'holidays', 'config', 'apps'),
   },
   {
     id: 'catalogue', label: 'Catalogue & money', icon: Ticket,

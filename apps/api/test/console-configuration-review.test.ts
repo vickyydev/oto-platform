@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import { eq, sql } from 'drizzle-orm';
-import { account, branch, role, roleAssignment, rolePermission } from '@oto/db';
+import { account, branch, role, roleAssignment, rolePermission, SETTING_CATALOGUE } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
@@ -57,10 +57,16 @@ describe('Console configuration native read contract', () => {
   it('R2 high: an existing native page grant alone does not grant index access', async () => {
     expect((await read(denied)).statusCode).toBe(403);
   });
-  it('R3 high: first authorized read is empty without creating catalogue rows', async () => {
+  it('R3 high: the read answers the synced catalogue and never writes a row', async () => {
+    // Since SCRUM-643 landed the Q27 wiring, platform sync converges the
+    // code-owned catalogue, so an authorized read answers those rows — but
+    // the read itself still seeds nothing: the count is the catalogue's,
+    // before and after, across repeated reads.
     const body = await routeReady();
-    expect(body).toMatchObject({ operatorId, selectedBranchId: null, entries: [] });
+    expect(body).toMatchObject({ operatorId, selectedBranchId: null });
     expect(Number.isNaN(Date.parse(body.generatedAt))).toBe(false);
+    expect(body.entries.length).toBeGreaterThan(0);
+    for (const entry of body.entries) expect(entry.supported).toBe(true);
     const before = await ctx.db.execute<{ count: number }>(
       // No setting values are read by this diagnostic.
       sql`select count(*)::int as count from core.setting_registry`,
@@ -68,7 +74,7 @@ describe('Console configuration native read contract', () => {
     await routeReady();
     const after = await ctx.db.execute<{ count: number }>(sql`select count(*)::int as count from core.setting_registry`);
     expect(after.rows).toEqual(before.rows);
-    expect(after.rows).toEqual([{ count: 0 }]);
+    expect(after.rows).toEqual([{ count: SETTING_CATALOGUE.length }]);
   });
   it('R4 high: an explicit live own branch is selected without borrowing the session seat', async () => {
     const response = await read(admin, `?branchId=${ownBranch}`);
