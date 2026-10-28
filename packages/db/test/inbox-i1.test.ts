@@ -15,6 +15,7 @@ import { platformSync, seed, SECOND_OPERATOR_NAME } from '../src/seed/index';
 import {
   CONSOLE_NOTICE_CHANNELS,
   INBOX_DEPARTMENTS,
+  INBOX_TEMPLATE_AWAITING_TRANSLATION,
   INBOX_TEMPLATE_BODIES,
   INBOX_TEMPLATE_FORMER_BODIES,
   INBOX_TEMPLATE_TRANSLATIONS,
@@ -275,19 +276,29 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     ]);
   });
 
-  it('lays the fourteen templates in EN, TH and RU, each language in its own words, nothing waiting for a translator', async () => {
+  it('lays the fifteen templates in EN, TH and RU, each language in its own words but for a key waiting for its translator', async () => {
     const templates = await db.select().from(s.template).where(eq(s.template.operatorId, oto));
     expect(templates).toHaveLength(INBOX_TEMPLATE_KEYS.length * 3);
     expect(new Set(templates.map((t) => t.key))).toEqual(new Set(INBOX_TEMPLATE_KEYS));
-    expect(templates.every((t) => !t.needsTranslation)).toBe(true);
     expect(templates.every((t) => t.approvalStatus === 'not_required' && t.active)).toBe(true);
+    // SCRUM-677: the booking line's Thai and Russian rows carry the English source, flagged for a translator.
+    const awaiting: readonly string[] = INBOX_TEMPLATE_AWAITING_TRANSLATION;
+    expect(awaiting).toEqual(['closing_booking']);
+    for (const t of templates) expect(t.needsTranslation, `${t.key}/${t.language}`).toBe(t.language !== 'en' && awaiting.includes(t.key));
+    for (const key of INBOX_TEMPLATE_AWAITING_TRANSLATION) {
+      for (const language of ['th', 'ru'] as const) {
+        expect(templates.find((t) => t.key === key && t.language === language)!.body).toBe(INBOX_TEMPLATE_BODIES[key]);
+      }
+    }
     for (const key of INBOX_TEMPLATE_KEYS) {
+      if (awaiting.includes(key)) continue;
+      const translated = key as Exclude<typeof key, (typeof INBOX_TEMPLATE_AWAITING_TRANSLATION)[number]>;
       const en = templates.find((t) => t.key === key && t.language === 'en')!;
       const th = templates.find((t) => t.key === key && t.language === 'th')!;
       const ru = templates.find((t) => t.key === key && t.language === 'ru')!;
       expect(en.body).toBe(INBOX_TEMPLATE_BODIES[key]);
-      expect(th.body).toBe(INBOX_TEMPLATE_TRANSLATIONS.th[key]);
-      expect(ru.body).toBe(INBOX_TEMPLATE_TRANSLATIONS.ru[key]);
+      expect(th.body).toBe(INBOX_TEMPLATE_TRANSLATIONS.th[translated]);
+      expect(ru.body).toBe(INBOX_TEMPLATE_TRANSLATIONS.ru[translated]);
       expect(th.body).not.toBe(en.body);
       expect(ru.body).not.toBe(en.body);
       // Thai script in the Thai line, Cyrillic in the Russian one; the same
@@ -308,6 +319,8 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     expect(en('closing_branch')).toBe("Thanks! We'll be back to you shortly.");
     // The playbook's unclear line wins over the destination's, branch or GM.
     expect(en('closing_unclear')).toBe('Thanks for your message! A team member will be with you shortly.');
+    // SCRUM-677: a nanny answer's line says why Central Floresta will write.
+    expect(en('closing_booking')).toBe('Our Central Floresta team will message you to confirm the booking 😊');
     // The follow-up is the one line that is not a holding line, and the only one with a placeholder.
     expect(INBOX_TEMPLATE_BODIES.follow_up).toContain('{{name}}');
     expect(INBOX_TEMPLATE_KEYS.filter((k) => INBOX_TEMPLATE_BODIES[k].includes('{{'))).toEqual(['follow_up']);

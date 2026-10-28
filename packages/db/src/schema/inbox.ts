@@ -154,7 +154,10 @@ export type RoutingPrimaryKind = (typeof ROUTING_PRIMARY_KINDS)[number];
  * playbook's closing lines: three keyed by destination (the birthday
  * manager, the general manager, or a branch will be with the customer
  * shortly), and `closing_unclear`, the unclear line, which an unclear or
- * emotional hand-over sends whichever queue it goes to.
+ * emotional hand-over sends whichever queue it goes to. `closing_booking`
+ * (SCRUM-677, `0095_inbox_booking_closing`) is a PLAN's own line, not a
+ * destination's: after a nanny answer it says why Central Floresta will
+ * write — to confirm the booking — where the branch line only said "shortly".
  */
 export const INBOX_TEMPLATE_KEYS = [
   'welcome',
@@ -171,6 +174,7 @@ export const INBOX_TEMPLATE_KEYS = [
   'closing_gm',
   'closing_branch',
   'closing_unclear',
+  'closing_booking',
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 
