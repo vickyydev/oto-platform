@@ -1,0 +1,215 @@
+{
+  "ticket": "SCRUM-680",
+  "completedAt": "2026-10-28T17:53:33.003Z",
+  "scopedChecksPassed": true,
+  "fullReleaseApproved": false,
+  "baseSha": "d8f5cf0c0e6b0e47cab248865c59a78a130f46e7",
+  "sourceFiles": {
+    "apps/api/src/routes/catalog.ts": "b6960edcce8d03d7b69ffdcd5143a761d9a523226cd962d07bd6c33209e80c7d",
+    "apps/api/test/s680-tax-reference-review.test.ts": "0ca0117652b91ea423f02694fbaf3d10cbeb95c2dcbbdec58dfc949f4592671c",
+    "packages/api-types/openapi.json": "2f667b5f715f41fcdc343aa85ae256bd3a0b021d8591abcf52ef94c2348d884d",
+    "packages/api-types/src/openapi.ts": "a3a7303d49ad39f1b1c3bb464f651ef4adad5704e979b089747165f2d272af1b"
+  },
+  "changes": [
+    "Category lookup by current operator inside native write transaction.",
+    "Product lookup by current operator and target branch or native shared-null branch, in that same transaction.",
+    "Missing/foreign references return404 NOT_FOUND with Category not found or Product not found; no insert/success audit.",
+    "Valid-input route-local fresh permission check runs in preValidation before idempotent replay; malformed input keeps native400.",
+    "Existing permission config, body-id replay, header replay and tax bounds are preserved.",
+    "POST response schema now declares the unchanged200 UUID id answer; generated contracts updated.",
+    "Used-tender DELETE description now describes existing archival behavior."
+  ],
+  "actualHistory": {
+    "firstRed": {
+      "tests": 14,
+      "passed": 7,
+      "failed": 7,
+      "fixtureFailures": 0,
+      "findings": "Six reference failures plus an unexpected current-permission replay failure."
+    },
+    "expandedRed": {
+      "tests": 16,
+      "passed": 8,
+      "failed": 8,
+      "fixtureFailures": 0,
+      "added": "Malformed-input400 control and missing output-schema pin."
+    },
+    "sameExpandedTestGreen": {
+      "tests": 16,
+      "passed": 16,
+      "failed": 0,
+      "testsByteIdenticalToExpandedRed": true
+    }
+  },
+  "finalGates": {
+    "affectedApi": {
+      "files": 8,
+      "passed": 170,
+      "failed": 0,
+      "breakdown": {
+        "routeGuards": 102,
+        "catalog": 24,
+        "tenders": 24,
+        "newTaxReview": 16,
+        "taxSeam": 4
+      }
+    },
+    "apiCompiler": {
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    "generatedContractsMatch": true,
+    "apiTypesTests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "apiTypesCompiler": {
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    "lint": {
+      "authoredFiles": 2,
+      "errors": 0,
+      "outputBytes": 0
+    },
+    "gitDiffCheck": 0
+  },
+  "receipts": {
+    "red-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/red-v1.json",
+      "sha256": "50049f5629f23a54bda34c7ba64a542ece09e27281d91d5c4f76c4efac853060",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/red-v1.log",
+      "logSha256": "aa75dba71e8d574d8675772fed05faefeb1ba874ea55d4b94f0a3225de3b045d",
+      "exitCode": 1,
+      "summaryLines": [
+        " Test Files  1 failed (1)",
+        "      Tests  7 failed | 7 passed (14)",
+        "   Duration  28.53s (transform 3.92s, setup 0ms, collect 13.28s, tests 14.84s, environment 0ms, prepare 186ms)"
+      ],
+      "sourceUnchanged": true
+    },
+    "red-v2": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/red-v2.json",
+      "sha256": "44af2c4114cf991eb575567df415af2cb95813f5f7ebd74d038b19693e3a9e0b",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/red-v2.log",
+      "logSha256": "ebf13148f67282e0f25e1380fa8acae8b5b24f691c89a7826c0ec8067705024b",
+      "exitCode": 1,
+      "summaryLines": [
+        " Test Files  1 failed (1)",
+        "      Tests  8 failed | 8 passed (16)",
+        "   Duration  20.79s (transform 4.81s, setup 0ms, collect 8.65s, tests 11.86s, environment 0ms, prepare 105ms)"
+      ],
+      "sourceUnchanged": true
+    },
+    "green-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/green-v1.json",
+      "sha256": "e9bc175504fd6b1a909f87eda7162d140b2fe0f80e06dfa8286f16bdbf7c5f97",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/green-v1.log",
+      "logSha256": "29ca3b2aaa97ea7410df5569d26b5747757adf69f3ed680fb9bc7b0c86a94450",
+      "exitCode": 0,
+      "summaryLines": [
+        " Test Files  1 passed (1)",
+        "      Tests  16 passed (16)",
+        "   Duration  19.82s (transform 4.84s, setup 0ms, collect 8.64s, tests 10.90s, environment 0ms, prepare 101ms)"
+      ],
+      "sourceUnchanged": true
+    },
+    "generate-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/generate-v1.json",
+      "sha256": "60ff6307db17db74877abadded4fa0d1a10ecb33d3cd6512dcf2960d33068d49",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/generate-v1.log",
+      "logSha256": "27e3089e7389787141dee4db4f9058739b25c5a322aea8336c5a940fb29d22bb",
+      "exitCode": 0,
+      "summaryLines": [],
+      "sourceUnchanged": false
+    },
+    "affected-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/affected-v1.json",
+      "sha256": "1f3b0274882751b32d3b4c673c3cc0a8354832c72af7e27c0fb1e1303c54f8fc",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/affected-v1.log",
+      "logSha256": "df274733409eafe447507dd0ecba9c91155373bfc55ce79a340d3108986d9678",
+      "exitCode": 0,
+      "summaryLines": [
+        " Test Files  8 passed (8)",
+        "      Tests  170 passed (170)",
+        "   Duration  90.86s (transform 4.26s, setup 0ms, collect 23.13s, tests 65.73s, environment 1ms, prepare 792ms)"
+      ],
+      "sourceUnchanged": true
+    },
+    "typecheck-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/typecheck-v1.json",
+      "sha256": "9167f723f2700826e4b4fd2f83cc2e557dd030ca91e7fbfe11056ca5a0bc3f20",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/typecheck-v1.log",
+      "logSha256": "9217c1aa4f829f0d96e40f0c848e07a13b36a7c12bdf438b1b59af59784513fb",
+      "exitCode": 0,
+      "summaryLines": [],
+      "sourceUnchanged": true
+    },
+    "contracts-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/contracts-v1.json",
+      "sha256": "bb1b7e9746e85fd437dc6fe93296b8726fc1898c613c298e199e2cc64d0d48ba",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/contracts-v1.log",
+      "logSha256": "bd9771256fd34b1e2d0346ef316b6a96da52ae342df0d124b61d1310d5f2a306",
+      "exitCode": 0,
+      "summaryLines": [],
+      "sourceUnchanged": true
+    },
+    "client-tests-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/client-tests-v1.json",
+      "sha256": "9f240878428e290b3eeb0d6f4b03bd7acf47aeb2ae6485d1ee1e2b2c3b893d11",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/client-tests-v1.log",
+      "logSha256": "4cd3a524a8230bd4da3a699d56f987573b4febf8ab0d6ea57675b6cbd3da41c1",
+      "exitCode": 0,
+      "summaryLines": [
+        " Test Files  1 passed (1)",
+        "      Tests  10 passed (10)",
+        "   Duration  4.51s (transform 600ms, setup 0ms, collect 3.91s, tests 35ms, environment 0ms, prepare 224ms)"
+      ],
+      "sourceUnchanged": true
+    },
+    "client-typecheck-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/client-typecheck-v1.json",
+      "sha256": "a74dff1dfd67a5c275e160f4069e0b552a7ede9a8fdff97f8c71c4abeb3cfa84",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/client-typecheck-v1.log",
+      "logSha256": "7e5b2aafe5a85dfb320afbf73ea48638b9a3bb81dc3b63c5031394cfef1be41e",
+      "exitCode": 0,
+      "summaryLines": [],
+      "sourceUnchanged": true
+    },
+    "lint-v1": {
+      "path": "C:/oto-lanes/admin680-evidence-20261029/lint-v1.json",
+      "sha256": "599bf536e98620f5a0a70400a597837834ec5ed640e9dd5a6763115d0eecb3fb",
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/lint-v1.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "summaryLines": [],
+      "sourceUnchanged": true
+    }
+  },
+  "cleanup": {
+    "path": "C:/oto-lanes/admin680-evidence-20261029/cleanup-verification-v1.json",
+    "sha256": "faf8b020c48ef2aa276c7c85d44b8eb2a83768067d1786eac50c91aff790312e",
+    "ownPgStarts": 9,
+    "ownProcessesAndListenersAbsent": true,
+    "unrelatedReusedIdsUntouched": true
+  },
+  "scope": {
+    "productionRouteFiles": 1,
+    "newReviewFiles": 1,
+    "generatedFiles": 2,
+    "newServiceHelpers": 0,
+    "migrations": 0,
+    "genericPermissionOrIdempotencyPluginChanges": 0,
+    "taxOrPaymentRuleChanges": 0,
+    "providerActions": 0,
+    "stagingActions": 0,
+    "gitCommits": 0,
+    "gitPushes": 0,
+    "jiraMutations": 0
+  },
+  "limits": [
+    "Scoped local closure only; root full API shards are running separately.",
+    "The permission replay repair is confined to this tax-override route; no claim is made for other existing routes.",
+    "Main/rebase/CI/Render/staging acceptance remain root-owned."
+  ]
+}

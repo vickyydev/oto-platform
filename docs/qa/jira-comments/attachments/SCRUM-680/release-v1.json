@@ -1,0 +1,75 @@
+{
+  "ticket": "SCRUM-680",
+  "head": "75063bc7f064100dc16e2007d5957527012733a4",
+  "startedAt": "2026-10-28T18:07:09.001Z",
+  "sourceManifestSha256": "53120ebc35039bf681eaf9dbbed79f8fa0d69b99a0eaf272c3c7bcc52ce0685a",
+  "checks": [
+    {
+      "name": "typecheck",
+      "cmd": "pnpm typecheck --concurrency=2",
+      "startedAt": "2026-10-28T18:07:09.005Z",
+      "finishedAt": "2026-10-28T18:10:45.132Z",
+      "exitCode": 0,
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/release-v1-typecheck.log",
+      "logSha256": "78a64ed9ca499ad06f58ba59e6d97dd9d77ea4293568e0fabfb910a63261fe99",
+      "summary": [
+        " Tasks:    16 successful, 16 total"
+      ],
+      "sourceUnchanged": true
+    },
+    {
+      "name": "contracts",
+      "cmd": "pnpm api-types:check",
+      "startedAt": "2026-10-28T18:10:49.244Z",
+      "finishedAt": "2026-10-28T18:11:13.475Z",
+      "exitCode": 0,
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/release-v1-contracts.log",
+      "logSha256": "9285808932289e85387075f448b0e41422c171e4d7bac1557ba125328dc629fa",
+      "summary": [],
+      "sourceUnchanged": true
+    },
+    {
+      "name": "affected",
+      "cmd": "pnpm --filter @oto/api test test/s680-tax-reference-review.test.ts test/catalog.test.ts test/catalog-payment-methods.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts test/menu-tax-seam.test.ts",
+      "startedAt": "2026-10-28T18:11:16.296Z",
+      "finishedAt": "2026-10-28T18:14:02.409Z",
+      "exitCode": 0,
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/release-v1-affected.log",
+      "logSha256": "3b148e9080808d9a35266a0750aa4db3f939fffc5282cb01a2787afc7e0699d1",
+      "summary": [
+        " Test Files  8 passed (8)",
+        "      Tests  170 passed (170)",
+        "   Duration  163.65s (transform 6.92s, setup 0ms, collect 38.42s, tests 121.44s, environment 2ms, prepare 1.45s)"
+      ],
+      "sourceUnchanged": true
+    },
+    {
+      "name": "seam",
+      "cmd": "pnpm --filter @oto/api-types test",
+      "startedAt": "2026-10-28T18:14:06.596Z",
+      "finishedAt": "2026-10-28T18:14:15.980Z",
+      "exitCode": 0,
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/release-v1-seam.log",
+      "logSha256": "9cfbc25015ced86f8b3d171b0e56ce92d144afd28cae1fcf5fa89a6079964a8a",
+      "summary": [
+        " Test Files  1 passed (1)",
+        "      Tests  10 passed (10)",
+        "   Duration  7.41s (transform 1.28s, setup 0ms, collect 6.12s, tests 43ms, environment 0ms, prepare 490ms)"
+      ],
+      "sourceUnchanged": true
+    },
+    {
+      "name": "lint",
+      "cmd": "pnpm exec eslint apps/api/src/routes/catalog.ts apps/api/test/s680-tax-reference-review.test.ts",
+      "startedAt": "2026-10-28T18:14:18.961Z",
+      "finishedAt": "2026-10-28T18:14:34.695Z",
+      "exitCode": 0,
+      "logPath": "C:/oto-lanes/admin680-evidence-20261029/release-v1-lint.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary": [],
+      "sourceUnchanged": true
+    }
+  ],
+  "finishedAt": "2026-10-28T18:14:37.363Z",
+  "complete": true
+}

@@ -1,0 +1,69 @@
+{
+  "ticket": "SCRUM-680",
+  "startedAt": "2026-10-28T17:49:36.998Z",
+  "finishedAt": "2026-10-28T18:36:55.770Z",
+  "sourceHead": "3d989a8d47b11be27c02f58304e8a9868936afe0",
+  "passed": true,
+  "shards": [
+    {
+      "ticket": "SCRUM-680",
+      "shard": 1,
+      "command": "set -eo pipefail; pnpm --filter @oto/api test --shard=1/3",
+      "sourceHead": "3d989a8d47b11be27c02f58304e8a9868936afe0",
+      "startedAt": "2026-10-28T17:49:36.998Z",
+      "finishedAt": "2026-10-28T18:35:43.517Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "27ba40c47c6ca28561295ef9d92179ed9bc35f7d3df6c187776559c99ba6c66b",
+      "sourceInputCount": 3957,
+      "sourceUnchanged": true,
+      "summary": [
+        " Test Files  134 passed | 2 skipped (136)",
+        "      Tests  1991 passed | 106 skipped (2097)",
+        "   Duration  2762.07s (transform 9.23s, setup 0ms, collect 444.94s, tests 2268.35s, environment 25ms, prepare 20.56s)"
+      ],
+      "logSha256": "ee95eb164105fc1548daaabdbb8ac476c3414ba2da30a3136dac7f84cc107d41",
+      "databaseEnvUnset": true,
+      "docker": false
+    },
+    {
+      "ticket": "SCRUM-680",
+      "shard": 2,
+      "command": "set -eo pipefail; pnpm --filter @oto/api test --shard=2/3",
+      "sourceHead": "3d989a8d47b11be27c02f58304e8a9868936afe0",
+      "startedAt": "2026-10-28T17:49:36.998Z",
+      "finishedAt": "2026-10-28T18:35:30.121Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "27ba40c47c6ca28561295ef9d92179ed9bc35f7d3df6c187776559c99ba6c66b",
+      "sourceInputCount": 3957,
+      "sourceUnchanged": true,
+      "summary": [
+        " Test Files  132 passed | 4 skipped (136)",
+        "      Tests  1940 passed | 174 skipped | 4 todo (2118)",
+        "   Duration  2745.67s (transform 9.88s, setup 0ms, collect 447.74s, tests 2247.86s, environment 26ms, prepare 21.18s)"
+      ],
+      "logSha256": "7afc22f9285e5c78841bb057934a132530fc8d8e40bb2b0d43a525a369b07f63",
+      "databaseEnvUnset": true,
+      "docker": false
+    },
+    {
+      "ticket": "SCRUM-680",
+      "shard": 3,
+      "command": "set -eo pipefail; pnpm --filter @oto/api test --shard=3/3",
+      "sourceHead": "3d989a8d47b11be27c02f58304e8a9868936afe0",
+      "startedAt": "2026-10-28T17:49:36.998Z",
+      "finishedAt": "2026-10-28T18:36:55.760Z",
+      "exitCode": 0,
+      "sourceManifestSha256": "27ba40c47c6ca28561295ef9d92179ed9bc35f7d3df6c187776559c99ba6c66b",
+      "sourceInputCount": 3957,
+      "sourceUnchanged": true,
+      "summary": [
+        " Test Files  134 passed | 2 skipped (136)",
+        "      Tests  1868 passed | 121 skipped | 1 todo (1990)",
+        "   Duration  2833.35s (transform 9.22s, setup 0ms, collect 448.06s, tests 2336.79s, environment 26ms, prepare 20.41s)"
+      ],
+      "logSha256": "2be8f848df60077b617e66207e2ab5a7b4a0bcfefa38c3fb127ec69ccb6ad77e",
+      "databaseEnvUnset": true,
+      "docker": false
+    }
+  ]
+}
