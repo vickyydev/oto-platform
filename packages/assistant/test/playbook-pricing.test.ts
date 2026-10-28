@@ -140,6 +140,32 @@ describe('E. the gate: any cited price, never a computed one', () => {
     expect(traceabilityGuard(["As a resident you'll get a discount at Central 😊"], [chalong])).toMatchObject({ ok: false, rule: 'en:discount' });
   });
 
+  // SCRUM-669: a Chalong price question answered with Central's starts-from.
+  // The number guard cannot see a park mismatch; the gate can, when the
+  // customer named exactly one park.
+  it('one park named: a price reply may cite only that park’s live price fact (GUARD_PARK)', () => {
+    const chalongReply = 'At Robinson Chalong it starts from ฿300 per child on weekdays 😊';
+    const centralReply = 'Prices start from ฿690 per child 😊';
+    expect(
+      pgate({ intent: 'ticket_prices', branchNamed: 'chalong', grounding: ['fact.prices.chalong'], bubbles: [chalongReply] }),
+    ).toMatchObject({ action: 'answer', groundingKeys: ['fact.prices.chalong'] });
+    expect(
+      pgate({ intent: 'ticket_prices', branchNamed: 'chalong', grounding: ['fact.prices.central'], bubbles: [centralReply] }),
+    ).toMatchObject({ action: 'silent', reason: 'GUARD_PARK', rule: 'park' });
+    // Citing the named park beside the other one still names the other park's prices: refused.
+    expect(
+      pgate({ intent: 'ticket_prices', branchNamed: 'chalong', grounding: ['fact.prices.chalong', 'fact.prices.central'], bubbles: [chalongReply] }),
+    ).toMatchObject({ action: 'silent', reason: 'GUARD_PARK' });
+    // No park named: both parks' facts may be cited (the combined question cites both).
+    expect(
+      pgate({ intent: 'ticket_prices', grounding: ['fact.prices.central', 'fact.prices.chalong'], bubbles: [centralReply] }),
+    ).toMatchObject({ action: 'answer' });
+    // A price objection with a fallback is overruled into its hand-over, as the other guards are.
+    expect(
+      pgate({ intent: 'discount_negotiation', branchNamed: 'central', grounding: ['fact.prices.chalong'], bubbles: [chalongReply] }),
+    ).toMatchObject({ action: 'handover', reason: 'OVERRULED_HANDOVER', droppedHoldingRule: 'park' });
+  });
+
   it('the Thai and Russian branch questions hold no promise word, so they need no source', () => {
     expect(traceabilityGuard([TH_PERSONA.branchQuestion], [])).toEqual({ ok: true });
     expect(traceabilityGuard([RU_PERSONA.branchResidencyQuestion], [])).toEqual({ ok: true });

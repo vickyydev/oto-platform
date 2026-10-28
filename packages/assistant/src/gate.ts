@@ -221,6 +221,19 @@ function holdingFailure(bubbles: readonly string[], min: number, english: boolea
   );
 }
 
+/**
+ * A price source kept for a park other than `named` (SCRUM-669): another
+ * park's live price fact (`fact.prices.<park>`), or a price note filed for
+ * that park (`<key>@<park>`).
+ */
+function priceSourceOfOtherPark(s: GroundingSource, named: AiBranchKey): boolean {
+  const fact = /^fact\.prices\.(.+)$/.exec(s.key);
+  if (fact) return fact[1] !== named;
+  if (s.topic !== 'prices' && s.topic !== 'prices_note') return false;
+  const at = s.key.lastIndexOf('@');
+  return at !== -1 && s.key.slice(at + 1) !== named;
+}
+
 export function episodeCapReached(episode: EpisodeState): boolean {
   return (
     episode.aiAnswers >= EPISODE_ANSWER_CAP || episode.aiAnswersLast10Min >= EPISODE_WINDOW_CAP
@@ -432,6 +445,15 @@ export function applyGates({ decision: d, grounding, episode }: GateInput): Gate
     if (!cited.some((s) => topics.includes(s.topic))) {
       return overruled({ reason: 'GROUNDING_TOPIC', rule: 'grounding' }) ?? silent('GROUNDING_TOPIC');
     }
+  }
+
+  // SCRUM-669: the customer named one park, so the reply's prices are that
+  // park's. The number guard cannot see a park mismatch (Central's 690 is a
+  // grounded number), so a cited price source of ANOTHER park — its live
+  // price fact, or a price note kept for it — refuses the reply.
+  const named = d.branchNamed;
+  if (named !== null && cited.some((s) => priceSourceOfOtherPark(s, named))) {
+    return overruled({ reason: 'GUARD_PARK', rule: 'park' }) ?? silent('GUARD_PARK', 'park');
   }
 
   // Gate 7, then 6, then 5, over the whole reply; then the playbook's own
