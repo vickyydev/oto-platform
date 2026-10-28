@@ -14,6 +14,7 @@ import {
 import { DeviceSettingsSchema, newId, PaymentRoutingSchema } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
+import { nullableResponseEnumTransform } from '../lib/nullable-response-enum';
 import { holdsGrantAt } from '../services/access-control';
 import { ClientIdSchema, REPLAY_HEADER, wasReplay } from '../services/client-id';
 import {
@@ -976,7 +977,8 @@ export async function fleetRoutes(app: App): Promise<void> {
   app.get(
     '/branches/:branchId/credentials',
     {
-      config: { permission: 'admin:device:read', target: { branchId: 'params.branchId' } },
+      config: { permission: 'admin:device:read', target: { branchId: 'params.branchId' },
+        swaggerTransform: nullableResponseEnumTransform('credentials') },
       schema: {
         description: 'Screens paired at this branch, and the codes still outstanding',
         params: BranchParams,
