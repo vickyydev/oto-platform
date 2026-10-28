@@ -95,7 +95,13 @@ import { sendAfterCommit } from './send';
  *      and the episode built into the prompt, one structured decision, then
  *      the server's gates (`@oto/assistant` `applyGates`). Every call is an
  *      `ops_run` (`adapter:inbox.ai`): ids, outcome, latency, tokens, the
- *      error word.
+ *      error word. Then, still with no transaction open, THE COHERENCE REVIEW
+ *      (SCRUM-677, `reviewStage`): a reply that mixes the model's words and a
+ *      fixed line is shown to the reviewer, which returns operations only
+ *      (keep, drop, merge) under the server's rules, failing open. A reply
+ *      it reads as answering something else (SCRUM-678, `rethinkTurn`) is
+ *      decided once more with its reading as a hint; a second miss is the
+ *      unclear hand-over. The operator's `coherenceReview` switch governs both.
  *   4. THE COMMIT, under the thread lock, RE-CHECKING EVERYTHING: the turn is
  *      still ours (not cancelled by a person's action, not re-claimed), the
  *      switches still on, the thread still eligible, and no newer customer
