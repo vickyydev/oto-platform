@@ -579,13 +579,14 @@ describe('silence (§B.1, §B.3): every failure of the model', () => {
     });
   }
 
-  it('a gate that fails is silence with the gate’s word: an ungrounded number', async () => {
+  it('a gate that fails keeps the gate’s word on the turn; the customer gets the unclear line, never the withheld words (item D)', async () => {
     await drain();
     const conv = await customer(w, central, nextPhone(), 'how much?');
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'socks', grounding: ['socks'], bubbles: ['Socks are 99 baht'] }) });
     await tick(w, later(25_000));
-    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'silent', reason: 'GUARD_NUMBER' });
-    expect(await aiLines(w, conv.id)).toHaveLength(0);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', reason: 'GUARD_NUMBER' });
+    const unclear = await closingTemplate('closing_unclear');
+    expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([{ body: unclear.body, templateId: unclear.id }]);
   });
 });
 

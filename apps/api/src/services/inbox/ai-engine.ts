@@ -1,7 +1,9 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import {
   AI_REPLY_LANGUAGES,
+  BY_BRANCH,
   applyGates,
+  resolvePlan,
   buildPrompt,
   scheduleBubbles,
   type AiBranchKey,
@@ -42,6 +44,7 @@ import type { InboxAiRuntime } from './ai-runtime';
 import {
   CLOSING_KEY_OF,
   UNCLEAR_CLOSING_KEY,
+  WITHHELD_REPLY_REASONS,
   destinationOf,
   isUnclearHandover,
   planOwner,
@@ -856,15 +859,50 @@ interface Handover {
   unclear: boolean;
 }
 
-function handoverOf(v: GateVerdict | undefined, silent: ReadonlySet<string> | null): Handover | null {
+function handoverOf(v: GateVerdict | undefined, silent: ReadonlySet<string> | null, withheld = false): Handover | null {
   if (!v || v.action === 'silent') return null;
   const plan = v.action === 'answer' ? v.thenHandover : v.plan;
   if (!plan) return null;
   const owner = planOwner(v.intents, plan);
   const silenced = silencedBy(silent, v.intents, owner, v.intent);
   const branchLine = v.action === 'silent_handover' && !silenced;
-  const byModel = v.action === 'handover' && v.reason === 'MODEL_HANDOVER';
+  // The model handing over on its own, or a reply the gate withheld (item D),
+  // is the playbook's "Unclear or not covered" row.
+  const byModel = withheld || (v.action === 'handover' && v.reason === 'MODEL_HANDOVER');
   return { plan, owner, silenced, branchLine, unclear: !branchLine && isUnclearHandover(v.intents, plan, byModel) };
+}
+
+/**
+ * SCRUM-671, item D (owner ruling, 28 Oct 2026): a customer never gets pure
+ * silence on a main channel. When the gate WITHHOLDS a reply the model wrote
+ * (`WITHHELD_REPLY_REASONS`: a grounding refusal or a guard), the turn becomes
+ * the "Unclear or not covered" hand-over: the playbook's unclear line, and the
+ * thread to the park when it is known, else the GM. None of the withheld words
+ * go (`holdingBubbles` empty). A number whose silence policy covers the
+ * intent keeps true silence, as before. The turn keeps the gate's own reason
+ * word (`commitTurn`), so a reviewer sees WHY the reply was held back.
+ */
+function withheldReplyFallback(
+  v: GateVerdict | undefined,
+  d: AiDecision | undefined,
+  silent: ReadonlySet<string> | null,
+  threadHasBranch: boolean,
+): GateVerdict | null {
+  if (!v || v.action !== 'silent' || !d || v.intent === null || !WITHHELD_REPLY_REASONS.has(v.reason)) return null;
+  const intents = v.intents.length > 0 ? v.intents : [v.intent];
+  if (silencedBy(silent, intents, null, v.intent)) return null;
+  const language = (AI_REPLY_LANGUAGES as readonly string[]).includes(d.language) ? (d.language as AiReplyLanguage) : 'en';
+  return {
+    action: 'handover',
+    reason: 'OVERRULED_HANDOVER',
+    intent: v.intent,
+    intents,
+    language,
+    plan: resolvePlan(BY_BRANCH, threadHasBranch || d.branchNamed !== null),
+    holdingBubbles: [],
+    droppedHoldingRule: v.rule ?? v.reason,
+    branchNamed: d.branchNamed,
+  };
 }
 
 /**
@@ -1022,7 +1060,7 @@ async function closeTurn(
       ...fields,
       // The gate's rule id, and the grounding keys the answer rests on —
       // only keys the prompt offered, never a string the model invented.
-      gate: v && v.action === 'silent' ? (v.rule ?? null) : null,
+      gate: v && v.action === 'silent' ? (v.rule ?? null) : v && v.action === 'handover' ? (v.droppedHoldingRule ?? null) : null,
       groundingKeys: v && v.action === 'answer' ? v.groundingKeys : [],
       // Every part the burst held (test night 2026-10-21, D1a): the turn row
       // keeps the primary in `intent`; the audit keeps them all.
@@ -1193,11 +1231,17 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
         return 'superseded';
       }
 
-      const v = r.verdict;
-      const reason = r.silence ?? (v ? v.reason : 'PROVIDER_ERROR');
+      const gated = r.verdict;
+      // The gate's own word stays the turn's reason, also when a withheld
+      // reply turns into the unclear hand-over (item D).
+      const reason = r.silence ?? (gated ? gated.reason : 'PROVIDER_ERROR');
+      const silentSet = silentIntentsOf(account.silencePolicy);
+      const fallback = withheldReplyFallback(gated, r.decision, silentSet, conv.branchId !== null);
+      const v = fallback ?? gated;
+      const turnResult: TurnResult = fallback ? { ...r, verdict: fallback } : r;
       // SCRUM-220 playbook: the hand-over this turn makes, with the number's
       // silence policy read (`ai-destination.ts`).
-      const handover = handoverOf(v, silentIntentsOf(account.silencePolicy));
+      const handover = handoverOf(v, silentSet, fallback !== null);
       const finalReason = handoverReason(handover, reason);
 
       // SHADOW (§B.5): the decision on the turn, and nothing the customer
@@ -1239,7 +1283,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             }, at),
           );
         }
-        await closeTurn(tx, turn, conv, 'shadowed', finalReason, r, at, messageIds);
+        await closeTurn(tx, turn, conv, 'shadowed', finalReason, turnResult, at, messageIds);
         return 'shadowed';
       }
 
@@ -1333,7 +1377,9 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             turnId: turn.id,
             intent: v.intent,
             intents: v.intents,
-            reason: handoverReason(handover, v.reason),
+            reason: finalReason,
+            // The rule that dropped the model's words, or withheld its reply (item D): WHY, for a reviewer.
+            rule: v.action === 'handover' ? (v.droppedHoldingRule ?? null) : null,
             silent: handover.silenced,
             destination: plan.category,
             templateKey: handover.plan.templateKey,
@@ -1374,7 +1420,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       if (v.action === 'answer' && v.mayAutoHandle && !handover) await handleByAi(tx, conv, turn.id, at, null);
 
       const state = handover ? 'handed_over' : 'answered';
-      await closeTurn(tx, turn, conv, state, finalReason, r, at, messageIds);
+      await closeTurn(tx, turn, conv, state, finalReason, turnResult, at, messageIds);
       return state;
     },
   );
