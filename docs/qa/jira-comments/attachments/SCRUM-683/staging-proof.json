@@ -1,0 +1,992 @@
+{
+  "ticket": "SCRUM-683",
+  "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "ciRunId": "40772012368",
+  "helperSha256": "66f1ec3394fe1b780d77192d8298f2876054c49b5b0b40abd2aecd9a7c399ed8",
+  "startedAt": "2026-10-28T21:56:39.467Z",
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-28T21:56:42.796Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-683-01-catalogue.png",
+      "at": "2026-10-28T21:56:53.163Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-683-02-tenders.png",
+      "at": "2026-10-28T21:57:01.276Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-683-03-devices.png",
+      "at": "2026-10-28T21:57:10.023Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-683-04-config.png",
+      "at": "2026-10-28T21:57:18.136Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-683-05-money-cash-attention.png",
+      "at": "2026-10-28T21:57:25.513Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-683-06-money-settlement-attention.png",
+      "at": "2026-10-28T21:57:28.902Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "after-proof",
+      "at": "2026-10-28T21:57:33.042Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "catalogue",
+      "path": "/catalogue",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:46.167Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:46.656Z",
+          "bodySha256": "6f945caadc10d2536e2ee07c1a83e3a61535794e8782405a31e239376b79605b"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:47.138Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:47.652Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:47.659Z",
+          "bodySha256": "8840ce9a78ffd2c178d9cd2ef348c5204e2738e746f894d72137509059184e8b"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:47.681Z",
+          "bodySha256": "10f6182da4e881ab6048fe9786e09f7f7ad2ef6aa145867011f58381af6c9f64"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:48.220Z",
+          "bodySha256": "4e543d762d85bd7edcba0569f10ddfdd87cf1a21f00a58d7978e3e572a9d1075"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "checks": {
+        "nativeTaskGroups": 4,
+        "fixedExistingDoors": 6,
+        "capabilityLimitsVisible": true,
+        "linksClicked": 0,
+        "surfaceReadsUnchanged": true,
+        "filtersRefineLoadedRowsOnly": true
+      },
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-683-01-catalogue.png",
+          "at": "2026-10-28T21:56:53.164Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 982,
+            "width": 1312,
+            "height": 58
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    },
+    {
+      "id": "tenders",
+      "path": "/catalogue/tenders",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:54.357Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:54.847Z",
+          "bodySha256": "6f945caadc10d2536e2ee07c1a83e3a61535794e8782405a31e239376b79605b"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:55.392Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:55.873Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "methods",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:55.945Z",
+          "bodySha256": "0317f7491f9125fddab8b084f7a4f2899a99cd29b0cf09feb7d589f21b93d3ac"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:55.996Z",
+          "bodySha256": "10f6182da4e881ab6048fe9786e09f7f7ad2ef6aa145867011f58381af6c9f64"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:56.234Z",
+          "bodySha256": "4af5613826a5283249ab3a8b24093129dc2af1feabf2566f89c0e3eee61ebcdc"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:56:56.737Z",
+          "bodySha256": "b1d92c01f0beaff025cdcd98c733d42323b06a8bbde0cbe9d51551a66adc4b4d"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "checks": {
+        "loadedMethods": 15,
+        "enabledCashMatches": 1,
+        "noMatchSearchVerified": true,
+        "sourceOrderOrMethodMutation": false,
+        "surfaceReadsUnchanged": true,
+        "filtersRefineLoadedRowsOnly": true
+      },
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-683-02-tenders.png",
+          "at": "2026-10-28T21:57:01.277Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 982,
+            "width": 1312,
+            "height": 58
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    },
+    {
+      "id": "devices",
+      "path": "/devices",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:02.292Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:02.775Z",
+          "bodySha256": "6f945caadc10d2536e2ee07c1a83e3a61535794e8782405a31e239376b79605b"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:03.243Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:03.714Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:03.725Z",
+          "bodySha256": "39878db36836c7489926f543fe09df98f38eadbb8154f1388742e082f973b012"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:03.737Z",
+          "bodySha256": "10f6182da4e881ab6048fe9786e09f7f7ad2ef6aa145867011f58381af6c9f64"
+        },
+        {
+          "label": "branch-stations",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:03.758Z",
+          "bodySha256": "035a8a2f7ec749540da915d0c2b5c9744b644902b7f411daa827a93d4882d043",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "branch-boxes",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:03.774Z",
+          "bodySha256": "0e66bbc0cd9f6a24b5383f59180f6219ba4ecdd45df65b6f6d7710a6d96bdc57",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.118Z",
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.203Z",
+          "bodySha256": "bf2c2d3149045f2b8ea61eb4a0c96870e614bb25ec83e08d36cb7b1557f5b595"
+        },
+        {
+          "label": "branch-credentials",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.221Z",
+          "bodySha256": "5f499d3f602717a69a169989f3582470b0c5e9aa944e90f1cbd67ee1bb8088f0",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.694Z",
+          "bodySha256": "f7d5d95e2efc41c3038a634cd2d8fdef61c26847cee8819598ade0f2f62e26d2"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.707Z",
+          "bodySha256": "d344a8cc1d20eafcb2a834fdce2ed206b7185a05135f1af72d8fcedee600247d"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.719Z",
+          "bodySha256": "ff5061cf0be1b46f00c909a479e0c5fab98f46a9ddc3dbdff692d8cf9d1b9eb7"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.720Z",
+          "bodySha256": "44e7bc124ce1f598373d3261c48cddf332c2b19fbf3cfca9d7c7d3bbb5eefe73"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.743Z",
+          "bodySha256": "f7d5d95e2efc41c3038a634cd2d8fdef61c26847cee8819598ade0f2f62e26d2"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:04.746Z",
+          "bodySha256": "4633e06eae73cfa6735e4b4a5b2d16c9f63cc8794629a8ef39dcf856557fbf4c"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:05.139Z",
+          "bodySha256": "93e2ff7165f049efa4cd083451f190cc63d4bf16fe392a9292bde57a784ae10a"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "checks": {
+        "loadedBoxes": 7,
+        "loadedStations": 8,
+        "nativeStatusTurns": [
+          {
+            "status": "online",
+            "matchingBoxes": 1
+          },
+          {
+            "status": "offline",
+            "matchingBoxes": 5
+          },
+          {
+            "status": "unclaimed",
+            "matchingBoxes": 1
+          }
+        ],
+        "noMatchSearchVerified": true,
+        "nativeTotalsSha256": "5c810a3d9f67d6657e0c83fa66ce96bf50e8688b396c23127a128a9ebde1ab95",
+        "totalsUnchanged": true,
+        "filtersCleared": true,
+        "surfaceReadsUnchanged": true,
+        "filtersRefineLoadedRowsOnly": true
+      },
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-683-03-devices.png",
+          "at": "2026-10-28T21:57:10.024Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 982,
+            "width": 1312,
+            "height": 58
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    },
+    {
+      "id": "config",
+      "path": "/organisation/configuration",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:11.042Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:11.863Z",
+          "bodySha256": "6f945caadc10d2536e2ee07c1a83e3a61535794e8782405a31e239376b79605b"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:12.326Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:12.811Z",
+          "bodySha256": "71e2ea8079052d090434c6802fc973c4b219b533f3e26412fdeac832112797ff"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:12.815Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:12.827Z",
+          "bodySha256": "10f6182da4e881ab6048fe9786e09f7f7ad2ef6aa145867011f58381af6c9f64"
+        },
+        {
+          "label": "configuration",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:12.836Z",
+          "bodySha256": "ba11950acf6f6a373dfcd55b43c6ba1f694fad1bdccbf354bc203804ecb0238a"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:13.382Z",
+          "bodySha256": "fdfec3757a4f4891e0b2ed297b55ef6f06d6c50d65e0e6696040c0d4ad6a9ea4"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "checks": {
+        "loadedEntries": 8,
+        "ownerGroups": 2,
+        "noMatchSearchVerified": true,
+        "searchCleared": true,
+        "destinationClicks": 0,
+        "surfaceReadsUnchanged": true,
+        "filtersRefineLoadedRowsOnly": true
+      },
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-683-04-config.png",
+          "at": "2026-10-28T21:57:18.137Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 982,
+            "width": 1312,
+            "height": 58
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    },
+    {
+      "id": "money",
+      "path": "/reports/money",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:19.133Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:19.609Z",
+          "bodySha256": "6f945caadc10d2536e2ee07c1a83e3a61535794e8782405a31e239376b79605b"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.088Z",
+          "bodySha256": "9e61f87aceaa775c2322df26c826494d187209050a1783a3c2bd91148d4f3da9"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.555Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.586Z",
+          "bodySha256": "10f6182da4e881ab6048fe9786e09f7f7ad2ef6aa145867011f58381af6c9f64"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.586Z",
+          "bodySha256": "4822b2512d35a1498f3a335f6fed5f9b752b3e502fb2deec9379aa8bcafd53e1"
+        },
+        {
+          "label": "money-discounts",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.613Z",
+          "bodySha256": "ac7fc8a02f1b71bf9805676f2653b53fb264213dd6bb4522ac3e43286e242e78"
+        },
+        {
+          "label": "money-costs",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.631Z",
+          "bodySha256": "1664df9ff8d40285c7d62cbdf04c63ea297c4f282b61cd6bbf43d9c55cc9a9ea"
+        },
+        {
+          "label": "money-sales",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.680Z",
+          "bodySha256": "8bde3887b526b78efb896dcd0278ec5503efb7d25304941a3587e935ead897e7"
+        },
+        {
+          "label": "money-integrity",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.710Z",
+          "bodySha256": "a820abe8857ffc4207dbb3a882b0c7c72df5088a5f529c773dafe4c0ffad3dd9"
+        },
+        {
+          "label": "money-wallets",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.710Z",
+          "bodySha256": "de5b9ac7528b7bb44688e9e4296b5a17d6fafb0fb2e1f895b989ee431f43c423"
+        },
+        {
+          "label": "money-settlement",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:20.730Z",
+          "bodySha256": "d3ceadfa245f3fff32f4889a6f6ab553df034f6a8684831a6a58fdbe64b2c2c4"
+        },
+        {
+          "label": "money-refunds",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:21.015Z",
+          "bodySha256": "c7891d17d5b7eb561b754cd7e92cf2f3f9657a4870ad64223a998e835c97768b"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:21.084Z",
+          "bodySha256": "7c0f63a9684f6d6093c3154d9c6381f3ba019c62504354a42981a1f3ce7998db"
+        },
+        {
+          "label": "money-cash",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:57:21.104Z",
+          "bodySha256": "f117365e7964d654103fad20565e5365b077661e524a713767bc1002ad7f7817"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "checks": {
+        "cashAllRows": 18,
+        "cashAttentionRows": 18,
+        "settlementAllRows": 18,
+        "settlementAttentionRows": 18,
+        "headlineSha256": "661f8b292aa4d8cb8a5b8b2a01de74a4820cbe18a23cd13209c237ca0a83bfb1",
+        "totalsUnchanged": true,
+        "unavailableEvidenceRetained": true,
+        "surfaceReadsUnchanged": true,
+        "filtersRefineLoadedRowsOnly": true
+      },
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-683-05-money-cash-attention.png",
+          "at": "2026-10-28T21:57:25.514Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 982,
+            "width": 1312,
+            "height": 58
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        },
+        {
+          "filename": "SCRUM-683-06-money-settlement-attention.png",
+          "at": "2026-10-28T21:57:28.903Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 982,
+            "width": 1312,
+            "height": 58
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "SCRUM-683-01-catalogue.png",
+      "sha256": "69add373544144f0c002c5ea94d9b6232095d8229ddf97a962c58f31d520351b",
+      "capturedAt": "2026-10-28T21:56:53.164Z",
+      "page": "/catalogue",
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 982,
+          "width": 1312,
+          "height": 58
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-683-02-tenders.png",
+      "sha256": "10e0a5ad5c48918ce7f4ebecf9fa5ecdf8be19d057e98572b374bbdbe09abec4",
+      "capturedAt": "2026-10-28T21:57:01.277Z",
+      "page": "/catalogue/tenders",
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 982,
+          "width": 1312,
+          "height": 58
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-683-03-devices.png",
+      "sha256": "765f14cc9462ee9cdffcb9b610ffbea56f8f6467b929131891aed9ad95b145cc",
+      "capturedAt": "2026-10-28T21:57:10.024Z",
+      "page": "/devices",
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 982,
+          "width": 1312,
+          "height": 58
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-683-04-config.png",
+      "sha256": "7d9036eed9cfdb312e8c5522e6b0e7529225805e320c2c7a0b6fccdf58e3d8b9",
+      "capturedAt": "2026-10-28T21:57:18.137Z",
+      "page": "/organisation/configuration",
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 982,
+          "width": 1312,
+          "height": 58
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-683-05-money-cash-attention.png",
+      "sha256": "8461f907804e48ed2630628ab97b0d6c0394df6b96b8032133be43a5eaffc237",
+      "capturedAt": "2026-10-28T21:57:25.514Z",
+      "page": "/reports/money",
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 982,
+          "width": 1312,
+          "height": 58
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-683-06-money-settlement-attention.png",
+      "sha256": "276af6db755308f34f5386dd1ff492951f9b6de750b81b92037891e79cccedcb",
+      "capturedAt": "2026-10-28T21:57:28.903Z",
+      "page": "/reports/money",
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 982,
+          "width": 1312,
+          "height": 58
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    }
+  ],
+  "local": {
+    "inputSha256": "a6ef417367cff4d215ca66ac0040b614e6e94ffcfa7224cb89903137d55dfd88",
+    "registrySha256": "450e71e0f1f402ed3ded2569cf360a3e7e36fce45a6d090c77c2890c6d9e5427",
+    "support": {
+      "scripts/agent/env.mjs": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237",
+      "scripts/agent/evidence.mjs": "8e928a28fcc85ba0df51ac841b4ac619605b05cd8f1a275090f74251bfcec695"
+    },
+    "browser": {
+      "passed": 359,
+      "failed": 0,
+      "receiptSha256": "1556fcfa5f58fe139c18c45ade8deee253bd0f025a6d37e94b85bd6bc2676da1",
+      "sourceManifestSha256": "c168e1423d0b476858132f5c4898d67907d0ba88572031f90fb4298aca7c0146",
+      "logSha256": "53caf2a068323bb33fd3bd1abc224cefe362fc2edd81c9d686c952afa923f88f"
+    },
+    "regressions": []
+  },
+  "auth": {
+    "attempted": true,
+    "signInStatus": 200,
+    "ambiguous": false
+  },
+  "cleanup": {
+    "originalCookieObserved": true,
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "businessWrites": 0,
+  "fixtureRecordsCreated": 0,
+  "limitations": [
+    "Business requests are GET-only; the two authentication POSTs are private sign-in and exact-session cleanup.",
+    "Only ordinary staging reads and local loaded-row filters are exercised; no fault, payment, provider, hardware or business mutation is dispatched.",
+    "Counts and totals are checked before masking. Identities, identifiers, contacts, codes and private media are masked in partial-viewport screenshots.",
+    "Native read endpoints may create their ordinary read-audit entries. No business mutation request is dispatched.",
+    "Local adversarial results remain local evidence. This helper neither reproduces faults on staging nor certifies bundle byte closure."
+  ],
+  "authorityBeforeSha256": "2b2abd7fe0de1c62fc1b62f97ff2373034a4b371c54c83f5679236fbad990402",
+  "permissionsBeforeSha256": "629511ea66449436e642228665bf103cbd220a03500a7235b4fea876f1c1f03a",
+  "authorityAfterSha256": "2b2abd7fe0de1c62fc1b62f97ff2373034a4b371c54c83f5679236fbad990402",
+  "permissionsAfterSha256": "629511ea66449436e642228665bf103cbd220a03500a7235b4fea876f1c1f03a",
+  "finishedAt": "2026-10-28T21:57:34.033Z",
+  "complete": true
+}

@@ -1,0 +1,17 @@
+{
+  "ticket": "SCRUM-683",
+  "at": "2026-10-28T21:56:39.251Z",
+  "firstProof": "C:/oto-lanes/admin683-staging-proof-v1/receipt.json",
+  "observedBlockedUrlSha256": "9e68f5d67c088f08a617804aa9979adced0450174af510fd5f92dccac921f360",
+  "identifiedOperation": "GET /api/ops/failures?windowHours=24&limit=50",
+  "nativeHookSha256": "10846e5a3d90d917faae70682d86a181604ab9ec143296dcdfcdb733368a6330",
+  "originalHelperSha256": "751195f562b0e9a235108a72967b4c4443633ceec5b4569a62083fd08b0dc6f7",
+  "helperSha256": "66f1ec3394fe1b780d77192d8298f2876054c49b5b0b40abd2aecd9a7c399ed8",
+  "correction": "The evidence helper expected limit=1, while the existing native sidebar uses limit=50. Accept only the exact native limit and retain all read-only/parameter guards.",
+  "originalClassifierRefusedNativeQuery": true,
+  "correctedClassifierAcceptsNativeQuery": true,
+  "negativeCasesPassed": 8,
+  "productionFilesChanged": 0,
+  "priorAttemptAndInputPreserved": true,
+  "stagingExecuted": false
+}

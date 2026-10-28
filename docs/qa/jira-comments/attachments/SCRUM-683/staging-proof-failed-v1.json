@@ -1,0 +1,141 @@
+{
+  "ticket": "SCRUM-683",
+  "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "ciRunId": "40772012368",
+  "helperSha256": "751195f562b0e9a235108a72967b4c4443633ceec5b4569a62083fd08b0dc6f7",
+  "startedAt": "2026-10-28T21:53:52.311Z",
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-28T21:53:56.511Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 447,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "catalogue",
+      "path": "/catalogue",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:54:05.504Z",
+          "bodySha256": "4a85cb4c10e13eec33dc884f835009f2c4142062e78e9b817f0aad7c93be525a"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:54:05.989Z",
+          "bodySha256": "6f945caadc10d2536e2ee07c1a83e3a61535794e8782405a31e239376b79605b"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:54:06.476Z",
+          "bodySha256": "4a85cb4c10e13eec33dc884f835009f2c4142062e78e9b817f0aad7c93be525a"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:54:07.007Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:54:07.348Z",
+          "bodySha256": "fb3d50ba0018f77553ea86de1cd470e0f474d1057e17cf0b9b13b6305c5392a5"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:54:08.069Z",
+          "bodySha256": "572482397e244c39dae548ab47a50ea7ee4e4c5aa7e84723c0de6bc98ba336ef"
+        }
+      ],
+      "blocked": [
+        {
+          "method": "GET",
+          "type": "fetch",
+          "urlSha256": "9e68f5d67c088f08a617804aa9979adced0450174af510fd5f92dccac921f360",
+          "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 1,
+      "privacySuppressed": 2,
+      "failure": "NATIVE_PAGE_NOT_SETTLED",
+      "pendingAtClose": 0
+    }
+  ],
+  "screenshots": [],
+  "local": {
+    "inputSha256": "09f8ce6c001435627b04bb44be07ec28122f06084dc98eb4a5e98c38e8890460",
+    "registrySha256": "450e71e0f1f402ed3ded2569cf360a3e7e36fce45a6d090c77c2890c6d9e5427",
+    "support": {
+      "scripts/agent/env.mjs": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237",
+      "scripts/agent/evidence.mjs": "8e928a28fcc85ba0df51ac841b4ac619605b05cd8f1a275090f74251bfcec695"
+    },
+    "browser": {
+      "passed": 359,
+      "failed": 0,
+      "receiptSha256": "1556fcfa5f58fe139c18c45ade8deee253bd0f025a6d37e94b85bd6bc2676da1",
+      "sourceManifestSha256": "c168e1423d0b476858132f5c4898d67907d0ba88572031f90fb4298aca7c0146",
+      "logSha256": "53caf2a068323bb33fd3bd1abc224cefe362fc2edd81c9d686c952afa923f88f"
+    },
+    "regressions": []
+  },
+  "auth": {
+    "attempted": true,
+    "signInStatus": 200,
+    "ambiguous": false
+  },
+  "cleanup": {
+    "originalCookieObserved": true,
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "businessWrites": 0,
+  "fixtureRecordsCreated": 0,
+  "limitations": [
+    "Business requests are GET-only; the two authentication POSTs are private sign-in and exact-session cleanup.",
+    "Only ordinary staging reads and local loaded-row filters are exercised; no fault, payment, provider, hardware or business mutation is dispatched.",
+    "Counts and totals are checked before masking. Identities, identifiers, contacts, codes and private media are masked in partial-viewport screenshots.",
+    "Native read endpoints may create their ordinary read-audit entries. No business mutation request is dispatched.",
+    "Local adversarial results remain local evidence. This helper neither reproduces faults on staging nor certifies bundle byte closure."
+  ],
+  "authorityBeforeSha256": "d5f23010782fca77faf15f0f9efdb9aaf046bc6487baea12f242ff33ef3185b0",
+  "permissionsBeforeSha256": "629511ea66449436e642228665bf103cbd220a03500a7235b4fea876f1c1f03a",
+  "failure": "NATIVE_PAGE_NOT_SETTLED",
+  "finishedAt": "2026-10-28T21:54:10.562Z",
+  "complete": false
+}

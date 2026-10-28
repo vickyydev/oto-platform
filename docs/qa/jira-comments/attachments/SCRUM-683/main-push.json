@@ -1,0 +1,16 @@
+{
+  "ticket": "SCRUM-683",
+  "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "candidateSha": "469806a355dd4ab5e54a1e934b051ce6ee42a474",
+  "candidateRun": "40763734553",
+  "before": {
+    "status": "Testing",
+    "summary": "Make existing payment settings and long Console lists easier to find"
+  },
+  "after": {
+    "status": "Testing",
+    "summary": "Make existing payment settings and long Console lists easier to find"
+  },
+  "commentId": "12680",
+  "at": "2026-10-28T21:26:48.247Z"
+}

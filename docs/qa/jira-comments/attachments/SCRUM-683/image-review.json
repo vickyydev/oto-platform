@@ -1,0 +1,61 @@
+{
+  "ticket": "SCRUM-683",
+  "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "inspected": true,
+  "reviewedAt": "2026-10-28T22:00:59.771Z",
+  "images": [
+    {
+      "file": "SCRUM-683-01-catalogue.png",
+      "sha256": "69add373544144f0c002c5ea94d9b6232095d8229ddf97a962c58f31d520351b",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-683-02-tenders.png",
+      "sha256": "10e0a5ad5c48918ce7f4ebecf9fa5ecdf8be19d057e98572b374bbdbe09abec4",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-683-03-devices.png",
+      "sha256": "765f14cc9462ee9cdffcb9b610ffbea56f8f6467b929131891aed9ad95b145cc",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-683-04-config.png",
+      "sha256": "7d9036eed9cfdb312e8c5522e6b0e7529225805e320c2c7a0b6fccdf58e3d8b9",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-683-05-money-cash-attention.png",
+      "sha256": "8461f907804e48ed2630628ab97b0d6c0394df6b96b8032133be43a5eaffc237",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-683-06-money-settlement-attention.png",
+      "sha256": "276af6db755308f34f5386dd1ff492951f9b6de750b81b92037891e79cccedcb",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    }
+  ],
+  "observations": [
+    "All six actual PNGs were viewed at original resolution. Every raw hash matches the completed receipt; its cleanup confirmation is true. Captions, UTC capture timestamps and the full source SHA are legible.",
+    "These are partial-viewport images as declared by their captions. Privacy masks conceal identities, codes, QR and some input or label text; concealed values and checked states are not independently verified visually. No visible secret or benefit QR was observed.",
+    "01: Catalogue and money shows all four Payments groups and the explicit Deployment-only and Not integrated statements.",
+    "02: Tenders shows Enabled and Cash filters, one matching method out of15 loaded methods, and the native row controls. Method names and search/input text are masked.",
+    "03: Devices shows filter labels, All statuses, native loaded counts, box roles and current statuses. Offline, never-reported and waiting-to-be-claimed readings are operational conditions, not classified here as product defects.",
+    "04: Configuration shows the Payments groups, the All parks in your reach selection, the eight-of-eight settings count and the Settings by owner heading. The search field and detailed setting cards are not established by this partial frame.",
+    "05: Cash-day rows, dates, amounts, Not counted statuses and loaded counts are readable. The Cash days heading and attention-filter label/control are outside the frame, so this image alone does not visually demonstrate the toggle. This framing limit was reported to root before finalization.",
+    "06: Settlement heading and the attention-filter label are visible; the checkbox itself is hidden by privacy masking. No-file and terminal not-run readings remain legible. They are retained operational conditions and are not interpreted as newly broken reconciliation.",
+    "A filter need not reduce rows when all loaded rows meet its predicate. No reduction is inferred from these frames. This is artifact-only visual/hash review; no browser, database, staging/network action, image retouch or repository change was performed."
+  ]
+}

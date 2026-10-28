@@ -1,0 +1,702 @@
+{
+  "ticket": "SCRUM-679",
+  "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "ciRunId": "40772012368",
+  "startedAt": "2026-10-28T22:10:47.786Z",
+  "helperSha256": "0bc1fb94b03ce125b0cee585aace801e54cfda3aeae28ea6eca38c8409c7e5c1",
+  "openapiSha256": "810343a53c08c9ad3c5576b3a1a3858ba0455e8826a2bf365f22e075024850e3",
+  "reads": [
+    {
+      "operation": "GET /api/console/analytics/drift",
+      "status": 200,
+      "at": "2026-10-28T22:10:54.894Z",
+      "bodySha256": "cb15df9ca37cfd2f9d1908e1761adf5e1dd1c1b739541ab37b4f5eed7a89a6c3",
+      "matched": false,
+      "failures": [
+        {
+          "keyword": "enum",
+          "instancePath": "/comparisons/0/reason",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1console~1analytics~1drift/get/responses/200/content/application~1json/schema/properties/comparisons/items/properties/reason/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/comparisons/1/reason",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1console~1analytics~1drift/get/responses/200/content/application~1json/schema/properties/comparisons/items/properties/reason/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/comparisons/2/reason",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1console~1analytics~1drift/get/responses/200/content/application~1json/schema/properties/comparisons/items/properties/reason/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        }
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/menu",
+      "status": 200,
+      "at": "2026-10-28T22:10:55.473Z",
+      "bodySha256": "7e2de1a333392b8cab65bbbe2a7a6cb59d7a9fb1244d9eb11a17b53a3c15ccce",
+      "matched": false,
+      "failures": [
+        {
+          "keyword": "enum",
+          "instancePath": "/categories/0/taxableCategory",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/taxableCategory/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/categories/0/defaultPrepStation",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/defaultPrepStation/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/categories/1/defaultPrepStation",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/defaultPrepStation/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/categories/1/effectivePrepStation",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/effectivePrepStation/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/categories/3/taxableCategory",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/taxableCategory/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/categories/3/defaultPrepStation",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/defaultPrepStation/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/categories/5/taxableCategory",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/taxableCategory/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/categories/5/defaultPrepStation",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/defaultPrepStation/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/0/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/0/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/1/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/1/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/2/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/2/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/3/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/3/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/4/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/4/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/5/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/5/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/6/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/6/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/7/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/7/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/8/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/8/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/9/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/9/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/10/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/10/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/11/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/11/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/12/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/12/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/13/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/13/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/14/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/14/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/15/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/15/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/16/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/16/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/17/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/17/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/18/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/18/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/19/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/19/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/20/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/20/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/21/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/21/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/22/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/22/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/23/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/23/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/24/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/24/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/25/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/25/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/26/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/26/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/27/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/27/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/28/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/28/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/29/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/29/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/30/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/30/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/31/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/31/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/32/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/32/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/33/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/33/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/34/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/34/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/35/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/35/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/36/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/36/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/37/prepStationOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        },
+        {
+          "keyword": "enum",
+          "instancePath": "/products/37/taxCategoryOverride",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        }
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/credentials",
+      "status": 200,
+      "at": "2026-10-28T22:10:55.994Z",
+      "bodySha256": "39381fa08d39402e7b18f80873529020ecf38f5cf5d6008c322a76a6fd29a4fa",
+      "matched": false,
+      "failures": [
+        {
+          "keyword": "enum",
+          "instancePath": "/credentials/0/lastRejectedCode",
+          "schemaPath": "urn:oto679:diagnosis#/paths/~1branches~1{branchId}~1credentials/get/responses/200/content/application~1json/schema/properties/credentials/items/properties/lastRejectedCode/enum",
+          "valueIsNull": true,
+          "valueType": "null"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "stage": "before",
+      "at": "2026-10-28T22:10:50.714Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "after",
+      "at": "2026-10-28T22:10:59.804Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    }
+  ],
+  "businessWrites": 0,
+  "rawBodiesSaved": false,
+  "branchIdSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156",
+  "authorityUnchanged": true,
+  "cleanup": {
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "finishedAt": "2026-10-28T22:11:00.814Z",
+  "complete": true
+}
