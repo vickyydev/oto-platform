@@ -11,13 +11,13 @@
       "says": "สวัสดีค่ะ OTO เปิดกี่โมงถึงกี่โมงคะ",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUXz4U8oz4DZSKNepAdb",
+        "id": "msg_011CgUYATayAoKYhPvdwqfzF",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"th\",\"intent\":\"hours\",\"intents\":[\"hours\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\",\"fact.hours.chalong\",\"hours-holidays\"],\"bubbles\":[\"สวัสดีค่ะ 😊 ทั้งสองสาขา Central Floresta และ Robinson Chalong เปิดทุกวัน 10:00–20:00 น. ค่ะ\",\"วันหยุดนักขัตฤกษ์ก็เปิดนะคะ รอบเข้าสุดท้ายหนึ่งชั่วโมงก่อนปิดค่ะ\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"th\",\"intent\":\"hours\",\"intents\":[\"hours\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\",\"fact.hours.chalong\",\"hours-holidays\"],\"bubbles\":[\"สวัสดีค่ะ 😊 ทั้งสาขา Central Floresta และ Robinson Chalong เปิดทุกวัน 10:00–20:00 น. ค่ะ\",\"รอบเข้าสุดท้ายหนึ่งชั่วโมงก่อนปิดนะคะ\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -35,7 +35,7 @@
           "iterations": [
             {
               "input_tokens": 230,
-              "output_tokens": 260,
+              "output_tokens": 229,
               "cache_read_input_tokens": 10765,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 260,
+          "output_tokens": 229,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
@@ -68,18 +68,13 @@
       "says": "ราคาเท่าไหร่คะ",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUXzP5Kttuki7DPy11Ds",
+        "id": "msg_011CgUYAerPF1dL1gUeGfk4v",
         "type": "message",
         "role": "assistant",
         "content": [
           {
-            "type": "thinking",
-            "thinking": "",
-            "signature": "CAQS0QoKEAgTGAI4AUIIdGhpbmtpbmcSDLYGbisi2TUH61HU6BoMUh+Cg6MkmoGCphBtIjC8t0TnrXB7oiHjTGAk20cXruIMsKGYMfLdoimKZUVldX2aVAXt9auMh2bjeeJxw4sq7glyh/nd4GSEP+DwmLlkHtkD81E0eKdGrQvjUkIrhmSmIR6xxG/X3VfOrXpM6dp+B5UTwyPjutjOPfiR8wQH1DiKIIjaVuih90r66m+TTcjp29g8rvMeqfXRMUbYpZKlSW4U5eTo4mKK6b7rN7BUuc06xB4bK84cnaQVcCWb5fRQ3uoszlIuxkbGloJozzpJ0gfelAowTIcL9g2UjO+LjauEKd16gmergM/C2pwLjwKvQw0pHJtzHa2no2ywKAp1ehP50mizhQTc4OSqaeMRWxxg9XTq//Mf8odG3dvvSM24shHB0w/fAp5UXPxla5BT04yXxJNryRcEzWg0DEbU2nqGKFC1wCHc30Z2D8/mkm7gw6zsvVXTTSh5h9nUCJrLs5u3bPhZYtHnY5JbnTzr+5ugCzyYIgMj8dT706DP/yvjeYJgoUWBz7WkQFkLiVOB+j5N/yDCreHw5nINIfuHWpUn3MJ4SQcO1HpoxAWv0ysa41b0Jo41e1iAJUw4pE7GlUFk2yF3AvD4+qEJYkrtCamn+jyJBOSlt4Y+dac5DOXwMbi4Y3j6ccHT5kYH1DLbZtI2NkKTidW2kShS4QpTOnjYh189HzobYx7wmkAtd55NmXvCLXGythl7kSdVEshfR+H1oQAk4RzIekldH/ZkvDCu5FpfYFy5+QSvPttMO274ItPKrSFFHnRLuyztPjwFO0LoMtEFIAmMV0apqisckSbBrY97m1YRiyvWsCifsghdjvABsHAuX+8+oECR3na0BEM6oLWTik5P2RYgvrt5oXHHjYTAuH2yyN2ScfcZCcSnSSCbIiHw3n7OPfXjjRO0rJI1wo0805Ec1xicRcbCbn6e38lJhsuJLAOcZcdrUrc4IvWoJcHXd61V1x2pWiAKlZi2I4C7+Odb+VtjPD7phctwcGq1NyCYV1drWpKrud3wkVG2XMIRVDq91sMcNfctLpDJ419uq+Ofsq4AnsFUkkpOG4P5YFI2EZDe/7eZB2JqEDdNkCLTJQzX2YqLbNuhp3f+ZdWZpi2zLI64yr49qNQA4RWPqanZtjIo5uJm1hIPor2B5ZXop2FJ8YfXK9s0hmBbgtJtNBm+HuSpn+tuDTrhpanVvBVX81yPsAHmyomO/QFGVATi72kAB6El8Iket72qxmcijeKD0MR7heghpQZPickC342LQIl3+HNNEyL4dI93p9jFWBezEXzR+VMbp5H5+Gpmc6qSiAd/0OLB7J9KXlLKU7F6+1WSAvmpynnnNPUF/pT+a5jCrUrtd8TjrX+2AWQBuyO4C5gtVZiSRUWFxR7XK+ILlFyl0HvmS7n5rM7TszWS+UkkuTo9Ff4xggo40fdXMmE2V+HFq7qYtH3hW/SGUC4GLuLCOOzigan9LlR2gUZmHqUzxGz1KfrSB9F4qxSyrpBfxlabTK2hCZuROWruUA/y6Hz5HaetqEBLvoVjj8hIpdsFGBt/VuypUvrLo1C+1fE8r6Kh7DD9c+mp9w0eiSWqmHhJWtx4iKWctpddOstAWTVpFXbp57+N0DWdXryomWBsvVyLsodwDv7rUtBdBupwo2ABZhRZokM13s4j73SMtZ4/G0GNsgzd9diI1/Kr9MAxJx853vJfbf771abymO4AlWNSv3DAd9wDDs/ZquKM/+fWXJpoBSxVIsgZ++ncjqghtL6AXqhnUBgB"
-          },
-          {
             "type": "text",
-            "text": "{\"language\":\"th\",\"intent\":\"ticket_prices\",\"intents\":[\"ticket_prices\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.prices.central\",\"fact.prices.chalong\"],\"bubbles\":[\"ครอบครัวคนไทยได้ราคาพิเศษนะคะ! สนใจมาสาขา Central Floresta หรือ Robinson Chalong คะ 😊\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":true,\"reason\":\"CLEAR_INTENT\"}"
+            "text": "{\"language\":\"th\",\"intent\":\"ticket_prices\",\"intents\":[\"ticket_prices\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.prices.central\",\"fact.prices.chalong\"],\"bubbles\":[\"สนใจมาสาขาไหนคะ Central Floresta หรือ Robinson Chalong คะ 😊\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":true,\"reason\":\"CLEAR_INTENT\"}"
           }
         ],
         "container": null,
@@ -87,7 +82,7 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 466,
+          "input_tokens": 435,
           "cache_creation_input_tokens": 0,
           "cache_read_input_tokens": 10765,
           "cache_creation": {
@@ -96,8 +91,8 @@
           },
           "iterations": [
             {
-              "input_tokens": 466,
-              "output_tokens": 454,
+              "input_tokens": 435,
+              "output_tokens": 164,
               "cache_read_input_tokens": 10765,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
@@ -108,9 +103,9 @@
               "model": null
             }
           ],
-          "output_tokens": 454,
+          "output_tokens": 164,
           "output_tokens_details": {
-            "thinking_tokens": 267
+            "thinking_tokens": 0
           },
           "service_tier": "standard",
           "inference_geo": "global",
@@ -122,10 +117,8 @@
         "action": "answer",
         "reason": "OK",
         "intent": "ticket_prices",
-        "pass": false,
-        "failures": [
-          "no bubble says /which (?:park|branch)|central floresta or (?:robinson )?chalong|สาขาไหน/i"
-        ]
+        "pass": true,
+        "failures": []
       }
     }
   ]
