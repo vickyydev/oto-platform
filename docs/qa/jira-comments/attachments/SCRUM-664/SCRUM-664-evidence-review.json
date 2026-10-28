@@ -1,0 +1,158 @@
+{
+  "ticket": "SCRUM-664",
+  "passed": true,
+  "createdAt": "2026-10-28T13:43:27.432Z",
+  "sourceSha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+  "localeFixSha": "78fa8542e8c5c50c4c1ff2aad19dee30f4d18102",
+  "finalReceipt": {
+    "file": "SCRUM-664-staging-results-v4.json",
+    "sha256": "e7bcb04685f1cfeefc0c8ff63ed852628b07eb32e2ae5ac9f00a6b3a6c64da62"
+  },
+  "image": {
+    "file": "SCRUM-664-04-end-of-day-de-DE.png",
+    "sha256": "6872a1493742a502eb92cf3d591eb4f5b6f23e47b6cd1e85a68a97684315ecbf",
+    "inspected": true,
+    "capturedAt": "2026-10-28T13:41:42.433Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1400
+    },
+    "nativeTab": "End of Day",
+    "date": "2026-10-28",
+    "reading": {
+      "floatSatang": 600000,
+      "floatDisplay": "฿6,000"
+    },
+    "fullTableAndFloatVisible": true,
+    "captionDoesNotHideMoney": true,
+    "privacy": "Only native money, known seeded administrator/station and catalogue labels; no credential, cookie, token, guest or benefit QR shown."
+  },
+  "locale": {
+    "language": "de-DE",
+    "resolvedLocale": "de-DE",
+    "defaultExample": "1.234,56"
+  },
+  "deploysStableBeforeAfter": true,
+  "ownSessionSelection": [
+    {
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "status": 200
+    }
+  ],
+  "cleanup": [
+    {
+      "signOutStatus": 200,
+      "meAfterSignOutStatus": 401
+    }
+  ],
+  "businessWrites": 0,
+  "blockedRequests": 0,
+  "serverErrors": 0,
+  "originalHelperInputs": [
+    {
+      "path": "scripts/agent/evidence.mjs",
+      "sha256": "8e928a28fcc85ba0df51ac841b4ac619605b05cd8f1a275090f74251bfcec695"
+    },
+    {
+      "path": "scripts/agent/env.mjs",
+      "sha256": "7ed9e5879adeeeadbda307b375595b9bb801071f3939a6afa24de1ee2693e237"
+    },
+    {
+      "path": "scripts/agent/render.mjs",
+      "sha256": "38c0624969c762a5d93de2a0ab0675e98c7a265e8dde750a51c25d1a5a9826b7"
+    }
+  ],
+  "proofHelper": {
+    "path": "C:/oto-lanes/admin664-evidence-20261028-v4.mjs",
+    "sha256": "649b1357b59d80e2305ff21e3f22392f086b8a1aff6c224228118e369374f27d"
+  },
+  "attempts": [
+    {
+      "file": "SCRUM-664-staging-results.json",
+      "sha256": "9164dd51f5c93d2a81ee54113e1032e5099fe84e90d4e1b726601bdf3acc8704",
+      "complete": false,
+      "checks": 0,
+      "images": 0,
+      "failure": {
+        "phase": "PREFLIGHT",
+        "name": "Error",
+        "code": "EXACT_LATEST_LIVE_PAIR_REQUIRED"
+      },
+      "cleanup": []
+    },
+    {
+      "file": "SCRUM-664-staging-results-v2.json",
+      "sha256": "fee7f639bc2cc6746c4d4f38fff52c198c7e699b47028db4b5af6f18c0e3e31c",
+      "complete": false,
+      "checks": 2,
+      "images": 0,
+      "failure": {
+        "phase": "OPEN_NATIVE_END_OF_DAY",
+        "name": "Error",
+        "code": "UNIQUE_OWN_RECEPTION_TILL_REQUIRED"
+      },
+      "cleanup": [
+        {
+          "signOutStatus": 200,
+          "meAfterSignOutStatus": 401
+        }
+      ]
+    },
+    {
+      "file": "SCRUM-664-staging-results-v3.json",
+      "sha256": "925409053d7cff793e33442127d1b8534d8c8c18c2d67d9794e055b1ac7c711c",
+      "complete": false,
+      "checks": 2,
+      "images": 0,
+      "failure": {
+        "phase": "OPEN_NATIVE_END_OF_DAY",
+        "name": "Error",
+        "code": "ACTUAL_NATIVE_GROUPED_MONEY_REQUIRED"
+      },
+      "cleanup": [
+        {
+          "signOutStatus": 200,
+          "meAfterSignOutStatus": 401
+        }
+      ]
+    },
+    {
+      "file": "SCRUM-664-staging-results-v4.json",
+      "sha256": "e7bcb04685f1cfeefc0c8ff63ed852628b07eb32e2ae5ac9f00a6b3a6c64da62",
+      "complete": true,
+      "checks": 5,
+      "images": 1,
+      "failure": null,
+      "cleanup": [
+        {
+          "signOutStatus": 200,
+          "meAfterSignOutStatus": 401
+        }
+      ]
+    }
+  ],
+  "failureClassification": [
+    {
+      "file": "SCRUM-664-staging-results.json",
+      "classification": "Automatic deployment transition stopped the exact-live gate before browser/auth."
+    },
+    {
+      "file": "SCRUM-664-staging-results-v2.json",
+      "classification": "Harness required branchId on the native pickable-station list, which omits it; no station selection. Corrected with canonical station GET before selection."
+    },
+    {
+      "file": "SCRUM-664-staging-results-v3.json",
+      "classification": "Harness expected currency prefix was corrupted by PowerShell text cloning; no product fault. Final helper was rebuilt from original UTF-8 and uses a Unicode escape."
+    }
+  ],
+  "limits": [
+    "Actual native grouping is demonstrated by the canonical opening float, not a fabricated sale or typed cash count.",
+    "All expected sale-channel amounts were zero on this day; a nonzero fractional native amount was not available or claimed.",
+    "The browser default decimal convention was independently observed as German; no product amount was changed.",
+    "Settlement was still loading at capture and the station-selection toast remains at the lower corner; neither hides the table or float. No settlement result is claimed.",
+    "This is staging screenshot evidence only. No Jira transition, commit, push or parent acceptance is performed here."
+  ]
+}

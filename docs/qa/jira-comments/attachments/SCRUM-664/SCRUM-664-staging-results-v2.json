@@ -1,0 +1,58 @@
+{
+  "ticket": "SCRUM-664",
+  "startedAt": "2026-10-28T13:35:26.569Z",
+  "complete": false,
+  "sourceSha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+  "localeFixSha": "78fa8542e8c5c50c4c1ff2aad19dee30f4d18102",
+  "previousAttempt": {
+    "file": "SCRUM-664-staging-results.json",
+    "sha256": "9164dd51f5c93d2a81ee54113e1032e5099fe84e90d4e1b726601bdf3acc8704"
+  },
+  "locale": "de-DE",
+  "staging": true,
+  "businessWrites": 0,
+  "sessionSelections": [],
+  "blockedRequests": [],
+  "serverErrors": [],
+  "checks": [
+    "Latest API and POS are live on the exact source, including unchanged fixed End of Day components.",
+    "Original evidence helper signed in the seeded ADMIN in an owned de-DE context."
+  ],
+  "images": [],
+  "cleanup": [
+    {
+      "signOutStatus": 200,
+      "meAfterSignOutStatus": 401
+    }
+  ],
+  "limits": [
+    "Read-only End of Day evidence; no cash entry, close, settlement, payment, check-in or hardware action.",
+    "Native values only; no synthetic sale or money fixture is created.",
+    "Browser storage is ephemeral and never exported; no credential, cookie or token is included in this receipt."
+  ],
+  "preparationIssue": "Initial standalone Render read used a Windows ESM path before correction; no browser or auth session existed.",
+  "before": {
+    "oto-api-staging": {
+      "id": "dep-dbgvieavcj2c73du1lig",
+      "status": "live",
+      "sha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+      "createdAt": "2026-10-28T13:31:37.925636Z",
+      "finishedAt": "2026-10-28T13:35:03.068611Z"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbgvieivcj2c73du1mhg",
+      "status": "live",
+      "sha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+      "createdAt": "2026-10-28T13:31:38.066592Z",
+      "finishedAt": "2026-10-28T13:32:24.956006Z"
+    }
+  },
+  "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "failure": {
+    "phase": "OPEN_NATIVE_END_OF_DAY",
+    "name": "Error",
+    "code": "UNIQUE_OWN_RECEPTION_TILL_REQUIRED"
+  },
+  "finishedAt": "2026-10-28T13:35:51.001Z"
+}

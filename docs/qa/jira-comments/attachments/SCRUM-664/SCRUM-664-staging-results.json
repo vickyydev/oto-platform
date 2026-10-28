@@ -1,0 +1,28 @@
+{
+  "ticket": "SCRUM-664",
+  "startedAt": "2026-10-28T13:33:41.957Z",
+  "complete": false,
+  "sourceSha": "6b6deec668a4a5ce9e0c7d0bc98c5501afddbbd4",
+  "localeFixSha": "78fa8542e8c5c50c4c1ff2aad19dee30f4d18102",
+  "locale": "de-DE",
+  "staging": true,
+  "businessWrites": 0,
+  "sessionSelections": [],
+  "blockedRequests": [],
+  "serverErrors": [],
+  "checks": [],
+  "images": [],
+  "cleanup": [],
+  "limits": [
+    "Read-only End of Day evidence; no cash entry, close, settlement, payment, check-in or hardware action.",
+    "Native values only; no synthetic sale or money fixture is created.",
+    "Browser storage is ephemeral and never exported; no credential, cookie or token is included in this receipt."
+  ],
+  "preparationIssue": "Initial standalone Render read used a Windows ESM path before correction; no browser or auth session existed.",
+  "failure": {
+    "phase": "PREFLIGHT",
+    "name": "Error",
+    "code": "EXACT_LATEST_LIVE_PAIR_REQUIRED"
+  },
+  "finishedAt": "2026-10-28T13:33:42.756Z"
+}

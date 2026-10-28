@@ -1,0 +1,163 @@
+{
+  "ticket": "SCRUM-664",
+  "startedAt": "2026-10-28T13:41:18.114Z",
+  "complete": true,
+  "sourceSha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+  "localeFixSha": "78fa8542e8c5c50c4c1ff2aad19dee30f4d18102",
+  "previousAttempt": {
+    "file": "SCRUM-664-staging-results-v3.json",
+    "sha256": "925409053d7cff793e33442127d1b8534d8c8c18c2d67d9794e055b1ac7c711c"
+  },
+  "locale": "de-DE",
+  "staging": true,
+  "businessWrites": 0,
+  "sessionSelections": [
+    {
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "status": 200
+    }
+  ],
+  "blockedRequests": [],
+  "serverErrors": [],
+  "checks": [
+    "Latest API and POS are live on the exact source, including unchanged fixed End of Day components.",
+    "Original evidence helper signed in the seeded ADMIN in an owned de-DE context.",
+    "Native browser is de-DE while actual End of Day money and all expected channel amounts retain fixed en-US separators.",
+    "One actual native End of Day PNG captures the whole channel table and grouped float after both live deployments.",
+    "The exact API/POS live deploys stayed unchanged; no business write or blocked request occurred."
+  ],
+  "images": [
+    {
+      "file": "SCRUM-664-04-end-of-day-de-DE.png",
+      "capturedAt": "2026-10-28T13:41:42.433Z",
+      "sha256": "6872a1493742a502eb92cf3d591eb4f5b6f23e47b6cd1e85a68a97684315ecbf",
+      "viewport": {
+        "width": 1600,
+        "height": 1400
+      },
+      "tableBox": {
+        "x": 333,
+        "y": 582,
+        "width": 934,
+        "height": 503.5
+      },
+      "floatBox": {
+        "x": 808,
+        "y": 1205.5,
+        "width": 459,
+        "height": 44
+      },
+      "captionBox": {
+        "x": 941.265625,
+        "y": 1364,
+        "width": 650.734375,
+        "height": 30
+      }
+    }
+  ],
+  "cleanup": [
+    {
+      "signOutStatus": 200,
+      "meAfterSignOutStatus": 401
+    }
+  ],
+  "limits": [
+    "Read-only End of Day evidence; no cash entry, close, settlement, payment, check-in or hardware action.",
+    "Native values only; no synthetic sale or money fixture is created.",
+    "Browser storage is ephemeral and never exported; no credential, cookie or token is included in this receipt."
+  ],
+  "preparationIssue": "Initial standalone Render read used a Windows ESM path before correction; no browser or auth session existed.",
+  "before": {
+    "oto-api-staging": {
+      "id": "dep-dbgvieavcj2c73du1lig",
+      "status": "live",
+      "sha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+      "createdAt": "2026-10-28T13:31:37.925636Z",
+      "finishedAt": "2026-10-28T13:35:03.068611Z"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbgvieivcj2c73du1mhg",
+      "status": "live",
+      "sha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+      "createdAt": "2026-10-28T13:31:38.066592Z",
+      "finishedAt": "2026-10-28T13:32:24.956006Z"
+    }
+  },
+  "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "stationVerification": {
+    "method": "GET",
+    "stationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "status": 200,
+    "listOmitsBranchId": true
+  },
+  "boundedMoneyReads": [
+    {
+      "date": "2026-10-28",
+      "status": 200,
+      "amountsSatang": [
+        0,
+        600000,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "moneyDiagnostics": {
+    "date": "2026-10-28",
+    "floatSatang": 600000,
+    "floatDisplay": "฿6,000",
+    "expectedFloatDisplay": "฿6,000"
+  },
+  "localeObserved": {
+    "language": "de-DE",
+    "resolvedLocale": "de-DE",
+    "defaultExample": "1.234,56"
+  },
+  "nativeReading": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "date": "2026-10-28",
+    "status": "open",
+    "totalExpectedSatang": 0,
+    "totalActualSatang": 0,
+    "floatSatang": 600000,
+    "floatDisplay": "฿6,000",
+    "expectedDisplays": [
+      "฿0",
+      "฿0",
+      "฿0",
+      "฿0",
+      "฿0",
+      "฿0",
+      "฿0",
+      "฿0"
+    ]
+  },
+  "after": {
+    "oto-api-staging": {
+      "id": "dep-dbgvieavcj2c73du1lig",
+      "status": "live",
+      "sha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+      "createdAt": "2026-10-28T13:31:37.925636Z",
+      "finishedAt": "2026-10-28T13:35:03.068611Z"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbgvieivcj2c73du1mhg",
+      "status": "live",
+      "sha": "23d4cd552aa0c9c4de1d28fc7e21e6496bab8405",
+      "createdAt": "2026-10-28T13:31:38.066592Z",
+      "finishedAt": "2026-10-28T13:32:24.956006Z"
+    }
+  },
+  "finishedAt": "2026-10-28T13:41:45.066Z"
+}
