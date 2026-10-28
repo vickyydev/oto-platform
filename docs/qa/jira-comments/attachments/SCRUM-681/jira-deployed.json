@@ -1,0 +1,23 @@
+{
+  "ticket": "SCRUM-681",
+  "before": {
+    "status": "Testing",
+    "summary": "Keep Console data, empty states and page ranges tied to the current selection"
+  },
+  "after": {
+    "status": "Deployed",
+    "summary": "Keep Console data, empty states and page ranges tied to the current selection"
+  },
+  "evidenceCommit": "01887724fb684c3bf9a3ddaea66eefdc160e1640",
+  "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+  "screenshots": [
+    "SCRUM-681-01-devices.png",
+    "SCRUM-681-02-booths.png",
+    "SCRUM-681-03-vouchers.png",
+    "SCRUM-681-04-activity.png",
+    "SCRUM-681-05-releases.png",
+    "SCRUM-681-06-local-regressions.png"
+  ],
+  "commentId": "12675",
+  "at": "2026-10-28T20:45:46.279Z"
+}
