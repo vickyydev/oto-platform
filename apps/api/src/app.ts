@@ -395,6 +395,12 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     return reply.status(500).send({ error: { code: 'INTERNAL', message: 'Internal server error' } });
   });
 
+  // Missing endpoints are different from a route's own missing-record refusal.
+  // Keep the response fixed: Fastify's default message echoes the full URL.
+  app.setNotFoundHandler(async (_req, reply) => reply.status(404).send({
+    error: { code: 'ROUTE_NOT_FOUND', message: 'This API endpoint is not available.' },
+  }));
+
   await app.register(rateLimitPlugin);
   await app.register(sessionPlugin);
   await app.register(permissionPlugin);
