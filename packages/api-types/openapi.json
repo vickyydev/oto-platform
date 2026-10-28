@@ -79321,7 +79321,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79384,7 +79403,134 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fingerprint": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "number"
+                          },
+                          "firstSeenAt": {
+                            "type": "string"
+                          },
+                          "lastSeenAt": {
+                            "type": "string"
+                          },
+                          "lastError": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastRunId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "retryable": {
+                            "type": "boolean"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "stationId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "actionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "requestId": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "fingerprint",
+                          "kind",
+                          "name",
+                          "count",
+                          "firstSeenAt",
+                          "lastSeenAt",
+                          "lastError",
+                          "lastRunId",
+                          "retryable",
+                          "branchId",
+                          "stationId",
+                          "actionId",
+                          "requestId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "ungrouped": {
+                      "type": "number"
+                    },
+                    "reach": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "operator",
+                            "branch"
+                          ]
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "scope",
+                        "branches"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "groups",
+                    "nextCursor",
+                    "reach"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79417,7 +79563,91 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "runs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          },
+                          "startedAt": {
+                            "type": "string"
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "durationMs": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "error": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "fingerprint": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "requestId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "actionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "stationId": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "name",
+                          "outcome",
+                          "startedAt",
+                          "finishedAt",
+                          "durationMs",
+                          "error",
+                          "fingerprint",
+                          "requestId",
+                          "actionId",
+                          "branchId",
+                          "stationId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "runs"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79438,7 +79668,83 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ok": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "outcome": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "failed"
+                          ]
+                        },
+                        "syncState": {
+                          "type": "string",
+                          "enum": [
+                            "synced",
+                            "pending",
+                            "failed"
+                          ]
+                        },
+                        "sent": {
+                          "type": "number"
+                        },
+                        "synced": {
+                          "type": "number"
+                        },
+                        "waiting": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "ok",
+                        "outcome",
+                        "syncState",
+                        "sent",
+                        "synced",
+                        "waiting"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ok": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "outcome": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "failed",
+                            "not_due"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ok",
+                        "outcome"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -79511,7 +79817,151 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "boxId": {
+                            "type": "string"
+                          },
+                          "boxName": {
+                            "type": "string"
+                          },
+                          "slot": {
+                            "type": "string"
+                          },
+                          "eventId": {
+                            "type": "string"
+                          },
+                          "journalEpoch": {
+                            "type": "number"
+                          },
+                          "boxSeq": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "schemaVersion": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "errorCode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "errorMessage": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "payloadHash": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "existingPayloadHash": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "occurredAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "receivedAt": {
+                            "type": "string"
+                          },
+                          "actionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "batchId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "alertKey": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "resolvedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "resolvedByAccountId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "resolutionNote": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "replayedEventId": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "boxId",
+                          "boxName",
+                          "slot",
+                          "eventId",
+                          "journalEpoch",
+                          "boxSeq",
+                          "type",
+                          "schemaVersion",
+                          "reason",
+                          "status",
+                          "errorCode",
+                          "errorMessage",
+                          "payloadHash",
+                          "existingPayloadHash",
+                          "occurredAt",
+                          "receivedAt",
+                          "actionId",
+                          "batchId",
+                          "alertKey",
+                          "resolvedAt",
+                          "resolvedByAccountId",
+                          "resolutionNote",
+                          "replayedEventId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "openCount": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "events",
+                    "nextCursor",
+                    "openCount"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79572,7 +80022,115 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "anomalies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "boxId": {
+                            "type": "string"
+                          },
+                          "boxName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "eventId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "relatedEventId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "detail": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "nullable": true
+                          },
+                          "actionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "detectedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "boxId",
+                          "boxName",
+                          "kind",
+                          "eventId",
+                          "relatedEventId",
+                          "detail",
+                          "actionId",
+                          "detectedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "reach": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "operator",
+                            "branch"
+                          ]
+                        },
+                        "branches": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "scope",
+                        "branches"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "anomalies",
+                    "nextCursor",
+                    "reach"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79593,7 +80151,113 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "replayed",
+                        "open"
+                      ]
+                    },
+                    "eventId": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "errorMessage": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "enum": [
+                        "applied",
+                        "duplicate",
+                        "quarantined",
+                        "rejected"
+                      ]
+                    },
+                    "outcome": {
+                      "type": "object",
+                      "properties": {
+                        "eventId": {
+                          "type": "string"
+                        },
+                        "boxSeq": {
+                          "type": "number"
+                        },
+                        "result": {
+                          "type": "string",
+                          "enum": [
+                            "applied",
+                            "duplicate",
+                            "quarantined",
+                            "rejected"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "conflict",
+                            "poison",
+                            "epoch_regressed",
+                            "sequence_gap",
+                            "unknown_type",
+                            "schema_too_new",
+                            "actor_unknown",
+                            "signature_invalid",
+                            "apply_failed"
+                          ]
+                        },
+                        "businessDate": {
+                          "type": "string"
+                        },
+                        "businessDateSource": {
+                          "type": "string",
+                          "enum": [
+                            "occurred_at",
+                            "received_at"
+                          ]
+                        },
+                        "errorCode": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "eventId",
+                        "boxSeq",
+                        "result"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "status",
+                    "eventId",
+                    "errorCode",
+                    "errorMessage",
+                    "result",
+                    "outcome",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79635,7 +80299,33 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "discarded"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79781,7 +80471,51 @@
         "description": "Which staging-only controls this deployment offers this caller",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "controls": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "sticky": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "label",
+                          "description",
+                          "sticky"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "available",
+                    "controls"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79802,7 +80536,30 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -79812,7 +80569,31 @@
         "description": "Whether the demo reset is available to this caller",
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "confirmationPhrase": {
+                      "type": "string"
+                    },
+                    "playground": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "available",
+                    "confirmationPhrase",
+                    "playground"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -79839,7 +80620,26 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "required": [
+                    "deleted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

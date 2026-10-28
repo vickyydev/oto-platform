@@ -948,5 +948,5 @@ export const stationsApi = {
 
 export const opsApi = {
 demoResetStatus: () =>
-    api.get<{ available: boolean; confirmationPhrase: string; playground?: boolean }>('/ops/demo-reset'),
+    api.get<ApiResponse<'/ops/demo-reset', 'get'>>('/ops/demo-reset'),
 };

@@ -628,7 +628,7 @@ function EventRow({
 
       {row.resolutionNote && (
         <p className="mt-1 text-xs text-muted-foreground break-words">
-          “{row.resolutionNote}”{row.resolvedByName ? ` — ${row.resolvedByName}` : ''}
+          “{row.resolutionNote}”
         </p>
       )}
 
@@ -643,7 +643,7 @@ function EventRow({
 
       {showPayload && (
         <pre className="mt-1.5 rounded-xl border bg-muted/30 p-3 text-xs font-mono whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
-          {row.payload ? JSON.stringify(row.payload, null, 2) : 'The ledger kept no payload for this one.'}
+          This view does not include the event payload.
         </pre>
       )}
 
