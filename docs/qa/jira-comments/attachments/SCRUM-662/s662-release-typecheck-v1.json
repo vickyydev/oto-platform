@@ -1,0 +1,74 @@
+{
+  "ticket": "SCRUM-662",
+  "gate": "typecheck",
+  "startedAt": "2026-10-28T15:00:13.831Z",
+  "completedAt": "2026-10-28T15:00:53.636Z",
+  "passed": true,
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "command": {
+    "executable": "cmd.exe",
+    "args": [
+      "/d",
+      "/s",
+      "/c",
+      "pnpm --filter @oto/api typecheck"
+    ],
+    "cwd": "C:/oto-lanes/admin662-release-20261028"
+  },
+  "before": {
+    "head": "a371471429eb0900e87c50aa7ed7d014aa54577d",
+    "statusSha256": "c00cbe47dcf311cbf8992037dea9f074c6b39c9d676f5209b84086115cc17691",
+    "files": {
+      "apps/api/src/services/jobs.ts": "b257c24cbcd7f450deeaf3759238b2869d4dc78a0ae83e5f239267ad33049ab4",
+      "apps/api/test/watchdog-fallback-review.test.ts": "6c0d8f76b302ab4b50cb097df0d473bdfc7b460a2d3b4ae4115ca571178e4d3b",
+      "apps/api/src/services/ops.ts": "d7cb6cc4e75705408e5f65cfdb0562a972cae4349a5ff9736987644e79cdc3d9",
+      "apps/api/src/services/health-evidence.ts": "6e00b383ec5392a54fdcedbd6ea07b01ca2f933e22366646b57058bd3f80ed1e",
+      "apps/api/package.json": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3",
+      "apps/api/tsconfig.json": "44c4543aeedac061aafe95f62e58858a88a54b63b388ae1d6d9f0320850118ca",
+      "apps/api/vitest.config.ts": "c46861b6f3d5a4fdf34bd5e90c2b86326ec141610df92c8d9f232c82f521f261",
+      "apps/api/scripts/api-types.ts": "c4855e66f7838670f6297c415a8d316d09e450d46f2b527134f30cb52b1ecb3a",
+      "packages/api-types/openapi.json": "947700d4ff21ad552c42439075ddbb9fc6cac46690714e20e9af396488fbb78c",
+      "packages/api-types/src/openapi.ts": "3d24951c978990a4be1e4148d0bd16c98be0d1fecb8ad26280c48e3407b5682d",
+      "packages/db/package.json": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+      "packages/db/src/testing.ts": "866d40a5113b08b22155bee4bc82649fd546a025b58ca59eb9fdeecc5d0f816d",
+      "packages/shared/package.json": "ebf05048ec1880ec37eed0560700125cc4b050731630ed0795079f7ced9c25e3",
+      "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+      "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+    }
+  },
+  "after": {
+    "head": "a371471429eb0900e87c50aa7ed7d014aa54577d",
+    "statusSha256": "c00cbe47dcf311cbf8992037dea9f074c6b39c9d676f5209b84086115cc17691",
+    "files": {
+      "apps/api/src/services/jobs.ts": "b257c24cbcd7f450deeaf3759238b2869d4dc78a0ae83e5f239267ad33049ab4",
+      "apps/api/test/watchdog-fallback-review.test.ts": "6c0d8f76b302ab4b50cb097df0d473bdfc7b460a2d3b4ae4115ca571178e4d3b",
+      "apps/api/src/services/ops.ts": "d7cb6cc4e75705408e5f65cfdb0562a972cae4349a5ff9736987644e79cdc3d9",
+      "apps/api/src/services/health-evidence.ts": "6e00b383ec5392a54fdcedbd6ea07b01ca2f933e22366646b57058bd3f80ed1e",
+      "apps/api/package.json": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3",
+      "apps/api/tsconfig.json": "44c4543aeedac061aafe95f62e58858a88a54b63b388ae1d6d9f0320850118ca",
+      "apps/api/vitest.config.ts": "c46861b6f3d5a4fdf34bd5e90c2b86326ec141610df92c8d9f232c82f521f261",
+      "apps/api/scripts/api-types.ts": "c4855e66f7838670f6297c415a8d316d09e450d46f2b527134f30cb52b1ecb3a",
+      "packages/api-types/openapi.json": "947700d4ff21ad552c42439075ddbb9fc6cac46690714e20e9af396488fbb78c",
+      "packages/api-types/src/openapi.ts": "3d24951c978990a4be1e4148d0bd16c98be0d1fecb8ad26280c48e3407b5682d",
+      "packages/db/package.json": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+      "packages/db/src/testing.ts": "866d40a5113b08b22155bee4bc82649fd546a025b58ca59eb9fdeecc5d0f816d",
+      "packages/shared/package.json": "ebf05048ec1880ec37eed0560700125cc4b050731630ed0795079f7ced9c25e3",
+      "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+      "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+    }
+  },
+  "sourceUnchanged": true,
+  "nodeVersion": "v22.17.1",
+  "logPath": "C:/oto-lanes/proof-tools/s662-release-typecheck-v1.log",
+  "logSha256": "8ee386bf2d010cebb0765e5528efcd84fa04d038d66e0e5c337f89ae7a37c5f4",
+  "helperSha256": "1dd92b70b6d0dd93f27c56de4ea3f14d17c9040e04c4e0de43d389e9f98bbf32",
+  "databaseEnvironmentRemoved": [
+    "DATABASE_URL",
+    "TEST_DATABASE_URL"
+  ],
+  "docker": false,
+  "staging": false,
+  "redactionChanged": false
+}

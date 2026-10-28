@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-662",
+  "shard": "2",
+  "command": "set -eo pipefail; pnpm --filter @oto/api test --shard=2/3",
+  "startedAt": "2026-10-28T14:18:40.653Z",
+  "completedAt": "2026-10-28T14:52:38.769Z",
+  "exitCode": 0,
+  "before": {
+    "apps/api/src/services/jobs.ts": "b257c24cbcd7f450deeaf3759238b2869d4dc78a0ae83e5f239267ad33049ab4",
+    "apps/api/test/watchdog-fallback-review.test.ts": "6c0d8f76b302ab4b50cb097df0d473bdfc7b460a2d3b4ae4115ca571178e4d3b",
+    "apps/api/src/services/ops.ts": "d7cb6cc4e75705408e5f65cfdb0562a972cae4349a5ff9736987644e79cdc3d9"
+  },
+  "after": {
+    "apps/api/src/services/jobs.ts": "b257c24cbcd7f450deeaf3759238b2869d4dc78a0ae83e5f239267ad33049ab4",
+    "apps/api/test/watchdog-fallback-review.test.ts": "6c0d8f76b302ab4b50cb097df0d473bdfc7b460a2d3b4ae4115ca571178e4d3b",
+    "apps/api/src/services/ops.ts": "d7cb6cc4e75705408e5f65cfdb0562a972cae4349a5ff9736987644e79cdc3d9"
+  },
+  "inputsUnchanged": true,
+  "summary": [
+    " Test Files  132 passed | 4 skipped (136)",
+    "      Tests  1956 passed | 174 skipped | 4 todo (2134)",
+    "   Duration  2036.99s (transform 6.27s, setup 0ms, collect 322.39s, tests 1676.32s, environment 21ms, prepare 15.90s)"
+  ],
+  "logSha256": "995774cc0e1a1655086703cd723229aa0375c8a96b31e91bbe461d29327c5278",
+  "databaseEnvUnset": true,
+  "docker": false
+}

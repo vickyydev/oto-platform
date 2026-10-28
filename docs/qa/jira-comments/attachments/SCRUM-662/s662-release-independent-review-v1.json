@@ -1,0 +1,96 @@
+{
+  "ticket": "SCRUM-662",
+  "reviewedAt": "2026-10-28T15:03:59.246Z",
+  "scopedApproved": true,
+  "fullReleaseApproved": false,
+  "newBaseSha": "a371471429eb0900e87c50aa7ed7d014aa54577d",
+  "sourceFiles": {
+    "apps/api/src/services/jobs.ts": "b257c24cbcd7f450deeaf3759238b2869d4dc78a0ae83e5f239267ad33049ab4",
+    "apps/api/test/watchdog-fallback-review.test.ts": "6c0d8f76b302ab4b50cb097df0d473bdfc7b460a2d3b4ae4115ca571178e4d3b"
+  },
+  "oldBaseFullApi": {
+    "path": "C:/oto-lanes/proof-tools/s662-full-shards-audit-v1.json",
+    "sha256": "fb5cda7f9a9ed62d5dfd2e93b8c96e4600fdf04476ce0f4768b21817071c83c4",
+    "totals": {
+      "files": 407,
+      "passedFiles": 399,
+      "skippedFiles": 8,
+      "tests": 6180,
+      "passed": 5774,
+      "skipped": 401,
+      "todo": 5,
+      "failed": 0
+    },
+    "fileUnionExact": true,
+    "claim": "Original base plus exact two-file change only; not a new-base full-suite rerun."
+  },
+  "newBaseStrictGates": {
+    "path": "C:/oto-lanes/proof-tools/s662-release-strict-summary-v1.json",
+    "sha256": "ef6044f76a38a0a249d7f1a5179f4fef4e7065783f4d1a711f141b10a7d78462",
+    "passed": true,
+    "gates": [
+      {
+        "gate": "typecheck",
+        "passed": true,
+        "exitCode": 0,
+        "receiptPath": "C:/oto-lanes/proof-tools/s662-release-typecheck-v1.json",
+        "receiptSha256": "090666645aad847cdd0681cc9bb2db5cc05f18ef5e9b587125d3d78ce883e911",
+        "logSha256": "8ee386bf2d010cebb0765e5528efcd84fa04d038d66e0e5c337f89ae7a37c5f4"
+      },
+      {
+        "gate": "review",
+        "passed": true,
+        "exitCode": 0,
+        "receiptPath": "C:/oto-lanes/proof-tools/s662-release-review-v1.json",
+        "receiptSha256": "35b0b9a74daa92f1a02cf642ecb9c821fcac9dc176a3eb20ed1a0ff40514e65f",
+        "logSha256": "64ed042cd593c9cdac574f2b6f01cd8aabbf15142ebc80d0a54e18e2581733f1"
+      },
+      {
+        "gate": "lint",
+        "passed": true,
+        "exitCode": 0,
+        "receiptPath": "C:/oto-lanes/proof-tools/s662-release-lint-v1.json",
+        "receiptSha256": "5f221ec2bb4b4844e394dc73077cb16ed77b896ce09e42054463422215170213",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "gate": "contracts",
+        "passed": true,
+        "exitCode": 0,
+        "receiptPath": "C:/oto-lanes/proof-tools/s662-release-contracts-v1.json",
+        "receiptSha256": "d2efe80889d8148c9009f4e130c686235c638dda1236cca9e9def49608727dd8",
+        "logSha256": "3c19ddd9b23147813b8f9dfcd1b5c9e8e7ba0adb7610828037dd4b243f6ad671"
+      }
+    ],
+    "apiTypecheckDiagnostics": 0,
+    "wholeCompilerOutputRead": true,
+    "reviewTests": {
+      "passed": 6,
+      "failed": 0
+    },
+    "lintFiles": 2,
+    "contractsMatch": true,
+    "sourceUnchanged": true
+  },
+  "cleanup": [
+    {
+      "path": "C:/oto-lanes/proof-tools/s662-full-cleanup-audit-v1.json",
+      "sha256": "3b2a8bac01ebd283429b1dded3cc90effe29dcf4d17869e65015765109ad4105",
+      "passed": true
+    },
+    {
+      "path": "C:/oto-lanes/proof-tools/s662-release-cleanup-audit-v1.json",
+      "sha256": "8fc03faa390f09f8120f893eabf37186ccf4028ec39c2ed5249cf4b2ca1bde5c",
+      "passed": true
+    }
+  ],
+  "historicalLimits": [
+    "Old-base 401 existing skips and five TODOs remain unexecuted, including native OTO App loader availability gates.",
+    "Lost tool-output session52586 is not used as evidence; this review binds fresh durable sequential captures.",
+    "Full candidate CI/release and staging acceptance remain coordinator-owned."
+  ],
+  "noSourceChangesDuringReview": true,
+  "noGitMutation": true,
+  "noJiraMutation": true,
+  "noSharedResourceMutation": true
+}

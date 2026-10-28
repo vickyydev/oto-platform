@@ -1,0 +1,48 @@
+{
+  "ticket": "SCRUM-662",
+  "reviewedAt": "2026-10-28T15:09:47.550Z",
+  "passed": true,
+  "scopedApproved": true,
+  "fullReleaseApproved": false,
+  "originalSourceCommit": "ae329681e4974ae3e47e3673d7930d701e52d35a",
+  "rebasedCommit": "bebeab5ac991de2b614c344a9a3e724ae2207cea",
+  "sourceTree": {
+    "trackedNonDocFiles": 3972,
+    "definition": "All tracked files except docs/**; includes manifests, ignore rules and assets.",
+    "committedTreeSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "workingBytesSha256": "ddf464e332d0b3503797744a96595a57dbe1bdd53bb3741b1e1523623a864284",
+    "identicalToOriginalCommit": true,
+    "unchangedBeforeAfter": true,
+    "docsOnlyChangesAllowed": true
+  },
+  "sourceFiles": {
+    "apps/api/src/services/jobs.ts": "b257c24cbcd7f450deeaf3759238b2869d4dc78a0ae83e5f239267ad33049ab4",
+    "apps/api/test/watchdog-fallback-review.test.ts": "6c0d8f76b302ab4b50cb097df0d473bdfc7b460a2d3b4ae4115ca571178e4d3b"
+  },
+  "gates": {
+    "apiCompilerDiagnostics": 0,
+    "wholeCompilerOutputRead": true,
+    "reviewTestsPassed": 6,
+    "reviewTestsFailed": 0,
+    "lintFiles": 2,
+    "lintErrors": 0,
+    "generatedContractsMatch": true,
+    "sequential": true
+  },
+  "summary": {
+    "path": "C:/oto-lanes/proof-tools/s662-release-postrebase-strict-summary-v2.json",
+    "sha256": "2639d0e2cf4edf5f34e262cbc551869955aa3945a6fc628e80b94049cdb395df"
+  },
+  "cleanup": {
+    "path": "C:/oto-lanes/proof-tools/s662-release-postrebase-cleanup-v2.json",
+    "sha256": "facb7d4171185b6108ee4c69bffee60760db43107c545371f34e064b3ab970e9",
+    "passed": true
+  },
+  "limits": [
+    "No full-suite repeat; original-base full-shard evidence remains separately labelled.",
+    "Remote full candidate CI and final release/staging approval remain coordinator-owned."
+  ],
+  "sourceChanges": false,
+  "gitMutations": false,
+  "jiraMutations": false
+}

@@ -1,0 +1,285 @@
+{
+  "ticket": "SCRUM-662",
+  "checkedAt": "2026-10-28T15:02:55.995Z",
+  "passed": true,
+  "fullReleaseApproved": false,
+  "scope": "Three full API shards on original frozen f5b6d333 base plus exact two-file change; not new-main full-suite evidence",
+  "shards": [
+    {
+      "shard": 1,
+      "receiptPath": "C:/oto-lanes/proof-tools/s662-full-shard1-v1.json",
+      "receiptSha256": "40a04aeb88c7ec3b42e060558b692d9b0c30d4e8790c4fbda62c28bb0bca8218",
+      "logSha256": "2de58ffa7a08f8c3e816093d1808b2c997417cba0f1ec7291df097934c432cdb",
+      "exitCode": 0,
+      "files": 136,
+      "tests": 2097,
+      "passed": 1991,
+      "skipped": 106,
+      "todo": 0,
+      "fullySkippedFiles": [
+        {
+          "state": "skip",
+          "path": "test/s217b-r7-finance-access-cross-review.test.ts",
+          "tests": 8,
+          "pendingSlots": 8
+        },
+        {
+          "state": "skip",
+          "path": "test/s217c-fix-preview-review.test.ts",
+          "tests": 7,
+          "pendingSlots": 7
+        }
+      ],
+      "partialPendingFiles": [
+        {
+          "state": "pass",
+          "path": "test/s217b-r3-review.test.ts",
+          "tests": 44,
+          "pendingSlots": 21
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r6.test.ts",
+          "tests": 36,
+          "pendingSlots": 2
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r4b.test.ts",
+          "tests": 36,
+          "pendingSlots": 4
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r1-review.test.ts",
+          "tests": 42,
+          "pendingSlots": 20
+        },
+        {
+          "state": "pass",
+          "path": "test/s217c-employee-history-review.test.ts",
+          "tests": 28,
+          "pendingSlots": 27
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r7-access-review.test.ts",
+          "tests": 18,
+          "pendingSlots": 17
+        }
+      ],
+      "failureSections": 0
+    },
+    {
+      "shard": 2,
+      "receiptPath": "C:/oto-lanes/proof-tools/s662-full-shard2-v1.json",
+      "receiptSha256": "d56cd9fff070a38efe9f4b52c7038461d3f1b215fd364508bb31ee06de8570ea",
+      "logSha256": "995774cc0e1a1655086703cd723229aa0375c8a96b31e91bbe461d29327c5278",
+      "exitCode": 0,
+      "files": 136,
+      "tests": 2134,
+      "passed": 1956,
+      "skipped": 174,
+      "todo": 4,
+      "fullySkippedFiles": [
+        {
+          "state": "skip",
+          "path": "test/s217b-r7-access-cross-review.test.ts",
+          "tests": 15,
+          "pendingSlots": 15
+        },
+        {
+          "state": "skip",
+          "path": "test/s217b-r7-readers-review.test.ts",
+          "tests": 4,
+          "pendingSlots": 4
+        },
+        {
+          "state": "skip",
+          "path": "test/s548-qa-reports-review.test.ts",
+          "tests": 36,
+          "pendingSlots": 36
+        },
+        {
+          "state": "skip",
+          "path": "test/s217b-scheduling-review.test.ts",
+          "tests": 32,
+          "pendingSlots": 32
+        }
+      ],
+      "partialPendingFiles": [
+        {
+          "state": "pass",
+          "path": "test/s217b-r6-review.test.ts",
+          "tests": 65,
+          "pendingSlots": 51
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r4a-review.test.ts",
+          "tests": 37,
+          "pendingSlots": 12
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r2-review.test.ts",
+          "tests": 33,
+          "pendingSlots": 3
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r2.test.ts",
+          "tests": 33,
+          "pendingSlots": 2
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r1.test.ts",
+          "tests": 31,
+          "pendingSlots": 1
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r4a.test.ts",
+          "tests": 28,
+          "pendingSlots": 2
+        },
+        {
+          "state": "pass",
+          "path": "test/s221-r4-closing-audit.test.ts",
+          "tests": 37,
+          "pendingSlots": 4
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r5.test.ts",
+          "tests": 18,
+          "pendingSlots": 1
+        },
+        {
+          "state": "pass",
+          "path": "test/s217c-sop-history-review.test.ts",
+          "tests": 16,
+          "pendingSlots": 15
+        }
+      ],
+      "failureSections": 0
+    },
+    {
+      "shard": 3,
+      "receiptPath": "C:/oto-lanes/proof-tools/s662-full-shard3-v1.json",
+      "receiptSha256": "5a65a9e80f6c831fca25b111f8c45394b97c4ef67ada3e90e44d2f0589ad9c61",
+      "logSha256": "9dbb36e2eb653dc7917b65a6cf116f18006e09bcae9a664872187057194039cb",
+      "exitCode": 0,
+      "files": 135,
+      "tests": 1949,
+      "passed": 1827,
+      "skipped": 121,
+      "todo": 1,
+      "fullySkippedFiles": [
+        {
+          "state": "skip",
+          "path": "test/s217b-r7-payroll-cross-review.test.ts",
+          "tests": 25,
+          "pendingSlots": 25
+        },
+        {
+          "state": "skip",
+          "path": "test/s217c-camp-sms-review.test.ts",
+          "tests": 23,
+          "pendingSlots": 23
+        }
+      ],
+      "partialPendingFiles": [
+        {
+          "state": "pass",
+          "path": "test/s217b-r4b-review.test.ts",
+          "tests": 29,
+          "pendingSlots": 11
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r3.test.ts",
+          "tests": 41,
+          "pendingSlots": 9
+        },
+        {
+          "state": "pass",
+          "path": "test/g17-round0-review.test.ts",
+          "tests": 32,
+          "pendingSlots": 4
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r5-review.test.ts",
+          "tests": 30,
+          "pendingSlots": 20
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r1-review-recheck.test.ts",
+          "tests": 17,
+          "pendingSlots": 10
+        },
+        {
+          "state": "pass",
+          "path": "test/offline-capability.test.ts",
+          "tests": 23,
+          "pendingSlots": 1
+        },
+        {
+          "state": "pass",
+          "path": "test/s217c-presence-delivery-review.test.ts",
+          "tests": 15,
+          "pendingSlots": 12
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r7-finance-cross-review.test.ts",
+          "tests": 4,
+          "pendingSlots": 2
+        },
+        {
+          "state": "pass",
+          "path": "test/s217b-r7-finance.test.ts",
+          "tests": 7,
+          "pendingSlots": 3
+        },
+        {
+          "state": "pass",
+          "path": "test/files.test.ts",
+          "tests": 5,
+          "pendingSlots": 2
+        }
+      ],
+      "failureSections": 0
+    }
+  ],
+  "totals": {
+    "files": 407,
+    "passedFiles": 399,
+    "skippedFiles": 8,
+    "tests": 6180,
+    "passed": 5774,
+    "skipped": 401,
+    "todo": 5,
+    "failed": 0
+  },
+  "fileUnionExact": true,
+  "existingConditions": {
+    "fullySkipped": "Eight pre-existing OTO App loader-availability guards; App native dependencies were not installed for this platform-only full run.",
+    "todos": "Four existing s221-r4-closing-audit TODOs plus one existing offline-capability pending TODO.",
+    "noSkipOrTodoChanges": "Only jobs.ts and new six-case test differ from original base; new test contains no skip/TODO.",
+    "perFileReporter": "Vitest file-line skipped counts include TODO slots; summary separates 401 skipped and five TODOs. Initial reviewer count check caught this reporting shape before receipt creation."
+  },
+  "newReviewInFullBatch": {
+    "state": "pass",
+    "path": "test/watchdog-fallback-review.test.ts",
+    "tests": 6,
+    "pendingSlots": 0
+  },
+  "limits": [
+    "401 skipped cases and five TODOs remain unexecuted; none relabelled green.",
+    "Final new-base narrow gates and full candidate CI are separate obligations."
+  ]
+}

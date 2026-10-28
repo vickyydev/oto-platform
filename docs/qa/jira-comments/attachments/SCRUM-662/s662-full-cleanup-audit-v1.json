@@ -1,0 +1,41 @@
+{
+    "ticket":  "SCRUM-662",
+    "checkedAt":  "2026-10-28T15:03:15.9496802Z",
+    "processCensusPath":  "C:/oto-lanes/proof-tools/s662-full-owned-processes-v1.json",
+    "processCensusSha256":  "c6fd5f7a4a829e083908d94334b3bfbfe3cbf29d0f4beb1314af42f33d100fad",
+    "originalRecordedProcesses":  45,
+    "observedPgStarts":  367,
+    "checkedDistinctIds":  361,
+    "remainingOwnershipMatchedProcesses":  [
+
+                                           ],
+    "reusedUnrelatedIds":  [
+                               {
+                                   "processId":  17468,
+                                   "ownershipMatch":  false,
+                                   "name":  "svchost.exe"
+                               },
+                               {
+                                   "processId":  47076,
+                                   "ownershipMatch":  false,
+                                   "name":  "chrome.exe"
+                               },
+                               {
+                                   "processId":  38560,
+                                   "ownershipMatch":  false,
+                                   "name":  "chrome.exe"
+                               },
+                               {
+                                   "processId":  48264,
+                                   "ownershipMatch":  false,
+                                   "name":  "powershell.exe"
+                               }
+                           ],
+    "remainingObservedPortListeners":  [
+
+                                       ],
+    "allOwnedProcessesAbsent":  true,
+    "allObservedPortListenersAbsent":  true,
+    "mutationsPerformed":  false,
+    "scope":  "Only exact original recorded process identities and PG starts/ports; no processes stopped"
+}

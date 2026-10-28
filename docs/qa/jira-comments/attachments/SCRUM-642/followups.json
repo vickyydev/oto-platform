@@ -1,0 +1,35 @@
+{
+  "createdAt": "2026-10-28T15:11:22.421Z",
+  "issues": [
+    {
+      "key": "SCRUM-672",
+      "source": "SCRUM-643",
+      "summary": "Record verified deployment events in Admin release history",
+      "status": "To Do",
+      "linkStatus": 201
+    },
+    {
+      "key": "SCRUM-673",
+      "source": "SCRUM-648",
+      "summary": "Retain view-as actor attribution in OTO App schedule history",
+      "status": "To Do",
+      "linkStatus": 201
+    },
+    {
+      "key": "SCRUM-674",
+      "source": "SCRUM-648",
+      "summary": "Add safe readers for the three missing Support lookup sections",
+      "status": "To Do",
+      "linkStatus": 201
+    },
+    {
+      "key": "SCRUM-675",
+      "source": "SCRUM-646",
+      "summary": "Q27 Stage 2: dated analytics cutover after the legacy dump",
+      "status": "To Do",
+      "linkStatus": 201,
+      "legacyLinkStatus": 201
+    }
+  ],
+  "parentCommentStatus": 201
+}

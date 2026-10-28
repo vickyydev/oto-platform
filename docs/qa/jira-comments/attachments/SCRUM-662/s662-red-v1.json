@@ -1,0 +1,67 @@
+{
+  "ticket": "SCRUM-662",
+  "phase": "red",
+  "startedAt": "2026-10-28T14:08:48.702Z",
+  "completedAt": "2026-10-28T14:09:13.326Z",
+  "exitCode": 1,
+  "signal": null,
+  "errorCode": null,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\oto-lanes\\admin662-watchdog-20261028\\apps\\api\\node_modules\\vitest\\vitest.mjs",
+      "run",
+      "test/watchdog-fallback-review.test.ts",
+      "--maxWorkers=1",
+      "--no-file-parallelism"
+    ],
+    "cwd": "C:\\oto-lanes\\admin662-watchdog-20261028\\apps\\api"
+  },
+  "nodeVersion": "v22.17.1",
+  "before": {
+    "apps/api/src/services/jobs.ts": "7b10265b20951c87067a111d1e7f253a3abb4521616b106bf7be844840ae0ab8",
+    "apps/api/test/watchdog-fallback-review.test.ts": "408f55a78e62135b0b6a63eaef36aaf578dade81936423e5d075c58648159291",
+    "apps/api/src/services/ops.ts": "d7cb6cc4e75705408e5f65cfdb0562a972cae4349a5ff9736987644e79cdc3d9",
+    "apps/api/src/services/health-evidence.ts": "6e00b383ec5392a54fdcedbd6ea07b01ca2f933e22366646b57058bd3f80ed1e",
+    "packages/db/src/testing.ts": "866d40a5113b08b22155bee4bc82649fd546a025b58ca59eb9fdeecc5d0f816d",
+    "packages/db/src/schema/sync.ts": "b013ac2348b2e03fd7a4d35fedaf85bce99671d528479a09bc3a7a165dfcfd9e",
+    "apps/api/package.json": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3",
+    "apps/api/vitest.config.ts": "c46861b6f3d5a4fdf34bd5e90c2b86326ec141610df92c8d9f232c82f521f261",
+    "packages/db/package.json": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+    "packages/shared/package.json": "ebf05048ec1880ec37eed0560700125cc4b050731630ed0795079f7ced9c25e3",
+    "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "after": {
+    "apps/api/src/services/jobs.ts": "7b10265b20951c87067a111d1e7f253a3abb4521616b106bf7be844840ae0ab8",
+    "apps/api/test/watchdog-fallback-review.test.ts": "408f55a78e62135b0b6a63eaef36aaf578dade81936423e5d075c58648159291",
+    "apps/api/src/services/ops.ts": "d7cb6cc4e75705408e5f65cfdb0562a972cae4349a5ff9736987644e79cdc3d9",
+    "apps/api/src/services/health-evidence.ts": "6e00b383ec5392a54fdcedbd6ea07b01ca2f933e22366646b57058bd3f80ed1e",
+    "packages/db/src/testing.ts": "866d40a5113b08b22155bee4bc82649fd546a025b58ca59eb9fdeecc5d0f816d",
+    "packages/db/src/schema/sync.ts": "b013ac2348b2e03fd7a4d35fedaf85bce99671d528479a09bc3a7a165dfcfd9e",
+    "apps/api/package.json": "e88a347801105fe861a88cabed7b694d01077f0542219df11120a93819eb6ca3",
+    "apps/api/vitest.config.ts": "c46861b6f3d5a4fdf34bd5e90c2b86326ec141610df92c8d9f232c82f521f261",
+    "packages/db/package.json": "444bd1a4c894a93c82f1e48c34a04568e1b540dd552a7fbb6b8f5cae2ab42ebd",
+    "packages/shared/package.json": "ebf05048ec1880ec37eed0560700125cc4b050731630ed0795079f7ced9c25e3",
+    "package.json": "aa43fc6128d6ece99f34f8f82b453fec4ae4a4214bbd40eaac57badb5b7b0128",
+    "pnpm-lock.yaml": "3e525e366b0fd08b10a1e5fc87b414d601c00cb2caf4302c4c3995d8b58128b0"
+  },
+  "scopedInputsUnchanged": true,
+  "logPath": "C:/oto-lanes/proof-tools/s662-red-v1.log",
+  "logSha256": "593aca76c54b411020108b276aaf960d0691b572138f68db0348ffa14c94e31a",
+  "helperSha256": "291623dcdf116340fcb62c51ad6fa5b724d56076dd419c29af548b6a95479e61",
+  "databaseEnvironmentRemoved": [
+    "DATABASE_URL",
+    "TEST_DATABASE_URL"
+  ],
+  "docker": false,
+  "staging": false,
+  "providerActions": false,
+  "logRedaction": {
+    "databaseUrls": true,
+    "changed": false
+  },
+  "limits": [
+    "Scoped local check; not a full release or staging claim"
+  ]
+}

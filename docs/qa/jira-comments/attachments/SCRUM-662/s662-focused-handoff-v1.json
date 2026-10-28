@@ -1,0 +1,220 @@
+{
+  "ticket": "SCRUM-662",
+  "checkedAt": "2026-10-28T14:18:38.499Z",
+  "scope": "Local focused implementation only",
+  "scopedChecksPassed": true,
+  "fullReleaseApproved": false,
+  "baseSha": "f5b6d333214e00232e6cc57911352d0dd530c02d",
+  "sourceFiles": {
+    "apps/api/src/services/jobs.ts": "b257c24cbcd7f450deeaf3759238b2869d4dc78a0ae83e5f239267ad33049ab4",
+    "apps/api/test/watchdog-fallback-review.test.ts": "6c0d8f76b302ab4b50cb097df0d473bdfc7b460a2d3b4ae4115ca571178e4d3b"
+  },
+  "implementation": {
+    "productionPaths": [
+      "apps/api/src/services/jobs.ts"
+    ],
+    "testPaths": [
+      "apps/api/test/watchdog-fallback-review.test.ts"
+    ],
+    "opsTsUnchanged": true,
+    "behavior": "Existing onUnread classifies denied/failed supporting reads; no fleet alert open/close effects on an incomplete tick. Job checks and independently measured silence marking remain active.",
+    "conservativeLimit": "Every fleet condition is deferred for the incomplete tick, including independently readable conditions; the next readable tick evaluates normally."
+  },
+  "actualHistory": {
+    "initialRed": {
+      "tests": 6,
+      "passed": 3,
+      "failed": 3,
+      "productFailures": 2,
+      "fixtureFailures": 1,
+      "fixtureIssue": "Initial epoch0 violated native positive-epoch constraint; corrected only fixture to currentEpoch2/journalEpoch1. Original attempt and test source preserved."
+    },
+    "cleanRed": {
+      "tests": 6,
+      "passed": 3,
+      "failed": 3,
+      "productFailures": 3,
+      "fixtureFailures": 0,
+      "observed": "Denied general and epoch quarantine counts, and a real blocked support read reaching its existing deadline, each resolved the actual open incident."
+    },
+    "sameTestGreen": {
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "testBytesUnchangedFromCleanRed": true
+    },
+    "affected": {
+      "files": 8,
+      "tests": 129,
+      "passed": 129,
+      "failed": 0
+    },
+    "apiTypecheck": {
+      "exitCode": 0,
+      "diagnostics": 0,
+      "wholeOutputRead": true
+    },
+    "lint": {
+      "files": 2,
+      "exitCode": 0,
+      "outputBytes": 0
+    },
+    "gitDiffCheck": {
+      "exitCode": 0
+    },
+    "wholeAffectedLogRead": true
+  },
+  "receipts": {
+    "install-v1": {
+      "path": "C:/oto-lanes/proof-tools/s662-install-v1.json",
+      "sha256": "b752606c1bf4af6de4530e85567eb6cd93db0368edaf17dbfefaca75da4f5baf",
+      "exitCode": 0,
+      "startedAt": "2026-10-28T14:02:16.750Z",
+      "completedAt": "2026-10-28T14:02:46.740Z",
+      "logPath": "C:/oto-lanes/proof-tools/s662-install-v1.log",
+      "logSha256": "a1a490bce42968a7f5afe1b870a265382a830b0d7f1ec5aa685989537f195fa1",
+      "logLines": 40,
+      "scopedInputsUnchanged": true
+    },
+    "red-v1": {
+      "path": "C:/oto-lanes/proof-tools/s662-red-v1.json",
+      "sha256": "e4274d0e5de8e3fa2bc9050ad2a2201d7301c5e5abb86ca20761e924d3a8d05a",
+      "exitCode": 1,
+      "startedAt": "2026-10-28T14:08:48.702Z",
+      "completedAt": "2026-10-28T14:09:13.326Z",
+      "logPath": "C:/oto-lanes/proof-tools/s662-red-v1.log",
+      "logSha256": "593aca76c54b411020108b276aaf960d0691b572138f68db0348ffa14c94e31a",
+      "logLines": 215,
+      "scopedInputsUnchanged": true
+    },
+    "red-v2": {
+      "path": "C:/oto-lanes/proof-tools/s662-red-v2.json",
+      "sha256": "1175bc92c37e87dfa7038c7a0a9b7f58e50e794a681a8934cb65af6a09dfe555",
+      "exitCode": 1,
+      "startedAt": "2026-10-28T14:12:32.514Z",
+      "completedAt": "2026-10-28T14:12:48.375Z",
+      "logPath": "C:/oto-lanes/proof-tools/s662-red-v2.log",
+      "logSha256": "5020bc1eecd670e99468bef0699d4c21d83e0f6331d7f2c12f451d9e707cf8c7",
+      "logLines": 191,
+      "scopedInputsUnchanged": true
+    },
+    "green-v1": {
+      "path": "C:/oto-lanes/proof-tools/s662-green-v1.json",
+      "sha256": "b3c9c33af06acc6d064b2f0a3a9128526c578ba36579a3bb08520f2007fe673d",
+      "exitCode": 0,
+      "startedAt": "2026-10-28T14:13:51.021Z",
+      "completedAt": "2026-10-28T14:14:06.649Z",
+      "logPath": "C:/oto-lanes/proof-tools/s662-green-v1.log",
+      "logSha256": "bf9cb151f425ca7dc986690e7e7fc250066c8dcc9be20f10685763a9bddb7edf",
+      "logLines": 150,
+      "scopedInputsUnchanged": true
+    },
+    "affected-v1": {
+      "path": "C:/oto-lanes/proof-tools/s662-affected-v1.json",
+      "sha256": "cad36fa773b13b4c8989d030f387c640a98f72396b3ef31fcdbd1ebed0e4adeb",
+      "exitCode": 0,
+      "startedAt": "2026-10-28T14:14:40.193Z",
+      "completedAt": "2026-10-28T14:16:08.591Z",
+      "logPath": "C:/oto-lanes/proof-tools/s662-affected-v1.log",
+      "logSha256": "9c0c88aa62012b13600b407eb5fe84cb41062f3ef965cfd7ea851fd834ed329e",
+      "logLines": 851,
+      "scopedInputsUnchanged": true,
+      "files": [
+        {
+          "path": "apps/api/test/ops-api.test.ts",
+          "tests": 34
+        },
+        {
+          "path": "apps/api/test/sync-ledger.test.ts",
+          "tests": 33
+        },
+        {
+          "path": "apps/api/test/ops-jobs.test.ts",
+          "tests": 24
+        },
+        {
+          "path": "apps/api/test/booth-health.test.ts",
+          "tests": 6
+        },
+        {
+          "path": "apps/api/test/box-agent.test.ts",
+          "tests": 11
+        },
+        {
+          "path": "apps/api/test/health-read-availability-review.test.ts",
+          "tests": 9
+        },
+        {
+          "path": "apps/api/test/watchdog-fallback-review.test.ts",
+          "tests": 6
+        },
+        {
+          "path": "apps/api/test/health-evidence.test.ts",
+          "tests": 6
+        }
+      ],
+      "summary": {
+        "files": 8,
+        "tests": 129,
+        "passed": 129,
+        "failed": 0
+      }
+    },
+    "typecheck-v1": {
+      "path": "C:/oto-lanes/proof-tools/s662-typecheck-v1.json",
+      "sha256": "e5b1a986a985294a4fc0fee36d87b835c13b9b5b5b0840ccebf25a0bc1ad5760",
+      "exitCode": 0,
+      "startedAt": "2026-10-28T14:14:09.654Z",
+      "completedAt": "2026-10-28T14:14:44.036Z",
+      "logPath": "C:/oto-lanes/proof-tools/s662-typecheck-v1.log",
+      "logSha256": "30adb0552017ab81a953acd32beaec92d92f088291d41e399dda539b77b42bb9",
+      "logLines": 5,
+      "scopedInputsUnchanged": true
+    },
+    "lint-v1": {
+      "path": "C:/oto-lanes/proof-tools/s662-lint-v1.json",
+      "sha256": "2f2ecba656eccd4594b13f281dc822c6bca3ddc9380dcf504f4e64e4fb93c533",
+      "exitCode": 0,
+      "startedAt": "2026-10-28T14:14:09.654Z",
+      "completedAt": "2026-10-28T14:14:30.071Z",
+      "logPath": "C:/oto-lanes/proof-tools/s662-lint-v1.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logLines": 1,
+      "scopedInputsUnchanged": true
+    }
+  },
+  "cleanup": {
+    "path": "C:/oto-lanes/proof-tools/s662-cleanup-verification-v1.json",
+    "sha256": "acaf93a39f1b56425e8a0017431e39e301418ad3d87307dd391aab55a9fde240",
+    "allObservedProcessIdsAbsent": true,
+    "allObservedListenersAbsent": true
+  },
+  "logReview": {
+    "expectedNativeErrors": [
+      "Intentional restricted-role denials",
+      "Native duplicate-key replay/dedupe controls"
+    ],
+    "inheritedWarnings": [
+      "FSTDEP023 disableRequestLogging deprecation"
+    ],
+    "unexpectedFailures": 0,
+    "secretLabelCandidateCount": 0
+  },
+  "boundaries": {
+    "docker": false,
+    "staging": false,
+    "providers": false,
+    "gitCommit": false,
+    "gitPush": false,
+    "jiraMutation": false,
+    "docsMutation": false
+  },
+  "remaining": [
+    "Root full native API shards/full release gates",
+    "Landing only after 648/664/642 acceptance",
+    "Rebase/source binding and CI/staging acceptance remain coordinator-owned"
+  ],
+  "preparationAttempt": {
+    "firstAssembler": "Inline Unicode checkmark corrupted by Windows pipe encoding; parse failed before any source/runtime/artifact mutation; corrected to ASCII Unicode escape."
+  }
+}

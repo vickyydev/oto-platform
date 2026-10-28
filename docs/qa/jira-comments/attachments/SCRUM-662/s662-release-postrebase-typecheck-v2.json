@@ -1,0 +1,53 @@
+{
+  "ticket": "SCRUM-662",
+  "gate": "typecheck",
+  "startedAt": "2026-10-28T15:07:47.428Z",
+  "completedAt": "2026-10-28T15:08:25.265Z",
+  "passed": true,
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "command": {
+    "executable": "cmd.exe",
+    "args": [
+      "/d",
+      "/s",
+      "/c",
+      "pnpm --filter @oto/api typecheck"
+    ],
+    "cwd": "C:/oto-lanes/admin662-release-20261028"
+  },
+  "before": {
+    "head": "bebeab5ac991de2b614c344a9a3e724ae2207cea",
+    "trackedNonDocFiles": 3972,
+    "committedSourceSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "workingSourceSha256": "ddf464e332d0b3503797744a96595a57dbe1bdd53bb3741b1e1523623a864284",
+    "originalTreeSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "identicalCommittedNonDocSource": true,
+    "changedSourceCount": 0,
+    "untrackedSourceCount": 0
+  },
+  "after": {
+    "head": "bebeab5ac991de2b614c344a9a3e724ae2207cea",
+    "trackedNonDocFiles": 3972,
+    "committedSourceSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "workingSourceSha256": "ddf464e332d0b3503797744a96595a57dbe1bdd53bb3741b1e1523623a864284",
+    "originalTreeSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "identicalCommittedNonDocSource": true,
+    "changedSourceCount": 0,
+    "untrackedSourceCount": 0
+  },
+  "sourceUnchanged": true,
+  "nodeVersion": "v22.17.1",
+  "logPath": "C:/oto-lanes/proof-tools/s662-release-postrebase-typecheck-v2.log",
+  "logSha256": "8ee386bf2d010cebb0765e5528efcd84fa04d038d66e0e5c337f89ae7a37c5f4",
+  "helperSha256": "f29487dc58a9c7bba067e189c8e584c6a11b45e8febacfd433f082333580d3f3",
+  "databaseEnvironmentRemoved": [
+    "DATABASE_URL",
+    "TEST_DATABASE_URL"
+  ],
+  "docker": false,
+  "staging": false,
+  "redactionChanged": false,
+  "docsOnlyChangesAllowed": true
+}

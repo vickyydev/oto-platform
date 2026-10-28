@@ -1,0 +1,69 @@
+{
+  "ticket": "SCRUM-662",
+  "completedAt": "2026-10-28T15:09:00.702Z",
+  "passed": true,
+  "fullReleaseApproved": false,
+  "originalSourceCommit": "ae329681e4974ae3e47e3673d7930d701e52d35a",
+  "initialRebasedCommit": "bebeab5ac991de2b614c344a9a3e724ae2207cea",
+  "initial": {
+    "head": "bebeab5ac991de2b614c344a9a3e724ae2207cea",
+    "trackedNonDocFiles": 3972,
+    "committedSourceSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "workingSourceSha256": "ddf464e332d0b3503797744a96595a57dbe1bdd53bb3741b1e1523623a864284",
+    "originalTreeSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "identicalCommittedNonDocSource": true,
+    "changedSourceCount": 0,
+    "untrackedSourceCount": 0
+  },
+  "final": {
+    "head": "bebeab5ac991de2b614c344a9a3e724ae2207cea",
+    "trackedNonDocFiles": 3972,
+    "committedSourceSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "workingSourceSha256": "ddf464e332d0b3503797744a96595a57dbe1bdd53bb3741b1e1523623a864284",
+    "originalTreeSha256": "410928c13925eaf4918bfb18f9c3c13591f7dc205b12449b81cf3b306c72259e",
+    "identicalCommittedNonDocSource": true,
+    "changedSourceCount": 0,
+    "untrackedSourceCount": 0
+  },
+  "gates": [
+    {
+      "gate": "typecheck",
+      "passed": true,
+      "exitCode": 0,
+      "receiptPath": "C:/oto-lanes/proof-tools/s662-release-postrebase-typecheck-v2.json",
+      "receiptSha256": "fd922fb59ec194a52bcd1d6b0a26460ba9b59210999c00d23eae9ad3fa4ecce7",
+      "logSha256": "8ee386bf2d010cebb0765e5528efcd84fa04d038d66e0e5c337f89ae7a37c5f4"
+    },
+    {
+      "gate": "review",
+      "passed": true,
+      "exitCode": 0,
+      "receiptPath": "C:/oto-lanes/proof-tools/s662-release-postrebase-review-v2.json",
+      "receiptSha256": "f0545411ee9e81f6dceccaf3887de0ac1eed9a415bf861df9dfbbd8752a2a0f4",
+      "logSha256": "80d833c321a5f5f558bba79682b80a53ba62db61ed108919e37709b813fae9c3"
+    },
+    {
+      "gate": "lint",
+      "passed": true,
+      "exitCode": 0,
+      "receiptPath": "C:/oto-lanes/proof-tools/s662-release-postrebase-lint-v2.json",
+      "receiptSha256": "bfc9594e878277237950d96b7f21ffb7bd9b1ae299a36d66d96b5a55dce0a95c",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "gate": "contracts",
+      "passed": true,
+      "exitCode": 0,
+      "receiptPath": "C:/oto-lanes/proof-tools/s662-release-postrebase-contracts-v2.json",
+      "receiptSha256": "3fd0429cc536afc3ce6df4e1e74a6ba87e26994cd6ce1024232f2377d7d8b133",
+      "logSha256": "8169096bc7cea258c4670da3c24966f4dcfbd3fe53c0a4b6376a7d33f8bd2fa3"
+    }
+  ],
+  "sourceFiles": {
+    "apps/api/src/services/jobs.ts": "b257c24cbcd7f450deeaf3759238b2869d4dc78a0ae83e5f239267ad33049ab4",
+    "apps/api/test/watchdog-fallback-review.test.ts": "6c0d8f76b302ab4b50cb097df0d473bdfc7b460a2d3b4ae4115ca571178e4d3b"
+  },
+  "limits": [
+    "Post-rebase narrow gates only; old-base full shards and remote CI are separate evidence."
+  ]
+}

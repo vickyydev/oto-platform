@@ -1,0 +1,13 @@
+{
+    "ticket":  "SCRUM-662",
+    "checkedAt":  "2026-10-28T15:09:16.5894770Z",
+    "sourceLog":  "C:/oto-lanes/proof-tools/s662-release-postrebase-review-v2.log",
+    "observedPid":  5860,
+    "observedPort":  52647,
+    "matchingOwnPgRemains":  false,
+    "remainingObservedPortListeners":  [
+
+                                       ],
+    "cleanupPassed":  true,
+    "mutationsPerformed":  false
+}
