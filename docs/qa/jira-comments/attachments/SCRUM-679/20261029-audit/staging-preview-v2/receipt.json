@@ -1,0 +1,527 @@
+{
+  "ticket": "SCRUM-679",
+  "scope": "Print and Booth follow-up: allow only pure fixture-preview POSTs after route and service review; no saved template, print job, hardware or business change",
+  "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+  "ciRunId": "40716035735",
+  "startedAt": "2026-10-28T16:59:50.391Z",
+  "pages": [
+    {
+      "path": "/catalogue/print-templates",
+      "title": "Print templates",
+      "startedAt": "2026-10-28T16:59:55.527Z",
+      "reads": [
+        {
+          "method": "GET",
+          "path": "/api/me",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:57.045Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/me/permissions",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:57.551Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/me",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:58.292Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/operators",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:58.793Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/ready",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:58.804Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/ops/failures",
+          "queryKeys": [
+            "limit",
+            "windowHours"
+          ],
+          "status": 200,
+          "at": "2026-10-28T16:59:58.805Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/branches",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:59.135Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/branches",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:59.366Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/ops/health",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:59.367Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/branches/:id/print-templates",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:59.872Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/branches/:id/stations",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T16:59:59.883Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/print-templates/:id/preview.png",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:00.518Z",
+          "json": false
+        },
+        {
+          "method": "POST",
+          "path": "/api/print-templates/:id/preview.png",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:00.863Z",
+          "json": false
+        },
+        {
+          "method": "POST",
+          "path": "/api/print-templates/:id/preview.png",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:00.946Z",
+          "json": false
+        },
+        {
+          "method": "POST",
+          "path": "/api/print-templates/:id/preview.png",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:01.258Z",
+          "json": false
+        },
+        {
+          "method": "POST",
+          "path": "/api/print-templates/:id/preview.png",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:01.366Z",
+          "json": false
+        },
+        {
+          "method": "POST",
+          "path": "/api/print-templates/:id/preview.png",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:01.435Z",
+          "json": false
+        }
+      ],
+      "blocked": [],
+      "networkFailures": [],
+      "pageErrors": [],
+      "headings": [
+        "Print templates",
+        "Print templates"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "complete": true,
+      "documentStatus": 200,
+      "settled": true,
+      "finalPath": "/catalogue/print-templates",
+      "finishedAt": "2026-10-28T17:00:02.605Z"
+    },
+    {
+      "path": "/devices/booths",
+      "title": "Booths",
+      "startedAt": "2026-10-28T17:00:02.605Z",
+      "reads": [
+        {
+          "method": "GET",
+          "path": "/api/me",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:03.346Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/me/permissions",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:03.815Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/me",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:04.356Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/operators",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:04.831Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/branches",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:04.866Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/ready",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:04.884Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/booth-layouts",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:04.902Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/branches/:id/booths",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:04.972Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/ops/failures",
+          "queryKeys": [
+            "limit",
+            "windowHours"
+          ],
+          "status": 200,
+          "at": "2026-10-28T17:00:05.065Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/voucher-definitions",
+          "queryKeys": [
+            "includeArchived"
+          ],
+          "status": 200,
+          "at": "2026-10-28T17:00:05.349Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/ops/health",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:05.381Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/booths/:id/staff",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:05.477Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/booths/:id/versions",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:05.478Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/booths/:id/status",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:05.489Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/booths/:id/draft",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:05.497Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/booths/:id/screens",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:05.920Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/branches/:id/staff",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:06.062Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/booths/:id/spins",
+          "queryKeys": [
+            "limit",
+            "offset"
+          ],
+          "status": 200,
+          "at": "2026-10-28T17:00:06.063Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/branches/:id/staff",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:06.068Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/booths/:id/voucher-preview.png",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:06.469Z",
+          "json": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/booths/:id/duty",
+          "queryKeys": [],
+          "status": 200,
+          "at": "2026-10-28T17:00:06.525Z",
+          "json": true,
+          "shape": "object",
+          "requestIdPresent": true
+        }
+      ],
+      "blocked": [],
+      "networkFailures": [],
+      "pageErrors": [],
+      "headings": [
+        "Booth 2 (proof)",
+        "Booths",
+        "Set up this booth",
+        "The wheel",
+        "Publish",
+        "Booth staff",
+        "Spins",
+        "Version history",
+        "Screens",
+        "Today’s staff",
+        "Voucher slip",
+        "The box",
+        "Wheel preview",
+        "Booth settings"
+      ],
+      "alerts": [],
+      "stateText": [
+        "no spins yet today",
+        "This draft cannot be published yet — 1 thing to fix",
+        "Staff on this list can also sign in at the booth with their own phone and password, when their role allows it (booth:staff:sign_in): Platform admin, Operator admin, Branch manager, Reception, Staff. A role the park created itself allows it only if it carries that permission. Either way a sign-in lasts 10 hours — set under Booth settings — and does not end when nobody presses anything.",
+        "every wheel this booth has run — a version is frozen, so what the odds were on a given day cannot be changed by tonight’s publish",
+        "Slices with no colour of their own take the layout’s palette. This preview draws those in a placeholder ramp: the layout’s own colours live in its design document, which this page does not read yet."
+      ],
+      "complete": true,
+      "documentStatus": 200,
+      "settled": true,
+      "finalPath": "/devices/booths",
+      "finishedAt": "2026-10-28T17:00:07.687Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "SCRUM-679-01-catalogue-print-templates.png",
+      "page": "/catalogue/print-templates",
+      "capturedAt": "2026-10-28T17:00:02.523Z",
+      "sha256": "3f0e1d4761bd58794aecd84e790c9a86378e32b418f5c4ac58339f041ea32e1d",
+      "privacyApplied": true,
+      "partialViewport": true
+    },
+    {
+      "file": "SCRUM-679-02-devices-booths.png",
+      "page": "/devices/booths",
+      "capturedAt": "2026-10-28T17:00:07.593Z",
+      "sha256": "9a786206c01f37ffd724e3d4ca5b4ec3903e1bfc99c2766d826e4af9b085a720",
+      "privacyApplied": true,
+      "partialViewport": true
+    }
+  ],
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-28T16:59:53.626Z",
+      "deployments": [
+        {
+          "serviceName": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh1itp5efls73b84gmg",
+          "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+          "status": "live",
+          "finishedAt": "2026-10-28T15:52:27.177371Z"
+        },
+        {
+          "serviceName": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh1itp5efls73b84hog",
+          "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+          "status": "live",
+          "finishedAt": "2026-10-28T15:50:57.971675Z"
+        }
+      ],
+      "ciGreenJobs": 6
+    },
+    {
+      "stage": "after-pages",
+      "at": "2026-10-28T17:00:11.498Z",
+      "deployments": [
+        {
+          "serviceName": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh1itp5efls73b84gmg",
+          "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+          "status": "live",
+          "finishedAt": "2026-10-28T15:52:27.177371Z"
+        },
+        {
+          "serviceName": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh1itp5efls73b84hog",
+          "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+          "status": "live",
+          "finishedAt": "2026-10-28T15:50:57.971675Z"
+        }
+      ],
+      "ciGreenJobs": 6
+    }
+  ],
+  "cleanup": {
+    "cookieObserved": true,
+    "signOutStatus": 200,
+    "originalCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "authority": {
+    "platformAdmin": true,
+    "homeOperator": true,
+    "actorSha256": "3ec556d62ffc010aa821caa122bcd8d5865ebd7b064d0835c62de053b6484c41",
+    "at": "2026-10-28T16:59:55.527Z"
+  },
+  "sourceDiff": [],
+  "finishedAt": "2026-10-28T17:00:12.580Z",
+  "complete": true
+}

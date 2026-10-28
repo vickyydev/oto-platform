@@ -1,0 +1,10 @@
+{
+  "removedAt": "2026-10-28T17:07:06.153Z",
+  "path": "C:/oto-lanes/admin-audit-20261028/apps/console/e2e/admin-audit-ui-booths-ledger.spec.ts",
+  "sha256": "ad22ec4b7a347321d259236ca048bfc516a3ffbeb19890ffe9249513be3ff9dd",
+  "exactArchive": "C:/oto-lanes/admin-audit-evidence/ui/browser-probes-v3.spec.ts.txt",
+  "archiveBytesMatch": true,
+  "removed": true,
+  "productionSourceUnchanged": true,
+  "ownEmbeddedStopped": true
+}

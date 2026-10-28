@@ -1,0 +1,12 @@
+{
+  "files": [
+    {
+      "path": "20261029-audit/payments/cleanup-verification-v1.json",
+      "originalSourceSha256": "bb16dc14ef20ec5abe1127e1fbcc61c2557d6c67fb1818655b5b466a5b727528",
+      "committedSha256": "b9f147174e12f18ba56d79c45dc734ce7265d1cb826174de4661e75820b795c6",
+      "originalBytes": 859,
+      "committedBytes": 834,
+      "change": "CRLF normalized to LF; content unchanged; original external receipt retained"
+    }
+  ]
+}

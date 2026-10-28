@@ -1,0 +1,7 @@
+{
+  "checkedAt": "2026-10-28T16:56:57.7776337+00:00",
+  "remainingAuditPathProcesses": [],
+  "remainingCreatedDuringAudit": 0,
+  "noProcessStopped": true,
+  "limitation": "Later native servers in the shared audit worktree belong to the coordinator; left untouched."
+}

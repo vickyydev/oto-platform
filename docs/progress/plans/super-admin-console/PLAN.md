@@ -1,5 +1,7 @@
 # Super Admin Console — the build plan (approved)
 
+**29 October 2026 — post-delivery audit, proposed changes NOT YET APPROVED:** The owner requested a complete Console/page/API/message/payment-settings audit and a plan before any modifications. SCRUM-679 is Testing; [the completed audit and concrete repair plan](../../../qa/admin-console-audit-2026-10-29.md) records native staging coverage, retained passing controls, confirmed failures, source-only candidates and capability limits. Proposed SCRUM-680 through 683 remain To Do until that approval. This adds no implementation authority to the approved story below, changes no owner ruling and does not revive descoped649 or Q27Stage2. Root audit lane is C:/oto-lanes/admin-audit-20261028; planner Inbox sources remain separate.
+
 Approved by the owner on 2026-10-21 ("I approve the console plan"), with every decision in `PROPOSAL.md` §11 taken as recommended. This file is the plan the builder follows; `PROPOSAL.md` is the reasoning behind it; the three `inventory-*.md` files are the evidence. The owner's words on any conflict: `docs/briefs/OWNER_DIRECTION.md`, then `docs/progress/STATUS.md`.
 
 Builder: the Codex agent (phases P1–P4). The coding agent that wrote this plan owns P0 and keeps the QA lane. Jira: the epic's stories and subtasks are listed in §9 with their keys once created (the key list is appended by the planner after creation).

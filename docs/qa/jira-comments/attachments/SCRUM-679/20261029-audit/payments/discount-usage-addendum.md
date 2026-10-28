@@ -1,0 +1,3 @@
+# Discount usage wording addendum
+
+This supersedes the earlier payment report only where it repeats the current tab-only usage banner. Source review confirms that GET /menu/discounts (routes/menu.ts:779-788) counts distinct persisted finalised sales, scoped to the operator/code/kind and since the definition creation. The lifted mapper preserves usedCount; Console displays it. Usage is cumulative across the operator, distinct from date/park-filtered report value. The banner saying tab-only/report not built is stale. Manual discount reasons remain separately tab-local. No extra test or staging mutation ran for this source-established correction. Proposed text repair is in SCRUM-682 and awaits plan approval.

@@ -1,0 +1,333 @@
+{
+  "sourceSha": "5da2fe226a3fec8f4d9c725deba9428d040275b0",
+  "sourceManifestSha256": "42a75f3f8cc1807cc8f07cb9d3d577ed3f5ad0812ea60ce59e74924f6b6b4e10",
+  "existing": {
+    "wholeFiles": 47,
+    "passed": 675,
+    "failed": 0
+  },
+  "temporary": {
+    "wholeFiles": 1,
+    "tests": 9,
+    "passed": 8,
+    "failed": 1
+  },
+  "allFiles": [
+    {
+      "file": "test/ops-api.test.ts",
+      "tests": 34,
+      "failed": 0,
+      "passed": 34
+    },
+    {
+      "file": "test/route-write-conformance.test.ts",
+      "tests": 26,
+      "failed": 0,
+      "passed": 26
+    },
+    {
+      "file": "test/routes-guarded.test.ts",
+      "tests": 26,
+      "failed": 0,
+      "passed": 26
+    },
+    {
+      "file": "test/id-conformance.test.ts",
+      "tests": 26,
+      "failed": 0,
+      "passed": 26
+    },
+    {
+      "file": "test/support-tools.test.ts",
+      "tests": 17,
+      "failed": 0,
+      "passed": 17
+    },
+    {
+      "file": "test/suite-controls-integration.test.ts",
+      "tests": 13,
+      "failed": 0,
+      "passed": 13
+    },
+    {
+      "file": "test/ops-jobs.test.ts",
+      "tests": 24,
+      "failed": 0,
+      "passed": 24
+    },
+    {
+      "file": "test/app-identities.test.ts",
+      "tests": 22,
+      "failed": 0,
+      "passed": 22
+    },
+    {
+      "file": "test/route-scope-target.test.ts",
+      "tests": 24,
+      "failed": 0,
+      "passed": 24
+    },
+    {
+      "file": "test/console-branch-scope.test.ts",
+      "tests": 27,
+      "failed": 0,
+      "passed": 27
+    },
+    {
+      "file": "test/assistant-settings-review.test.ts",
+      "tests": 49,
+      "failed": 0,
+      "passed": 49
+    },
+    {
+      "file": "test/suite-control-approvals-review.test.ts",
+      "tests": 15,
+      "failed": 0,
+      "passed": 15
+    },
+    {
+      "file": "test/console-drift-review.test.ts",
+      "tests": 13,
+      "failed": 0,
+      "passed": 13
+    },
+    {
+      "file": "test/platform-review.test.ts",
+      "tests": 18,
+      "failed": 0,
+      "passed": 18
+    },
+    {
+      "file": "test/operator-switch-idempotency-review.test.ts",
+      "tests": 21,
+      "failed": 0,
+      "passed": 21
+    },
+    {
+      "file": "test/branch-scoping.test.ts",
+      "tests": 17,
+      "failed": 0,
+      "passed": 17
+    },
+    {
+      "file": "test/console-otoapp.test.ts",
+      "tests": 34,
+      "failed": 0,
+      "passed": 34
+    },
+    {
+      "file": "test/s616-access-review-review.test.ts",
+      "tests": 8,
+      "failed": 0,
+      "passed": 8
+    },
+    {
+      "file": "test/console-analytics-sources-review.test.ts",
+      "tests": 15,
+      "failed": 0,
+      "passed": 15
+    },
+    {
+      "file": "test/console-analytics-review.test.ts",
+      "tests": 17,
+      "failed": 0,
+      "passed": 17
+    },
+    {
+      "file": "test/s613-app-access-review.test.ts",
+      "tests": 6,
+      "failed": 0,
+      "passed": 6
+    },
+    {
+      "file": "test/access-review.test.ts",
+      "tests": 6,
+      "failed": 0,
+      "passed": 6
+    },
+    {
+      "file": "test/s614-employees-review.test.ts",
+      "tests": 8,
+      "failed": 0,
+      "passed": 8
+    },
+    {
+      "file": "test/roles-console.test.ts",
+      "tests": 10,
+      "failed": 0,
+      "passed": 10
+    },
+    {
+      "file": "test/console-staff.test.ts",
+      "tests": 25,
+      "failed": 0,
+      "passed": 25
+    },
+    {
+      "file": "test/s644-audit-filters-export.test.ts",
+      "tests": 15,
+      "failed": 0,
+      "passed": 15
+    },
+    {
+      "file": "test/operator-switch-route-review.test.ts",
+      "tests": 26,
+      "failed": 0,
+      "passed": 26
+    },
+    {
+      "file": "test/health-read-availability-review.test.ts",
+      "tests": 9,
+      "failed": 0,
+      "passed": 9
+    },
+    {
+      "file": "test/health-integrations-response-review.test.ts",
+      "tests": 8,
+      "failed": 0,
+      "passed": 8
+    },
+    {
+      "file": "test/telemetry.test.ts",
+      "tests": 10,
+      "failed": 0,
+      "passed": 10
+    },
+    {
+      "file": "test/console-configuration-entries.test.ts",
+      "tests": 7,
+      "failed": 0,
+      "passed": 7
+    },
+    {
+      "file": "test/watchdog-fallback-review.test.ts",
+      "tests": 6,
+      "failed": 0,
+      "passed": 6
+    },
+    {
+      "file": "test/s615-departments-review.test.ts",
+      "tests": 8,
+      "failed": 0,
+      "passed": 8
+    },
+    {
+      "file": "test/accounts-operators-tx.test.ts",
+      "tests": 8,
+      "failed": 0,
+      "passed": 8
+    },
+    {
+      "file": "test/departments.test.ts",
+      "tests": 7,
+      "failed": 0,
+      "passed": 7
+    },
+    {
+      "file": "test/access-restore.test.ts",
+      "tests": 10,
+      "failed": 0,
+      "passed": 10
+    },
+    {
+      "file": "test/suite-controls-review.test.ts",
+      "tests": 9,
+      "failed": 0,
+      "passed": 9
+    },
+    {
+      "file": "test/audit-read.test.ts",
+      "tests": 9,
+      "failed": 0,
+      "passed": 9
+    },
+    {
+      "file": "test/employees.test.ts",
+      "tests": 5,
+      "failed": 0,
+      "passed": 5
+    },
+    {
+      "file": "test/accounts-console.test.ts",
+      "tests": 3,
+      "failed": 0,
+      "passed": 3
+    },
+    {
+      "file": "test/audit-response-review.test.ts",
+      "tests": 4,
+      "failed": 0,
+      "passed": 4
+    },
+    {
+      "file": "test/s612-roles-review.test.ts",
+      "tests": 4,
+      "failed": 0,
+      "passed": 4
+    },
+    {
+      "file": "test/rate-limit-public.test.ts",
+      "tests": 2,
+      "failed": 0,
+      "passed": 2
+    },
+    {
+      "file": "test/s634-staff-summary-review.test.ts",
+      "tests": 8,
+      "failed": 0,
+      "passed": 8
+    },
+    {
+      "file": "test/admin-audit-contract-errors.test.ts",
+      "tests": 9,
+      "failed": 1,
+      "passed": 8
+    },
+    {
+      "file": "test/console-configuration-review.test.ts",
+      "tests": 7,
+      "failed": 0,
+      "passed": 7
+    },
+    {
+      "file": "test/s611-accounts-review.test.ts",
+      "tests": 3,
+      "failed": 0,
+      "passed": 3
+    },
+    {
+      "file": "test/health-evidence.test.ts",
+      "tests": 6,
+      "failed": 0,
+      "passed": 6
+    }
+  ],
+  "guards": [
+    {
+      "file": "test/route-write-conformance.test.ts",
+      "tests": 26,
+      "failed": 0,
+      "passed": 26
+    },
+    {
+      "file": "test/routes-guarded.test.ts",
+      "tests": 26,
+      "failed": 0,
+      "passed": 26
+    },
+    {
+      "file": "test/id-conformance.test.ts",
+      "tests": 26,
+      "failed": 0,
+      "passed": 26
+    },
+    {
+      "file": "test/route-scope-target.test.ts",
+      "tests": 24,
+      "failed": 0,
+      "passed": 24
+    }
+  ],
+  "wholeOutputRead": true,
+  "fullApiBattery": false
+}

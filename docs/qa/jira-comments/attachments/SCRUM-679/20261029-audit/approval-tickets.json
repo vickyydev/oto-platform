@@ -1,0 +1,31 @@
+{
+  "parent": "SCRUM-679",
+  "createdAt": "2026-10-28T17:09:43.870Z",
+  "approvalReceived": false,
+  "proposals": [
+    {
+      "slot": "A1",
+      "key": "SCRUM-680",
+      "summary": "Check tax-override ownership and give useful reference refusals",
+      "status": "To Do"
+    },
+    {
+      "slot": "A2",
+      "key": "SCRUM-681",
+      "summary": "Keep Console data, empty states and page ranges tied to the current selection",
+      "status": "To Do"
+    },
+    {
+      "slot": "B",
+      "key": "SCRUM-682",
+      "summary": "Make Console refusals actionable and validate legacy operations replies",
+      "status": "To Do"
+    },
+    {
+      "slot": "C",
+      "key": "SCRUM-683",
+      "summary": "Make existing payment settings and long Console lists easier to find",
+      "status": "To Do"
+    }
+  ]
+}

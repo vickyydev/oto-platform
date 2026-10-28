@@ -1,0 +1,1099 @@
+{
+  "sourceBasis": "Fresh audit worktree at root-provided5da2fe22; no implementation changes",
+  "canonicalCount": 66,
+  "pages": [
+    {
+      "path": "/reports/analytics",
+      "title": "Analytics & sources",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "analytics",
+      "permission": "console:analytics:read",
+      "platformWide": false,
+      "component": "<AnalyticsSources />",
+      "source": "apps/console/src/pages/AnalyticsSources.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 153,
+      "aliases": [
+        "/analytics"
+      ]
+    },
+    {
+      "path": "/organisation/configuration",
+      "title": "Configuration",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "config",
+      "permission": "console:config:read",
+      "platformWide": false,
+      "component": "<Configuration />",
+      "source": "apps/console/src/pages/Configuration.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 154,
+      "aliases": [
+        "/config"
+      ]
+    },
+    {
+      "path": "/organisation/apps",
+      "title": "Apps",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "apps",
+      "permission": "console:app_registry:read",
+      "platformWide": false,
+      "component": "<SuiteControls page=\"apps\" />",
+      "source": "apps/console/src/pages/SuiteControls.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 155,
+      "aliases": [
+        "/apps"
+      ]
+    },
+    {
+      "path": "/watch/releases",
+      "title": "Releases",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "releases",
+      "permission": "console:release:read",
+      "platformWide": false,
+      "component": "<SuiteControls page=\"releases\" />",
+      "source": "apps/console/src/pages/SuiteControls.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 156,
+      "aliases": [
+        "/releases"
+      ]
+    },
+    {
+      "path": "/watch/support",
+      "title": "Support",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "support",
+      "permission": "console:support:lookup",
+      "platformWide": false,
+      "component": "<Support />",
+      "source": "apps/console/src/pages/Support.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 202,
+      "aliases": [
+        "/support"
+      ]
+    },
+    {
+      "path": "/catalogue/inventory",
+      "title": "Inventory",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "inventory",
+      "permission": null,
+      "platformWide": false,
+      "component": "<Operations page=\"inventory\" />",
+      "source": "apps/console/src/pages/Operations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 163,
+      "aliases": [
+        "/inventory"
+      ]
+    },
+    {
+      "path": "/catalogue/members",
+      "title": "Members",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "members",
+      "permission": "pos:member:update",
+      "platformWide": false,
+      "component": "<Operations page=\"members\" />",
+      "source": "apps/console/src/pages/Operations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 164,
+      "aliases": [
+        "/members"
+      ]
+    },
+    {
+      "path": "/catalogue/tier-verifications",
+      "title": "Tier verifications",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tier-verifications",
+      "permission": "pos:member:read",
+      "platformWide": false,
+      "component": "<Operations page=\"tier-verifications\" />",
+      "source": "apps/console/src/pages/Operations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 165,
+      "aliases": [
+        "/tier-verifications"
+      ]
+    },
+    {
+      "path": "/reports/wallets",
+      "title": "Wallets",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "wallets",
+      "permission": "pos:wallet:read",
+      "platformWide": false,
+      "component": "<Operations page=\"wallets\" />",
+      "source": "apps/console/src/pages/Operations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 166,
+      "aliases": [
+        "/wallets"
+      ]
+    },
+    {
+      "path": "/channels/teams-routing",
+      "title": "Teams & routing",
+      "section": "Channels & assistant",
+      "sectionId": "channels",
+      "kind": "internal",
+      "pageId": "teams-routing",
+      "permission": "inbox:routing:manage",
+      "platformWide": false,
+      "component": "<TeamsRouting />",
+      "source": "apps/console/src/pages/TeamsRouting.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 167,
+      "aliases": [
+        "/teams-routing"
+      ]
+    },
+    {
+      "path": "/channels/assistant-settings",
+      "title": "Assistant settings",
+      "section": "Channels & assistant",
+      "sectionId": "channels",
+      "kind": "internal",
+      "pageId": "assistant-settings",
+      "permission": "inbox:ai:manage",
+      "platformWide": false,
+      "component": "<AssistantSettings />",
+      "source": "apps/console/src/pages/AssistantSettings.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 168,
+      "aliases": [
+        "/assistant-settings"
+      ]
+    },
+    {
+      "path": "/reports/sales",
+      "title": "Sales",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-sales",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"sales\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 169,
+      "aliases": [
+        "/reports-sales"
+      ]
+    },
+    {
+      "path": "/reports/profitability",
+      "title": "Profitability",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-profitability",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"profitability\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 170,
+      "aliases": [
+        "/reports-profitability"
+      ]
+    },
+    {
+      "path": "/reports/discounts",
+      "title": "Discounts & comps",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-discounts",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"discounts\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 171,
+      "aliases": [
+        "/reports-discounts"
+      ]
+    },
+    {
+      "path": "/reports/tax-vat",
+      "title": "Tax & VAT",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-tax-vat",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"tax-vat\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 172,
+      "aliases": [
+        "/reports-tax-vat"
+      ]
+    },
+    {
+      "path": "/reports/wallet-promo",
+      "title": "Wallet & promo",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-wallet-promo",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"wallet-promo\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 173,
+      "aliases": [
+        "/reports-wallet-promo"
+      ]
+    },
+    {
+      "path": "/reports/money",
+      "title": "Money oversight",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "money",
+      "permission": "console:money:read",
+      "platformWide": false,
+      "component": "<MoneyOversight />",
+      "source": "apps/console/src/pages/MoneyOversight.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 177,
+      "aliases": [
+        "/money"
+      ]
+    },
+    {
+      "path": "/catalogue/care",
+      "title": "Drop-off & supervision",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "care",
+      "permission": "pos:checkin:read",
+      "platformWide": false,
+      "component": "<Care page=\"care\" />",
+      "source": "apps/console/src/pages/Care.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 174,
+      "aliases": [
+        "/care"
+      ]
+    },
+    {
+      "path": "/catalogue/print-templates",
+      "title": "Print templates",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "print-templates",
+      "permission": "pos:print:read",
+      "platformWide": false,
+      "component": "<Care page=\"print-templates\" />",
+      "source": "apps/console/src/pages/Care.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 175,
+      "aliases": [
+        "/print-templates"
+      ]
+    },
+    {
+      "path": "/catalogue/staff-benefits",
+      "title": "Staff benefits",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "staff-benefits",
+      "permission": "admin:benefit:read",
+      "platformWide": false,
+      "component": "<StaffBenefits />",
+      "source": "apps/console/src/pages/StaffBenefits.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 176,
+      "aliases": [
+        "/staff-benefits"
+      ]
+    },
+    {
+      "path": "/catalogue/discounts",
+      "title": "Discounts",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "discounts",
+      "permission": "catalog:menu:manage",
+      "platformWide": false,
+      "component": "<Money page=\"discounts\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 178,
+      "aliases": [
+        "/discounts"
+      ]
+    },
+    {
+      "path": "/catalogue/tenders",
+      "title": "Tenders",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tenders",
+      "permission": "catalog:menu:manage",
+      "platformWide": false,
+      "component": "<Money page=\"tenders\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 179,
+      "aliases": [
+        "/tenders"
+      ]
+    },
+    {
+      "path": "/catalogue/tax",
+      "title": "Tax",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tax",
+      "permission": "catalog:tax:manage",
+      "platformWide": false,
+      "component": "<Money page=\"tax\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 180,
+      "aliases": [
+        "/tax"
+      ]
+    },
+    {
+      "path": "/catalogue/voucher-campaigns",
+      "title": "Voucher campaigns",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "voucher-campaigns",
+      "permission": "admin:booth:read",
+      "platformWide": false,
+      "component": "<Money page=\"voucher-campaigns\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 181,
+      "aliases": [
+        "/voucher-campaigns"
+      ]
+    },
+    {
+      "path": "/catalogue/event-pricing",
+      "title": "Event pricing",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "event-pricing",
+      "permission": "admin:event_pricing:manage",
+      "platformWide": false,
+      "component": "<Money page=\"event-pricing\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 182,
+      "aliases": [
+        "/event-pricing"
+      ]
+    },
+    {
+      "path": "/catalogue/menu",
+      "title": "Menu",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "menu",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<MenuCatalogue page=\"menu\" />",
+      "source": "apps/console/src/pages/MenuCatalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 183,
+      "aliases": [
+        "/menu"
+      ]
+    },
+    {
+      "path": "/catalogue/categories",
+      "title": "Categories",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "categories",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<MenuCatalogue page=\"categories\" />",
+      "source": "apps/console/src/pages/MenuCatalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 184,
+      "aliases": [
+        "/categories"
+      ]
+    },
+    {
+      "path": "/catalogue/modifiers",
+      "title": "Modifiers",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "modifiers",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<MenuCatalogue page=\"modifiers\" />",
+      "source": "apps/console/src/pages/MenuCatalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 185,
+      "aliases": [
+        "/modifiers"
+      ]
+    },
+    {
+      "path": "/catalogue/merch",
+      "title": "Merch",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "merch",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<MenuCatalogue page=\"merch\" />",
+      "source": "apps/console/src/pages/MenuCatalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 186,
+      "aliases": [
+        "/merch"
+      ]
+    },
+    {
+      "path": "/catalogue/tickets",
+      "title": "Tickets",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tickets",
+      "permission": "catalog:package:read",
+      "platformWide": false,
+      "component": "<Catalogue page=\"tickets\" />",
+      "source": "apps/console/src/pages/Catalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 187,
+      "aliases": [
+        "/tickets"
+      ]
+    },
+    {
+      "path": "/catalogue/tiers",
+      "title": "Tiers",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tiers",
+      "permission": "catalog:package:read",
+      "platformWide": false,
+      "component": "<Catalogue page=\"tiers\" />",
+      "source": "apps/console/src/pages/Catalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 188,
+      "aliases": [
+        "/tiers"
+      ]
+    },
+    {
+      "path": "/catalogue/add-ons",
+      "title": "Add-ons",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "add-ons",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<Catalogue page=\"add-ons\" />",
+      "source": "apps/console/src/pages/Catalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 189,
+      "aliases": [
+        "/add-ons"
+      ]
+    },
+    {
+      "path": "/organisation/operators",
+      "title": "Operators",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "operators",
+      "permission": "admin:operator:read",
+      "platformWide": true,
+      "component": "<Operators />",
+      "source": "apps/console/src/pages/Operators.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 190,
+      "aliases": [
+        "/operators"
+      ]
+    },
+    {
+      "path": "/platform/operators",
+      "title": "Operators",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-operators",
+      "permission": "admin:operator:read",
+      "platformWide": true,
+      "component": "<Operators sectionId=\"platform-operators\" />",
+      "source": "apps/console/src/pages/Operators.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 157,
+      "aliases": [
+        "/platform-operators"
+      ]
+    },
+    {
+      "path": "/platform/system-roles",
+      "title": "System roles",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "system-roles",
+      "permission": "admin:role:read",
+      "platformWide": true,
+      "component": "<Platform page=\"system-roles\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 158,
+      "aliases": [
+        "/system-roles"
+      ]
+    },
+    {
+      "path": "/platform/alerts",
+      "title": "Platform alerts",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-alerts",
+      "permission": "admin:health:read",
+      "platformWide": true,
+      "component": "<Platform page=\"platform-alerts\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 159,
+      "aliases": [
+        "/platform-alerts"
+      ]
+    },
+    {
+      "path": "/platform/jobs",
+      "title": "Platform jobs",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-jobs",
+      "permission": "admin:health:read",
+      "platformWide": true,
+      "component": "<Platform page=\"platform-jobs\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 160,
+      "aliases": [
+        "/platform-jobs"
+      ]
+    },
+    {
+      "path": "/platform/environment",
+      "title": "Environment",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-environment",
+      "permission": "admin:health:read",
+      "platformWide": true,
+      "component": "<Platform page=\"platform-environment\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 161,
+      "aliases": [
+        "/platform-environment"
+      ]
+    },
+    {
+      "path": "/platform/test-controls",
+      "title": "Test controls",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-test-controls",
+      "permission": "admin:ops:manage",
+      "platformWide": true,
+      "component": "<Platform page=\"platform-test-controls\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 162,
+      "aliases": [
+        "/platform-test-controls"
+      ]
+    },
+    {
+      "path": "/organisation/holidays",
+      "title": "Holidays",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "holidays",
+      "permission": "catalog:holiday:manage",
+      "platformWide": false,
+      "component": "<Holidays />",
+      "source": "apps/console/src/pages/Holidays.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 191,
+      "aliases": [
+        "/holidays"
+      ]
+    },
+    {
+      "path": "/people/access-review",
+      "title": "Access review",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "access-review",
+      "permission": "admin:role:read",
+      "platformWide": false,
+      "component": "<AccessReview />",
+      "source": "apps/console/src/pages/AccessReview.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 197,
+      "aliases": [
+        "/access-review"
+      ]
+    },
+    {
+      "path": "/people/departments",
+      "title": "Departments",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "departments",
+      "permission": "admin:account:read",
+      "platformWide": false,
+      "component": "<Departments />",
+      "source": "apps/console/src/pages/Departments.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 196,
+      "aliases": [
+        "/departments"
+      ]
+    },
+    {
+      "path": "/people/employees",
+      "title": "Employees",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "employees",
+      "permission": "admin:account:read",
+      "platformWide": false,
+      "component": "<Employees />",
+      "source": "apps/console/src/pages/Employees.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 195,
+      "aliases": [
+        "/employees"
+      ]
+    },
+    {
+      "path": "/people/app-access",
+      "title": "App access",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "app-access",
+      "permission": "admin:account:read",
+      "platformWide": false,
+      "component": "<AppAccess />",
+      "source": "apps/console/src/pages/AppAccess.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 194,
+      "aliases": [
+        "/app-access"
+      ]
+    },
+    {
+      "path": "/people/roles",
+      "title": "Roles & scopes",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "roles",
+      "permission": "admin:role:read",
+      "platformWide": false,
+      "component": "<Roles />",
+      "source": "apps/console/src/pages/Roles.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 193,
+      "aliases": [
+        "/roles"
+      ]
+    },
+    {
+      "path": "/people/accounts",
+      "title": "Accounts",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "accounts",
+      "permission": "admin:account:read",
+      "platformWide": false,
+      "component": "<Accounts />",
+      "source": "apps/console/src/pages/Accounts.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 192,
+      "aliases": [
+        "/accounts"
+      ]
+    },
+    {
+      "path": "/watch/health",
+      "title": "Health",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "health",
+      "permission": "admin:health:read",
+      "platformWide": false,
+      "component": "<Health />",
+      "source": "apps/console/src/pages/Health.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 198,
+      "aliases": [
+        "/health"
+      ]
+    },
+    {
+      "path": "/watch/failures",
+      "title": "Failures",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "failures",
+      "permission": "admin:health:read",
+      "platformWide": false,
+      "component": "<Failures />",
+      "source": "apps/console/src/pages/Failures.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 198,
+      "aliases": [
+        "/failures"
+      ]
+    },
+    {
+      "path": "/watch/activity",
+      "title": "Activity",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "activity",
+      "permission": "admin:audit:read",
+      "platformWide": false,
+      "component": "<Activity />",
+      "source": "apps/console/src/pages/Activity.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 198,
+      "aliases": [
+        "/activity"
+      ]
+    },
+    {
+      "path": "/devices/booths",
+      "title": "Booths",
+      "section": "Devices & places",
+      "sectionId": "devices",
+      "kind": "internal",
+      "pageId": "booths",
+      "permission": "admin:booth:read",
+      "platformWide": false,
+      "component": "<Booths />",
+      "source": "apps/console/src/pages/Booths.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 200,
+      "aliases": [
+        "/booths"
+      ]
+    },
+    {
+      "path": "/reports/booths",
+      "title": "Booth report",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "booth-report",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<BoothReport />",
+      "source": "apps/console/src/pages/BoothReport.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 200,
+      "aliases": [
+        "/booth-report"
+      ]
+    },
+    {
+      "path": "/devices",
+      "title": "Devices",
+      "section": "Devices & places",
+      "sectionId": "devices",
+      "kind": "internal",
+      "pageId": "devices",
+      "permission": "admin:station:read",
+      "platformWide": false,
+      "component": "<Devices />",
+      "source": "apps/console/src/pages/Devices.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 199,
+      "aliases": []
+    },
+    {
+      "path": "/organisation/branches",
+      "title": "Branches",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "branches",
+      "permission": "admin:branch:read",
+      "platformWide": false,
+      "component": "<Branches />",
+      "source": "apps/console/src/pages/Branches.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 199,
+      "aliases": [
+        "/branches"
+      ]
+    },
+    {
+      "path": "/reports/bookings",
+      "title": "Bookings",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "bookings",
+      "permission": "pos:booking:read",
+      "platformWide": false,
+      "component": "<Bookings />",
+      "source": "apps/console/src/pages/Bookings.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 199,
+      "aliases": [
+        "/bookings"
+      ]
+    },
+    {
+      "path": "/catalogue/vouchers",
+      "title": "Vouchers",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "vouchers",
+      "permission": "admin:booth:read",
+      "platformWide": false,
+      "component": "<Vouchers />",
+      "source": "apps/console/src/pages/Vouchers.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 200,
+      "aliases": [
+        "/vouchers"
+      ]
+    },
+    {
+      "path": "/catalogue/voucher-types",
+      "title": "Voucher types",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "voucher-types",
+      "permission": "admin:booth:read",
+      "platformWide": false,
+      "component": "<VoucherTypes />",
+      "source": "apps/console/src/pages/VoucherTypes.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 201,
+      "aliases": [
+        "/voucher-types"
+      ]
+    },
+    {
+      "path": "/watch/integrations",
+      "title": "Integrations",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "integrations",
+      "permission": "admin:health:read",
+      "platformWide": false,
+      "component": "<Integrations />",
+      "source": "apps/console/src/pages/Integrations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 201,
+      "aliases": [
+        "/integrations"
+      ]
+    },
+    {
+      "path": "/overview",
+      "title": "Overview",
+      "section": "Overview",
+      "sectionId": "overview",
+      "kind": "internal",
+      "pageId": "overview",
+      "permission": "{ any: ['console:overview:read'] }",
+      "component": "overview native area host",
+      "aliases": []
+    },
+    {
+      "path": "/people",
+      "title": "People & access",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "people",
+      "permission": "{ any: ['admin:account:read'] }",
+      "component": "AreaLanding",
+      "aliases": []
+    },
+    {
+      "path": "/organisation",
+      "title": "Organisation",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "organisation",
+      "permission": "{ any: ['admin:branch:read', 'console:config:read', 'console:app_registry:read'] }",
+      "component": "AreaLanding",
+      "aliases": []
+    },
+    {
+      "path": "/catalogue",
+      "title": "Catalogue & money",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "catalogue",
+      "permission": "{ any: ['catalog:package:read', 'catalog:menu:read'] }",
+      "component": "AreaLanding",
+      "aliases": []
+    },
+    {
+      "path": "/channels",
+      "title": "Channels & assistant",
+      "section": "Channels & assistant",
+      "sectionId": "channels",
+      "kind": "internal",
+      "pageId": "channels",
+      "permission": "{ any: ['inbox:channel:manage', 'inbox:kb:manage', 'inbox:ai:manage'] }",
+      "component": "channels native area host",
+      "aliases": []
+    },
+    {
+      "path": "/staff",
+      "title": "Staff & HR",
+      "section": "Staff & HR",
+      "sectionId": "staff",
+      "kind": "internal",
+      "pageId": "staff",
+      "permission": "{ all: ['app:oto_app:access', 'admin:account:read'] }",
+      "component": "staff native area host",
+      "aliases": []
+    },
+    {
+      "path": "/reports",
+      "title": "Reports",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports",
+      "permission": "{ any: ['analytics:read', 'console:money:read'] }",
+      "component": "reports native area host",
+      "aliases": []
+    },
+    {
+      "path": "/watch",
+      "title": "Watch",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "watch",
+      "permission": "{ any: ['admin:health:read', 'admin:audit:read', 'console:release:read', 'console:support:lookup'] }",
+      "component": "AreaLanding",
+      "aliases": []
+    },
+    {
+      "path": "/platform",
+      "title": "Platform",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform",
+      "permission": "{ platformWide: true }",
+      "component": "AreaLanding",
+      "aliases": []
+    }
+  ],
+  "excludedFromNativeWalk": [
+    {
+      "kind": "external",
+      "label": "Inbox Numbers/Templates/Knowledge base/Examples",
+      "reason": "Existing acting-user app doors; not Console pages"
+    },
+    {
+      "kind": "external",
+      "label": "OTO App staff and HR pages",
+      "reason": "Existing acting-user deep links"
+    },
+    {
+      "kind": "external",
+      "label": "Radar",
+      "reason": "Existing deep-analysis acting-user handoff tile"
+    },
+    {
+      "kind": "legacy-alias",
+      "label": "Old Console aliases",
+      "reason": "Retained in aliases; avoid repeated staging reads"
+    },
+    {
+      "kind": "legacy-redirect",
+      "label": "POS /admin",
+      "reason": "One-release same-person redirect; not repeated in native read-only walk"
+    }
+  ]
+}

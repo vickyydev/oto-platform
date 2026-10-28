@@ -1,0 +1,138 @@
+{
+  "scope": "Synthetic local Fastify injection; no staging or providers",
+  "observed": [
+    {
+      "label": "anonymous accounts",
+      "status": 401,
+      "body": {
+        "error": {
+          "code": "UNAUTHORIZED",
+          "message": "Not signed in"
+        }
+      },
+      "requestId": "ZZ-AUDIT-401",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "reception support refusal",
+      "status": 403,
+      "body": {
+        "error": {
+          "code": "FORBIDDEN",
+          "message": "Missing permission console:support:impersonate"
+        }
+      },
+      "requestId": "ZZ-AUDIT-403",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "invalid support query",
+      "status": 400,
+      "body": {
+        "error": {
+          "code": "VALIDATION",
+          "message": "Request does not match the schema",
+          "details": [
+            {
+              "keyword": "too_small",
+              "instancePath": "/q",
+              "schemaPath": "#/q/too_small",
+              "params": {
+                "issue": {
+                  "code": "too_small",
+                  "minimum": 1,
+                  "type": "string",
+                  "inclusive": true,
+                  "exact": false,
+                  "message": "String must contain at least 1 character(s)",
+                  "path": [
+                    "q"
+                  ]
+                }
+              },
+              "message": "String must contain at least 1 character(s)"
+            }
+          ]
+        }
+      },
+      "requestId": "ZZ-AUDIT-400",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "unavailable endpoint",
+      "status": 404,
+      "body": {
+        "message": "Route GET:/__admin_audit/not-built not found",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "requestId": "ZZ-AUDIT-404",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "known conflict envelope",
+      "status": 409,
+      "body": {
+        "error": {
+          "code": "ZZ_TEST_CONFLICT",
+          "message": "ZZ TEST a fresh read is required.",
+          "details": {
+            "reason": "ZZ_TEST_STALE"
+          }
+        }
+      },
+      "requestId": "ZZ-AUDIT-409",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "native rate refusal",
+      "status": 429,
+      "body": {
+        "error": {
+          "code": "TOO_MANY_REQUESTS",
+          "message": "Too many requests. Try again in 60s.",
+          "details": {
+            "retryAfterSeconds": 60
+          }
+        }
+      },
+      "requestId": "ZZ-AUDIT-429",
+      "retryAfter": "60",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "failure",
+      "status": 500,
+      "body": {
+        "error": {
+          "code": "INTERNAL",
+          "message": "Internal server error"
+        }
+      },
+      "requestId": "ZZ-AUDIT-500",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "invalid-output",
+      "status": 500,
+      "body": {
+        "error": {
+          "code": "INTERNAL",
+          "message": "Internal server error"
+        }
+      },
+      "requestId": "ZZ-AUDIT-500",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "undeclared output",
+      "status": 200,
+      "body": {
+        "ok": true
+      },
+      "requestId": "632276b6-557c-4cc0-a9fb-bf8b64cf857a",
+      "contentType": "application/json; charset=utf-8"
+    }
+  ],
+  "cleanupCompleted": true
+}

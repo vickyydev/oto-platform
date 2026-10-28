@@ -1,0 +1,16 @@
+{
+  "ticket": "SCRUM-679",
+  "kind": "audit baseline plus temporary regression probes; failures are findings, not fixed",
+  "startedAt": "2026-10-28T16:47:26.544Z",
+  "finishedAt": "2026-10-28T16:51:23.261Z",
+  "nativeExitCode": 0,
+  "failed": 3,
+  "passed": 327,
+  "trackedNonDocIndexBefore": "dcd3d22ce9f54618b9d9cf432a3b40233640bec4723d94f58db853ee8ade915d",
+  "trackedNonDocIndexAfter": "dcd3d22ce9f54618b9d9cf432a3b40233640bec4723d94f58db853ee8ade915d",
+  "sourceIndexUnchanged": true,
+  "embeddedStopped": true,
+  "logSha256": "383d88a583a8e3753ee78064b87caa886a5033daecf70bdb0b52fc1dee397ab2",
+  "staging": false,
+  "docker": false
+}

@@ -1,0 +1,1649 @@
+{
+  "ticket": "SCRUM-679",
+  "recordedAt": "2026-10-28T17:12:36.532Z",
+  "auditCompleted": true,
+  "approvalReceived": false,
+  "productChanged": false,
+  "sourceSha": "adce7c4feac9f9989056e34ec42bc86f5c3da5a2",
+  "ciRunId": "40716035735",
+  "coverage": {
+    "canonicalPages": 66,
+    "resolvedDefaultViews": 66,
+    "attemptedPageViews": 68,
+    "nativeResponses": 685,
+    "http200": 685,
+    "methodPathCombinations": 101,
+    "purePreviewPosts": 7,
+    "existingApiPass": 728,
+    "existingUnitPass": 610,
+    "existingBrowserPass": 327,
+    "newDiagnosticPass": 9,
+    "newDiagnosticFail": 9,
+    "stagingImages": 14,
+    "localFailureIllustrations": 6
+  },
+  "sessions": [
+    {
+      "cookieObserved": true,
+      "signOutStatus": 200,
+      "originalCookieMeStatus": 401,
+      "confirmed": true
+    },
+    {
+      "cookieObserved": true,
+      "signOutStatus": 200,
+      "originalCookieMeStatus": 401,
+      "confirmed": true
+    }
+  ],
+  "localResources": "Owned embedded databases and browsers closed; see lane receipts. Docker never started.",
+  "stagingLimits": "Default read views, not every action/drawer/input. Read audit/session rows are expected. No provider/payment/SMS/hardware/print job business action.",
+  "initialAttempt": "Seven read-only preview POSTs across two pages were blocked by the broad write guard. Source reviewed; both pages passed isolated follow-up. Original attempt retained.",
+  "pages": [
+    {
+      "path": "/reports/analytics",
+      "title": "Analytics & sources",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 11,
+      "headings": [
+        "Analytics & sources",
+        "Summary",
+        "Demo Branch 2",
+        "Oto Play Park, Central Floresta",
+        "Oto Play Park, Robinson Chalong",
+        "Demo Branch 2",
+        "Oto Play Park, Central Floresta",
+        "Oto Play Park, Robinson Chalong",
+        "Report sources",
+        "Demo Branch 2",
+        "Oto Play Park, Central Floresta",
+        "Oto Play Park, Robinson Chalong",
+        "Copies and their masters",
+        "Park names in the OTO App",
+        "Employee records copied from the OTO App",
+        "OTO App sign-ins",
+        "Radar"
+      ],
+      "alerts": [],
+      "stateText": [
+        "A re-run recomputes our POS figures from our own records; it cannot rebuild a day from Pisell or Papaya. Days are queued for the next rollup; frozen days are never recomputed.",
+        "A re-run recomputes our POS figures from our own records; it cannot rebuild a day from Pisell or Papaya. Days are queued for the next rollup; frozen days are never recomputed.",
+        "A re-run recomputes our POS figures from our own records; it cannot rebuild a day from Pisell or Papaya. Days are queued for the next rollup; frozen days are never recomputed.",
+        "No drift found",
+        "No drift found"
+      ],
+      "observedAt": "2026-10-28T16:54:29.601Z"
+    },
+    {
+      "path": "/organisation/configuration",
+      "title": "Configuration",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Configuration",
+        "Assistant settings",
+        "Holidays",
+        "Tax",
+        "Drop-off & supervision",
+        "Event pricing",
+        "Message templates",
+        "Print templates",
+        "Tenders"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:54:33.899Z"
+    },
+    {
+      "path": "/organisation/apps",
+      "title": "Apps",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Apps",
+        "POS",
+        "Admin",
+        "OTO App",
+        "Radar",
+        "Lucky Wheel",
+        "Inbox"
+      ],
+      "alerts": [],
+      "stateText": [
+        "REQUIRED PERMISSION",
+        "REQUIRED PERMISSION",
+        "REQUIRED PERMISSION",
+        "REQUIRED PERMISSION",
+        "REQUIRED PERMISSION",
+        "REQUIRED PERMISSION"
+      ],
+      "observedAt": "2026-10-28T16:54:37.942Z"
+    },
+    {
+      "path": "/watch/releases",
+      "title": "Releases",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Releases",
+        "Kill switches",
+        "Pause outbound messaging",
+        "Block new sign-ins to POS",
+        "Block new sign-ins to Admin",
+        "Block new sign-ins to OTO App",
+        "Block new sign-ins to Radar",
+        "Block new sign-ins to Lucky Wheel",
+        "Block new sign-ins to Inbox",
+        "Disable QR tender",
+        "Disable card tender",
+        "Force manual payment recording",
+        "Close the gate",
+        "Stop the booth",
+        "Freeze analytics rollups",
+        "Feature flags",
+        "Recorded releases",
+        "Box agent versions",
+        "Demo counter box",
+        "Evidence box 206-G",
+        "Evidence box 361",
+        "FortuneWheelBox",
+        "Proof box 2 (26 Sept)",
+        "Proof box (25 Sept)"
+      ],
+      "alerts": [],
+      "stateText": [
+        "No feature flag can be changed yet.",
+        "No app reads a feature flag yet, so nothing is offered to change. Flags will appear here once their consumer is built."
+      ],
+      "observedAt": "2026-10-28T16:54:42.809Z"
+    },
+    {
+      "path": "/watch/support",
+      "title": "Support",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Support",
+        "Find anything",
+        "What happened to this sale",
+        "View as"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:54:47.362Z"
+    },
+    {
+      "path": "/catalogue/inventory",
+      "title": "Inventory",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 12,
+      "headings": [
+        "Inventory",
+        "Merch items",
+        "Stocked add-ons",
+        "Stocked F&B items"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:54:51.361Z"
+    },
+    {
+      "path": "/catalogue/members",
+      "title": "Members",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Members"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:54:56.129Z"
+    },
+    {
+      "path": "/catalogue/tier-verifications",
+      "title": "Tier verifications",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Tier verifications"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Read-only audit trail — who checked the document is recorded automatically from the signed-in account at the counter and cannot be edited."
+      ],
+      "observedAt": "2026-10-28T16:55:01.236Z"
+    },
+    {
+      "path": "/reports/wallets",
+      "title": "Wallets",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 7,
+      "headings": [
+        "Wallets"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:05.363Z"
+    },
+    {
+      "path": "/channels/teams-routing",
+      "title": "Teams & routing",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Teams & routing",
+        "Teams",
+        "Birthdays & Events",
+        "Reception · Central Floresta",
+        "Reception · Robinson Chalong",
+        "Reception · Demo Branch 2",
+        "Marketing",
+        "GM",
+        "Routing rules",
+        "Birthdays & events · Birthdays & Events",
+        "Birthdays & events · Birthdays & Events",
+        "Birthdays & events · Birthdays & Events",
+        "Marketing · Marketing",
+        "GM · GM",
+        "General enquiries · Reception · Central Floresta",
+        "General enquiries · Reception · Robinson Chalong",
+        "General enquiries · Reception · Demo Branch 2",
+        "Birthdays & events · Birthdays & Events",
+        "Marketing · Marketing",
+        "GM · GM"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Teams are retained by the system. Edit their details or archive routing rules; teams cannot be deleted. Team membership follows the linked department's Inbox role assignments.",
+        "Highest priority wins, then the more specific language and park, then the oldest rule and its ID. Any language and Any park are wildcards. Team fallback stays in place when no rule matches or a named person is unavailable."
+      ],
+      "observedAt": "2026-10-28T16:55:09.830Z"
+    },
+    {
+      "path": "/channels/assistant-settings",
+      "title": "Assistant settings",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Assistant settings",
+        "Internal assistant",
+        "Inbox assistant",
+        "Price estimates"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Saved versions cannot be changed or removed. Add a later version for the same model to change its rates."
+      ],
+      "observedAt": "2026-10-28T16:55:13.767Z"
+    },
+    {
+      "path": "/reports/sales",
+      "title": "Sales",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Sales",
+        "Revenue by category — ฿18,669.00 total",
+        "Payment method mix",
+        "Ticket sales by tier",
+        "Ticket type breakdown",
+        "Weekday / weekend split",
+        "Drop-off / nanny sessions",
+        "Event / camp revenue (estimate)",
+        "Top F&B items",
+        "Top merch items"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:17.823Z"
+    },
+    {
+      "path": "/reports/profitability",
+      "title": "Profitability",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Profitability",
+        "Revenue ฿650.00 · COGS ฿0.00 · Margin ฿650.00",
+        "Revenue ฿370.00 · COGS ฿125.00 · Margin ฿245.00"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:21.868Z"
+    },
+    {
+      "path": "/reports/discounts",
+      "title": "Discounts & comps",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Discounts & comps",
+        "Promo impact by type",
+        "By operator",
+        "Promo code impact (4)",
+        "Transactions (2)"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:26.335Z"
+    },
+    {
+      "path": "/reports/tax-vat",
+      "title": "Tax & VAT",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Tax & VAT",
+        "VAT summary — ฿1,221.33 tax on ฿18,669.00 gross",
+        "Bulk tax-receipt export (74 transactions)"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:30.474Z"
+    },
+    {
+      "path": "/reports/wallet-promo",
+      "title": "Wallet & promo",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 12,
+      "headings": [
+        "Wallet & promo",
+        "Wallet ledger — 39 of 39 entries shown",
+        "Promotional vouchers — foregone revenue ฿100.00",
+        "Promo code usage"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:34.910Z"
+    },
+    {
+      "path": "/reports/money",
+      "title": "Money oversight",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 15,
+      "headings": [
+        "Money oversight",
+        "Sales",
+        "Demo Branch 2",
+        "Oto Play Park, Central Floresta",
+        "Oto Play Park, Robinson Chalong",
+        "Refunds and voids",
+        "Discounts, comps and promotions",
+        "Cash days",
+        "Demo Branch 2",
+        "Oto Play Park, Central Floresta",
+        "Oto Play Park, Robinson Chalong",
+        "Settlement",
+        "Demo Branch 2",
+        "Oto Play Park, Central Floresta",
+        "Oto Play Park, Robinson Chalong",
+        "Wallet liability",
+        "Demo Branch 2",
+        "Oto Play Park, Central Floresta",
+        "Oto Play Park, Robinson Chalong",
+        "Voucher and benefit cost",
+        "Money integrity",
+        "Receipt-number gaps per station and series",
+        "Sales with no settled payment",
+        "Payments with no sale"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:39.369Z"
+    },
+    {
+      "path": "/catalogue/care",
+      "title": "Drop-off & supervision",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Drop-off & supervision",
+        "Drop-off & nanny pricing",
+        "Prepaid food policy",
+        "Age bands",
+        "Confirmations",
+        "Sibling waiver"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:44.225Z"
+    },
+    {
+      "path": "/catalogue/print-templates",
+      "title": "Print templates",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 17,
+      "headings": [
+        "Print templates",
+        "Print templates"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T17:00:02.605Z"
+    },
+    {
+      "path": "/catalogue/staff-benefits",
+      "title": "Staff benefits",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 11,
+      "headings": [
+        "Staff benefits",
+        "Role templates",
+        "Staff",
+        "Audit log"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:55:52.902Z"
+    },
+    {
+      "path": "/catalogue/discounts",
+      "title": "Discounts",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 13,
+      "headings": [
+        "Discounts",
+        "Discount codes",
+        "Manual-discount reasons"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Usage counts are this tab only — SCRUM-230. The codes themselves save to the database; how many times each has been redeemed is counted from the sales that used it, and that report is not built yet.",
+        "No reasons yet. Add one above."
+      ],
+      "observedAt": "2026-10-28T16:55:58.431Z"
+    },
+    {
+      "path": "/catalogue/tenders",
+      "title": "Tenders",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Tenders",
+        "Payment methods"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:02.604Z"
+    },
+    {
+      "path": "/catalogue/tax",
+      "title": "Tax",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Tax",
+        "Global tax rates",
+        "Tax per area",
+        "Discount placement",
+        "Live example"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:07.227Z"
+    },
+    {
+      "path": "/catalogue/voucher-campaigns",
+      "title": "Voucher campaigns",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 16,
+      "headings": [
+        "Voucher campaigns",
+        "Voucher definitions — promotional rules",
+        "Campaigns"
+      ],
+      "alerts": [],
+      "stateText": [
+        "No campaigns minted yet."
+      ],
+      "observedAt": "2026-10-28T16:56:12.486Z"
+    },
+    {
+      "path": "/catalogue/event-pricing",
+      "title": "Event pricing",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Event pricing",
+        "Walk-up prices"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:16.986Z"
+    },
+    {
+      "path": "/catalogue/menu",
+      "title": "Menu",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Menu",
+        "Coffee1",
+        "F&B1",
+        "Food2",
+        "Mains3",
+        "Drinks5",
+        "Light Bites1",
+        "Bar4",
+        "Snacks4"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:21.409Z"
+    },
+    {
+      "path": "/catalogue/categories",
+      "title": "Categories",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 11,
+      "headings": [
+        "Categories",
+        "F&B Categories"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:26.162Z"
+    },
+    {
+      "path": "/catalogue/modifiers",
+      "title": "Modifiers",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Modifiers",
+        "Shared modifier groups"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:30.673Z"
+    },
+    {
+      "path": "/catalogue/merch",
+      "title": "Merch",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 11,
+      "headings": [
+        "Merch"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:35.270Z"
+    },
+    {
+      "path": "/catalogue/tickets",
+      "title": "Tickets",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 12,
+      "headings": [
+        "Tickets"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:39.759Z"
+    },
+    {
+      "path": "/catalogue/tiers",
+      "title": "Tiers",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 11,
+      "headings": [
+        "Tiers",
+        "Customer tiers"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:44.171Z"
+    },
+    {
+      "path": "/catalogue/add-ons",
+      "title": "Add-ons",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Add-ons"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:48.542Z"
+    },
+    {
+      "path": "/organisation/operators",
+      "title": "Operators",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Operators"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:52.926Z"
+    },
+    {
+      "path": "/platform/operators",
+      "title": "Operators",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Operators"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:56:57.057Z"
+    },
+    {
+      "path": "/platform/system-roles",
+      "title": "System roles",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "System roles",
+        "System catalogue"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Immutable platform-maintained roles and their permission sentences.",
+        "System roles are maintained by the platform. Their permissions are read-only here."
+      ],
+      "observedAt": "2026-10-28T16:57:01.198Z"
+    },
+    {
+      "path": "/platform/alerts",
+      "title": "Platform alerts",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Platform alerts",
+        "Platform alert register"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:57:05.131Z"
+    },
+    {
+      "path": "/platform/jobs",
+      "title": "Platform jobs",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Platform jobs",
+        "Persisted job status"
+      ],
+      "alerts": [],
+      "stateText": [
+        "failed",
+        "Error"
+      ],
+      "observedAt": "2026-10-28T16:57:09.138Z"
+    },
+    {
+      "path": "/platform/environment",
+      "title": "Environment",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Environment",
+        "Variable presence"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Not configured",
+        "Where each app lives, so a token for the till cannot be spent on the console.",
+        "Not configured",
+        "Error reporting. A no-op while unset."
+      ],
+      "observedAt": "2026-10-28T16:57:13.409Z"
+    },
+    {
+      "path": "/platform/test-controls",
+      "title": "Test controls",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Test controls",
+        "Available controls"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Record a failed job run"
+      ],
+      "observedAt": "2026-10-28T16:57:17.445Z"
+    },
+    {
+      "path": "/organisation/holidays",
+      "title": "Holidays",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Holidays",
+        "Holidays / weekend overrides"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:57:22.189Z"
+    },
+    {
+      "path": "/people/access-review",
+      "title": "Access review",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Access review",
+        "Operator-wide holders",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked] (Reception)",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "Platform-wide holders",
+        "[identity masked]",
+        "Accounts without an employee",
+        "[phone masked]",
+        "[phone masked]",
+        "[phone masked]",
+        "[phone masked]",
+        "[phone masked]",
+        "[phone masked]",
+        "[phone masked]",
+        "Employees without an account",
+        "Farida Jamil"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:57:26.257Z"
+    },
+    {
+      "path": "/people/departments",
+      "title": "Departments",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Departments",
+        "Department directory",
+        "Barista",
+        "Barista",
+        "birthdays & events",
+        "Childcare",
+        "Event Department",
+        "Event Department",
+        "floor",
+        "floor",
+        "gm",
+        "House Keeper",
+        "House Keeper",
+        "Kitchen",
+        "Kitchen",
+        "Maintanance ",
+        "Maintanance ",
+        "Management",
+        "Management",
+        "marketing",
+        "nanny",
+        "nanny",
+        "reception",
+        "Reception"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:57:30.540Z"
+    },
+    {
+      "path": "/people/employees",
+      "title": "Employees",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Employees",
+        "Employee directory",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]",
+        "[identity masked]"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:57:34.876Z"
+    },
+    {
+      "path": "/people/app-access",
+      "title": "App access",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "App access",
+        "OTO App users with no suite sign-in"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Made in the OTO App's own Users screen, so the launcher cannot open the app as them yet. Link each to the staff account that is the same person.",
+        "[contact masked] · [phone masked] · No branch yet"
+      ],
+      "observedAt": "2026-10-28T16:57:39.156Z"
+    },
+    {
+      "path": "/people/roles",
+      "title": "Roles & scopes",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Roles & scopes",
+        "Role catalogue",
+        "Who holds a permission?"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Existing roles in plain words, who holds a permission and previews before role changes.",
+        "Search roles and permissions",
+        "Who holds a permission?",
+        "Permission",
+        "Search the suite for one phone, band, receipt, booking, voucher, account or action, each app answering only what your own permissions allow; every search is recorded.",
+        "Read roles, role grants and effective permissions.",
+        "Be recognised as administering the whole operator, without adding other permissions.",
+        "Retry failed runs, acknowledge alerts and resolve operational expectations.",
+        "Open the till app, with actions still controlled by their own permissions.",
+        "Open Admin, with actions still controlled by their own permissions.",
+        "Open the OTO App, with actions still controlled by their own permissions.",
+        "Open Radar, with actions still controlled by their own permissions.",
+        "Open the booth app, with actions still controlled by their own permissions.",
+        "Open Inbox, with actions still controlled by their own permissions.",
+        "Pick a permission to see the accounts and role assignments that give it to them.",
+        "Permissions",
+        "Permissions",
+        "Permissions"
+      ],
+      "observedAt": "2026-10-28T16:57:43.150Z"
+    },
+    {
+      "path": "/people/accounts",
+      "title": "Accounts",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Accounts",
+        "Recent denials"
+      ],
+      "alerts": [],
+      "stateText": [
+        "You cannot grant or act on a role that carries a permission you do not hold yourself (admin:branch:read)",
+        "You cannot grant or act on a role that carries a permission you do not hold yourself (admin:branch:read)",
+        "You cannot grant or act on a role that carries a permission you do not hold yourself (admin:branch:read)"
+      ],
+      "observedAt": "2026-10-28T16:57:47.507Z"
+    },
+    {
+      "path": "/watch/health",
+      "title": "Health",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Health",
+        "Services",
+        "Alerts",
+        "The boxes",
+        "Scheduled jobs",
+        "Analytics rollup",
+        "Booths",
+        "Kiosks",
+        "Test controls"
+      ],
+      "alerts": [],
+      "stateText": [
+        "job:demo.fail failed 38d 10h ago.",
+        "1 event(s) from Evidence box 361 (evidence-361) could not be applied and are waiting on Failures > Quarantine",
+        "1 event(s) from FortuneWheelBox (booth-1) could not be applied and are waiting on Failures > Quarantine",
+        "FortuneWheelBox (booth-1) could not apply part of its offline copy (box.cache_unreadable) — until it pulls a complete one, its till refuses to unlock offline",
+        "failed",
+        "Error",
+        "Record a failed job run"
+      ],
+      "observedAt": "2026-10-28T16:57:52.043Z"
+    },
+    {
+      "path": "/watch/failures",
+      "title": "Failures",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 11,
+      "headings": [
+        "Failures",
+        "2 problems",
+        "Quarantine",
+        "Alert recipients"
+      ],
+      "alerts": [],
+      "stateText": [
+        "930 failed runs in this window, grouped by what went wrong",
+        "API errors",
+        "apply_failed",
+        "apply_failed",
+        "No recipients yet"
+      ],
+      "observedAt": "2026-10-28T16:57:56.023Z"
+    },
+    {
+      "path": "/watch/activity",
+      "title": "Activity",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 10,
+      "headings": [
+        "Activity",
+        "Filters",
+        "The log"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Failed or refused"
+      ],
+      "observedAt": "2026-10-28T16:58:00.103Z"
+    },
+    {
+      "path": "/devices/booths",
+      "title": "Booths",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 21,
+      "headings": [
+        "Booth 2 (proof)",
+        "Booths",
+        "Set up this booth",
+        "The wheel",
+        "Publish",
+        "Booth staff",
+        "Spins",
+        "Version history",
+        "Screens",
+        "Today’s staff",
+        "Voucher slip",
+        "The box",
+        "Wheel preview",
+        "Booth settings"
+      ],
+      "alerts": [],
+      "stateText": [
+        "no spins yet today",
+        "This draft cannot be published yet — 1 thing to fix",
+        "Staff on this list can also sign in at the booth with their own phone and password, when their role allows it (booth:staff:sign_in): Platform admin, Operator admin, Branch manager, Reception, Staff. A role the park created itself allows it only if it carries that permission. Either way a sign-in lasts 10 hours — set under Booth settings — and does not end when nobody presses anything.",
+        "every wheel this booth has run — a version is frozen, so what the odds were on a given day cannot be changed by tonight’s publish",
+        "Slices with no colour of their own take the layout’s palette. This preview draws those in a placeholder ramp: the layout’s own colours live in its design document, which this page does not read yet."
+      ],
+      "observedAt": "2026-10-28T17:00:07.687Z"
+    },
+    {
+      "path": "/reports/booths",
+      "title": "Booth report",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Booth report",
+        "By booth",
+        "By prize",
+        "By staff"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:58:09.558Z"
+    },
+    {
+      "path": "/devices",
+      "title": "Devices",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 18,
+      "headings": [
+        "Devices",
+        "Boxes",
+        "Stations",
+        "Paired screens",
+        "Card terminals"
+      ],
+      "alerts": [],
+      "stateText": [
+        "The setting is chosen before a tender is sent and stays until it is changed — a terminal asked after the fact what it had done could not reproduce “no answer at all”, which is the case the whole inquiry rule exists for. These do not ride the command queue: an approval code is a value to carry, not one to store in a command payload this page renders, so they reach the box this api is running and no other."
+      ],
+      "observedAt": "2026-10-28T16:58:14.002Z"
+    },
+    {
+      "path": "/organisation/branches",
+      "title": "Branches",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Branches",
+        "Registered branches",
+        "Clone from another branch",
+        "In the OTO App only: “HKT Central”, “Head Office”"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:58:17.962Z"
+    },
+    {
+      "path": "/reports/bookings",
+      "title": "Bookings",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Bookings",
+        "Bookings",
+        "Redemption"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Payment failed"
+      ],
+      "observedAt": "2026-10-28T16:58:22.308Z"
+    },
+    {
+      "path": "/catalogue/vouchers",
+      "title": "Vouchers",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 12,
+      "headings": [
+        "Vouchers",
+        "290 vouchers"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:58:26.346Z"
+    },
+    {
+      "path": "/catalogue/voucher-types",
+      "title": "Voucher types",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 9,
+      "headings": [
+        "Voucher types",
+        "The catalog",
+        "Words on the slip",
+        "Every booth voucher"
+      ],
+      "alerts": [],
+      "stateText": [
+        "No till redeems a wallet credit yet.",
+        "Wallet credit — no till redeems one yet",
+        "No till redeems a wallet credit yet.",
+        "Wallet credit — no till redeems one yet"
+      ],
+      "observedAt": "2026-10-28T16:58:30.384Z"
+    },
+    {
+      "path": "/watch/integrations",
+      "title": "Integrations",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 13,
+      "headings": [
+        "Integrations",
+        "SMS — Twilio",
+        "Object storage (S3)",
+        "Scheduled jobs",
+        "Alert channels",
+        "Error reporting (Sentry)",
+        "OTO App",
+        "Credential expiry",
+        "Integration tests",
+        "QR payment gateway",
+        "2C2P settlement import",
+        "Variables to provision",
+        "This console's own build"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Error reporting (Sentry)",
+        "Where an unhandled server error is reported, with its stack.",
+        "Unset, so the reporter is a no-op and errors go to the log only.",
+        "Error reporting. A no-op while unset."
+      ],
+      "observedAt": "2026-10-28T16:58:35.525Z"
+    },
+    {
+      "path": "/overview",
+      "title": "Overview",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Overview",
+        "Members & visits",
+        "Booking activity",
+        "Internal assistant",
+        "Unassigned operator-wide usage",
+        "Inbox AI",
+        "Unassigned operator-wide usage",
+        "Fleet",
+        "Needs a decision",
+        "Reporting dates & freshness"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Included once in the totals above. It is separate from park usage and is unavailable when a park is explicitly selected.",
+        "Included once in the totals above. It is separate from park usage and is unavailable when a park is explicitly selected.",
+        "Current readings from the selected parks. Unavailable and not-built sources are not zero. Source screens retain their own access.",
+        "Off cash lines in saved closes for each park’s current business date. An absent close is unavailable.",
+        "Unavailable",
+        "The erasure-request queue is not built yet.",
+        "Not built",
+        "The approval-request queue is not built yet.",
+        "Not built"
+      ],
+      "observedAt": "2026-10-28T16:58:40.000Z"
+    },
+    {
+      "path": "/people",
+      "title": "People & access",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 7,
+      "headings": [
+        "People & access"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Existing roles in plain words, who holds a permission and previews before role changes."
+      ],
+      "observedAt": "2026-10-28T16:58:44.718Z"
+    },
+    {
+      "path": "/organisation",
+      "title": "Organisation",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 7,
+      "headings": [
+        "Organisation"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:58:48.642Z"
+    },
+    {
+      "path": "/catalogue",
+      "title": "Catalogue & money",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 7,
+      "headings": [
+        "Catalogue & money"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:58:53.002Z"
+    },
+    {
+      "path": "/channels",
+      "title": "Channels & assistant",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 7,
+      "headings": [
+        "Channels & assistant",
+        "Numbers",
+        "Templates",
+        "Knowledge base",
+        "Examples"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:58:57.090Z"
+    },
+    {
+      "path": "/staff",
+      "title": "Staff & HR",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 8,
+      "headings": [
+        "Staff & HR",
+        "On shift now",
+        "Attendance issues",
+        "Leave entries today",
+        "Payroll month status",
+        "ZZ TEST T&T Concept"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:59:01.761Z"
+    },
+    {
+      "path": "/reports",
+      "title": "Reports",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 7,
+      "headings": [
+        "Reports",
+        "Radar"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:59:05.715Z"
+    },
+    {
+      "path": "/watch",
+      "title": "Watch",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 7,
+      "headings": [
+        "Watch"
+      ],
+      "alerts": [],
+      "stateText": [],
+      "observedAt": "2026-10-28T16:59:09.672Z"
+    },
+    {
+      "path": "/platform",
+      "title": "Platform",
+      "complete": true,
+      "documentStatus": 200,
+      "readResponses": 7,
+      "headings": [
+        "Platform"
+      ],
+      "alerts": [],
+      "stateText": [
+        "Immutable platform-maintained roles and their permission sentences."
+      ],
+      "observedAt": "2026-10-28T16:59:13.586Z"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "20261029-audit/api/api-audit-report.json",
+      "sha256": "ea2d87ec74b10371ac64855a708d694d2c4bd4b399f5ec8ccd565e1d4a9a00bc",
+      "bytes": 20966
+    },
+    {
+      "path": "20261029-audit/api/core-batch-v1.json",
+      "sha256": "7982d39ec0d16618b0c1a3f3d18f96c052ab01d6173bdce785ff7b9bda29a3b4",
+      "bytes": 4923
+    },
+    {
+      "path": "20261029-audit/api/core-batch-v1.log.gz",
+      "sha256": "bb4d82487a8d3d9ab82ce78e85e6f811fec27fd26d6d616a181b39b6db9890eb",
+      "bytes": 18067,
+      "uncompressedSha256": "d9cd8e90602b70507fa8192f9b84e1344fa211f3f0ff976a0bcdf637e048ebd8",
+      "uncompressedBytes": 205855
+    },
+    {
+      "path": "20261029-audit/api/error-observations.json",
+      "sha256": "a50241fe76147d4dd4ad3cfe06d7feb1504f9966526f03f1edb8adcc219c7bcc",
+      "bytes": 3614
+    },
+    {
+      "path": "20261029-audit/api/coverage-census.json",
+      "sha256": "1d6c9daff35363188b5b2b3e96c3e96e502764414e855dcc22b2bd267443c826",
+      "bytes": 6641
+    },
+    {
+      "path": "20261029-audit/api/route-inventory.json",
+      "sha256": "8ad3bd63085babc84984e03cf15886353f26831feeb67d5570b3fbc4a7547434",
+      "bytes": 69032
+    },
+    {
+      "path": "20261029-audit/api/cleanup-process-check.json",
+      "sha256": "9b4af1018bb20e9237329b93f9259dc2b3934d6e3e588e315b2c5fe40d66be52",
+      "bytes": 268
+    },
+    {
+      "path": "20261029-audit/payments/payment-audit-report.json",
+      "sha256": "c3cfe877ceb90be296fd04f89ec30673f076305fe58d6026f85b45e528cb0157",
+      "bytes": 8205
+    },
+    {
+      "path": "20261029-audit/payments/payment-capability-and-audit.md",
+      "sha256": "2ca18506cbf885b44427d1d4b5e9edcf1f4b5f1853b95dbbfbfb0c19b903ba5c",
+      "bytes": 14456
+    },
+    {
+      "path": "20261029-audit/payments/prioritized-summary.md",
+      "sha256": "68da12cb530cc4aab38ec6b4197812febe107e8c0ae5e7b58b519f566d0e0828",
+      "bytes": 3112
+    },
+    {
+      "path": "20261029-audit/payments/native-targeted-v1.json",
+      "sha256": "2879a9f612727c8863eabe2128099bd40989663cd3216ee7a29e7ac42573354a",
+      "bytes": 2423
+    },
+    {
+      "path": "20261029-audit/payments/native-targeted-v1.log.gz",
+      "sha256": "19cd6bb2a6c6db589ae578a08357f5306cafd6f60e0395cc166fd27ffe00b65c",
+      "bytes": 2928,
+      "uncompressedSha256": "d945ddb76ba32ff0b36c3e0c94c684e49dfa5d002680b472e03bf42475a8e4ee",
+      "uncompressedBytes": 18040
+    },
+    {
+      "path": "20261029-audit/payments/tax-ownership-v1.json",
+      "sha256": "5df95809f719ac23ac662b21c389163be1cba5a26c822a0dddcf1dd6534e01da",
+      "bytes": 1867
+    },
+    {
+      "path": "20261029-audit/payments/tax-ownership-v1.log.gz",
+      "sha256": "085a9467c69d3ed82d234fdb76685660375ace8326f7f63b66927bc7504a2e05",
+      "bytes": 2565,
+      "uncompressedSha256": "4904a9cce701d4ccab6cf5bf4a06e85a5fbab9ec2ee431de4b7d847ded907652",
+      "uncompressedBytes": 8845
+    },
+    {
+      "path": "20261029-audit/payments/tax-override-native-observations-v1.json",
+      "sha256": "f007ba8eabdffe3486ed54baeb5c21a6bdcd1aa8744e5a067e9294f22fc5b1fc",
+      "bytes": 470
+    },
+    {
+      "path": "20261029-audit/payments/cleanup-verification-v1.json",
+      "sha256": "b9f147174e12f18ba56d79c45dc734ce7265d1cb826174de4661e75820b795c6",
+      "bytes": 834,
+      "originalSourceSha256": "bb16dc14ef20ec5abe1127e1fbcc61c2557d6c67fb1818655b5b466a5b727528"
+    },
+    {
+      "path": "20261029-audit/payments/temporary-test-removal-v1.json",
+      "sha256": "d4fa750bd0fb0f691d2c7b6cf163bd8ef4ede115b0a591d7e3f0e805eb965fdf",
+      "bytes": 412
+    },
+    {
+      "path": "20261029-audit/ui/UI-AUDIT.md",
+      "sha256": "a0f9fa99b9a10b02c2f5e5d42afe4e9828768690b3e6a0ba6ea8f0b37ff24ae1",
+      "bytes": 19162
+    },
+    {
+      "path": "20261029-audit/ui/ui-audit-results.json",
+      "sha256": "a7f919dc6785a23803e87d88d0bab60af6b837dff4e8752d2dc17dff94b32ffe",
+      "bytes": 24794
+    },
+    {
+      "path": "20261029-audit/ui/ui-audit-matrix.json",
+      "sha256": "33b784ed59a5a3e7dc735e1bee9ba6d8bcd567ce3278ae7b0648088fef45bf96",
+      "bytes": 71602
+    },
+    {
+      "path": "20261029-audit/ui/pages.json",
+      "sha256": "ede9291073e623b1c3846e59c133a080f004f12773fac398c6c20c0ec854bb5e",
+      "bytes": 32765
+    },
+    {
+      "path": "20261029-audit/ui/page-matrix.md",
+      "sha256": "28f00822dd1ff815e295904943b23acd96cd3716387a79a43821a5e3cec04ff6",
+      "bytes": 9632
+    },
+    {
+      "path": "20261029-audit/ui/existing-unit-results.json",
+      "sha256": "fed528cde5d9a95bae7c5e80868e23b0de69e5ec0a6a8e568366654aac75ebb6",
+      "bytes": 920
+    },
+    {
+      "path": "20261029-audit/ui/console-existing-units.log.gz",
+      "sha256": "9ece0457a43daba07f813d01be539eb7705c3e787fc446d7fc39f25a31691d84",
+      "bytes": 936,
+      "uncompressedSha256": "5c6e00f32618efb9116e2ca5ab1dc5f0f1d9bf0436b734286aea1e35451af81b",
+      "uncompressedBytes": 2853
+    },
+    {
+      "path": "20261029-audit/ui/admin-screens-existing-units.log.gz",
+      "sha256": "6fec8216dfb3bc896497f2cd37c2aef605ffbfe719caa3e2963f4ede428d2070",
+      "bytes": 511,
+      "uncompressedSha256": "ee0ea0ea920a72195c80cef286fc6d7cb58c7be9f4130b5085aa888ecd71166d",
+      "uncompressedBytes": 1216
+    },
+    {
+      "path": "20261029-audit/ui/browser-all-v1.json",
+      "sha256": "e1156bd1b12d21ec03a25323562524f109b5dc672f151517121f7f6a8a8e59de",
+      "bytes": 641
+    },
+    {
+      "path": "20261029-audit/ui/browser-all-v1.log.gz",
+      "sha256": "4424ba8bc6359b305ef60225a26f875e769f8a9b8714d266e5e1a925814af856",
+      "bytes": 18558,
+      "uncompressedSha256": "383d88a583a8e3753ee78064b87caa886a5033daecf70bdb0b52fc1dee397ab2",
+      "uncompressedBytes": 67067
+    },
+    {
+      "path": "20261029-audit/ui/browser-probes-v2.json",
+      "sha256": "e21de44c9b3b1d9bd73f7876b08430a7b588063e3fdd78c25c68d8fbc666e86c",
+      "bytes": 788
+    },
+    {
+      "path": "20261029-audit/ui/browser-probes-v2.log.gz",
+      "sha256": "30f9cdca630a784b2934b9bf6592dcd66f852d9180c0f02c7eb27335135acbb8",
+      "bytes": 4947,
+      "uncompressedSha256": "713d134dabe0c8c7c80fe3c16b5a9c7d7148cb832c42f8d20004532a88178aa0",
+      "uncompressedBytes": 25101
+    },
+    {
+      "path": "20261029-audit/ui/browser-probes-v3.json",
+      "sha256": "3b3e3e92db2b3c9e84461d16fcd2d2f20d29fd9691775bfc921febf38211dbda",
+      "bytes": 788
+    },
+    {
+      "path": "20261029-audit/ui/browser-probes-v3.log.gz",
+      "sha256": "d2b7ea58b4b3e44395f9cb8388cb860624ffbedb42fb29c84ff6a055f6b193ea",
+      "bytes": 4581,
+      "uncompressedSha256": "1f8536b4d808d3466913076ee2157b0638c920ffa36a6d37d9015db91006eae7",
+      "uncompressedBytes": 24895
+    },
+    {
+      "path": "20261029-audit/ui/temporary-test-cleanup.json",
+      "sha256": "e14aec2999b0daef46297997e5dfc1c5d4aeef8b4cc3ff69dace34e6953433ef",
+      "bytes": 430
+    },
+    {
+      "path": "20261029-audit/ui/probe-v3/image-review.json",
+      "sha256": "b5fa164403eb2d41e627977d894f2f376e84dbfba5442cf60a7f9b5444eb251c",
+      "bytes": 4127
+    },
+    {
+      "path": "20261029-audit/ui/report-hashes.json",
+      "sha256": "ffb249b389d88f681eada4ac763f850ddfe2ed826eb361823ced9afd5c142e9f",
+      "bytes": 1838
+    },
+    {
+      "path": "20261029-audit/approval-tickets.json",
+      "sha256": "94c8536cc7918e3fb1e9a38215388cee701d1263c5139aff318befbc7e83658d",
+      "bytes": 814
+    },
+    {
+      "path": "20261029-audit/staging-v1/receipt.json",
+      "sha256": "d1d4c553f07c61cfc7dfcad255efb0634d641aa9993812dcae4f16b8c6410f10",
+      "bytes": 235697
+    },
+    {
+      "path": "20261029-audit/staging-preview-v2/receipt.json",
+      "sha256": "23d17df9e32791ecfbd5b75a2b09c4fb35a0facae51f5ec64c288679ea6ae4ad",
+      "bytes": 15315
+    },
+    {
+      "path": "SCRUM-679-01-organisation-configuration.png",
+      "sha256": "d02bd53565386d0eacf1b4079ace3cdfb991ed3c3258cb516e2355039d5a69ee",
+      "bytes": 112638,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-02-watch-releases.png",
+      "sha256": "9807f90bb0a3f2f81efdeef3a3617aa0a60bb23236c47a6f6c26cd7e63415dd9",
+      "bytes": 132888,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-03-watch-support.png",
+      "sha256": "93a171442e572d41adf3acbde1378c7143239e725a48c8daa7e1938cea14bf4a",
+      "bytes": 93953,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-04-reports-money.png",
+      "sha256": "13fdc74484225ac372f4e0dd7416e83f92f5b0ac788d495965e43bc79748d76c",
+      "bytes": 117878,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-05-catalogue-tenders.png",
+      "sha256": "71acc89ca73279fb05eb1ee43a0bfcc41fb4a3b7c9080f936cb0087c3eb1e87b",
+      "bytes": 140776,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-06-catalogue-tax.png",
+      "sha256": "70c805991d9c0976612f849f10032c57591f1244d90d9e2fcc0b2935b21dd544",
+      "bytes": 117544,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-07-watch-health.png",
+      "sha256": "ef865f4a02d6968c701357a37bd3f331b930e6c5b5f1f0f31a461455203d80e2",
+      "bytes": 140747,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-08-watch-activity.png",
+      "sha256": "6c87f3abd2e7d1252b50b7d5c43813b3245e038ac50a7f65a75f9db21ea1f72f",
+      "bytes": 180497,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-09-devices.png",
+      "sha256": "dace550eb41eefbad00accf1c4ca3bb4606f9d1f9760eca3720c96cc1d9093cb",
+      "bytes": 134806,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-10-catalogue-vouchers.png",
+      "sha256": "0068a997ece196cd3735e0ae4202550e79b9a048590f105c737186d481237059",
+      "bytes": 170548,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-11-watch-integrations.png",
+      "sha256": "35ab5a876cbe2ea4dd94f34a62c9786cd3a63b0f9423cd20c81d129ff6458a2c",
+      "bytes": 140039,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-12-overview.png",
+      "sha256": "ed8c58258b9a5db5315a48851d2ca0ed6c7695111de2aef869f236c5f8febe27",
+      "bytes": 111632,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-01-catalogue-print-templates.png",
+      "sha256": "3f0e1d4761bd58794aecd84e790c9a86378e32b418f5c4ac58339f041ea32e1d",
+      "bytes": 97888,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-02-devices-booths.png",
+      "sha256": "9a786206c01f37ffd724e3d4ca5b4ec3903e1bfc99c2766d826e4af9b085a720",
+      "bytes": 157332,
+      "kind": "native staging partial viewport"
+    },
+    {
+      "path": "SCRUM-679-UI01-late-booth-history.png",
+      "sha256": "adf328da1d091d04c0b911c6d24c06b07e6b38d6d2d15a5ee039654b5ec616d4",
+      "bytes": 228141,
+      "kind": "local controlled-response illustration"
+    },
+    {
+      "path": "SCRUM-679-UI02-resource404-message.png",
+      "sha256": "dba4c43e2ce96a43c6cdfab0ac3026e645456391f496aece289455a429cbf99f",
+      "bytes": 159123,
+      "kind": "local controlled-response illustration"
+    },
+    {
+      "path": "SCRUM-679-UI03-inverted-page-range.png",
+      "sha256": "479cd0dcaf05db06e8a900b112e5f2d18d3516448b2640f7eeacffa540f8c713",
+      "bytes": 129157,
+      "kind": "local controlled-response illustration"
+    },
+    {
+      "path": "SCRUM-679-UI04-pending-park-fleet.png",
+      "sha256": "f781da21a1a6f6a30023552c9a6f202cf0631c14ceb2e72148e3c202b653de88",
+      "bytes": 190491,
+      "kind": "local controlled-response illustration"
+    },
+    {
+      "path": "SCRUM-679-UI05-failed-box-read-empty.png",
+      "sha256": "8a433324a58cca119fc040596682632cc938ad49e69cd516f6319a4a4855bd41",
+      "bytes": 178372,
+      "kind": "local controlled-response illustration"
+    },
+    {
+      "path": "SCRUM-679-UI06-failed-station-read-empty.png",
+      "sha256": "73fb6048f2be650592c4e4242c1c404273dd421f4b88d6058c56a3778458052e",
+      "bytes": 172155,
+      "kind": "local controlled-response illustration"
+    }
+  ]
+}

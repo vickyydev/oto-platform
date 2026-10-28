@@ -1,0 +1,708 @@
+{
+  "ticket": "SCRUM-679",
+  "recordedAt": "2026-10-28T16:59:52.540Z",
+  "mode": "AUDIT ONLY; fixes await user approval after the complete audit",
+  "sourceSha": "5da2fe226a3fec8f4d9c725deba9428d040275b0",
+  "sourceUnchangedDuringRun": true,
+  "productChanges": 0,
+  "existingTestChanges": 0,
+  "stagingCalls": 0,
+  "dockerStarted": false,
+  "scope": {
+    "families": 26,
+    "literalRoutes": 109,
+    "inventory": "route-inventory.json",
+    "excluded": "Payment, money, tender, tax, cash and settlement domain review is owned by the payment auditor. Known descoped/deferred features are not newly discovered defects."
+  },
+  "runtime": {
+    "sourceSha": "5da2fe226a3fec8f4d9c725deba9428d040275b0",
+    "sourceManifestSha256": "42a75f3f8cc1807cc8f07cb9d3d577ed3f5ad0812ea60ce59e74924f6b6b4e10",
+    "existing": {
+      "wholeFiles": 47,
+      "passed": 675,
+      "failed": 0
+    },
+    "temporary": {
+      "wholeFiles": 1,
+      "tests": 9,
+      "passed": 8,
+      "failed": 1
+    },
+    "allFiles": [
+      {
+        "file": "test/ops-api.test.ts",
+        "tests": 34,
+        "failed": 0,
+        "passed": 34
+      },
+      {
+        "file": "test/route-write-conformance.test.ts",
+        "tests": 26,
+        "failed": 0,
+        "passed": 26
+      },
+      {
+        "file": "test/routes-guarded.test.ts",
+        "tests": 26,
+        "failed": 0,
+        "passed": 26
+      },
+      {
+        "file": "test/id-conformance.test.ts",
+        "tests": 26,
+        "failed": 0,
+        "passed": 26
+      },
+      {
+        "file": "test/support-tools.test.ts",
+        "tests": 17,
+        "failed": 0,
+        "passed": 17
+      },
+      {
+        "file": "test/suite-controls-integration.test.ts",
+        "tests": 13,
+        "failed": 0,
+        "passed": 13
+      },
+      {
+        "file": "test/ops-jobs.test.ts",
+        "tests": 24,
+        "failed": 0,
+        "passed": 24
+      },
+      {
+        "file": "test/app-identities.test.ts",
+        "tests": 22,
+        "failed": 0,
+        "passed": 22
+      },
+      {
+        "file": "test/route-scope-target.test.ts",
+        "tests": 24,
+        "failed": 0,
+        "passed": 24
+      },
+      {
+        "file": "test/console-branch-scope.test.ts",
+        "tests": 27,
+        "failed": 0,
+        "passed": 27
+      },
+      {
+        "file": "test/assistant-settings-review.test.ts",
+        "tests": 49,
+        "failed": 0,
+        "passed": 49
+      },
+      {
+        "file": "test/suite-control-approvals-review.test.ts",
+        "tests": 15,
+        "failed": 0,
+        "passed": 15
+      },
+      {
+        "file": "test/console-drift-review.test.ts",
+        "tests": 13,
+        "failed": 0,
+        "passed": 13
+      },
+      {
+        "file": "test/platform-review.test.ts",
+        "tests": 18,
+        "failed": 0,
+        "passed": 18
+      },
+      {
+        "file": "test/operator-switch-idempotency-review.test.ts",
+        "tests": 21,
+        "failed": 0,
+        "passed": 21
+      },
+      {
+        "file": "test/branch-scoping.test.ts",
+        "tests": 17,
+        "failed": 0,
+        "passed": 17
+      },
+      {
+        "file": "test/console-otoapp.test.ts",
+        "tests": 34,
+        "failed": 0,
+        "passed": 34
+      },
+      {
+        "file": "test/s616-access-review-review.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "passed": 8
+      },
+      {
+        "file": "test/console-analytics-sources-review.test.ts",
+        "tests": 15,
+        "failed": 0,
+        "passed": 15
+      },
+      {
+        "file": "test/console-analytics-review.test.ts",
+        "tests": 17,
+        "failed": 0,
+        "passed": 17
+      },
+      {
+        "file": "test/s613-app-access-review.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "passed": 6
+      },
+      {
+        "file": "test/access-review.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "passed": 6
+      },
+      {
+        "file": "test/s614-employees-review.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "passed": 8
+      },
+      {
+        "file": "test/roles-console.test.ts",
+        "tests": 10,
+        "failed": 0,
+        "passed": 10
+      },
+      {
+        "file": "test/console-staff.test.ts",
+        "tests": 25,
+        "failed": 0,
+        "passed": 25
+      },
+      {
+        "file": "test/s644-audit-filters-export.test.ts",
+        "tests": 15,
+        "failed": 0,
+        "passed": 15
+      },
+      {
+        "file": "test/operator-switch-route-review.test.ts",
+        "tests": 26,
+        "failed": 0,
+        "passed": 26
+      },
+      {
+        "file": "test/health-read-availability-review.test.ts",
+        "tests": 9,
+        "failed": 0,
+        "passed": 9
+      },
+      {
+        "file": "test/health-integrations-response-review.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "passed": 8
+      },
+      {
+        "file": "test/telemetry.test.ts",
+        "tests": 10,
+        "failed": 0,
+        "passed": 10
+      },
+      {
+        "file": "test/console-configuration-entries.test.ts",
+        "tests": 7,
+        "failed": 0,
+        "passed": 7
+      },
+      {
+        "file": "test/watchdog-fallback-review.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "passed": 6
+      },
+      {
+        "file": "test/s615-departments-review.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "passed": 8
+      },
+      {
+        "file": "test/accounts-operators-tx.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "passed": 8
+      },
+      {
+        "file": "test/departments.test.ts",
+        "tests": 7,
+        "failed": 0,
+        "passed": 7
+      },
+      {
+        "file": "test/access-restore.test.ts",
+        "tests": 10,
+        "failed": 0,
+        "passed": 10
+      },
+      {
+        "file": "test/suite-controls-review.test.ts",
+        "tests": 9,
+        "failed": 0,
+        "passed": 9
+      },
+      {
+        "file": "test/audit-read.test.ts",
+        "tests": 9,
+        "failed": 0,
+        "passed": 9
+      },
+      {
+        "file": "test/employees.test.ts",
+        "tests": 5,
+        "failed": 0,
+        "passed": 5
+      },
+      {
+        "file": "test/accounts-console.test.ts",
+        "tests": 3,
+        "failed": 0,
+        "passed": 3
+      },
+      {
+        "file": "test/audit-response-review.test.ts",
+        "tests": 4,
+        "failed": 0,
+        "passed": 4
+      },
+      {
+        "file": "test/s612-roles-review.test.ts",
+        "tests": 4,
+        "failed": 0,
+        "passed": 4
+      },
+      {
+        "file": "test/rate-limit-public.test.ts",
+        "tests": 2,
+        "failed": 0,
+        "passed": 2
+      },
+      {
+        "file": "test/s634-staff-summary-review.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "passed": 8
+      },
+      {
+        "file": "test/admin-audit-contract-errors.test.ts",
+        "tests": 9,
+        "failed": 1,
+        "passed": 8
+      },
+      {
+        "file": "test/console-configuration-review.test.ts",
+        "tests": 7,
+        "failed": 0,
+        "passed": 7
+      },
+      {
+        "file": "test/s611-accounts-review.test.ts",
+        "tests": 3,
+        "failed": 0,
+        "passed": 3
+      },
+      {
+        "file": "test/health-evidence.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "passed": 6
+      }
+    ],
+    "guards": [
+      {
+        "file": "test/route-write-conformance.test.ts",
+        "tests": 26,
+        "failed": 0,
+        "passed": 26
+      },
+      {
+        "file": "test/routes-guarded.test.ts",
+        "tests": 26,
+        "failed": 0,
+        "passed": 26
+      },
+      {
+        "file": "test/id-conformance.test.ts",
+        "tests": 26,
+        "failed": 0,
+        "passed": 26
+      },
+      {
+        "file": "test/route-scope-target.test.ts",
+        "tests": 24,
+        "failed": 0,
+        "passed": 24
+      }
+    ],
+    "wholeOutputRead": true,
+    "fullApiBattery": false
+  },
+  "findings": [
+    {
+      "id": "API-01",
+      "severity": "medium",
+      "state": "CONFIRMED native failing HTTP assertion",
+      "title": "Unavailable routes bypass the shared error envelope",
+      "actual": {
+        "label": "unavailable endpoint",
+        "status": 404,
+        "body": {
+          "message": "Route GET:/__admin_audit/not-built not found",
+          "error": "Not Found",
+          "statusCode": 404
+        },
+        "requestId": "ZZ-AUDIT-404",
+        "contentType": "application/json; charset=utf-8"
+      },
+      "expected": {
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not found"
+          }
+        },
+        "requestId": "retained"
+      },
+      "impact": "Console ApiError reads error.code/error.message. The Fastify string error instead falls back to UNKNOWN and statusText, losing a stable machine reason and consistent error rendering.",
+      "anchors": [
+        "apps/api/src/lib/errors.ts:1-4",
+        "apps/api/src/app.ts:310-399 (error handler; no not-found handler)",
+        "apps/console/src/api/client.ts:103-116"
+      ],
+      "proposedFix": "Add a native not-found handler using the existing error envelope, status404 and correlation. Do not echo raw URL queries or change route permissions.",
+      "acceptance": [
+        "An unknown JSON API GET returns404 with error.code/message and x-request-id.",
+        "A missing endpoint with a private query canary does not echo that query.",
+        "Known-record404, anonymous401, valid routes and existing method behavior remain distinct."
+      ],
+      "evidence": [
+        "core-batch-v1.log",
+        "error-observations.json",
+        "admin-audit-contract-errors.test.ts.txt"
+      ]
+    },
+    {
+      "id": "API-02",
+      "severity": "medium contract debt",
+      "state": "CONFIRMED SOURCE GAP; no malformed runtime reply demonstrated",
+      "title": "Twelve legacy ops JSON endpoints lack response schemas",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/ops/alerts/:alertId/acknowledge",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 194
+        },
+        {
+          "method": "GET",
+          "path": "/ops/failures",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 252
+        },
+        {
+          "method": "GET",
+          "path": "/ops/runs",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 278
+        },
+        {
+          "method": "POST",
+          "path": "/ops/runs/:runId/retry",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 301
+        },
+        {
+          "method": "GET",
+          "path": "/ops/quarantine",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 544
+        },
+        {
+          "method": "GET",
+          "path": "/ops/anomalies",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 581
+        },
+        {
+          "method": "POST",
+          "path": "/ops/quarantine/:quarantineId/replay",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 627
+        },
+        {
+          "method": "POST",
+          "path": "/ops/quarantine/:quarantineId/discard",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 673
+        },
+        {
+          "method": "GET",
+          "path": "/ops/test-controls",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 934
+        },
+        {
+          "method": "POST",
+          "path": "/ops/test-controls/:key",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 948
+        },
+        {
+          "method": "GET",
+          "path": "/ops/demo-reset",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 1252
+        },
+        {
+          "method": "POST",
+          "path": "/ops/demo-reset",
+          "file": "apps/api/src/routes/ops.ts",
+          "line": 1272
+        }
+      ],
+      "intentionalBinaryException": {
+        "method": "GET",
+        "path": "/audit/export",
+        "reason": "Bounded CSV/NDJSON is not a JSON response."
+      },
+      "impact": "These native replies lack runtime Zod output validation/generated response contracts. Passing guards do not demonstrate output conformance for these legacy routes.",
+      "proposedFix": "Add lossless success schemas and generated aliases one family at a time, preserving every native field, null/unknown state, scope and status. Keep binary export explicit.",
+      "acceptance": [
+        "Native success, empty and unavailable bodies match declared nested schemas without lost fields.",
+        "A deliberately malformed service result is contained as generic500 with correlation and without internal details."
+      ],
+      "evidence": [
+        "route-inventory.json",
+        "core-batch-v1.log"
+      ]
+    }
+  ],
+  "sourceOnlyProposals": [
+    {
+      "id": "API-UX-01",
+      "state": "SOURCE ONLY; browser behavior not reproduced by this API audit",
+      "title": "Present safe field validation details at forms",
+      "anchors": [
+        "apps/api/src/app.ts:348-357",
+        "apps/console/src/api/client.ts:10-20,103-116",
+        "apps/console/src/components/Panel.tsx:58-78"
+      ],
+      "observedApi": "400 VALIDATION includes field /q and the minimum-length reason; its common message is Request does not match the schema.",
+      "proposal": "Project safe field/reason details where callers currently render only failure.message; do not display submitted values or internal issue objects wholesale.",
+      "acceptance": "A real API-rejected form names the field/reason and retains the draft without revealing private input."
+    },
+    {
+      "id": "API-UX-02",
+      "state": "SOURCE ONLY; UI loss not browser-reproduced here",
+      "title": "Retain the API correlation reference in Console errors",
+      "anchors": [
+        "apps/api/src/plugins/telemetry.ts:117-130",
+        "apps/console/src/api/client.ts:10-20,103-116",
+        "apps/console/src/components/Panel.tsx:58-78"
+      ],
+      "observedApi": "All eight error probes retained the exact x-request-id, including the failed404 envelope pin.",
+      "proposal": "Retain x-request-id in ApiError and optionally show a safe copyable support reference beside its existing public explanation.",
+      "acceptance": "A real failed Console action exposes its response reference without replacing the message with diagnostics."
+    }
+  ],
+  "verifiedExamples": [
+    {
+      "label": "anonymous accounts",
+      "status": 401,
+      "body": {
+        "error": {
+          "code": "UNAUTHORIZED",
+          "message": "Not signed in"
+        }
+      },
+      "requestId": "ZZ-AUDIT-401",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "reception support refusal",
+      "status": 403,
+      "body": {
+        "error": {
+          "code": "FORBIDDEN",
+          "message": "Missing permission console:support:impersonate"
+        }
+      },
+      "requestId": "ZZ-AUDIT-403",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "invalid support query",
+      "status": 400,
+      "body": {
+        "error": {
+          "code": "VALIDATION",
+          "message": "Request does not match the schema",
+          "details": [
+            {
+              "keyword": "too_small",
+              "instancePath": "/q",
+              "schemaPath": "#/q/too_small",
+              "params": {
+                "issue": {
+                  "code": "too_small",
+                  "minimum": 1,
+                  "type": "string",
+                  "inclusive": true,
+                  "exact": false,
+                  "message": "String must contain at least 1 character(s)",
+                  "path": [
+                    "q"
+                  ]
+                }
+              },
+              "message": "String must contain at least 1 character(s)"
+            }
+          ]
+        }
+      },
+      "requestId": "ZZ-AUDIT-400",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "unavailable endpoint",
+      "status": 404,
+      "body": {
+        "message": "Route GET:/__admin_audit/not-built not found",
+        "error": "Not Found",
+        "statusCode": 404
+      },
+      "requestId": "ZZ-AUDIT-404",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "known conflict envelope",
+      "status": 409,
+      "body": {
+        "error": {
+          "code": "ZZ_TEST_CONFLICT",
+          "message": "ZZ TEST a fresh read is required.",
+          "details": {
+            "reason": "ZZ_TEST_STALE"
+          }
+        }
+      },
+      "requestId": "ZZ-AUDIT-409",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "native rate refusal",
+      "status": 429,
+      "body": {
+        "error": {
+          "code": "TOO_MANY_REQUESTS",
+          "message": "Too many requests. Try again in 60s.",
+          "details": {
+            "retryAfterSeconds": 60
+          }
+        }
+      },
+      "requestId": "ZZ-AUDIT-429",
+      "retryAfter": "60",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "failure",
+      "status": 500,
+      "body": {
+        "error": {
+          "code": "INTERNAL",
+          "message": "Internal server error"
+        }
+      },
+      "requestId": "ZZ-AUDIT-500",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "invalid-output",
+      "status": 500,
+      "body": {
+        "error": {
+          "code": "INTERNAL",
+          "message": "Internal server error"
+        }
+      },
+      "requestId": "ZZ-AUDIT-500",
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "label": "undeclared output",
+      "status": 200,
+      "body": {
+        "ok": true
+      },
+      "requestId": "632276b6-557c-4cc0-a9fb-bf8b64cf857a",
+      "contentType": "application/json; charset=utf-8"
+    }
+  ],
+  "positiveCoverage": [
+    "675 existing cases in47wholefiles pass; all4route guards are green.",
+    "Eight of9newHTTP probes pass. Anonymous401, missing-permission403, request-schema400, known409reason, native429wait/header, generic500 and invalid-output500 retain correlation.",
+    "The500answers conceal internal diagnostics; a declared output schema strips undeclared fields.",
+    "Existing named suites cover foreign/archived/unreachable scope refusals, idempotency, approval races and failure behavior. This is not every possible matrix cell.",
+    "suite-controls-integration13cases pass, including disabled/unsupported control gates; no real payment provider is contacted."
+  ],
+  "otoApp": {
+    "freshExecution": false,
+    "bridge": "git diff adce7c4f..5da2fe22 has docs/evidence only. App, dependency and workflow bytes match coordinator-verified six-green CI40716035735.",
+    "relevantChecks": [
+      "admin-managed.check.ts",
+      "admin-managed-alternate.check.ts",
+      "admin-managed-ui.check.tsx",
+      "platform-role-{suite,mapping,managed-flag,permissions,branch-scope,database,storage-tenant,training-scope}.check.ts",
+      "suite-sign-in.check.ts",
+      "suite-sign-in-routes.check.ts (imports s633-suite and s634-suite)",
+      "s633 employee/lifecycle/wizard checks",
+      "s634-payroll-status.check.ts"
+    ],
+    "limit": "The fresh API staff transport cases use a captured fake upstream; they are not fresh OTO App HTTP execution."
+  },
+  "cleanup": {
+    "testTeardownCompleted": true,
+    "temporarySourcePreservedAndRemoved": true,
+    "remainingAuditPathPostgres": 0,
+    "remainingCreatedDuringAudit": 0,
+    "unownedProcessesTouched": false,
+    "productDiff": [],
+    "coordinatorDocsChangesPreserved": [
+      "docs/handover/CLOUD_HANDOVER.md",
+      "docs/handover/CODEX_HANDOVER.md",
+      "docs/progress/STATUS.md"
+    ]
+  },
+  "limitations": [
+    "48wholefiles were executed, not the entire API or App battery.",
+    "The109-route AST inventory maps literal app.METHOD registrations. Dynamic registrations/options retain the guard-review limitation.",
+    "No exhaustive401/403/400/404/409/429/5xx cross-product was driven across all109routes.",
+    "No staging, provider, real message, payment or hardware action ran.",
+    "Reversed Activity ranges and local requestId filtering are source-read candidates only, with no new native assertion or confirmed defect here.",
+    "No fixes were applied. Known649/672-675 and missing-banner limits remain separate."
+  ],
+  "artifacts": {
+    "receipt": "core-batch-v1.json",
+    "log": "core-batch-v1.log",
+    "logSha256": "d9cd8e90602b70507fa8192f9b84e1344fa211f3f0ff976a0bcdf637e048ebd8",
+    "sourceManifest": "source-manifest.json",
+    "temporarySource": "admin-audit-contract-errors.test.ts.txt",
+    "census": "coverage-census.json",
+    "inventory": "route-inventory.json",
+    "examples": "error-observations.json",
+    "cleanup": "cleanup-process-check.json",
+    "sourceRemoval": "temporary-source-removal.json"
+  }
+}

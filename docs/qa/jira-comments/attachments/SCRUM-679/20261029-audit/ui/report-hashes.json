@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-10-28T17:10:10.018Z",
+  "correction": "Family summaries explicitly labelled; all four message-plan items named; independent source-only discount usage semantics recorded.",
+  "before": [
+    {
+      "file": "UI-AUDIT.md",
+      "sha256": "ec1f9182cae8091ee4f671e9bc0962c712059f74ccdd2f1858dbaf823b933bf9"
+    },
+    {
+      "file": "ui-audit-results.json",
+      "sha256": "a3c2308f478861bf6e1cb6075851e56aeda29bd40b03018e4681e44f1959da27"
+    },
+    {
+      "file": "ui-audit-matrix.json",
+      "sha256": "9319c67ccbfd93c65f1e5b8d19cf97b30a4fd78b42a79f7d1a6b2d97986e6b2a"
+    }
+  ],
+  "files": [
+    {
+      "file": "UI-AUDIT.md",
+      "sha256": "a0f9fa99b9a10b02c2f5e5d42afe4e9828768690b3e6a0ba6ea8f0b37ff24ae1"
+    },
+    {
+      "file": "ui-audit-results.json",
+      "sha256": "a7f919dc6785a23803e87d88d0bab60af6b837dff4e8752d2dc17dff94b32ffe"
+    },
+    {
+      "file": "ui-audit-matrix.json",
+      "sha256": "33b784ed59a5a3e7dc735e1bee9ba6d8bcd567ce3278ae7b0648088fef45bf96"
+    },
+    {
+      "file": "pages.json",
+      "sha256": "ede9291073e623b1c3846e59c133a080f004f12773fac398c6c20c0ec854bb5e"
+    },
+    {
+      "file": "page-coverage.json",
+      "sha256": "fea545feefe7d870fa6f88bf25d87a72d374f42e3799c1dc94fcc8b4f6d96fc2"
+    },
+    {
+      "file": "native-message-catalogue.json",
+      "sha256": "077fedf50f3d06bade4024f2b959ef798cf3f3f391b46dec63bf24653969a715"
+    },
+    {
+      "file": "browser-probes-v3.json",
+      "sha256": "3b3e3e92db2b3c9e84461d16fcd2d2f20d29fd9691775bfc921febf38211dbda"
+    },
+    {
+      "file": "probe-v3/image-review.json",
+      "sha256": "b5fa164403eb2d41e627977d894f2f376e84dbfba5442cf60a7f9b5444eb251c"
+    },
+    {
+      "file": "temporary-test-cleanup.json",
+      "sha256": "e14aec2999b0daef46297997e5dfc1c5d4aeef8b4cc3ff69dace34e6953433ef"
+    }
+  ]
+}

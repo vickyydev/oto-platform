@@ -1,0 +1,197 @@
+{
+  "ticket": "SCRUM-679",
+  "domain": "Payment settings, Money, tax, cash, settlement and payment flags",
+  "completedAt": "2026-10-28T16:52:53.404Z",
+  "sourceSha": "5da2fe226a3fec8f4d9c725deba9428d040275b0",
+  "auditCompleted": true,
+  "readyForOwnerPlanReview": true,
+  "implementationApproved": false,
+  "productChanges": false,
+  "existingTestsChanged": false,
+  "temporaryTestRemoved": true,
+  "sourceFiles": {
+    "apps/console/src/pages/Money.tsx": "8c30741685f28d85cce24b5c4ff90724a02975fab19d9cf7cb09f78aab0699e6",
+    "apps/console/src/pages/MoneyOversight.tsx": "26a95875b72a901586cfcc25746fb2d54d522c1f07fff78cb31fa7fefcc50dad",
+    "apps/console/src/components/devices/StationDrawer.tsx": "1cbb3fd0c31e3be56cab76268380bf7d59a3bfd1a86b9e6cbd9c947dfc3b8324",
+    "apps/console/src/components/integrations/SettlementImportPanel.tsx": "e1735fe6f0adece6d3675df529c9e4cb76d2a934632ad7bf4b37fabe800b76d5",
+    "apps/console/src/api/moneyOversight.ts": "07ad6bd1d78339201e31c8ec435f4f5cc13a790da490063aa5df5b350fabf0b0",
+    "apps/api/src/routes/catalog.ts": "c1aa693ee673c7015f9377d4d4ab2a8dd0a006245d4accd0f7f815debe15ef60",
+    "apps/api/src/routes/console-money.ts": "8d417079dcce0e5c370a0f848ea8bbd64770dd1accbb98029123c53abbaafbf8",
+    "apps/api/src/routes/settlement.ts": "bab9a845fe3211c4565e55642dc037448c21c8bc53d19dccc196ff457b94a741",
+    "apps/api/src/routes/end-of-day.ts": "a570a42e4c6ef1f81ef8ddbc0887d29cb6b7c655ac757095e8c73a0affd7ff6e",
+    "apps/api/src/routes/fleet.ts": "1b105a1bdbc55025496cb4dadf2b76df4b0b4f57d4fe5e4544f92830ff5f1dec",
+    "apps/api/src/services/payment-methods.ts": "c11a6b9c83de4afcd0633e451b29312254d60081d219ced94cabc61c76b41101",
+    "apps/api/src/services/console-money.ts": "600d950f5770f769e68326badd98f78a6fa16e247f707554a40e3ba3098a6869",
+    "apps/api/src/services/settlement.ts": "3523d604d5c9fc216fce036fcb38bc3ba4f49e55b610dacc44334667123fa549",
+    "apps/api/src/services/payments/routing.ts": "4ce4ff83cd31cca1e6d5cf0deff9331eeb068d637e16ef5484d9289f93e98432",
+    "apps/api/src/services/suite-flags.ts": "26130820fc896f7f278aca8352fe850aba516254e8d2eaa6c875957057e3394c",
+    "apps/api/src/env.ts": "1a927ca731b68587b9eab6f2fa391715676d91246219c2282aacb29f08e277b2",
+    "packages/shared/src/catalog-shapes.ts": "551c42e32b8bd17fd06396be2df121d11384e260bc04fc3d08703f5d2f688bee",
+    "packages/shared/src/payments.ts": "c994cdf9ec42d1ba73b38c0c4e3962fbc833de478e17cdf30169a52942a187aa",
+    "packages/shared/src/settlement.ts": "9047246b8a1660b890f1acc1e2c1e40ad54e04ce353dabe29c73f8405b344c02",
+    "packages/db/src/schema/suite-controls.ts": "9a1966588b8e2c3dfb73ae0c80bf21a498e557dafb7f2c27c7454eb1d8de06d5",
+    "packages/db/src/schema/catalog.ts": "5fde89846a19c5936a6f9e29c82d648a65ed2b93b1c9aa84c49932f287543739"
+  },
+  "coverage": {
+    "existingNative": {
+      "files": 4,
+      "passed": 53,
+      "failed": 0,
+      "breakdown": {
+        "tenders": 24,
+        "money": 16,
+        "settlement": 9,
+        "taxSeam": 4
+      },
+      "receipt": "native-targeted-v1.json"
+    },
+    "diagnostic": {
+      "files": 1,
+      "passed": 1,
+      "failed": 2,
+      "setupFailures": 0,
+      "receipt": "tax-ownership-v1.json",
+      "test": "admin-audit-payment-ownership.test.ts.txt"
+    },
+    "authCleanup": {
+      "nativeSignOut": 200,
+      "originalCookieMe": 401,
+      "assertedInAfterAll": true
+    },
+    "ownedPgCleanup": {
+      "passed": true,
+      "servers": 5,
+      "listeners": 5,
+      "receipt": "cleanup-verification-v1.json"
+    }
+  },
+  "findings": [
+    {
+      "id": "PAY-01",
+      "severity": "medium",
+      "title": "Tax override stores a foreign-operator category reference",
+      "verification": "Native real DB/HTTP",
+      "actual": {
+        "case": "foreign category",
+        "status": 200,
+        "code": null,
+        "message": null,
+        "stored": true
+      },
+      "scope": "Cross-owner reference/data integrity; no foreign-value disclosure demonstrated",
+      "owner": "API catalogue",
+      "proposedFix": "Validate referenced ownership in the transaction; consistent 404 and no success row on foreign/missing reference.",
+      "acceptance": "Retain own control; category and product parity, missing and rollback checks."
+    },
+    {
+      "id": "PAY-02",
+      "severity": "medium",
+      "title": "Unknown category reports a generic internal failure",
+      "verification": "Native real DB/HTTP",
+      "actual": {
+        "case": "nonexistent category",
+        "status": 500,
+        "code": "INTERNAL",
+        "message": "Internal server error",
+        "stored": false
+      },
+      "owner": "API catalogue",
+      "proposedFix": "Refuse missing reference before INSERT with a clear 404; preserve sanitization.",
+      "acceptance": "No override persisted, no successful write audit, own reference still works."
+    },
+    {
+      "id": "PAY-03",
+      "severity": "low",
+      "title": "Used-tender DELETE description and inventory disagree with approved archive behavior",
+      "verification": "Source plus existing native archive test passed",
+      "owner": "API contract/docs",
+      "proposedFix": "Update description only; preserve manager confirmation/archive/ledger history.",
+      "acceptance": "All24 existing tender tests unchanged and green."
+    }
+  ],
+  "productOverrideOwnership": {
+    "runtimeVerified": false,
+    "sourceOnly": true
+  },
+  "unsupportedPaymentFlags": [
+    "payments.qr_tender_disabled",
+    "payments.card_tender_disabled",
+    "payments.manual_recording_forced"
+  ],
+  "coreSuiteFlagsRuntimeEvidence": "Assigned to core API auditor; no execution claimed here.",
+  "report": "payment-capability-and-audit.md",
+  "summary": "prioritized-summary.md",
+  "artifacts": [
+    {
+      "filename": "admin-audit-payment-ownership.test.ts.txt",
+      "sha256": "eb4f148757c7bb8e37ba5c00b49cce043435029aa83c7aca1fcbb3bcc93d259b",
+      "bytes": 4386
+    },
+    {
+      "filename": "cleanup-targets-v1.json",
+      "sha256": "2fc5ae99aaf7a28b1883abd1815d1187681b9b496210aa34d49fefc820953c5f",
+      "bytes": 699
+    },
+    {
+      "filename": "cleanup-verification-v1.json",
+      "sha256": "bb16dc14ef20ec5abe1127e1fbcc61c2557d6c67fb1818655b5b466a5b727528",
+      "bytes": 859
+    },
+    {
+      "filename": "native-targeted-v1.json",
+      "sha256": "2879a9f612727c8863eabe2128099bd40989663cd3216ee7a29e7ac42573354a",
+      "bytes": 2423
+    },
+    {
+      "filename": "native-targeted-v1.log",
+      "sha256": "d945ddb76ba32ff0b36c3e0c94c684e49dfa5d002680b472e03bf42475a8e4ee",
+      "bytes": 18040
+    },
+    {
+      "filename": "payment-capability-and-audit.md",
+      "sha256": "2ca18506cbf885b44427d1d4b5e9edcf1f4b5f1853b95dbbfbfb0c19b903ba5c",
+      "bytes": 14456
+    },
+    {
+      "filename": "prioritized-summary.md",
+      "sha256": "68da12cb530cc4aab38ec6b4197812febe107e8c0ae5e7b58b519f566d0e0828",
+      "bytes": 3112
+    },
+    {
+      "filename": "run-native-targeted-v1.mjs",
+      "sha256": "fdd0d2f2ff5e72d470cab0617dd02316b1b95fa2e2cd75ce69e93e9dcf9cad4b",
+      "bytes": 3745
+    },
+    {
+      "filename": "run-tax-ownership-v1.mjs",
+      "sha256": "cdd8f985b95994f0c8061b05a5dff6ff3f630a13983718cc841bd9e2d0dd269a",
+      "bytes": 3741
+    },
+    {
+      "filename": "tax-override-native-observations-v1.json",
+      "sha256": "f007ba8eabdffe3486ed54baeb5c21a6bdcd1aa8744e5a067e9294f22fc5b1fc",
+      "bytes": 470
+    },
+    {
+      "filename": "tax-ownership-v1.json",
+      "sha256": "5df95809f719ac23ac662b21c389163be1cba5a26c822a0dddcf1dd6534e01da",
+      "bytes": 1867
+    },
+    {
+      "filename": "tax-ownership-v1.log",
+      "sha256": "4904a9cce701d4ccab6cf5bf4a06e85a5fbab9ec2ee431de4b7d847ded907652",
+      "bytes": 8845
+    },
+    {
+      "filename": "temporary-test-removal-v1.json",
+      "sha256": "d4fa750bd0fb0f691d2c7b6cf163bd8ef4ede115b0a591d7e3f0e805eb965fdf",
+      "bytes": 412
+    }
+  ],
+  "limits": [
+    "No real provider, staging, hardware, payment or cash-close operation.",
+    "No browser or full-suite/CI claim.",
+    "Station routing/cap and gateway deployment behavior source-reviewed; not natively exercised in this audit.",
+    "Approval required before any implementation."
+  ]
+}

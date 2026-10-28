@@ -1,0 +1,61 @@
+{
+  "reviewedAt": "2026-10-28T17:07:06.149Z",
+  "allSixInspected": true,
+  "publishableAs": "Local controlled-response audit illustrations only; never staging acceptance screenshots",
+  "images": [
+    {
+      "file": "C:/oto-lanes/admin-audit-evidence/ui/probe-v3/SCRUM-679-UI01-late-booth-history.png",
+      "observation": "Late A history replaces selected B history",
+      "sha256": "adf328da1d091d04c0b911c6d24c06b07e6b38d6d2d15a5ee039654b5ec616d4",
+      "original": "C:/oto-lanes/admin-audit-20261028/apps/console/test-results/admin-audit-ui-booths-ledg-86bcf-ce-selected-booth-B-history/test-failed-1.png",
+      "scope": "Local actual built Console with controlled read responses; not staging evidence",
+      "inspected": true,
+      "limitation": "Selected B is visible. Version-history rows lie below this automatic viewport capture; the native assertion/log is the primary proof."
+    },
+    {
+      "file": "C:/oto-lanes/admin-audit-evidence/ui/probe-v3/SCRUM-679-UI02-resource404-message.png",
+      "observation": "Record404 is described as an undeployed route",
+      "sha256": "dba4c43e2ce96a43c6cdfab0ac3026e645456391f496aece289455a429cbf99f",
+      "original": "C:/oto-lanes/admin-audit-20261028/apps/console/test-results/admin-audit-ui-booths-ledg-75b53-laiming-an-undeployed-route/test-failed-1.png",
+      "scope": "Local actual built Console with controlled read responses; not staging evidence",
+      "inspected": true,
+      "limitation": "The visible defect is captured in the automatic viewport screenshot."
+    },
+    {
+      "file": "C:/oto-lanes/admin-audit-evidence/ui/probe-v3/SCRUM-679-UI03-inverted-page-range.png",
+      "observation": "51–50 of1 after a valid shrinking page response",
+      "sha256": "479cd0dcaf05db06e8a900b112e5f2d18d3516448b2640f7eeacffa540f8c713",
+      "original": "C:/oto-lanes/admin-audit-20261028/apps/console/test-results/admin-audit-ui-booths-ledg-be7a0-possible-current-page-range/test-failed-1.png",
+      "scope": "Local actual built Console with controlled read responses; not staging evidence",
+      "inspected": true,
+      "limitation": "The visible defect is captured in the automatic viewport screenshot."
+    },
+    {
+      "file": "C:/oto-lanes/admin-audit-evidence/ui/probe-v3/SCRUM-679-UI04-pending-park-fleet.png",
+      "observation": "Old park fleet remains while newly selected park loads",
+      "sha256": "f781da21a1a6f6a30023552c9a6f202cf0631c14ceb2e72148e3c202b653de88",
+      "original": "C:/oto-lanes/admin-audit-20261028/apps/console/test-results/admin-audit-ui-booths-ledg-76acc-ile-its-own-read-is-pending/test-failed-1.png",
+      "scope": "Local actual built Console with controlled read responses; not staging evidence",
+      "inspected": true,
+      "limitation": "The visible defect is captured in the automatic viewport screenshot."
+    },
+    {
+      "file": "C:/oto-lanes/admin-audit-evidence/ui/probe-v3/SCRUM-679-UI05-failed-box-read-empty.png",
+      "observation": "Failed box read plus no-box claim",
+      "sha256": "8a433324a58cca119fc040596682632cc938ad49e69cd516f6319a4a4855bd41",
+      "original": "C:/oto-lanes/admin-audit-20261028/apps/console/test-results/admin-audit-ui-booths-ledg-fe706-laim-an-empty-park-register/test-failed-1.png",
+      "scope": "Local actual built Console with controlled read responses; not staging evidence",
+      "inspected": true,
+      "limitation": "The visible defect is captured in the automatic viewport screenshot."
+    },
+    {
+      "file": "C:/oto-lanes/admin-audit-evidence/ui/probe-v3/SCRUM-679-UI06-failed-station-read-empty.png",
+      "observation": "Failed station read plus no-stations claim",
+      "sha256": "73fb6048f2be650592c4e4242c1c404273dd421f4b88d6058c56a3778458052e",
+      "original": "C:/oto-lanes/admin-audit-20261028/apps/console/test-results/admin-audit-ui-booths-ledg-6d02c-laim-an-empty-park-register/test-failed-1.png",
+      "scope": "Local actual built Console with controlled read responses; not staging evidence",
+      "inspected": true,
+      "limitation": "The visible defect is captured in the automatic viewport screenshot."
+    }
+  ]
+}

@@ -1,0 +1,2730 @@
+{
+  "sourceSha": "5da2fe22",
+  "recordedAt": "2026-10-28T16:45:39.111Z",
+  "kind": "Source AST map; not a runtime coverage claim",
+  "families": 26,
+  "routes": 109,
+  "routeEntries": [
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 87,
+      "method": "GET",
+      "path": "/accounts/",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:account:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 137,
+      "method": "POST",
+      "path": "/accounts/",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:account:create'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 259,
+      "method": "GET",
+      "path": "/accounts/:id/permissions",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:role:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 290,
+      "method": "POST",
+      "path": "/accounts/:id/role-assignments",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:role:assign'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 369,
+      "method": "DELETE",
+      "path": "/accounts/:id/role-assignments/:assignmentId",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:role:assign'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 425,
+      "method": "PATCH",
+      "path": "/accounts/:id",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:account:update'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 500,
+      "method": "POST",
+      "path": "/accounts/:id/temp-password",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:account:update'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": "true",
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 554,
+      "method": "GET",
+      "path": "/accounts/:id/sessions",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:account:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/accounts.ts",
+      "line": 601,
+      "method": "POST",
+      "path": "/accounts/:id/sessions/revoke",
+      "plugin": "accountRoutes",
+      "prefix": "/accounts",
+      "permission": "'admin:account:update'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/roles.ts",
+      "line": 18,
+      "method": "GET",
+      "path": "/roles/",
+      "plugin": "roleRoutes",
+      "prefix": "/roles",
+      "permission": "'admin:role:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/roles.ts",
+      "line": 33,
+      "method": "GET",
+      "path": "/roles/holders",
+      "plugin": "roleRoutes",
+      "prefix": "/roles",
+      "permission": "'admin:role:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/roles.ts",
+      "line": 49,
+      "method": "GET",
+      "path": "/roles/preview",
+      "plugin": "roleRoutes",
+      "prefix": "/roles",
+      "permission": "'admin:role:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/app-identities.ts",
+      "line": 149,
+      "method": "POST",
+      "path": "/admin/apps/:app/users",
+      "plugin": "appIdentityRoutes",
+      "prefix": "/admin/apps",
+      "permission": "'admin:role:assign'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/app-identities.ts",
+      "line": 526,
+      "method": "POST",
+      "path": "/admin/apps/oto_app/suite-sign-ins",
+      "plugin": "appIdentityRoutes",
+      "prefix": "/admin/apps",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": "true",
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/app-identities.ts",
+      "line": 566,
+      "method": "POST",
+      "path": "/admin/apps/oto_app/lifecycle-deactivations",
+      "plugin": "appIdentityRoutes",
+      "prefix": "/admin/apps",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/app-identities.ts",
+      "line": 592,
+      "method": "GET",
+      "path": "/admin/apps/oto_app/unlinked-users",
+      "plugin": "appIdentityRoutes",
+      "prefix": "/admin/apps",
+      "permission": "'admin:account:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/app-identities.ts",
+      "line": 642,
+      "method": "GET",
+      "path": "/admin/apps/users/:accountId",
+      "plugin": "appIdentityRoutes",
+      "prefix": "/admin/apps",
+      "permission": "'admin:role:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/app-identities.ts",
+      "line": 717,
+      "method": "PUT",
+      "path": "/admin/apps/oto_app/users/:accountId/branches",
+      "plugin": "appIdentityRoutes",
+      "prefix": "/admin/apps",
+      "permission": "'admin:role:assign'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/app-identities.ts",
+      "line": 796,
+      "method": "DELETE",
+      "path": "/admin/apps/:app/users/:accountId",
+      "plugin": "appIdentityRoutes",
+      "prefix": "/admin/apps",
+      "permission": "'admin:role:assign'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/operators.ts",
+      "line": 24,
+      "method": "GET",
+      "path": "/operators/",
+      "plugin": "operatorRoutes",
+      "prefix": "/operators",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/operators.ts",
+      "line": 40,
+      "method": "POST",
+      "path": "/operators/",
+      "plugin": "operatorRoutes",
+      "prefix": "/operators",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/operators.ts",
+      "line": 86,
+      "method": "PATCH",
+      "path": "/operators/:id",
+      "plugin": "operatorRoutes",
+      "prefix": "/operators",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/operators.ts",
+      "line": 126,
+      "method": "POST",
+      "path": "/operators/:id/administrators",
+      "plugin": "operatorRoutes",
+      "prefix": "/operators",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/branches.ts",
+      "line": 61,
+      "method": "GET",
+      "path": "/branches/",
+      "plugin": "branchRoutes",
+      "prefix": "/branches",
+      "permission": "'admin:branch:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/branches.ts",
+      "line": 115,
+      "method": "POST",
+      "path": "/branches/",
+      "plugin": "branchRoutes",
+      "prefix": "/branches",
+      "permission": "'admin:branch:create'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/branches.ts",
+      "line": 204,
+      "method": "GET",
+      "path": "/branches/oto-app",
+      "plugin": "branchRoutes",
+      "prefix": "/branches",
+      "permission": "'admin:branch:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/branches.ts",
+      "line": 224,
+      "method": "POST",
+      "path": "/branches/oto-app/reconcile",
+      "plugin": "branchRoutes",
+      "prefix": "/branches",
+      "permission": "'admin:branch:update'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/branches.ts",
+      "line": 267,
+      "method": "PATCH",
+      "path": "/branches/:id",
+      "plugin": "branchRoutes",
+      "prefix": "/branches",
+      "permission": "'admin:branch:update'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ branchId: 'params.id' }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/branches.ts",
+      "line": 337,
+      "method": "GET",
+      "path": "/branches/:id/occupancy",
+      "plugin": "branchRoutes",
+      "prefix": "/branches",
+      "permission": "'pos:checkin:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ branchId: 'params.id' }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/employees.ts",
+      "line": 16,
+      "method": "GET",
+      "path": "/employees/",
+      "plugin": "employeeRoutes",
+      "prefix": "/employees",
+      "permission": "'admin:account:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/departments.ts",
+      "line": 6,
+      "method": "GET",
+      "path": "/departments/",
+      "plugin": "departmentRoutes",
+      "prefix": "/departments",
+      "permission": "'admin:account:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/access-review.ts",
+      "line": 20,
+      "method": "GET",
+      "path": "/access-review/",
+      "plugin": "accessReviewRoutes",
+      "prefix": "/access-review",
+      "permission": "'admin:role:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console.ts",
+      "line": 70,
+      "method": "GET",
+      "path": "/overview",
+      "plugin": "consoleRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-staff.ts",
+      "line": 32,
+      "method": "GET",
+      "path": "/staff/summary",
+      "plugin": "consoleStaffRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/aggregates.ts",
+      "line": 61,
+      "method": "GET",
+      "path": "/aggregates/members",
+      "plugin": "aggregateRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/aggregates.ts",
+      "line": 70,
+      "method": "GET",
+      "path": "/aggregates/bookings",
+      "plugin": "aggregateRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/aggregates.ts",
+      "line": 79,
+      "method": "GET",
+      "path": "/aggregates/assistant-usage",
+      "plugin": "aggregateRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/aggregates.ts",
+      "line": 88,
+      "method": "GET",
+      "path": "/aggregates/inbox-ai-usage",
+      "plugin": "aggregateRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/aggregates.ts",
+      "line": 97,
+      "method": "GET",
+      "path": "/aggregates/fleet",
+      "plugin": "aggregateRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/assistant-settings.ts",
+      "line": 24,
+      "method": "GET",
+      "path": "/assistant-settings",
+      "plugin": "assistantSettingsRoutes",
+      "prefix": "",
+      "permission": "'inbox:ai:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/assistant-settings.ts",
+      "line": 39,
+      "method": "PUT",
+      "path": "/assistant-settings",
+      "plugin": "assistantSettingsRoutes",
+      "prefix": "",
+      "permission": "'inbox:ai:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/platform.ts",
+      "line": 40,
+      "method": "GET",
+      "path": "/platform/alerts",
+      "plugin": "platformRoutes",
+      "prefix": "",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/platform.ts",
+      "line": 57,
+      "method": "GET",
+      "path": "/platform/jobs",
+      "plugin": "platformRoutes",
+      "prefix": "",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/platform.ts",
+      "line": 69,
+      "method": "GET",
+      "path": "/platform/environment",
+      "plugin": "platformRoutes",
+      "prefix": "",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-controls.ts",
+      "line": 39,
+      "method": "GET",
+      "path": "/console/apps",
+      "plugin": "suiteControlRoutes",
+      "prefix": "",
+      "permission": "'console:app_registry:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-controls.ts",
+      "line": 49,
+      "method": "GET",
+      "path": "/console/releases",
+      "plugin": "suiteControlRoutes",
+      "prefix": "",
+      "permission": "'console:release:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-controls.ts",
+      "line": 62,
+      "method": "GET",
+      "path": "/console/releases/agents",
+      "plugin": "suiteControlRoutes",
+      "prefix": "",
+      "permission": "'console:release:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 173,
+      "method": "GET",
+      "path": "/suite/apps",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": "'session'",
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 186,
+      "method": "GET",
+      "path": "/console/flags",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": "'console:release:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 197,
+      "method": "GET",
+      "path": "/console/flags/preview",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": "'console:release:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 214,
+      "method": "PUT",
+      "path": "/console/apps/:key/maintenance",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": "'console:app_registry:manage'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 243,
+      "method": "POST",
+      "path": "/console/apps/:key/maintenance/clear",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": "'console:app_registry:manage'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 268,
+      "method": "PUT",
+      "path": "/console/flags",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 298,
+      "method": "POST",
+      "path": "/console/flags/clear",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 324,
+      "method": "POST",
+      "path": "/console/flags/approvals",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": "'console:release:kill_switch'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 348,
+      "method": "POST",
+      "path": "/console/flags/approvals/:id/approve",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": "'console:release:kill_switch'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 365,
+      "method": "POST",
+      "path": "/console/flags/approvals/:id/apply",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": "'console:release:kill_switch'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/suite-control-writes.ts",
+      "line": 386,
+      "method": "POST",
+      "path": "/console/deploy-events",
+      "plugin": "suiteControlWriteRoutes",
+      "prefix": "",
+      "permission": "'console:app_registry:manage'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-configuration.ts",
+      "line": 28,
+      "method": "GET",
+      "path": "/console/configuration",
+      "plugin": "consoleConfigurationRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-analytics.ts",
+      "line": 28,
+      "method": "GET",
+      "path": "/console/analytics",
+      "plugin": "consoleAnalyticsRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-analytics-sources.ts",
+      "line": 65,
+      "method": "GET",
+      "path": "/console/analytics/sources",
+      "plugin": "consoleAnalyticsSourcesRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-analytics-sources.ts",
+      "line": 80,
+      "method": "GET",
+      "path": "/console/analytics/sources/preview",
+      "plugin": "consoleAnalyticsSourcesRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-analytics-sources.ts",
+      "line": 98,
+      "method": "PUT",
+      "path": "/console/analytics/sources/:branchId",
+      "plugin": "consoleAnalyticsSourcesRoutes",
+      "prefix": "",
+      "permission": "'console:analytics:manage_source'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ branchId: 'params.branchId' }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-analytics-sources.ts",
+      "line": 116,
+      "method": "POST",
+      "path": "/console/analytics/rerun",
+      "plugin": "consoleAnalyticsSourcesRoutes",
+      "prefix": "",
+      "permission": "'console:analytics:rerun'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ branchId: 'body.branchId' }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-drift.ts",
+      "line": 33,
+      "method": "GET",
+      "path": "/console/analytics/drift",
+      "plugin": "consoleDriftRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-support.ts",
+      "line": 86,
+      "method": "GET",
+      "path": "/console/support/lookup",
+      "plugin": "consoleSupportRoutes",
+      "prefix": "",
+      "permission": "'console:support:lookup'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-support.ts",
+      "line": 120,
+      "method": "GET",
+      "path": "/console/support/trace",
+      "plugin": "consoleSupportRoutes",
+      "prefix": "",
+      "permission": "'console:support:trace'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-support.ts",
+      "line": 141,
+      "method": "GET",
+      "path": "/console/support/impersonations",
+      "plugin": "consoleSupportRoutes",
+      "prefix": "",
+      "permission": "'console:support:impersonate'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-support.ts",
+      "line": 158,
+      "method": "POST",
+      "path": "/console/support/impersonations",
+      "plugin": "consoleSupportRoutes",
+      "prefix": "",
+      "permission": "'console:support:impersonate'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": "true",
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-support.ts",
+      "line": 180,
+      "method": "POST",
+      "path": "/console/support/impersonations/approvals",
+      "plugin": "consoleSupportRoutes",
+      "prefix": "",
+      "permission": "'console:support:impersonate'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-support.ts",
+      "line": 190,
+      "method": "POST",
+      "path": "/console/support/impersonations/approvals/:id/approve",
+      "plugin": "consoleSupportRoutes",
+      "prefix": "",
+      "permission": "'console:support:impersonate'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-support.ts",
+      "line": 207,
+      "method": "POST",
+      "path": "/console/support/impersonations/:id/end",
+      "plugin": "consoleSupportRoutes",
+      "prefix": "",
+      "permission": "'console:support:impersonate'",
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-routing.ts",
+      "line": 66,
+      "method": "GET",
+      "path": "/inbox/teams",
+      "plugin": "consoleRoutingRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-routing.ts",
+      "line": 73,
+      "method": "POST",
+      "path": "/inbox/teams",
+      "plugin": "consoleRoutingRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-routing.ts",
+      "line": 88,
+      "method": "PATCH",
+      "path": "/inbox/teams/:id",
+      "plugin": "consoleRoutingRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-routing.ts",
+      "line": 101,
+      "method": "DELETE",
+      "path": "/inbox/teams/:id",
+      "plugin": "consoleRoutingRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200",
+        "409"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-routing.ts",
+      "line": 114,
+      "method": "GET",
+      "path": "/inbox/routing-rules",
+      "plugin": "consoleRoutingRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-routing.ts",
+      "line": 121,
+      "method": "POST",
+      "path": "/inbox/routing-rules",
+      "plugin": "consoleRoutingRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-routing.ts",
+      "line": 136,
+      "method": "PATCH",
+      "path": "/inbox/routing-rules/:id",
+      "plugin": "consoleRoutingRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/console-routing.ts",
+      "line": 149,
+      "method": "DELETE",
+      "path": "/inbox/routing-rules/:id",
+      "plugin": "consoleRoutingRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/audit.ts",
+      "line": 351,
+      "method": "GET",
+      "path": "/audit/",
+      "plugin": "auditRoutes",
+      "prefix": "/audit",
+      "permission": "'admin:audit:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/audit.ts",
+      "line": 459,
+      "method": "GET",
+      "path": "/audit/export",
+      "plugin": "auditRoutes",
+      "prefix": "/audit",
+      "permission": "'console:activity:export'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 166,
+      "method": "GET",
+      "path": "/ops/health",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 194,
+      "method": "POST",
+      "path": "/ops/alerts/:alertId/acknowledge",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 252,
+      "method": "GET",
+      "path": "/ops/failures",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 278,
+      "method": "GET",
+      "path": "/ops/runs",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 301,
+      "method": "POST",
+      "path": "/ops/runs/:runId/retry",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 544,
+      "method": "GET",
+      "path": "/ops/quarantine",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 581,
+      "method": "GET",
+      "path": "/ops/anomalies",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 627,
+      "method": "POST",
+      "path": "/ops/quarantine/:quarantineId/replay",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 673,
+      "method": "POST",
+      "path": "/ops/quarantine/:quarantineId/discard",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": null,
+      "dynamicPermission": "true",
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 703,
+      "method": "GET",
+      "path": "/ops/integrations",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 934,
+      "method": "GET",
+      "path": "/ops/test-controls",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": "'session'",
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 948,
+      "method": "POST",
+      "path": "/ops/test-controls/:key",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 1252,
+      "method": "GET",
+      "path": "/ops/demo-reset",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": "'session'",
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops.ts",
+      "line": 1272,
+      "method": "POST",
+      "path": "/ops/demo-reset",
+      "plugin": "opsRoutes",
+      "prefix": "/ops",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": "true",
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [],
+      "responseDeclared": false
+    },
+    {
+      "file": "apps/api/src/routes/ops-alert-routing.ts",
+      "line": 104,
+      "method": "GET",
+      "path": "/ops/alert-mutes",
+      "plugin": "opsAlertRoutingRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/ops-alert-routing.ts",
+      "line": 139,
+      "method": "POST",
+      "path": "/ops/alert-mutes",
+      "plugin": "opsAlertRoutingRoutes",
+      "prefix": "/ops",
+      "permission": "'console:alert:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/ops-alert-routing.ts",
+      "line": 190,
+      "method": "POST",
+      "path": "/ops/alert-mutes/:muteId/lift",
+      "plugin": "opsAlertRoutingRoutes",
+      "prefix": "/ops",
+      "permission": "'console:alert:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/ops-alert-routing.ts",
+      "line": 227,
+      "method": "GET",
+      "path": "/ops/alert-recipients",
+      "plugin": "opsAlertRoutingRoutes",
+      "prefix": "/ops",
+      "permission": "'console:alert:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/ops-alert-routing.ts",
+      "line": 254,
+      "method": "POST",
+      "path": "/ops/alert-recipients",
+      "plugin": "opsAlertRoutingRoutes",
+      "prefix": "/ops",
+      "permission": "'console:alert:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/ops-alert-routing.ts",
+      "line": 319,
+      "method": "PATCH",
+      "path": "/ops/alert-recipients/:recipientId",
+      "plugin": "opsAlertRoutingRoutes",
+      "prefix": "/ops",
+      "permission": "'console:alert:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/ops-alert-routing.ts",
+      "line": 371,
+      "method": "POST",
+      "path": "/ops/alert-recipients/:recipientId/archive",
+      "plugin": "opsAlertRoutingRoutes",
+      "prefix": "/ops",
+      "permission": "'console:alert:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/integration-controls.ts",
+      "line": 89,
+      "method": "GET",
+      "path": "/ops/integrations/credentials",
+      "plugin": "integrationControlRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/integration-controls.ts",
+      "line": 117,
+      "method": "PUT",
+      "path": "/ops/integrations/:key/expiry",
+      "plugin": "integrationControlRoutes",
+      "prefix": "/ops",
+      "permission": "'console:integration:manage'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": true,
+        "body": true
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/integration-controls.ts",
+      "line": 165,
+      "method": "GET",
+      "path": "/ops/integrations/tests",
+      "plugin": "integrationControlRoutes",
+      "prefix": "/ops",
+      "permission": "'admin:health:read'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/integration-controls.ts",
+      "line": 186,
+      "method": "POST",
+      "path": "/ops/integrations/:key/test",
+      "plugin": "integrationControlRoutes",
+      "prefix": "/ops",
+      "permission": "'console:integration:test'",
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": null,
+      "target": "{ operator: true }",
+      "secretResponse": null,
+      "inputs": {
+        "query": true,
+        "params": true,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/health.ts",
+      "line": 69,
+      "method": "GET",
+      "path": "/health",
+      "plugin": "healthRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": "true",
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200"
+      ],
+      "responseDeclared": true
+    },
+    {
+      "file": "apps/api/src/routes/health.ts",
+      "line": 71,
+      "method": "GET",
+      "path": "/ready",
+      "plugin": "healthRoutes",
+      "prefix": "",
+      "permission": null,
+      "dynamicPermission": null,
+      "platformWide": null,
+      "auth": null,
+      "public": "true",
+      "target": null,
+      "secretResponse": null,
+      "inputs": {
+        "query": false,
+        "params": false,
+        "body": false
+      },
+      "responseStatuses": [
+        "200",
+        "503"
+      ],
+      "responseDeclared": true
+    }
+  ],
+  "sourceBindings": [
+    {
+      "path": "apps/api/src/routes/accounts.ts",
+      "sha256": "9b768d578bf09bdb039c681f535e2b6da5be676a97dd9211dfa4e445b74b12b3"
+    },
+    {
+      "path": "apps/api/src/routes/roles.ts",
+      "sha256": "07984c9478bdfdde403ee2873a9ed7c829ba61dc15758faf5b6ef8d12de317b1"
+    },
+    {
+      "path": "apps/api/src/routes/app-identities.ts",
+      "sha256": "b08c2c4df5c2f69cec16e9f0c01e2639346fb82c8e27de1927b7563024d97a5f"
+    },
+    {
+      "path": "apps/api/src/routes/operators.ts",
+      "sha256": "34e7bec6f5ac70b4bb5367e759631106cea502287be34dee4a379b7885519921"
+    },
+    {
+      "path": "apps/api/src/routes/branches.ts",
+      "sha256": "df483df6d3910b6e794736d112a98f1f1813cce9b8519079fc7a8e09a2fef805"
+    },
+    {
+      "path": "apps/api/src/routes/employees.ts",
+      "sha256": "b38c0123e20fdeaa879e00ca405414c3f58401bbf57507c82e6206021db7a326"
+    },
+    {
+      "path": "apps/api/src/routes/departments.ts",
+      "sha256": "3c400fc3f28e10b509050daf63634ad42a35550a44c4891398b260adf6977916"
+    },
+    {
+      "path": "apps/api/src/routes/access-review.ts",
+      "sha256": "cb92b47eb51af9245c3500985499672bd762cb3f5b2a9b2c4f196a88c685f253"
+    },
+    {
+      "path": "apps/api/src/routes/console.ts",
+      "sha256": "41f3b9a7d4f52ddc26d3e4e4f7501d407eb964df7fd0a60f3afaf7d0ac3a0276"
+    },
+    {
+      "path": "apps/api/src/routes/console-staff.ts",
+      "sha256": "3812de793aceaa0b01f439e0361ae951082258f0c43caf1592f679b72c023189"
+    },
+    {
+      "path": "apps/api/src/routes/aggregates.ts",
+      "sha256": "3fd815f1c294baaa9134e0f22eae0221643d658b762820b0039d3ab5badaeeca"
+    },
+    {
+      "path": "apps/api/src/routes/assistant-settings.ts",
+      "sha256": "62a63c0433a2fec3b8ca668da4c5e29d6bc4921bf45cbd1273ee39ad3dae8b93"
+    },
+    {
+      "path": "apps/api/src/routes/platform.ts",
+      "sha256": "ef4d03bab41a747211aa7e7fb023731af2d879fdee3472575790303a6228129a"
+    },
+    {
+      "path": "apps/api/src/routes/suite-controls.ts",
+      "sha256": "8f18ab31cb9e2bae79bb66f729901c44b683e88bdc8bf0476e087b41df423a8d"
+    },
+    {
+      "path": "apps/api/src/routes/suite-control-writes.ts",
+      "sha256": "cd18f8b56fe89af9fb008f5f93402df51f32c0aa55307207a8d632485edde327"
+    },
+    {
+      "path": "apps/api/src/routes/console-configuration.ts",
+      "sha256": "07475994e7f8f04e41d9c57531707861a9ec5bd0f16a71bc904936ac7ea28558"
+    },
+    {
+      "path": "apps/api/src/routes/console-analytics.ts",
+      "sha256": "94c00881d94b1d5da637e81907edc966d0928a64c381738f5a6db68858e2e5f6"
+    },
+    {
+      "path": "apps/api/src/routes/console-analytics-sources.ts",
+      "sha256": "4e10e31a7eca241808a99982f344f353ccf50ed7bdfa6f1cda222bda6c64b3bf"
+    },
+    {
+      "path": "apps/api/src/routes/console-drift.ts",
+      "sha256": "cacc62412b8c59db05e0994c1083ac3b2cbca3989ac266b9ffeb1cbbc580e75b"
+    },
+    {
+      "path": "apps/api/src/routes/console-support.ts",
+      "sha256": "0e9a1f9b50b7e84ba88551a7b99441d87c6a6f196817770f5cc58f897896f6b1"
+    },
+    {
+      "path": "apps/api/src/routes/console-routing.ts",
+      "sha256": "bc7c33124fa26f61191868147daf5060043044623cc981c120456052e9c57f3b"
+    },
+    {
+      "path": "apps/api/src/routes/audit.ts",
+      "sha256": "6010e39509b30b7bc2e76d3806ecb4bf6c59f56a810d1183c53a978e387cd8ca"
+    },
+    {
+      "path": "apps/api/src/routes/ops.ts",
+      "sha256": "4f01fccccb9672acceb0b3601ae6db5fffd1a5742679a3fd43ac9f81dceab09e"
+    },
+    {
+      "path": "apps/api/src/routes/ops-alert-routing.ts",
+      "sha256": "73579dbef0d9e96acb504c65ad7bf3920349a4d32095421a4dfb13ec880b042c"
+    },
+    {
+      "path": "apps/api/src/routes/integration-controls.ts",
+      "sha256": "fcca6994ba51c54e36f506b385df6a6aa35fb28a0aec4a546b486b6a4d71a66d"
+    },
+    {
+      "path": "apps/api/src/routes/health.ts",
+      "sha256": "7fb7642862595ad62e84a0bf3c4256c919ab778d6435f397ceb7a3dc76604a4d"
+    }
+  ],
+  "centralHandling": [
+    {
+      "file": "apps/api/src/app.ts",
+      "lines": "310-399",
+      "contracts": "AppError; Zod400; unique409; nativeFastify4xx; generic500"
+    },
+    {
+      "file": "apps/api/src/plugins/telemetry.ts",
+      "lines": "117-130",
+      "contracts": "x-request-id, traceparent, action-id onSend"
+    },
+    {
+      "file": "apps/api/src/plugins/rate-limit.ts",
+      "lines": "178-190",
+      "contracts": "native429, retryAfterSeconds and retry-after"
+    }
+  ],
+  "limits": [
+    "Static app.METHOD calls with literal paths only. Dynamic registration and named imported route options require manual or runtime guard review.",
+    "Description/source inventory predates delivered P5; actual route source is authoritative.",
+    "No business calculation or payment/money domain review here.",
+    "routes/release.ts is the child pickup/release API, not Console release controls, and is excluded. Console Releases live in suite-controls.ts."
+  ]
+}

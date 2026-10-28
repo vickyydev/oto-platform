@@ -1,0 +1,26 @@
+{
+    "checkedAt":  "2026-10-28T16:47:35.5785753Z",
+    "ownObservedPids":  [
+                            6088,
+                            27124,
+                            5460,
+                            34184,
+                            19520
+                        ],
+    "ownObservedPorts":  [
+                             63560,
+                             50700,
+                             62950,
+                             52243,
+                             63376
+                         ],
+    "remainingOwnershipMatchedProcesses":  [
+
+                                           ],
+    "remainingObservedPortListeners":  [
+
+                                       ],
+    "passed":  true,
+    "mutationsPerformed":  false,
+    "scope":  "Exact own observed native PG identities only; no shared resources stopped"
+}

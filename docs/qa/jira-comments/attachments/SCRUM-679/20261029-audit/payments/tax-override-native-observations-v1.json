@@ -1,0 +1,26 @@
+{
+  "auditOnly": true,
+  "observations": [
+    {
+      "case": "own category",
+      "status": 200,
+      "code": null,
+      "message": null,
+      "stored": true
+    },
+    {
+      "case": "foreign category",
+      "status": 200,
+      "code": null,
+      "message": null,
+      "stored": true
+    },
+    {
+      "case": "nonexistent category",
+      "status": 500,
+      "code": "INTERNAL",
+      "message": "Internal server error",
+      "stored": false
+    }
+  ]
+}

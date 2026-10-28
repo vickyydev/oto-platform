@@ -1,0 +1,486 @@
+{
+  "ticket": "SCRUM-679",
+  "preparedAt": "2026-10-28T17:07:06.151Z",
+  "mode": "AUDIT ONLY; no implementation or owner approval inferred",
+  "sourceBasis": "Fresh audit worktree at root-provided5da2fe22; no implementation changes",
+  "scope": {
+    "canonicalRoutes": 66,
+    "registeredDetailPages": 57,
+    "distinctAreaRoots": 9,
+    "navigationAreas": 10,
+    "detailAliasesIncludingCanonical": 113,
+    "hashedConsoleAndAdminScreenSourceFiles": 317,
+    "jsxMessageFragmentsInventoried": 3117,
+    "exclusions": [
+      "Payment-domain deep-dive delegated",
+      "API response/ownership audit delegated",
+      "External app implementations not changed",
+      "No own staging auth or provider/business action"
+    ]
+  },
+  "retainedChecks": {
+    "consoleUnit": {
+      "passed": 490,
+      "todo": 3,
+      "files": 48
+    },
+    "adminScreensUnit": {
+      "passed": 120,
+      "files": 16
+    },
+    "rootNativeV1": {
+      "existingPassed": 327,
+      "auditFailures": 3,
+      "classification": "2 genuine +1 locator setup failure; unchanged original retained"
+    },
+    "nativeV2": {
+      "failed": 6,
+      "classification": "4 genuine +2 harness/mixed failures; immutable original retained"
+    },
+    "nativeV3": {
+      "ticket": "SCRUM-679",
+      "kind": "Audit-only native failure reproductions; production remains unchanged",
+      "startedAt": "2026-10-28T16:58:54.443Z",
+      "finishedAt": "2026-10-28T17:00:26.316Z",
+      "nativeExitCode": 0,
+      "failed": 6,
+      "passed": 0,
+      "spec": "apps/console/e2e/admin-audit-ui-booths-ledger.spec.ts",
+      "specSha256": "ad22ec4b7a347321d259236ca048bfc516a3ffbeb19890ffe9249513be3ff9dd",
+      "sourceFiles": 317,
+      "sourceBeforeSha256": "c63542a0f34efe2b670aea4e51c220e20ea33d59bf09ebc01af789050ccca63a",
+      "sourceAfterSha256": "c63542a0f34efe2b670aea4e51c220e20ea33d59bf09ebc01af789050ccca63a",
+      "sourceBytesUnchanged": true,
+      "embeddedStopped": true,
+      "logSha256": "1f8536b4d808d3466913076ee2157b0638c920ffa36a6d37d9015db91006eae7",
+      "staging": false,
+      "docker": false,
+      "classification": "All6 reached intended behavior assertions; wrapper exited1 even though package nativeExitCode is0"
+    }
+  },
+  "findings": [
+    {
+      "id": "UI-B1",
+      "classification": "BUG",
+      "evidence": "Native local built-browser reproduction",
+      "severity": "P2",
+      "title": "A previous booth history replaces the selected booth history",
+      "flow": "Hold A version refresh, select B, observe B history, release A.",
+      "observed": "B history disappears after the old A result. Same actor/operator/park throughout; global authority protection does not cover booth selection.",
+      "references": [
+        {
+          "file": "apps/console/src/pages/Booths.tsx",
+          "line": 253,
+          "sha256": "2971c6ba0b58a2ca0cdbc635a08f47feff0a5cceee34f8ff820287ab557fe9b1"
+        },
+        {
+          "file": "apps/console/src/pages/Booths.tsx",
+          "line": 277,
+          "sha256": "2971c6ba0b58a2ca0cdbc635a08f47feff0a5cceee34f8ff820287ab557fe9b1"
+        }
+      ],
+      "proposedCorrectionForApproval": "Bind all booth/list/detail reads and post-write refreshes to a monotonic selected-target/request generation, retaining independent read errors. Preserve API authority and native presentation.",
+      "probes": [
+        1
+      ]
+    },
+    {
+      "id": "UI-B2",
+      "classification": "BUG",
+      "evidence": "Native local built-browser reproduction",
+      "severity": "P2",
+      "title": "Old park equipment remains under a newly selected park",
+      "flow": "Read park A fleet, select B while B read is held.",
+      "observed": "The command bar selects Robinson Chalong while original Central fleet and station controls remain present. No equipment action was dispatched.",
+      "references": [
+        {
+          "file": "apps/console/src/pages/Devices.tsx",
+          "line": 146,
+          "sha256": "8b66e7f220410050dacadb9c08341c7479518c47bc1d82ab95294569152fc569"
+        },
+        {
+          "file": "apps/console/src/pages/Devices.tsx",
+          "line": 526,
+          "sha256": "8b66e7f220410050dacadb9c08341c7479518c47bc1d82ab95294569152fc569"
+        },
+        {
+          "file": "apps/console/src/pages/Devices.tsx",
+          "line": 537,
+          "sha256": "8b66e7f220410050dacadb9c08341c7479518c47bc1d82ab95294569152fc569"
+        }
+      ],
+      "proposedCorrectionForApproval": "Clear or context-tag retained fleet rows immediately on park change and reject old park completions. Bind drawers/actions to their captured targets; do not change grants or fleet rules.",
+      "probes": [
+        4
+      ]
+    },
+    {
+      "id": "UI-B3",
+      "classification": "BUG",
+      "evidence": "Native local built-browser reproduction",
+      "severity": "P2",
+      "title": "Failed equipment reads make false empty-register claims",
+      "flow": "Refuse the first box read and, separately, the first station read with500.",
+      "observed": "A real error banner coexists with “No box at this branch yet” / “No stations yet” and add-first guidance. Existing count-suppression controls do pass.",
+      "references": [
+        {
+          "file": "apps/console/src/pages/Devices.tsx",
+          "line": 270,
+          "sha256": "8b66e7f220410050dacadb9c08341c7479518c47bc1d82ab95294569152fc569"
+        },
+        {
+          "file": "apps/console/src/pages/Devices.tsx",
+          "line": 347,
+          "sha256": "8b66e7f220410050dacadb9c08341c7479518c47bc1d82ab95294569152fc569"
+        },
+        {
+          "file": "apps/console/src/pages/Devices.tsx",
+          "line": 558,
+          "sha256": "8b66e7f220410050dacadb9c08341c7479518c47bc1d82ab95294569152fc569"
+        }
+      ],
+      "proposedCorrectionForApproval": "Keep per-list unread/failed/stale/empty states. Draw empty-register advice only after that list answers successfully, retaining other independently successful lists.",
+      "probes": [
+        5,
+        6
+      ]
+    },
+    {
+      "id": "UI-B4",
+      "classification": "BUG",
+      "evidence": "Native local built-browser reproduction",
+      "severity": "P2",
+      "title": "Missing record404 is presented as an undeployed API",
+      "flow": "Return the native404 BOOTH_NOT_FOUND / “No booth with that id” for a selected draft.",
+      "observed": "The native reason disappears; the page says its draft route is not deployed and cites SCRUM-200.",
+      "references": [
+        {
+          "file": "apps/console/src/api/client.ts",
+          "line": 31,
+          "sha256": "15c408d12cc1dac68dbb79904779282809966881924dad413c756ec8141a85d0"
+        },
+        {
+          "file": "apps/console/src/pages/Booths.tsx",
+          "line": 249,
+          "sha256": "2971c6ba0b58a2ca0cdbc635a08f47feff0a5cceee34f8ff820287ab557fe9b1"
+        },
+        {
+          "file": "apps/console/src/pages/Booths.tsx",
+          "line": 600,
+          "sha256": "2971c6ba0b58a2ca0cdbc635a08f47feff0a5cceee34f8ff820287ab557fe9b1"
+        }
+      ],
+      "proposedCorrectionForApproval": "Distinguish a genuine missing-route fallback from structured resource404, preserving the server reason and an appropriate reread. Check other isMissingRoute consumers without broad policy changes.",
+      "probes": [
+        2
+      ]
+    },
+    {
+      "id": "UI-B5",
+      "classification": "BUG",
+      "evidence": "Native local built-browser reproduction",
+      "severity": "P3",
+      "title": "A shrinking ledger produces an inverted range and misleading empty text",
+      "flow": "Read50of51, request offset50, then receive valid total1/rows[].",
+      "observed": "The footer says “51–50 of1”; the page also says nothing matches although one record exists on an earlier page.",
+      "references": [
+        {
+          "file": "apps/console/src/pages/Vouchers.tsx",
+          "line": 309,
+          "sha256": "e84d4ff0c79fb6bbaf0e321a9f9c8de8d1b7147b2e042b9c27d52e845da53adb"
+        },
+        {
+          "file": "apps/console/src/pages/Vouchers.tsx",
+          "line": 328,
+          "sha256": "e84d4ff0c79fb6bbaf0e321a9f9c8de8d1b7147b2e042b9c27d52e845da53adb"
+        }
+      ],
+      "proposedCorrectionForApproval": "Use an honest empty-current-page state and navigable previous page or reset the stale offset. Bookings.tsx263 has the same range expression by static inspection; money-domain reconciliation is outside this UI audit.",
+      "probes": [
+        3
+      ]
+    }
+  ],
+  "sourceCandidates": [
+    {
+      "id": "UI-S1",
+      "classification": "BUG CANDIDATE",
+      "evidence": "Source-established closure comparison; no new native probe",
+      "severity": "P2",
+      "title": "Activity export cannot invalidate an old filtered response",
+      "references": [
+        {
+          "file": "apps/console/src/pages/Activity.tsx",
+          "line": 760,
+          "sha256": "a6698113ebed3ac21d6196f68c31fd17ded326e5f156e009baf8340f913980f4"
+        },
+        {
+          "file": "apps/console/src/pages/Activity.tsx",
+          "line": 768,
+          "sha256": "a6698113ebed3ac21d6196f68c31fd17ded326e5f156e009baf8340f913980f4"
+        }
+      ],
+      "observed": "asked.key and key are captured from the same render, so asked.key !== key cannot detect later filter changes. The old file and its completion note can publish into the new selection.",
+      "next": "Hold export, change filters, release; assert no obsolete download/note, then propose a current owner/ref guard."
+    },
+    {
+      "id": "UI-S2",
+      "classification": "BUG CANDIDATE",
+      "evidence": "Source plus API-owner confirmation that requestId is not server-filtered",
+      "severity": "P2",
+      "title": "Related audit rows can overclaim completeness",
+      "references": [
+        {
+          "file": "apps/console/src/pages/Activity.tsx",
+          "line": 542,
+          "sha256": "a6698113ebed3ac21d6196f68c31fd17ded326e5f156e009baf8340f913980f4"
+        },
+        {
+          "file": "apps/console/src/pages/Activity.tsx",
+          "line": 549,
+          "sha256": "a6698113ebed3ac21d6196f68c31fd17ded326e5f156e009baf8340f913980f4"
+        },
+        {
+          "file": "apps/console/src/pages/Activity.tsx",
+          "line": 666,
+          "sha256": "a6698113ebed3ac21d6196f68c31fd17ded326e5f156e009baf8340f913980f4"
+        }
+      ],
+      "observed": "Related locally filters at most200 recent rows, discards nextCursor, then says “This was the only row for that request”. The main Request id filter does carry a page-only warning when narrowed; this drawer does not.",
+      "next": "Return200 unrelated recent rows with another page and an older related record; require bounded/incomplete wording or an approved true server request filter."
+    },
+    {
+      "id": "UI-S3",
+      "classification": "BUG CANDIDATE",
+      "evidence": "Source-established drawer lifetime; native reproduction pending",
+      "severity": "P2",
+      "title": "A late maintenance completion may close a replacement app drawer",
+      "references": [
+        {
+          "file": "apps/console/src/pages/SuiteControls.tsx",
+          "line": 176,
+          "sha256": "ddeaf72061898cd633916fb8e726e20b86642718adad14aff98876941a33e82f"
+        },
+        {
+          "file": "apps/console/src/pages/SuiteControls.tsx",
+          "line": 202,
+          "sha256": "ddeaf72061898cd633916fb8e726e20b86642718adad14aff98876941a33e82f"
+        },
+        {
+          "file": "apps/console/src/components/Drawer.tsx",
+          "line": 28,
+          "sha256": "744a7271b60a5eb8ee4df76728bd49e1830f828d1849eae55d271c8758cbf5b8"
+        }
+      ],
+      "observed": "Close/Escape unmounts the old drawer while its request can continue. onDone checks page authority, then the parent unconditionally clears the currently open drawer. That authority remains current when a different app is opened in the same page.",
+      "next": "Mock one maintenance request, close A/open B, release A; require B draft and target remain. No staging maintenance action is needed."
+    }
+  ],
+  "messageIssues": [
+    {
+      "id": "UI-M1",
+      "classification": "BUG - wording/navigation",
+      "evidence": "Literal source",
+      "title": "Permission advice directs staff to removed Login Users panel",
+      "exact": "A manager can grant it from the Login Users panel.",
+      "references": [
+        {
+          "file": "apps/console/src/components/Panel.tsx",
+          "line": 205,
+          "sha256": "d956f8b97959ae5a2782f0877f3de63eef040952fe8762d6a345be32cadae0e7"
+        },
+        {
+          "file": "apps/console/src/pages/Booths.tsx",
+          "line": 746,
+          "sha256": "2971c6ba0b58a2ca0cdbc635a08f47feff0a5cceee34f8ff820287ab557fe9b1"
+        }
+      ],
+      "recommendation": "Point to current People & access → Accounts / Roles & scopes. Keep permission codes as secondary diagnostic information."
+    },
+    {
+      "id": "UI-M2",
+      "classification": "USABILITY PROPOSAL",
+      "title": "Direct platform-only refusal does not explain the missing scope",
+      "references": [
+        {
+          "file": "apps/console/src/App.tsx",
+          "line": 132,
+          "sha256": "24fbeeede2a5b271eccac52f5b5e85f8688f88b502c69c355cc0a45815223a94"
+        }
+      ],
+      "reason": "Section can refuse a non-platform account that already holds the named permission, then displays only that permission as what is needed.",
+      "recommendation": "Explain the required platform-wide authority and current context, rather than imply the same held permission is absent. No permission change."
+    },
+    {
+      "id": "UI-M3",
+      "classification": "USABILITY PROPOSAL",
+      "title": "Generic unread/error text sometimes describes the wrong thing",
+      "exact": [
+        "Unknown error",
+        "That is a request that did not answer, not a fact about this box",
+        "Not deployed here yet — SCRUM-200."
+      ],
+      "references": [
+        {
+          "file": "apps/console/src/components/Panel.tsx",
+          "line": 116,
+          "sha256": "d956f8b97959ae5a2782f0877f3de63eef040952fe8762d6a345be32cadae0e7"
+        },
+        {
+          "file": "packages/admin-screens/src/apps/UnlinkedOtoAppUsers.tsx",
+          "line": 107,
+          "sha256": "3a95d0381330b2ec830f4355a6c44c8197a1333f9323ece5379b5007390033dd"
+        },
+        {
+          "file": "apps/console/src/pages/Booths.tsx",
+          "line": 1164,
+          "sha256": "2971c6ba0b58a2ca0cdbc635a08f47feff0a5cceee34f8ff820287ab557fe9b1"
+        }
+      ],
+      "reason": "A403/404 is an answered refusal; shared Unreadable is used for non-box data too. Ticket numbers and old release explanations do not tell park staff what to do.",
+      "recommendation": "Keep resource, cause, unchanged-state/uncertainty and next action explicit; retain technical code/request detail behind optional disclosure. Never replace an actual reason with a generic all-clear."
+    },
+    {
+      "id": "UI-M4",
+      "classification": "SOURCE MESSAGE CANDIDATE",
+      "title": "Discount usage banner appears to describe an older implementation",
+      "exact": "Usage counts are this tab only — SCRUM-230.",
+      "references": [
+        {
+          "file": "packages/admin-screens/src/lifted/components/admin/discounts/DiscountCodesSection.tsx",
+          "line": 246,
+          "sha256": "b2fab50db1f46cb6a6feac24fbd867066206b015cd1f3ac6ef793252cc9466ec"
+        },
+        {
+          "file": "packages/admin-screens/src/lifted/api/menu.ts",
+          "line": 708,
+          "sha256": "f0b0f5809eba1f4ab9bd228e53a526db0b04f23e67a90a7243ecd0d6dd522ba6"
+        }
+      ],
+      "reason": "Payment/API reviewer confirmed from source: usedCount counts distinct persisted finalised sale IDs for this operator/definition code since the definition was created. The generated response, mapper and Console panel retain it. It is cumulative across branches, not tab-local or the selected report range. This is a source-only wording finding; no new native counter test was run.",
+      "recommendation": "Propose wording that describes this persisted cumulative usage basis, retaining genuinely local manual-discount reasons and the differently windowed usage/value report labels.",
+      "verification": {
+        "type": "Independent source confirmation from payment/API audit lane",
+        "references": [
+          "apps/api/src/routes/menu.ts:779",
+          "packages/admin-screens/src/lifted/api/menu.ts:691",
+          "apps/console/src/pages/Money.tsx:107",
+          "packages/admin-screens/src/lifted/components/admin/discounts/DiscountCodesSection.tsx:507"
+        ],
+        "nativeCounterTestExecutedForThisAudit": false
+      }
+    }
+  ],
+  "filterProposals": [
+    {
+      "id": "UI-P1",
+      "area": "Activity",
+      "classification": "USABILITY / missing filter capability, not isolation failure",
+      "existing": "Action, actor, branch, outcome, request id, entity, From/To, app, target app; Data access and Denials server filters.",
+      "limitation": "Admin log, Staff log and Sign-in log explicitly leave the list unfiltered and show a warning. Request id narrows only the returned page.",
+      "proposal": "Either clearly mark unsupported presets unavailable, or approve actual server category/request filtering. Label bounded Related results honestly. Keep the current explicit warnings until real filtering exists.",
+      "userReason": "A support person must know whether an empty result means no event or an incomplete search."
+    },
+    {
+      "id": "UI-P2",
+      "area": "Date-bounded views",
+      "classification": "Validation proposal / API reviewer owns reversed-range reproduction",
+      "existing": "Native From/To inputs drive immediate reads; Activity DateTimeFilter has no paired bound.",
+      "proposal": "Validate From≤To at the filter boundary, name the bad field, retain the previous selection and avoid a misleading no-match claim.",
+      "userReason": "An invalid period should not look like a day with no business or audit events."
+    },
+    {
+      "id": "UI-P3",
+      "area": "Watch / Releases / device lists",
+      "classification": "Optional usability",
+      "proposal": "Offer explicit filters for unavailable reads, actionable failures, agent below minimum/unknown version, expired/near-expiry metadata and active versus historical rows, reusing native status categories.",
+      "userReason": "Find the items needing attention without scanning all healthy/history rows. Do not introduce new thresholds or redefine healthy."
+    },
+    {
+      "id": "UI-P4",
+      "area": "People / catalogue / configuration",
+      "classification": "Optional usability",
+      "proposal": "Add search/sort only to genuinely long lists, show current result count and distinguish current-page empty from globally empty. Prefer names over raw IDs, retain stable ordering, and make clear/reset behavior consistent.",
+      "userReason": "The navigation has20 Catalogue entries and several full-list read surfaces; staff need to find a person/item/setting quickly without changing authority."
+    },
+    {
+      "id": "UI-P5",
+      "area": "Shared forms and drawers",
+      "classification": "Optional accessibility/recovery work",
+      "proposal": "Audit a keyboard focus trap/return focus in the custom Drawer; announce dynamic errors consistently; associate field errors through described-by rather than changing accessible labels; show clear pending/confirmed/uncertain outcomes and why an action is disabled.",
+      "references": [
+        {
+          "file": "apps/console/src/components/Drawer.tsx",
+          "line": 28,
+          "sha256": "744a7271b60a5eb8ee4df76728bd49e1830f828d1849eae55d271c8758cbf5b8"
+        },
+        {
+          "file": "apps/console/src/components/Panel.tsx",
+          "line": 70,
+          "sha256": "d956f8b97959ae5a2782f0877f3de63eef040952fe8762d6a345be32cadae0e7"
+        }
+      ],
+      "userReason": "A keyboard/phone user must understand and recover from a refusal without losing a draft. This proposal does not authorize a layout or business-rule redesign."
+    }
+  ],
+  "intentionalAndNotBuilt": [
+    "Q1 Sessions lists historical revoked entries under an inherited signed-in caption. It is an existing owner question; distinguish current/history only by approval.",
+    "Q5 fractional ticket hours remain an existing UI/API-rule question, not a silent new allowance.",
+    "Manual discount reasons and declared stock placeholders retain explicitly local/mock behavior; they are not falsely promised as persistent.",
+    "Admin/Staff/Sign-in audit presets lack true server category filtering and explicitly warn; Related completeness is separately problematic.",
+    "Unsupported payment/gate/booth/rollup switches remain non-actionable. Real provider adapters are not implied by local test controls.",
+    "SCRUM-649 Data tools is NOT BUILT/owner-descoped/To Do;672 deployment history,673 schedule attribution,674 missing readers and675 dated cutover/unfreeze are named follow-ups. The Inbox/Radar/OTO App banner gap remains on648."
+  ],
+  "approvalPlanOnly": [
+    "Approve the native data-state repairs UI-B1–B5 with retained controls and no policy/layout changes.",
+    "Require targeted synthetic reproductions for UI-S1–S3 before implementation; they are not staging-confirmed.",
+    "Explicit wording/navigation items for approval: UI-M1 replace stale Login Users directions with current People/Accounts or Roles destinations; UI-M2 explain platform-wide scope refusal when the named permission is already held; UI-M3 make generic unread text resource-specific and distinguish answered refusal from unread transport, including non-box uses.",
+    "UI-M4 remains source-only: the payment/API audit confirmed cumulative persisted usage across branches for this operator/definition. Approve correction of the stale this-tab/report-not-built wording without changing usage rules, report windows or genuinely local manual reasons.",
+    "Approve optional filter/accessibility convenience separately from concrete bugs; retain exact reasons and uncertainty.",
+    "Do not bundle known unbuilt follow-ups, permission policy changes, formulas, stock persistence, provider consumers or fiscal integration into a wording repair."
+  ],
+  "limits": [
+    "AST inventory covers all317 source files; this is not a claim every line or every dynamic state was individually fault-injected.",
+    "All327 existing built-browser controls passed in root run. Six new probes deliberately fail on unchanged source and represent audit evidence, not failed fixes.",
+    "Root independently owns the68 staging observations /66 resolved pages. That live walkthrough is not claimed as this lane execution.",
+    "No production source/existing test was edited. Only the allowed temporary audit spec was created, archived and removed after terminal.",
+    "No credential values, raw auth headers/cookies, raw private API bodies, raw DOM or staging PII are included in the report artifacts. One initial helper-read output incident is separately recorded without values."
+  ],
+  "sourceBytesUnchanged": true,
+  "resources": {
+    "ownEmbeddedPgStopped": true,
+    "ownNativeBrowsersStopped": true,
+    "dockerUsed": false
+  },
+  "artifacts": {
+    "canonicalPages": "pages.json",
+    "inventory": "page-coverage.json",
+    "matrix": "ui-audit-matrix.json",
+    "messages": "native-message-catalogue.json",
+    "units": "existing-unit-results.json",
+    "firstWholeBrowser": "browser-all-v1.json",
+    "nativeProbeV2": "browser-probes-v2.json",
+    "nativeProbeV3": "browser-probes-v3.json",
+    "finalSpecArchive": "browser-probes-v3.spec.ts.txt",
+    "finalImages": "probe-v3/image-review.json"
+  },
+  "matrixSemantics": "Each route is inventoried individually. Controls/state summaries are grouped at family level; they are not per-route capability assertions. For example Configuration has ownership links, not Analytics source/rerun controls; Devices has fleet controls, not Booth prize/publish controls.",
+  "reportCorrection": {
+    "at": "2026-10-28T17:09:18.107Z",
+    "reason": "Repeated family summaries were previously presented under an overly specific per-page controls header. Relabelled and grouped without changing findings, tests, production source or receipts.",
+    "priorVersions": [
+      {
+        "file": "UI-AUDIT.md",
+        "sha256": "ec1f9182cae8091ee4f671e9bc0962c712059f74ccdd2f1858dbaf823b933bf9"
+      },
+      {
+        "file": "ui-audit-results.json",
+        "sha256": "a3c2308f478861bf6e1cb6075851e56aeda29bd40b03018e4681e44f1959da27"
+      },
+      {
+        "file": "ui-audit-matrix.json",
+        "sha256": "9319c67ccbfd93c65f1e5b8d19cf97b30a4fd78b42a79f7d1a6b2d97986e6b2a"
+      }
+    ]
+  }
+}

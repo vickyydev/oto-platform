@@ -1,0 +1,51 @@
+{
+  "audit": "Console payment audit",
+  "sourceHead": "5da2fe226a3fec8f4d9c725deba9428d040275b0",
+  "startedAt": "2026-10-28T16:44:57.242Z",
+  "completedAt": "2026-10-28T16:45:22.848Z",
+  "exitCode": 1,
+  "signal": null,
+  "errorCode": null,
+  "passed": false,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\oto-lanes\\admin-audit-20261028\\apps\\api\\node_modules\\vitest\\vitest.mjs",
+      "run",
+      "test/admin-audit-payment-ownership.test.ts",
+      "--maxWorkers=1",
+      "--no-file-parallelism"
+    ],
+    "cwd": "C:\\oto-lanes\\admin-audit-20261028\\apps\\api"
+  },
+  "tests": [
+    "apps/api/test/admin-audit-payment-ownership.test.ts"
+  ],
+  "sourceInputCount": 3950,
+  "beforeSourceSha256": "0525590559a6b36a1f1575a9b1ae2e7757599e3be5c69b80de3876d2b2e8a11b",
+  "afterSourceSha256": "0525590559a6b36a1f1575a9b1ae2e7757599e3be5c69b80de3876d2b2e8a11b",
+  "sourceUnchanged": true,
+  "testHashes": {
+    "apps/api/test/admin-audit-payment-ownership.test.ts": "eb4f148757c7bb8e37ba5c00b49cce043435029aa83c7aca1fcbb3bcc93d259b"
+  },
+  "logPath": "C:/oto-lanes/admin-audit-evidence/payments/tax-ownership-v1.log",
+  "logSha256": "4904a9cce701d4ccab6cf5bf4a06e85a5fbab9ec2ee431de4b7d847ded907652",
+  "redactionChanged": false,
+  "summaryLines": [
+    " Test Files  1 failed (1)",
+    "      Tests  2 failed | 1 passed (3)",
+    "   Duration  22.61s (transform 5.66s, setup 0ms, collect 10.33s, tests 11.96s, environment 0ms, prepare 120ms)"
+  ],
+  "helperSha256": "cdd8f985b95994f0c8061b05a5dff6ff3f630a13983718cc841bd9e2d0dd269a",
+  "databaseEnvironmentRemoved": [
+    "DATABASE_URL",
+    "TEST_DATABASE_URL"
+  ],
+  "docker": false,
+  "staging": false,
+  "providerCallsRequested": false,
+  "productChanges": false,
+  "limits": [
+    "Existing local native tests only; no live or full-release assertion."
+  ]
+}

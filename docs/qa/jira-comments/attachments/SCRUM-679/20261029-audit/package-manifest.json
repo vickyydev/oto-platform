@@ -1,0 +1,316 @@
+{
+  "ticket": "SCRUM-679",
+  "verifiedAt": "2026-10-28T17:18:56.372Z",
+  "files": [
+    {
+      "path": "20261029-audit/api/api-audit-report.json",
+      "bytes": 20966,
+      "sha256": "ea2d87ec74b10371ac64855a708d694d2c4bd4b399f5ec8ccd565e1d4a9a00bc"
+    },
+    {
+      "path": "20261029-audit/api/cleanup-process-check.json",
+      "bytes": 268,
+      "sha256": "9b4af1018bb20e9237329b93f9259dc2b3934d6e3e588e315b2c5fe40d66be52"
+    },
+    {
+      "path": "20261029-audit/api/core-batch-v1.json",
+      "bytes": 4923,
+      "sha256": "7982d39ec0d16618b0c1a3f3d18f96c052ab01d6173bdce785ff7b9bda29a3b4"
+    },
+    {
+      "path": "20261029-audit/api/core-batch-v1.log.gz",
+      "bytes": 18067,
+      "sha256": "bb4d82487a8d3d9ab82ce78e85e6f811fec27fd26d6d616a181b39b6db9890eb"
+    },
+    {
+      "path": "20261029-audit/api/coverage-census.json",
+      "bytes": 6641,
+      "sha256": "1d6c9daff35363188b5b2b3e96c3e96e502764414e855dcc22b2bd267443c826"
+    },
+    {
+      "path": "20261029-audit/api/error-observations.json",
+      "bytes": 3614,
+      "sha256": "a50241fe76147d4dd4ad3cfe06d7feb1504f9966526f03f1edb8adcc219c7bcc"
+    },
+    {
+      "path": "20261029-audit/api/route-inventory.json",
+      "bytes": 69032,
+      "sha256": "8ad3bd63085babc84984e03cf15886353f26831feeb67d5570b3fbc4a7547434"
+    },
+    {
+      "path": "20261029-audit/approval-tickets.json",
+      "bytes": 814,
+      "sha256": "94c8536cc7918e3fb1e9a38215388cee701d1263c5139aff318befbc7e83658d"
+    },
+    {
+      "path": "20261029-audit/audit-summary.json",
+      "bytes": 50049,
+      "sha256": "150b7bb66421c0bee01246536a5e63d5a28e903868e8832179d7a789214bb7f9"
+    },
+    {
+      "path": "20261029-audit/compressed-log-index.json",
+      "bytes": 2626,
+      "sha256": "0e45833b628d976b0021022bd3e2393aef6f79348ef29bb9bfb0036724d3c3c3"
+    },
+    {
+      "path": "20261029-audit/payments/cleanup-verification-v1.json",
+      "bytes": 834,
+      "sha256": "b9f147174e12f18ba56d79c45dc734ce7265d1cb826174de4661e75820b795c6"
+    },
+    {
+      "path": "20261029-audit/payments/discount-usage-addendum.md",
+      "bytes": 715,
+      "sha256": "51db51555b7028d202b137b218af21ece6689638efeaba00ba944cd991b6673f"
+    },
+    {
+      "path": "20261029-audit/payments/native-targeted-v1.json",
+      "bytes": 2423,
+      "sha256": "2879a9f612727c8863eabe2128099bd40989663cd3216ee7a29e7ac42573354a"
+    },
+    {
+      "path": "20261029-audit/payments/native-targeted-v1.log.gz",
+      "bytes": 2928,
+      "sha256": "19cd6bb2a6c6db589ae578a08357f5306cafd6f60e0395cc166fd27ffe00b65c"
+    },
+    {
+      "path": "20261029-audit/payments/payment-audit-report.json",
+      "bytes": 8205,
+      "sha256": "c3cfe877ceb90be296fd04f89ec30673f076305fe58d6026f85b45e528cb0157"
+    },
+    {
+      "path": "20261029-audit/payments/payment-capability-and-audit.md",
+      "bytes": 14456,
+      "sha256": "2ca18506cbf885b44427d1d4b5e9edcf1f4b5f1853b95dbbfbfb0c19b903ba5c"
+    },
+    {
+      "path": "20261029-audit/payments/prioritized-summary.md",
+      "bytes": 3112,
+      "sha256": "68da12cb530cc4aab38ec6b4197812febe107e8c0ae5e7b58b519f566d0e0828"
+    },
+    {
+      "path": "20261029-audit/payments/tax-override-native-observations-v1.json",
+      "bytes": 470,
+      "sha256": "f007ba8eabdffe3486ed54baeb5c21a6bdcd1aa8744e5a067e9294f22fc5b1fc"
+    },
+    {
+      "path": "20261029-audit/payments/tax-ownership-v1.json",
+      "bytes": 1867,
+      "sha256": "5df95809f719ac23ac662b21c389163be1cba5a26c822a0dddcf1dd6534e01da"
+    },
+    {
+      "path": "20261029-audit/payments/tax-ownership-v1.log.gz",
+      "bytes": 2565,
+      "sha256": "085a9467c69d3ed82d234fdb76685660375ace8326f7f63b66927bc7504a2e05"
+    },
+    {
+      "path": "20261029-audit/payments/temporary-test-removal-v1.json",
+      "bytes": 412,
+      "sha256": "d4fa750bd0fb0f691d2c7b6cf163bd8ef4ede115b0a591d7e3f0e805eb965fdf"
+    },
+    {
+      "path": "20261029-audit/README.md",
+      "bytes": 3289,
+      "sha256": "91bcf75292f40787a68e57931f09500293d6510b15bf25fa1f1d719fe455ffd4"
+    },
+    {
+      "path": "20261029-audit/staging-preview-v2/receipt.json",
+      "bytes": 15315,
+      "sha256": "23d17df9e32791ecfbd5b75a2b09c4fb35a0facae51f5ec64c288679ea6ae4ad"
+    },
+    {
+      "path": "20261029-audit/staging-v1/receipt.json",
+      "bytes": 235697,
+      "sha256": "d1d4c553f07c61cfc7dfcad255efb0634d641aa9993812dcae4f16b8c6410f10"
+    },
+    {
+      "path": "20261029-audit/text-normalization.json",
+      "bytes": 446,
+      "sha256": "8f4c7f82538948ac7d59ed75bc27057cb1f92c2ac6b40bb0a19a7b8b8302296f"
+    },
+    {
+      "path": "20261029-audit/ui/admin-screens-existing-units.log.gz",
+      "bytes": 511,
+      "sha256": "6fec8216dfb3bc896497f2cd37c2aef605ffbfe719caa3e2963f4ede428d2070"
+    },
+    {
+      "path": "20261029-audit/ui/browser-all-v1.json",
+      "bytes": 641,
+      "sha256": "e1156bd1b12d21ec03a25323562524f109b5dc672f151517121f7f6a8a8e59de"
+    },
+    {
+      "path": "20261029-audit/ui/browser-all-v1.log.gz",
+      "bytes": 18558,
+      "sha256": "4424ba8bc6359b305ef60225a26f875e769f8a9b8714d266e5e1a925814af856"
+    },
+    {
+      "path": "20261029-audit/ui/browser-probes-v2.json",
+      "bytes": 788,
+      "sha256": "e21de44c9b3b1d9bd73f7876b08430a7b588063e3fdd78c25c68d8fbc666e86c"
+    },
+    {
+      "path": "20261029-audit/ui/browser-probes-v2.log.gz",
+      "bytes": 4947,
+      "sha256": "30f9cdca630a784b2934b9bf6592dcd66f852d9180c0f02c7eb27335135acbb8"
+    },
+    {
+      "path": "20261029-audit/ui/browser-probes-v3.json",
+      "bytes": 788,
+      "sha256": "3b3e3e92db2b3c9e84461d16fcd2d2f20d29fd9691775bfc921febf38211dbda"
+    },
+    {
+      "path": "20261029-audit/ui/browser-probes-v3.log.gz",
+      "bytes": 4581,
+      "sha256": "d2b7ea58b4b3e44395f9cb8388cb860624ffbedb42fb29c84ff6a055f6b193ea"
+    },
+    {
+      "path": "20261029-audit/ui/console-existing-units.log.gz",
+      "bytes": 936,
+      "sha256": "9ece0457a43daba07f813d01be539eb7705c3e787fc446d7fc39f25a31691d84"
+    },
+    {
+      "path": "20261029-audit/ui/existing-unit-results.json",
+      "bytes": 920,
+      "sha256": "fed528cde5d9a95bae7c5e80868e23b0de69e5ec0a6a8e568366654aac75ebb6"
+    },
+    {
+      "path": "20261029-audit/ui/page-matrix.md",
+      "bytes": 9632,
+      "sha256": "28f00822dd1ff815e295904943b23acd96cd3716387a79a43821a5e3cec04ff6"
+    },
+    {
+      "path": "20261029-audit/ui/pages.json",
+      "bytes": 32765,
+      "sha256": "ede9291073e623b1c3846e59c133a080f004f12773fac398c6c20c0ec854bb5e"
+    },
+    {
+      "path": "20261029-audit/ui/probe-v3/image-review.json",
+      "bytes": 4127,
+      "sha256": "b5fa164403eb2d41e627977d894f2f376e84dbfba5442cf60a7f9b5444eb251c"
+    },
+    {
+      "path": "20261029-audit/ui/report-hashes.json",
+      "bytes": 1838,
+      "sha256": "ffb249b389d88f681eada4ac763f850ddfe2ed826eb361823ced9afd5c142e9f"
+    },
+    {
+      "path": "20261029-audit/ui/temporary-test-cleanup.json",
+      "bytes": 430,
+      "sha256": "e14aec2999b0daef46297997e5dfc1c5d4aeef8b4cc3ff69dace34e6953433ef"
+    },
+    {
+      "path": "20261029-audit/ui/ui-audit-matrix.json",
+      "bytes": 71602,
+      "sha256": "33b784ed59a5a3e7dc735e1bee9ba6d8bcd567ce3278ae7b0648088fef45bf96"
+    },
+    {
+      "path": "20261029-audit/ui/ui-audit-results.json",
+      "bytes": 24794,
+      "sha256": "a7f919dc6785a23803e87d88d0bab60af6b837dff4e8752d2dc17dff94b32ffe"
+    },
+    {
+      "path": "20261029-audit/ui/UI-AUDIT.md",
+      "bytes": 19162,
+      "sha256": "a0f9fa99b9a10b02c2f5e5d42afe4e9828768690b3e6a0ba6ea8f0b37ff24ae1"
+    },
+    {
+      "path": "SCRUM-679-01-catalogue-print-templates.png",
+      "bytes": 97888,
+      "sha256": "3f0e1d4761bd58794aecd84e790c9a86378e32b418f5c4ac58339f041ea32e1d"
+    },
+    {
+      "path": "SCRUM-679-01-organisation-configuration.png",
+      "bytes": 112638,
+      "sha256": "d02bd53565386d0eacf1b4079ace3cdfb991ed3c3258cb516e2355039d5a69ee"
+    },
+    {
+      "path": "SCRUM-679-02-devices-booths.png",
+      "bytes": 157332,
+      "sha256": "9a786206c01f37ffd724e3d4ca5b4ec3903e1bfc99c2766d826e4af9b085a720"
+    },
+    {
+      "path": "SCRUM-679-02-watch-releases.png",
+      "bytes": 132888,
+      "sha256": "9807f90bb0a3f2f81efdeef3a3617aa0a60bb23236c47a6f6c26cd7e63415dd9"
+    },
+    {
+      "path": "SCRUM-679-03-watch-support.png",
+      "bytes": 93953,
+      "sha256": "93a171442e572d41adf3acbde1378c7143239e725a48c8daa7e1938cea14bf4a"
+    },
+    {
+      "path": "SCRUM-679-04-reports-money.png",
+      "bytes": 117878,
+      "sha256": "13fdc74484225ac372f4e0dd7416e83f92f5b0ac788d495965e43bc79748d76c"
+    },
+    {
+      "path": "SCRUM-679-05-catalogue-tenders.png",
+      "bytes": 140776,
+      "sha256": "71acc89ca73279fb05eb1ee43a0bfcc41fb4a3b7c9080f936cb0087c3eb1e87b"
+    },
+    {
+      "path": "SCRUM-679-06-catalogue-tax.png",
+      "bytes": 117544,
+      "sha256": "70c805991d9c0976612f849f10032c57591f1244d90d9e2fcc0b2935b21dd544"
+    },
+    {
+      "path": "SCRUM-679-07-watch-health.png",
+      "bytes": 140747,
+      "sha256": "ef865f4a02d6968c701357a37bd3f331b930e6c5b5f1f0f31a461455203d80e2"
+    },
+    {
+      "path": "SCRUM-679-08-watch-activity.png",
+      "bytes": 180497,
+      "sha256": "6c87f3abd2e7d1252b50b7d5c43813b3245e038ac50a7f65a75f9db21ea1f72f"
+    },
+    {
+      "path": "SCRUM-679-09-devices.png",
+      "bytes": 134806,
+      "sha256": "dace550eb41eefbad00accf1c4ca3bb4606f9d1f9760eca3720c96cc1d9093cb"
+    },
+    {
+      "path": "SCRUM-679-10-catalogue-vouchers.png",
+      "bytes": 170548,
+      "sha256": "0068a997ece196cd3735e0ae4202550e79b9a048590f105c737186d481237059"
+    },
+    {
+      "path": "SCRUM-679-11-watch-integrations.png",
+      "bytes": 140039,
+      "sha256": "35ab5a876cbe2ea4dd94f34a62c9786cd3a63b0f9423cd20c81d129ff6458a2c"
+    },
+    {
+      "path": "SCRUM-679-12-overview.png",
+      "bytes": 111632,
+      "sha256": "ed8c58258b9a5db5315a48851d2ca0ed6c7695111de2aef869f236c5f8febe27"
+    },
+    {
+      "path": "SCRUM-679-UI01-late-booth-history.png",
+      "bytes": 228141,
+      "sha256": "adf328da1d091d04c0b911c6d24c06b07e6b38d6d2d15a5ee039654b5ec616d4"
+    },
+    {
+      "path": "SCRUM-679-UI02-resource404-message.png",
+      "bytes": 159123,
+      "sha256": "dba4c43e2ce96a43c6cdfab0ac3026e645456391f496aece289455a429cbf99f"
+    },
+    {
+      "path": "SCRUM-679-UI03-inverted-page-range.png",
+      "bytes": 129157,
+      "sha256": "479cd0dcaf05db06e8a900b112e5f2d18d3516448b2640f7eeacffa540f8c713"
+    },
+    {
+      "path": "SCRUM-679-UI04-pending-park-fleet.png",
+      "bytes": 190491,
+      "sha256": "f781da21a1a6f6a30023552c9a6f202cf0631c14ceb2e72148e3c202b653de88"
+    },
+    {
+      "path": "SCRUM-679-UI05-failed-box-read-empty.png",
+      "bytes": 178372,
+      "sha256": "8a433324a58cca119fc040596682632cc938ad49e69cd516f6319a4a4855bd41"
+    },
+    {
+      "path": "SCRUM-679-UI06-failed-station-read-empty.png",
+      "bytes": 172155,
+      "sha256": "73fb6048f2be650592c4e4242c1c404273dd421f4b88d6058c56a3778458052e"
+    }
+  ]
+}

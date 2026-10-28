@@ -1,0 +1,23 @@
+{
+  "sourceBasis": "root-provided5da2fe22",
+  "results": [
+    {
+      "package": "@oto/console",
+      "command": "pnpm --filter @oto/console test --fileParallelism=false --maxWorkers=1",
+      "startedAt": "2026-10-28T16:47:11.554Z",
+      "finishedAt": "2026-10-28T16:47:47.872Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin-audit-evidence/ui/console-existing-units.log",
+      "logSha256": "5c6e00f32618efb9116e2ca5ab1dc5f0f1d9bf0436b734286aea1e35451af81b"
+    },
+    {
+      "package": "@oto/admin-screens",
+      "command": "pnpm --filter @oto/admin-screens test --fileParallelism=false --maxWorkers=1",
+      "startedAt": "2026-10-28T16:47:47.874Z",
+      "finishedAt": "2026-10-28T16:48:08.384Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin-audit-evidence/ui/admin-screens-existing-units.log",
+      "logSha256": "ee0ea0ea920a72195c80cef286fc6d7cb58c7be9f4130b5085aa888ecd71166d"
+    }
+  ]
+}

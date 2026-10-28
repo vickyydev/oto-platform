@@ -1,0 +1,8 @@
+{
+  "removedPath": "C:/oto-lanes/admin-audit-20261028/apps/api/test/admin-audit-payment-ownership.test.ts",
+  "preservedPath": "C:/oto-lanes/admin-audit-evidence/payments/admin-audit-payment-ownership.test.ts.txt",
+  "sha256": "eb4f148757c7bb8e37ba5c00b49cce043435029aa83c7aca1fcbb3bcc93d259b",
+  "matchedFrozenNativeRun": true,
+  "removedOnlyOwnTemporaryTest": true,
+  "removedAt": "2026-10-28T16:47:32.313Z"
+}

@@ -1,0 +1,62 @@
+{
+  "lossless": true,
+  "originalLogs": "External C:/oto-lanes/admin-audit-evidence/; decompression produces the exact original hashes in native receipts",
+  "files": [
+    {
+      "path": "api/core-batch-v1.log.gz",
+      "originalSha256": "d9cd8e90602b70507fa8192f9b84e1344fa211f3f0ff976a0bcdf637e048ebd8",
+      "compressedSha256": "bb4d82487a8d3d9ab82ce78e85e6f811fec27fd26d6d616a181b39b6db9890eb",
+      "originalBytes": 205855,
+      "compressedBytes": 18067
+    },
+    {
+      "path": "payments/native-targeted-v1.log.gz",
+      "originalSha256": "d945ddb76ba32ff0b36c3e0c94c684e49dfa5d002680b472e03bf42475a8e4ee",
+      "compressedSha256": "19cd6bb2a6c6db589ae578a08357f5306cafd6f60e0395cc166fd27ffe00b65c",
+      "originalBytes": 18040,
+      "compressedBytes": 2928
+    },
+    {
+      "path": "payments/tax-ownership-v1.log.gz",
+      "originalSha256": "4904a9cce701d4ccab6cf5bf4a06e85a5fbab9ec2ee431de4b7d847ded907652",
+      "compressedSha256": "085a9467c69d3ed82d234fdb76685660375ace8326f7f63b66927bc7504a2e05",
+      "originalBytes": 8845,
+      "compressedBytes": 2565
+    },
+    {
+      "path": "ui/admin-screens-existing-units.log.gz",
+      "originalSha256": "ee0ea0ea920a72195c80cef286fc6d7cb58c7be9f4130b5085aa888ecd71166d",
+      "compressedSha256": "6fec8216dfb3bc896497f2cd37c2aef605ffbfe719caa3e2963f4ede428d2070",
+      "originalBytes": 1216,
+      "compressedBytes": 511
+    },
+    {
+      "path": "ui/browser-all-v1.log.gz",
+      "originalSha256": "383d88a583a8e3753ee78064b87caa886a5033daecf70bdb0b52fc1dee397ab2",
+      "compressedSha256": "4424ba8bc6359b305ef60225a26f875e769f8a9b8714d266e5e1a925814af856",
+      "originalBytes": 67067,
+      "compressedBytes": 18558
+    },
+    {
+      "path": "ui/browser-probes-v2.log.gz",
+      "originalSha256": "713d134dabe0c8c7c80fe3c16b5a9c7d7148cb832c42f8d20004532a88178aa0",
+      "compressedSha256": "30f9cdca630a784b2934b9bf6592dcd66f852d9180c0f02c7eb27335135acbb8",
+      "originalBytes": 25101,
+      "compressedBytes": 4947
+    },
+    {
+      "path": "ui/browser-probes-v3.log.gz",
+      "originalSha256": "1f8536b4d808d3466913076ee2157b0638c920ffa36a6d37d9015db91006eae7",
+      "compressedSha256": "d2b7ea58b4b3e44395f9cb8388cb860624ffbedb42fb29c84ff6a055f6b193ea",
+      "originalBytes": 24895,
+      "compressedBytes": 4581
+    },
+    {
+      "path": "ui/console-existing-units.log.gz",
+      "originalSha256": "5c6e00f32618efb9116e2ca5ab1dc5f0f1d9bf0436b734286aea1e35451af81b",
+      "compressedSha256": "9ece0457a43daba07f813d01be539eb7705c3e787fc446d7fc39f25a31691d84",
+      "originalBytes": 2853,
+      "compressedBytes": 936
+    }
+  ]
+}

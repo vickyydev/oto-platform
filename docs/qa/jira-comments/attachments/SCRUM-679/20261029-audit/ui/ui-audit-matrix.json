@@ -1,0 +1,1599 @@
+{
+  "preparedAt": "2026-10-28T17:07:06.150Z",
+  "canonicalCount": 66,
+  "sourceBasis": "Fresh audit worktree at root-provided5da2fe22; no implementation changes",
+  "pages": [
+    {
+      "path": "/reports/analytics",
+      "title": "Analytics & sources",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "analytics",
+      "permission": "console:analytics:read",
+      "platformWide": false,
+      "component": "<AnalyticsSources />",
+      "source": "apps/console/src/pages/AnalyticsSources.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 153,
+      "aliases": [
+        "/analytics"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-01",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/organisation/configuration",
+      "title": "Configuration",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "config",
+      "permission": "console:config:read",
+      "platformWide": false,
+      "component": "<Configuration />",
+      "source": "apps/console/src/pages/Configuration.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 154,
+      "aliases": [
+        "/config"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-01",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/organisation/apps",
+      "title": "Apps",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "apps",
+      "permission": "console:app_registry:read",
+      "platformWide": false,
+      "component": "<SuiteControls page=\"apps\" />",
+      "source": "apps/console/src/pages/SuiteControls.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 155,
+      "aliases": [
+        "/apps"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-02",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/watch/releases",
+      "title": "Releases",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "releases",
+      "permission": "console:release:read",
+      "platformWide": false,
+      "component": "<SuiteControls page=\"releases\" />",
+      "source": "apps/console/src/pages/SuiteControls.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 156,
+      "aliases": [
+        "/releases"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-02",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/watch/support",
+      "title": "Support",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "support",
+      "permission": "console:support:lookup",
+      "platformWide": false,
+      "component": "<Support />",
+      "source": "apps/console/src/pages/Support.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 202,
+      "aliases": [
+        "/support"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-03",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/inventory",
+      "title": "Inventory",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "inventory",
+      "permission": null,
+      "platformWide": false,
+      "component": "<Operations page=\"inventory\" />",
+      "source": "apps/console/src/pages/Operations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 163,
+      "aliases": [
+        "/inventory"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-04",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/members",
+      "title": "Members",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "members",
+      "permission": "pos:member:update",
+      "platformWide": false,
+      "component": "<Operations page=\"members\" />",
+      "source": "apps/console/src/pages/Operations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 164,
+      "aliases": [
+        "/members"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-04",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/tier-verifications",
+      "title": "Tier verifications",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tier-verifications",
+      "permission": "pos:member:read",
+      "platformWide": false,
+      "component": "<Operations page=\"tier-verifications\" />",
+      "source": "apps/console/src/pages/Operations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 165,
+      "aliases": [
+        "/tier-verifications"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-04",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/wallets",
+      "title": "Wallets",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "wallets",
+      "permission": "pos:wallet:read",
+      "platformWide": false,
+      "component": "<Operations page=\"wallets\" />",
+      "source": "apps/console/src/pages/Operations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 166,
+      "aliases": [
+        "/wallets"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-04",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/channels/teams-routing",
+      "title": "Teams & routing",
+      "section": "Channels & assistant",
+      "sectionId": "channels",
+      "kind": "internal",
+      "pageId": "teams-routing",
+      "permission": "inbox:routing:manage",
+      "platformWide": false,
+      "component": "<TeamsRouting />",
+      "source": "apps/console/src/pages/TeamsRouting.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 167,
+      "aliases": [
+        "/teams-routing"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-05",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/channels/assistant-settings",
+      "title": "Assistant settings",
+      "section": "Channels & assistant",
+      "sectionId": "channels",
+      "kind": "internal",
+      "pageId": "assistant-settings",
+      "permission": "inbox:ai:manage",
+      "platformWide": false,
+      "component": "<AssistantSettings />",
+      "source": "apps/console/src/pages/AssistantSettings.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 168,
+      "aliases": [
+        "/assistant-settings"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-05",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/sales",
+      "title": "Sales",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-sales",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"sales\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 169,
+      "aliases": [
+        "/reports-sales"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-06",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/profitability",
+      "title": "Profitability",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-profitability",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"profitability\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 170,
+      "aliases": [
+        "/reports-profitability"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-06",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/discounts",
+      "title": "Discounts & comps",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-discounts",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"discounts\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 171,
+      "aliases": [
+        "/reports-discounts"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-06",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/tax-vat",
+      "title": "Tax & VAT",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-tax-vat",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"tax-vat\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 172,
+      "aliases": [
+        "/reports-tax-vat"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-06",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/wallet-promo",
+      "title": "Wallet & promo",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports-wallet-promo",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<Reports page=\"wallet-promo\" />",
+      "source": "apps/console/src/pages/Reports.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 173,
+      "aliases": [
+        "/reports-wallet-promo"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-06",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/money",
+      "title": "Money oversight",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "money",
+      "permission": "console:money:read",
+      "platformWide": false,
+      "component": "<MoneyOversight />",
+      "source": "apps/console/src/pages/MoneyOversight.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 177,
+      "aliases": [
+        "/money"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-07",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/care",
+      "title": "Drop-off & supervision",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "care",
+      "permission": "pos:checkin:read",
+      "platformWide": false,
+      "component": "<Care page=\"care\" />",
+      "source": "apps/console/src/pages/Care.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 174,
+      "aliases": [
+        "/care"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-08",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/print-templates",
+      "title": "Print templates",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "print-templates",
+      "permission": "pos:print:read",
+      "platformWide": false,
+      "component": "<Care page=\"print-templates\" />",
+      "source": "apps/console/src/pages/Care.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 175,
+      "aliases": [
+        "/print-templates"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-08",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/staff-benefits",
+      "title": "Staff benefits",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "staff-benefits",
+      "permission": "admin:benefit:read",
+      "platformWide": false,
+      "component": "<StaffBenefits />",
+      "source": "apps/console/src/pages/StaffBenefits.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 176,
+      "aliases": [
+        "/staff-benefits"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-08",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/discounts",
+      "title": "Discounts",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "discounts",
+      "permission": "catalog:menu:manage",
+      "platformWide": false,
+      "component": "<Money page=\"discounts\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 178,
+      "aliases": [
+        "/discounts"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-09",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/tenders",
+      "title": "Tenders",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tenders",
+      "permission": "catalog:menu:manage",
+      "platformWide": false,
+      "component": "<Money page=\"tenders\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 179,
+      "aliases": [
+        "/tenders"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-09",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/tax",
+      "title": "Tax",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tax",
+      "permission": "catalog:tax:manage",
+      "platformWide": false,
+      "component": "<Money page=\"tax\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 180,
+      "aliases": [
+        "/tax"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-09",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/voucher-campaigns",
+      "title": "Voucher campaigns",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "voucher-campaigns",
+      "permission": "admin:booth:read",
+      "platformWide": false,
+      "component": "<Money page=\"voucher-campaigns\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 181,
+      "aliases": [
+        "/voucher-campaigns"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-09",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/event-pricing",
+      "title": "Event pricing",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "event-pricing",
+      "permission": "admin:event_pricing:manage",
+      "platformWide": false,
+      "component": "<Money page=\"event-pricing\" />",
+      "source": "apps/console/src/pages/Money.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 182,
+      "aliases": [
+        "/event-pricing"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-09",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/menu",
+      "title": "Menu",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "menu",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<MenuCatalogue page=\"menu\" />",
+      "source": "apps/console/src/pages/MenuCatalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 183,
+      "aliases": [
+        "/menu"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-10",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/categories",
+      "title": "Categories",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "categories",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<MenuCatalogue page=\"categories\" />",
+      "source": "apps/console/src/pages/MenuCatalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 184,
+      "aliases": [
+        "/categories"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-10",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/modifiers",
+      "title": "Modifiers",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "modifiers",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<MenuCatalogue page=\"modifiers\" />",
+      "source": "apps/console/src/pages/MenuCatalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 185,
+      "aliases": [
+        "/modifiers"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-10",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/merch",
+      "title": "Merch",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "merch",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<MenuCatalogue page=\"merch\" />",
+      "source": "apps/console/src/pages/MenuCatalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 186,
+      "aliases": [
+        "/merch"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-10",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/tickets",
+      "title": "Tickets",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tickets",
+      "permission": "catalog:package:read",
+      "platformWide": false,
+      "component": "<Catalogue page=\"tickets\" />",
+      "source": "apps/console/src/pages/Catalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 187,
+      "aliases": [
+        "/tickets"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-11",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/tiers",
+      "title": "Tiers",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "tiers",
+      "permission": "catalog:package:read",
+      "platformWide": false,
+      "component": "<Catalogue page=\"tiers\" />",
+      "source": "apps/console/src/pages/Catalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 188,
+      "aliases": [
+        "/tiers"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-11",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/add-ons",
+      "title": "Add-ons",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "add-ons",
+      "permission": "catalog:menu:read",
+      "platformWide": false,
+      "component": "<Catalogue page=\"add-ons\" />",
+      "source": "apps/console/src/pages/Catalogue.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 189,
+      "aliases": [
+        "/add-ons"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-11",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/organisation/operators",
+      "title": "Operators",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "operators",
+      "permission": "admin:operator:read",
+      "platformWide": true,
+      "component": "<Operators />",
+      "source": "apps/console/src/pages/Operators.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 190,
+      "aliases": [
+        "/operators"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-12",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/platform/operators",
+      "title": "Operators",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-operators",
+      "permission": "admin:operator:read",
+      "platformWide": true,
+      "component": "<Operators sectionId=\"platform-operators\" />",
+      "source": "apps/console/src/pages/Operators.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 157,
+      "aliases": [
+        "/platform-operators"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-12",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/platform/system-roles",
+      "title": "System roles",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "system-roles",
+      "permission": "admin:role:read",
+      "platformWide": true,
+      "component": "<Platform page=\"system-roles\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 158,
+      "aliases": [
+        "/system-roles"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-13",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/platform/alerts",
+      "title": "Platform alerts",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-alerts",
+      "permission": "admin:health:read",
+      "platformWide": true,
+      "component": "<Platform page=\"platform-alerts\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 159,
+      "aliases": [
+        "/platform-alerts"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-13",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/platform/jobs",
+      "title": "Platform jobs",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-jobs",
+      "permission": "admin:health:read",
+      "platformWide": true,
+      "component": "<Platform page=\"platform-jobs\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 160,
+      "aliases": [
+        "/platform-jobs"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-13",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/platform/environment",
+      "title": "Environment",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-environment",
+      "permission": "admin:health:read",
+      "platformWide": true,
+      "component": "<Platform page=\"platform-environment\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 161,
+      "aliases": [
+        "/platform-environment"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-13",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/platform/test-controls",
+      "title": "Test controls",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform-test-controls",
+      "permission": "admin:ops:manage",
+      "platformWide": true,
+      "component": "<Platform page=\"platform-test-controls\" />",
+      "source": "apps/console/src/pages/Platform.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 162,
+      "aliases": [
+        "/platform-test-controls"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-13",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/organisation/holidays",
+      "title": "Holidays",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "holidays",
+      "permission": "catalog:holiday:manage",
+      "platformWide": false,
+      "component": "<Holidays />",
+      "source": "apps/console/src/pages/Holidays.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 191,
+      "aliases": [
+        "/holidays"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-12",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/people/access-review",
+      "title": "Access review",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "access-review",
+      "permission": "admin:role:read",
+      "platformWide": false,
+      "component": "<AccessReview />",
+      "source": "apps/console/src/pages/AccessReview.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 197,
+      "aliases": [
+        "/access-review"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-14",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/people/departments",
+      "title": "Departments",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "departments",
+      "permission": "admin:account:read",
+      "platformWide": false,
+      "component": "<Departments />",
+      "source": "apps/console/src/pages/Departments.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 196,
+      "aliases": [
+        "/departments"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-15",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/people/employees",
+      "title": "Employees",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "employees",
+      "permission": "admin:account:read",
+      "platformWide": false,
+      "component": "<Employees />",
+      "source": "apps/console/src/pages/Employees.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 195,
+      "aliases": [
+        "/employees"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-15",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/people/app-access",
+      "title": "App access",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "app-access",
+      "permission": "admin:account:read",
+      "platformWide": false,
+      "component": "<AppAccess />",
+      "source": "apps/console/src/pages/AppAccess.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 194,
+      "aliases": [
+        "/app-access"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-16",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/people/roles",
+      "title": "Roles & scopes",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "roles",
+      "permission": "admin:role:read",
+      "platformWide": false,
+      "component": "<Roles />",
+      "source": "apps/console/src/pages/Roles.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 193,
+      "aliases": [
+        "/roles"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-14",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/people/accounts",
+      "title": "Accounts",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "accounts",
+      "permission": "admin:account:read",
+      "platformWide": false,
+      "component": "<Accounts />",
+      "source": "apps/console/src/pages/Accounts.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 192,
+      "aliases": [
+        "/accounts"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-16",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/watch/health",
+      "title": "Health",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "health",
+      "permission": "admin:health:read",
+      "platformWide": false,
+      "component": "<Health />",
+      "source": "apps/console/src/pages/Health.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 198,
+      "aliases": [
+        "/health"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-17",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/watch/failures",
+      "title": "Failures",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "failures",
+      "permission": "admin:health:read",
+      "platformWide": false,
+      "component": "<Failures />",
+      "source": "apps/console/src/pages/Failures.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 198,
+      "aliases": [
+        "/failures"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-18",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/watch/activity",
+      "title": "Activity",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "activity",
+      "permission": "admin:audit:read",
+      "platformWide": false,
+      "component": "<Activity />",
+      "source": "apps/console/src/pages/Activity.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 198,
+      "aliases": [
+        "/activity"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-18",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/devices/booths",
+      "title": "Booths",
+      "section": "Devices & places",
+      "sectionId": "devices",
+      "kind": "internal",
+      "pageId": "booths",
+      "permission": "admin:booth:read",
+      "platformWide": false,
+      "component": "<Booths />",
+      "source": "apps/console/src/pages/Booths.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 200,
+      "aliases": [
+        "/booths"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [
+        "UI-B1",
+        "UI-B4"
+      ],
+      "familySummaryId": "family-19",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/booths",
+      "title": "Booth report",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "booth-report",
+      "permission": "analytics:read",
+      "platformWide": false,
+      "component": "<BoothReport />",
+      "source": "apps/console/src/pages/BoothReport.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 200,
+      "aliases": [
+        "/booth-report"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-06",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/devices",
+      "title": "Devices",
+      "section": "Devices & places",
+      "sectionId": "devices",
+      "kind": "internal",
+      "pageId": "devices",
+      "permission": "admin:station:read",
+      "platformWide": false,
+      "component": "<Devices />",
+      "source": "apps/console/src/pages/Devices.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 199,
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [
+        "UI-B2",
+        "UI-B3"
+      ],
+      "familySummaryId": "family-19",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/organisation/branches",
+      "title": "Branches",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "branches",
+      "permission": "admin:branch:read",
+      "platformWide": false,
+      "component": "<Branches />",
+      "source": "apps/console/src/pages/Branches.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 199,
+      "aliases": [
+        "/branches"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-12",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports/bookings",
+      "title": "Bookings",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "bookings",
+      "permission": "pos:booking:read",
+      "platformWide": false,
+      "component": "<Bookings />",
+      "source": "apps/console/src/pages/Bookings.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 199,
+      "aliases": [
+        "/bookings"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-20",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/vouchers",
+      "title": "Vouchers",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "vouchers",
+      "permission": "admin:booth:read",
+      "platformWide": false,
+      "component": "<Vouchers />",
+      "source": "apps/console/src/pages/Vouchers.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 200,
+      "aliases": [
+        "/vouchers"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [
+        "UI-B5"
+      ],
+      "familySummaryId": "family-20",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue/voucher-types",
+      "title": "Voucher types",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "voucher-types",
+      "permission": "admin:booth:read",
+      "platformWide": false,
+      "component": "<VoucherTypes />",
+      "source": "apps/console/src/pages/VoucherTypes.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 201,
+      "aliases": [
+        "/voucher-types"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-09",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/watch/integrations",
+      "title": "Integrations",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "integrations",
+      "permission": "admin:health:read",
+      "platformWide": false,
+      "component": "<Integrations />",
+      "source": "apps/console/src/pages/Integrations.tsx",
+      "registrationFile": "apps/console/src/App.tsx",
+      "registrationLine": 201,
+      "aliases": [
+        "/integrations"
+      ],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-17",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/overview",
+      "title": "Overview",
+      "section": "Overview",
+      "sectionId": "overview",
+      "kind": "internal",
+      "pageId": "overview",
+      "permission": "{ any: ['console:overview:read'] }",
+      "component": "overview native area host",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-21",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/people",
+      "title": "People & access",
+      "section": "People & access",
+      "sectionId": "people",
+      "kind": "internal",
+      "pageId": "people",
+      "permission": "{ any: ['admin:account:read'] }",
+      "component": "AreaLanding",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-22",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/organisation",
+      "title": "Organisation",
+      "section": "Organisation",
+      "sectionId": "organisation",
+      "kind": "internal",
+      "pageId": "organisation",
+      "permission": "{ any: ['admin:branch:read', 'console:config:read', 'console:app_registry:read'] }",
+      "component": "AreaLanding",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-22",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/catalogue",
+      "title": "Catalogue & money",
+      "section": "Catalogue & money",
+      "sectionId": "catalogue",
+      "kind": "internal",
+      "pageId": "catalogue",
+      "permission": "{ any: ['catalog:package:read', 'catalog:menu:read'] }",
+      "component": "AreaLanding",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-22",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/channels",
+      "title": "Channels & assistant",
+      "section": "Channels & assistant",
+      "sectionId": "channels",
+      "kind": "internal",
+      "pageId": "channels",
+      "permission": "{ any: ['inbox:channel:manage', 'inbox:kb:manage', 'inbox:ai:manage'] }",
+      "component": "channels native area host",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-22",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/staff",
+      "title": "Staff & HR",
+      "section": "Staff & HR",
+      "sectionId": "staff",
+      "kind": "internal",
+      "pageId": "staff",
+      "permission": "{ all: ['app:oto_app:access', 'admin:account:read'] }",
+      "component": "staff native area host",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-23",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/reports",
+      "title": "Reports",
+      "section": "Reports",
+      "sectionId": "reports",
+      "kind": "internal",
+      "pageId": "reports",
+      "permission": "{ any: ['analytics:read', 'console:money:read'] }",
+      "component": "reports native area host",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-22",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/watch",
+      "title": "Watch",
+      "section": "Watch",
+      "sectionId": "watch",
+      "kind": "internal",
+      "pageId": "watch",
+      "permission": "{ any: ['admin:health:read', 'admin:audit:read', 'console:release:read', 'console:support:lookup'] }",
+      "component": "AreaLanding",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-22",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    },
+    {
+      "path": "/platform",
+      "title": "Platform",
+      "section": "Platform",
+      "sectionId": "platform",
+      "kind": "internal",
+      "pageId": "platform",
+      "permission": "{ platformWide: true }",
+      "component": "AreaLanding",
+      "aliases": [],
+      "sourceReviewLevel": "Route/nav registration inventoried. Semantic source findings and existing automated coverage are documented at family/flow level, not asserted for every control or message fragment.",
+      "linkedFindings": [],
+      "familySummaryId": "family-22",
+      "familySummaryScope": "Family-level summary only. Not every listed control or state belongs to this route."
+    }
+  ],
+  "summarySemantics": "Each route is inventoried individually. Controls/state summaries are grouped at family level; they are not per-route capability assertions. For example Configuration has ownership links, not Analytics source/rerun controls; Devices has fleet controls, not Booth prize/publish controls.",
+  "familySummaries": [
+    {
+      "id": "family-01",
+      "controlsSummary": "Native summary date/park selection, source/preference/formula/queue/drift, read-only preview and audited source/rerun; owned settings index links",
+      "stateHandlingSummary": "Independent read failures/omissions, fixed safe app doors, actual source metadata; absent metadata never guessed",
+      "approvedBehaviorAndLimitsSummary": "Q27Stage1 is whole-branch source. Dated splice/unfreeze waits on675/legacy dump. Config is not a generic cross-app writer.",
+      "routes": [
+        "/reports/analytics",
+        "/organisation/configuration"
+      ]
+    },
+    {
+      "id": "family-02",
+      "controlsSummary": "Native registry/maintenance; supported flags, exact preview/expiry/reason/confirmation/dual approval; release/agent pagination",
+      "stateHandlingSummary": "Read authority and request keys, independent history/agent errors, truthful empty-current-page; UI-S3 is the drawer-lifetime candidate",
+      "approvedBehaviorAndLimitsSummary": "Unsupported payment/gate/booth flags are catalogue-only, no action. Empty deployment history is known672, not invented.",
+      "routes": [
+        "/organisation/apps",
+        "/watch/releases"
+      ]
+    },
+    {
+      "id": "family-03",
+      "controlsSummary": "Native kind-aware lookup, action/sale trace, time-limited read-only view-as/history and dual-control paths",
+      "stateHandlingSummary": "Central actor fence, explicit unknown trace, preserved refusal and session reconciliation; source action callbacks inspected",
+      "approvedBehaviorAndLimitsSummary": "No view-as or trace action by this lane. Three unavailable readers674 and three-app banner gap648 remain known, not claimed fixed.",
+      "routes": [
+        "/watch/support"
+      ]
+    },
+    {
+      "id": "family-04",
+      "controlsSummary": "Existing native operations panels, stock/member searches and own-park selectors, wallet lookup/reactivation",
+      "stateHandlingSummary": "Working-authority owner keys, stock readback error distinct from a confirmed save, member-tier configuration failure visible",
+      "approvedBehaviorAndLimitsSummary": "Inherited page offers and service rules are preserved; no new write, wallet, member or verification rule is proposed here.",
+      "routes": [
+        "/catalogue/inventory",
+        "/catalogue/members",
+        "/catalogue/tier-verifications",
+        "/reports/wallets"
+      ]
+    },
+    {
+      "id": "family-05",
+      "controlsSummary": "Team/routing scope and archive filters, explicit owner/backup edits; operator caps/pacing/rates",
+      "stateHandlingSummary": "Owned working context, refusal/uncertainty feedback, original routing order/defaults and canonical readback",
+      "approvedBehaviorAndLimitsSummary": "Existing Inbox settings open through acting-user doors; no provider/channel mode action.",
+      "routes": [
+        "/channels/teams-routing",
+        "/channels/assistant-settings"
+      ]
+    },
+    {
+      "id": "family-06",
+      "controlsSummary": "Trading-day From/To, readable-park selection, native tables/summary cards, bounded CSV; deep-analysis Radar offer",
+      "stateHandlingSummary": "Context/filter-owned requests, errors distinct from zeros, export lifetime guards in lifted reports/Booth report",
+      "approvedBehaviorAndLimitsSummary": "No formula replacement; different wallet/promo windows stay labelled. Activity export is a separate source candidate.",
+      "routes": [
+        "/reports/sales",
+        "/reports/profitability",
+        "/reports/discounts",
+        "/reports/tax-vat",
+        "/reports/wallet-promo",
+        "/reports/booths"
+      ]
+    },
+    {
+      "id": "family-07",
+      "controlsSummary": "Read-only Money oversight navigation and safe trace discoverability",
+      "stateHandlingSummary": "Page offer and links inventoried; money deep-dive delegated to payment auditor",
+      "approvedBehaviorAndLimitsSummary": "Nothing on this page is treated as a money writer.",
+      "routes": [
+        "/reports/money"
+      ]
+    },
+    {
+      "id": "family-08",
+      "controlsSummary": "Native drop-off/supervision, print templates and station target, role benefits/overrides/credential/history",
+      "stateHandlingSummary": "Independent reads, owned actor/park/station generations, saved-versus-print continuation ownership and stable retry keys",
+      "approvedBehaviorAndLimitsSummary": "Preview and physical command are different permissions. No QR/credential/hardware action was performed by this audit lane.",
+      "routes": [
+        "/catalogue/care",
+        "/catalogue/print-templates",
+        "/catalogue/staff-benefits"
+      ]
+    },
+    {
+      "id": "family-09",
+      "controlsSummary": "Native discount/tender/tax/type/campaign/event editors, archive, order, branch mint/export",
+      "stateHandlingSummary": "Management/branch capability offers, confirmations, rejected drafts, late target guards and keyed uncertain retries",
+      "approvedBehaviorAndLimitsSummary": "Payment-domain deep correctness is delegated. UI-M4 is banner wording; manual reasons stay genuinely local. Tender archive-after-warning retains approved SCRUM-495 behavior.",
+      "routes": [
+        "/catalogue/discounts",
+        "/catalogue/tenders",
+        "/catalogue/tax",
+        "/catalogue/voucher-campaigns",
+        "/catalogue/event-pricing",
+        "/catalogue/voucher-types"
+      ]
+    },
+    {
+      "id": "family-10",
+      "controlsSummary": "Native item/category/library/variant forms and search, workbook preview/import/export",
+      "stateHandlingSummary": "Exact park/operator offers, translation preservation, inherited defaults, fractional monetary inputs, compound-write retry and preview generation guards",
+      "approvedBehaviorAndLimitsSummary": "Mock stock toggles remain explicitly nonpersistent; no stock policy is inferred from them.",
+      "routes": [
+        "/catalogue/menu",
+        "/catalogue/categories",
+        "/catalogue/modifiers",
+        "/catalogue/merch"
+      ]
+    },
+    {
+      "id": "family-11",
+      "controlsSummary": "Native forms, tier/default/proof/order, ticket/add-on prices and edit/remove offers",
+      "stateHandlingSummary": "Narrow ports, target lifecycle guards, retained refused drafts, canonical readback and write uncertainty recovery",
+      "approvedBehaviorAndLimitsSummary": "Operator-wide tier offers fail closed; local/mock behavior remains. Half-hour UI versus integer-hours API is recorded Q5, not a new rule fix.",
+      "routes": [
+        "/catalogue/tickets",
+        "/catalogue/tiers",
+        "/catalogue/add-ons"
+      ]
+    },
+    {
+      "id": "family-12",
+      "controlsSummary": "Native operator/branch forms, rename, mapping/reconcile, pricing-calendar ranges and branch selection",
+      "stateHandlingSummary": "Captured targets, stale draft fences, native server refusal details, exact-name archive confirmation",
+      "approvedBehaviorAndLimitsSummary": "Archive blockers are active boxes/stations only; no invented cash blocker. Reconcile/create are not staging audit actions.",
+      "routes": [
+        "/organisation/operators",
+        "/platform/operators",
+        "/organisation/holidays",
+        "/organisation/branches"
+      ]
+    },
+    {
+      "id": "family-13",
+      "controlsSummary": "Immutable role search; platform-only alert/job/environment reads and native staging-gated controls",
+      "stateHandlingSummary": "Canonical platform authority and explicit loading/error/empty states; no values exposed for environment names",
+      "approvedBehaviorAndLimitsSummary": "No platform write/provider action; the narrower platform scope is intentional.",
+      "routes": [
+        "/platform/system-roles",
+        "/platform/alerts",
+        "/platform/jobs",
+        "/platform/environment",
+        "/platform/test-controls"
+      ]
+    },
+    {
+      "id": "family-14",
+      "controlsSummary": "Role/permission text search, reverse permission picker, holder lists, effective-diff confirmations; six access-review cards",
+      "stateHandlingSummary": "Catalogue/holder/park errors are independent; null employee projection does not claim no owned link",
+      "approvedBehaviorAndLimitsSummary": "Read-only role catalogue; no new role/bundle editor is built.",
+      "routes": [
+        "/people/access-review",
+        "/people/roles"
+      ]
+    },
+    {
+      "id": "family-15",
+      "controlsSummary": "Server search, Refresh, read-only source/park/link facts; existing OTO App door",
+      "stateHandlingSummary": "Search/read owner cleanup and explicit error/empty/in-reach wording; nullable recorded sign-in",
+      "approvedBehaviorAndLimitsSummary": "OTO App mastering and mirrored/archived records remain approved.",
+      "routes": [
+        "/people/departments",
+        "/people/employees"
+      ]
+    },
+    {
+      "id": "family-16",
+      "controlsSummary": "Server name/phone search; Accounts actions, sessions/tokens, app linking/unlinked-user search",
+      "stateHandlingSummary": "Latest account/search and selected-dialog request guards; explicit read/mutation errors and deliberate password reveal",
+      "approvedBehaviorAndLimitsSummary": "Sessions caption/history ambiguity is existing Q1, not silently changed. Invite is local captured-SMS proof only; no audit staging invite.",
+      "routes": [
+        "/people/app-access",
+        "/people/accounts"
+      ]
+    },
+    {
+      "id": "family-17",
+      "controlsSummary": "Native refresh, fleet/job/readiness detail, provider categories, expiry metadata/history and gated local-adapter tests",
+      "stateHandlingSummary": "Current errors suppress all-clear; missing readings stay unknown; retained snapshot labelled; station totals/per-station counts are this API instance",
+      "approvedBehaviorAndLimitsSummary": "No live provider, watchdog, alert, fault or simulator action by this lane. The source includes deployed662 repair.",
+      "routes": [
+        "/watch/health",
+        "/watch/integrations"
+      ]
+    },
+    {
+      "id": "family-18",
+      "controlsSummary": "Audit filters/presets/change/raw/related/export; failure kind/window/cursor, run/quarantine and recipient/mute views",
+      "stateHandlingSummary": "Filter/page success/error/finally guards and explicit detail failures; source candidates UI-S1/S2 remain",
+      "approvedBehaviorAndLimitsSummary": "Unsupported presets are warned, not true server filters. Mute bound remains1–24h; console-only delivery is intentional.",
+      "routes": [
+        "/watch/failures",
+        "/watch/activity"
+      ]
+    },
+    {
+      "id": "family-19",
+      "controlsSummary": "Park and panel filters; fleet drawers, pairing/commands; booth draft, prizes, publishing, settings, staff and history",
+      "stateHandlingSummary": "Global actor/session protection exists, but local target/read-state gaps are native UI-B1–B4",
+      "approvedBehaviorAndLimitsSummary": "No hardware, pairing, command, publish or fleet write was dispatched. Native fixtures are local, not staging.",
+      "routes": [
+        "/devices/booths",
+        "/devices"
+      ]
+    },
+    {
+      "id": "family-20",
+      "controlsSummary": "Status/date/park filters; vouchers type/issuer/place; newest-first paging and voucher CSV",
+      "stateHandlingSummary": "List effect cleanup protects current filters; positive native controls pass; UI-B5 exposes shrinking-page empty/range handling",
+      "approvedBehaviorAndLimitsSummary": "Bookings shares the footer expression by source only. Payment/refund/settlement values are delegated.",
+      "routes": [
+        "/reports/bookings",
+        "/catalogue/vouchers"
+      ]
+    },
+    {
+      "id": "family-21",
+      "controlsSummary": "Reach-filtered park selector, Refresh, source links, copied status summary",
+      "stateHandlingSummary": "Current-owner-tagged data/error/copy/handoff; each unavailable metric stays explicit",
+      "approvedBehaviorAndLimitsSummary": "Default /overview and metric formulas are approved behavior.",
+      "routes": [
+        "/overview"
+      ]
+    },
+    {
+      "id": "family-22",
+      "controlsSummary": "Area landing: permission-filtered links to native pages; Channels includes fixed acting-user Inbox doors and Reports the gated Radar offer.",
+      "stateHandlingSummary": "Area and page grants remain independent; direct page refusals use shared PermissionRequired.",
+      "approvedBehaviorAndLimitsSummary": "Navigation host, not a replacement form or generic writer.",
+      "routes": [
+        "/people",
+        "/organisation",
+        "/catalogue",
+        "/channels",
+        "/reports",
+        "/watch",
+        "/platform"
+      ]
+    },
+    {
+      "id": "family-23",
+      "controlsSummary": "Read-only park/day staff headlines and native OTO App source doors",
+      "stateHandlingSummary": "Current owner/filter fence; forbidden/unavailable source metrics labelled independently; payroll remains permission-filtered",
+      "approvedBehaviorAndLimitsSummary": "No HR editor or salary policy added.",
+      "routes": [
+        "/staff"
+      ]
+    }
+  ],
+  "correctedAt": "2026-10-28T17:09:18.107Z"
+}

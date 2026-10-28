@@ -1,0 +1,19 @@
+{
+  "ticket": "SCRUM-679",
+  "kind": "Audit-only native failure reproductions; production remains unchanged",
+  "startedAt": "2026-10-28T16:58:54.443Z",
+  "finishedAt": "2026-10-28T17:00:26.316Z",
+  "nativeExitCode": 0,
+  "failed": 6,
+  "passed": 0,
+  "spec": "apps/console/e2e/admin-audit-ui-booths-ledger.spec.ts",
+  "specSha256": "ad22ec4b7a347321d259236ca048bfc516a3ffbeb19890ffe9249513be3ff9dd",
+  "sourceFiles": 317,
+  "sourceBeforeSha256": "c63542a0f34efe2b670aea4e51c220e20ea33d59bf09ebc01af789050ccca63a",
+  "sourceAfterSha256": "c63542a0f34efe2b670aea4e51c220e20ea33d59bf09ebc01af789050ccca63a",
+  "sourceBytesUnchanged": true,
+  "embeddedStopped": true,
+  "logSha256": "1f8536b4d808d3466913076ee2157b0638c920ffa36a6d37d9015db91006eae7",
+  "staging": false,
+  "docker": false
+}

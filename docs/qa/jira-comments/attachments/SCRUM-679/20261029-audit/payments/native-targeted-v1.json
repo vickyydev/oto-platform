@@ -1,0 +1,60 @@
+{
+  "audit": "Console payment audit",
+  "sourceHead": "5da2fe226a3fec8f4d9c725deba9428d040275b0",
+  "startedAt": "2026-10-28T16:41:29.044Z",
+  "completedAt": "2026-10-28T16:42:53.578Z",
+  "exitCode": 0,
+  "signal": null,
+  "errorCode": null,
+  "passed": true,
+  "command": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\oto-lanes\\admin-audit-20261028\\apps\\api\\node_modules\\vitest\\vitest.mjs",
+      "run",
+      "test/catalog-payment-methods.test.ts",
+      "test/console-money.test.ts",
+      "test/eod-r3-settlement.test.ts",
+      "test/menu-tax-seam.test.ts",
+      "--maxWorkers=1",
+      "--no-file-parallelism"
+    ],
+    "cwd": "C:\\oto-lanes\\admin-audit-20261028\\apps\\api"
+  },
+  "tests": [
+    "apps/api/test/catalog-payment-methods.test.ts",
+    "apps/api/test/console-money.test.ts",
+    "apps/api/test/eod-r3-settlement.test.ts",
+    "apps/api/test/menu-tax-seam.test.ts"
+  ],
+  "sourceInputCount": 3949,
+  "beforeSourceSha256": "cb30e546b70e4dc4191ff17bb90ddf67f3912778f95a9b1e9aee327e3edbe168",
+  "afterSourceSha256": "cb30e546b70e4dc4191ff17bb90ddf67f3912778f95a9b1e9aee327e3edbe168",
+  "sourceUnchanged": true,
+  "testHashes": {
+    "apps/api/test/catalog-payment-methods.test.ts": "cdd8bb280093a40061aceb69f44d71822c3bafe247faa0bf9334fb9225849fe8",
+    "apps/api/test/console-money.test.ts": "ab82223496732289c7b390147c1ae0c9f7b8468f9dc9e3cec1edb194386c3a1e",
+    "apps/api/test/eod-r3-settlement.test.ts": "b0eb95eb3990ed126577e62d9528c4f2dbe47fe179fde2458b35d750d5280bf3",
+    "apps/api/test/menu-tax-seam.test.ts": "1103acd104b98fe7dcb0ff0ba91a6ae9e897cddeddbb99c85dbebac0fcdc59c2"
+  },
+  "logPath": "C:/oto-lanes/admin-audit-evidence/payments/native-targeted-v1.log",
+  "logSha256": "d945ddb76ba32ff0b36c3e0c94c684e49dfa5d002680b472e03bf42475a8e4ee",
+  "redactionChanged": false,
+  "summaryLines": [
+    " Test Files  4 passed (4)",
+    "      Tests  53 passed (53)",
+    "   Duration  80.99s (transform 5.41s, setup 0ms, collect 24.44s, tests 55.26s, environment 1ms, prepare 546ms)"
+  ],
+  "helperSha256": "fdd0d2f2ff5e72d470cab0617dd02316b1b95fa2e2cd75ce69e93e9dcf9cad4b",
+  "databaseEnvironmentRemoved": [
+    "DATABASE_URL",
+    "TEST_DATABASE_URL"
+  ],
+  "docker": false,
+  "staging": false,
+  "providerCallsRequested": false,
+  "productChanges": false,
+  "limits": [
+    "Existing local native tests only; no live or full-release assertion."
+  ]
+}
