@@ -6,15 +6,17 @@
  *
  *   - the three inbox roles (`inbox_agent`, `inbox_manager`, `inbox_admin`),
  *     as the operator's own roles;
- *   - the two operator-wide departments the Birthdays & Events and Marketing
- *     teams map onto, and a `reception` department at any live branch that
- *     has none (the seeded parks already have theirs, and reuse it);
- *   - the teams: Birthdays & Events, Marketing, and Reception per branch;
+ *   - the three operator-wide departments the Birthdays & Events, Marketing
+ *     and GM teams map onto, and a `reception` department at any live branch
+ *     that has none (the seeded parks already have theirs, and reuse it);
+ *   - the teams: Birthdays & Events, Marketing, GM (the playbook's general
+ *     manager queue, SCRUM-220) and Reception per branch;
  *   - the routing rules for the IT Brief's defaults, every person BLANK
  *     (`primary_kind = 'team'`, owner Q20), plus one catch-all per team so
  *     routing can never leave a conversation unowned;
- *   - the ten template keys (`handover_general` joined with SCRUM-590,
- *     `follow_up` with the SCRUM-220 test night) in English, Thai and
+ *   - the thirteen template keys (`handover_general` joined with SCRUM-590,
+ *     `follow_up` with the SCRUM-220 test night, the three `closing_*`
+ *     lines with the SCRUM-220 playbook) in English, Thai and
  *     Russian, each language in its own words — and the one UPDATE this file
  *     makes: a TH or RU row that still carries the English source marked
  *     `needs_translation` (as every operator synced before the test night
@@ -61,10 +63,12 @@ import type { Db } from '../index';
 import * as s from '../schema/index';
 import type { InboxCategory, InboxChannel, InboxTeamKey, InboxTemplateKey } from '../schema/inbox';
 
-/** The two operator-wide departments the Inbox adds. Reception reuses each branch's own. */
+/** The operator-wide departments the Inbox adds. Reception reuses each branch's own. */
 export const INBOX_DEPARTMENTS = {
   birthdays: 'birthdays & events',
   marketing: 'marketing',
+  /** The playbook's GM queue (SCRUM-220, `0094_inbox_playbook`). */
+  gm: 'gm',
 } as const;
 
 /** The department every branch rosters its counter staff in (`seed/index.ts` `departmentsFor`). */
@@ -75,6 +79,7 @@ const TEAM_LOOK: Record<InboxTeamKey, { colour: string; sortOrder: number }> = {
   birthdays: { colour: 'violet', sortOrder: 0 },
   reception: { colour: 'sky', sortOrder: 10 },
   marketing: { colour: 'pink', sortOrder: 100 },
+  gm: { colour: 'amber', sortOrder: 110 },
 };
 
 /** The notice channels a registration can name (`crm.member` CONTACT_CHANNELS less Instagram). */
@@ -140,6 +145,13 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   // follow a thread up after a day. `{{name}}` is the customer's name.
   follow_up:
     "Hello {{name}}, following up on your message to OTO Play Park — reply here whenever you're ready and we'll pick it up.",
+  // SCRUM-220 playbook (`0094_inbox_playbook`): the playbook's closing lines,
+  // word for word, keyed by where the thread goes next — the birthday
+  // manager, the general manager, or a branch. Laid insert-if-absent like
+  // the rest, so an admin's edit is never undone.
+  closing_birthday: 'Thank you so much! Our birthday manager will be with you shortly.',
+  closing_gm: 'Thank you so much! Our general manager will be in contact with you shortly.',
+  closing_branch: "Thanks! We'll be back to you shortly.",
 };
 
 /**
@@ -170,6 +182,9 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Inbo
     handover_general: 'ขอบคุณสำหรับข้อความนะคะ รอสักครู่นะคะ เจ้าหน้าที่ของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
     follow_up:
       'สวัสดีค่ะ คุณ{{name}} ขอติดตามเรื่องข้อความที่ส่งถึง OTO Play Park นะคะ สะดวกเมื่อไหร่ตอบกลับมาได้เลยค่ะ เราพร้อมดูแลต่อให้ค่ะ',
+    closing_birthday: 'ขอบคุณมากนะคะ ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
+    closing_gm: 'ขอบคุณมากนะคะ ผู้จัดการทั่วไปของเราจะติดต่อกลับหาคุณในอีกไม่นานค่ะ',
+    closing_branch: 'ขอบคุณค่ะ เราจะติดต่อกลับหาคุณในอีกไม่นานนะคะ',
   },
   ru: {
     welcome: 'Здравствуйте! 👋 Добро пожаловать в OTO Play Park. Чем мы можем вам помочь?',
@@ -187,6 +202,9 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Inbo
     handover_general: 'Спасибо за ваше сообщение. Одну минуту, пожалуйста — коллега скоро подключится к разговору.',
     follow_up:
       'Здравствуйте, {{name}}! Пишем по поводу вашего сообщения в OTO Play Park — ответьте здесь, когда вам будет удобно, и мы продолжим.',
+    closing_birthday: 'Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами.',
+    closing_gm: 'Большое спасибо! Наш генеральный менеджер скоро свяжется с вами.',
+    closing_branch: 'Спасибо! Мы скоро вам ответим.',
   },
 };
 
@@ -216,6 +234,8 @@ export const INBOX_TEMPLATE_FORMER_BODIES: Readonly<Partial<Record<InboxTemplate
  *
  *   Birthdays & Events  EN, RU, TH (the IT Brief's pairs), then a catch-all
  *   Marketing           the marketing owner's rule, then a catch-all
+ *   GM                  the general manager's rule, then a catch-all
+ *                       (SCRUM-220 playbook)
  *   Reception · <park>  general enquiries at that park — a team primary,
  *                       which is itself the team's catch-all
  */
@@ -238,6 +258,11 @@ function rulesFor(
       return [
         { category: 'marketing', language: null, branchId: null, priority: NAMED_RULE_PRIORITY },
         { category: 'marketing', language: null, branchId: null, priority: CATCH_ALL_PRIORITY },
+      ];
+    case 'gm':
+      return [
+        { category: 'gm', language: null, branchId: null, priority: NAMED_RULE_PRIORITY },
+        { category: 'gm', language: null, branchId: null, priority: CATCH_ALL_PRIORITY },
       ];
     case 'reception':
       return [{ category: 'general', language: null, branchId, priority: CATCH_ALL_PRIORITY }];
@@ -555,7 +580,8 @@ export async function syncInboxSetup(db: Db): Promise<InboxSyncCounts> {
 
     const birthdaysDept = await department(db, operatorId, null, INBOX_DEPARTMENTS.birthdays, 'birthdays');
     const marketingDept = await department(db, operatorId, null, INBOX_DEPARTMENTS.marketing, 'marketing');
-    counts.departments += Number(birthdaysDept.created) + Number(marketingDept.created);
+    const gmDept = await department(db, operatorId, null, INBOX_DEPARTMENTS.gm, 'gm');
+    counts.departments += Number(birthdaysDept.created) + Number(marketingDept.created) + Number(gmDept.created);
 
     const teams = [
       await syncTeam(
@@ -606,6 +632,22 @@ export async function syncInboxSetup(db: Db): Promise<InboxSyncCounts> {
           departmentId: marketingDept.id,
           name: 'Marketing',
           sortOrder: TEAM_LOOK.marketing.sortOrder,
+        },
+        counts,
+      ),
+    );
+
+    // SCRUM-220 playbook: the general manager's queue, operator-wide.
+    teams.push(
+      await syncTeam(
+        db,
+        {
+          operatorId,
+          key: 'gm',
+          branchId: null,
+          departmentId: gmDept.id,
+          name: 'GM',
+          sortOrder: TEAM_LOOK.gm.sortOrder,
         },
         counts,
       ),

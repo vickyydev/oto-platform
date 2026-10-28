@@ -227,9 +227,11 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     ]);
   });
 
-  it('maps reception teams onto each branch’s own reception department, and adds the two operator-wide ones', async () => {
+  it('maps reception teams onto each branch’s own reception department, and adds the three operator-wide ones', async () => {
     const teams = await db.select().from(s.team).where(eq(s.team.operatorId, oto));
-    expect(teams.map((t) => t.key).sort()).toEqual(['birthdays', 'marketing', 'reception', 'reception']);
+    expect(teams.map((t) => t.key).sort()).toEqual(['birthdays', 'gm', 'marketing', 'reception', 'reception']);
+    // The playbook's GM queue (SCRUM-220): one operator-wide team named GM.
+    expect(teams.filter((t) => t.key === 'gm').map((t) => [t.name, t.branchId])).toEqual([['GM', null]]);
     for (const t of teams.filter((x) => x.key === 'reception')) {
       const [dept] = await db.select().from(s.department).where(eq(s.department.id, t.departmentId!));
       expect(dept!.name).toBe('reception');
@@ -237,7 +239,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     }
     expect(teams.find((t) => t.key === 'reception' && t.name === 'Reception · Central Floresta')).toBeDefined();
     expect(teams.find((t) => t.key === 'reception' && t.name === 'Reception · Robinson Chalong')).toBeDefined();
-    for (const key of ['birthdays', 'marketing'] as const) {
+    for (const key of ['birthdays', 'marketing', 'gm'] as const) {
       const t = teams.find((x) => x.key === key)!;
       const [dept] = await db.select().from(s.department).where(eq(s.department.id, t.departmentId!));
       expect(dept!.name).toBe(INBOX_DEPARTMENTS[key]);
@@ -245,12 +247,12 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     }
     // The second operator's branch had no reception department: it got one.
     const secondTeams = await db.select().from(s.team).where(eq(s.team.operatorId, second));
-    expect(secondTeams.map((t) => t.key).sort()).toEqual(['birthdays', 'marketing', 'reception']);
+    expect(secondTeams.map((t) => t.key).sort()).toEqual(['birthdays', 'gm', 'marketing', 'reception']);
   });
 
   it('lays the routing rules with every person blank and one catch-all per team', async () => {
     const rules = await db.select().from(s.routingRule).where(eq(s.routingRule.operatorId, oto));
-    expect(rules).toHaveLength(4 + 2 + 2); // birthdays EN/RU/TH + catch-all; marketing + catch-all; one per reception
+    expect(rules).toHaveLength(4 + 2 + 2 + 2); // birthdays EN/RU/TH + catch-all; marketing + catch-all; one per reception; GM + catch-all
     expect(rules.every((r) => r.primaryKind === 'team' && r.primaryAccountId === null && r.backupAccountId === null)).toBe(true);
     const teams = await db.select().from(s.team).where(eq(s.team.operatorId, oto));
     for (const t of teams) {
@@ -259,6 +261,13 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
       );
       expect(catchAll, `${t.name} has exactly one catch-all`).toHaveLength(1);
     }
+    const gm = teams.find((t) => t.key === 'gm')!;
+    expect(rules.filter((r) => r.teamId === gm.id).map((r) => [r.category, r.language, r.branchId, r.priority])).toEqual(
+      expect.arrayContaining([
+        ['gm', null, null, 10],
+        ['gm', null, null, 0],
+      ]),
+    );
     expect(rules.filter((r) => r.category === 'birthdays' && r.language !== null).map((r) => r.language).sort()).toEqual([
       'en',
       'ru',
@@ -266,7 +275,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     ]);
   });
 
-  it('lays the ten templates in EN, TH and RU, each language in its own words, nothing waiting for a translator', async () => {
+  it('lays the thirteen templates in EN, TH and RU, each language in its own words, nothing waiting for a translator', async () => {
     const templates = await db.select().from(s.template).where(eq(s.template.operatorId, oto));
     expect(templates).toHaveLength(INBOX_TEMPLATE_KEYS.length * 3);
     expect(new Set(templates.map((t) => t.key))).toEqual(new Set(INBOX_TEMPLATE_KEYS));
@@ -292,6 +301,11 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
       for (const n of numbers(th.body)) expect(numbers(en.body)).toContain(n);
       for (const n of numbers(ru.body)) expect(numbers(en.body)).toContain(n);
     }
+    // The playbook's destination-keyed closing lines (SCRUM-220), word for word.
+    const en = (key: string) => templates.find((t) => t.key === key && t.language === 'en')!.body;
+    expect(en('closing_birthday')).toBe('Thank you so much! Our birthday manager will be with you shortly.');
+    expect(en('closing_gm')).toBe('Thank you so much! Our general manager will be in contact with you shortly.');
+    expect(en('closing_branch')).toBe("Thanks! We'll be back to you shortly.");
     // The follow-up is the one line that is not a holding line, and the only one with a placeholder.
     expect(INBOX_TEMPLATE_BODIES.follow_up).toContain('{{name}}');
     expect(INBOX_TEMPLATE_KEYS.filter((k) => INBOX_TEMPLATE_BODIES[k].includes('{{'))).toEqual(['follow_up']);

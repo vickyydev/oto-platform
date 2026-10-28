@@ -70,12 +70,16 @@ export type InboxProvider = (typeof INBOX_PROVIDERS)[number];
 export const CHANNEL_ACCOUNT_STATUSES = ['active', 'paused', 'error'] as const;
 export type ChannelAccountStatus = (typeof CHANNEL_ACCOUNT_STATUSES)[number];
 
-/** The three categories of the IT Brief, each owned by a team. */
-export const INBOX_CATEGORIES = ['birthdays', 'general', 'marketing'] as const;
+/**
+ * The categories, each owned by a team: the IT Brief's three, and `gm`
+ * (SCRUM-220 playbook, `0094_inbox_playbook`) — the general manager's queue
+ * for complaints, influencers, jobs, photography and refunds.
+ */
+export const INBOX_CATEGORIES = ['birthdays', 'general', 'marketing', 'gm'] as const;
 export type InboxCategory = (typeof INBOX_CATEGORIES)[number];
 
-/** A team's kind. `reception` is per branch; the other two are operator-wide. */
-export const INBOX_TEAM_KEYS = ['birthdays', 'reception', 'marketing'] as const;
+/** A team's kind. `reception` is per branch; the others are operator-wide. `gm` joined with `0094_inbox_playbook`. */
+export const INBOX_TEAM_KEYS = ['birthdays', 'reception', 'marketing', 'gm'] as const;
 export type InboxTeamKey = (typeof INBOX_TEAM_KEYS)[number];
 
 /** IT Brief: two statuses, and no conversation is ever without an owner. */
@@ -145,7 +149,10 @@ export type RoutingPrimaryKind = (typeof ROUTING_PRIMARY_KINDS)[number];
  * custom requests, nanny booking, unclear or emotional messages, a request
  * for a person. `follow_up` (SCRUM-220 test night, `0083_inbox_test_night`)
  * is the one line that is not a holding line: a person's follow-up outside
- * WhatsApp's 24-hour window, when only a template may be sent.
+ * WhatsApp's 24-hour window, when only a template may be sent. The three
+ * `closing_*` keys (SCRUM-220 playbook, `0094_inbox_playbook`) are the
+ * playbook's destination-keyed closing lines: the birthday manager, the
+ * general manager, or a branch will be with the customer shortly.
  */
 export const INBOX_TEMPLATE_KEYS = [
   'welcome',
@@ -158,6 +165,9 @@ export const INBOX_TEMPLATE_KEYS = [
   'out_of_hours',
   'handover_general',
   'follow_up',
+  'closing_birthday',
+  'closing_gm',
+  'closing_branch',
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 
@@ -280,6 +290,15 @@ export type AiExampleVerdict = (typeof AI_EXAMPLE_VERDICTS)[number];
 export const AI_EXAMPLE_STATUSES = ['proposed', 'approved', 'rejected'] as const;
 export type AiExampleStatus = (typeof AI_EXAMPLE_STATUSES)[number];
 
+/**
+ * A channel account's silence policy (`channel_account.silence_policy`,
+ * SCRUM-220 playbook): the assistant intent ids (`@oto/assistant` AI_INTENTS)
+ * on which it says nothing to the customer and hands the thread to the team.
+ */
+export interface ChannelSilencePolicy {
+  silentIntents: string[];
+}
+
 /** `'a','b'` for a CHECK, from one of the lists above, so the list is said once. */
 const inList = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`).join(','));
 
@@ -342,6 +361,13 @@ export const channelAccount = inbox.table(
      * decision (`inbox:ai:manage`), never a deploy's.
      */
     aiMode: text('ai_mode').$type<AiMode>().notNull().default('off'),
+    /**
+     * The number's silence policy (SCRUM-220 playbook, `0094_inbox_playbook`):
+     * the intents on which the assistant stays silent to the customer and
+     * leaves the thread to the team — a branch's drop-off and nanny desk.
+     * Null means no policy: every intent behaves as the intent table says.
+     */
+    silencePolicy: jsonb('silence_policy').$type<ChannelSilencePolicy>(),
     ...timestamps,
     ...archivedAt,
   },
@@ -366,6 +392,11 @@ export const channelAccount = inbox.table(
     ),
     /** A console account only sends notices; it can never carry a reply. */
     check('channel_account_console_reply_check', sql`${t.provider} <> 'console' or not ${t.canReply}`),
+    /** A silence policy, when set, is an object whose `silentIntents` is a list. */
+    check(
+      'channel_account_silence_policy_check',
+      sql`${t.silencePolicy} is null or (jsonb_typeof(${t.silencePolicy}) = 'object' and coalesce(jsonb_typeof(${t.silencePolicy} -> 'silentIntents'), '') = 'array')`,
+    ),
   ],
 );
 
