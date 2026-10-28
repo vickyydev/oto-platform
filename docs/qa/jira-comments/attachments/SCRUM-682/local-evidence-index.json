@@ -1,0 +1,73 @@
+{
+  "ticket": "SCRUM-682",
+  "createdAt": "2026-10-28T20:19:31.747Z",
+  "testedSource": "30e90eb3257a05ab3f59411a7c6f70b65adb328b",
+  "currentSource": "8e66aef1bd237d519ebc698a2055b981a1448672",
+  "productBytesIdentical": true,
+  "files": [
+    {
+      "file": "integrated-results.json",
+      "sha256": "d525faba23d55b8b572fde725b94248222ca8e9f7f4a4928c7fd865bbddbcb50"
+    },
+    {
+      "file": "browser-all.json",
+      "sha256": "8dc7b1d2364bc3f84f548956c64d971e4eb3b345598dd967108463fbb80f919b"
+    },
+    {
+      "file": "browser-all-frontend.json",
+      "sha256": "80224b6c2d6c8c5fb7ae03f04ac418fc4e94f26e6bf2bac82ccfe6bcdffdfab3"
+    },
+    {
+      "file": "browser-all-frontend-source.json",
+      "sha256": "300b9dc65f7d3948adc2260178ef9bb2a81962dd1d6649ede3c13385a3c6c6f8"
+    },
+    {
+      "file": "checks.json",
+      "sha256": "37824419a3f2f521354a8b0f05b81044f7906652d5f5e83a2858e1d4c90763cc"
+    },
+    {
+      "file": "support-checkpoint.json",
+      "sha256": "1da30ef9ca14528e27c32c088332de77b27d147b06e811639f13b56db62426c2"
+    },
+    {
+      "file": "ui-local-history.json",
+      "sha256": "6f1e269ff942e54bfba97d3698ed465f9169eeeb2d9ac7fe0edb52f02d4c35e8"
+    },
+    {
+      "file": "safe-reasons-manifest.json",
+      "sha256": "bab83aac0a74541be40b8411b1d1f87e20f667fa403b54482493d4e29c8c5c48"
+    },
+    {
+      "file": "browser-failure-classification.json",
+      "sha256": "39139a52a99891aa89280b0c40a49d3fa41666e980b5dac8e8b6bb658c49d046"
+    },
+    {
+      "file": "api-green.json",
+      "sha256": "9512b50b3916f68ad7f8386867508db608fd7f4a429d43d325a86434d455509a"
+    },
+    {
+      "file": "api-guards.json",
+      "sha256": "a6ec947a41d282a303d1afc80be1460e768aa7d98f3da306ec34d2a6c88c18e3"
+    },
+    {
+      "file": "api-affected.json",
+      "sha256": "6c108e0fa9b80d9faa7829cd0f166406560a7bd2fa2a6bee676884db1e529d99"
+    },
+    {
+      "file": "api-contracts.json",
+      "sha256": "f6e6ece343a872756ce83fcd36cd4b3ef2005cd49023f925cb2d2119446d64e4"
+    },
+    {
+      "file": "api-seam.json",
+      "sha256": "71d9a995a6514523b765415b8ffbb0203d0637139b9e235a62c70dcda4ffe808"
+    },
+    {
+      "file": "api-compiler2.json",
+      "sha256": "61828b5c88ede81eead92f80b13305872937d9ae2c650473691b1cdaec9b62cc"
+    },
+    {
+      "file": "api-lint.json",
+      "sha256": "38cd324bc5c1f9b3f423ce23d63051232c8c5ba7b8238e60c5e9f1183a63c101"
+    }
+  ]
+}

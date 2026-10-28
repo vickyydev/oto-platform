@@ -1,0 +1,75 @@
+{
+  "ticket": "SCRUM-682",
+  "headSha": "30e90eb3257a05ab3f59411a7c6f70b65adb328b",
+  "sourceFiles": 3985,
+  "sourceBeforeSha256": "10db1ed809b5604676ead6e7b22901538eb5c6bdc57fb43260d11d5e413bfdf6",
+  "sourceAfterSha256": "10db1ed809b5604676ead6e7b22901538eb5c6bdc57fb43260d11d5e413bfdf6",
+  "inputsUnchanged": true,
+  "gitStillClean": true,
+  "headUnchanged": true,
+  "results": [
+    {
+      "name": "console-units",
+      "command": "pnpm --filter @oto/console test --fileParallelism=false --maxWorkers=1",
+      "startedAt": "2026-10-28T20:09:56.509Z",
+      "finishedAt": "2026-10-28T20:10:30.064Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin682-integrated-evidence-20261029/console-units.log",
+      "logSha256": "c50d3a7676cc34ff7b27a7312220a5167a5ce6d0b18bbe5de249302497da6bc9"
+    },
+    {
+      "name": "admin-units",
+      "command": "pnpm --filter @oto/admin-screens test --fileParallelism=false --maxWorkers=1",
+      "startedAt": "2026-10-28T20:10:30.066Z",
+      "finishedAt": "2026-10-28T20:10:46.550Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin682-integrated-evidence-20261029/admin-units.log",
+      "logSha256": "99650212878f4afc52ce7ba09de4484389d50a86ada43dd5f45e56709fc39b4d"
+    },
+    {
+      "name": "pos-units",
+      "command": "pnpm --filter @oto/pos test --fileParallelism=false --maxWorkers=1",
+      "startedAt": "2026-10-28T20:10:46.550Z",
+      "finishedAt": "2026-10-28T20:13:21.629Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin682-integrated-evidence-20261029/pos-units.log",
+      "logSha256": "156c01a2fbb31cd3c8af73af8e47ea56e95f7e1430df7ad8854e74ad95e52332"
+    },
+    {
+      "name": "console-typecheck",
+      "command": "pnpm --filter @oto/console typecheck",
+      "startedAt": "2026-10-28T20:13:21.629Z",
+      "finishedAt": "2026-10-28T20:13:46.662Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin682-integrated-evidence-20261029/console-typecheck.log",
+      "logSha256": "e3d55e08051276e53493db9dfa3f35372dfc679a39774956ec126f2b71f2bad9"
+    },
+    {
+      "name": "admin-typecheck",
+      "command": "pnpm --filter @oto/admin-screens typecheck",
+      "startedAt": "2026-10-28T20:13:46.662Z",
+      "finishedAt": "2026-10-28T20:13:55.803Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin682-integrated-evidence-20261029/admin-typecheck.log",
+      "logSha256": "7ca7c4df8bfec9ace5f2d5e6634301360e5de4a6d3410ae5c3eea739edbc898a"
+    },
+    {
+      "name": "pos-typecheck",
+      "command": "pnpm --filter @oto/pos typecheck",
+      "startedAt": "2026-10-28T20:13:55.803Z",
+      "finishedAt": "2026-10-28T20:14:25.953Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin682-integrated-evidence-20261029/pos-typecheck.log",
+      "logSha256": "b5b5c6b7adf6dea4acec83d86c9cede49c83d040b7042090e7ec80b5b0402cbc"
+    },
+    {
+      "name": "lint",
+      "command": "pnpm exec eslint apps/api/src/app.ts apps/api/src/routes/ops-response-schemas.ts apps/api/src/routes/ops.ts apps/api/test/s682-ops-contracts-review.test.ts apps/console/e2e/access-review.spec.ts apps/console/e2e/app-access.spec.ts apps/console/e2e/assistant-settings.spec.ts apps/console/e2e/departments.spec.ts apps/console/e2e/employees.spec.ts apps/console/e2e/error-recovery-review.spec.ts apps/console/e2e/health-integrations-review.spec.ts apps/console/e2e/money.spec.ts apps/console/e2e/observability-lifetime.spec.ts apps/console/e2e/organisation.spec.ts apps/console/e2e/page-state-review.spec.ts apps/console/e2e/platform.spec.ts apps/console/e2e/read-failures.spec.ts apps/console/e2e/roles.spec.ts apps/console/e2e/suite-controls.spec.ts apps/console/e2e/support-error-review.spec.ts apps/console/src/App.tsx apps/console/src/api/client.ts apps/console/src/api/observability.ts apps/console/src/api/sync.ts apps/console/src/components/Panel.tsx apps/console/src/components/failures/Quarantine.tsx apps/console/src/pages/Booths.tsx apps/console/src/pages/Failures.tsx apps/console/src/pages/Money.tsx apps/console/src/pages/Platform.tsx apps/console/src/pages/Support.tsx apps/console/test/error-panel-review.test.ts apps/console/test/error-transport-review.test.ts apps/pos/src/api/client.ts apps/pos/src/api/platform.ts apps/pos/test/wallet-staging-surfaces.test.ts packages/admin-screens/src/api/app-identities.ts packages/admin-screens/src/index.ts packages/admin-screens/src/lib/errorView.ts packages/admin-screens/src/lifted/api/client.ts packages/admin-screens/src/lifted/api/platform.ts packages/admin-screens/src/lifted/components/admin/discounts/DiscountCodesSection.tsx packages/admin-screens/src/lifted/components/admin/tax/TaxPanel.tsx packages/admin-screens/src/lifted/runtime/money.ts packages/admin-screens/test/error-view.test.ts packages/admin-screens/test/money-ports.test.ts packages/api-types/test/migration-list.ts",
+      "startedAt": "2026-10-28T20:14:25.953Z",
+      "finishedAt": "2026-10-28T20:14:38.333Z",
+      "exitCode": 0,
+      "log": "C:/oto-lanes/admin682-integrated-evidence-20261029/lint.log",
+      "logSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-682",
+  "phase": "affected",
+  "command": "pnpm --filter @oto/api test --maxWorkers=1 --fileParallelism=false test/ops-api.test.ts test/ops-jobs.test.ts test/demo-reset.test.ts test/console-branch-scope.test.ts test/sync-api.test.ts test/sync-ledger.test.ts test/events-e3.test.ts test/events-e4.test.ts test/events-e5.test.ts test/health-evidence.test.ts test/health-read-availability-review.test.ts test/health-integrations-response-review.test.ts test/watchdog-fallback-review.test.ts test/telemetry.test.ts test/booth-api.test.ts",
+  "helperSha256": "a36ae816f800f2ba56174cda8d09620362dafbf4a76a183a81343269321c783d",
+  "startedAt": "2026-10-28T19:22:48.380Z",
+  "sourceHead": "aa22b28c02d8625f1d3d1d5de1954885c1513a9d",
+  "sourceManifestSha256": "77643bdc43c08e2621790f8a41fb7e2ac50e28c0f89da5331d2bb6a2d13744d0",
+  "sourceInputs": 3981,
+  "terminal": true,
+  "nodeVersion": "v22.17.1",
+  "privateEmbeddedPostgres": true,
+  "inheritedDatabaseOrProviderEnvironment": false,
+  "docker": false,
+  "completedAt": "2026-10-28T19:28:21.720Z",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "sourceUnchanged": true,
+  "logPath": "C:\\oto-lanes\\admin682-release-evidence-20261029\\affected.log",
+  "logSha256": "f8467acd1317f0aec03c76d60b6429c4b790b89850044fb38dae578789830df8",
+  "logBytes": 75253,
+  "logSanitizedInRamBeforeDisk": true,
+  "redactions": {
+    "databaseUrls": 0,
+    "jwt": 0,
+    "bearer": 0,
+    "cookies": 0,
+    "quotedSecrets": 0,
+    "syntheticAuthCode": 0
+  },
+  "summaries": [
+    " Test Files  15 passed (15)",
+    "      Tests  322 passed (322)",
+    "   Start at  02:22:50",
+    "   Duration  331.25s (transform 6.42s, setup 0ms, collect 57.24s, tests 267.63s, environment 3ms, prepare 2.41s)"
+  ],
+  "semanticPass": true,
+  "passed": true
+}

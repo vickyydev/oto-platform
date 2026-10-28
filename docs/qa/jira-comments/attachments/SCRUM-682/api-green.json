@@ -1,0 +1,40 @@
+{
+  "ticket": "SCRUM-682",
+  "phase": "green",
+  "command": "pnpm --filter @oto/api test --maxWorkers=1 --fileParallelism=false test/s682-ops-contracts-review.test.ts test/s680-tax-reference-review.test.ts",
+  "helperSha256": "a36ae816f800f2ba56174cda8d09620362dafbf4a76a183a81343269321c783d",
+  "startedAt": "2026-10-28T19:20:37.112Z",
+  "sourceHead": "aa22b28c02d8625f1d3d1d5de1954885c1513a9d",
+  "sourceManifestSha256": "77643bdc43c08e2621790f8a41fb7e2ac50e28c0f89da5331d2bb6a2d13744d0",
+  "sourceInputs": 3981,
+  "terminal": true,
+  "nodeVersion": "v22.17.1",
+  "privateEmbeddedPostgres": true,
+  "inheritedDatabaseOrProviderEnvironment": false,
+  "docker": false,
+  "completedAt": "2026-10-28T19:21:36.551Z",
+  "exitCode": 0,
+  "signal": null,
+  "launchError": null,
+  "sourceUnchanged": true,
+  "logPath": "C:\\oto-lanes\\admin682-release-evidence-20261029\\green.log",
+  "logSha256": "f672ed9e2d598f71fbce09b764945e828b51c4b2580fb2a26fb628afeea772dd",
+  "logBytes": 10538,
+  "logSanitizedInRamBeforeDisk": true,
+  "redactions": {
+    "databaseUrls": 0,
+    "jwt": 0,
+    "bearer": 0,
+    "cookies": 0,
+    "quotedSecrets": 0,
+    "syntheticAuthCode": 0
+  },
+  "summaries": [
+    " Test Files  2 passed (2)",
+    "      Tests  37 passed (37)",
+    "   Start at  02:20:39",
+    "   Duration  56.86s (transform 7.68s, setup 0ms, collect 18.20s, tests 37.65s, environment 0ms, prepare 366ms)"
+  ],
+  "semanticPass": true,
+  "passed": true
+}

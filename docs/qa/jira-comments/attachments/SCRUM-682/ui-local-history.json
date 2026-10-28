@@ -1,0 +1,347 @@
+{
+  "ticket": "SCRUM-682",
+  "createdAt": "2026-10-28T20:05:52.000Z",
+  "worktree": "C:\\oto-lanes\\admin682-ui-20261029",
+  "headCommit": "677b5896700b4bd9b9864559fa19ea05b100fb91",
+  "uncommittedRevision": true,
+  "scopedChecksPassed": true,
+  "fullReleaseApproved": false,
+  "ownedFiles": [
+    "apps/console/e2e/access-review.spec.ts",
+    "apps/console/e2e/app-access.spec.ts",
+    "apps/console/e2e/assistant-settings.spec.ts",
+    "apps/console/e2e/departments.spec.ts",
+    "apps/console/e2e/employees.spec.ts",
+    "apps/console/e2e/error-recovery-review.spec.ts",
+    "apps/console/e2e/health-integrations-review.spec.ts",
+    "apps/console/e2e/money.spec.ts",
+    "apps/console/e2e/observability-lifetime.spec.ts",
+    "apps/console/e2e/organisation.spec.ts",
+    "apps/console/e2e/page-state-review.spec.ts",
+    "apps/console/e2e/platform.spec.ts",
+    "apps/console/e2e/read-failures.spec.ts",
+    "apps/console/e2e/roles.spec.ts",
+    "apps/console/e2e/suite-controls.spec.ts",
+    "apps/console/src/App.tsx",
+    "apps/console/src/api/client.ts",
+    "apps/console/src/components/Panel.tsx",
+    "apps/console/src/pages/Booths.tsx",
+    "apps/console/src/pages/Money.tsx",
+    "apps/console/src/pages/Platform.tsx",
+    "apps/console/test/error-panel-review.test.ts",
+    "apps/console/test/error-transport-review.test.ts",
+    "apps/pos/src/api/client.ts",
+    "packages/admin-screens/package.json",
+    "packages/admin-screens/src/api/app-identities.ts",
+    "packages/admin-screens/src/index.ts",
+    "packages/admin-screens/src/lib/errorView.ts",
+    "packages/admin-screens/src/lifted/api/client.ts",
+    "packages/admin-screens/src/lifted/components/admin/discounts/DiscountCodesSection.tsx",
+    "packages/admin-screens/src/lifted/components/admin/tax/TaxPanel.tsx",
+    "packages/admin-screens/src/lifted/runtime/money.ts",
+    "packages/admin-screens/test/error-view.test.ts",
+    "packages/admin-screens/test/money-ports.test.ts"
+  ],
+  "ownedFileCount": 34,
+  "sourceManifest": {
+    "path": "C:/oto-lanes/admin682-evidence/source-manifest-final-v3.json",
+    "sha256": "b89c72ec3963ed074672ee36d6a977cd8a74d082b98755cdf6ba9a29a30648c2"
+  },
+  "changes": [
+    "Shared fixed public error projection; safe field constraints and copyable request references; actual Retry-After; all three Console error transports retain metadata and sanitize unexpected5xx.",
+    "Four route-absence predicates accept ROUTE_NOT_FOUND and legacy UNKNOWN404 while preserving resource404. Native401/423 events unchanged.",
+    "Panel/resource/access guidance, Login Users destination and persisted discount-usage wording corrected without domain rule changes.",
+    "Tax retains/focuses draft, distinguishes definite refusal and uncertain write, blocks replay until an explicit read, exposes saved native values separately from retained draft, and never automatically repeats a write. Money confirmed-save refresh retry remains GET-only.",
+    "Known native503s use a strict status/code list and fixed public copy; no raw server text is trusted. Storage/busy/unavailable write paths retain conservative uncertainty."
+  ],
+  "expected503": {
+    "status": 503,
+    "codes": [
+      "BOOTH_NOT_ON_THIS_BOX",
+      "STORAGE_NOT_CONFIGURED",
+      "EVENTS_SEAM_NOT_GRANTED",
+      "EMPLOYEES_SEAM_NOT_GRANTED",
+      "STORAGE_UNAVAILABLE",
+      "DISPLAY_PAIRING_BUSY",
+      "KIOSK_PAIRING_BUSY",
+      "OTO_APP_NOT_CONFIGURED",
+      "OTO_APP_UNAVAILABLE"
+    ],
+    "uncertainWriteCodes": [
+      "STORAGE_UNAVAILABLE",
+      "DISPLAY_PAIRING_BUSY",
+      "KIOSK_PAIRING_BUSY",
+      "OTO_APP_UNAVAILABLE"
+    ],
+    "sourceAnchors": [
+      "apps/api/src/services/booth.ts:290",
+      "apps/api/src/routes/files.ts:26",
+      "apps/api/src/services/files.ts:59",
+      "apps/api/src/services/events.ts:117",
+      "apps/api/src/services/booth-duty.ts:417",
+      "apps/api/src/services/display.ts:149",
+      "apps/api/src/services/kiosk-pairing.ts:100",
+      "apps/api/src/services/console-otoapp.ts:38",
+      "apps/api/src/services/console-otoapp.ts:88"
+    ],
+    "unknownOrWrongStatus5xxRemainsSanitized": true,
+    "transportCasesPassed": 42,
+    "presenterCasesPassed": 36
+  },
+  "regressionHistory": {
+    "initialNativeTax": {
+      "passed": 3,
+      "failed": 5
+    },
+    "meaningfulReadbackRed": {
+      "passed": 8,
+      "failed": 1
+    },
+    "focusedRecoveryGreen": {
+      "passed": 9,
+      "failed": 0
+    },
+    "originalFullRun": {
+      "passed": 321,
+      "failed": 25,
+      "classification": {
+        "path": "C:/oto-lanes/proof-tools/s682-full-browser-failure-classification-v1.json",
+        "sha256": "39139a52a99891aa89280b0c40a49d3fa41666e980b5dac8e8b6bb658c49d046"
+      },
+      "obsoletePrivate5xxExpectations": 24,
+      "http500": 8,
+      "http503": 16,
+      "taxConflictCopyAndExplicitReadWorkflow": 1,
+      "laterAssertionsOriginallyNotReached": true
+    },
+    "targetedWholeSpecs": {
+      "count": 14,
+      "passed": 167,
+      "failed": 3,
+      "remainingFailures": "Three retry locator assumptions in one whole Health/Integrations file; native safe message and retry control visible. All three PNGs inspected; original artifacts preserved."
+    },
+    "healthClosure": {
+      "wholeFile": true,
+      "passed": 12,
+      "failed": 0,
+      "onlyChange": "Nearest ancestor containing the exact native Try again button; all existing assertions retained."
+    },
+    "finalCoverage": {
+      "uniqueCasesCovered": 170,
+      "productionSourceHash": "269d0ec5251449b3161308822eac06133afac0984166d6d3d6d5d4fdb3f1d5f0",
+      "notASecondFullSuite": true
+    },
+    "compilerHistory": "A new unit test unknown value needed the explicit existing ApiError narrowing guard. Initial compiler failure retained; no assertion removed or changed."
+  },
+  "finalGates": {
+    "receipt": {
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-v2-checks.json",
+      "sha256": "0702608d072961f043acfcc0a8475da112bc424ca78a9cfd9941415b1e1ce1c9"
+    },
+    "consoleUnits": {
+      "passed": 544,
+      "todo": 3,
+      "files": 51
+    },
+    "adminScreensUnits": {
+      "passed": 156,
+      "files": 17
+    },
+    "typecheck": {
+      "consoleConfigurations": 3,
+      "adminScreensConfigurations": 1,
+      "posConfigurations": 2,
+      "allExitZero": true,
+      "allOutputReadWhole": true
+    },
+    "lint": {
+      "files": 33,
+      "exitCode": 0,
+      "diagnostics": 0
+    },
+    "currentHashesStable": true,
+    "priorPosWholeUnits": {
+      "passed": 1441,
+      "receipt": "C:/oto-lanes/admin682-evidence/final-checks.json",
+      "limit": "Before the final expected503-only presenter revision. POS source unchanged; final two POS compilers passed. Root integrated whole gates still required."
+    }
+  },
+  "cleanup": {
+    "targeted": {
+      "nativeChildExitCode": 1,
+      "databaseDropped": true,
+      "embeddedStopped": true,
+      "cleanupFailure": false,
+      "setupFailureName": null,
+      "exitCode": 1
+    },
+    "health": {
+      "nativeChildExitCode": 0,
+      "databaseDropped": true,
+      "embeddedStopped": true,
+      "cleanupFailure": false,
+      "setupFailureName": null,
+      "exitCode": 0
+    },
+    "browserSlotReleased": true,
+    "staging": false,
+    "docker": false
+  },
+  "inspectedFailureImages": [
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-targeted-v3-artifacts/health-integrations-review-64a20-tion-that-no-services-exist/test-failed-1.png",
+      "sha256": "3099825a9c6b98048e59504874bfa3474efaadf6cef8979bf72bd04df367258b"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-targeted-v3-artifacts/health-integrations-review-44b24-ng-is-currently-provisioned/test-failed-1.png",
+      "sha256": "517371294790a5b3452dd4f7f19d1894477a3f7e7a2fde63f6ee95a681ae4a77"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-targeted-v3-artifacts/health-integrations-review-15f9d--from-the-previous-snapshot/test-failed-1.png",
+      "sha256": "27192d41a31e8350dd224217c526f45d15bcf03d82ffa24430578327f3bb6f7f"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "C:/oto-lanes/admin682-evidence/baseline.json",
+      "sha256": "db8142c4f3f68aef836f97a98bcb2fabd6035fd728dd63a887dbd3415d5aae6a"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/unit-red.json",
+      "sha256": "7bff4f3636e51bc98b533eed0797f5d14ea566bdb74b28220a3d4e1f591d9a98"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/unit-green.json",
+      "sha256": "c915e2f696bb83f4d7b2c9931de69f00c1d59be59fb5f77dd8e6f40c078e4148"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/transport-safety-red.json",
+      "sha256": "7bd3975affff51835f6ca93fbb0f1d71975dc3b8c13d26bc49b3bd6786a453aa"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/transport-safety-green.json",
+      "sha256": "94627cc6f86c02d978bec2b174b3a21015908dcf2c2070487400b64b44656b53"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/refusal-safety-red.json",
+      "sha256": "bb7ef7e21778dee158845f68c98a2ae03f3653bdbde2860b981fe16b0dba54b0"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/refusal-safety-green.json",
+      "sha256": "761698dd007c4495b224dbf5690f88ccac44876275d781cd0090910ce5b9dec6"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-red.json",
+      "sha256": "63eec2dd93755043e35f0f952bb046738a7164d6049be28079494e56dce6f4d5"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-wrapper-amendment.json",
+      "sha256": "b66c46cde967faa32c6241d1f5f4a334676564d5a12f3229a3d5ae7fac9688ec"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-readback-v2-red.json",
+      "sha256": "d6ab8fd5cf3157806af99f59ca78fca5cd5275bb709cacc17ff7782cbfb51b73"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-readback-v2-green.json",
+      "sha256": "1f77e390f2b2e61c71bbc4b2970b6094932f50181dcbf3a7d321e5004703468b"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/original-eight-preserved.json",
+      "sha256": "be2ad4ddee5574e55bf2764a09b1c40950bd22c87a3050672802ec4aea1894ec"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/final-checks.json",
+      "sha256": "d76daa9c6c8b5eb6d2bb2f5870d35bddbda0c76ba11674b9bed4fa6bb83b7264"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-readback-v2-all.json",
+      "sha256": "4f7cf6c3f51dbcdeb2c8af4771a402d9c4d149aecab377b2a2a6a13bc14d4c98"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/reviewed-expectations-amendment.json",
+      "sha256": "9db0cc43d4bbe548af9ab8becb1f5af51f627afa28bbcc1e50f6fa3ee24220c9"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/service-refusals-red.json",
+      "sha256": "e4daf6d433156f3905e9359c7a2014a63ec7c545fdf7d7be6e005f1ffae75c61"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/service-refusals-green.json",
+      "sha256": "04f1326f2d1062ad7a255199a85b52de49a7f6e27ca5daf337b15d28d05575fe"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/service-refusals-red-v2.json",
+      "sha256": "ac76320a792fe1acab995f5b5398eb70c66b667d16d483775b7666cdf4cf7e6c"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/service-refusals-green-v2.json",
+      "sha256": "36183e9e33329ba4e5412d7b37d0d9a01f0d7f0346b00b6d7f56924948d93993"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-targeted-v3-affected.json",
+      "sha256": "7363b8d2786dccbff97c05c2deff234209a30affb07951957a8c439b8768175c"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-checks.json",
+      "sha256": "23554ae9f6f218a8a9281a48cd5b5305d04a71f31fc3935be4d0a758c321407e"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/browser-targeted-v4-health.json",
+      "sha256": "a4fca2c02ef63ddaa07d65435b618d24f26bc84a47178c7d86236aa72ea5fccb"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-v2-checks.json",
+      "sha256": "0702608d072961f043acfcc0a8475da112bc424ca78a9cfd9941415b1e1ce1c9"
+    },
+    {
+      "path": "C:/oto-lanes/admin682-evidence/source-manifest-final-v3.json",
+      "sha256": "b89c72ec3963ed074672ee36d6a977cd8a74d082b98755cdf6ba9a29a30648c2"
+    }
+  ],
+  "finalGateLogs": [
+    {
+      "name": "console-units",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-v2-console-units.log",
+      "sha256": "ab81a1d67551a7c183d4fd665c97df210c54e8b66a1c8e469fffd504531ba362"
+    },
+    {
+      "name": "admin-units",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-v2-admin-units.log",
+      "sha256": "1020ae5e6566bf2d966f831c5e44aeb94e3326c195b4e2d122fcc75746119c5e"
+    },
+    {
+      "name": "console-typecheck",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-v2-console-typecheck.log",
+      "sha256": "bea104a0ffc1305916accbf6809e5bb105d79af1b2a7cb5c95391836a9224a6e"
+    },
+    {
+      "name": "admin-typecheck",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-v2-admin-typecheck.log",
+      "sha256": "6680cb88cdc7a3b474c217bae830ed512a36e3481c375cfcf4868ab1fc4564df"
+    },
+    {
+      "name": "pos-typecheck",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-v2-pos-typecheck.log",
+      "sha256": "5d0f0a3b8cc685ffcdf2a0cb8ab16be6a688b67067e53118db5a7c7f6a14590b"
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-evidence/revision-final-v2-lint.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  ],
+  "limits": [
+    "Local built-browser fixture evidence; no staging/provider actions or deployment/CI claim.",
+    "Support metadata fixes are independent and not in this worktree; root will integrate them and run the combined full suite.",
+    "Original failed/partial runs are retained and never relabelled green.",
+    "The 13 existing-spec amendments change only reviewed public expected copy and the approved explicit Tax read interaction; mocked refusal bodies and original state/context/request assertions remain.",
+    "No source commits, pushes, Jira, shared docs or API/service edits by this UI lane."
+  ]
+}

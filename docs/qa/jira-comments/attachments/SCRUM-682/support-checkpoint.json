@@ -1,0 +1,122 @@
+{
+  "ticket": "SCRUM-682",
+  "declaredBaseSha": "677b5896700b4bd9b9864559fa19ea05b100fb91",
+  "ready": true,
+  "sourceFiles": [
+    {
+      "path": "apps/console/src/pages/Support.tsx",
+      "sha256": "4c1faf89f89d4bf444e2c82c28483b1621df3cc7ed19375e07819a1a42fd450e"
+    },
+    {
+      "path": "apps/console/e2e/support-error-review.spec.ts",
+      "sha256": "07d88249d3bd87d22367b66e25c306708a9bfedd6c257f2c15d16a2fac1ac27c"
+    }
+  ],
+  "selectedProductionSourceFiles": 318,
+  "changedSelectedProductionPaths": [
+    "apps/console/src/pages/Support.tsx"
+  ],
+  "red": {
+    "passed": 3,
+    "failed": 5,
+    "nativeExitCode": 1
+  },
+  "green": {
+    "passed": 8,
+    "failed": 0,
+    "nativeExitCode": 0
+  },
+  "testsIdentical": true,
+  "focusedUnitFiles": 3,
+  "focusedUnitPasses": 31,
+  "consoleTypecheckConfigs": 3,
+  "typecheckDiagnostics": 0,
+  "lintFiles": 2,
+  "lintErrors": 0,
+  "cleanup": {
+    "bothDatabaseDropped": true,
+    "bothEmbeddedStopped": true,
+    "cleanupFailures": false
+  },
+  "artifacts": [
+    {
+      "path": "setup.json",
+      "bytes": 2150,
+      "sha256": "f73616371c821f5edca03bedd9eb76d4dea2b74f9de58b032c8eabc027441d2b"
+    },
+    {
+      "path": "browser-support-red.json",
+      "bytes": 1142,
+      "sha256": "6008bf125fc96b815f792f1bf200bfa2983d3f56baab6028f33ce58d673c3d98"
+    },
+    {
+      "path": "browser-support-red.log",
+      "bytes": 24462,
+      "sha256": "8c86cf899305d4d792b9167c46d3baa95e73e61b637ba1b3487e70b60a7bf7e6"
+    },
+    {
+      "path": "browser-support-red-source.json",
+      "bytes": 40142,
+      "sha256": "4f7d4aacc7f4f60733b85c63f15d53ec401386fc83f307095d388bc608beea68"
+    },
+    {
+      "path": "browser-support-green.json",
+      "bytes": 1144,
+      "sha256": "6c0f9719b532e9485506cc35c15a6f2f1df3d8040cdec3c456b02e8121eddaab"
+    },
+    {
+      "path": "browser-support-green.log",
+      "bytes": 12953,
+      "sha256": "cbe213f1a5de3ec775e81226ce7acd7ae9d1fd4ae36ce3a4fcc3c3e7e9ee90a3"
+    },
+    {
+      "path": "browser-support-green-source.json",
+      "bytes": 40142,
+      "sha256": "239ef8ed38487645d201e4bc2a563084efb8c67a6b1ffb8ae4cf58e06e19cd9e"
+    },
+    {
+      "path": "checks.json",
+      "bytes": 2308,
+      "sha256": "1058f9750772a9a151a283f857804d3b180206921d28e55c8a5807dff85f53f0"
+    },
+    {
+      "path": "typecheck.log",
+      "bytes": 192,
+      "sha256": "a2ffd203892d9178fd6771ac1ba254bc9a876feaeaac05ab6fc81fe84c6bd7bb"
+    },
+    {
+      "path": "units.log",
+      "bytes": 412,
+      "sha256": "780ac76e4b12bb230075971a23ef010586f1c37c1028c44c4fd9a9039f93edb1"
+    },
+    {
+      "path": "lint.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "run-browser-support.mjs",
+      "bytes": 5931,
+      "sha256": "9fec578e0239915098c942d0c11cea0b6f82a02488e38acd8d49bc524c939388"
+    },
+    {
+      "path": "run-checks.mjs",
+      "bytes": 2723,
+      "sha256": "63ee1bf09a098687399385dcea9bf917cd47114776d429c42d34dee809a52d03"
+    },
+    {
+      "path": "Support.before.tsx.txt",
+      "bytes": 11406,
+      "sha256": "d5bd93cbfa8cf7b8167eba327103c0e4f006eb3f7f2e14d18c1d9c29062e584b"
+    },
+    {
+      "path": "Support.patch",
+      "bytes": 3281,
+      "sha256": "f540b13eca71496904c854d29028b87da530cd557018c398b4d61d5be7af267d"
+    }
+  ],
+  "limits": [
+    "Focused local built-browser follow-up only; no fresh full browser suite.",
+    "No staging, business writes, permission/rule changes, Git commits or publication."
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "ticket": "SCRUM-682",
+  "createdAt": "2026-10-28T20:17:20.435Z",
+  "sourceRoot": "C:/oto-lanes/admin682-api-20261029",
+  "headSha": "30e90eb3257a05ab3f59411a7c6f70b65adb328b",
+  "scope": "Integrated local execution only; no source changes, staging, CI or deployment claim.",
+  "passed": true,
+  "browser": {
+    "discovered": 351,
+    "passed": 351,
+    "failed": 0,
+    "skipped": 0,
+    "countsReconciled": true,
+    "nativeExitCode": 0,
+    "workerExitCode": 0,
+    "startedAt": "2026-10-28T20:09:47.041Z",
+    "finishedAt": "2026-10-28T20:15:34.222Z",
+    "rawReceipt": {
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/browser-all.json",
+      "sha256": "8dc7b1d2364bc3f84f548956c64d971e4eb3b345598dd967108463fbb80f919b"
+    },
+    "rawManifest": {
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/browser-all-source.json",
+      "sha256": "dda78cb2d9a7f31e083ce476f147fe36514faf6f7fcd6d6a9f6b28617c2fb384"
+    },
+    "log": {
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/browser-all.log",
+      "sha256": "ef974c9fba56a44adaf1e5861bc0d24488e1bbac769fa4dcb23220e3a9a9f024"
+    },
+    "frontendSubsetReceipt": {
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/browser-all-frontend.json",
+      "sha256": "80224b6c2d6c8c5fb7ae03f04ac418fc4e94f26e6bf2bac82ccfe6bcdffdfab3"
+    },
+    "frontendSubsetManifest": {
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/browser-all-frontend-source.json",
+      "sha256": "300b9dc65f7d3948adc2260178ef9bb2a81962dd1d6649ede3c13385a3c6c6f8"
+    },
+    "actualSpecFiles": 37,
+    "namedRegressions": {
+      "recoveryCases": 9,
+      "supportCases": 5
+    }
+  },
+  "wholeUnits": {
+    "console": {
+      "passed": 544,
+      "todo": 3,
+      "files": 51
+    },
+    "adminScreens": {
+      "passed": 156,
+      "files": 17
+    },
+    "pos": {
+      "passed": 1441,
+      "files": 102
+    }
+  },
+  "compilers": {
+    "consoleConfigurations": 3,
+    "adminScreensConfigurations": 1,
+    "posConfigurations": 2,
+    "allExitZero": true,
+    "wholeOutputsRead": true
+  },
+  "lint": {
+    "changedTsFiles": 47,
+    "exitCode": 0,
+    "diagnostics": 0,
+    "changedPaths": {
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/changed-lint-files.json",
+      "sha256": "92e43fca9b78b9bca2737d1221c1f3fa8124e22ec63eba091def4ec7e86229b4"
+    }
+  },
+  "source": {
+    "wholeTrackedNonDocInputs": 3985,
+    "fullBeforeHash": "10db1ed809b5604676ead6e7b22901538eb5c6bdc57fb43260d11d5e413bfdf6",
+    "fullAfterHash": "10db1ed809b5604676ead6e7b22901538eb5c6bdc57fb43260d11d5e413bfdf6",
+    "unchanged": true,
+    "gitClean": true,
+    "headUnchanged": true
+  },
+  "checksReceipt": {
+    "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/checks.json",
+    "sha256": "37824419a3f2f521354a8b0f05b81044f7906652d5f5e83a2858e1d4c90763cc"
+  },
+  "checksManifest": {
+    "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/checks-source.json",
+    "sha256": "fb3a627f294e60015d42c5e2ad3f76d27cb6c88cdd0ab4af1e61246562cbae2d"
+  },
+  "checkLogs": [
+    {
+      "name": "console-units",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/console-units.log",
+      "sha256": "c50d3a7676cc34ff7b27a7312220a5167a5ce6d0b18bbe5de249302497da6bc9"
+    },
+    {
+      "name": "admin-units",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/admin-units.log",
+      "sha256": "99650212878f4afc52ce7ba09de4484389d50a86ada43dd5f45e56709fc39b4d"
+    },
+    {
+      "name": "pos-units",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/pos-units.log",
+      "sha256": "156c01a2fbb31cd3c8af73af8e47ea56e95f7e1430df7ad8854e74ad95e52332"
+    },
+    {
+      "name": "console-typecheck",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/console-typecheck.log",
+      "sha256": "e3d55e08051276e53493db9dfa3f35372dfc679a39774956ec126f2b71f2bad9"
+    },
+    {
+      "name": "admin-typecheck",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/admin-typecheck.log",
+      "sha256": "7ca7c4df8bfec9ace5f2d5e6634301360e5de4a6d3410ae5c3eea739edbc898a"
+    },
+    {
+      "name": "pos-typecheck",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/pos-typecheck.log",
+      "sha256": "b5b5c6b7adf6dea4acec83d86c9cede49c83d040b7042090e7ec80b5b0402cbc"
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "path": "C:/oto-lanes/admin682-integrated-evidence-20261029/lint.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  ],
+  "cleanup": {
+    "nativeChildExitCode": 0,
+    "databaseDropped": true,
+    "embeddedStopped": true,
+    "cleanupFailure": false,
+    "setupFailureName": null,
+    "exitCode": 0
+  },
+  "resourcesReleased": true,
+  "limits": [
+    "API461 and contracts10 were supplied as prior green unchanged-API evidence by root; not rerun here.",
+    "No source, existing test, repository docs, Git, Jira or staging changes.",
+    "Parent still owns CI, automatic deployment, native staging proof and acceptance.",
+    "The frontend subset is derived binding metadata, not an additional test execution. Whole3985-input receipt and source freeze remain the stronger original evidence."
+  ]
+}
