@@ -1,0 +1,22 @@
+{
+  "ticket": "SCRUM-682",
+  "before": {
+    "status": "Testing",
+    "summary": "Make Console refusals actionable and validate legacy operations replies"
+  },
+  "after": {
+    "status": "Deployed",
+    "summary": "Make Console refusals actionable and validate legacy operations replies"
+  },
+  "evidenceCommit": "6df246429a3e8b71114a7aa8ce446e1507cea417",
+  "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+  "screenshots": [
+    "SCRUM-682-01-tax.png",
+    "SCRUM-682-02-environment.png",
+    "SCRUM-682-03-failures.png",
+    "SCRUM-682-04-quarantine.png",
+    "SCRUM-682-05-local-regressions-and-native-get-checks.png"
+  ],
+  "commentId": "12678",
+  "at": "2026-10-28T21:25:39.172Z"
+}
