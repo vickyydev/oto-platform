@@ -4,14 +4,14 @@
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
   "personaVersion": "persona-2026-10-28.4",
-  "kbVersion": "2d0143a312336f01",
+  "kbVersion": "bdfb4ba5c8d2a04d",
   "recordedOn": "2026-10-28",
   "turns": [
     {
       "says": "are you a bot?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV4itdzAHSVaE1YzRnPK",
+        "id": "msg_011CgV8tJY8fmRhoanyLhYgq",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 199,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11135,
+          "cache_read_input_tokens": 11430,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -36,7 +36,7 @@
             {
               "input_tokens": 199,
               "output_tokens": 128,
-              "cache_read_input_tokens": 11135,
+              "cache_read_input_tokens": 11430,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -68,7 +68,7 @@
       "says": "I want to talk to a real person",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV4j57WrwRGYdjEsUM9T",
+        "id": "msg_011CgV8tUYtenELiihV9qayS",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -84,7 +84,7 @@
         "usage": {
           "input_tokens": 290,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11135,
+          "cache_read_input_tokens": 11430,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -93,7 +93,7 @@
             {
               "input_tokens": 290,
               "output_tokens": 101,
-              "cache_read_input_tokens": 11135,
+              "cache_read_input_tokens": 11430,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,

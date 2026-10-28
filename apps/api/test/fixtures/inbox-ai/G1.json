@@ -4,14 +4,14 @@
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
   "personaVersion": "persona-2026-10-28.4",
-  "kbVersion": "2d0143a312336f01",
+  "kbVersion": "bdfb4ba5c8d2a04d",
   "recordedOn": "2026-10-28",
   "turns": [
     {
       "says": "hi",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV4fJMeN1eGhYigLd9VL",
+        "id": "msg_011CgV8ppJRXUHvZeTJsV5BW",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -26,21 +26,21 @@
         "stop_details": null,
         "usage": {
           "input_tokens": 195,
-          "cache_creation_input_tokens": 11135,
+          "cache_creation_input_tokens": 11430,
           "cache_read_input_tokens": 0,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
-            "ephemeral_1h_input_tokens": 11135
+            "ephemeral_1h_input_tokens": 11430
           },
           "iterations": [
             {
               "input_tokens": 195,
               "output_tokens": 112,
               "cache_read_input_tokens": 0,
-              "cache_creation_input_tokens": 11135,
+              "cache_creation_input_tokens": 11430,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
-                "ephemeral_1h_input_tokens": 11135
+                "ephemeral_1h_input_tokens": 11430
               },
               "type": "message",
               "model": null

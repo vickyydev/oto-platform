@@ -760,7 +760,11 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
           groundingAnyOf: ['deals'],
           thenHandover: null,
           mustSay: [/Food & Play/],
-          mustNotSay: [NO_DISCOUNT, /%/],
+          // The owner's 28 Oct ruling: the WORD is allowed in a negation or a
+          // cited fact ("no separate discount, but…"); only GRANTING one is
+          // forbidden, and the commitment guard holds that. No percentages —
+          // an invented figure has no source.
+          mustNotSay: [/%/],
         },
         rehearsal: d({
           language: 'ru',

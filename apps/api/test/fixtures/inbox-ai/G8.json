@@ -4,25 +4,25 @@
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
   "personaVersion": "persona-2026-10-28.4",
-  "kbVersion": "2d0143a312336f01",
+  "kbVersion": "bdfb4ba5c8d2a04d",
   "recordedOn": "2026-10-28",
   "turns": [
     {
       "says": "Можно скидку если придём с тремя детьми?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV4iL4RMBMEqQijeDhu1",
+        "id": "msg_011CgV92yCnowZ6NWcjShL2C",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "thinking",
             "thinking": "",
-            "signature": "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"
+            "signature": "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"
           },
           {
             "type": "text",
-            "text": "{\"language\":\"ru\",\"intent\":\"discount_negotiation\",\"intents\":[\"discount_negotiation\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"deals\"],\"bubbles\":[\"Здравствуйте! С детьми к нам всегда рады 😊 У нас всё включено: персонал присматривает за всем парком, а билет для родителей — это кредит на еду и напитки в нашем ресторане.\",\"А для семей есть выгодное предложение Food & Play: игра на весь день и детское блюдо, ฿420 за ребёнка.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"ru\",\"intent\":\"discount_negotiation\",\"intents\":[\"discount_negotiation\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"deals\"],\"bubbles\":[\"Здравствуйте! У нас всё включено: персонал присматривает за всем парком, а билеты для родителей идут в зачёт еды и напитков в нашем настоящем ресторане 😊\",\"А для семьи есть выгодное предложение Food & Play: игра на весь день плюс детское блюдо, ฿420 за ребёнка.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -32,7 +32,7 @@
         "usage": {
           "input_tokens": 210,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11135,
+          "cache_read_input_tokens": 11430,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -40,8 +40,8 @@
           "iterations": [
             {
               "input_tokens": 210,
-              "output_tokens": 537,
-              "cache_read_input_tokens": 11135,
+              "output_tokens": 598,
+              "cache_read_input_tokens": 11430,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -51,9 +51,9 @@
               "model": null
             }
           ],
-          "output_tokens": 537,
+          "output_tokens": 598,
           "output_tokens_details": {
-            "thinking_tokens": 308
+            "thinking_tokens": 374
           },
           "service_tier": "standard",
           "inference_geo": "global",
@@ -73,7 +73,7 @@
       "says": "Нет, всё равно хочу скидку.",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV4imVsa4dorR57nX9DL",
+        "id": "msg_011CgV93UVfxjemkNNpA4ZrV",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -87,18 +87,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 428,
+          "input_tokens": 424,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11135,
+          "cache_read_input_tokens": 11430,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 428,
+              "input_tokens": 424,
               "output_tokens": 104,
-              "cache_read_input_tokens": 11135,
+              "cache_read_input_tokens": 11430,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,

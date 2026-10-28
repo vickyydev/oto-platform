@@ -4,20 +4,20 @@
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
   "personaVersion": "persona-2026-10-28.4",
-  "kbVersion": "2d0143a312336f01",
+  "kbVersion": "bdfb4ba5c8d2a04d",
   "recordedOn": "2026-10-28",
   "turns": [
     {
       "says": "what are your hours and can I book a party for the 20th?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV4jeHofCEKBsjnj33sA",
+        "id": "msg_011CgV8tsrrFxnfAdkL661Zc",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"en\",\"intent\":\"hours\",\"intents\":[\"hours\",\"birthday_party\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\"],\"bubbles\":[\"Central Floresta is open every day 10:00–20:00 😊\",\"Amazing, thank you! We'd love to organize a party for you. Roughly how many people are you thinking of?\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"MIXED_INTENTS\"}"
+            "text": "{\"language\":\"en\",\"intent\":\"hours\",\"intents\":[\"hours\",\"birthday_party\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\",\"hours-holidays\"],\"bubbles\":[\"Central Floresta is open every day 10:00–20:00, last entry one hour before closing 😊\",\"Amazing, thank you! We'd love to organize a party for you. Roughly how many people are you thinking of, and is it at Central Floresta or Robinson Chalong?\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"MIXED_INTENTS\"}"
           }
         ],
         "container": null,
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 210,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11135,
+          "cache_read_input_tokens": 11430,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -35,8 +35,8 @@
           "iterations": [
             {
               "input_tokens": 210,
-              "output_tokens": 169,
-              "cache_read_input_tokens": 11135,
+              "output_tokens": 206,
+              "cache_read_input_tokens": 11430,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 169,
+          "output_tokens": 206,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
@@ -68,7 +68,7 @@
       "says": "about 12 kids, at Central Floresta",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV4jrgSnpmRTxxkBv4bg",
+        "id": "msg_011CgV8uFiVWefjDWppD1nNy",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -82,18 +82,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 364,
+          "input_tokens": 394,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11135,
+          "cache_read_input_tokens": 11430,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 364,
+              "input_tokens": 394,
               "output_tokens": 103,
-              "cache_read_input_tokens": 11135,
+              "cache_read_input_tokens": 11430,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
