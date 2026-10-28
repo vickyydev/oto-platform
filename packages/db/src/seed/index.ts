@@ -33,6 +33,7 @@ import {
 } from '@oto/shared';
 import { and, eq, isNull, notInArray, sql, type SQL } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
+import { convergeSettingRegistry } from '../setting-registry';
 import { reconcileAppBranches } from '../schema/otoapp';
 import { seedMenu } from './menu';
 import { seedStock, syncStockSetup } from './stock';
@@ -228,6 +229,13 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
   // maintenance window or tile state survives every sync.
   const registered = await syncSuiteRegistry(db);
   if (registered > 0) console.log(`Suite registry: registered ${registered} app(s).`);
+
+  // The settings catalogue (SCRUM-646, Q27): idempotent, never deletes, and
+  // never writes last_changed_at — a catalogue run is not a setting edit.
+  const settings = await convergeSettingRegistry(db);
+  if (settings.inserted.length || settings.updated.length) {
+    console.log(`Settings catalogue: ${settings.inserted.length} inserted, ${settings.updated.length} updated.`);
+  }
 
   return roleIds;
 }
