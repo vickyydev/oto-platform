@@ -342,11 +342,23 @@ async function quietBeforeBurst(
 
 interface EpisodeFacts {
   state: EpisodeState;
-  earlier: { answered: number; brochureSent: boolean; branchAsked: boolean; identityAnswered: boolean };
+  earlier: { answered: number; brochureSent: boolean; branchAsked: boolean; identityAnswered: boolean; languageOffered: boolean };
 }
 
-/** §D.4 guard 3 and the prompt's context line, counted from this episode's own rows. */
-async function episodeFacts(db: Exec, conv: ConversationRow, episodeStart: Date, now: Date): Promise<EpisodeFacts> {
+/**
+ * §D.4 guard 3 and the prompt's context line, counted from this episode's own
+ * rows. Since SCRUM-220 (the playbook's "Languages") the gate reads the
+ * contact's calling code and whether the one language offer was already made
+ * (an earlier reply's `languageOffer`), so a +7 or +66 customer may be made
+ * the offer once and never twice.
+ */
+async function episodeFacts(
+  db: Exec,
+  conv: ConversationRow,
+  episodeStart: Date,
+  now: Date,
+  contactCountryCode: string | null,
+): Promise<EpisodeFacts> {
   const answered = await db
     .select({ intent: aiTurn.intent, at: aiTurn.updatedAt })
     .from(aiTurn)
@@ -372,19 +384,23 @@ async function episodeFacts(db: Exec, conv: ConversationRow, episodeStart: Date,
     );
   const tenAgo = now.getTime() - 10 * 60_000;
   const identityAnswered = answered.some((t) => t.intent === 'identity_question');
-  const payloads = events.map((e) => (e.payload ?? {}) as { askBranch?: unknown; brochureFileIds?: unknown });
+  const payloads = events.map((e) => (e.payload ?? {}) as { askBranch?: unknown; brochureFileIds?: unknown; languageOffer?: unknown });
+  const languageOffered = payloads.some((p) => p.languageOffer === 'ru' || p.languageOffer === 'th');
   return {
     state: {
       aiAnswers: answered.length,
       aiAnswersLast10Min: answered.filter((t) => t.at.getTime() >= tenAgo).length,
       identityAnswered,
       threadHasBranch: conv.branchId !== null,
+      contactCountryCode,
+      languageOffered,
     },
     earlier: {
       answered: answered.length,
       brochureSent: payloads.some((p) => Array.isArray(p.brochureFileIds) && p.brochureFileIds.length > 0),
       branchAsked: payloads.some((p) => p.askBranch === true),
       identityAnswered,
+      languageOffered,
     },
   };
 }
@@ -503,14 +519,17 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
   if (burst.length === 0 || burst.every((m) => m.text === null)) return { conv, silence: 'NO_TEXT' };
 
   const knowledge = await loadTurnKnowledge(db, turn.operatorId, now);
-  const facts = await episodeFacts(db, conv, eligible.episodeStart, now);
   // SCRUM-220 playbook: the calling code of the number the customer writes
-  // from (`66`, `7`), for the language and residency questions.
+  // from (`66`, `7`), for the language and residency questions — given to the
+  // model in its context AND to the gate, which checks the one language offer
+  // against it.
   const [person] = await db
     .select({ phone: contact.phone })
     .from(contact)
     .where(and(eq(contact.operatorId, conv.operatorId), eq(contact.id, conv.contactId)))
     .limit(1);
+  const contactCountryCode = callingCodeOf(person?.phone);
+  const facts = await episodeFacts(db, conv, eligible.episodeStart, now, contactCountryCode);
   const built = buildPrompt({
     knowledge: knowledge.knowledge,
     episode,
@@ -518,7 +537,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
       now,
       threadBranch: conv.branchId ? (knowledge.keyOfBranch.get(conv.branchId) ?? null) : null,
       priceModeToday: knowledge.priceModeToday,
-      contactCountryCode: callingCodeOf(person?.phone),
+      contactCountryCode,
       earlier: facts.earlier,
     },
   });
@@ -623,31 +642,18 @@ async function templateLine(
 }
 
 /**
- * The holding line (§C.5, owner G6 default): the template VERBATIM in the
- * customer's language; the model's own checked words only where that
- * language's row still needs translation (or is missing); and nothing when
- * neither exists — the handover still happens, a person owns the thread.
- */
-async function holdingLine(
-  tx: Tx,
-  conv: ConversationRow,
-  account: AccountRow,
-  key: string,
-  language: AiReplyLanguage,
-  modelWords: readonly string[],
-): Promise<HoldingLine> {
-  const line = await templateLine(tx, conv, account, key, language);
-  if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey: null };
-  if (modelWords.length > 0) return { kind: 'persona', items: modelWords.map((w) => ({ body: w })), templateId: null, closingKey: null };
-  return NO_LINE;
-}
-
-/**
- * The line a hand-over closes with (SCRUM-220 playbook): the DESTINATION's
- * closing template verbatim — the birthday manager, the general manager, the
- * branch — and, where the destination has none (Marketing) or its row is
- * missing, inactive or untranslated in this language, the intent's own
- * holding line exactly as before.
+ * The line a hand-over closes with (SCRUM-220 playbook; §C.5, owner G6
+ * default): the DESTINATION's closing template verbatim in the customer's
+ * language — the birthday manager, the general manager, the branch. Where the
+ * destination has none (Marketing) or its row is missing, inactive or
+ * untranslated in this language: the plan's own template (the brochure's
+ * `handover_birthday`, the unclear `handover_general`), then the team-neutral
+ * `handover_general` — since the playbook a plan carries its destination's
+ * closing key, and the old per-topic lines name teams the playbook moved
+ * (reception for a complaint, marketing for a collaboration). The model's own
+ * checked holding words only where none of those is usable in the language;
+ * and nothing when neither exists — the hand-over still happens, a person
+ * owns the thread.
  */
 async function closingLine(
   tx: Tx,
@@ -662,7 +668,14 @@ async function closingLine(
     const line = await templateLine(tx, conv, account, closingKey, language);
     if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey };
   }
-  return holdingLine(tx, conv, account, plan.templateKey, language, modelWords);
+  const fallbacks = new Set<string>([plan.templateKey, 'handover_general']);
+  if (closingKey) fallbacks.delete(closingKey);
+  for (const key of fallbacks) {
+    const line = await templateLine(tx, conv, account, key, language);
+    if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey: null };
+  }
+  if (modelWords.length > 0) return { kind: 'persona', items: modelWords.map((w) => ({ body: w })), templateId: null, closingKey: null };
+  return NO_LINE;
 }
 
 /**
@@ -823,7 +836,10 @@ interface Handover {
   plan: AiHandoverPlan;
   /** The intent whose hand-over it is; null for the cap's, a second identity question's, the model's call. */
   owner: AiIntent | null;
-  /** The number's silence policy covers it: no line and no brochure; the thread still routes. */
+  /**
+   * The number's silence policy covers it: nothing is said — no answer, no
+   * lead line, no closing line, no brochure — and the thread still routes.
+   */
   silenced: boolean;
   /** A `silent_handover` the policy does not cover: a normal hand-over with the branch's closing line. */
   branchLine: boolean;
@@ -858,8 +874,11 @@ interface RoutingPlan {
  * The branch the customer named, and the destination of the hand-over (§B.5,
  * and since SCRUM-220 the playbook's: `destinationOf`): a branchless general
  * thread takes the named park and that park's reception; a hand-over whose
- * destination differs from the thread's category moves it — each only when
- * no person has touched the routing. Read-only; `executeRouting` writes it.
+ * destination differs from the thread's category moves it; a branch-desk plan
+ * that names its own park (`plan.branch`: a nanny booking goes to Central
+ * Floresta, the only park with the service) goes to that park's reception
+ * whatever the thread's park — each only when no person has touched the
+ * routing. Read-only; `executeRouting` writes it.
  */
 async function planRouting(
   tx: Tx,
@@ -882,11 +901,14 @@ async function planRouting(
   const target: InboxCategory = handover
     ? destinationOf(handover.owner, handover.plan, { category: conv.category, branchKnown: branchId !== null })
     : conv.category;
+  const planPark =
+    target === 'general' && handover?.plan.branch && knowledge ? (knowledge.branchOfKey.get(handover.plan.branch) ?? null) : null;
+  const destBranch = planPark ?? branchId;
   let move: RoutingPlan['move'] = null;
-  if (target !== conv.category || branchSet) {
-    const dest = await teamFor(tx, conv.operatorId, target, branchId);
+  if (target !== conv.category || branchSet || destBranch !== conv.branchId) {
+    const dest = await teamFor(tx, conv.operatorId, target, destBranch);
     if (dest && dest.id !== conv.teamId) {
-      move = { dest, category: target, branchId: dest.key === 'reception' ? dest.branchId : branchId };
+      move = { dest, category: target, branchId: dest.key === 'reception' ? dest.branchId : destBranch };
     }
   }
   return { branchSet, move, category: move ? move.category : conv.category };
@@ -1156,11 +1178,11 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       // as one `shadow` message row for staff, named by an `ai_shadow` pill;
       // the thread's routing, intent, language and last-message fields stay
       // as they are. A silent decision keeps nothing: nothing would have gone;
-      // a hand-over the number's policy silences keeps only its answer, if any.
+      // nor does a hand-over the number's policy silences, answer and all.
       if (account.aiMode === 'shadow') {
         let messageIds: string[] = [];
         if (v && v.action !== 'silent') {
-          const lines: string[] = v.action === 'answer' ? [...v.bubbles] : [];
+          const lines: string[] = v.action === 'answer' && !handover?.silenced ? [...v.bubbles] : [];
           let holding: HoldingLine = NO_LINE;
           let destination: InboxCategory | null = null;
           if (handover) {
@@ -1233,7 +1255,10 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
 
       // Where the thread ends up is read first: the closing line names it.
       const plan = await planRouting(tx, classified, v.branchNamed, handover, r.knowledge);
-      const items: LineItem[] = v.action === 'answer' ? v.bubbles.map((b) => ({ body: b })) : [];
+      // A hand-over the number's policy silences says nothing at all, its
+      // answer included (the nanny on Central's own number is the desk's).
+      const replied = v.action === 'answer' && !handover?.silenced;
+      const items: LineItem[] = replied ? v.bubbles.map((b) => ({ body: b })) : [];
       let brochure: string[] = [];
       let holding: HoldingLine = NO_LINE;
       if (handover && !handover.silenced) {
@@ -1260,7 +1285,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       const messageIds = await writeLines(tx, conv, v.language, items, at, random, pacing);
       const routing = await executeRouting(tx, classified, plan, at);
 
-      if (v.action === 'answer') {
+      if (replied) {
         await tx.insert(inboxEvent).values(
           event(conv, 'ai_replied', {
             turnId: turn.id,
@@ -1269,6 +1294,9 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             messageIds,
             askBranch: v.askBranch,
             brochureFileIds: brochure,
+            // SCRUM-220 playbook: the one language offer, so the next turn's
+            // gate refuses a second (`episodeFacts`).
+            languageOffer: v.languageOffer,
           }, at),
         );
       }

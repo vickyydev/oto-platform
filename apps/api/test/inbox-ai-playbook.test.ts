@@ -34,15 +34,23 @@ import {
  * these are its engine-side rules, against a real embedded database and the
  * `FakeAssistantClient`:
  *
- *   - THE GM QUEUE: an online complaint and an influencer go to the GM team,
- *     not Marketing; an unclear message stays with the thread's park when it
- *     has one and goes to the GM when it has none.
+ *   - THE GM QUEUE: complaints (a checked apology first), refunds,
+ *     collaborations, jobs and photography go to the GM team, not Marketing;
+ *     an unclear message stays with the thread's park when it has one and
+ *     goes to the GM when it has none.
  *   - DESTINATION-KEYED CLOSING LINES: the line names where the thread goes
  *     (the birthday manager, the general manager, the branch), falling back
- *     to the intent's own template when the destination's line is missing.
+ *     to the team-neutral general line when the destination's line is missing.
+ *   - BIRTHDAYS (owner D1): the open and one combined question first; the
+ *     birthday manager's line once the basics are in.
+ *   - THE NANNY goes to Central Floresta's reception (`plan.branch`), the
+ *     only park with the service.
  *   - THE NUMBER'S SILENCE POLICY: on the intents a number's policy names, the
- *     hand-over is silent — the thread routes, the assistant stops, and no line
- *     goes; a silent hand-over the policy does not cover sends the branch line.
+ *     hand-over is silent — the thread routes, the assistant stops, and
+ *     nothing goes, its answer included; a silent hand-over the policy does
+ *     not cover sends the branch line.
+ *   - THE ONE LANGUAGE OFFER reaches the gate with the caller's country code,
+ *     and is made once per episode.
  *   - TIER PRICE FACTS: every tier the active packages carry, `expat` said as
  *     "resident", a "starts from" per tier, a weekend gap said as such — in a
  *     fact block that stays small.
@@ -58,8 +66,8 @@ import {
 /**
  * The prompt's input and the gate's verdict, observed: `buildPrompt` is the
  * real one, recorded; `applyGates` is the real one, and a test may reshape
- * its verdict (the gate does not emit `silent_handover` yet — the assistant
- * lane owns that — so the engine's handling of it is driven from here).
+ * its verdict (to drive a `silent_handover` the gate only emits for drop-off
+ * care and lost items through a plan it would not give one).
  */
 const seen = vi.hoisted(() => ({
   contexts: [] as unknown[],
@@ -100,6 +108,13 @@ beforeAll(async () => {
     language: 'en',
     question: 'Do we need socks?',
     body: 'Yes, everyone on the play floor wears grip socks. You can buy them at reception.',
+  });
+  await kb(w, approver, {
+    key: 'nanny',
+    topic: 'faq',
+    language: 'en',
+    question: 'Do you have a nanny service?',
+    body: 'Our nanny service is one-on-one care at Central Floresta for children from 3 years old. Please book ahead.',
   });
 }, 300_000);
 
@@ -162,9 +177,10 @@ describe('the GM queue (playbook routing)', () => {
     expect(closing.body).toBe(INBOX_TEMPLATE_BODIES.closing_gm);
     const lines = await aiLines(w, conv.id);
     expect(lines.map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([{ body: closing.body, templateId: closing.id }]);
+    // The plan carries the GM's line since the playbook (`GM_PLAN`), and the line sent is the destination's.
     expect((await handoverEvent(conv.id))!.payload).toMatchObject({
       intent: 'complaint_online',
-      templateKey: 'handover_complaint_online',
+      templateKey: 'closing_gm',
       destination: 'gm',
       closingKey: 'closing_gm',
       holdingLine: 'template',
@@ -172,6 +188,29 @@ describe('the GM queue (playbook routing)', () => {
       reroutedTeamId: gm.id,
     });
     expect((await activeSlots(w, conv.id)).every((a) => a.assignedByKind === 'ai')).toBe(true);
+  });
+
+  it('a complaint: one sincere apology, then the general manager’s line; an apology that admits fault is dropped', async () => {
+    await drain();
+    const gm = await teamOf(w, 'gm');
+    const apology = `I'm so sorry to hear about your visit ${SENTINEL}.`;
+    const conv = await customer(w, central, nextPhone(), `my son got sick after your food ${SENTINEL}`);
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'complaint_onsite', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [apology] }) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([apology, INBOX_TEMPLATE_BODIES.closing_gm]);
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'gm', teamId: gm.id });
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', action: 'answer', intent: 'complaint_onsite' });
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'gm', closingKey: 'closing_gm', silent: false });
+
+    // Never admits fault: the apology is dropped, the GM's line goes alone.
+    const fault = await customer(w, central, nextPhone(), 'the slide was broken and my kid got hurt');
+    w.fake.push({
+      kind: 'decision',
+      decision: decision({ intent: 'complaint_onsite', action: 'handover', reason: 'NEEDS_PERSON', bubbles: ["We're so sorry, that was our fault."] }),
+    });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, fault.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_gm]);
+    expect(await conversationRow(w, fault.id)).toMatchObject({ category: 'gm', teamId: gm.id });
   });
 
   it('an influencer goes to the GM team, not Marketing', async () => {
@@ -207,12 +246,13 @@ describe('the GM queue (playbook routing)', () => {
     expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_gm]);
   });
 
-  it('a birthday closes with the birthday manager’s line, in the customer’s language', async () => {
+  it('a birthday closes with the birthday manager’s line, in the customer’s language, once the basics are in', async () => {
     await drain();
-    const conv = await customer(w, central, nextPhone(), 'อยากจัดวันเกิดให้ลูกค่ะ');
+    // The basics all at once (owner D1: the closing line follows the basics).
+    const conv = await customer(w, central, nextPhone(), 'อยากจัดวันเกิดให้ลูกค่ะ วันเสาร์หน้า ประมาณ 15 คน ที่สาขาเซ็นทรัลค่ะ');
     w.fake.push({
       kind: 'decision',
-      decision: decision({ language: 'th', intent: 'birthday_party', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }),
+      decision: decision({ language: 'th', intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }),
     });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     const birthdays = await teamOf(w, 'birthdays');
@@ -224,11 +264,27 @@ describe('the GM queue (playbook routing)', () => {
     ]);
   });
 
-  it('any hand-over the intent table routes to gm (jobs, photography, refunds, when the assistant names them) goes to GM', async () => {
+  it('every hand-over the intent table routes to gm (jobs, photography, refunds) goes to GM, with a lead line where the playbook gives one', async () => {
+    const gm = await teamOf(w, 'gm');
+    const cases = [
+      { intent: 'job_request', text: 'are you hiring?', bubbles: ["We're always looking for great people!"] },
+      { intent: 'photography_question', text: 'can I do a photo shoot at the park?', bubbles: ['Good question!'] },
+      { intent: 'refund_request', text: 'I want my money back for yesterday', bubbles: [] },
+    ] as const;
+    for (const c of cases) {
+      await drain();
+      const conv = await customer(w, central, nextPhone(), c.text);
+      w.fake.push({ kind: 'decision', decision: decision({ intent: c.intent, action: 'handover', reason: 'NEEDS_PERSON', bubbles: [...c.bubbles] }) });
+      expect((await tick(w, later(25_000))).handedOver, c.intent).toBe(1);
+      expect(await conversationRow(w, conv.id), c.intent).toMatchObject({ category: 'gm', teamId: gm.id });
+      expect((await aiLines(w, conv.id)).map((l) => l.body), c.intent).toEqual([...c.bubbles, INBOX_TEMPLATE_BODIES.closing_gm]);
+    }
+  });
+
+  it('a table route of gm is honoured as is, whatever the intent', async () => {
     await drain();
-    const conv = await customer(w, central, nextPhone(), 'are you hiring? I am a photographer too');
+    const conv = await customer(w, central, nextPhone(), 'something only the manager can sort out');
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'custom_request', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
-    // The table's own route, as the assistant lane's new intents will carry it.
     seen.reshape = (v) => {
       const verdict = v as GateVerdict;
       return verdict.action === 'handover' ? { ...verdict, plan: { ...verdict.plan, route: 'gm' } } : verdict;
@@ -243,20 +299,76 @@ describe('the GM queue (playbook routing)', () => {
     expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_gm]);
   });
 
-  it('a missing destination line falls back to the intent’s own template', async () => {
+  it('a missing destination line falls back to the team-neutral general line, never to one that names another team', async () => {
     await drain();
+    // Since the playbook a plan carries its destination's line (`GM_PLAN` is
+    // `closing_gm`), so with that line gone the next is the plan-neutral
+    // `handover_general` — not the old complaint line, which names reception.
     const closing = await templateRow('closing_gm', 'en');
     await w.ctx.db.update(s.template).set({ active: false }).where(eq(s.template.id, closing.id));
     try {
       const conv = await customer(w, central, nextPhone(), 'your instagram ad is misleading');
       w.fake.push({ kind: 'decision', decision: decision({ intent: 'complaint_online', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
       expect((await tick(w, later(25_000))).handedOver).toBe(1);
-      const own = await templateRow('handover_complaint_online', 'en');
-      expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([{ body: own.body, templateId: own.id }]);
+      const general = await templateRow('handover_general', 'en');
+      expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([
+        { body: general.body, templateId: general.id },
+      ]);
       expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'gm', closingKey: null, holdingLine: 'template' });
     } finally {
       await w.ctx.db.update(s.template).set({ active: true }).where(eq(s.template.id, closing.id));
     }
+  });
+
+  it('a plan’s own template is the first fallback: the brochure request keeps the birthday template’s line', async () => {
+    await drain();
+    const closing = await templateRow('closing_birthday', 'en');
+    await w.ctx.db.update(s.template).set({ active: false }).where(eq(s.template.id, closing.id));
+    try {
+      const conv = await customer(w, central, nextPhone(), 'can you send me your birthday packages?');
+      const bubble = 'Of course! Here they are 🎂';
+      w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_brochure', sendBrochure: true, reason: 'CLEAR_INTENT', bubbles: [bubble] }) });
+      expect((await tick(w, later(25_000))).handedOver).toBe(1);
+      const own = await templateRow('handover_birthday', 'en');
+      expect((await aiLines(w, conv.id)).filter((l) => l.body !== null).map((l) => l.body)).toEqual([bubble, own.body]);
+      expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'birthdays', templateKey: 'handover_birthday', closingKey: null });
+    } finally {
+      await w.ctx.db.update(s.template).set({ active: true }).where(eq(s.template.id, closing.id));
+    }
+  });
+});
+
+describe('the nanny (the playbook’s "Ages, nanny and drop-off")', () => {
+  const facts = `Our nanny service is one-on-one care at Central Floresta, from 3 years old 😊 ${SENTINEL}`;
+  const nanny = () =>
+    decision({ intent: 'nanny_booking', grounding: ['nanny'], reason: 'FACT_IN_KB', bubbles: [facts] });
+
+  it('answered from the knowledge, then Central Floresta’s reception takes the booking, whatever number it came in on', async () => {
+    await drain();
+    const chalongNumber = await simAccount(w, { branchId: w.chalong });
+    const conv = await customer(w, chalongNumber, nextPhone(), 'do you have a nanny for my 3 year old?');
+    expect(conv.branchId).toBe(w.chalong);
+    w.fake.push({ kind: 'decision', decision: nanny() });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([facts, INBOX_TEMPLATE_BODIES.closing_branch]);
+    const receptionCentral = await teamOf(w, 'reception', w.central);
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: receptionCentral.id, branchId: w.central });
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'general', closingKey: 'closing_branch', reroutedTeamId: receptionCentral.id });
+  });
+
+  it('on Central’s own number, whose policy names the nanny, nothing is said — not even the answer — and the desk has it', async () => {
+    await drain();
+    const centralNumber = await simAccount(w, { branchId: w.central, silentIntents: [...DEFAULT_SILENT_INTENTS.withNanny] });
+    const conv = await customer(w, centralNumber, nextPhone(), `is there a nanny today? ${SENTINEL}`);
+    w.fake.push({ kind: 'decision', decision: nanny() });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect(await aiLines(w, conv.id)).toHaveLength(0);
+    const receptionCentral = await teamOf(w, 'reception', w.central);
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: receptionCentral.id, branchId: w.central });
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', action: 'answer', reason: 'SILENCE_POLICY', messageIds: [] });
+    const events = await eventsOf(w, conv.id);
+    expect(events.some((e) => e.kind === 'ai_replied')).toBe(false);
+    expect(events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ silent: true, holdingLine: 'none', messageIds: [] });
   });
 });
 
@@ -265,7 +377,7 @@ describe('the number’s silence policy', () => {
     expect(silentIntentsOf(null)).toBeNull();
     expect(silentIntentsOf({ silentIntents: 'lost_item' })).toBeNull();
     expect(silentIntentsOf({ silentIntents: ['lost_item', 3, 'nanny_booking'] })).toEqual(new Set(['lost_item', 'nanny_booking']));
-    // Every hand-over part must be on the list; an answerable part rides along.
+    // Every hand-over part must be on the list; an answerable part does not count (and says nothing once silenced).
     const policy = new Set(['lost_item', 'nanny_booking']);
     expect(silencedBy(policy, ['lost_item'], 'lost_item', 'lost_item')).toBe(true);
     expect(silencedBy(policy, ['socks', 'lost_item'], 'lost_item', 'socks')).toBe(true);
@@ -329,15 +441,16 @@ describe('the number’s silence policy', () => {
     expect((await turnsOf(w, nanny.id))[0]).toMatchObject({ state: 'handed_over', reason: 'OK' });
   });
 
-  it('a number with no policy: a lost item gets the branch closing line', async () => {
+  it('a number with no policy: a lost item, the gate’s silent hand-over, gets the branch closing line', async () => {
     await drain();
     const conv = await customer(w, central, nextPhone(), 'I lost my sunglasses');
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'lost_item', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_branch]);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', action: 'handover', reason: 'POLICY_MISSING' });
   });
 
-  it('an answer with a silenced hand-over part: the answer goes, the hand-over is silent', async () => {
+  it('a lost item beside an answerable question on a policy number: nothing is said, whatever else was asked (the playbook)', async () => {
     await drain();
     const policyNumber = await simAccount(w, { branchId: w.central, silentIntents: ['lost_item'] });
     const conv = await customer(w, policyNumber, nextPhone(), 'do we need socks? also I lost my hat');
@@ -347,15 +460,15 @@ describe('the number’s silence policy', () => {
       decision: decision({ intent: 'socks', intents: ['socks', 'lost_item'], grounding: ['socks'], reason: 'MIXED_INTENTS', bubbles: [answer] }),
     });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([answer]);
-    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', reason: 'SILENCE_POLICY' });
-    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ silent: true, holdingLine: 'none' });
+    expect(await aiLines(w, conv.id)).toHaveLength(0);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', intent: 'lost_item', reason: 'SILENCE_POLICY' });
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ silent: true, holdingLine: 'none', intents: ['socks', 'lost_item'] });
   });
 
   it('a silent hand-over the gate names, with no policy covering it, goes as a normal hand-over with the branch line', async () => {
     await drain();
-    const conv = await customer(w, central, nextPhone(), 'birthday for 20 kids next month');
-    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_party', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
+    const conv = await customer(w, central, nextPhone(), 'birthday for 20 kids next month at Central');
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
     seen.reshape = (v) => toSilentHandover(v as GateVerdict);
     try {
       expect((await tick(w, later(25_000))).handedOver).toBe(1);
@@ -374,13 +487,9 @@ describe('the number’s silence policy', () => {
     await drain();
     const policyNumber = await simAccount(w, { branchId: w.central, silentIntents: ['lost_item'] });
     const conv = await customer(w, policyNumber, nextPhone(), 'lost my phone in the ball pit');
-    w.fake.push({ kind: 'decision', decision: decision({ intent: 'lost_item', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
-    seen.reshape = (v) => toSilentHandover(v as GateVerdict);
-    try {
-      expect((await tick(w, later(25_000))).handedOver).toBe(1);
-    } finally {
-      seen.reshape = null;
-    }
+    // Whatever words the model wrote: the gate's silent hand-over drops them.
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'lost_item', action: 'handover', reason: 'NEEDS_PERSON', bubbles: ['I will check for you'] }) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
     expect(await aiLines(w, conv.id)).toHaveLength(0);
     expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', action: 'handover', reason: 'SILENCE_POLICY' });
   });
@@ -563,6 +672,34 @@ describe('the caller’s country code', () => {
     w.fake.push({ kind: 'decision', decision: decision({ language: 'ru', bubbles: ['Здравствуйте! Чем можем помочь?'] }) });
     await tick(w, later(25_000));
     expect((seen.contexts.at(-1) as TurnContext).contactCountryCode).toBe('7');
+  });
+
+  it('the gate reads it too: a +7 number writing in English is made the one Russian offer once, and a second is refused', async () => {
+    await drain();
+    seen.contexts.length = 0;
+    const phone = '79161230002';
+    const offer = 'Hi there! Would you like to continue in English or Russian?';
+    const conv = await customer(w, central, phone, 'hi');
+    w.fake.push({ kind: 'decision', decision: decision({ bubbles: [offer] }) });
+    expect((await tick(w, later(25_000))).answered).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([offer]);
+    expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({ languageOffer: 'ru' });
+
+    // The same episode: the offer was made, so the model is told and the gate refuses another.
+    await customer(w, central, phone, 'hello again');
+    w.fake.push({ kind: 'decision', decision: decision({ bubbles: [offer] }) });
+    expect((await tick(w, later(25_000))).silent).toBe(1);
+    expect((seen.contexts.at(-1) as TurnContext).earlier.languageOffered).toBe(true);
+    expect((await turnsOf(w, conv.id))[1]).toMatchObject({ state: 'silent', reason: 'GUARD_LANGUAGE' });
+    expect(await aiLines(w, conv.id)).toHaveLength(1);
+  });
+
+  it('a +66 number is never made the Russian offer', async () => {
+    await drain();
+    const conv = await customer(w, central, nextPhone(), 'hi');
+    w.fake.push({ kind: 'decision', decision: decision({ bubbles: ['Hi there! Would you like to continue in English or Russian?'] }) });
+    expect((await tick(w, later(25_000))).silent).toBe(1);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'silent', reason: 'GUARD_LANGUAGE' });
   });
 });
 
