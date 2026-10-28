@@ -14,8 +14,8 @@
  *   - the routing rules for the IT Brief's defaults, every person BLANK
  *     (`primary_kind = 'team'`, owner Q20), plus one catch-all per team so
  *     routing can never leave a conversation unowned;
- *   - the thirteen template keys (`handover_general` joined with SCRUM-590,
- *     `follow_up` with the SCRUM-220 test night, the three `closing_*`
+ *   - the fourteen template keys (`handover_general` joined with SCRUM-590,
+ *     `follow_up` with the SCRUM-220 test night, the four `closing_*`
  *     lines with the SCRUM-220 playbook) in English, Thai and
  *     Russian, each language in its own words — and the one UPDATE this file
  *     makes: a TH or RU row that still carries the English source marked
@@ -157,6 +157,10 @@ export const INBOX_TEMPLATE_BODIES: Record<InboxTemplateKey, string> = {
   closing_birthday: 'Thank you so much! Our birthday manager will be with you shortly.',
   closing_gm: 'Thank you so much! Our general manager will be in contact with you shortly.',
   closing_branch: "Thanks! We'll be back to you shortly.",
+  // The playbook's unclear line, word for word: an unclear or emotional
+  // message's hand-over sends it whichever queue the thread goes to (the
+  // park's when it is known, else the GM's) — it wins over the destination's.
+  closing_unclear: 'Thanks for your message! A team member will be with you shortly.',
 };
 
 /**
@@ -190,6 +194,7 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Inbo
     closing_birthday: 'ขอบคุณมากนะคะ ผู้จัดการฝ่ายงานวันเกิดของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
     closing_gm: 'ขอบคุณมากนะคะ ผู้จัดการทั่วไปของเราจะติดต่อกลับหาคุณในอีกไม่นานค่ะ',
     closing_branch: 'ขอบคุณค่ะ เราจะติดต่อกลับหาคุณในอีกไม่นานนะคะ',
+    closing_unclear: 'ขอบคุณสำหรับข้อความนะคะ ทีมงานของเราจะมาดูแลคุณในอีกไม่นานค่ะ',
   },
   ru: {
     welcome: 'Здравствуйте! 👋 Добро пожаловать в OTO Play Park. Чем мы можем вам помочь?',
@@ -210,6 +215,7 @@ export const INBOX_TEMPLATE_TRANSLATIONS: Record<TranslatedLanguage, Record<Inbo
     closing_birthday: 'Большое спасибо! Наш менеджер по праздникам скоро свяжется с вами.',
     closing_gm: 'Большое спасибо! Наш генеральный менеджер скоро свяжется с вами.',
     closing_branch: 'Спасибо! Мы скоро вам ответим.',
+    closing_unclear: 'Спасибо за сообщение! Сотрудник нашей команды скоро свяжется с вами.',
   },
 };
 

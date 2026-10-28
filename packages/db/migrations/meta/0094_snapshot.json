@@ -41500,7 +41500,7 @@
         },
         "channel_account_out_of_hours_key_check": {
           "name": "channel_account_out_of_hours_key_check",
-          "value": "\"inbox\".\"channel_account\".\"out_of_hours_template_key\" is null or \"inbox\".\"channel_account\".\"out_of_hours_template_key\" in ('welcome','handover_birthday','handover_events','handover_complaint_online','handover_complaint_onsite','handover_lost_found','handover_marketing','out_of_hours','handover_general','follow_up','closing_birthday','closing_gm','closing_branch')"
+          "value": "\"inbox\".\"channel_account\".\"out_of_hours_template_key\" is null or \"inbox\".\"channel_account\".\"out_of_hours_template_key\" in ('welcome','handover_birthday','handover_events','handover_complaint_online','handover_complaint_onsite','handover_lost_found','handover_marketing','out_of_hours','handover_general','follow_up','closing_birthday','closing_gm','closing_branch','closing_unclear')"
         },
         "channel_account_console_reply_check": {
           "name": "channel_account_console_reply_check",
@@ -44824,7 +44824,7 @@
       "checkConstraints": {
         "template_key_check": {
           "name": "template_key_check",
-          "value": "\"inbox\".\"template\".\"key\" in ('welcome','handover_birthday','handover_events','handover_complaint_online','handover_complaint_onsite','handover_lost_found','handover_marketing','out_of_hours','handover_general','follow_up','closing_birthday','closing_gm','closing_branch')"
+          "value": "\"inbox\".\"template\".\"key\" in ('welcome','handover_birthday','handover_events','handover_complaint_online','handover_complaint_onsite','handover_lost_found','handover_marketing','out_of_hours','handover_general','follow_up','closing_birthday','closing_gm','closing_branch','closing_unclear')"
         },
         "template_channel_check": {
           "name": "template_channel_check",

@@ -1,4 +1,5 @@
 import {
+  BY_BRANCH,
   INTENT_TABLE,
   resolvePlan,
   type AiHandoverPlan,
@@ -84,6 +85,20 @@ export function planOwner(intents: readonly AiIntent[], plan: AiHandoverPlan): A
     if (rule.action === 'answer' && (planMatches(rule.thenHandover, plan) || planMatches(rule.fallback?.plan ?? null, plan))) return intent;
   }
   return null;
+}
+
+/**
+ * The playbook's unclear line (owner ruling, 28 Oct 2026): an unclear or
+ * emotional message's hand-over says "Thanks for your message! A team member
+ * will be with you shortly." whichever queue it goes to — the park's when it
+ * is known, else the GM's. It wins over the destination's line, for unclear
+ * only: a request the knowledge does not cover keeps the destination's.
+ */
+export const UNCLEAR_CLOSING_KEY = 'closing_unclear' satisfies InboxTemplateKey;
+
+/** The hand-over is the unclear part's: `emotional_or_unclear` is in the burst and the plan is its `BY_BRANCH` one. */
+export function isUnclearHandover(intents: readonly AiIntent[], plan: AiHandoverPlan): boolean {
+  return intents.includes('emotional_or_unclear') && planMatches(BY_BRANCH, plan);
 }
 
 /**

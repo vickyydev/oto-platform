@@ -149,10 +149,12 @@ export type RoutingPrimaryKind = (typeof ROUTING_PRIMARY_KINDS)[number];
  * custom requests, nanny booking, unclear or emotional messages, a request
  * for a person. `follow_up` (SCRUM-220 test night, `0083_inbox_test_night`)
  * is the one line that is not a holding line: a person's follow-up outside
- * WhatsApp's 24-hour window, when only a template may be sent. The three
+ * WhatsApp's 24-hour window, when only a template may be sent. The
  * `closing_*` keys (SCRUM-220 playbook, `0094_inbox_playbook`) are the
- * playbook's destination-keyed closing lines: the birthday manager, the
- * general manager, or a branch will be with the customer shortly.
+ * playbook's closing lines: three keyed by destination (the birthday
+ * manager, the general manager, or a branch will be with the customer
+ * shortly), and `closing_unclear`, the unclear line, which an unclear or
+ * emotional hand-over sends whichever queue it goes to.
  */
 export const INBOX_TEMPLATE_KEYS = [
   'welcome',
@@ -168,6 +170,7 @@ export const INBOX_TEMPLATE_KEYS = [
   'closing_birthday',
   'closing_gm',
   'closing_branch',
+  'closing_unclear',
 ] as const;
 export type InboxTemplateKey = (typeof INBOX_TEMPLATE_KEYS)[number];
 

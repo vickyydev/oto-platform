@@ -14,8 +14,12 @@
  *   GM                 `closing_gm`        route `gm`
  *   Branch             `closing_branch`    route `general` (the thread's
  *                                          park's reception)
- *   unclear            `handover_general`  the branch when it is known,
- *                                          else the GM (`BY_BRANCH`)
+ *   unclear            `closing_unclear`   the branch when it is known,
+ *                                          else the GM (`BY_BRANCH`); the
+ *                                          engine sends the unclear line
+ *                                          whichever queue it goes to (the
+ *                                          plan keeps `handover_general` as
+ *                                          its own fallback)
  */
 
 import type { InboxCategoryKey } from '@oto/shared';
@@ -78,10 +82,11 @@ export type AiAction = (typeof AI_ACTIONS)[number];
 /**
  * The holding-line templates a handover may use. The six existing
  * `INBOX_TEMPLATE_KEYS` handover keys, `handover_general` (migration
- * `0080_inbox_ai`, rails change R1), and the playbook's three closing lines
- * keyed by destination (`0094_inbox_playbook`). Kept here as a literal list
- * because this package has no database dependency; the engine reads the
- * template rows by this key.
+ * `0080_inbox_ai`, rails change R1), and the playbook's closing lines
+ * (`0094_inbox_playbook`): three keyed by destination, and the unclear
+ * line the engine sends for an unclear or emotional hand-over. Kept here as
+ * a literal list because this package has no database dependency; the
+ * engine reads the template rows by this key.
  */
 export const AI_HOLDING_TEMPLATE_KEYS = [
   'handover_birthday',
@@ -94,6 +99,7 @@ export const AI_HOLDING_TEMPLATE_KEYS = [
   'closing_birthday',
   'closing_gm',
   'closing_branch',
+  'closing_unclear',
 ] as const;
 export type AiHoldingTemplateKey = (typeof AI_HOLDING_TEMPLATE_KEYS)[number];
 

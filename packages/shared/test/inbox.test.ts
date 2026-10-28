@@ -162,8 +162,8 @@ describe('the playbook contract (SCRUM-220): the GM queue, the closing lines, th
     expect(INBOX_VIEW_ROLES).toContain('gm');
   });
 
-  it('names the three destination-keyed closing lines as template keys', () => {
-    for (const key of ['closing_birthday', 'closing_gm', 'closing_branch']) {
+  it('names the three destination-keyed closing lines and the unclear line as template keys', () => {
+    for (const key of ['closing_birthday', 'closing_gm', 'closing_branch', 'closing_unclear']) {
       expect(INBOX_TEMPLATE_KEY_NAMES).toContain(key);
     }
   });

@@ -82962,7 +82962,8 @@
                       "follow_up",
                       "closing_birthday",
                       "closing_gm",
-                      "closing_branch"
+                      "closing_branch",
+                      "closing_unclear"
                     ]
                   },
                   "language": {
@@ -85139,7 +85140,8 @@
                 "follow_up",
                 "closing_birthday",
                 "closing_gm",
-                "closing_branch"
+                "closing_branch",
+                "closing_unclear"
               ]
             },
             "in": "query",

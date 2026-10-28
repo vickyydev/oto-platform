@@ -149,6 +149,9 @@ async function templateRow(key: typeof s.template.$inferSelect.key, language: 'e
   return row!;
 }
 
+/** The playbook's unclear line, word for word (owner ruling, 28 Oct): it wins over the destination's line. */
+const UNCLEAR_LINE = 'Thanks for your message! A team member will be with you shortly.';
+
 async function handoverEvent(conversationId: string) {
   return (await eventsOf(w, conversationId)).find((e) => e.kind === 'ai_handover');
 }
@@ -223,7 +226,7 @@ describe('the GM queue (playbook routing)', () => {
     expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_gm]);
   });
 
-  it('an unclear message on a park’s thread stays with that park, with the branch closing line', async () => {
+  it('an unclear message on a park’s thread stays with that park, with the playbook’s unclear line word for word', async () => {
     await drain();
     const conv = await customer(w, central, nextPhone(), 'hmm not sure what to do now');
     const reception = await teamOf(w, 'reception', w.central);
@@ -231,11 +234,14 @@ describe('the GM queue (playbook routing)', () => {
     w.fake.push({ kind: 'decision', decision: decision({ intent: 'emotional_or_unclear', action: 'handover', reason: 'UNCLEAR', bubbles: [] }) });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id, branchId: w.central });
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_branch]);
-    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'general', closingKey: 'closing_branch', reroutedTeamId: null });
+    const unclear = await templateRow('closing_unclear', 'en');
+    expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, templateId: l.templateId }))).toEqual([
+      { body: UNCLEAR_LINE, templateId: unclear.id },
+    ]);
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'general', closingKey: 'closing_unclear', reroutedTeamId: null });
   });
 
-  it('an unclear message on a thread with no park goes to the GM', async () => {
+  it('an unclear message on a thread with no park goes to the GM, with the same unclear line, not the GM’s', async () => {
     await drain();
     const conv = await customer(w, wide, nextPhone(), 'hmm not sure what to do now');
     expect(conv.branchId).toBeNull();
@@ -243,7 +249,45 @@ describe('the GM queue (playbook routing)', () => {
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     const gm = await teamOf(w, 'gm');
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'gm', teamId: gm.id });
-    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_gm]);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([UNCLEAR_LINE]);
+    expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'gm', closingKey: 'closing_unclear' });
+  });
+
+  it('the unclear line in the customer’s language: Thai and Russian are real translations', async () => {
+    for (const language of ['th', 'ru'] as const) {
+      await drain();
+      const unclear = await templateRow('closing_unclear', language);
+      expect(unclear.needsTranslation).toBe(false);
+      const conv = await customer(w, central, nextPhone(), language === 'th' ? 'ไม่แน่ใจค่ะ' : 'не знаю, что делать');
+      w.fake.push({ kind: 'decision', decision: decision({ language, intent: 'emotional_or_unclear', action: 'handover', reason: 'UNCLEAR', bubbles: [] }) });
+      expect((await tick(w, later(25_000))).handedOver, language).toBe(1);
+      expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, templateId: l.templateId })), language).toEqual([
+        { body: unclear.body, templateId: unclear.id },
+      ]);
+    }
+  });
+
+  it('with the unclear line inactive, the ladder goes on: the destination’s line', async () => {
+    await drain();
+    const unclear = await templateRow('closing_unclear', 'en');
+    await w.ctx.db.update(s.template).set({ active: false }).where(eq(s.template.id, unclear.id));
+    try {
+      const conv = await customer(w, central, nextPhone(), 'hmm, no idea');
+      w.fake.push({ kind: 'decision', decision: decision({ intent: 'emotional_or_unclear', action: 'handover', reason: 'UNCLEAR', bubbles: [] }) });
+      expect((await tick(w, later(25_000))).handedOver).toBe(1);
+      expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_branch]);
+      expect((await handoverEvent(conv.id))!.payload).toMatchObject({ destination: 'general', closingKey: 'closing_branch', holdingLine: 'template' });
+    } finally {
+      await w.ctx.db.update(s.template).set({ active: true }).where(eq(s.template.id, unclear.id));
+    }
+  });
+
+  it('the unclear line is for unclear only: a request the knowledge does not cover keeps the destination’s line', async () => {
+    await drain();
+    const conv = await customer(w, central, nextPhone(), 'can you host a dog show?');
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'custom_request', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([INBOX_TEMPLATE_BODIES.closing_branch]);
   });
 
   it('a birthday closes with the birthday manager’s line, in the customer’s language, once the basics are in', async () => {

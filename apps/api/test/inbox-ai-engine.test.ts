@@ -299,7 +299,7 @@ describe('an answer (§B.5, §B.6)', () => {
  * a hand-over closes with where the thread goes — the birthday manager, the
  * general manager, the branch — not with the intent's own holding template.
  */
-async function closingTemplate(key: 'closing_birthday' | 'closing_gm' | 'closing_branch', language: 'en' | 'th' | 'ru' = 'en') {
+async function closingTemplate(key: 'closing_birthday' | 'closing_gm' | 'closing_branch' | 'closing_unclear', language: 'en' | 'th' | 'ru' = 'en') {
   const [row] = await w.ctx.db
     .select()
     .from(s.template)
@@ -477,11 +477,12 @@ describe('a handover (§B.5, §C.5)', () => {
     expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'gm', teamId: gm.id });
   });
 
-  it('a Thai unclear message whose branch line and general line both still need translation: the checked persona words go; it stays with reception', async () => {
+  it('a Thai unclear message whose unclear, branch and general lines all still need translation: the checked persona words go; it stays with reception', async () => {
     await drain();
     // The fallback path, constructed: an operator whose Thai rows for the
-    // destination's line and the team-neutral line still carry the English
-    // source, marked for translation. Restored after.
+    // unclear line, the destination's line and the team-neutral line still
+    // carry the English source, marked for translation. Restored after.
+    const unclearTh = await closingTemplate('closing_unclear', 'th');
     const branchTh = await closingTemplate('closing_branch', 'th');
     const [generalTh] = await w.ctx.db
       .select()
@@ -489,6 +490,7 @@ describe('a handover (§B.5, §C.5)', () => {
       .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_general'), eq(s.template.language, 'th')))
       .limit(1);
     const untranslated = [
+      { row: unclearTh, english: INBOX_TEMPLATE_BODIES.closing_unclear },
       { row: branchTh, english: INBOX_TEMPLATE_BODIES.closing_branch },
       { row: generalTh!, english: INBOX_TEMPLATE_BODIES.handover_general },
     ];

@@ -9,7 +9,7 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
 /**
  * SCRUM-220, the inbox playbook build — the shared contract's one migration.
  * Expand-only: CHECK swaps that only widen a list (the GM category and team
- * kind, the three closing-line template keys) and one nullable jsonb column
+ * kind, the four closing-line template keys) and one nullable jsonb column
  * (`channel_account.silence_policy`) with its own shape CHECK.
  */
 const MIGRATIONS = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
@@ -85,7 +85,7 @@ describe('SCRUM-220 inbox playbook migration', () => {
       ),
     ).rejects.toMatchObject({ code: '23514', constraint: 'routing_rule_category_check' });
 
-    for (const key of ['closing_birthday', 'closing_gm', 'closing_branch']) {
+    for (const key of ['closing_birthday', 'closing_gm', 'closing_branch', 'closing_unclear']) {
       await client.query(
         `insert into inbox.template (id, operator_id, key, language, body) values ($1, $2, $3, 'en', 'ZZ TEST')`,
         [newId(), operatorId, key],
@@ -102,6 +102,7 @@ describe('SCRUM-220 inbox playbook migration', () => {
         [newId(), operatorId, `zz-test-${newId()}`, category, outOfHours, policy],
       );
     await account(null);
+    await account(null, 'general', 'closing_unclear');
     await account('{"silentIntents": []}');
     await account('{"silentIntents": ["drop_off_care", "nanny_booking"]}');
     await expect(account('[]')).rejects.toMatchObject({ code: '23514', constraint: 'channel_account_silence_policy_check' });

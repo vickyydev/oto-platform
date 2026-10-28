@@ -39,7 +39,15 @@ import { recordRun } from '../ops';
 import { withTx, type Exec, type Tx } from '../tx';
 import { assistantSettingOverridesOf } from '../assistant-settings';
 import type { InboxAiRuntime } from './ai-runtime';
-import { CLOSING_KEY_OF, destinationOf, planOwner, silencedBy, silentIntentsOf } from './ai-destination';
+import {
+  CLOSING_KEY_OF,
+  UNCLEAR_CLOSING_KEY,
+  destinationOf,
+  isUnclearHandover,
+  planOwner,
+  silencedBy,
+  silentIntentsOf,
+} from './ai-destination';
 import { loadTurnKnowledge, type TurnKnowledge } from './ai-knowledge';
 import { aiEligibility, dueAiMessageIds, type IneligibleReason } from './ai-turns';
 import { callingCodeOf } from './calling-code';
@@ -643,11 +651,12 @@ async function templateLine(
 
 /**
  * The line a hand-over closes with (SCRUM-220 playbook; §C.5, owner G6
- * default): the DESTINATION's closing template verbatim in the customer's
- * language — the birthday manager, the general manager, the branch. Where the
- * destination has none (Marketing) or its row is missing, inactive or
- * untranslated in this language: the plan's own template (the brochure's
- * `handover_birthday`, the unclear `handover_general`), then the team-neutral
+ * default): the first usable of its closing keys (`closingKeysOf`) verbatim
+ * in the customer's language — the unclear line for an unclear hand-over,
+ * then the DESTINATION's: the birthday manager, the general manager, the
+ * branch. Where none is usable (Marketing has none; a row may be missing,
+ * inactive or untranslated in this language): the plan's own template (the
+ * brochure's `handover_birthday`, the unclear `handover_general`), then the team-neutral
  * `handover_general` — since the playbook a plan carries its destination's
  * closing key, and the old per-topic lines name teams the playbook moved
  * (reception for a complaint, marketing for a collaboration). The model's own
@@ -659,17 +668,17 @@ async function closingLine(
   tx: Tx,
   conv: ConversationRow,
   account: AccountRow,
-  closingKey: InboxTemplateKey | null,
+  closingKeys: readonly InboxTemplateKey[],
   plan: AiHandoverPlan,
   language: AiReplyLanguage,
   modelWords: readonly string[],
 ): Promise<HoldingLine> {
-  if (closingKey) {
+  for (const closingKey of closingKeys) {
     const line = await templateLine(tx, conv, account, closingKey, language);
     if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey };
   }
   const fallbacks = new Set<string>([plan.templateKey, 'handover_general']);
-  if (closingKey) fallbacks.delete(closingKey);
+  for (const key of closingKeys) fallbacks.delete(key);
   for (const key of fallbacks) {
     const line = await templateLine(tx, conv, account, key, language);
     if (line) return { kind: 'template', items: [line.item], templateId: line.templateId, closingKey: null };
@@ -843,6 +852,8 @@ interface Handover {
   silenced: boolean;
   /** A `silent_handover` the policy does not cover: a normal hand-over with the branch's closing line. */
   branchLine: boolean;
+  /** The unclear part's hand-over: the playbook's unclear line, whichever queue it goes to. */
+  unclear: boolean;
 }
 
 function handoverOf(v: GateVerdict | undefined, silent: ReadonlySet<string> | null): Handover | null {
@@ -851,7 +862,22 @@ function handoverOf(v: GateVerdict | undefined, silent: ReadonlySet<string> | nu
   if (!plan) return null;
   const owner = planOwner(v.intents, plan);
   const silenced = silencedBy(silent, v.intents, owner, v.intent);
-  return { plan, owner, silenced, branchLine: v.action === 'silent_handover' && !silenced };
+  const branchLine = v.action === 'silent_handover' && !silenced;
+  return { plan, owner, silenced, branchLine, unclear: !branchLine && isUnclearHandover(v.intents, plan) };
+}
+
+/**
+ * The closing keys a hand-over tries, in order (SCRUM-220 playbook): a
+ * silent hand-over the policy does not cover, the branch's line; an unclear
+ * hand-over, the unclear line first (owner ruling, 28 Oct), then the
+ * destination's; any other, the destination's line, when it has one.
+ */
+function closingKeysOf(h: Handover, destination: InboxCategory): InboxTemplateKey[] {
+  if (h.branchLine) return ['closing_branch'];
+  const keys: InboxTemplateKey[] = h.unclear ? [UNCLEAR_CLOSING_KEY] : [];
+  const own = CLOSING_KEY_OF[destination];
+  if (own) keys.push(own);
+  return keys;
 }
 
 /** The turn's reason word once the number's policy has been read. */
@@ -1188,8 +1214,8 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
           if (handover) {
             destination = (await planRouting(tx, conv, v.branchNamed, handover, r.knowledge)).category;
             if (!handover.silenced) {
-              const key = handover.branchLine ? 'closing_branch' : CLOSING_KEY_OF[destination];
-              holding = await closingLine(tx, conv, account, key, handover.plan, v.language, v.action === 'handover' ? v.holdingBubbles : []);
+              const keys = closingKeysOf(handover, destination);
+              holding = await closingLine(tx, conv, account, keys, handover.plan, v.language, v.action === 'handover' ? v.holdingBubbles : []);
               lines.push(...holding.items.flatMap((i) => (i.body ? [i.body] : [])));
             }
           }
@@ -1263,12 +1289,11 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
       let holding: HoldingLine = NO_LINE;
       if (handover && !handover.silenced) {
         if (handover.plan.brochure) brochure = await brochureFiles(tx, conv, account, v.language);
-        const key = handover.branchLine ? 'closing_branch' : CLOSING_KEY_OF[plan.category];
         holding = await closingLine(
           tx,
           conv,
           account,
-          key,
+          closingKeysOf(handover, plan.category),
           handover.plan,
           v.language,
           v.action === 'handover' ? v.holdingBubbles : [],

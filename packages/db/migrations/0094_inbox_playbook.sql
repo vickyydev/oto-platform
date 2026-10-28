@@ -11,8 +11,10 @@
 --   team.key                                              + gm
 --       the one operator-wide GM team that owns it.
 --   template.key (and channel_account.out_of_hours_template_key)
---                       + closing_birthday, closing_gm, closing_branch
---       the playbook's destination-keyed closing lines.
+--       + closing_birthday, closing_gm, closing_branch, closing_unclear
+--       the playbook's closing lines: three keyed by destination, and the
+--       unclear line an unclear or emotional hand-over sends whichever
+--       queue it goes to.
 --   channel_account.silence_policy (jsonb, null = no policy)
 --       {"silentIntents": [...]}: the intents on which the assistant stays
 --       silent to the customer on that number and leaves the thread to the
@@ -34,8 +36,8 @@ ALTER TABLE "inbox"."template" DROP CONSTRAINT "template_key_check";--> statemen
 ALTER TABLE "inbox"."channel_account" ADD COLUMN "silence_policy" jsonb;--> statement-breakpoint
 ALTER TABLE "inbox"."channel_account" ADD CONSTRAINT "channel_account_silence_policy_check" CHECK ("inbox"."channel_account"."silence_policy" is null or (jsonb_typeof("inbox"."channel_account"."silence_policy") = 'object' and coalesce(jsonb_typeof("inbox"."channel_account"."silence_policy" -> 'silentIntents'), '') = 'array'));--> statement-breakpoint
 ALTER TABLE "inbox"."channel_account" ADD CONSTRAINT "channel_account_default_category_check" CHECK ("inbox"."channel_account"."default_category" in ('birthdays','general','marketing','gm'));--> statement-breakpoint
-ALTER TABLE "inbox"."channel_account" ADD CONSTRAINT "channel_account_out_of_hours_key_check" CHECK ("inbox"."channel_account"."out_of_hours_template_key" is null or "inbox"."channel_account"."out_of_hours_template_key" in ('welcome','handover_birthday','handover_events','handover_complaint_online','handover_complaint_onsite','handover_lost_found','handover_marketing','out_of_hours','handover_general','follow_up','closing_birthday','closing_gm','closing_branch'));--> statement-breakpoint
+ALTER TABLE "inbox"."channel_account" ADD CONSTRAINT "channel_account_out_of_hours_key_check" CHECK ("inbox"."channel_account"."out_of_hours_template_key" is null or "inbox"."channel_account"."out_of_hours_template_key" in ('welcome','handover_birthday','handover_events','handover_complaint_online','handover_complaint_onsite','handover_lost_found','handover_marketing','out_of_hours','handover_general','follow_up','closing_birthday','closing_gm','closing_branch','closing_unclear'));--> statement-breakpoint
 ALTER TABLE "inbox"."conversation" ADD CONSTRAINT "conversation_category_check" CHECK ("inbox"."conversation"."category" in ('birthdays','general','marketing','gm'));--> statement-breakpoint
 ALTER TABLE "inbox"."routing_rule" ADD CONSTRAINT "routing_rule_category_check" CHECK ("inbox"."routing_rule"."category" in ('birthdays','general','marketing','gm'));--> statement-breakpoint
 ALTER TABLE "inbox"."team" ADD CONSTRAINT "team_key_check" CHECK ("inbox"."team"."key" in ('birthdays','reception','marketing','gm'));--> statement-breakpoint
-ALTER TABLE "inbox"."template" ADD CONSTRAINT "template_key_check" CHECK ("inbox"."template"."key" in ('welcome','handover_birthday','handover_events','handover_complaint_online','handover_complaint_onsite','handover_lost_found','handover_marketing','out_of_hours','handover_general','follow_up','closing_birthday','closing_gm','closing_branch'));
+ALTER TABLE "inbox"."template" ADD CONSTRAINT "template_key_check" CHECK ("inbox"."template"."key" in ('welcome','handover_birthday','handover_events','handover_complaint_online','handover_complaint_onsite','handover_lost_found','handover_marketing','out_of_hours','handover_general','follow_up','closing_birthday','closing_gm','closing_branch','closing_unclear'));

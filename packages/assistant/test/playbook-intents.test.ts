@@ -35,7 +35,7 @@ describe('D. the destinations', () => {
     expect(GM_PLAN).toEqual({ templateKey: 'closing_gm', route: 'gm', brochure: false });
     expect(BRANCH_PLAN).toEqual({ templateKey: 'closing_branch', route: 'general', brochure: false });
     expect(CENTRAL_PLAN).toEqual({ ...BRANCH_PLAN, branch: 'central' });
-    for (const k of ['closing_birthday', 'closing_gm', 'closing_branch'] as const) expect(AI_HOLDING_TEMPLATE_KEYS).toContain(k);
+    for (const k of ['closing_birthday', 'closing_gm', 'closing_branch', 'closing_unclear'] as const) expect(AI_HOLDING_TEMPLATE_KEYS).toContain(k);
   });
 
   it('unclear goes to the branch when it is known, else to the GM, with the playbook\'s team-member line', () => {

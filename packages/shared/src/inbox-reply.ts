@@ -35,9 +35,10 @@ import { InboxChannelSchema, InboxMessageSchema, InboxTemplateSchema } from './i
  * that is not a holding line: outside WhatsApp's 24-hour window only a
  * template may be sent, and the composer offers this key as the natural
  * choice for a person following a thread up (the template table has no
- * purpose column; the shell picks by key). The three `closing_*` keys
- * (SCRUM-220 playbook, `0094_inbox_playbook`) are the destination-keyed
- * closing lines: birthday manager, general manager, a branch.
+ * purpose column; the shell picks by key). The `closing_*` keys (SCRUM-220
+ * playbook, `0094_inbox_playbook`) are the playbook's closing lines: three
+ * keyed by destination (birthday manager, general manager, a branch), and
+ * `closing_unclear`, the unclear line that wins over the destination's.
  */
 export const INBOX_TEMPLATE_KEY_NAMES = [
   'welcome',
@@ -53,6 +54,7 @@ export const INBOX_TEMPLATE_KEY_NAMES = [
   'closing_birthday',
   'closing_gm',
   'closing_branch',
+  'closing_unclear',
 ] as const;
 export type InboxTemplateKeyName = (typeof INBOX_TEMPLATE_KEY_NAMES)[number];
 

@@ -275,7 +275,7 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     ]);
   });
 
-  it('lays the thirteen templates in EN, TH and RU, each language in its own words, nothing waiting for a translator', async () => {
+  it('lays the fourteen templates in EN, TH and RU, each language in its own words, nothing waiting for a translator', async () => {
     const templates = await db.select().from(s.template).where(eq(s.template.operatorId, oto));
     expect(templates).toHaveLength(INBOX_TEMPLATE_KEYS.length * 3);
     expect(new Set(templates.map((t) => t.key))).toEqual(new Set(INBOX_TEMPLATE_KEYS));
@@ -306,6 +306,8 @@ describe('platform-sync lays the inbox configuration (I1)', () => {
     expect(en('closing_birthday')).toBe('Thank you so much! Our birthday manager will be with you shortly.');
     expect(en('closing_gm')).toBe('Thank you so much! Our general manager will be in contact with you shortly.');
     expect(en('closing_branch')).toBe("Thanks! We'll be back to you shortly.");
+    // The playbook's unclear line wins over the destination's, branch or GM.
+    expect(en('closing_unclear')).toBe('Thanks for your message! A team member will be with you shortly.');
     // The follow-up is the one line that is not a holding line, and the only one with a placeholder.
     expect(INBOX_TEMPLATE_BODIES.follow_up).toContain('{{name}}');
     expect(INBOX_TEMPLATE_KEYS.filter((k) => INBOX_TEMPLATE_BODIES[k].includes('{{'))).toEqual(['follow_up']);
