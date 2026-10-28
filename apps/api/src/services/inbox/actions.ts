@@ -89,11 +89,13 @@ const TEAM_OF_CATEGORY: Record<InboxCategory, InboxTeamKey> = {
   birthdays: 'birthdays',
   general: 'reception',
   marketing: 'marketing',
+  gm: 'gm',
 };
 const CATEGORY_OF_TEAM: Record<InboxTeamKey, InboxCategory> = {
   birthdays: 'birthdays',
   reception: 'general',
   marketing: 'marketing',
+  gm: 'gm',
 };
 
 export const INBOX_ACTION_MESSAGES = {
@@ -677,7 +679,11 @@ export async function divert(tx: Tx, ctx: ActionCtx, input: { conversationId: st
 
 // --- MOVE: another team, re-routed -------------------------------------------------------------
 
-export type MoveDest = { kind: 'birthdays' } | { kind: 'marketing' } | { kind: 'reception'; branchId: string };
+export type MoveDest =
+  | { kind: 'birthdays' }
+  | { kind: 'marketing' }
+  | { kind: 'gm' }
+  | { kind: 'reception'; branchId: string };
 
 export async function moveTeam(
   tx: Tx,

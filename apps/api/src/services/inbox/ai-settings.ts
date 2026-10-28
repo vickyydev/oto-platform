@@ -483,13 +483,16 @@ const isCategoryKey = (v: string): v is InboxCategoryKey => CATEGORY_KEYS.has(v)
  * classified the thread (SCRUM-220 test night, R7): the assistant's own
  * table (`@oto/assistant` INTENT_TABLE) routes `birthday_party` to the
  * birthdays team and `influencer_marketing` to marketing; a general thread's
- * correction is a factual one, `faq`. A default for the editor's picker, not
- * a classification: the example queue may change it before approval.
+ * correction is a factual one, `faq`. A gm thread (SCRUM-220 playbook, the GM
+ * queue) starts on `complaint_online`, the GM's most common matter. A default
+ * for the editor's picker, not a classification: the example queue may change
+ * it before approval.
  */
 export const CATEGORY_DEFAULT_INTENT: Readonly<Record<InboxCategoryKey, (typeof AI_INTENTS)[number]>> = {
   birthdays: 'birthday_party',
   general: 'faq',
   marketing: 'influencer_marketing',
+  gm: 'complaint_online',
 };
 
 function checkReply(verdict: ExampleRow['verdict'], goodReply: string | null): void {

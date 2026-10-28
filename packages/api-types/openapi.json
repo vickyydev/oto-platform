@@ -47303,7 +47303,8 @@
                         "enum": [
                           "birthdays",
                           "general",
-                          "marketing"
+                          "marketing",
+                          "gm"
                         ]
                       },
                       "intent": {
@@ -65411,7 +65412,8 @@
                             "enum": [
                               "birthdays",
                               "reception",
-                              "marketing"
+                              "marketing",
+                              "gm"
                             ]
                           },
                           "name": {
@@ -65560,7 +65562,8 @@
                             "enum": [
                               "birthdays",
                               "reception",
-                              "marketing"
+                              "marketing",
+                              "gm"
                             ]
                           },
                           "name": {
@@ -65615,7 +65618,8 @@
                     "enum": [
                       "birthdays",
                       "reception",
-                      "marketing"
+                      "marketing",
+                      "gm"
                     ]
                   },
                   "branchId": {
@@ -65675,7 +65679,8 @@
                           "enum": [
                             "birthdays",
                             "reception",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "name": {
@@ -65810,7 +65815,8 @@
                           "enum": [
                             "birthdays",
                             "reception",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "name": {
@@ -65982,7 +65988,8 @@
                             "enum": [
                               "birthdays",
                               "general",
-                              "marketing"
+                              "marketing",
+                              "gm"
                             ]
                           },
                           "language": {
@@ -66100,7 +66107,8 @@
                     "enum": [
                       "birthdays",
                       "general",
-                      "marketing"
+                      "marketing",
+                      "gm"
                     ]
                   },
                   "language": {
@@ -66185,7 +66193,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "language": {
@@ -66304,7 +66313,8 @@
                     "enum": [
                       "birthdays",
                       "general",
-                      "marketing"
+                      "marketing",
+                      "gm"
                     ]
                   },
                   "language": {
@@ -66391,7 +66401,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "language": {
@@ -80956,7 +80967,8 @@
                           "events",
                           "reception",
                           "marketing",
-                          "staff"
+                          "staff",
+                          "gm"
                         ]
                       }
                     },
@@ -80985,7 +80997,8 @@
                             "enum": [
                               "birthdays",
                               "reception",
-                              "marketing"
+                              "marketing",
+                              "gm"
                             ]
                           },
                           "name": {
@@ -81258,7 +81271,8 @@
               "enum": [
                 "birthdays",
                 "general",
-                "marketing"
+                "marketing",
+                "gm"
               ]
             },
             "in": "query",
@@ -81303,6 +81317,15 @@
             },
             "in": "query",
             "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "channelAccountId",
             "required": false
           },
           {
@@ -81410,6 +81433,10 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "channelAccountName": {
+                            "type": "string",
+                            "nullable": true
+                          },
                           "canReply": {
                             "type": "boolean"
                           },
@@ -81466,7 +81493,8 @@
                             "enum": [
                               "birthdays",
                               "general",
-                              "marketing"
+                              "marketing",
+                              "gm"
                             ]
                           },
                           "intent": {
@@ -81603,6 +81631,7 @@
                           "id",
                           "channel",
                           "channelAccountId",
+                          "channelAccountName",
                           "canReply",
                           "contact",
                           "category",
@@ -81701,6 +81730,10 @@
                       "type": "string",
                       "format": "uuid"
                     },
+                    "channelAccountName": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "canReply": {
                       "type": "boolean"
                     },
@@ -81757,7 +81790,8 @@
                       "enum": [
                         "birthdays",
                         "general",
-                        "marketing"
+                        "marketing",
+                        "gm"
                       ]
                     },
                     "intent": {
@@ -82029,6 +82063,7 @@
                     "id",
                     "channel",
                     "channelAccountId",
+                    "channelAccountName",
                     "canReply",
                     "contact",
                     "category",
@@ -82760,12 +82795,16 @@
                         },
                         "marketing": {
                           "type": "integer"
+                        },
+                        "gm": {
+                          "type": "integer"
                         }
                       },
                       "required": [
                         "birthdays",
                         "general",
-                        "marketing"
+                        "marketing",
+                        "gm"
                       ],
                       "additionalProperties": false
                     },
@@ -82920,7 +82959,10 @@
                       "handover_marketing",
                       "out_of_hours",
                       "handover_general",
-                      "follow_up"
+                      "follow_up",
+                      "closing_birthday",
+                      "closing_gm",
+                      "closing_branch"
                     ]
                   },
                   "language": {
@@ -83169,7 +83211,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "teamId": {
@@ -83397,7 +83440,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "teamId": {
@@ -83614,7 +83658,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "teamId": {
@@ -83822,7 +83867,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "teamId": {
@@ -84037,6 +84083,21 @@
                           "kind": {
                             "type": "string",
                             "enum": [
+                              "gm"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
                               "reception"
                             ]
                           },
@@ -84100,7 +84161,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "teamId": {
@@ -84329,7 +84391,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "teamId": {
@@ -84572,7 +84635,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "teamId": {
@@ -84780,7 +84844,8 @@
                           "enum": [
                             "birthdays",
                             "general",
-                            "marketing"
+                            "marketing",
+                            "gm"
                           ]
                         },
                         "teamId": {
@@ -85071,7 +85136,10 @@
                 "handover_marketing",
                 "out_of_hours",
                 "handover_general",
-                "follow_up"
+                "follow_up",
+                "closing_birthday",
+                "closing_gm",
+                "closing_branch"
               ]
             },
             "in": "query",

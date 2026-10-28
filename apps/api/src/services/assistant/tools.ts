@@ -550,6 +550,8 @@ export const PLATFORM_TOOL_ADAPTERS: readonly PlatformToolAdapter[] = [
         { team: 'birthdays', category: 'birthdays', conversations: num(by.birthdays) ?? 0 },
         { team: 'reception', category: 'general', conversations: num(by.general) ?? 0 },
         { team: 'marketing', category: 'marketing', conversations: num(by.marketing) ?? 0 },
+        // The playbook's GM queue (SCRUM-220): the GM team's category.
+        { team: 'gm', category: 'gm', conversations: num(by.gm) ?? 0 },
       ];
       const most = Math.max(...teams.map((t) => t.conversations));
       const leaders = teams.filter((t) => t.conversations === most && most > 0).map((t) => t.team);

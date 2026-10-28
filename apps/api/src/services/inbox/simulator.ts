@@ -9,6 +9,7 @@ import {
   message,
   participant,
   type Db,
+  type InboxCategory,
 } from '@oto/db';
 import {
   seedInboxDemo,
@@ -94,7 +95,7 @@ export interface SimulatedPress {
   from: string;
   name?: string;
   text: string;
-  hint?: { category?: 'birthdays' | 'general' | 'marketing'; intent?: string; language?: string; branchId?: string };
+  hint?: { category?: InboxCategory; intent?: string; language?: string; branchId?: string };
 }
 
 export async function simulateInbound(

@@ -48,6 +48,7 @@ const TEAM_OF_CATEGORY: Record<InboxCategory, InboxTeamKey> = {
   birthdays: 'birthdays',
   general: 'reception',
   marketing: 'marketing',
+  gm: 'gm',
 };
 
 export interface RouteInput {

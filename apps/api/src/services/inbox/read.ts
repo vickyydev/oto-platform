@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, sql, type SQL } from 'drizzle-orm';
-import { schema as s, type Db } from '@oto/db';
+import { schema as s, type Db, type InboxCategory, type InboxTeamKey } from '@oto/db';
 import {
   INBOX_DAY_TIMEZONE,
   isUnanswered,
@@ -126,6 +126,8 @@ async function accountNames(db: Db | Tx, operatorId: string, ids: Iterable<strin
 const rowColumns = {
   id: s.conversation.id,
   channelAccountId: s.conversation.channelAccountId,
+  /** The number's display name: every row says which number it came in on (SCRUM-220 playbook). */
+  channelAccountName: s.channelAccount.displayName,
   channel: s.channelAccount.channel,
   canReply: s.channelAccount.canReply,
   contactId: s.contact.id,
@@ -246,6 +248,7 @@ function toRow(r: RawRow, assignments: InboxConversationRow['assignments']): Inb
     id: r.id,
     channel: r.channel,
     channelAccountId: r.channelAccountId,
+    channelAccountName: r.channelAccountName,
     canReply: r.canReply,
     contact: {
       id: r.contactId,
@@ -284,6 +287,8 @@ function filterSql(q: InboxConversationListQuery): SQL[] {
   }
   if (q.status) where.push(eq(s.conversation.status, q.status));
   if (q.language) where.push(eq(s.conversation.language, q.language));
+  // SCRUM-220 playbook, the named inboxes: the number the conversation came in on.
+  if (q.channelAccountId) where.push(eq(s.conversation.channelAccountId, q.channelAccountId));
   if (q.unanswered === 'true') where.push(unansweredSql);
   if (q.phone !== undefined) {
     // SCRUM-648 (support lookup): the contact's stored E.164, never a partial match.
@@ -675,7 +680,7 @@ export async function dashboardScopeOf(db: Db, viewer: InboxViewer): Promise<Inb
 export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Promise<InboxDashboard> {
   const day = inboxToday(now);
   const start = dayStartSql(day);
-  const activeIn = (category: 'birthdays' | 'general' | 'marketing'): SQL =>
+  const activeIn = (category: InboxCategory): SQL =>
     sql`count(*) filter (where ${s.conversation.status} = 'active' and ${s.conversation.category} = ${category})::int`;
   const [row] = await db
     .select({
@@ -689,6 +694,7 @@ export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Pr
       birthdays: activeIn('birthdays').mapWith(Number),
       general: activeIn('general').mapWith(Number),
       marketing: activeIn('marketing').mapWith(Number),
+      gm: activeIn('gm').mapWith(Number),
     })
     .from(s.conversation)
     .where(visibleConversationsSql(viewer));
@@ -705,6 +711,7 @@ export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Pr
       birthdays: Number(row?.birthdays ?? 0),
       general: Number(row?.general ?? 0),
       marketing: Number(row?.marketing ?? 0),
+      gm: Number(row?.gm ?? 0),
     },
     day,
   };
@@ -712,10 +719,11 @@ export async function inboxDashboard(db: Db, viewer: InboxViewer, now: Date): Pr
 
 // --- The viewer --------------------------------------------------------------------------
 
-const VIEW_OF_TEAM: Record<'birthdays' | 'reception' | 'marketing', InboxViewRole> = {
+const VIEW_OF_TEAM: Record<InboxTeamKey, InboxViewRole> = {
   birthdays: 'events',
   reception: 'reception',
   marketing: 'marketing',
+  gm: 'gm',
 };
 
 /**
@@ -726,7 +734,7 @@ const VIEW_OF_TEAM: Record<'birthdays' | 'reception' | 'marketing', InboxViewRol
  */
 export function viewRolesOf(
   viewer: InboxViewer,
-  teams: Array<{ key: 'birthdays' | 'reception' | 'marketing'; departmentId: string | null }>,
+  teams: Array<{ key: InboxTeamKey; departmentId: string | null }>,
   readsAnywhere: boolean,
 ): InboxViewRole[] {
   if (viewer.scope.operatorWide) return ['owner'];

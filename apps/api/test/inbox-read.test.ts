@@ -125,7 +125,7 @@ async function staff(
   return accountId;
 }
 
-async function teamOf(operatorId: string, key: 'birthdays' | 'reception' | 'marketing', branchId: string | null = null) {
+async function teamOf(operatorId: string, key: 'birthdays' | 'reception' | 'marketing' | 'gm', branchId: string | null = null) {
   const [t] = await ctx.db
     .select()
     .from(s.team)
@@ -180,6 +180,12 @@ beforeAll(async () => {
   coordinatorId = await staff(oto, '+66810000983', 'Read Test Coordinator', 'inbox_agent', {
     scopeType: 'department',
     scopeId: entertainment,
+  });
+  // SCRUM-220 playbook: a member of the GM team, by the department grant.
+  const gmTeam = await teamOf(oto, 'gm');
+  await staff(oto, '+66810000984', 'Read Test GM Agent', 'inbox_agent', {
+    scopeType: 'department',
+    scopeId: gmTeam.departmentId!,
   });
   await ctx.db.insert(s.assignment).values({
     id: newId(),
@@ -241,6 +247,7 @@ beforeAll(async () => {
   await sign('receptionCentral', '+66810000981', PASSWORD);
   await sign('chalongManager', '+66810000982', PASSWORD);
   await sign('coordinator', '+66810000983', PASSWORD);
+  await sign('gmAgent', '+66810000984', PASSWORD);
   await sign('admin', ADMIN.phone, ADMIN.password);
   await sign('counter', RECEPTION.phone, RECEPTION.password);
   await sign('secondAdmin', SECOND_OPERATOR_ADMIN.phone, SECOND_OPERATOR_ADMIN.password);
@@ -354,6 +361,8 @@ describe('who sees which conversation (plan §3.2)', () => {
     ['chalongManager', ['demo-04', 'demo-06']],
     // (d) the manual-only person sees only the conversation she is on.
     ['coordinator', ['demo-01']],
+    // A GM team member sees the GM queue's, and the demo has none (SCRUM-220 playbook).
+    ['gmAgent', []],
     // The other operator's administrator sees only its own.
     ['secondAdmin', ['second']],
   ])('%s sees %j', async (who, expected) => {
@@ -425,6 +434,8 @@ describe('the tabs (ported code, the owner-note pinned on purpose)', () => {
     // A reader in no team: the default arm of tabsForRole.
     ['coordinator', ['staff'], ['mine', 'team', 'handled']],
     ['chalongManager', ['staff'], ['mine', 'team', 'handled']],
+    // SCRUM-220 playbook: the GM team's view, the default arm too.
+    ['gmAgent', ['gm'], ['mine', 'team', 'handled']],
   ])('%s is %j with tabs %j', async (who, roles, tabs) => {
     const me = await get<InboxMe>(who, '/inbox/me');
     expect(me.status).toBe(200);
@@ -547,6 +558,44 @@ describe('the filters', () => {
   });
 });
 
+describe('the source number (SCRUM-220 playbook: named inboxes, every row labelled)', () => {
+  const accountsOf = async () =>
+    ctx.db
+      .select({ id: s.channelAccount.id, displayName: s.channelAccount.displayName })
+      .from(s.channelAccount)
+      .where(eq(s.channelAccount.operatorId, oto));
+
+  it('every row and the detail name the number the conversation came in on', async () => {
+    const names = new Map((await accountsOf()).map((a) => [a.id, a.displayName]));
+    const all = (await listAll('gm', 'limit=100')).conversations;
+    expect(all.length).toBe(10);
+    for (const c of all) expect(c.channelAccountName, c.id).toBe(names.get(c.channelAccountId));
+    expect(new Set(all.map((c) => c.channelAccountName))).toContain(DEMO_CHANNEL_ACCOUNTS.wa_central.displayName);
+    const d = (await get<InboxConversationDetail>('gm', `/inbox/conversations/${conv['demo-09']}`)).body;
+    expect(d.channelAccountName).toBe(names.get(d.channelAccountId));
+  });
+
+  it('filters the list to one number, inside what the viewer can see', async () => {
+    const facts = await factsOf();
+    const centralNumber = (await accountsOf()).find((a) => a.displayName === DEMO_CHANNEL_ACCOUNTS.wa_central.displayName)!;
+    const expected = facts.filter((f) => f.channelAccountId === centralNumber.id).map((f) => f.id).sort();
+    expect(expected.length).toBeGreaterThan(0);
+    expect(expected.length).toBeLessThan(10);
+    const gm = await listAll('gm', `channelAccountId=${centralNumber.id}&limit=100`);
+    expect(gm.conversations.map((c) => c.id).sort()).toEqual(expected);
+    expect(gm.conversations.every((c) => c.channelAccountId === centralNumber.id)).toBe(true);
+    // The tab counts are over everything visible, before filters, as for every filter.
+    expect(gm.tabCounts).toEqual((await listAll('gm', 'limit=100')).tabCounts);
+    // Visibility still holds: a Birthdays agent sees only the team's threads on that number.
+    const bday = await listAll('bdayTh', `channelAccountId=${centralNumber.id}&limit=100`);
+    const bdayAll = (await listAll('bdayTh', 'limit=100')).conversations.map((c) => c.id);
+    expect(bday.conversations.map((c) => c.id).sort()).toEqual(expected.filter((id) => bdayAll.includes(id)));
+    // A number that is not this operator's matches nothing; a malformed id is refused.
+    expect((await listAll('gm', `channelAccountId=${newId()}`)).conversations).toHaveLength(0);
+    expect((await get('gm', '/inbox/conversations?channelAccountId=reception')).status).toBe(400);
+  });
+});
+
 describe('one conversation', () => {
   it('the header, the assignment strip, and the timeline without a body', async () => {
     const res = await get<InboxConversationDetail>('gm', `/inbox/conversations/${conv['demo-09']}`);
@@ -665,10 +714,13 @@ describe('the dashboard', () => {
           birthdays: active.filter((f) => f.category === 'birthdays').length,
           general: active.filter((f) => f.category === 'general').length,
           marketing: active.filter((f) => f.category === 'marketing').length,
+          gm: active.filter((f) => f.category === 'gm').length,
         },
         day,
       });
-      expect(res.body.byCategory.birthdays + res.body.byCategory.general + res.body.byCategory.marketing).toBe(res.body.active);
+      expect(
+        res.body.byCategory.birthdays + res.body.byCategory.general + res.body.byCategory.marketing + res.body.byCategory.gm,
+      ).toBe(res.body.active);
     };
     // R9: the operator-wide GM's numbers are the whole inbox's; a team member's are their teams'; the
     // manual-only coordinator, in no inbox team, sees — and averages — only what she holds.
@@ -683,6 +735,7 @@ describe('the dashboard', () => {
       birthdays: demoActive.filter((f) => f.category === 'birthdays').length,
       general: demoActive.filter((f) => f.category === 'general').length,
       marketing: demoActive.filter((f) => f.category === 'marketing').length,
+      gm: demoActive.filter((f) => f.category === 'gm').length,
     });
     // The demo data holds three handled threads, so the active population is smaller than every thread's.
     expect(demoActive.length).toBe(demoIds.length - 3);
@@ -699,6 +752,7 @@ describe('the viewer and the templates', () => {
       ['reception', false],
       ['reception', false],
       ['marketing', false],
+      ['gm', false],
     ]);
     expect(me.capabilities).toEqual({ writes: true, dashboard: true, assign: false, move: false, reopen: false, templates: false, kb: false, ai: false });
     // No simulator panel for an agent: the suite runs the simulator, but they hold no inbox:channel:manage.
@@ -726,11 +780,23 @@ describe('the viewer and the templates', () => {
   it('templates: the active rows, optionally one language', async () => {
     const all = await get<{ templates: Array<{ key: string; language: string; needsTranslation: boolean }> }>('bdayTh', '/inbox/templates');
     expect(all.status).toBe(200);
-    // Ten keys (handover_general joined with SCRUM-590, follow_up with the SCRUM-220 test night) in three languages.
-    expect(all.body.templates).toHaveLength(30);
+    // Thirteen keys (handover_general joined with SCRUM-590, follow_up with the SCRUM-220 test night, the three
+    // closing lines with the SCRUM-220 playbook) in three languages.
+    expect(all.body.templates).toHaveLength(39);
+    expect(all.body.templates.filter((t) => t.key.startsWith('closing_')).map((t) => `${t.key}:${t.language}`).sort()).toEqual([
+      'closing_birthday:en',
+      'closing_birthday:ru',
+      'closing_birthday:th',
+      'closing_branch:en',
+      'closing_branch:ru',
+      'closing_branch:th',
+      'closing_gm:en',
+      'closing_gm:ru',
+      'closing_gm:th',
+    ]);
     expect(all.body.templates.filter((t) => t.key === 'follow_up').map((t) => t.language).sort()).toEqual(['en', 'ru', 'th']);
     const th = await get<{ templates: Array<{ language: string; needsTranslation: boolean }> }>('bdayTh', '/inbox/templates?language=th');
-    expect(th.body.templates).toHaveLength(10);
+    expect(th.body.templates).toHaveLength(13);
     // Thai in its own words since the test night: nothing waits for a translator.
     expect(th.body.templates.every((t) => t.language === 'th' && !t.needsTranslation)).toBe(true);
     // An archived template is gone from the composer.
@@ -739,7 +805,7 @@ describe('the viewer and the templates', () => {
       .from(s.template)
       .where(and(eq(s.template.operatorId, oto), eq(s.template.key, 'welcome'), eq(s.template.language, 'ru')));
     await ctx.db.update(s.template).set({ archivedAt: new Date() }).where(inArray(s.template.id, [one!.id]));
-    expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(29);
+    expect((await get<{ templates: unknown[] }>('bdayTh', '/inbox/templates')).body.templates).toHaveLength(38);
   });
 });
 

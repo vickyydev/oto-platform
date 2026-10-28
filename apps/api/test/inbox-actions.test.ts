@@ -85,7 +85,7 @@ async function divertToOf(who: string, id: string): Promise<{ accountId: string 
   return (res.json() as { divertTo: { accountId: string } | null }).divertTo;
 }
 
-async function teamRow(key: 'birthdays' | 'reception' | 'marketing', branchId: string | null) {
+async function teamRow(key: 'birthdays' | 'reception' | 'marketing' | 'gm', branchId: string | null) {
   const [t] = await ctx.db
     .select()
     .from(s.team)
@@ -613,6 +613,24 @@ describe('move: another team, re-routed', () => {
       [0, people.bdayA, 'move'],
       [1, people.bdayB, 'move'],
     ]);
+  });
+
+  it('to the GM queue (SCRUM-220 playbook): category gm, the GM team, its blank rule seats the team itself', async () => {
+    const gmTeam = await teamRow('gm', null);
+    const id = await bday();
+    const res = await call('gm', 'POST', at(id, 'move'), { dest: { kind: 'gm' } });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body).toMatchObject({ moved: true, conversation: { category: 'gm', teamId: gmTeam.id, branchId: central } });
+    expect(await seated(id)).toEqual([[0, gmTeam.id, 'move']]);
+    const again = await call<Refusal>('gm', 'POST', at(id, 'move'), { dest: { kind: 'gm' } });
+    expect(again.body.error.code).toBe('ALREADY_IN_TEAM');
+  });
+
+  it('a new gm-classified thread is routed to the GM team (SCRUM-220 playbook)', async () => {
+    const gmTeam = await teamRow('gm', null);
+    const id = await newThread({ category: 'gm', language: 'en' });
+    expect(await convRow(id)).toMatchObject({ category: 'gm', teamId: gmTeam.id });
+    expect(await seated(id)).toEqual([[0, gmTeam.id, 'auto']]);
   });
 
   it('a reception destination with no desk is 404', async () => {

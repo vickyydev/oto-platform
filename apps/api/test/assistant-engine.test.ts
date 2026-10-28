@@ -1191,14 +1191,14 @@ describe('the test night (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")',
     await customer(aw, account, nextPhone(), 'ZZ is the party room free on Sunday?');
     await customer(aw, account, nextPhone(), 'ZZ do you have parking?');
     const gm = await staff(w, 'ZZ Hana GM', 'inbox_manager', { scopeType: 'operator', scopeId: w.oto });
-    const direct = await call<{ byCategory: { birthdays: number; general: number; marketing: number }; unanswered: number; active: number }>(
+    const direct = await call<{ byCategory: { birthdays: number; general: number; marketing: number; gm: number }; unanswered: number; active: number }>(
       w,
       gm.cookie,
       'GET',
       '/inbox/dashboard',
     );
     expect(direct.status).toBe(200);
-    const { general, birthdays, marketing } = direct.body.byCategory;
+    const { general, birthdays, marketing, gm: gmQueue } = direct.body.byCategory;
     expect(general).toBeGreaterThanOrEqual(2);
     const fake = script(
       w,
@@ -1215,6 +1215,8 @@ describe('the test night (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")',
         { team: 'birthdays', category: 'birthdays', conversations: birthdays },
         { team: 'reception', category: 'general', conversations: general },
         { team: 'marketing', category: 'marketing', conversations: marketing },
+        // The playbook's GM queue (SCRUM-220): its own team, counted beside the other three.
+        { team: 'gm', category: 'gm', conversations: gmQueue },
       ],
       mostConversations: ['reception'],
     });

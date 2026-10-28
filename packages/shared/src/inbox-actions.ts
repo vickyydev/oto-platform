@@ -39,10 +39,15 @@ export type InboxPrimaryBody = z.infer<typeof InboxPrimaryBodySchema>;
 /** `POST /inbox/conversations/{id}/support`. */
 export const InboxSupportBodySchema = z.object({ accountId: Uuid });
 
-/** Where a conversation can be moved: the four destinations of the team badge (Brief §8). */
+/**
+ * Where a conversation can be moved: the destinations of the team badge
+ * (Brief §8), and the GM queue (SCRUM-220 playbook) — operator-wide, like
+ * Birthdays & Events and Marketing.
+ */
 export const InboxMoveDestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('birthdays') }),
   z.object({ kind: z.literal('marketing') }),
+  z.object({ kind: z.literal('gm') }),
   z.object({ kind: z.literal('reception'), branchId: Uuid }),
 ]);
 

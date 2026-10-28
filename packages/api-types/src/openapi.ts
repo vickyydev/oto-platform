@@ -19999,7 +19999,7 @@ export interface paths {
                         text: string;
                         hint?: {
                             /** @enum {string} */
-                            category?: "birthdays" | "general" | "marketing";
+                            category?: "birthdays" | "general" | "marketing" | "gm";
                             intent?: string;
                             language?: string;
                             /** Format: uuid */
@@ -26476,7 +26476,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 /** @enum {string} */
-                                key: "birthdays" | "reception" | "marketing";
+                                key: "birthdays" | "reception" | "marketing" | "gm";
                                 name: string;
                                 /** Format: uuid */
                                 branchId: string | null;
@@ -26515,7 +26515,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 /** @enum {string} */
-                                key: "birthdays" | "reception" | "marketing";
+                                key: "birthdays" | "reception" | "marketing" | "gm";
                                 name: string;
                                 /** Format: uuid */
                                 branchId: string | null;
@@ -26540,7 +26540,7 @@ export interface paths {
                         /** Format: uuid */
                         id?: string;
                         /** @enum {string} */
-                        key: "birthdays" | "reception" | "marketing";
+                        key: "birthdays" | "reception" | "marketing" | "gm";
                         /** Format: uuid */
                         branchId: string | null;
                         name: string;
@@ -26563,7 +26563,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 /** @enum {string} */
-                                key: "birthdays" | "reception" | "marketing";
+                                key: "birthdays" | "reception" | "marketing" | "gm";
                                 name: string;
                                 /** Format: uuid */
                                 branchId: string | null;
@@ -26675,7 +26675,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 /** @enum {string} */
-                                key: "birthdays" | "reception" | "marketing";
+                                key: "birthdays" | "reception" | "marketing" | "gm";
                                 name: string;
                                 /** Format: uuid */
                                 branchId: string | null;
@@ -26728,7 +26728,7 @@ export interface paths {
                                 teamId: string;
                                 teamName: string | null;
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 language: string | null;
                                 /** Format: uuid */
                                 branchId: string | null;
@@ -26771,7 +26771,7 @@ export interface paths {
                         /** Format: uuid */
                         teamId: string;
                         /** @enum {string} */
-                        category: "birthdays" | "general" | "marketing";
+                        category: "birthdays" | "general" | "marketing" | "gm";
                         language?: string | null;
                         /** Format: uuid */
                         branchId?: string | null;
@@ -26804,7 +26804,7 @@ export interface paths {
                                 teamId: string;
                                 teamName: string | null;
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 language: string | null;
                                 /** Format: uuid */
                                 branchId: string | null;
@@ -26892,7 +26892,7 @@ export interface paths {
                         /** Format: uuid */
                         teamId?: string;
                         /** @enum {string} */
-                        category?: "birthdays" | "general" | "marketing";
+                        category?: "birthdays" | "general" | "marketing" | "gm";
                         language?: string | null;
                         /** Format: uuid */
                         branchId?: string | null;
@@ -26923,7 +26923,7 @@ export interface paths {
                                 teamId: string;
                                 teamName: string | null;
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 language: string | null;
                                 /** Format: uuid */
                                 branchId: string | null;
@@ -32347,13 +32347,13 @@ export interface paths {
                             /** Format: uuid */
                             accountId: string;
                             name: string | null;
-                            roles: ("owner" | "events" | "reception" | "marketing" | "staff")[];
+                            roles: ("owner" | "events" | "reception" | "marketing" | "staff" | "gm")[];
                             tabs: ("mine" | "team" | "handled")[];
                             teams: {
                                 /** Format: uuid */
                                 id: string;
                                 /** @enum {string} */
-                                kind: "birthdays" | "reception" | "marketing";
+                                kind: "birthdays" | "reception" | "marketing" | "gm";
                                 name: string;
                                 colour: string;
                                 /** Format: uuid */
@@ -32435,11 +32435,12 @@ export interface paths {
             parameters: {
                 query?: {
                     tab?: "mine" | "team" | "handled";
-                    category?: "birthdays" | "general" | "marketing";
+                    category?: "birthdays" | "general" | "marketing" | "gm";
                     branchId?: string;
                     status?: "active" | "handled";
                     language?: string;
                     q?: string;
+                    channelAccountId?: string;
                     unanswered?: "true" | "false";
                     phone?: string;
                     handledFrom?: string;
@@ -32468,6 +32469,7 @@ export interface paths {
                                 channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
                                 /** Format: uuid */
                                 channelAccountId: string;
+                                channelAccountName: string | null;
                                 canReply: boolean;
                                 contact: {
                                     /** Format: uuid */
@@ -32481,7 +32483,7 @@ export interface paths {
                                     erased: boolean;
                                 };
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 intent: string | null;
                                 language: string | null;
                                 /** Format: uuid */
@@ -32568,6 +32570,7 @@ export interface paths {
                             channel: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform";
                             /** Format: uuid */
                             channelAccountId: string;
+                            channelAccountName: string | null;
                             canReply: boolean;
                             contact: {
                                 /** Format: uuid */
@@ -32581,7 +32584,7 @@ export interface paths {
                                 erased: boolean;
                             };
                             /** @enum {string} */
-                            category: "birthdays" | "general" | "marketing";
+                            category: "birthdays" | "general" | "marketing" | "gm";
                             intent: string | null;
                             language: string | null;
                             /** Format: uuid */
@@ -32942,6 +32945,7 @@ export interface paths {
                                 birthdays: number;
                                 general: number;
                                 marketing: number;
+                                gm: number;
                             };
                             day: string;
                         };
@@ -33018,7 +33022,7 @@ export interface paths {
                         /** Format: uuid */
                         id?: string;
                         /** @enum {string} */
-                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up";
+                        key: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch";
                         language: string;
                         /** @enum {string|null} */
                         channel?: "whatsapp" | "instagram" | "facebook" | "line" | "telegram" | "webform" | null;
@@ -33117,7 +33121,7 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "active" | "handled";
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 /** Format: uuid */
                                 teamId: string | null;
                                 /** Format: uuid */
@@ -33216,7 +33220,7 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "active" | "handled";
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 /** Format: uuid */
                                 teamId: string | null;
                                 /** Format: uuid */
@@ -33309,7 +33313,7 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "active" | "handled";
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 /** Format: uuid */
                                 teamId: string | null;
                                 /** Format: uuid */
@@ -33399,7 +33403,7 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "active" | "handled";
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 /** Format: uuid */
                                 teamId: string | null;
                                 /** Format: uuid */
@@ -33486,6 +33490,9 @@ export interface paths {
                             kind: "marketing";
                         } | {
                             /** @enum {string} */
+                            kind: "gm";
+                        } | {
+                            /** @enum {string} */
                             kind: "reception";
                             /** Format: uuid */
                             branchId: string;
@@ -33507,7 +33514,7 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "active" | "handled";
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 /** Format: uuid */
                                 teamId: string | null;
                                 /** Format: uuid */
@@ -33609,7 +33616,7 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "active" | "handled";
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 /** Format: uuid */
                                 teamId: string | null;
                                 /** Format: uuid */
@@ -33704,7 +33711,7 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "active" | "handled";
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 /** Format: uuid */
                                 teamId: string | null;
                                 /** Format: uuid */
@@ -33795,7 +33802,7 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "active" | "handled";
                                 /** @enum {string} */
-                                category: "birthdays" | "general" | "marketing";
+                                category: "birthdays" | "general" | "marketing" | "gm";
                                 /** Format: uuid */
                                 teamId: string | null;
                                 /** Format: uuid */
@@ -33923,7 +33930,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up";
+                    key?: "welcome" | "handover_birthday" | "handover_events" | "handover_complaint_online" | "handover_complaint_onsite" | "handover_lost_found" | "handover_marketing" | "out_of_hours" | "handover_general" | "follow_up" | "closing_birthday" | "closing_gm" | "closing_branch";
                     language?: string;
                     archived?: "true" | "false";
                 };
