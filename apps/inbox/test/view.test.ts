@@ -5,6 +5,7 @@ import { HANDOFF_FALLBACK, HANDOFF_REFUSALS, handoffRefusal, readHandoffToken } 
 import { stateForRefusal } from '@/auth/SessionContext';
 import { EMPTY_FILTERS, activeFilterCount, listQuery } from '@/lib/query';
 import {
+  RETHINK_READING_LABEL,
   SHADOW_LABEL,
   SUPPORT_FULL_HINT,
   TRANSLATION_PENDING,
@@ -449,6 +450,27 @@ describe('runs of system pills in one line (customer-AI test night, W7)', () => 
     // The pills keep the time they were written: only their place moves.
     const g = items.at(-1)!;
     expect(g.kind === 'group' && g.at).toBe(at);
+  });
+
+  it('SCRUM-678: staff see the assistant corrected itself — the pills say so, and the reading row says what it is', () => {
+    const rethink = { rethought: true, why: 'WRONG_TOPIC', readingMessageId: 'rd', ended: 'reply', rounds: [] };
+    // An answer the assistant re-read: a pill, where a plain answer has none.
+    expect(eventText(event({ kind: 'ai_replied', actorKind: 'ai', payload: { turnId: 't', rethink } }), ctx)).toBe('AI re-read the message before replying');
+    expect(eventText(event({ kind: 'ai_replied', actorKind: 'ai', payload: { turnId: 't' } }), ctx)).toBeNull();
+    // A hand-over says it too, and what the coherence review left out.
+    const coherence = { state: 'reviewed', dropped: [{ index: 2, origin: 'template', key: 'closing_booking' }], merged: 0 };
+    expect(
+      eventText(event({ kind: 'ai_handover', actorKind: 'ai', payload: { intent: 'special_event', reroutedTeamId: T_BIRTHDAYS, rethink, coherence } }), ctx),
+    ).toBe('AI handed over to Birthdays & Events · special event · re-read the message · 1 line left out');
+    const h = event({ id: 'h', kind: 'ai_handover', actorKind: 'ai', payload: { reroutedTeamId: T_BIRTHDAYS, rethink, coherence } });
+    expect(groupSummary([{ item: { text: 'x' }, event: h }], ctx)).toBe('AI handed over to Birthdays & Events — re-read the message, 1 line left out');
+    // The reviewer's reading is a never-sent row of its own, labelled as what it is.
+    const reading = msg('rd', ms(-1), { direction: 'outbound', authorKind: 'ai', body: 'Asks whether a camp runs today', providerStatus: 'shadow' as never });
+    const items = timeline([reading], [h], true, ctx);
+    expect(items[0]).toMatchObject({ kind: 'shadow', id: 'rd', label: RETHINK_READING_LABEL });
+    expect(RETHINK_READING_LABEL).toMatch(/re-read/);
+    // Any other shadow row keeps the shadow label.
+    expect(timeline([{ ...reading, id: 'other' }], [h], true, ctx)[0]).not.toHaveProperty('label');
   });
 
   it('moves only the hand-over’s own moment: a later pill, a person’s pill and an answer with no hand-over stay where they were', () => {

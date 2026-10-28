@@ -727,7 +727,7 @@ export function ChatPanel({
           )}
           {items.map((it) =>
             it.kind === 'shadow' ? (
-              <ShadowBubble key={it.id} text={it.text} at={it.at} now={now} />
+              <ShadowBubble key={it.id} text={it.text} at={it.at} now={now} {...(it.label ? { label: it.label } : {})} />
             ) : it.kind === 'group' ? (
               // One moment's pills in one line (customer-AI test night, W7), the pills under it on a press.
               <details key={it.id} className="my-1 flex flex-col items-center gap-1" data-pill-group={it.pills.length}>

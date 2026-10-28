@@ -416,8 +416,10 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
     personName(ctx, p.accountId) ?? teamName(ctx, p.teamId) ?? (p.assigneeKind === 'ai' ? 'the AI Assistant' : 'someone');
   switch (e.kind) {
     case 'received':
-    case 'ai_replied':
       return null;
+    // The bubbles say an answer; a rethought one (SCRUM-678) also says the assistant corrected itself.
+    case 'ai_replied':
+      return rethought(p) ? 'AI re-read the message before replying' : null;
     case 'classified': {
       const parts = ['AI'];
       if (str(p.language)) parts.push(`Language: ${langLabel(str(p.language))}`);
@@ -491,7 +493,8 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
     case 'ai_handover': {
       const team = teamName(ctx, p.reroutedTeamId);
       const intent = str(p.intent);
-      return `AI handed over to ${team ?? 'the team'}${intent ? ` · ${intentWords(intent)}` : ''}`;
+      const notes = turnNotes(p);
+      return `AI handed over to ${team ?? 'the team'}${intent ? ` · ${intentWords(intent)}` : ''}${notes.map((n) => ` · ${n}`).join('')}`;
     }
     case 'ai_silent':
       // §B.3: the pill says only that the assistant left this one for a person.
@@ -514,6 +517,25 @@ export function eventText(e: InboxEvent, ctx: PillContext): string | null {
     default:
       return e.kind.replace(/_/g, ' ');
   }
+}
+
+/** SCRUM-678: the turn was decided again after the reviewer read its first reply as off the topic. */
+function rethought(p: Record<string, unknown>): boolean {
+  return p.rethink !== null && typeof p.rethink === 'object' && (p.rethink as Record<string, unknown>).rethought === true;
+}
+
+/**
+ * What the assistant did to its own reply on the way out, from the turn's
+ * records (never text): it re-read the message (SCRUM-678), and the lines the
+ * coherence review left out (SCRUM-677).
+ */
+function turnNotes(p: Record<string, unknown>): string[] {
+  const notes: string[] = [];
+  if (rethought(p)) notes.push('re-read the message');
+  const c = p.coherence !== null && typeof p.coherence === 'object' ? (p.coherence as Record<string, unknown>) : null;
+  const dropped = c?.state === 'reviewed' && Array.isArray(c.dropped) ? c.dropped.length : 0;
+  if (dropped > 0) notes.push(`${dropped} line${dropped === 1 ? '' : 's'} left out`);
+  return notes;
 }
 
 /** An intent word as staff read it: `birthday_party` → "birthday party". */
@@ -564,8 +586,12 @@ export type PillItem = { kind: 'pill'; at: string; id: string; text: string; eve
 export type TimelineItem =
   | { kind: 'message'; at: string; message: Message }
   | PillItem
-  /** A shadow row: what the assistant would have said in shadow mode — never sent (customer-AI test night, W5). */
-  | { kind: 'shadow'; at: string; id: string; text: string; turnId: string | null }
+  /**
+   * A shadow row: what the assistant would have said in shadow mode — never
+   * sent (customer-AI test night, W5). `label` names a row that is no reply:
+   * the reviewer's reading of a message the assistant re-read (SCRUM-678).
+   */
+  | { kind: 'shadow'; at: string; id: string; text: string; turnId: string | null; label?: string }
   /** A run of system pills from one actor and moment, said in one line, expandable (customer-AI test night, W7). */
   | { kind: 'group'; at: string; id: string; summary: string; pills: PillItem[] };
 
@@ -579,6 +605,20 @@ export type TimelineItem =
 export const SHADOW_EVENT_KIND = 'ai_shadow';
 export const SHADOW_MESSAGE_STATUS = 'shadow';
 export const SHADOW_LABEL = 'Shadow suggestion — not sent';
+/** SCRUM-678: the row holding the coherence reviewer's reading of the customer's message. */
+export const RETHINK_READING_LABEL = 'How the assistant re-read the message — not sent';
+
+/** The reading rows the thread's rethink records name (`rethink.readingMessageId`). */
+function readingRows(events: readonly InboxEvent[]): Set<string> {
+  const out = new Set<string>();
+  for (const e of events) {
+    const r = e.payload.rethink;
+    if (r !== null && typeof r === 'object' && typeof (r as Record<string, unknown>).readingMessageId === 'string') {
+      out.add((r as Record<string, unknown>).readingMessageId as string);
+    }
+  }
+  return out;
+}
 
 export function isShadowMessage(m: Pick<Message, 'providerStatus'>): boolean {
   return (m.providerStatus as string | null) === SHADOW_MESSAGE_STATUS;
@@ -628,9 +668,17 @@ export function timeline(
   ctx: PillContext,
 ): TimelineItem[] {
   const oldest = messages[0]?.createdAt;
+  const readings = readingRows(events);
   const items: TimelineItem[] = messages.map((m) =>
     isShadowMessage(m)
-      ? { kind: 'shadow', at: m.createdAt, id: m.id, text: m.body ?? '', turnId: shadowTurnId(events, m.id) }
+      ? {
+          kind: 'shadow',
+          at: m.createdAt,
+          id: m.id,
+          text: m.body ?? '',
+          turnId: shadowTurnId(events, m.id),
+          ...(readings.has(m.id) ? { label: RETHINK_READING_LABEL } : {}),
+        }
       : { kind: 'message', at: m.createdAt, message: m },
   );
   for (const e of events) {
@@ -707,6 +755,7 @@ export function groupSummary(run: readonly { item: Pick<PillItem, 'text'>; event
     const team = teamName(ctx, p.reroutedTeamId) ?? 'the team';
     const parts: string[] = [];
     if (Array.isArray(p.brochureFileIds) && p.brochureFileIds.length > 0) parts.push('brochure sent');
+    parts.push(...turnNotes(p));
     const primary = run.find((r) => r.event.kind === 'assigned' && r.event.payload.slot === 'primary');
     const primaryName = primary ? seatName(primary.event.payload) : null;
     if (primaryName) parts.push(`${primaryName} primary`);
