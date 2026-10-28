@@ -1,0 +1,27 @@
+{
+  "ticket": "SCRUM-681",
+  "phase": "all",
+  "startedAt": "2026-10-28T18:40:30.734Z",
+  "finishedAt": "2026-10-28T18:48:18.758Z",
+  "nativeExitCode": 0,
+  "failed": 0,
+  "passed": 337,
+  "tests": [
+    {
+      "file": "apps/console/e2e/page-state-review.spec.ts",
+      "sha256": "438be336f36c26f87526ffa18677930a3620efe5020a50f126202e7c1bda384f"
+    },
+    {
+      "file": "apps/console/e2e/page-state-candidates.spec.ts",
+      "sha256": "e39d88db956dbd21e75f31b1b7b303cc2d3d52ccb3c199c0088dc51623b65b07"
+    }
+  ],
+  "sourceFiles": 317,
+  "sourceBeforeSha256": "4a66fde2a0ea94f809c1b34b61e0c6761c89b2351b2160a7ac0cab54bc86d062",
+  "sourceAfterSha256": "4a66fde2a0ea94f809c1b34b61e0c6761c89b2351b2160a7ac0cab54bc86d062",
+  "sourceBytesUnchanged": true,
+  "embeddedStopped": true,
+  "logSha256": "c93ebc974ead2f117641c2b2da4d601e6a1b944ea818b8c8f0a80d230fdcb60a",
+  "staging": false,
+  "docker": false
+}
