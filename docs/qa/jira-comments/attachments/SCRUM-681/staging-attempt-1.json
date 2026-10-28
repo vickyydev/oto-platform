@@ -1,0 +1,818 @@
+{
+  "ticket": "SCRUM-681",
+  "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+  "ciRunId": "40755193201",
+  "helperSha256": "506cf3a4627f5247c47273b299cdafa41aed534380bbc00f7308dc1b87948b21",
+  "startedAt": "2026-10-28T20:33:15.635Z",
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-28T20:33:19.927Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "ahead",
+      "testedBrowserSourceFiles": 319,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh5liq9lscs73e30220",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:21.341219Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh5lj29lscs73e3030g",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:51.685839Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-681-01-devices.png",
+      "at": "2026-10-28T20:33:37.752Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "ahead",
+      "testedBrowserSourceFiles": 319,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh5liq9lscs73e30220",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:21.341219Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh5lj29lscs73e3030g",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:51.685839Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-681-02-booths.png",
+      "at": "2026-10-28T20:33:46.875Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "ahead",
+      "testedBrowserSourceFiles": 319,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh5liq9lscs73e30220",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:21.341219Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh5lj29lscs73e3030g",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:51.685839Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-681-03-vouchers.png",
+      "at": "2026-10-28T20:33:55.209Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "ahead",
+      "testedBrowserSourceFiles": 319,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh5liq9lscs73e30220",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:21.341219Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh5lj29lscs73e3030g",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:51.685839Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-681-04-activity.png",
+      "at": "2026-10-28T20:34:03.630Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "ahead",
+      "testedBrowserSourceFiles": 319,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh5liq9lscs73e30220",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:21.341219Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh5lj29lscs73e3030g",
+          "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+          "finishedAt": "2026-10-28T20:31:51.685839Z"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "devices",
+      "path": "/devices",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:24.702Z",
+          "bodySha256": "dd1b64f74bec949727d55656b450b569f43f430d50e9e5e9e514b1bd8e1b5b82"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:25.544Z",
+          "bodySha256": "1209510c31f8089b40af4947244f6d89f26ce8e58d9f9b0bccd8b320802ad1f2"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:26.012Z",
+          "bodySha256": "dd1b64f74bec949727d55656b450b569f43f430d50e9e5e9e514b1bd8e1b5b82"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:26.505Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:26.532Z",
+          "bodySha256": "b5075d2837b96509f53a09f78fa67b2fe0b38271efe2f5427a5d6153dec5d167"
+        },
+        {
+          "label": "branch-stations",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:26.566Z",
+          "bodySha256": "035a8a2f7ec749540da915d0c2b5c9744b644902b7f411daa827a93d4882d043",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:26.581Z",
+          "bodySha256": "8851ab4b05d6f98df06ae04f6dde9cdf52595e96842657d7dd7721fece2492e3"
+        },
+        {
+          "label": "branch-boxes",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:26.672Z",
+          "bodySha256": "4692d93c3ab8ddddad8d909af59436c00d99be7ced7fb0ad50bb01470d2d17cc",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:26.901Z",
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:27.108Z",
+          "bodySha256": "7720f79066ff1ced1c2fd1922a69b88f54e3a19d7597290eebeda50cb64a902e"
+        },
+        {
+          "label": "branch-credentials",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:27.301Z",
+          "bodySha256": "5f499d3f602717a69a169989f3582470b0c5e9aa944e90f1cbd67ee1bb8088f0",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:27.792Z",
+          "bodySha256": "44e7bc124ce1f598373d3261c48cddf332c2b19fbf3cfca9d7c7d3bbb5eefe73"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:27.801Z",
+          "bodySha256": "f7d5d95e2efc41c3038a634cd2d8fdef61c26847cee8819598ade0f2f62e26d2"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:27.807Z",
+          "bodySha256": "4633e06eae73cfa6735e4b4a5b2d16c9f63cc8794629a8ef39dcf856557fbf4c"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:27.812Z",
+          "bodySha256": "93e2ff7165f049efa4cd083451f190cc63d4bf16fe392a9292bde57a784ae10a"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:27.845Z",
+          "bodySha256": "f7d5d95e2efc41c3038a634cd2d8fdef61c26847cee8819598ade0f2f62e26d2"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:27.846Z",
+          "bodySha256": "ff5061cf0be1b46f00c909a479e0c5fab98f46a9ddc3dbdff692d8cf9d1b9eb7"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:28.169Z",
+          "bodySha256": "a0811a50fa9a389751746230388210b767d9a60b0b562fa6e9ae5649bd474bcb"
+        },
+        {
+          "label": "branch-credentials",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:29.718Z",
+          "bodySha256": "cfdb9cbaacd00844d89857c9edfadd34624fcb513c4e230e63249ecd9a6fe76c",
+          "branchSha256": "6b4b344f036c3e50327463837013406862fc301d65ce83db12592bdd6c4c5354"
+        },
+        {
+          "label": "branch-boxes",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:29.732Z",
+          "bodySha256": "5a4a9cdf77af58024d5c2fde130b5c41625f5ebbf07da41c94173a1e99c7069b",
+          "branchSha256": "6b4b344f036c3e50327463837013406862fc301d65ce83db12592bdd6c4c5354"
+        },
+        {
+          "label": "branch-stations",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:29.732Z",
+          "bodySha256": "4dc47c7de853fd220e26f83c4e58b3e2425ba6ed54cd7562b85b30cbf8db055a",
+          "branchSha256": "6b4b344f036c3e50327463837013406862fc301d65ce83db12592bdd6c4c5354"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:30.205Z",
+          "bodySha256": "39543b9585d235b8f9c5ee9d5e9da93ef8396dc733daf0daea3a835106af69ea"
+        },
+        {
+          "label": "branch-boxes",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:31.744Z",
+          "bodySha256": "c6c17665a28747d2fe00cf32399059180d5d9cde91c9373c8b5183f22f3221c6",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "branch-credentials",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:31.748Z",
+          "bodySha256": "5f499d3f602717a69a169989f3582470b0c5e9aa944e90f1cbd67ee1bb8088f0",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "branch-stations",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:31.757Z",
+          "bodySha256": "035a8a2f7ec749540da915d0c2b5c9744b644902b7f411daa827a93d4882d043",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:32.228Z",
+          "bodySha256": "ff5061cf0be1b46f00c909a479e0c5fab98f46a9ddc3dbdff692d8cf9d1b9eb7"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:32.229Z",
+          "bodySha256": "f7d5d95e2efc41c3038a634cd2d8fdef61c26847cee8819598ade0f2f62e26d2"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:32.235Z",
+          "bodySha256": "f7d5d95e2efc41c3038a634cd2d8fdef61c26847cee8819598ade0f2f62e26d2"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:32.235Z",
+          "bodySha256": "4633e06eae73cfa6735e4b4a5b2d16c9f63cc8794629a8ef39dcf856557fbf4c"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:32.253Z",
+          "bodySha256": "a0811a50fa9a389751746230388210b767d9a60b0b562fa6e9ae5649bd474bcb"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:32.600Z",
+          "bodySha256": "44e7bc124ce1f598373d3261c48cddf332c2b19fbf3cfca9d7c7d3bbb5eefe73"
+        },
+        {
+          "label": "box-devices",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:32.624Z",
+          "bodySha256": "93e2ff7165f049efa4cd083451f190cc63d4bf16fe392a9292bde57a784ae10a"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "branchSelection": {
+        "executed": true,
+        "initialBranchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156",
+        "turns": [
+          {
+            "selectedBranchSha256": "6b4b344f036c3e50327463837013406862fc301d65ce83db12592bdd6c4c5354",
+            "at": "2026-10-28T20:33:31.277Z",
+            "freshReadTargetMatched": true
+          },
+          {
+            "selectedBranchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156",
+            "at": "2026-10-28T20:33:33.653Z",
+            "freshReadTargetMatched": true
+          }
+        ],
+        "restored": true,
+        "delayedFaultInjected": false
+      },
+      "pendingAtClose": 0
+    },
+    {
+      "id": "booths",
+      "path": "/devices/booths",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:38.817Z",
+          "bodySha256": "dd1b64f74bec949727d55656b450b569f43f430d50e9e5e9e514b1bd8e1b5b82"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:39.281Z",
+          "bodySha256": "1209510c31f8089b40af4947244f6d89f26ce8e58d9f9b0bccd8b320802ad1f2"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:39.759Z",
+          "bodySha256": "dd1b64f74bec949727d55656b450b569f43f430d50e9e5e9e514b1bd8e1b5b82"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.233Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.242Z",
+          "bodySha256": "8851ab4b05d6f98df06ae04f6dde9cdf52595e96842657d7dd7721fece2492e3"
+        },
+        {
+          "label": "branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.248Z",
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73"
+        },
+        {
+          "label": "booth-layouts",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.254Z",
+          "bodySha256": "0d1642c1f23cc4b06f5355067d59441bf08332198606fc01eb576ce9dc1b2311"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.258Z",
+          "bodySha256": "d83335d9c96b918b8cf4c3f6603220cc935a0012920c61ca6468ebd4dca22219"
+        },
+        {
+          "label": "voucher-definitions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.272Z",
+          "bodySha256": "dda28a887503e3070149859cafc02ebd036ba85633c6aaa1dfd4f846981931d2"
+        },
+        {
+          "label": "branch-booths",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.284Z",
+          "bodySha256": "eb7ce265ce1b0af681fb450755fd4ab14a61005a46395f26bc68b2baafac6785",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.766Z",
+          "bodySha256": "3f9518cc9d0e998d7f0c520412f79c83c67310a47746b24ea29251fd8edbe196"
+        },
+        {
+          "label": "booth-versions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.803Z",
+          "bodySha256": "9c26f65a0dfb280d177d66de9af259442dda69df97292979b58dfed6881f02e7"
+        },
+        {
+          "label": "booth-staff",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.804Z",
+          "bodySha256": "613d22c15e208e84877069ccf004d29f7c2074a3b0f541a83879114249e54bb7"
+        },
+        {
+          "label": "booth-status",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.823Z",
+          "bodySha256": "da2abf1fac088c61c2cf4ee897064c790f2fb690a0bb0cd1b1872ceb8437ed2b"
+        },
+        {
+          "label": "booth-draft",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.833Z",
+          "bodySha256": "e0e652515ac82c1f89e86f442081ccd7e06b95c731a90a87692ecfb503002998"
+        },
+        {
+          "label": "booth-screens",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:40.880Z",
+          "bodySha256": "aa7023a8c0a186f11e72a9b2f0accc50a836eb959ec7742ba8e5cefdaa1e559d"
+        },
+        {
+          "label": "branch-staff",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:41.376Z",
+          "bodySha256": "4647e550fb8121cf6a34ee76aebe2461613a4ad1e25951e2845cf28178e2a68d",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "booth-spins",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:41.377Z",
+          "bodySha256": "1e0ccaaa9f42f67f2caafc77c0b32b7cde9d7367f4cf76f972554a4b98dd49b0"
+        },
+        {
+          "label": "booth-duty",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:41.377Z",
+          "bodySha256": "d9731fce9e613f302476c8be2c72d8714804f1e092c71261d1010648edda4e61"
+        },
+        {
+          "label": "branch-staff",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:41.597Z",
+          "bodySha256": "4647e550fb8121cf6a34ee76aebe2461613a4ad1e25951e2845cf28178e2a68d",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "pure-booth-preview",
+          "method": "POST",
+          "status": 200,
+          "at": "2026-10-28T20:33:41.908Z",
+          "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "pendingAtClose": 0
+    },
+    {
+      "id": "vouchers",
+      "path": "/catalogue/vouchers",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:47.894Z",
+          "bodySha256": "dd1b64f74bec949727d55656b450b569f43f430d50e9e5e9e514b1bd8e1b5b82"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:48.364Z",
+          "bodySha256": "1209510c31f8089b40af4947244f6d89f26ce8e58d9f9b0bccd8b320802ad1f2"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:48.843Z",
+          "bodySha256": "dd1b64f74bec949727d55656b450b569f43f430d50e9e5e9e514b1bd8e1b5b82"
+        },
+        {
+          "label": "branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:49.312Z",
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73"
+        },
+        {
+          "label": "branch-staff",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:49.342Z",
+          "bodySha256": "4647e550fb8121cf6a34ee76aebe2461613a4ad1e25951e2845cf28178e2a68d",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:49.394Z",
+          "bodySha256": "8851ab4b05d6f98df06ae04f6dde9cdf52595e96842657d7dd7721fece2492e3"
+        },
+        {
+          "label": "voucher-definitions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:49.400Z",
+          "bodySha256": "dda28a887503e3070149859cafc02ebd036ba85633c6aaa1dfd4f846981931d2"
+        },
+        {
+          "label": "branch-booths",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:49.402Z",
+          "bodySha256": "eb7ce265ce1b0af681fb450755fd4ab14a61005a46395f26bc68b2baafac6785",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:49.670Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:49.688Z",
+          "bodySha256": "cb411e4a343c12f96bcea00ee340832e325a46d2b9a0147fdbf1c97aa952e06d"
+        },
+        {
+          "label": "voucher-ledger",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:49.774Z",
+          "bodySha256": "9dfae5e7395b2905dd7edec599b59d6c1f07599881ab026217201b8a1477797e"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:50.191Z",
+          "bodySha256": "7e719300e42a10c9eaa6f75f84bc90a77fb722aef0e09774cfde0b52ec73ba57"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "pendingAtClose": 0
+    },
+    {
+      "id": "activity",
+      "path": "/watch/activity",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:56.661Z",
+          "bodySha256": "dd1b64f74bec949727d55656b450b569f43f430d50e9e5e9e514b1bd8e1b5b82"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:57.125Z",
+          "bodySha256": "1209510c31f8089b40af4947244f6d89f26ce8e58d9f9b0bccd8b320802ad1f2"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:57.597Z",
+          "bodySha256": "dd1b64f74bec949727d55656b450b569f43f430d50e9e5e9e514b1bd8e1b5b82"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:58.056Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:58.075Z",
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:58.080Z",
+          "bodySha256": "df963e961bd70ff10a1908ad3f948c7655b1554f6515390370bfe768e875e0c9"
+        },
+        {
+          "label": "accounts",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:58.100Z",
+          "bodySha256": "f075b550375a2f6928240ceaae85a2984b2b9f384df334e08bf9be47844df270"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:58.101Z",
+          "bodySha256": "8851ab4b05d6f98df06ae04f6dde9cdf52595e96842657d7dd7721fece2492e3"
+        },
+        {
+          "label": "activity",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:58.149Z",
+          "bodySha256": "2836562df5aaba20944f474e28da7475934b879c1bc063480d6e2a5624510ec5"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T20:33:58.633Z",
+          "bodySha256": "b15f6d80f9d42687ea683f67728b53b5889f68adc67d83c0307edd2410d8ac94"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "failure": "PRIVACY_OR_CAPTION_CHECK_FAILED",
+      "pendingAtClose": 0
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "SCRUM-681-01-devices.png",
+      "sha256": "5bb22eb5ff1e2ad690400611fcd82e2c03eba947ad4d9fd99e541c86b4aef818",
+      "capturedAt": "2026-10-28T20:33:37.753Z",
+      "page": "/devices",
+      "labelledLocalCard": false,
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true
+      }
+    },
+    {
+      "file": "SCRUM-681-02-booths.png",
+      "sha256": "a26ffdf526de0bf3a61af198fead2ab6ab9a25bfa596c93bfc2e97d2cbe0d4f7",
+      "capturedAt": "2026-10-28T20:33:46.876Z",
+      "page": "/devices/booths",
+      "labelledLocalCard": false,
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true
+      }
+    },
+    {
+      "file": "SCRUM-681-03-vouchers.png",
+      "sha256": "20634349671b05833b659b9163172d6d459789a17f4801ea2e70b53606a7f2d2",
+      "capturedAt": "2026-10-28T20:33:55.210Z",
+      "page": "/catalogue/vouchers",
+      "labelledLocalCard": false,
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true
+      }
+    }
+  ],
+  "local": {
+    "inputSha256": "d48084865e3e650f57aca50c461ec37115bb8fb7a9640005d1247671ff872630",
+    "registrySha256": "450e71e0f1f402ed3ded2569cf360a3e7e36fce45a6d090c77c2890c6d9e5427",
+    "browser": {
+      "passed": 337,
+      "failed": 0,
+      "receiptSha256": "cddba1c3e5c1ef93bfe06f755ce73fefecfb081243255bf77f37eb318aeeb5d3",
+      "sourceManifestSha256": "66a74da64dcbf099a9eb29014341e9957d18f1c48a41689bf5079b11bd85bfd4",
+      "logSha256": "c93ebc974ead2f117641c2b2da4d601e6a1b944ea818b8c8f0a80d230fdcb60a"
+    },
+    "regressions": []
+  },
+  "auth": {
+    "attempted": true,
+    "signInStatus": 200,
+    "ambiguous": false
+  },
+  "cleanup": {
+    "originalCookieObserved": true,
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "limitations": [
+    "Staging reads native pages and optionally changes only the Devices local branch filter. No delayed response or fault is injected.",
+    "The sixth PNG is a clearly labelled local regression card over a real staging page. Local browser outcomes are not staging fault reproduction.",
+    "Identity, contact, code, input, image and QR content is masked for evidence. Screenshots are partial viewports."
+  ],
+  "authorityBeforeSha256": "77bcbe1467fa333572b879952f5c2ff5cfe76d340bff7ce67c16747a19df04db",
+  "permissionsBeforeSha256": "58e66f02e6e25b43480e94a7f3d7ced76e35f3355c7b6976ed53e5f354b1b5e6",
+  "failure": "PRIVACY_OR_CAPTION_CHECK_FAILED",
+  "finishedAt": "2026-10-28T20:34:05.062Z",
+  "complete": false
+}

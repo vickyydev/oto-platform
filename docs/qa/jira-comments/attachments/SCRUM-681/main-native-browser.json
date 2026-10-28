@@ -1,0 +1,13 @@
+{
+  "sourceSha": "de7fa1242bff8e025b0977155e9ad18d9ad548ed",
+  "runId": "40755193201",
+  "jobId": "123052123515",
+  "jobAttempt": 1,
+  "checkedAt": "2026-10-28T20:30:57.397Z",
+  "nativeBrowserSummaries": [
+    "337 passed (5.7m)"
+  ],
+  "matchingStepLines": 655,
+  "rawLogSha256": "c4c174c796bd4f87417e50529e6f8d9a2271db168b4198e58f9e6d7f81f4df30",
+  "rawLogNotPersisted": true
+}
