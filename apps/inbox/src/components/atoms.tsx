@@ -2,7 +2,8 @@
 // ported with their classes as they are and their data moved onto the api's
 // shapes: `Avatar`, `StaffChip` (here `ChipView`), `StatusBadge`,
 // `CategoryBadge`, `ChannelDot`, `MetricCard`, `CategoryMixCard`,
-// `FilterSelect`, `EmptyState`.
+// `EmptyState`; and the toggle pill as the rail's `FilterChip`, which took
+// the place of the prototype's `FilterSelect` (SCRUM-220 playbook).
 import type { ReactNode } from 'react';
 import { Briefcase, Building2, ChevronDown, Megaphone, PartyPopper, TrendingUp, type LucideIcon } from 'lucide-react';
 import type { InboxCategoryKey, InboxChannelKey, InboxStatusKey } from '@oto/shared/inbox';
@@ -259,36 +260,49 @@ export function CategoryMixCard({
   );
 }
 
-export function FilterSelect({
-  icon: Icon,
+/**
+ * The toggle pill the archive's filters use (`ConversationList`, "Handled in
+ * the last" and "Resolved by"), and since the playbook build (SCRUM-220) the
+ * rail's chips: white with a slate ring when off, inverted when on, the state
+ * in `aria-pressed` as the dashboard tiles carry it (SCRUM-652).
+ */
+export const PILL = 'rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition';
+export const PILL_ON = 'bg-slate-900 text-white ring-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-100';
+export const PILL_OFF = 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800';
+
+/**
+ * One chip of the rail's filters: a press adds it, a second press removes it.
+ * `dot` is a small mark in the thing's own colour — a topic's bar colour, a
+ * channel's, a status's — so the GM queue reads amber on its chip as on its
+ * badge. `chipKey` names the chip for the markup tests (`dim:value`).
+ */
+export function FilterChip({
+  chipKey,
   label,
-  value,
-  onChange,
-  options,
+  pressed,
+  onClick,
+  dot,
+  title,
 }: {
-  icon: LucideIcon;
+  chipKey: string;
   label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: [string, string][];
+  pressed: boolean;
+  onClick: () => void;
+  dot?: string;
+  title?: string;
 }) {
   return (
-    <div className="relative mb-1.5">
-      <Icon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-      <select
-        value={value}
-        aria-label={label}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 pl-8 pr-7 text-[12.5px] text-slate-700 dark:text-slate-200 focus:border-slate-300 dark:focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-600"
-      >
-        {options.map(([v, l]) => (
-          <option key={v} value={v}>
-            {l}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-    </div>
+    <button
+      type="button"
+      data-chip={chipKey}
+      aria-pressed={pressed}
+      onClick={onClick}
+      title={title ?? label}
+      className={`${PILL} ${pressed ? PILL_ON : PILL_OFF} inline-flex min-w-0 max-w-full items-center gap-1`}
+    >
+      {dot && <span aria-hidden className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />}
+      <span className="truncate">{label}</span>
+    </button>
   );
 }
 

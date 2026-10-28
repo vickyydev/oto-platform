@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Archive, Bot, FileText, FlaskConical, LogOut, MessageSquare, Monitor, Moon, Settings as SettingsGear, Sparkles, Sun } from 'lucide-react';
 import type { InboxCategoryKey, InboxTab } from '@oto/shared/inbox';
 import { ApiError } from '@/api/client';
-import { assistantCapabilities } from '@/api/assistant';
+import { assistantApi, assistantCapabilities } from '@/api/assistant';
 import { inboxApi, type ConversationList as ListPage, type ConversationRow, type Dashboard as DashboardData, type InboxMe, type Message } from '@/api/inbox';
 import { useSession } from '@/auth/SessionContext';
 import { AssistantSettings } from '@/components/AssistantSettings';
@@ -16,6 +16,7 @@ import { FiltersDialog, TemplatesDialog } from '@/components/dialogs';
 import { Rail, viewerRoleLabel } from '@/components/Rail';
 import { SimulatorDialog } from '@/components/Simulator';
 import { TemplateSettings } from '@/components/TemplateSettings';
+import { mergeSources, sourcesOfRows, type SourceOption } from '@/lib/inboxes';
 import { EMPTY_FILTERS, listQuery, type Filters } from '@/lib/query';
 import { nextTheme, themeTitle, useTheme, type Theme } from '@/lib/theme';
 import { inboxSearch, readInboxUrl, viewFromUrl, type AssistantTab, type SettingsPage } from '@/lib/url';
@@ -237,6 +238,31 @@ export function Workspace({ me }: { me: InboxMe }) {
 
   const patchFilters = useCallback((next: Partial<Filters>) => setFilters((f) => ({ ...f, ...next })), []);
 
+  // The numbers the Source chips offer (SCRUM-220 playbook): every number the
+  // viewer may switch the assistant on (`GET /inbox/ai/channel-accounts`, read
+  // once, only with inbox:ai:manage — it refuses everyone else), the
+  // simulator's numbers where it runs, and every number a page of the list
+  // names. Learned as the list is read: no call of its own, no polling.
+  const [sources, setSources] = useState<SourceOption[]>(() =>
+    mergeSources([], (me.simulator?.channelAccounts ?? []).map((a) => ({ id: a.id, channel: a.channel, name: a.displayName }))),
+  );
+  const learnSources = useCallback((more: SourceOption[]) => setSources((s) => mergeSources(s, more)), []);
+  useEffect(() => {
+    if (!me.capabilities.ai) return;
+    let cancelled = false;
+    assistantApi
+      .channelAccounts()
+      .then((r) => {
+        if (!cancelled) learnSources(r.channelAccounts.map((a) => ({ id: a.id, channel: a.channel, name: a.displayName })));
+      })
+      .catch(() => {
+        // The chips are a convenience: without the list, the rows still name their numbers.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [me.capabilities.ai, learnSources]);
+
   // The search box types freely; the list asks the api a quarter-second later.
   useEffect(() => {
     const t = window.setTimeout(() => setFilters((f) => (f.q === search ? f : { ...f, q: search })), 250);
@@ -254,6 +280,7 @@ export function Workspace({ me }: { me: InboxMe }) {
         if (seq !== listSeq.current) return;
         setPage(next);
         setRows(next.conversations);
+        learnSources(sourcesOfRows(next.conversations));
         setListError(null);
         // The landing's one decision, off the first page's counts (U8).
         if (landing.current) {
@@ -267,7 +294,7 @@ export function Workspace({ me }: { me: InboxMe }) {
         if (seq === listSeq.current) setListLoading(false);
       }
     },
-    [tab, filters, me.tabs],
+    [tab, filters, me.tabs, learnSources],
   );
 
   useEffect(() => {
@@ -284,13 +311,14 @@ export function Workspace({ me }: { me: InboxMe }) {
       const next = await inboxApi.conversations(listQuery(tab, filters, { cursor: page.nextCursor, limit: PAGE }));
       if (seq !== listSeq.current) return;
       setRows((r) => [...r, ...next.conversations.filter((c) => !r.some((x) => x.id === c.id))]);
+      learnSources(sourcesOfRows(next.conversations));
       setPage(next);
     } catch (err) {
       setListError(message(err, 'More conversations could not be read.'));
     } finally {
       setLoadingMore(false);
     }
-  }, [page, loadingMore, tab, filters]);
+  }, [page, loadingMore, tab, filters, learnSources]);
 
   // --- The dashboard ---------------------------------------------------------------
   const loadDashboard = useCallback(async () => {
@@ -647,7 +675,15 @@ export function Workspace({ me }: { me: InboxMe }) {
       {/* WORKSPACE */}
       <div className={`${settings !== null ? 'hidden ' : ''}overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]`}>
         <div className="grid h-[calc(100dvh-2rem)] min-h-[520px] grid-cols-1 lg:h-[min(82vh,860px)] lg:grid-cols-[220px_360px_minmax(0,1fr)]">
-          <Rail me={me} tab={tab} counts={page?.tabCounts ?? null} filters={filters} onTab={chooseTab} onFilters={patchFilters} />
+          <Rail
+            me={me}
+            tab={tab}
+            counts={page?.tabCounts ?? null}
+            filters={filters}
+            sources={sources}
+            onTab={chooseTab}
+            onFilters={patchFilters}
+          />
 
           <section
             className={`min-h-0 min-w-0 flex-col border-r border-slate-200 dark:border-slate-800 ${showChatMobile ? 'hidden lg:flex' : 'flex'}`}
@@ -675,6 +711,7 @@ export function Workspace({ me }: { me: InboxMe }) {
               search={search}
               selectedId={selected?.id ?? null}
               now={now}
+              sources={sources}
               onSearch={setSearch}
               onFilters={patchFilters}
               onTab={chooseTab}
@@ -747,6 +784,7 @@ export function Workspace({ me }: { me: InboxMe }) {
         onClose={() => setFiltersOpen(false)}
         me={me}
         filters={filters}
+        sources={sources}
         onChange={patchFilters}
         onClear={() => setFilters((f) => ({ ...EMPTY_FILTERS, q: f.q, archiveRange: f.archiveRange, resolvedBy: f.resolvedBy }))}
       />

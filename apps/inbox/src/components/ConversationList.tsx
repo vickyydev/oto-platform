@@ -2,13 +2,13 @@ import type { ReactNode } from 'react';
 import { Archive, CalendarRange, CheckCircle2, Download, Filter, Inbox, Loader2, Search, X } from 'lucide-react';
 import type { InboxTab } from '@oto/shared/inbox';
 import type { ConversationList as ListPage, ConversationRow, InboxMe } from '@/api/inbox';
-import { Avatar, CategoryBadge, ChannelDot, ChipView, EmptyState, StatusBadge } from '@/components/atoms';
+import { Avatar, CategoryBadge, ChannelDot, ChipView, EmptyState, PILL, PILL_OFF, PILL_ON, StatusBadge } from '@/components/atoms';
 import { PendingControl } from '@/components/writes';
+import { sourceLabel, type SourceOption } from '@/lib/inboxes';
 import { activeFilterCount, filterPills, type Filters } from '@/lib/query';
 import { TAB_ICON } from '@/components/Rail';
 import {
   ARCHIVE_RANGES,
-  CHANNEL_LABEL,
   TAB_LABEL,
   WRITES_PENDING_REASON,
   assigneeChip,
@@ -25,10 +25,6 @@ import {
   tintFor,
   writeMode,
 } from '@/lib/view';
-
-const PILL = 'rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition';
-const PILL_ON = 'bg-slate-900 text-white ring-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-100';
-const PILL_OFF = 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800';
 
 /**
  * The 360 px conversation list (WhatsAppDemo.tsx :1463-1630): the search,
@@ -51,6 +47,7 @@ export function ConversationList({
   search,
   selectedId,
   now,
+  sources = [],
   onSearch,
   onFilters,
   onTab,
@@ -72,6 +69,8 @@ export function ConversationList({
   search: string;
   selectedId: string | null;
   now: Date;
+  /** The numbers known so far, so the Source pill names its number (SCRUM-220 playbook). */
+  sources?: readonly SourceOption[];
   onSearch: (q: string) => void;
   onFilters: (next: Partial<Filters>) => void;
   onTab: (t: InboxTab) => void;
@@ -83,7 +82,7 @@ export function ConversationList({
 }) {
   const filterCount = activeFilterCount(filters);
   const hasStrip = strip !== undefined && strip !== null;
-  const pills = filterPills(filters, me.teams);
+  const pills = filterPills(filters, me.teams, sources);
   return (
     <>
       <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3">
@@ -139,14 +138,17 @@ export function ConversationList({
           </button>
         </div>
         {/* The applied filters as removable pills (UI round 2026-10-22, F1):
-            below lg the selects are behind the Filters button, so what is
-            applied says so here; at lg the rail's selects stay as they are. */}
+            below lg the chips are behind the Filters button, so what is
+            applied says so here; at lg the rail's chips stay as they are. A
+            topic's pill wears its colour, as its badge does (SCRUM-220). */}
         {pills.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1">
             {pills.map((p) => (
               <span
                 key={p.key}
-                className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 py-0.5 pl-2.5 pr-1 text-[11px] font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700"
+                className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded-full py-0.5 pl-2.5 pr-1 text-[11px] font-medium ring-1 ${
+                  p.tint ?? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 ring-slate-200 dark:ring-slate-700'
+                }`}
               >
                 {p.label}
                 <button
@@ -288,7 +290,7 @@ export function ConversationList({
 
 /**
  * One row (:1556-1625, screenshot 3): a 40 px avatar with the channel dot;
- * name and time; intent · language · branch; the one-line preview; category
+ * name · the number it came in on, and time; intent · language · branch; the one-line preview; category
  * and status pills with the unread count; then the assignee chips.
  */
 function Row({
@@ -337,7 +339,8 @@ function Row({
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0 truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">
               {name}
-              <span className="font-normal text-slate-400"> · {CHANNEL_LABEL[c.channel]}</span>
+              {/* The number it came in on (SCRUM-220 playbook), not the bare channel. */}
+              <span className="font-normal text-slate-400"> · {sourceLabel(c.channel, c.channelAccountName)}</span>
             </div>
             <div className="shrink-0 text-[11px] text-slate-400">{listTime(c.lastMessageAt, now)}</div>
           </div>

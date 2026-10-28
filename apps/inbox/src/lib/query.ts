@@ -1,19 +1,23 @@
 import type { InboxCategoryKey, InboxStatusKey, InboxTab } from '@oto/shared/inbox';
 import type { ListQuery, Team } from '@/api/inbox';
-import { archiveFrom, branchLabel, CATEGORY_OPTIONS, LANGUAGE_OPTIONS, STATUS_OPTIONS, type ArchiveRange } from './view';
+import { sourceLabel, type SourceOption } from './inboxes';
+import { archiveFrom, branchLabel, CATEGORY_OPTIONS, CATEGORY_TINT, LANGUAGE_OPTIONS, STATUS_OPTIONS, type ArchiveRange } from './view';
 
 /**
  * The list's filters as the rail and the list header hold them — the
  * prototype's `filterCategory`, `filterBranch`, `filterStatus`,
  * `filterLanguage`, `search`, `unansweredOnly`, `archiveRange` and
  * `archiveResolver` (WhatsAppDemo.tsx :1036-1050) — with "all" as the empty
- * string. The filtering itself is the api's (`GET /inbox/conversations`), on
- * the same rules from `@oto/shared/inbox`, so a page of fifty is the right
- * fifty.
+ * string, and the number a conversation came in on (`channelAccountId`, the
+ * playbook's Source chips, SCRUM-220). The filtering itself is the api's
+ * (`GET /inbox/conversations`), on the same rules from `@oto/shared/inbox`, so
+ * a page of fifty is the right fifty.
  */
 export interface Filters {
   category: InboxCategoryKey | '';
   branchId: string;
+  /** The number (channel account) the conversation came in on; '' is every number. */
+  channelAccountId: string;
   status: InboxStatusKey | '';
   language: string;
   q: string;
@@ -25,6 +29,7 @@ export interface Filters {
 export const EMPTY_FILTERS: Filters = {
   category: '',
   branchId: '',
+  channelAccountId: '',
   status: '',
   language: '',
   q: '',
@@ -36,27 +41,39 @@ export const EMPTY_FILTERS: Filters = {
 
 /** How many filters differ from the empty set — the phone's filter button shows it. */
 export function activeFilterCount(f: Filters): number {
-  return [f.category, f.branchId, f.status, f.language].filter((v) => v !== '').length;
+  return [f.category, f.branchId, f.channelAccountId, f.status, f.language].filter((v) => v !== '').length;
 }
 
 /** One applied filter as a removable pill: its label, and the patch that clears it — exactly that one. */
 export interface FilterPill {
-  key: 'category' | 'branchId' | 'status' | 'language';
+  key: 'category' | 'branchId' | 'channelAccountId' | 'status' | 'language';
   label: string;
   clear: Partial<Filters>;
+  /** The topic's own colour (`CATEGORY_TINT`), so the GM queue reads amber here as on the badge. */
+  tint?: string;
 }
 
 /**
  * The applied filters as removable pills under the search line (UI round
- * 2026-10-22, F1): at phone width the selects live behind the Filters button,
- * so what is applied must say so on the list itself. The labels are the same
- * option tables `FilterFields` offers.
+ * 2026-10-22, F1): at phone width the chips live behind the Filters button,
+ * so what is applied must say so on the list itself. The labels are the ones
+ * the chips carry (`FilterFields`); a number is named by its display name.
  */
-export function filterPills(f: Filters, teams: readonly Team[]): FilterPill[] {
+export function filterPills(f: Filters, teams: readonly Team[], sources: readonly SourceOption[] = []): FilterPill[] {
   const label = (options: readonly [string, string][], v: string) => options.find(([k]) => k === v)?.[1] ?? v;
   const out: FilterPill[] = [];
-  if (f.category !== '') out.push({ key: 'category', label: label(CATEGORY_OPTIONS, f.category), clear: { category: '' } });
+  if (f.category !== '') {
+    out.push({ key: 'category', label: label(CATEGORY_OPTIONS, f.category), clear: { category: '' }, tint: CATEGORY_TINT[f.category] });
+  }
   if (f.branchId !== '') out.push({ key: 'branchId', label: branchLabel(f.branchId, teams), clear: { branchId: '' } });
+  if (f.channelAccountId !== '') {
+    const source = sources.find((s) => s.id === f.channelAccountId);
+    out.push({
+      key: 'channelAccountId',
+      label: source ? sourceLabel(source.channel, source.name) : 'Source',
+      clear: { channelAccountId: '' },
+    });
+  }
   if (f.status !== '') out.push({ key: 'status', label: label(STATUS_OPTIONS, f.status), clear: { status: '' } });
   if (f.language !== '') out.push({ key: 'language', label: label(LANGUAGE_OPTIONS, f.language), clear: { language: '' } });
   return out;
@@ -74,6 +91,7 @@ export function listQuery(
   const q: ListQuery = { tab };
   if (f.category) q.category = f.category;
   if (f.branchId) q.branchId = f.branchId;
+  if (f.channelAccountId) q.channelAccountId = f.channelAccountId;
   if (f.status) q.status = f.status;
   if (f.language) q.language = f.language;
   const search = f.q.trim();
