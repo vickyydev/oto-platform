@@ -33,10 +33,10 @@ not a generator.
 - **Never print or record secret values** (tokens, PINs, claim codes, passwords, database
   URLs, box secrets). Variable names, file locations and sha256 fingerprints only.
 - **Migrations are forward-only and immutable once applied.** Platform migrations live in
-  `packages/db/migrations` (applied through 0075; next free 0076). The OTO App has its own
-  under `apps/oto-app/migrations` (applied through 0008 on staging; next free 0009).
-  A lane builds under a provisional number and renumbers at landing, regenerating the
-  snapshot and diffing the SQL identical. Never edit an applied migration.
+  `packages/db/migrations` (applied through 0094; read the journal before numbering). The
+  OTO App has its own under `apps/oto-app/migrations` (read its `meta/_journal.json` before
+  numbering). A lane builds under a provisional number and renumbers at landing,
+  regenerating the snapshot and diffing the SQL identical. Never edit an applied migration.
 - **The behaviour law (the SCRUM-488 ruling):** the OTO App's and the prototype's existing
   behaviour is the approved behaviour — port it as-is. Only data-reliability faults and
   park-group crossings are fixed on your own authority. Every other rule choice becomes a
@@ -101,12 +101,14 @@ raced cross-service call is Retry on the Failures page.
 - **Jira browsing** can also use the Atlassian MCP configured in
   `C:\Users\waqar\.codex\config.toml`; writes go through `scripts/agent/jira.mjs`.
 
-## Current direction (12 October 2026)
+## Current direction (28 October 2026)
 
-The open story is **S2-17b (SCRUM-191)** — the OTO App lifted whole. Rounds 1–6 are landed
-and live on staging. The order of work is: round 7, round 8, then the fix block of
-`docs/progress/OPEN_ITEMS.md` before any new story (the owner's standing ruling). The
-newest resume note in `docs/handover/CODEX_HANDOVER.md` carries the exact next steps.
+The open work for Codex is **closing out the Super Admin Console story (SCRUM-642, P5)**:
+the walkthroughs and remaining tickets listed in the newest resume note at the top of
+`docs/handover/CODEX_HANDOVER.md` — that note is the brief; read it first. The planner
+session concurrently works the **Unified Inbox** (SCRUM-220) on its own lanes; keep to the
+admin/console surface, rebase onto `origin/main` before every push, and never force-push.
 SCRUM-223 (the bench/Pi story) stays paused at its freeze — its brief is further down in
-that same handover file; do not touch it unless the owner schedules bench time. Only one
-agent session works this repository at a time.
+the handover file; do not touch it unless the owner schedules bench time. Docker stays off
+(owner preference): api/db tests use the embedded Postgres, console e2e the embedded
+built server.
