@@ -166,6 +166,17 @@ describe('E. the gate: any cited price, never a computed one', () => {
     ).toMatchObject({ action: 'handover', reason: 'OVERRULED_HANDOVER', droppedHoldingRule: 'park' });
   });
 
+  it('SCRUM-670: a deal answer may rest on its price note alone — no live price fact is required', () => {
+    const deal = 'At Robinson Chalong the Dinner Promo after 6pm is ฿1,080 on weekdays, plus free entry for 3 people 😊';
+    expect(
+      pgate({ intent: 'discount_negotiation', grounding: ['pb.deal-dinner-promo'], bubbles: [deal] }),
+    ).toMatchObject({ action: 'answer', groundingKeys: ['pb.deal-dinner-promo'], thenHandover: null });
+    // …and the deal's words stay checked: a number it does not hold overrules the answer.
+    expect(
+      pgate({ intent: 'discount_negotiation', grounding: ['pb.deal-dinner-promo'], bubbles: [deal.replace('3 people', '4 people')] }),
+    ).toMatchObject({ action: 'handover', reason: 'OVERRULED_HANDOVER', droppedHoldingRule: 'number' });
+  });
+
   it('the Thai and Russian branch questions hold no promise word, so they need no source', () => {
     expect(traceabilityGuard([TH_PERSONA.branchQuestion], [])).toEqual({ ok: true });
     expect(traceabilityGuard([RU_PERSONA.branchResidencyQuestion], [])).toEqual({ ok: true });
