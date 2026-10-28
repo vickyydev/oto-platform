@@ -261,6 +261,9 @@ export interface WatchdogSummary extends Record<string, unknown> {
   /** Live boxes examined, and how many of them this pass moved to `offline`. */
   boxes: number;
   boxesSilenced: number;
+  /** Unread supporting evidence forbids every fallback-derived fleet effect. */
+  fleetAvailability: 'ok' | 'failed' | 'denied';
+  fleetEvaluated: boolean;
   opened: number;
   resolved: number;
 }
@@ -294,6 +297,8 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     failing: 0,
     boxes: 0,
     boxesSilenced: 0,
+    fleetAvailability: 'ok',
+    fleetEvaluated: false,
     opened: 0,
     resolved: 0,
   };
@@ -468,8 +473,17 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     );
   }
 
-  const fleet = await fleetHealth({ db }, now.getTime());
+  const fleet = await fleetHealth({ db }, now.getTime(), (availability) => {
+    // A refusal is more specific than a failed or timed-out read.
+    if (summary.fleetAvailability !== 'denied') summary.fleetAvailability = availability;
+  });
   summary.boxes = fleet.boxes.length;
+  if (summary.fleetAvailability !== 'ok') {
+    // Fallback counts are not recovery evidence, nor evidence of a new fault.
+    log.warn({ availability: summary.fleetAvailability }, 'watchdog fleet effects skipped because supporting evidence was unread');
+    return summary;
+  }
+  summary.fleetEvaluated = true;
   for (const c of fleet.conditions) {
     const scope = { operatorId: c.operatorId, branchId: c.branchId };
     if (c.active) await open(c.key, c.category, c.severity, c.subject, c.summary, c.detail, scope);
