@@ -168,7 +168,7 @@ test('Activity related-read refusal is not an assertion that this was the only r
   await page.goto('/watch/activity'); await row(page, 'zz.test.open').click();
   const drawer = page.getByRole('dialog', { name: 'zz.test.open', exact: true });
   await drawer.getByRole('button', { name: 'Related', exact: true }).click();
-  await expect(drawer.getByText('ZZ TEST related rows unavailable', { exact: true })).toBeVisible();
+  await expect(drawer.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(drawer.getByText('This was the only row for that request', { exact: true })).toHaveCount(0);
   await drawer.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(drawer.getByText('This was the only row for that request', { exact: true })).toBeVisible();
@@ -182,7 +182,7 @@ test('Failures run-history refusal is not an assertion that no individual runs e
     json: { error: { code: 'ZZ_TEST_UNAVAILABLE', message: 'ZZ TEST run history unavailable' } } }) : route.fulfill({ json: { runs: [] } });
   await page.goto('/watch/failures'); await failureGroups(page).getByRole('button', { name: 'Details', exact: true }).click();
   const drawer = page.getByRole('dialog', { name: 'zz.test.open', exact: true });
-  await expect(drawer.getByText('ZZ TEST run history unavailable', { exact: true })).toBeVisible();
+  await expect(drawer.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(drawer.getByText('No individual runs returned', { exact: true })).toHaveCount(0);
   await drawer.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(drawer.getByText('No individual runs returned', { exact: true })).toBeVisible();

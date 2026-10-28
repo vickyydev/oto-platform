@@ -113,7 +113,7 @@ test('a pending or failed directory stays distinct from empty and retry refreshe
   await expect(page.getByRole('status')).toContainText('Loading employees');
   await expect(page.getByText('No employees in your reach', { exact: true })).toHaveCount(0);
   release!();
-  await expect(page.getByRole('alert')).toContainText('The employee source did not answer.');
+  await expect(page.getByRole('alert')).toContainText('The service returned an unexpected error. Read the current state before trying again.');
   await expect(page.getByRole('list', { name: 'Employees', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ZZ TEST Mira', exact: true })).toBeVisible();

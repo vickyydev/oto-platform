@@ -4,7 +4,7 @@
 // own and no CORS is involved.
 
 import { API_PREFIX, apiUrl } from './url';
-import { retryAfterSeconds, supportReference } from '@oto/admin-screens/error-view';
+import { retryAfterSeconds, serviceErrorMessage, supportReference } from '@oto/admin-screens/error-view';
 
 export { apiUrl };
 
@@ -19,7 +19,8 @@ export class ApiError extends Error {
   ) {
     // Legacy callers may keep only .message. Unexpected server diagnostics
     // must already be safe before that structural metadata is discarded.
-    super(status >= 500 ? 'The service returned an unexpected error. Read the current state before trying again.' : message);
+    super(serviceErrorMessage(status, code)
+      ?? (status >= 500 ? 'The service returned an unexpected error. Read the current state before trying again.' : message));
     this.name = 'ApiError';
   }
 }

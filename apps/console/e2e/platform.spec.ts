@@ -251,7 +251,7 @@ test.describe('native Platform pages', () => {
     const f = await fixture(page);
     f.jobs.fail = true;
     await page.goto('/platform/jobs');
-    await expect(page.getByText('ZZ TEST job register unavailable.', { exact: true })).toBeVisible();
+    await expect(page.getByText('This could not be loaded because the service had a problem. Try reading it again; share the reference if it keeps failing.', { exact: true })).toBeVisible();
     await expect(page.getByText('job:ZZ_TEST_persisted', { exact: true })).toHaveCount(0);
     f.jobs.fail = false;
     await page.getByRole('button', { name: /try again|retry/i }).click();

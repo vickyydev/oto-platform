@@ -129,7 +129,7 @@ test('failed reads have a retry and do not claim an empty registry or release hi
   const state = await fixture(page);
   state.reads.set('/console/apps', route => route.fulfill({ status: 503, json: { error: { code: 'UNAVAILABLE', message: 'ZZ TEST Registry unavailable.' } } }));
   await page.goto('/apps');
-  await expect(page.getByText('ZZ TEST Registry unavailable.', { exact: true })).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(page.getByText('No apps are recorded.', { exact: true })).toHaveCount(0);
   state.reads.delete('/console/apps');
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
@@ -270,7 +270,7 @@ test('agent versions keep nullable facts, independent read errors and honest emp
   state.reads.set('/console/releases/agents', route => route.fulfill({ status: 503,
     json: { error: { code: 'UNAVAILABLE', message: 'ZZ TEST Agent versions unavailable.' } } }));
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-  await expect(panel.getByText('ZZ TEST Agent versions unavailable.', { exact: true })).toBeVisible();
+  await expect(panel.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(page.getByText('ZZ TEST Admin', { exact: true })).toBeVisible();
   await expect(panel.getByText('No boxes are recorded.', { exact: true })).toHaveCount(0);
   state.reads.delete('/console/releases/agents'); state.setAgents({ ...fleet(), total: 0, agents: [] });
@@ -280,6 +280,6 @@ test('agent versions keep nullable facts, independent read errors and honest emp
   state.reads.set('/console/releases', route => route.fulfill({ status: 503,
     json: { error: { code: 'UNAVAILABLE', message: 'ZZ TEST History unavailable.' } } }));
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-  await expect(page.getByText('ZZ TEST History unavailable.', { exact: true })).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(panel.getByText('ZZ TEST Box', { exact: true })).toBeVisible();
 });

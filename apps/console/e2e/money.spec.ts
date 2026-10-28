@@ -155,8 +155,14 @@ test('tender add and blur-rename refusals retain native fields until a confirmed
 test('tax save refusal cannot report Saved and retry preserves fractions plus the hidden stored-value rule', async ({ page }) => {
   const state = await fixture(page), path = '/branches/' + PARK + '/tax-config'; state.control.refused.add(path);
   await page.goto('/catalogue/tax'); await page.locator('#tax-svc-fnb').fill('3.75');
-  await page.getByRole('button', { name: 'Save changes', exact: true }).click(); await expect(page.getByText('ZZ TEST Keep this money draft.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click(); await expect(page.getByText('ZZ TEST Keep this money draft. Read the current settings before trying again.', { exact: true })).toBeVisible();
   await expect(page.getByText('Saved — live in the till.', { exact: true })).toHaveCount(0); await expect(page.locator('#tax-svc-fnb')).toHaveValue('3.75');
+  await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+  const beforeRead = state.calls.length;
+  await page.getByRole('button', { name: 'Read current settings', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Saved tax settings', exact: true })).toBeVisible();
+  expect(state.calls.slice(beforeRead).filter(call => call.path === path).map(call => call.method)).toEqual(['GET']);
+  await expect(page.locator('#tax-svc-fnb')).toHaveValue('3.75');
   state.control.refused.delete(path); await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByText('Saved — live in the till.', { exact: true })).toBeVisible();
   const write = state.calls.filter(call => call.method === 'PUT' && call.path === path).at(-1);

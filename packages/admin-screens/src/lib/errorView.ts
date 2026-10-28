@@ -30,6 +30,31 @@ export function retryAfterSeconds(value: unknown): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 && seconds <= Number.MAX_SAFE_INTEGER / 1000 ? seconds : undefined;
 }
 
+// Native service refusals only. Never trust an arbitrary server message or
+// another code merely because it arrived with a 503 response.
+function serviceFailure(status: number | undefined, code: string | undefined): { reason: string; next: string; uncertainWrite?: boolean } | undefined {
+  if (status !== 503) return undefined;
+  switch (code) {
+    case 'BOOTH_NOT_ON_THIS_BOX': return { reason: 'This booth is not running on this service.', next: 'Check its assigned service before trying again.' };
+    case 'STORAGE_NOT_CONFIGURED': return { reason: 'File storage is not configured.', next: 'Ask someone authorised to configure it before trying again.' };
+    case 'EVENTS_SEAM_NOT_GRANTED': return { reason: 'Event data cannot be read because the service is missing required access.', next: 'Ask someone authorised to restore service access before trying again.' };
+    case 'EMPLOYEES_SEAM_NOT_GRANTED': return { reason: 'Employee data cannot be read because the service is missing required access.', next: 'Ask someone authorised to restore service access before trying again.' };
+    // A remote storage call may have completed before its answer was lost.
+    case 'STORAGE_UNAVAILABLE': return { reason: 'File storage is unavailable.', next: 'Read the current state before trying the operation again.', uncertainWrite: true };
+    case 'DISPLAY_PAIRING_BUSY': return { reason: 'Screen pairing is busy.', next: 'Wait a moment and check the current pairing before trying again.', uncertainWrite: true };
+    case 'KIOSK_PAIRING_BUSY': return { reason: 'Kiosk pairing is busy.', next: 'Wait a moment and check the current pairing before trying again.', uncertainWrite: true };
+    case 'OTO_APP_NOT_CONFIGURED': return { reason: 'The OTO App connection is not configured.', next: 'Ask someone authorised to configure the connection before trying again.' };
+    case 'OTO_APP_UNAVAILABLE': return { reason: 'The OTO App is unavailable.', next: 'Try reading it again later; share the reference if it keeps failing.', uncertainWrite: true };
+    default: return undefined;
+  }
+}
+
+/** Fixed public copy also protects legacy callers that retain only .message. */
+export function serviceErrorMessage(status: number, code: string): string | undefined {
+  const service = serviceFailure(status, code);
+  return service ? `${service.reason} ${service.next}` : undefined;
+}
+
 const diagnostic = /\b(?:SQLSTATE|postgres(?:ql)?|SELECT\s.+\sFROM|password|secret|authorization|bearer|cookie|stack trace)\b|https?:\/\/|private[-_]canary|<!doctype|<html|\bat .+\(.+:\d+:\d+\)/i;
 function publicReason(value: unknown): string | undefined {
   if (typeof value !== 'string' || !value.trim() || value.length > 600 || diagnostic.test(value)) return undefined;
@@ -90,7 +115,14 @@ export function errorView(error: unknown, options: Options = {}): ErrorView {
     || diagnostic.test(raw));
   const view: ErrorView = { message: '', fieldIssues: fields, supportReference: reference,
     retryAfterSeconds: wait, requiresFreshRead: status === 409, uncertain: false };
-  if (passwordRequired) view.message = 'Password change required before continuing. Change your password, then try again.';
+  const service = serviceFailure(status, code);
+  if (service) {
+    view.uncertain = write && service.uncertainWrite === true;
+    view.requiresFreshRead = view.uncertain;
+    view.message = view.uncertain
+      ? `${service.reason} The change may have been saved. Read the current settings before trying again.`
+      : `${service.reason} ${service.next}`;
+  } else if (passwordRequired) view.message = 'Password change required before continuing. Change your password, then try again.';
   else if (network || unexpected) {
     view.uncertain = write;
     view.requiresFreshRead = write;

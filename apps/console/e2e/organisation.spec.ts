@@ -304,7 +304,7 @@ for (const failingRead of ['me', 'permissions'] as const) test(`an accepted bran
     await expect(page.getByRole('heading', { name: 'Registered branches', exact: true })).toHaveCount(0);
   } finally { release(); }
   await expect(page.getByRole('heading', { name: 'Confirm the current operator', exact: true })).toBeVisible();
-  await expect(page.getByText('ZZ TEST canonical session read failed.', { exact: true })).toBeVisible();
+  await expect(page.getByText('The service returned an unexpected error. Read the current state before trying again.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toHaveCount(0);
