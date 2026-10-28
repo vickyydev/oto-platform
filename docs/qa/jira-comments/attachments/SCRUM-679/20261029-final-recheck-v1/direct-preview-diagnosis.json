@@ -1,0 +1,158 @@
+{
+  "ticket": "SCRUM-679",
+  "kind": "direct-context-sample-preview-byte-diagnostic",
+  "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "ciRunId": "40772012368",
+  "helperSha256": "ab95e16d7f5169476798ce532c6cbc6c4ea73287f49324a7bc51bb3b213ee157",
+  "startedAt": "2026-10-28T22:25:56.002Z",
+  "gates": [
+    {
+      "stage": "before",
+      "at": "2026-10-28T22:25:59.638Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "after",
+      "at": "2026-10-28T22:26:10.046Z",
+      "deployments": [
+        {
+          "service": "oto-api-staging",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "service": "oto-console-staging",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    }
+  ],
+  "reads": [
+    {
+      "operation": "GET /api/me",
+      "status": 200,
+      "at": "2026-10-28T22:26:02.832Z",
+      "bodySha256": "b3be18c2e97e10b1a352b95b9bc619a663f797c96505db7638e8eaf7b78d2e5f",
+      "requestIdPresent": true
+    },
+    {
+      "operation": "GET /api/branches",
+      "status": 200,
+      "at": "2026-10-28T22:26:03.342Z",
+      "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73",
+      "requestIdPresent": true
+    },
+    {
+      "operation": "GET /api/branches/:id/print-templates",
+      "status": 200,
+      "at": "2026-10-28T22:26:03.842Z",
+      "bodySha256": "5f611712bdc0bb9ca7e7108a6eb21cddf542b21dc96b73542fd3b84f4e6a4f57",
+      "requestIdPresent": true
+    },
+    {
+      "operation": "GET /api/branches/:id/booths",
+      "status": 200,
+      "at": "2026-10-28T22:26:04.429Z",
+      "bodySha256": "eb7ce265ce1b0af681fb450755fd4ab14a61005a46395f26bc68b2baafac6785",
+      "requestIdPresent": true
+    },
+    {
+      "operation": "GET /api/branches/:id/boxes",
+      "status": 200,
+      "at": "2026-10-28T22:26:04.978Z",
+      "bodySha256": "34d494ac2c59eab52dbe82e5e4366aa1a3666d3375946552b4b3902cd3d5e5d7",
+      "requestIdPresent": true
+    },
+    {
+      "operation": "GET /api/me",
+      "status": 200,
+      "at": "2026-10-28T22:26:07.002Z",
+      "bodySha256": "b3be18c2e97e10b1a352b95b9bc619a663f797c96505db7638e8eaf7b78d2e5f",
+      "requestIdPresent": true
+    }
+  ],
+  "previews": [
+    {
+      "operation": "POST /api/print-templates/:id/preview.png",
+      "status": 200,
+      "at": "2026-10-28T22:26:05.787Z",
+      "targetIdSha256": "886d75bb4e1c3af9e47206f71cf57b1984fd94cd0a7ce5e645fc851cda0222fe",
+      "requestBodySha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "requestSchemaMatched": true,
+      "byteLength": 7355,
+      "bodySha256": "6e16c3091b53d76c2017a64ff8abff4863389ab0680d77792b5f8a943a8f0a52",
+      "pngMagic": true,
+      "contentType": "image/png",
+      "contentLength": 7355,
+      "contentLengthPresent": true,
+      "contentEncoding": "not-provided",
+      "requestIdPresent": true,
+      "previewWidthDots": 576
+    },
+    {
+      "operation": "POST /api/booths/:id/voucher-preview.png",
+      "status": 200,
+      "at": "2026-10-28T22:26:06.444Z",
+      "targetIdSha256": "6a02f9507f1f7197f67014b7f475bd006f8e118f4e29e0cd2112e1eb2eef8f02",
+      "requestBodySha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "requestSchemaMatched": true,
+      "byteLength": 4526,
+      "bodySha256": "066aca6b6f9b3f481920c6ead1124e08fb5a80f2d731427886fc859b9631e72e",
+      "pngMagic": true,
+      "contentType": "image/png",
+      "contentLength": 4526,
+      "contentLengthPresent": true,
+      "contentEncoding": "not-provided",
+      "requestIdPresent": true,
+      "previewWidthDots": 576
+    }
+  ],
+  "businessWrites": 0,
+  "fixtureRecordsCreated": 0,
+  "physicalPrints": 0,
+  "rawBodiesSaved": false,
+  "fullAuditComplete": false,
+  "limitations": [
+    "This direct APIRequestContext diagnostic does not visit or recapture native pages.",
+    "Exactly one empty-object sample-preview request per selected template and non-protected booth; no test-print, save, equipment, cash, payment, SMS or channel operation.",
+    "A branch-boxes GET is needed to prove the booth is not on FWBooth1. Names, credentials, cookies, payloads and PNG bytes are never recorded.",
+    "Completion means the bounded diagnostic and cleanup completed, not that a preview or the full679 audit passed. Original seven empty observations remain unchanged."
+  ],
+  "openapiSha256": "810343a53c08c9ad3c5576b3a1a3858ba0455e8826a2bf365f22e075024850e3",
+  "auth": {
+    "attempted": true,
+    "signInStatus": 200
+  },
+  "branchIdSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156",
+  "selection": {
+    "templateIdSha256": "886d75bb4e1c3af9e47206f71cf57b1984fd94cd0a7ce5e645fc851cda0222fe",
+    "boothIdSha256": "6a02f9507f1f7197f67014b7f475bd006f8e118f4e29e0cd2112e1eb2eef8f02",
+    "boothBoxIdSha256": "3c559ceb6a1e3af4cfebc6728863ae6ee657f9b26b0851080cdf44fb05bf2e25",
+    "protectedBoothExcluded": true
+  },
+  "authorityUnchanged": true,
+  "cleanup": {
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "finishedAt": "2026-10-28T22:26:11.069Z",
+  "previewContractPassed": true,
+  "complete": true
+}
