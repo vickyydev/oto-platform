@@ -20,6 +20,11 @@ import { PermissionDeniedError } from '../plugins/session';
 import { branchReach, reachCovers, type BranchReach } from '../services/access-control';
 import { operatorBranches, rollupFreshnessOf } from '../services/analytics-summary';
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
+import {
+  AlertAcknowledgedResponse, AnomaliesResponse, DemoResetResponse, DemoResetStatusResponse,
+  FailuresResponse, QuarantineDiscardResponse, QuarantineReplayResponse, QuarantineResponse,
+  RunRetryResponse, RunsResponse, TestControlRunResponse, TestControlsResponse,
+} from './ops-response-schemas';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
 import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB } from '../services/analytics-rollup';
 import { ROLLUP_BOOTH_JOB } from '../services/analytics-booth';
@@ -199,6 +204,7 @@ export async function opsRoutes(app: App): Promise<void> {
       schema: {
         description: 'Take an alert — says somebody is on it, and never that it is resolved',
         params: z.object({ alertId: z.string().uuid() }),
+        response: { 200: AlertAcknowledgedResponse },
       },
     },
     async (req) => {
@@ -263,6 +269,7 @@ export async function opsRoutes(app: App): Promise<void> {
           cursor: z.string().max(200).optional(),
           limit: z.coerce.number().int().min(1).max(200).default(50),
         }),
+        response: { 200: FailuresResponse },
       },
     },
     async (req) => {
@@ -285,6 +292,7 @@ export async function opsRoutes(app: App): Promise<void> {
           fingerprint: z.string().min(4).max(64),
           limit: z.coerce.number().int().min(1).max(200).default(20),
         }),
+        response: { 200: RunsResponse },
       },
     },
     async (req) => {
@@ -307,6 +315,7 @@ export async function opsRoutes(app: App): Promise<void> {
         description:
           'Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id), check-ins (`otoapp:attendee.checkin`, each under its own check-in id) and party edits (`otoapp:party.update`, oldest first, each under its own edit id). Nothing else is safe from here',
         params: z.object({ runId: z.string().uuid() }),
+        response: { 200: RunRetryResponse },
       },
     },
     async (req) => {
@@ -555,6 +564,7 @@ export async function opsRoutes(app: App): Promise<void> {
           cursor: z.string().max(200).optional(),
           limit: z.coerce.number().int().min(1).max(200).default(50),
         }),
+        response: { 200: QuarantineResponse },
       },
     },
     async (req) => {
@@ -591,6 +601,7 @@ export async function opsRoutes(app: App): Promise<void> {
           cursor: z.string().max(200).optional(),
           limit: z.coerce.number().int().min(1).max(200).default(50),
         }),
+        response: { 200: AnomaliesResponse },
       },
     },
     async (req) => {
@@ -632,6 +643,7 @@ export async function opsRoutes(app: App): Promise<void> {
         description:
           'Put a refused event back through the sync door it was refused at, under the rules it arrived under. A box event is verified and epoch-checked again; an event the test controls injected was never sealed by a box and replays unsigned, so the reason it comes back with is its own rather than a missing signature.',
         params: z.object({ quarantineId: z.string().uuid() }),
+        response: { 200: QuarantineReplayResponse },
       },
     },
     async (req) => {
@@ -679,6 +691,7 @@ export async function opsRoutes(app: App): Promise<void> {
         params: z.object({ quarantineId: z.string().uuid() }),
         // A discard with no reason is not a decision, it is a deletion.
         body: z.object({ note: z.string().min(3).max(500) }).strict(),
+        response: { 200: QuarantineDiscardResponse },
       },
     },
     async (req) => {
@@ -935,7 +948,10 @@ export async function opsRoutes(app: App): Promise<void> {
     '/test-controls',
     {
       config: { auth: 'session' },
-      schema: { description: 'Which staging-only controls this deployment offers this caller' },
+      schema: {
+        description: 'Which staging-only controls this deployment offers this caller',
+        response: { 200: TestControlsResponse },
+      },
     },
     async (req) => {
       req.requireAuth();
@@ -952,6 +968,7 @@ export async function opsRoutes(app: App): Promise<void> {
       schema: {
         description: 'Run one staging-only control',
         params: z.object({ key: z.string().max(40) }),
+        response: { 200: TestControlRunResponse },
       },
     },
     async (req) => {
@@ -1253,7 +1270,10 @@ export async function opsRoutes(app: App): Promise<void> {
     '/demo-reset',
     {
       config: { auth: 'session' },
-      schema: { description: 'Whether the demo reset is available to this caller' },
+      schema: {
+        description: 'Whether the demo reset is available to this caller',
+        response: { 200: DemoResetStatusResponse },
+      },
     },
     async (req) => {
       req.requireAuth();
@@ -1276,6 +1296,7 @@ export async function opsRoutes(app: App): Promise<void> {
       schema: {
         description: 'Delete the demo facts, keeping accounts and the catalogue',
         body: z.object({ confirm: z.string() }).strict(),
+        response: { 200: DemoResetResponse },
       },
     },
     async (req) => {
