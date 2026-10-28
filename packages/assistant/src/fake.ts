@@ -157,7 +157,11 @@ export type FakeReviewStep =
   | { kind: 'hang' }
   | Exclude<FakeStep, { kind: 'decision' }>;
 
-export type FakeReviewScriptEntry = FakeReviewStep & { latencyMs?: number };
+export type FakeReviewScriptEntry = FakeReviewStep & {
+  /** Runs before the review returns: lets a test act while the "reviewer is reading". */
+  during?: () => void | Promise<void>;
+  latencyMs?: number;
+};
 
 /** A review verdict from plain lists: the indices to drop, the merges to make. */
 export function reviewOps(ops: { drop?: readonly number[]; merge?: ReadonlyArray<{ index: number; joiner: ReviewJoiner }> }): ReviewDecision {
@@ -189,6 +193,7 @@ export class FakeCoherenceReviewer implements CoherenceReviewer {
     this.requests.push(request);
     const step = this.script.shift();
     if (!step) throw new Error('FakeCoherenceReviewer: the script has no step left for this call');
+    if (step.during) await step.during();
     if (step.kind === 'hang') return new Promise<ReviewOutcome>(() => undefined);
     const latency = step.latencyMs ?? 400;
     if (step.kind === 'review' || step.kind === 'keep_all') {

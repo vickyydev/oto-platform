@@ -3,6 +3,7 @@ import {
   AI_REPLY_LANGUAGES,
   AnthropicAssistantClient,
   EPISODE_WINDOW_CAP,
+  FakeCoherenceReviewer,
   INTENT_TABLE,
   applyGates,
   bubbleGuard,
@@ -16,15 +17,19 @@ import {
   type AssistantClient,
   type AssistantOutcome,
   type AssistantRequest,
+  type CoherenceReviewer,
   type EpisodeState,
   type ExampleInput,
   type FakeAssistantClient,
+  type FakeReviewStep,
   type GateVerdict,
   type GroundingSource,
   type KbEntryInput,
   type KnowledgeBlock,
   type KnowledgeInput,
   type OpeningHours,
+  type ReviewOutcome,
+  type ReviewRequest,
 } from '@oto/assistant';
 import { schema as s, type InboxTemplateKey } from '@oto/db';
 import { newId, type Satang } from '@oto/shared';
@@ -407,6 +412,12 @@ export interface GoldenTurn {
   episode?: Partial<EpisodeState>;
   /** A plausible decision for `ai:eval --fake`: rehearses the script with no API call. */
   rehearsal: AiDecision;
+  /**
+   * SCRUM-677: the coherence review `ai:eval --fake` plays for this turn —
+   * set exactly on the turns whose send mixes the model's words and a fixed
+   * line (the only sends the engine reviews).
+   */
+  review?: FakeReviewStep;
 }
 
 /** What should be on the thread after the golden's last turn (the live eval checks it). */
@@ -628,6 +639,8 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
           sendBrochure: true,
           bubbles: ['Of course! Here are our birthday packages 🎂'],
         }),
+        // The answer, both parks' brochures and the birthday manager's line already read as one message.
+        review: { kind: 'keep_all' },
       },
     ],
     // A branchless thread: both parks' brochures, then the birthday manager's line.
@@ -692,6 +705,8 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
           reason: 'NEEDS_PERSON',
           bubbles: ["We're so sorry to hear about your visit today."],
         }),
+        // The apology, then who takes it from here: one message, nothing doubled.
+        review: { kind: 'keep_all' },
       },
     ],
     thread: { team: 'gm', closingKey: 'closing_gm' },
@@ -1048,6 +1063,31 @@ export class CapturingClient implements AssistantClient {
   }
 }
 
+export interface CapturedReview {
+  request: ReviewRequest;
+  outcome: ReviewOutcome;
+}
+
+/** Wraps a reviewer (SCRUM-677): every review's request and outcome, in order. */
+export class CapturingReviewer implements CoherenceReviewer {
+  readonly calls: CapturedReview[] = [];
+  constructor(private readonly inner: CoherenceReviewer) {}
+  get model(): string {
+    return this.inner.model;
+  }
+  async review(request: ReviewRequest): Promise<ReviewOutcome> {
+    try {
+      const outcome = await this.inner.review(request);
+      this.calls.push({ request, outcome });
+      return outcome;
+    } catch (err) {
+      // Counted all the same: an unscripted fake throws, and the engine fails open.
+      this.calls.push({ request, outcome: { ok: false, reason: 'PROVIDER_ERROR', error: null, usage: null, model: null, requestId: null, latencyMs: 0 } });
+      throw err;
+    }
+  }
+}
+
 /**
  * The real client over a recorded body: the SDK, `interpretReply` and the
  * schema parse run exactly as on a live call; the network is never reached.
@@ -1390,6 +1430,11 @@ export async function playMechanical(w: GoldenWorld, id: MechanicalId, fake: Fak
   const runtime = w.ctx.app.inboxAi;
   const saved = runtime.client;
   runtime.client = fake;
+  // SCRUM-677: no mechanical golden is a mixed send, so none may reach the
+  // coherence reviewer; its script is empty and every call is counted.
+  const savedReviewer = runtime.reviewer;
+  const noReview = new FakeCoherenceReviewer();
+  runtime.reviewer = noReview;
   const notes: string[] = [];
   const failures: string[] = [];
   const check = (ok: boolean, what: string) => {
@@ -1677,6 +1722,8 @@ export async function playMechanical(w: GoldenWorld, id: MechanicalId, fake: Fak
     }
   } finally {
     runtime.client = saved;
+    runtime.reviewer = savedReviewer;
+    check(noReview.requests.length === 0, `the coherence reviewer was called ${noReview.requests.length} time(s); a mechanical turn is never a mixed send`);
   }
   return { id, notes, failures };
 }

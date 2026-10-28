@@ -19,6 +19,13 @@
  * builder, the real `AnthropicAssistantClient`, the gates and the commit. G10
  * needs no model; G11–G16 are mechanical and run on the fake client.
  *
+ * THE COHERENCE REVIEW (SCRUM-677) runs on the turns whose send mixes the
+ * model's words and a fixed line (G5's brochure answer, G7's apology): live,
+ * the real reviewer with the same key and model; with `--fake`, each such
+ * turn's scripted `review`. A turn that reaches the reviewer without one, or
+ * scripts one it never reaches, fails. Reviews are not recorded: the replay
+ * suite replays the decision alone.
+ *
  * THE KEY. `ANTHROPIC_API_KEY` from the environment, else from `apps/api/.env`.
  * It is handed to the client's constructor and nowhere else: it is never
  * printed, never put in `process.env`, never written to a fixture. A
@@ -30,10 +37,13 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseDotenv } from 'dotenv';
 import {
   AnthropicAssistantClient,
+  AnthropicCoherenceReviewer,
   DEFAULT_MODEL,
   FakeAssistantClient,
+  FakeCoherenceReviewer,
   PERSONA_VERSION,
   type GateVerdict,
+  type ReviewOutcome,
   type TurnUsage,
 } from '@oto/assistant';
 import { WITHHELD_REPLY_REASONS } from '../src/services/inbox/ai-destination';
@@ -41,6 +51,7 @@ import { loadTurnKnowledge } from '../src/services/inbox/ai-knowledge';
 import { teardownAll } from '../test/helpers';
 import {
   CapturingClient,
+  CapturingReviewer,
   FIXTURE_NOTE,
   LIVE_GOLDENS,
   MECHANICAL_GOLDENS,
@@ -160,14 +171,32 @@ async function main(): Promise<void> {
   const rehearsal = new FakeAssistantClient([], args.model);
   const inner = args.fake ? rehearsal : new AnthropicAssistantClient({ apiKey: key, model: args.model, fetch: capture.fetch });
   const client = new CapturingClient(inner, args.fake ? () => null : capture.take);
+  const reviewRehearsal = new FakeCoherenceReviewer([], args.model);
+  const reviewer = new CapturingReviewer(args.fake ? reviewRehearsal : new AnthropicCoherenceReviewer({ apiKey: key, model: args.model }));
 
   console.log(`ai:eval  model ${args.model}  effort low (the engine default)  ${args.fake ? 'REHEARSAL (fake client, no API call)' : 'LIVE'}${args.record ? '  RECORDING' : ''}`);
   console.log('building the fixture world (embedded database, migrations, seed, fixture KB)…');
   const w = await buildGoldenWorld(client);
+  w.ctx.app.inboxAi.reviewer = reviewer;
   const results: Array<{ id: string; pass: boolean; why: string[] }> = [];
   const totals: TurnUsage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
   let cost = 0;
   let calls = 0;
+  let reviews = 0;
+  /** One review's usage into the run's totals and cost. */
+  const countReview = (o: ReviewOutcome): string => {
+    reviews += 1;
+    if (o.usage) {
+      totals.inputTokens += o.usage.inputTokens;
+      totals.outputTokens += o.usage.outputTokens;
+      totals.cacheReadTokens += o.usage.cacheReadTokens;
+      totals.cacheWriteTokens += o.usage.cacheWriteTokens;
+      cost += costOf(o.model ?? args.model, o.usage) ?? 0;
+    }
+    if (!o.ok) return `failed ${o.reason} (the reply went as composed)`;
+    const dropped = o.decision.items.filter((i) => !i.keep).map((i) => i.index);
+    return `drop [${dropped.join(', ')}] merge [${o.decision.merges.map((m) => `${m.index}+${m.index + 1}/${m.joiner}`).join(', ')}]  ${(o.latencyMs / 1000).toFixed(1)} s`;
+  };
   try {
     // The world must render exactly the knowledge the replay suite rebuilds with no database.
     const loaded = await loadTurnKnowledge(w.ctx.db, w.oto, new Date());
@@ -188,12 +217,19 @@ async function main(): Promise<void> {
       let served: string | null = null;
       for (const [i, turn] of golden.turns.entries()) {
         if (args.fake) rehearsal.push({ kind: 'decision', decision: turn.rehearsal, latencyMs: 0 });
+        if (args.fake && turn.review) reviewRehearsal.push({ ...turn.review, latencyMs: 0 });
         const before = client.calls.length;
+        const reviewsBefore = reviewer.calls.length;
         const conv = await customerSays(w, golden.account, phone, turn.says);
         if (i === 0) startTeam = conv.teamId;
         convId = conv.id;
         await tickAt(w, new Date());
         const call = client.calls[before];
+        for (const r of reviewer.calls.slice(reviewsBefore)) console.log(`  review     ${countReview(r.outcome)}`);
+        const reviewed = reviewer.calls.length - reviewsBefore;
+        if (args.fake && reviewed !== (turn.review ? 1 : 0)) {
+          why.push(`turn ${i + 1}: ${reviewed} coherence review(s), the golden scripts ${turn.review ? 'one' : 'none'}`);
+        }
         const row = (await threadState(w, conv.id)).turns.at(-1);
         console.log(`  customer   ${JSON.stringify(turn.says)}`);
         if (!call) {
@@ -296,7 +332,7 @@ async function main(): Promise<void> {
   const passed = results.filter((r) => r.pass).length;
   console.log(`  ${passed}/${results.length} PASS`);
   console.log(
-    `  model calls ${calls}  tokens in ${totals.inputTokens} out ${totals.outputTokens} cache read ${totals.cacheReadTokens} cache write ${totals.cacheWriteTokens}` +
+    `  model calls ${calls}  coherence reviews ${reviews}  tokens in ${totals.inputTokens} out ${totals.outputTokens} cache read ${totals.cacheReadTokens} cache write ${totals.cacheWriteTokens}` +
       (args.fake ? '' : `  rough cost $${cost.toFixed(3)}`),
   );
   if (passed !== results.length) process.exitCode = 1;

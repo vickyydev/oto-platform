@@ -27773,6 +27773,7 @@ export interface paths {
                                     debounceMaxSeconds?: number;
                                     firstBubbleMs?: number;
                                     bubbleGapMs?: number;
+                                    coherenceReview?: boolean;
                                 };
                             };
                             rates: {
@@ -27798,6 +27799,7 @@ export interface paths {
                                     debounceMaxSeconds: number;
                                     firstBubbleMs: number;
                                     bubbleGapMs: number;
+                                    coherenceReview: boolean;
                                 };
                             };
                             /** @enum {string} */
@@ -27812,7 +27814,7 @@ export interface paths {
                 };
             };
         };
-        /** @description Atomically replace sparse numeric overrides and append USD rate versions at the expected revision. Requires Idempotency-Key; saved rate history is immutable. */
+        /** @description Atomically replace sparse numeric overrides (and the coherence review switch) and append USD rate versions at the expected revision. Requires Idempotency-Key; saved rate history is immutable. */
         put: {
             parameters: {
                 query?: never;
@@ -27841,6 +27843,7 @@ export interface paths {
                                 debounceMaxSeconds?: number;
                                 firstBubbleMs?: number;
                                 bubbleGapMs?: number;
+                                coherenceReview?: boolean;
                             };
                         };
                         rates: {
@@ -27881,6 +27884,7 @@ export interface paths {
                                     debounceMaxSeconds?: number;
                                     firstBubbleMs?: number;
                                     bubbleGapMs?: number;
+                                    coherenceReview?: boolean;
                                 };
                             };
                             rates: {
@@ -27906,6 +27910,7 @@ export interface paths {
                                     debounceMaxSeconds: number;
                                     firstBubbleMs: number;
                                     bubbleGapMs: number;
+                                    coherenceReview: boolean;
                                 };
                             };
                             /** @enum {string} */

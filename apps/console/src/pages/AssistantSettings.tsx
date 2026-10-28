@@ -12,7 +12,8 @@ import { CardShell, StripedList } from '@/components/redesign/layout';
 import { Button } from '@/components/ui/button';
 
 type InternalKey = keyof AssistantSettingsRead['effective']['internal'];
-type InboxKey = keyof AssistantSettingsRead['effective']['inbox'];
+/** SCRUM-677: the inbox's one switch beside its numbers, the coherence review of a mixed reply. */
+type InboxKey = Exclude<keyof AssistantSettingsRead['effective']['inbox'], 'coherenceReview'>;
 type NumericField<K extends string> = { key: K; label: string; unit: string; min: number; max?: number };
 const INTERNAL: readonly NumericField<InternalKey>[] = [
   { key: 'personDailyCap', label: 'Per-person daily asks', unit: 'asks per Bangkok day', min: 0 },
@@ -29,7 +30,11 @@ const INBOX: readonly NumericField<InboxKey>[] = [
   { key: 'firstBubbleMs', label: 'First bubble (milliseconds)', unit: 'milliseconds', min: 0, max: 120000 },
   { key: 'bubbleGapMs', label: 'Bubble gap (milliseconds)', unit: 'milliseconds', min: 0, max: 60000 },
 ];
-type Draft = { internal: Record<InternalKey, number | null>; inbox: Record<InboxKey, number | null>; rates: AssistantSettingsWrite['rates'] };
+type Draft = {
+  internal: Record<InternalKey, number | null>; inbox: Record<InboxKey, number | null>;
+  /** Null uses the deployment default (on). */
+  coherenceReview: boolean | null; rates: AssistantSettingsWrite['rates'];
+};
 const draftOf = (data: AssistantSettingsRead): Draft => ({
   internal: { personDailyCap: data.overrides.internal.personDailyCap ?? null, dailyAskCap: data.overrides.internal.dailyAskCap ?? null,
     dailyTokenCap: data.overrides.internal.dailyTokenCap ?? null, concurrentPerPerson: data.overrides.internal.concurrentPerPerson ?? null,
@@ -37,6 +42,7 @@ const draftOf = (data: AssistantSettingsRead): Draft => ({
   inbox: { dailyTurnCap: data.overrides.inbox.dailyTurnCap ?? null, dailyTokenCap: data.overrides.inbox.dailyTokenCap ?? null,
     debounceSeconds: data.overrides.inbox.debounceSeconds ?? null, debounceMaxSeconds: data.overrides.inbox.debounceMaxSeconds ?? null,
     firstBubbleMs: data.overrides.inbox.firstBubbleMs ?? null, bubbleGapMs: data.overrides.inbox.bubbleGapMs ?? null },
+  coherenceReview: data.overrides.inbox.coherenceReview ?? null,
   rates: structuredClone(data.rates),
 });
 function numericError<K extends string>(fields: readonly NumericField<K>[], values: Record<K, number | null>) {
@@ -51,6 +57,7 @@ function bodyOf(data: AssistantSettingsRead, draft: Draft): AssistantSettingsWri
   const internal: AssistantSettingsWrite['overrides']['internal'] = {}, inbox: AssistantSettingsWrite['overrides']['inbox'] = {};
   for (const field of INTERNAL) { const value = draft.internal[field.key]; if (value !== null) internal[field.key] = value; }
   for (const field of INBOX) { const value = draft.inbox[field.key]; if (value !== null) inbox[field.key] = value; }
+  if (draft.coherenceReview !== null) inbox.coherenceReview = draft.coherenceReview;
   return { expectedRevision: data.revision, schemaVersion: 1, overrides: { internal, inbox }, rates: structuredClone(draft.rates) };
 }
 
@@ -106,6 +113,9 @@ function SettingsEditor({ operatorId, isCurrent }: { operatorId: string; isCurre
   const changeInbox = (key: InboxKey, value: number | null) => {
     if (!editable()) return; version.current++; setSaved(false); setDraft(d => d ? { ...d, inbox: { ...d.inbox, [key]: value } } : null);
   };
+  const changeReview = (value: boolean | null) => {
+    if (!editable()) return; version.current++; setSaved(false); setDraft(d => d ? { ...d, coherenceReview: value } : null);
+  };
   const validation = draft ? numericError(INTERNAL, draft.internal) ?? numericError(INBOX, draft.inbox) : null;
   const save = async () => {
     if (!current() || version.current !== viewVersion || reading.current || inFlight.current || conflictRef.current || !data || !draft || validation) return;
@@ -150,6 +160,12 @@ function SettingsEditor({ operatorId, isCurrent }: { operatorId: string; isCurre
       <CardShell title="Inbox assistant" note="daily caps and native pacing units">
         <NumericFields fields={INBOX} values={draft.inbox} effective={data.effective.inbox} disabled={frozen} onChange={changeInbox} />
         <p className="text-xs text-muted-foreground">The effective maximum debounce is at least the effective debounce. A lower saved maximum is retained and normalized when used.</p>
+        <Field label="Coherence review" hint={<>{draft.coherenceReview === null ? 'Deployment default' : 'Current override'} · Effective: {data.effective.inbox.coherenceReview ? 'on' : 'off'}. Before a reply that mixes the assistant’s words and a fixed line is sent, it is checked so it reads as one message. Blank uses the deployment default (on).</>}>
+          <select value={draft.coherenceReview === null ? '' : draft.coherenceReview ? 'on' : 'off'} disabled={frozen} className={CONTROL}
+            onChange={event => changeReview(event.target.value === '' ? null : event.target.value === 'on')}>
+            <option value="">Deployment default (on)</option><option value="on">On</option><option value="off">Off</option>
+          </select>
+        </Field>
       </CardShell>
       <RateVersions key={JSON.stringify([data.revision, data.rates])} saved={data.rates} pending={draft.rates.slice(data.rates.length)} disabled={frozen}
         canEdit={editable} onAdd={addRate} />

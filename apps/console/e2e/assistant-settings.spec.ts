@@ -11,7 +11,7 @@ const NOW = '2026-10-25T08:00:00.000Z';
 const ADDRESS = '/channels/assistant-settings';
 const defaults = {
   internal: { personDailyCap: 21, dailyAskCap: 300, dailyTokenCap: 10_000, concurrentPerPerson: 3, concurrentPerOperator: 8 },
-  inbox: { dailyTurnCap: 400, dailyTokenCap: 20_000, debounceSeconds: 2, debounceMaxSeconds: 8, firstBubbleMs: 300, bubbleGapMs: 600 },
+  inbox: { dailyTurnCap: 400, dailyTokenCap: 20_000, debounceSeconds: 2, debounceMaxSeconds: 8, firstBubbleMs: 300, bubbleGapMs: 600, coherenceReview: true },
 };
 type Overrides = { internal: Partial<typeof defaults.internal>; inbox: Partial<typeof defaults.inbox> };
 type Rate = { model: string; effectiveFrom: string; inputUsdPerMillion: number; outputUsdPerMillion: number; cacheReadUsdPerMillion: number };

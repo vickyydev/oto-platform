@@ -1,7 +1,10 @@
 import {
   AnthropicAssistantClient,
+  AnthropicCoherenceReviewer,
+  REVIEW_TIMEOUT_MS,
   type AiEffort,
   type AssistantClient,
+  type CoherenceReviewer,
   type PacingConfig,
   type RandomSource,
 } from '@oto/assistant';
@@ -38,6 +41,8 @@ export interface InboxAiConfig {
   dailyTokenCap: number;
   /** §B.6 typing time, the two knobs (test night 2026-10-21, P). */
   pacing: PacingConfig;
+  /** SCRUM-677: the coherence review's hard cap; past it the reply goes as composed. Tests shorten it. */
+  reviewTimeoutMs: number;
 }
 
 /** What the ingest needs to write a turn: the switch and the debounce. */
@@ -47,6 +52,13 @@ export interface InboxAiRuntime {
   config: InboxAiConfig;
   /** The model. Replaced in tests by a fake; null when there is none to call. */
   client: AssistantClient | null;
+  /**
+   * SCRUM-677: the coherence reviewer, built beside the client and from the
+   * same key and model; null when there is no client, and ALWAYS null under
+   * `NODE_ENV=test` (a suite injects `FakeCoherenceReviewer`). With none, a
+   * reply goes as composed.
+   */
+  reviewer: CoherenceReviewer | null;
   /** Pacing's jitter source (§B.6); tests pin it. */
   random: RandomSource;
 }
@@ -62,12 +74,14 @@ export function inboxAiConfigOf(env: Env): InboxAiConfig {
     dailyTurnCap: env.INBOX_AI_DAILY_TURN_CAP,
     dailyTokenCap: env.INBOX_AI_DAILY_TOKEN_CAP,
     pacing: { firstBubbleMaxMs: env.INBOX_AI_FIRST_BUBBLE_MS, bubbleGapMaxMs: env.INBOX_AI_BUBBLE_GAP_MS },
+    reviewTimeoutMs: REVIEW_TIMEOUT_MS,
   };
 }
 
 export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiRuntime {
   const config = inboxAiConfigOf(env);
   let client: AssistantClient | null = null;
+  let reviewer: CoherenceReviewer | null = null;
   if (config.enabled && env.NODE_ENV !== 'test' && env.ANTHROPIC_API_KEY.trim()) {
     client = new AnthropicAssistantClient({
       apiKey: env.ANTHROPIC_API_KEY,
@@ -75,6 +89,13 @@ export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiR
       model: config.model,
       effort: config.effort,
       timeoutMs: config.timeoutMs,
+    });
+    reviewer = new AnthropicCoherenceReviewer({
+      apiKey: env.ANTHROPIC_API_KEY,
+      baseURL: env.ANTHROPIC_BASE_URL.trim() || undefined,
+      model: config.model,
+      effort: config.effort,
+      timeoutMs: config.reviewTimeoutMs,
     });
   }
   if (config.enabled) {
@@ -84,7 +105,7 @@ export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiR
       'inbox assistant enabled',
     );
   }
-  return { config, client, random: Math.random };
+  return { config, client, reviewer, random: Math.random };
 }
 
 /** The ingest's view: the switch and the debounce only. */

@@ -14,7 +14,8 @@ const action = 'assistant_settings.update';
 const path = '/assistant-settings';
 const defaults = {
   internal: { personDailyCap: 11, dailyAskCap: 111, dailyTokenCap: 1234, concurrentPerPerson: 3, concurrentPerOperator: 17 },
-  inbox: { dailyTurnCap: 91, dailyTokenCap: 4567, debounceSeconds: 7, debounceMaxSeconds: 7, firstBubbleMs: 123, bubbleGapMs: 456 },
+  // SCRUM-677: the coherence review switch has no environment variable; it is on unless saved off.
+  inbox: { dailyTurnCap: 91, dailyTokenCap: 4567, debounceSeconds: 7, debounceMaxSeconds: 7, firstBubbleMs: 123, bubbleGapMs: 456, coherenceReview: true },
 };
 const body = (overrides: Record<string, unknown> = {}, rates: unknown[] = [], expectedRevision = 0) => ({
   expectedRevision, schemaVersion: 1, overrides: { internal: {}, inbox: {}, ...overrides }, rates,
@@ -87,7 +88,7 @@ describe('SCRUM-638 assistant settings HTTP adversarial review', () => {
     expect((await read()).statusCode).toBe(403);
   });
 
-  it('R3 high: no row is revision0/environment with all eleven native numeric defaults and normalized debounce, without creating a row', async () => {
+  it('R3 high: no row is revision0/environment with all eleven native numeric defaults, the review switch on, and normalized debounce, without creating a row', async () => {
     await resetSettings(); const response = await read(); expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ operatorId, schemaVersion: 1, overrides: { internal: {}, inbox: {} }, effective: defaults,
       rates: [], source: 'environment', revision: 0, updatedAt: null, updatedBy: null });
@@ -114,8 +115,18 @@ describe('SCRUM-638 assistant settings HTTP adversarial review', () => {
     };
     const response = await put(body(overrides)); expect(response.statusCode).toBe(200);
     expect(response.json().overrides).toEqual(overrides);
-    expect(response.json().effective).toEqual({ internal: overrides.internal, inbox: { ...overrides.inbox, debounceMaxSeconds: 20 } });
+    expect(response.json().effective).toEqual({ internal: overrides.internal, inbox: { ...overrides.inbox, debounceMaxSeconds: 20, coherenceReview: true } });
     expect(ctx.app.env.INTERNAL_AI_PERSON_DAILY_CAP).toBe(11); expect(ctx.app.env.INBOX_AI_DEBOUNCE_MAX_S).toBe(4);
+  });
+
+  it('SCRUM-677: the coherence review switch saves sparse like the numbers, off is explicit, and omitting it is on again', async () => {
+    await resetSettings(); const off = await put(body({ inbox: { coherenceReview: false } }));
+    expect(off.statusCode).toBe(200);
+    expect(off.json()).toMatchObject({ overrides: { inbox: { coherenceReview: false } }, effective: { inbox: { ...defaults.inbox, coherenceReview: false } } });
+    expect(await assistantSettingOverridesOf(ctx.db, operatorId)).toEqual({ internal: {}, inbox: { coherenceReview: false } });
+    const on = await put(body({}, [], 1)); expect(on.statusCode).toBe(200);
+    expect(on.json()).toMatchObject({ overrides: { inbox: {} }, effective: defaults });
+    expect(await audits()).toHaveLength(2);
   });
 
   it('R6 medium: sparse replacement resets omitted fields to deployment defaults, without inventing a quota maximum', async () => {
@@ -140,6 +151,9 @@ describe('SCRUM-638 assistant settings HTTP adversarial review', () => {
     ['debounce-max ceiling', { overrides: { internal: {}, inbox: { debounceMaxSeconds: 3601 } } }],
     ['first-bubble ceiling', { overrides: { internal: {}, inbox: { firstBubbleMs: 120001 } } }],
     ['bubble-gap ceiling', { overrides: { internal: {}, inbox: { bubbleGapMs: 60001 } } }],
+    ['coherence review as a word', { overrides: { internal: {}, inbox: { coherenceReview: 'off' } } }],
+    ['coherence review as a number', { overrides: { internal: {}, inbox: { coherenceReview: 0 } } }],
+    ['coherence review as null', { overrides: { internal: {}, inbox: { coherenceReview: null } } }],
   ])('R7 high: strict body rejects %s rather than silently changing engine policy or coercing native units', async (_label, change) => {
     expect((await put({ ...body(), ...change })).statusCode).toBe(400);
   });
