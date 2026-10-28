@@ -6,7 +6,6 @@ import {
   INTENT_TABLE,
   applyGates,
   bubbleGuard,
-  buildKnowledge,
   personaGuard,
   traceabilityGuard,
   type AiDecision,
@@ -31,6 +30,7 @@ import { schema as s } from '@oto/db';
 import { newId, type Satang } from '@oto/shared';
 import type { FileStorage } from '../src/services/files';
 import { runInboxAiJob, type AiSweep } from '../src/services/inbox/ai-engine';
+import { knowledgeWithTierPrices, packageFact } from '../src/services/inbox/ai-knowledge';
 import {
   ADMIN,
   CENTRAL_BRANCH_CODE,
@@ -295,26 +295,36 @@ export const FIXTURE_BIRTHDAY_HOLDING: Record<AiReplyLanguage, string> = {
   ru: 'Спасибо за интерес к празднику в OTO! 🎈 Мы отправили Вам пакеты праздников, коллега из команды праздников скоро свяжется с Вами.',
 };
 
-/** The rendered knowledge block of the fixture world, built with no database. */
+const FIXTURE_PARK_KEYS = ['central', 'chalong'] as const;
+
+/**
+ * The one ticket package each park of the fixture world sells, as the
+ * catalogue row `buildGoldenWorld` seeds — and the row the no-database twin
+ * renders, so the two cannot drift. Tourist tier only (the fixture prices
+ * have no Thai or resident tier): the child price weekday and weekend, one
+ * adult free with each child ticket, every further adult the park's extra.
+ */
+export function fixturePackageRow(key: (typeof FIXTURE_PARK_KEYS)[number]) {
+  const p = FIXTURE_PARKS[key];
+  const extra = { weekday: p.extraAdult, weekend: p.extraAdult };
+  return {
+    name: p.packageName,
+    hours: 8,
+    prices: { tourist: p.kid },
+    adultRules: { tourist: { kind: 'free_adults' as const, freeAdults: 1, overflow: 'set_price' as const, price: extra } },
+  };
+}
+
+/** The knowledge input of the fixture world, built with no database: each package's fact as `loadTurnKnowledge` reads it. */
 export function fixtureKnowledgeInput(): KnowledgeInput {
-  const parks = (['central', 'chalong'] as const).map((key) => {
+  const parks = FIXTURE_PARK_KEYS.map((key) => {
     const p = FIXTURE_PARKS[key];
     return {
       key,
       name: p.name,
       address: p.address,
       openingHours: FIXTURE_OPENING_HOURS,
-      packages: [
-        {
-          name: p.packageName,
-          kidWeekday: p.kid.weekday,
-          kidWeekend: p.kid.weekend,
-          adultWeekday: p.extraAdult,
-          adultWeekend: p.extraAdult,
-          includedAdults: 1,
-          overflowAdult: p.extraAdult,
-        },
-      ],
+      packages: [packageFact(fixturePackageRow(key))!],
     };
   });
   return {
@@ -324,8 +334,17 @@ export function fixtureKnowledgeInput(): KnowledgeInput {
   };
 }
 
+/**
+ * The rendered knowledge block of the fixture world, built with no database
+ * through the engine's own renderer: since SCRUM-220 each park's price fact
+ * is `priceFactText` (every tier the catalogue carries), as the live turn
+ * reads it, so the replay prompt is byte for byte the world's.
+ */
 export function fixtureKnowledge(): KnowledgeBlock {
-  return buildKnowledge(fixtureKnowledgeInput());
+  return knowledgeWithTierPrices(
+    fixtureKnowledgeInput(),
+    FIXTURE_PARK_KEYS.map((key) => ({ key, name: FIXTURE_PARKS[key].name, rows: [fixturePackageRow(key)] })),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1020,16 +1039,12 @@ export async function buildGoldenWorld(client: AssistantClient | null): Promise<
       .update(s.branch)
       .set({ name: p.name, address: p.address, openingHours: FIXTURE_OPENING_HOURS as never })
       .where(eq(s.branch.id, branchId));
-    const extra = { weekday: p.extraAdult, weekend: p.extraAdult };
     await db.insert(s.ticketPackage).values({
       id: newId(),
       operatorId: oto,
       branchId,
-      name: p.packageName,
+      ...fixturePackageRow(key),
       durationLabel: 'All Day',
-      hours: 8,
-      prices: { tourist: p.kid },
-      adultRules: { tourist: { kind: 'free_adults', freeAdults: 1, overflow: 'set_price', price: extra } },
       active: true,
     });
   }
