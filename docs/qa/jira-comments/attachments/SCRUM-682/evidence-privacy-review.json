@@ -1,0 +1,87 @@
+{
+  "kind": "held-proof-privacy-v2-preparation",
+  "createdAt": "2026-10-28T20:46:01.964Z",
+  "passed": true,
+  "readyForRootReview": true,
+  "bindings": [
+    {
+      "ticket": "682",
+      "originalPath": "C:/oto-lanes/admin682-proof-tools/prove682.mjs",
+      "originalSha256": "9d463ee90ab04971ad265de82648f59146b2652806e9f3dbd7bf23d1a9d69fb4",
+      "helperPath": "C:/oto-lanes/admin682-proof-tools/prove682-v2.mjs",
+      "helperSha256": "89e931cb0f8aa4063ab089de05196c45abed6b3339b1b048aad9ad76845c9179",
+      "testPath": "C:/oto-lanes/proof-tools/held-privacy-v2/privacy-682.test.mjs",
+      "testSha256": "63b95158e53f8f82bd27912c033125d92c9e90cf5c97624366ad5927f7d5a49e",
+      "diffPath": "C:/oto-lanes/proof-tools/held-privacy-v2/privacy-682.patch",
+      "diffSha256": "123ad033dee887f74064926523b08aed0aef6e018822376cc9e4e6fec0b180e9",
+      "outsideCaptureAndPrimitiveCollectionByteIdentical": true,
+      "syntaxExitCode": 0
+    },
+    {
+      "ticket": "683",
+      "originalPath": "C:/oto-lanes/admin683-proof-tools/prove683.mjs",
+      "originalSha256": "4c621979600f7f71234d2090cac1f5bfcf8ddd2492d8ddb7f84e7fc4867fb7f3",
+      "helperPath": "C:/oto-lanes/admin683-proof-tools/prove683-v2.mjs",
+      "helperSha256": "751195f562b0e9a235108a72967b4c4443633ceec5b4569a62083fd08b0dc6f7",
+      "testPath": "C:/oto-lanes/proof-tools/held-privacy-v2/privacy-683.test.mjs",
+      "testSha256": "541a17b7767f222543bbb4bef205d35cb3b0296b0f882debfd312b1aeec58384",
+      "diffPath": "C:/oto-lanes/proof-tools/held-privacy-v2/privacy-683.patch",
+      "diffSha256": "1ba08ea181dfbfeb15f60676bc2e295018438ee074abbb5c06446a2f60714690",
+      "outsideCaptureAndPrimitiveCollectionByteIdentical": true,
+      "syntaxExitCode": 0
+    },
+    {
+      "ticket": "679",
+      "originalPath": "C:/oto-lanes/admin679-final-proof-tools/prove679-final.mjs",
+      "originalSha256": "13196f708713c2664ba331ec234891b671d5631626116e927a41705453b7ba18",
+      "helperPath": "C:/oto-lanes/admin679-final-proof-tools/prove679-final-v2.mjs",
+      "helperSha256": "116661424132f7fe5dbdf7dd47dce2c9fb4a198a7fcea752b8e6e9664890b06e",
+      "testPath": "C:/oto-lanes/proof-tools/held-privacy-v2/privacy-679.test.mjs",
+      "testSha256": "cd24a42f980d0a52ace1e113462316439903944368a6ba0e954a1710d2b57936",
+      "diffPath": "C:/oto-lanes/proof-tools/held-privacy-v2/privacy-679.patch",
+      "diffSha256": "f7c98075cd118f27e68d97a6f36dccb2f993adb30eda8280eb33c54c91ab8a7f",
+      "outsideCaptureAndPrimitiveCollectionByteIdentical": true,
+      "syntaxExitCode": 0
+    }
+  ],
+  "offlineCalibration": {
+    "actualCallbackExtracted": true,
+    "syntheticMinimalDomOnly": true,
+    "tests": 25,
+    "pass": 25,
+    "fail": 0,
+    "observedToolChunk": "82db3c",
+    "environmentPublicNameExceptionPinned": true
+  },
+  "preserved": [
+    "Every existing private value is still checked, including single-character values.",
+    "Cross-node remnants retain the original helper-specific strict check.",
+    "No source/CI/allowlist/auth/cleanup change outside the masking capture and primitive collection.",
+    "Environment public-name exception is unchanged.",
+    "Original v1 helper files are untouched."
+  ],
+  "diagnostics": [
+    "condition booleans",
+    "numeric caption rectangle",
+    "remaining-value count",
+    "remaining-value SHA256 and length"
+  ],
+  "actual681V1CauseConfirmed": false,
+  "execution": {
+    "networkCalls": 0,
+    "authCalls": 0,
+    "browserStarted": false,
+    "stagingCalls": 0,
+    "repoFilesChanged": false
+  },
+  "proposal": {
+    "path": "C:/oto-lanes/proof-tools/held-privacy-v2/679-docs-only-proposal.md",
+    "sha256": "2ddddd7011b6886ccc519c94eff058d49d2efcaf3efd685217629446b78e647a",
+    "implemented": false,
+    "strictCurrentMainEqualityRetained": true
+  },
+  "limits": [
+    "Offline source/function checks only; no live counterpart proof was executed.",
+    "Update each reviewed input to the new helper hash and use a fresh attempt directory after root review."
+  ]
+}

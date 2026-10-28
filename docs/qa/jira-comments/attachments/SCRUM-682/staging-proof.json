@@ -1,0 +1,787 @@
+{
+  "ticket": "SCRUM-682",
+  "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+  "ciRunId": "40767751950",
+  "helperSha256": "89e931cb0f8aa4063ab089de05196c45abed6b3339b1b048aad9ad76845c9179",
+  "startedAt": "2026-10-28T21:23:13.233Z",
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-28T21:23:17.574Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 357,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6dmivcj2c73fakn7g",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:22:46.388265Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6dmivcj2c73fakn40",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:20:05.99117Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-682-01-tax.png",
+      "at": "2026-10-28T21:23:38.025Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 357,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6dmivcj2c73fakn7g",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:22:46.388265Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6dmivcj2c73fakn40",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:20:05.99117Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-682-02-environment.png",
+      "at": "2026-10-28T21:23:46.279Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 357,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6dmivcj2c73fakn7g",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:22:46.388265Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6dmivcj2c73fakn40",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:20:05.99117Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-682-03-failures.png",
+      "at": "2026-10-28T21:23:54.290Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 357,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6dmivcj2c73fakn7g",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:22:46.388265Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6dmivcj2c73fakn40",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:20:05.99117Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-682-04-quarantine.png",
+      "at": "2026-10-28T21:24:04.111Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 357,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6dmivcj2c73fakn7g",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:22:46.388265Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6dmivcj2c73fakn40",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:20:05.99117Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-SCRUM-682-05-local-regressions-and-native-get-checks.png",
+      "at": "2026-10-28T21:24:08.583Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 357,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6dmivcj2c73fakn7g",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:22:46.388265Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6dmivcj2c73fakn40",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:20:05.99117Z"
+        }
+      ]
+    },
+    {
+      "stage": "after-proof",
+      "at": "2026-10-28T21:24:13.268Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "identical",
+      "testedBrowserSourceFiles": 357,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6dmivcj2c73fakn7g",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:22:46.388265Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6dmivcj2c73fakn40",
+          "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+          "finishedAt": "2026-10-28T21:20:05.99117Z"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "tax",
+      "path": "/catalogue/tax",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:29.541Z",
+          "bodySha256": "0646cde7d4e081a676f8e67598194e6c5ac2bc553563a1b4f24ca9f928bed1e5"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:30.106Z",
+          "bodySha256": "dc6709b4a2dbc7de56e3d7c8cad03ea05b2254d6c3300d9373f088a89c26fc2f"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:30.585Z",
+          "bodySha256": "0646cde7d4e081a676f8e67598194e6c5ac2bc553563a1b4f24ca9f928bed1e5"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:31.109Z",
+          "bodySha256": "647b88d6c34c2d862ebf91f1473c4a144d8c07f43fb681fd66c61c869ddbaacf"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:31.119Z",
+          "bodySha256": "18a165b1b8b720da4929b6aaebab3682d4f6a1823fea6474d0a674905cff7975"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:31.125Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:31.480Z",
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:31.668Z",
+          "bodySha256": "5acba9820fd9ebc818bcb4497bd503baa26bf9c5a23b24084aee47cfc39e14a9"
+        },
+        {
+          "label": "branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:31.962Z",
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73"
+        },
+        {
+          "label": "tax-config",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:32.483Z",
+          "bodySha256": "a308586fbed331cf338a89e30f4809c1f259c803e3149628bbff0219af9a321e",
+          "branchSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-682-01-tax.png",
+          "at": "2026-10-28T21:23:38.027Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 952,
+            "width": 1312,
+            "height": 40
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    },
+    {
+      "id": "environment",
+      "path": "/platform/environment",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:39.211Z",
+          "bodySha256": "0646cde7d4e081a676f8e67598194e6c5ac2bc553563a1b4f24ca9f928bed1e5"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:39.685Z",
+          "bodySha256": "dc6709b4a2dbc7de56e3d7c8cad03ea05b2254d6c3300d9373f088a89c26fc2f"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:40.153Z",
+          "bodySha256": "0646cde7d4e081a676f8e67598194e6c5ac2bc553563a1b4f24ca9f928bed1e5"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:40.607Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:40.667Z",
+          "bodySha256": "ca0ecb1de0768473582a70c3ccfaa75ab197d5621e35981444612b3407d503db"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:40.674Z",
+          "bodySha256": "18a165b1b8b720da4929b6aaebab3682d4f6a1823fea6474d0a674905cff7975"
+        },
+        {
+          "label": "environment",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:40.686Z",
+          "bodySha256": "c15cfbe0630cb2a72b8626a1498e86f310edd9e49d6fca1910d4f5aa90b720d2"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:41.228Z",
+          "bodySha256": "886b929f3e04c9f1b2376a30c50d5a3c7bfc6b222787b9ec116ddd490c88db51"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-682-02-environment.png",
+          "at": "2026-10-28T21:23:46.280Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 952,
+            "width": 1312,
+            "height": 40
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    },
+    {
+      "id": "failures",
+      "path": "/watch/failures",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:47.443Z",
+          "bodySha256": "0646cde7d4e081a676f8e67598194e6c5ac2bc553563a1b4f24ca9f928bed1e5"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:47.908Z",
+          "bodySha256": "dc6709b4a2dbc7de56e3d7c8cad03ea05b2254d6c3300d9373f088a89c26fc2f"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:48.380Z",
+          "bodySha256": "0646cde7d4e081a676f8e67598194e6c5ac2bc553563a1b4f24ca9f928bed1e5"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:48.866Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:48.872Z",
+          "bodySha256": "361d058f335835a2888b42ae7d4d91c0016f6d356153d14b422303e5204e47bc"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:48.892Z",
+          "bodySha256": "18a165b1b8b720da4929b6aaebab3682d4f6a1823fea6474d0a674905cff7975"
+        },
+        {
+          "label": "alert-recipients",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:48.907Z",
+          "bodySha256": "2c45f3bee41f6cafcbaae128a645158f99ad01343d6e1ad8d34f1e5a15c9ba8d"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:48.908Z",
+          "bodySha256": "18a165b1b8b720da4929b6aaebab3682d4f6a1823fea6474d0a674905cff7975"
+        },
+        {
+          "label": "alert-mutes",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:48.908Z",
+          "bodySha256": "5f7756c262f0c9d16e8660c99402a34d793d14dee55abb308a425c11491cc65b"
+        },
+        {
+          "label": "quarantine",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:48.931Z",
+          "bodySha256": "17591742e2285402481eb235e74ee6f98172f254fc97faed12b6f671b99a22a2"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:49.375Z",
+          "bodySha256": "eb934d82857e4a746c64d24bc13cd6379222720d13d570de1ed66bbf0f72f7d8"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-682-03-failures.png",
+          "at": "2026-10-28T21:23:54.292Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 952,
+            "width": 1312,
+            "height": 40
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    },
+    {
+      "id": "quarantine",
+      "path": "/watch/failures",
+      "reads": [
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:55.075Z",
+          "bodySha256": "0646cde7d4e081a676f8e67598194e6c5ac2bc553563a1b4f24ca9f928bed1e5"
+        },
+        {
+          "label": "permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:55.542Z",
+          "bodySha256": "dc6709b4a2dbc7de56e3d7c8cad03ea05b2254d6c3300d9373f088a89c26fc2f"
+        },
+        {
+          "label": "me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.003Z",
+          "bodySha256": "0646cde7d4e081a676f8e67598194e6c5ac2bc553563a1b4f24ca9f928bed1e5"
+        },
+        {
+          "label": "operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.463Z",
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.482Z",
+          "bodySha256": "18a165b1b8b720da4929b6aaebab3682d4f6a1823fea6474d0a674905cff7975"
+        },
+        {
+          "label": "quarantine",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.489Z",
+          "bodySha256": "17591742e2285402481eb235e74ee6f98172f254fc97faed12b6f671b99a22a2"
+        },
+        {
+          "label": "ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.498Z",
+          "bodySha256": "813bc820f516fdb41e08de4cb7ecec9fde3e5722017ed8be499faf2c3a377f42"
+        },
+        {
+          "label": "alert-mutes",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.511Z",
+          "bodySha256": "5f7756c262f0c9d16e8660c99402a34d793d14dee55abb308a425c11491cc65b"
+        },
+        {
+          "label": "alert-recipients",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.511Z",
+          "bodySha256": "2c45f3bee41f6cafcbaae128a645158f99ad01343d6e1ad8d34f1e5a15c9ba8d"
+        },
+        {
+          "label": "failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.871Z",
+          "bodySha256": "18a165b1b8b720da4929b6aaebab3682d4f6a1823fea6474d0a674905cff7975"
+        },
+        {
+          "label": "health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:56.984Z",
+          "bodySha256": "c8ddba792548e2ab72c5ed693f1d499dc9ea16c0d73d0b48aff4f4ea3265b3f4"
+        },
+        {
+          "label": "quarantine",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:58.598Z",
+          "bodySha256": "17591742e2285402481eb235e74ee6f98172f254fc97faed12b6f671b99a22a2"
+        },
+        {
+          "label": "anomalies",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:58.896Z",
+          "bodySha256": "30535a9cc68608f0aa1dd69a035a25363270aebcc166e0ddea939dfc7cca91d4"
+        },
+        {
+          "label": "quarantine",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T21:23:59.186Z",
+          "bodySha256": "17591742e2285402481eb235e74ee6f98172f254fc97faed12b6f671b99a22a2"
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "nativeReadTabOpened": true,
+      "privacyChecks": [
+        {
+          "filename": "SCRUM-682-04-quarantine.png",
+          "at": "2026-10-28T21:24:04.112Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 952,
+            "width": 1312,
+            "height": 40
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        },
+        {
+          "filename": "SCRUM-682-05-local-regressions-and-native-get-checks.png",
+          "at": "2026-10-28T21:24:08.585Z",
+          "cleanEnough": true,
+          "captionFits": true,
+          "privateMediaHidden": true,
+          "captionRect": {
+            "x": 272,
+            "y": 952,
+            "width": 1312,
+            "height": 40
+          },
+          "remainingValueCount": 0,
+          "remainingValues": []
+        }
+      ],
+      "pendingAtClose": 0
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "SCRUM-682-01-tax.png",
+      "sha256": "a20e2b15c6f2f2dad54fedd467f76048becf2ed9678ee0b3767a19476bae7018",
+      "capturedAt": "2026-10-28T21:23:38.027Z",
+      "page": "/catalogue/tax",
+      "labelledLocalCard": false,
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 952,
+          "width": 1312,
+          "height": 40
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-682-02-environment.png",
+      "sha256": "3e39b1199a61445c3a533ee3f1c7c850f0413fc7956f01cf631bdec33d3dbfa8",
+      "capturedAt": "2026-10-28T21:23:46.280Z",
+      "page": "/platform/environment",
+      "labelledLocalCard": false,
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 952,
+          "width": 1312,
+          "height": 40
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-682-03-failures.png",
+      "sha256": "47b515645fce1ee3afbb1596e5d8aefbf23ecf9eefedc66d235d0cfe2e80922a",
+      "capturedAt": "2026-10-28T21:23:54.292Z",
+      "page": "/watch/failures",
+      "labelledLocalCard": false,
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 952,
+          "width": 1312,
+          "height": 40
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-682-04-quarantine.png",
+      "sha256": "9677519deed89bb33e3960c1a6772d06434fd360f3e7a66c3cf410bd08ac504a",
+      "capturedAt": "2026-10-28T21:24:04.112Z",
+      "page": "/watch/failures",
+      "labelledLocalCard": false,
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 952,
+          "width": 1312,
+          "height": 40
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    },
+    {
+      "file": "SCRUM-682-05-local-regressions-and-native-get-checks.png",
+      "sha256": "ed8acc4de5d468280b72b06f4ed1b7fd3ae1903bfe4f053258d99737d4f4b9d2",
+      "capturedAt": "2026-10-28T21:24:08.585Z",
+      "page": "/watch/failures",
+      "labelledLocalCard": true,
+      "privacy": {
+        "cleanEnough": true,
+        "captionFits": true,
+        "privateMediaHidden": true,
+        "captionRect": {
+          "x": 272,
+          "y": 952,
+          "width": 1312,
+          "height": 40
+        },
+        "remainingValueCount": 0,
+        "remainingValues": []
+      }
+    }
+  ],
+  "errorChecks": [
+    {
+      "kind": "missing-endpoint",
+      "method": "GET",
+      "urlSha256": "8372574861813bb647ee3ed88f5e1be374135daac4aaee901d3a9c05da1acca4",
+      "requestedAt": "2026-10-28T21:23:23.510Z",
+      "status": 404,
+      "code": "ROUTE_NOT_FOUND",
+      "message": "This API endpoint is not available.",
+      "supportReference": "zz682-137e85a7-1795-43f8-b20c-e27f6370f434",
+      "at": "2026-10-28T21:23:24.406Z"
+    },
+    {
+      "kind": "missing-record",
+      "method": "GET",
+      "urlSha256": "45864743430a88df3865a0b9c8616a62a7c637ba0132f9871400b90a091b5b25",
+      "requestedAt": "2026-10-28T21:23:24.408Z",
+      "status": 404,
+      "code": "BOOTH_NOT_FOUND",
+      "message": "No booth with that id",
+      "supportReference": "zz682-e8902f29-f053-4e0e-9b59-18c04aa3db0b",
+      "at": "2026-10-28T21:23:24.897Z"
+    }
+  ],
+  "local": {
+    "inputSha256": "d151e7091524f540bec4c80ef208befe5425852f98cad3d165ac9610b7d9ea77",
+    "registrySha256": "450e71e0f1f402ed3ded2569cf360a3e7e36fce45a6d090c77c2890c6d9e5427",
+    "browser": {
+      "passed": 351,
+      "failed": 0,
+      "receiptSha256": "80224b6c2d6c8c5fb7ae03f04ac418fc4e94f26e6bf2bac82ccfe6bcdffdfab3",
+      "sourceManifestSha256": "300b9dc65f7d3948adc2260178ef9bb2a81962dd1d6649ede3c13385a3c6c6f8",
+      "logSha256": "ef974c9fba56a44adaf1e5861bc0d24488e1bbac769fa4dcb23220e3a9a9f024"
+    },
+    "regressions": []
+  },
+  "auth": {
+    "attempted": true,
+    "signInStatus": 200,
+    "ambiguous": false
+  },
+  "cleanup": {
+    "originalCookieObserved": true,
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "limitations": [
+    "Staging reads native Tax, Environment, Failures and Quarantine plus two deliberate read-only missing-endpoint/record GETs. No fault, write or readback failure is injected.",
+    "The fifth PNG is a clearly labelled test-evidence card over a real staging page. Write-failure, uncertain-outcome and failed-refresh behavior is local regression evidence only.",
+    "Identity, contact, code, input, image and QR content is masked for evidence. Screenshots are partial viewports."
+  ],
+  "authorityBeforeSha256": "0acdc4ccee5645aa9ce261f953761376a6c27bd55368caca1e5f47b9175d866e",
+  "permissionsBeforeSha256": "1533e8069f5a6a53ed7be471727a6036e3fba3bd7c84e077d2516dd8584ae835",
+  "authorityAfterSha256": "0acdc4ccee5645aa9ce261f953761376a6c27bd55368caca1e5f47b9175d866e",
+  "permissionsAfterSha256": "1533e8069f5a6a53ed7be471727a6036e3fba3bd7c84e077d2516dd8584ae835",
+  "finishedAt": "2026-10-28T21:24:14.314Z",
+  "complete": true
+}

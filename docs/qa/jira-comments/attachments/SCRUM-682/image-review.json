@@ -1,0 +1,50 @@
+{
+  "ticket": "SCRUM-682",
+  "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+  "inspected": true,
+  "reviewedAt": "2026-10-28T21:24:56.513Z",
+  "images": [
+    {
+      "file": "SCRUM-682-01-tax.png",
+      "sha256": "a20e2b15c6f2f2dad54fedd467f76048becf2ed9678ee0b3767a19476bae7018",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-682-02-environment.png",
+      "sha256": "3e39b1199a61445c3a533ee3f1c7c850f0413fc7956f01cf631bdec33d3dbfa8",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-682-03-failures.png",
+      "sha256": "47b515645fce1ee3afbb1596e5d8aefbf23ecf9eefedc66d235d0cfe2e80922a",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-682-04-quarantine.png",
+      "sha256": "9677519deed89bb33e3960c1a6772d06434fd360f3e7a66c3cf410bd08ac504a",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    },
+    {
+      "file": "SCRUM-682-05-local-regressions-and-native-get-checks.png",
+      "sha256": "ed8acc4de5d468280b72b06f4ed1b7fd3ae1903bfe4f053258d99737d4f4b9d2",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true
+    }
+  ],
+  "observations": [
+    "All five actual PNGs were visually inspected after capture; source/timestamp captions are legible.",
+    "Tax, Environment, Failures and Quarantine are native post-deploy pages. Environment shows variable names and presence only, never values.",
+    "Existing operational failure/quarantine records remain visible; this proof verifies the readers and does not claim those records resolved.",
+    "The fifth frame clearly labels 351 local browser passes and separately lists the two native staging 404 checks. No live failed-write simulation is claimed.",
+    "Inputs, identities, contacts and private media are masked or hidden; no secret or benefit QR is visible. Screenshots are partial viewports."
+  ]
+}

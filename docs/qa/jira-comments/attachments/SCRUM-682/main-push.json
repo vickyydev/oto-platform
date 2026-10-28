@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-682",
+  "sourceSha": "f87a1f64ff196636e28ab9ee0d37bed81f08e15f",
+  "candidateSha": "f3a079d126228a3577a3718bfb801acb5517e9e4",
+  "candidateRun": "40763664277",
+  "mainCiRun": "40767751950",
+  "commentId": "12677",
+  "after": {
+    "status": "Testing",
+    "summary": "Make Console refusals actionable and validate legacy operations replies"
+  },
+  "at": "2026-10-28T20:58:27.503Z",
+  "note": "The main push and comment succeeded; this receipt was recovered after the helper tried to parse a truncated successful comment response. No repeat push or comment."
+}
