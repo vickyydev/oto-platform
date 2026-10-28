@@ -20,6 +20,18 @@ const entries = [entry('tenders', 'Accepted tenders'), entry('tax', 'Park tax', 
   entry('unknown', 'ZZ TEST Unknown setting', { supported: false, url: null }),
   entry('unsafe', 'ZZ TEST Unsupported address', { url: '//invalid.example/settings' })];
 
+const boxes = ['online', 'offline', 'unclaimed', 'disabled'].map((status, index) => ({
+  id: `01968300-0000-7000-8000-${String(100 + index).padStart(12, '0')}`, branchId: PARK,
+  name: ['ZZ TEST Entry counter', 'ZZ TEST Ticket counter', 'ZZ TEST Reserve', 'ZZ TEST Backup'][index],
+  slot: `zz-slot-${index}`, role: index === 1 ? 'gate' : 'counter', status, archived: false,
+  hostname: `zz-unit-${index}`, heartbeatAgeSeconds: status === 'online' ? 5 : null,
+}));
+const stations = boxes.map((box, index) => ({ id: `01968300-0000-7000-8000-${String(200 + index).padStart(12, '0')}`,
+  branchId: PARK, name: index === 0 ? 'ZZ TEST Entry till' : `ZZ TEST Station ${index + 1}`,
+  kind: index === 1 ? 'gate' : 'till', boxId: box.id, boxName: box.name, boxStatus: box.status,
+  archived: false, devices: [], accessScope: 'all_staff', staff: [], configVersion: 1,
+}));
+
 const scope = { from: '2026-10-01', to: '2026-10-04', branches: [{ branchId: PARK, name: 'ZZ TEST Money park' }], omitted: [] };
 const day = {
   businessDate: '2026-10-01', provisional: false, rolledDays: 1, computedAt: null, revenueSatang: 123_400, ticketsSatang: 100_000,
@@ -89,6 +101,11 @@ async function fixture(page: Page, grants = permissions) {
     if (/^\/payment-methods\/zz_card\/move$/.test(path) && method === 'POST') return route.fulfill({ json: { ok: true, moved: true } });
     if (method !== 'GET') return route.fulfill({ status: 403, json: { error: { code: 'ZZ_TEST_WRITE_BLOCKED', message: 'No other fixture writes.' } } });
     if (path === '/branches') return route.fulfill({ json: { branches: [PARK, OTHER].map((id, i) => ({ id, name: `ZZ TEST Payments park ${i + 1}`, code: `zz-test-${i}`, timezone: 'Asia/Bangkok', country: 'TH', archived: false, openingHours: null, businessDayStart: '05:00:00', address: null })) } });
+    const fleet = /^\/branches\/([^/]+)\/(boxes|stations|credentials)$/.exec(path);
+    if (fleet) return route.fulfill({ json: { [fleet[2]!]: fleet[1] === PARK
+      ? fleet[2] === 'boxes' ? boxes : fleet[2] === 'stations' ? stations : []
+      : fleet[2] === 'boxes' ? [{ ...boxes[0], id: '01968300-0000-7000-8000-000000000300', branchId: OTHER, name: 'ZZ TEST Other park box' }] : [] } });
+    if (/^\/boxes\/[^/]+\/devices$/.test(path)) return route.fulfill({ json: { devices: [] } });
     if (path === '/console/configuration') return route.fulfill({ json: {
       generatedAt: '2026-10-29T00:00:00.000Z', operatorId: OPERATOR,
       branches: [{ id: PARK, name: 'ZZ TEST Payments park' }, { id: OTHER, name: 'ZZ TEST Other park' }],
@@ -197,12 +214,79 @@ test('Money attention filters retain unavailable evidence and leave source total
 });
 
 test('payment discovery and loaded filters fit a native 390px viewport', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 }); await fixture(page);
-  for (const path of ['/catalogue', '/config', '/reports/money']) {
+  await page.setViewportSize({ width: 390, height: 844 }); await fixture(page, [...permissions, 'admin:box:read']);
+  for (const path of ['/catalogue', '/config', '/reports/money', '/devices']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     if (path === '/config') await expect(page.getByRole('searchbox', { name: 'Search settings' })).toBeVisible();
     if (path === '/reports/money') await expect(page.getByRole('checkbox', { name: 'Only cash days needing attention' })).toBeVisible();
+    if (path === '/devices') await expect(page.getByRole('textbox', { name: 'Filter boxes and stations' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   }
+});
+
+test('Devices text and native box-status filters combine with type tabs without changing totals, source order or requests', async ({ page }) => {
+  const calls = await fixture(page, [...permissions, 'admin:box:read']); await page.goto('/devices');
+  await expect(page.getByRole('button', { name: 'ZZ TEST Entry counter', exact: true })).toBeVisible();
+  const header = page.locator('header').filter({ has: page.getByRole('heading', { name: 'Devices', exact: true, level: 1 }) });
+  await expect(header).toContainText('4 boxes · 1 online · 4 stations');
+  const nativeTotals = await header.textContent(), reads = calls.length;
+  const search = page.getByRole('textbox', { name: 'Filter boxes and stations', exact: true });
+  const status = page.getByRole('combobox', { name: 'Box status', exact: true });
+  await search.fill('  ENTRY  '); await status.selectOption('online');
+  await expect(page.getByText('1 of 4 loaded boxes', { exact: true })).toBeVisible();
+  await expect(page.getByText('1 of 4 loaded stations', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'ZZ TEST Entry till', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'ZZ TEST Ticket counter', exact: true })).toHaveCount(0);
+  expect(await header.textContent()).toBe(nativeTotals); expect(calls).toHaveLength(reads);
+  await page.getByRole('button', { name: 'Stations', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'ZZ TEST Entry till', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'ZZ TEST Entry counter', exact: true })).toHaveCount(0);
+  await search.fill(''); await status.selectOption('unclaimed');
+  await expect(page.getByRole('button', { name: 'ZZ TEST Station 3', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'ZZ TEST Entry till', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'All', exact: true }).click();
+  await status.selectOption('offline');
+  await expect(page.getByRole('button', { name: 'ZZ TEST Ticket counter', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'ZZ TEST Station 2', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Clear box and station filters', exact: true }).click();
+  await expect(search).toHaveValue(''); await expect(status).toHaveValue('all');
+  await expect(page.getByText('4 of 4 loaded boxes', { exact: true })).toBeVisible();
+  const names = await page.getByRole('button', { name: /^ZZ TEST (Entry counter|Ticket counter|Reserve|Backup)$/, exact: true }).allTextContents();
+  expect(names).toEqual(boxes.map(box => box.name)); expect(calls).toHaveLength(reads);
+  await page.getByRole('button', { name: 'Paired screens', exact: true }).click();
+  await expect(search).toHaveCount(0); await expect(status).toHaveCount(0);
+  expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
+});
+
+test('Devices filtered-zero retains stale failures and a new-park pending or failed read never claims empty inventory', async ({ page }) => {
+  await fixture(page, [...permissions, 'admin:box:read']);
+  let failed = false, held = false, release!: () => void;
+  const waiting = new Promise<void>(resolve => { release = resolve; });
+  await page.route(new RegExp(`/api/branches/${PARK}/boxes(?:\\?|$)`), route => failed
+    ? route.fulfill({ status: 500, json: { error: { code: 'ZZ_TEST_READ', message: 'ZZ TEST box refresh refused' } } }) : route.fallback());
+  await page.route(new RegExp(`/api/branches/${OTHER}/boxes(?:\\?|$)`), async route => {
+    held = true; await waiting;
+    return route.fulfill({ status: 500, json: { error: { code: 'ZZ_TEST_READ', message: 'ZZ TEST other park box read refused' } } });
+  });
+  await page.goto('/devices');
+  await expect(page.getByRole('button', { name: 'ZZ TEST Entry counter', exact: true })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Filter boxes and stations', exact: true }).fill('no loaded match');
+  await expect(page.getByText('No boxes match these filters', { exact: true })).toBeVisible();
+  await expect(page.getByText('No box at this branch yet', { exact: true })).toHaveCount(0);
+  failed = true; await page.locator('header').getByRole('button', { name: 'Refresh', exact: true }).click();
+  await expect(page.getByText('ZZ TEST box refresh refused', { exact: false }).first()).toBeVisible();
+  await expect(page.getByText('No boxes match these filters', { exact: true })).toBeVisible();
+  await expect(page.getByText('0 of 4 loaded boxes', { exact: true })).toBeVisible();
+  try {
+    await page.getByRole('combobox', { name: 'Branch', exact: true }).selectOption(OTHER);
+    await expect.poll(() => held).toBe(true);
+    await expect(page.getByText('No boxes match these filters', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('0 of 4 loaded boxes', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'ZZ TEST Entry counter', exact: true })).toHaveCount(0);
+    release();
+    await expect(page.getByText('ZZ TEST other park box read refused', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('No boxes match these filters', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('No box at this branch yet', { exact: true })).toHaveCount(0);
+  } finally { release(); }
 });
