@@ -576,16 +576,18 @@ describe('the brochure on a template (PUT /inbox/templates/{id}/brochure, §C.5)
     expect((await put(agentCookie, templateId, PDF(64), 'application/pdf')).statusCode).toBe(403);
   });
 
-  it('the assistant’s birthday handover carries the template’s file onto the outbound row', async () => {
+  it('the assistant’s brochure hand-over carries the template’s file onto the outbound row', async () => {
     const [t] = await w.ctx.db.select().from(s.template).where(eq(s.template.id, templateId));
-    const conv = await customer(w, line, nextPhone(), 'a birthday party for my son please');
+    // Since the playbook (owner D1) the brochure rides only an explicit request, then the closing line.
+    const conv = await customer(w, line, nextPhone(), 'can you send me your birthday packages please?');
     w.fake.push({
       kind: 'decision',
-      decision: decision({ intent: 'birthday_party', action: 'handover', reason: 'NEEDS_PERSON', sendBrochure: true, bubbles: [] }),
+      decision: decision({ intent: 'birthday_brochure', reason: 'CLEAR_INTENT', sendBrochure: true, bubbles: ['Of course! Here are our birthday packages 🎂'] }),
     });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     const lines = await aiLines(w, conv.id);
-    expect(lines[0]!).toMatchObject({ direction: 'outbound', mediaFileIds: t!.attachmentFileIds });
+    expect(lines).toHaveLength(3);
+    expect(lines[1]!).toMatchObject({ direction: 'outbound', body: null, mediaFileIds: t!.attachmentFileIds });
   });
 });
 

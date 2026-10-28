@@ -308,42 +308,65 @@ async function closingTemplate(key: 'closing_birthday' | 'closing_gm' | 'closing
   return row!;
 }
 
+/** A brochure file on the English birthday template (§C.5): what an explicit brochure request sends. */
+async function attachBrochure(objectKey: string): Promise<string> {
+  const fileId = newId();
+  await w.ctx.db.insert(s.fileObject).values({
+    id: fileId,
+    operatorId: w.oto,
+    bucket: 'oto-files-test',
+    objectKey,
+    contentType: 'application/pdf',
+    size: 2048,
+    ownerEntityType: 'inbox.template',
+    ownerEntityId: newId(),
+  });
+  await w.ctx.db
+    .update(s.template)
+    .set({ attachmentFileIds: [fileId] })
+    .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_birthday'), eq(s.template.language, 'en')));
+  return fileId;
+}
+
+/** The playbook's birthday open and its ONE combined question (owner D1). */
+const PARTY_OPEN = "Amazing, thank you! We'd love to organize a party for you 🎈";
+const PARTY_ASK = 'What date(s) are you thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong?';
+
 describe('a handover (§B.5, §C.5)', () => {
-  it('a birthday: the brochure, then the birthday manager’s closing line verbatim, and the thread moves to Birthdays as the assistant', async () => {
+  it('a birthday (owner D1): the open and the one question first; once the basics are in, the birthday manager’s line verbatim, and the thread moves to Birthdays as the assistant', async () => {
     await drain();
-    const fileId = newId();
-    await w.ctx.db.insert(s.fileObject).values({
-      id: fileId,
-      operatorId: w.oto,
-      bucket: 'oto-files-test',
-      objectKey: 'inbox/templates/brochure.pdf',
-      contentType: 'application/pdf',
-      size: 2048,
-      ownerEntityType: 'inbox.template',
-      ownerEntityId: newId(),
-    });
-    await w.ctx.db
-      .update(s.template)
-      .set({ attachmentFileIds: [fileId] })
-      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_birthday'), eq(s.template.language, 'en')));
-    // The brochure still rides the birthday template; the line is the destination's (SCRUM-220 playbook).
+    // A brochure is on the birthday template, and still neither turn sends it:
+    // the playbook qualifies, it never sells — the brochure rides only an
+    // explicit request (next test).
+    const fileId = await attachBrochure('inbox/templates/brochure.pdf');
     const holding = await closingTemplate('closing_birthday');
 
-    const conv = await customer(w, central, nextPhone(), `a birthday party for my son on the fourteenth ${SENTINEL}`);
+    const phone = nextPhone();
+    const conv = await customer(w, central, phone, `a birthday party for my son please ${SENTINEL}`);
     const reception = await teamOf(w, 'reception', w.central);
     expect(conv.teamId).toBe(reception.id);
-    w.fake.push({
-      kind: 'decision',
-      decision: decision({ intent: 'birthday_party', action: 'handover', reason: 'NEEDS_PERSON', sendBrochure: true, bubbles: [] }),
-    });
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_party', reason: 'CLEAR_INTENT', bubbles: [PARTY_OPEN, PARTY_ASK] }) });
+    expect((await tick(w, later(25_000))).answered).toBe(1);
+
+    // The question turn: the open and the question, nothing else; the thread stays.
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'answered', intent: 'birthday_party', action: 'answer' });
+    expect((await aiLines(w, conv.id)).map((l) => ({ body: l.body, mediaFileIds: l.mediaFileIds }))).toEqual([
+      { body: PARTY_OPEN, mediaFileIds: [] },
+      { body: PARTY_ASK, mediaFileIds: [] },
+    ]);
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id });
+    expect((await eventsOf(w, conv.id)).some((e) => e.kind === 'ai_handover')).toBe(false);
+
+    // The basics are in: the birthday manager's line, verbatim and alone.
+    await customer(w, central, phone, `the 14th, about 15 kids, at Central ${SENTINEL}`);
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
 
-    const [turn] = await turnsOf(w, conv.id);
-    expect(turn).toMatchObject({ state: 'handed_over', intent: 'birthday_party', action: 'handover' });
-    const lines = await aiLines(w, conv.id);
-    expect(lines).toHaveLength(2);
-    expect(lines[0]!.mediaFileIds).toEqual([fileId]);
-    expect(lines[1]).toMatchObject({ body: holding!.body, templateId: holding!.id, mediaFileIds: [] });
+    expect((await turnsOf(w, conv.id))[1]).toMatchObject({ state: 'handed_over', intent: 'birthday_details', action: 'handover' });
+    const all = await aiLines(w, conv.id);
+    expect(all).toHaveLength(3);
+    expect(all[2]).toMatchObject({ body: holding.body, templateId: holding.id, mediaFileIds: [] });
+    expect(all.some((l) => l.mediaFileIds.includes(fileId))).toBe(false);
 
     const after = await conversationRow(w, conv.id);
     const birthdays = await teamOf(w, 'birthdays');
@@ -352,28 +375,56 @@ describe('a handover (§B.5, §C.5)', () => {
     expect(slots.length).toBeGreaterThan(0);
     expect(slots.every((a) => a.assignedByKind === 'ai' && a.assignedByAccountId === null)).toBe(true);
     const events = await eventsOf(w, conv.id);
-    const handover = events.find((e) => e.kind === 'ai_handover');
-    expect(handover!.payload).toMatchObject({
-      intent: 'birthday_party',
-      templateKey: 'handover_birthday',
+    expect(events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({
+      intent: 'birthday_details',
+      templateKey: 'closing_birthday',
       closingKey: 'closing_birthday',
       destination: 'birthdays',
       holdingLine: 'template',
-      brochureFileIds: [fileId],
+      brochureFileIds: [],
       reroutedTeamId: birthdays.id,
     });
     expect(events.some((e) => e.kind === 'moved_team' && e.actorKind === 'ai')).toBe(true);
 
+    // The handover ends the assistant's episode: the next bubble writes no turn.
+    await customer(w, central, phone, 'hello?');
+    expect((await turnsOf(w, conv.id)).filter((t) => t.state === 'pending')).toHaveLength(0);
+  });
+
+  it('the birthday brochure, on an explicit request: the answer, the brochure as media through the send path, then the birthday manager’s line; Birthdays owns it', async () => {
+    await drain();
+    const fileId = await attachBrochure('inbox/templates/brochure-request.pdf');
+    const holding = await closingTemplate('closing_birthday');
+    const conv = await customer(w, central, nextPhone(), `can you send me your birthday packages? ${SENTINEL}`);
+    const bubble = 'Of course! Here are our birthday packages 🎂';
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_brochure', reason: 'CLEAR_INTENT', sendBrochure: true, bubbles: [bubble] }) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'handed_over', intent: 'birthday_brochure', action: 'answer' });
+    const lines = await aiLines(w, conv.id);
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toMatchObject({ body: bubble, mediaFileIds: [] });
+    expect(lines[1]).toMatchObject({ body: null, mediaFileIds: [fileId] });
+    expect(lines[2]).toMatchObject({ body: holding.body, templateId: holding.id, mediaFileIds: [] });
+    const birthdays = await teamOf(w, 'birthdays');
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'birthdays', teamId: birthdays.id });
+    const events = await eventsOf(w, conv.id);
+    expect(events.find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({ brochureFileIds: [fileId] });
+    expect(events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({
+      intent: 'birthday_brochure',
+      templateKey: 'handover_birthday',
+      closingKey: 'closing_birthday',
+      destination: 'birthdays',
+      brochureFileIds: [fileId],
+      reroutedTeamId: birthdays.id,
+    });
+
     // The brochure leaves as media, through the send path, after its typing time.
-    await tick(w, new Date(lines[1]!.nextAttemptAt!.getTime() + 1000));
-    const sent = (await sim(w, central)).sent().filter((x) => x.clientRef === lines[0]!.id);
+    await tick(w, new Date(lines[2]!.nextAttemptAt!.getTime() + 1000));
+    const sent = (await sim(w, central)).sent().filter((x) => x.clientRef === lines[1]!.id);
     expect(sent).toHaveLength(1);
     expect(sent[0]!.kind).toBe('media');
     expect(w.presigns.length).toBeGreaterThan(0);
-
-    // The handover ends the assistant's episode: the next bubble writes no turn.
-    await customer(w, central, `${(await w.ctx.db.select().from(s.contact).where(eq(s.contact.id, conv.contactId)))[0]!.externalHandle.slice(1)}`, 'hello?');
-    expect((await turnsOf(w, conv.id)).filter((t) => t.state === 'pending')).toHaveLength(0);
   });
 
   it('does not re-route a thread a person already assigned (an earlier episode’s seat)', async () => {
@@ -385,9 +436,10 @@ describe('a handover (§B.5, §C.5)', () => {
     expect(primary.status, JSON.stringify(primary.body)).toBe(200);
     expect((await call(w, adminCookie, 'POST', `/inbox/conversations/${conv.id}/handle`)).status).toBe(200);
     // The customer writes again: a new episode, the assistant eligible, the person still seated.
-    await customer(w, central, phone, 'can we book a birthday?');
+    await customer(w, central, phone, 'can we book a birthday? the 14th, 15 kids, Central');
     expect((await turnsOf(w, conv.id)).filter((t) => t.state === 'pending')).toHaveLength(1);
-    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_party', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
+    // A hand-over whose destination (Birthdays) differs from the thread's: only the person's seat keeps it.
+    w.fake.push({ kind: 'decision', decision: decision({ intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
     const after = await conversationRow(w, conv.id);
     expect(after.category).toBe('general');
@@ -398,28 +450,57 @@ describe('a handover (§B.5, §C.5)', () => {
     expect(handover!.payload).toMatchObject({ reroutedTeamId: null });
   });
 
-  it('a Thai complaint: the branch’s closing line and the complaint line both still need translation, so the checked persona words go; it stays with reception', async () => {
+  it('a Thai complaint: the checked apology, then the general manager’s Thai closing line verbatim; the GM team has it', async () => {
     await drain();
-    // The premise, set here since the test night (SCRUM-220 R1) laid every
-    // template in its own words: an operator whose Thai complaint line still
-    // carries the English source, marked for translation. Since the playbook
-    // (SCRUM-220) the destination's closing line comes first, so the branch's
-    // Thai closing line is put in the same state for this case, and restored.
-    await w.ctx.db
-      .update(s.template)
-      .set({ body: INBOX_TEMPLATE_BODIES.handover_complaint_onsite, needsTranslation: true })
-      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_complaint_onsite'), eq(s.template.language, 'th')));
+    // The foundation lays the Thai closing lines as real translations (house
+    // style since the test night's U1), so the destination's own line goes.
+    const gmTh = await closingTemplate('closing_gm', 'th');
+    expect(gmTh.needsTranslation).toBe(false);
+    const conv = await customer(w, central, nextPhone(), `พนักงานไม่สุภาพเลยค่ะ ${SENTINEL}`);
+    const apology = `ต้องขออภัยจริงๆ นะคะที่ทำให้รู้สึกไม่ดี ${SENTINEL}`;
+    w.fake.push({
+      kind: 'decision',
+      decision: decision({ language: 'th', intent: 'complaint_onsite', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [apology] }),
+    });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    const lines = await aiLines(w, conv.id);
+    expect(lines.map((l) => ({ body: l.body, templateId: l.templateId, bodyLanguage: l.bodyLanguage }))).toEqual([
+      { body: apology, templateId: null, bodyLanguage: 'th' },
+      { body: gmTh.body, templateId: gmTh.id, bodyLanguage: 'th' },
+    ]);
+    expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({
+      holdingLine: 'template',
+      closingKey: 'closing_gm',
+      destination: 'gm',
+    });
+    const gm = await teamOf(w, 'gm');
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'gm', teamId: gm.id });
+  });
+
+  it('a Thai unclear message whose branch line and general line both still need translation: the checked persona words go; it stays with reception', async () => {
+    await drain();
+    // The fallback path, constructed: an operator whose Thai rows for the
+    // destination's line and the team-neutral line still carry the English
+    // source, marked for translation. Restored after.
     const branchTh = await closingTemplate('closing_branch', 'th');
-    await w.ctx.db
-      .update(s.template)
-      .set({ body: INBOX_TEMPLATE_BODIES.closing_branch, needsTranslation: true })
-      .where(eq(s.template.id, branchTh.id));
+    const [generalTh] = await w.ctx.db
+      .select()
+      .from(s.template)
+      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_general'), eq(s.template.language, 'th')))
+      .limit(1);
+    const untranslated = [
+      { row: branchTh, english: INBOX_TEMPLATE_BODIES.closing_branch },
+      { row: generalTh!, english: INBOX_TEMPLATE_BODIES.handover_general },
+    ];
+    for (const u of untranslated) {
+      await w.ctx.db.update(s.template).set({ body: u.english, needsTranslation: true }).where(eq(s.template.id, u.row.id));
+    }
     try {
-      const conv = await customer(w, central, nextPhone(), `พนักงานไม่สุภาพเลยค่ะ ${SENTINEL}`);
-      const words = `ขอบคุณที่แจ้งนะคะ ทีมแอดมินจะติดต่อกลับโดยเร็วค่ะ ${SENTINEL}`;
+      const conv = await customer(w, central, nextPhone(), `ไม่แน่ใจว่าจะทำยังไงดีค่ะ ${SENTINEL}`);
+      const words = `ขอบคุณสำหรับข้อความนะคะ ทีมงานจะติดต่อกลับค่ะ ${SENTINEL}`;
       w.fake.push({
         kind: 'decision',
-        decision: decision({ language: 'th', intent: 'complaint_onsite', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [words] }),
+        decision: decision({ language: 'th', intent: 'emotional_or_unclear', action: 'handover', reason: 'UNCLEAR', bubbles: [words] }),
       });
       expect((await tick(w, later(25_000))).handedOver).toBe(1);
       const lines = await aiLines(w, conv.id);
@@ -428,10 +509,9 @@ describe('a handover (§B.5, §C.5)', () => {
       expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({ holdingLine: 'persona', closingKey: null });
       expect((await conversationRow(w, conv.id)).teamId).toBe(conv.teamId);
     } finally {
-      await w.ctx.db
-        .update(s.template)
-        .set({ body: branchTh.body, needsTranslation: branchTh.needsTranslation })
-        .where(eq(s.template.id, branchTh.id));
+      for (const u of untranslated) {
+        await w.ctx.db.update(s.template).set({ body: u.row.body, needsTranslation: u.row.needsTranslation }).where(eq(s.template.id, u.row.id));
+      }
     }
   });
 
@@ -906,55 +986,59 @@ describe('several questions at once (test night 2026-10-21, D1a, W2)', () => {
     expect((await conversationRow(w, conv.id)).teamId).toBe(conv.teamId);
   });
 
-  it('hours and a party: the hours bubble, then the brochure and the birthday manager’s line; no date, no price; Birthdays owns it', async () => {
+  it('hours and a party: the hours bubble and the one birthday question; then socks and the basics: the socks bubble and the birthday manager’s line; no date, no price, no brochure; Birthdays owns it', async () => {
     await drain();
     await w.ctx.db
       .update(s.branch)
       .set({ openingHours: { mon: { open: '10:00', close: '20:00' }, tue: { open: '10:00', close: '20:00' }, wed: { open: '10:00', close: '20:00' }, thu: { open: '10:00', close: '20:00' }, fri: { open: '10:00', close: '20:00' }, sat: { open: '10:00', close: '20:00' }, sun: { open: '10:00', close: '20:00' } } as never })
       .where(eq(s.branch.id, w.central));
-    const fileId = newId();
-    await w.ctx.db.insert(s.fileObject).values({
-      id: fileId,
-      operatorId: w.oto,
-      bucket: 'oto-files-test',
-      objectKey: 'inbox/templates/brochure-mixed.pdf',
-      contentType: 'application/pdf',
-      size: 2048,
-      ownerEntityType: 'inbox.template',
-      ownerEntityId: newId(),
-    });
-    await w.ctx.db
-      .update(s.template)
-      .set({ attachmentFileIds: [fileId] })
-      .where(and(eq(s.template.operatorId, w.oto), eq(s.template.key, 'handover_birthday'), eq(s.template.language, 'en')));
-    // The brochure rides the birthday template; the line is the destination's (SCRUM-220 playbook).
+    // A brochure on the birthday template, which neither turn sends (owner D1).
+    const fileId = await attachBrochure('inbox/templates/brochure-mixed.pdf');
     const holding = await closingTemplate('closing_birthday');
+    const reception = await teamOf(w, 'reception', w.central);
 
-    const conv = await customer(w, central, nextPhone(), `what are your hours and can I book a party for the 20th? ${SENTINEL}`);
+    // Turn one (owner D1): the hours part answered, the party part asked about — no hand-over yet.
+    const phone = nextPhone();
+    const conv = await customer(w, central, phone, `what are your hours and can I book a party for the 20th? ${SENTINEL}`);
     const hours = `We're open every day 10:00–20:00 😊 ${SENTINEL}`;
+    const ask = "And we'd love to organize a party for you! Roughly how many people, and which branch, Central Floresta or Robinson Chalong?";
     w.fake.push({
       kind: 'decision',
-      decision: decision({ intent: 'hours', intents: ['hours', 'birthday_party'], grounding: ['fact.hours.central'], reason: 'FACT_IN_KB', bubbles: [hours] }),
+      decision: decision({ intent: 'hours', intents: ['hours', 'birthday_party'], grounding: ['fact.hours.central'], reason: 'FACT_IN_KB', bubbles: [hours, ask] }),
+    });
+    expect((await tick(w, later(25_000))).answered).toBe(1);
+    expect((await turnsOf(w, conv.id))[0]).toMatchObject({ state: 'answered', reason: 'OK', intent: 'hours', action: 'answer' });
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([hours, ask]);
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'general', teamId: reception.id });
+    expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({
+      intents: ['hours', 'birthday_party'],
+      brochureFileIds: [],
+    });
+
+    // Turn two: another question beside the basics — answered, then the closing line.
+    await customer(w, central, phone, `about 12 kids at Central. do we need socks? ${SENTINEL}`);
+    const socks = `Yes, grip socks on the play floor please 😊 ${SENTINEL}`;
+    w.fake.push({
+      kind: 'decision',
+      decision: decision({ intent: 'socks', intents: ['socks', 'birthday_details'], grounding: ['socks'], reason: 'MIXED_INTENTS', bubbles: [socks] }),
     });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
-    const [turn] = await turnsOf(w, conv.id);
-    expect(turn).toMatchObject({ state: 'handed_over', reason: 'OK', intent: 'hours', action: 'answer' });
+    expect((await turnsOf(w, conv.id))[1]).toMatchObject({ state: 'handed_over', reason: 'OK', intent: 'socks', action: 'answer' });
     const lines = await aiLines(w, conv.id);
-    expect(lines).toHaveLength(3);
-    expect(lines[0]).toMatchObject({ body: hours, mediaFileIds: [] });
-    expect(lines[1]).toMatchObject({ body: null, mediaFileIds: [fileId] });
-    expect(lines[2]).toMatchObject({ body: holding!.body, templateId: holding!.id });
+    expect(lines).toHaveLength(4);
+    expect(lines[2]).toMatchObject({ body: socks, mediaFileIds: [] });
+    expect(lines[3]).toMatchObject({ body: holding.body, templateId: holding.id, mediaFileIds: [] });
+    expect(lines.some((l) => l.mediaFileIds.includes(fileId))).toBe(false);
     for (const l of lines) expect(l.body ?? '').not.toMatch(/20th|twentieth|฿|baht/i);
     const birthdays = await teamOf(w, 'birthdays');
-    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'birthdays', teamId: birthdays.id, intent: 'hours' });
-    const events = await eventsOf(w, conv.id);
-    expect(events.find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({ intents: ['hours', 'birthday_party'], brochureFileIds: [fileId] });
-    expect(events.find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({
-      intent: 'hours',
-      intents: ['hours', 'birthday_party'],
-      templateKey: 'handover_birthday',
+    expect(await conversationRow(w, conv.id)).toMatchObject({ category: 'birthdays', teamId: birthdays.id, intent: 'socks' });
+    expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_handover')!.payload).toMatchObject({
+      intent: 'socks',
+      intents: ['socks', 'birthday_details'],
+      templateKey: 'closing_birthday',
       closingKey: 'closing_birthday',
       holdingLine: 'template',
+      brochureFileIds: [],
       reroutedTeamId: birthdays.id,
     });
   });
@@ -1001,7 +1085,8 @@ describe('the language the customer wrote in routes the hand-over (test night 20
     // A simulator WhatsApp message carries no language hint: the thread is filed as English.
     const conv = await customer(w, central, nextPhone(), `สวัสดีค่ะ อยากจัดวันเกิดให้ลูกชายครบ 6 ขวบค่ะ เด็กประมาณ 12 คน ราคาเท่าไหร่คะ ${SENTINEL}`);
     expect(conv.language).toBe('en');
-    w.fake.push({ kind: 'decision', decision: decision({ language: 'th', intent: 'birthday_party', action: 'handover', reason: 'NEEDS_PERSON', sendBrochure: true, bubbles: [] }) });
+    // The basics are in (a son turning six, about twelve children): the playbook's hand-over turn.
+    w.fake.push({ kind: 'decision', decision: decision({ language: 'th', intent: 'birthday_details', action: 'handover', reason: 'NEEDS_PERSON', bubbles: [] }) });
     expect((await tick(w, later(25_000))).handedOver).toBe(1);
 
     const after = await conversationRow(w, conv.id);
