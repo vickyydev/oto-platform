@@ -3,7 +3,7 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.2",
+  "personaVersion": "persona-2026-10-28.3",
   "kbVersion": "2d0143a312336f01",
   "recordedOn": "2026-10-28",
   "turns": [
@@ -11,13 +11,13 @@
       "says": "Можно скидку если придём с тремя детьми?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUY379CYtc3HJWpGuAaP",
+        "id": "msg_011CgUf7N5ohMzXyScp8UD4P",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"ru\",\"intent\":\"discount_negotiation\",\"intents\":[\"discount_negotiation\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"deals\"],\"bubbles\":[\"Здравствуйте! Билеты для родителей у нас — это кредит на еду и напитки в нашем ресторане, а персонал присматривает за всем парком, и всё уже включено 😊\",\"Ещё есть выгодный Food & Play: игра на весь день и детское блюдо, ฿420 за ребёнка в обоих парках.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"ru\",\"intent\":\"discount_negotiation\",\"intents\":[\"discount_negotiation\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"deals\"],\"bubbles\":[\"Здравствуйте! У нас всё включено: родительский билет — это кредит на еду и напитки в нашем настоящем ресторане, а за детьми по всему парку присматривает персонал 😊\",\"А ещё есть выгодный Food & Play: игра на весь день и детское блюдо, ฿420 за ребёнка.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 211,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 10765,
+          "cache_read_input_tokens": 10900,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -35,8 +35,8 @@
           "iterations": [
             {
               "input_tokens": 211,
-              "output_tokens": 223,
-              "cache_read_input_tokens": 10765,
+              "output_tokens": 219,
+              "cache_read_input_tokens": 10900,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 223,
+          "output_tokens": 219,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
@@ -68,7 +68,7 @@
       "says": "Нет, всё равно хочу скидку.",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUY3JiE7Y4PENV7zBR8D",
+        "id": "msg_011CgUf7e6iti15f8J3syQDZ",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -82,18 +82,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 424,
+          "input_tokens": 420,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 10765,
+          "cache_read_input_tokens": 10900,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 424,
+              "input_tokens": 420,
               "output_tokens": 104,
-              "cache_read_input_tokens": 10765,
+              "cache_read_input_tokens": 10900,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,

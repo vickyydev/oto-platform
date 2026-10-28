@@ -3,7 +3,7 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.2",
+  "personaVersion": "persona-2026-10-28.3",
   "kbVersion": "2d0143a312336f01",
   "recordedOn": "2026-10-28",
   "turns": [
@@ -11,13 +11,13 @@
       "says": "Hi there, few questions before we come over - is there parking? how do we get to you from Kata? and can we bring our own food/snacks in?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUY3ngDmpcGphTNU2Yp8",
+        "id": "msg_011CgUf882EpF3MZH6d3Ucao",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"en\",\"intent\":\"directions_parking\",\"intents\":[\"directions_parking\",\"faq\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"parking\",\"directions\",\"food-outside\"],\"bubbles\":[\"Hi! Yes, there's parking. The park is inside the mall and the mall car park is free 😊\",\"From Kata, take the bypass road north towards Phuket Town and follow the signs for the mall. A taxi takes about 25 minutes. We're on the 2nd floor, next to the cinema.\",\"Outside food and drinks aren't allowed, except baby food and milk. Our café serves meals and snacks though!\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"en\",\"intent\":\"directions_parking\",\"intents\":[\"directions_parking\",\"faq\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"parking\",\"directions\",\"food-outside\"],\"bubbles\":[\"Hi! Yes, parking's easy, the mall car park is free 😊\",\"From Kata, take the bypass road north towards Phuket Town and follow the signs for the mall. A taxi takes about 25 minutes. We're on the 2nd floor, next to the cinema.\",\"Outside food and drinks aren't allowed, except baby food and milk. Our café serves meals and snacks though!\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -27,7 +27,7 @@
         "usage": {
           "input_tokens": 237,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 10765,
+          "cache_read_input_tokens": 10900,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -35,8 +35,8 @@
           "iterations": [
             {
               "input_tokens": 237,
-              "output_tokens": 250,
-              "cache_read_input_tokens": 10765,
+              "output_tokens": 242,
+              "cache_read_input_tokens": 10900,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 250,
+          "output_tokens": 242,
           "output_tokens_details": {
             "thinking_tokens": 0
           },

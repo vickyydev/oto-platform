@@ -3,7 +3,7 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.2",
+  "personaVersion": "persona-2026-10-28.3",
   "kbVersion": "2d0143a312336f01",
   "recordedOn": "2026-10-28",
   "turns": [
@@ -11,7 +11,7 @@
       "says": "hi",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUXytS8qnGYeRWsWNmEV",
+        "id": "msg_011CgUf4uJvnbmPGpAKQD8q7",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -26,21 +26,21 @@
         "stop_details": null,
         "usage": {
           "input_tokens": 196,
-          "cache_creation_input_tokens": 10765,
+          "cache_creation_input_tokens": 10900,
           "cache_read_input_tokens": 0,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
-            "ephemeral_1h_input_tokens": 10765
+            "ephemeral_1h_input_tokens": 10900
           },
           "iterations": [
             {
               "input_tokens": 196,
               "output_tokens": 112,
               "cache_read_input_tokens": 0,
-              "cache_creation_input_tokens": 10765,
+              "cache_creation_input_tokens": 10900,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
-                "ephemeral_1h_input_tokens": 10765
+                "ephemeral_1h_input_tokens": 10900
               },
               "type": "message",
               "model": null

@@ -3,7 +3,7 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.2",
+  "personaVersion": "persona-2026-10-28.3",
   "kbVersion": "2d0143a312336f01",
   "recordedOn": "2026-10-28",
   "turns": [
@@ -11,18 +11,18 @@
       "says": "How much is it for 2 kids and me on Saturday?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgUXzrudhottWScL2wEgV",
+        "id": "msg_011CgUf5fuZ6Gbx2AQrpyfPb",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "thinking",
             "thinking": "",
-            "signature": "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"
+            "signature": "CAQS/QoKEAgTGAI4AUIIdGhpbmtpbmcSDBnHAdIUMsRWV1ABDBoMD3gK5naR6crFnZSQIjBZUKoBYyHkxWHTshKBa530+csHuOiNDFVpwXeVUVNZRBVTgjHUmO6okQByQwFEfSgqmgpwf9edt8OyVzxwG/zNEZoJUHGOmtlPdyGo9mNiZxZgEMfkmLdzeGXrJpQweJdc/3LrjdkofbznjUjQr3SyMliw449mSP9XRYHDeF6NVJ9ibFwRQNWPSjGlZpZvTzpJ4pjLpmhculyt3eRhNTLV8SIpW3MBIiapfD01DpIypkr6y9phV5n/LRVs2MGugofqCHVwdq/KntFGFUm74/Q/1FYSHF4en1Fzyt0NwWl3+SpIztZsio/CvkDMsfJd+PCndz/uufSZ51JWL3fRJDTBbXht48rcVEnMWOZg+t1aIaDvxCJd1b0II8lvE0lnhrDPjOAxQyfu4NhyaXw8zHnpWX9zBg2Ajll5xtt4N836onoS3OSstRyVOovXerzesm/c14kHCVRAyfqbGsBoCXSv7YKzmO0rBVx7UdX5UVZjYt9jEGaiLAhnYWvfgjSsLbgPf1zeGRwp+p655xW7PFjjh9AEsRNwB67PlSpxh4WTntBxvvq1eZvpmMaE1+rkJHEcHDHJHwV4VzvczCcEzPUZ9Xq94meICJjf7AdlIcH2P5ESoE1YBIE4gehI6a6JpQbFUlqyEhSCnahCmRQGVQk9fVkt56+Rcefcqlo/LmuK0+hwLMSKQyHo7qwk7ZdkfP435mJ5SNZcoOK1IIVR8uRAbrfPgtKEvkLTkB2ZxWQFnv14AJEN5n1NNItad1Z6v6ofHKwkFIt9CJKdFSMI9874k2ZTnfpDVm+P94Nq0jpGV5aiEyxYIJ14SJOXILD54ymYmr5Sl4NDPcCrVhuJz4yLzn8+bXa3ggIyLeQTAb6TRTUs+jkxConaDgug58blXw/6Ij74LAXp6+lYY8l2Jfkx0jRfOnuSa2cULiXrYTSK0F2EGN4o6QMvE6hGJZEMA47jWaxb0Ocw5J/riK3axzJPjwZ/v0wc80upYv0ZUqUo1WiRFAwBrAIsqKTEtZ/2vbM52D9Kx3ZniCJh/51GxpIbyb5YW8O26zFzHZ5VKLRfHENSMuAqUKaActVNsUnFlevIxN/YE1qHrr6l3Qlxncm8QNbzGAU177JY9wHDCfmYiqGIswkhndbo6ciFjyzo/gadG64yaqPqGuDS93uQMSpagHBvPQKJXmPqK+/gcVXb+1gw33cq9C+SuVgY8MtrINq7DLaBVJ2AhVJZd+FdHe20DA59T2HXPaO3i1iV8fArlx8IFSd1kRLr+EDXcAsg4ptGQ9Mh8niJQSerV03daYewS2PSJUDRl9LYiyDAcMcm0PrqSjjWkb4abPoIqWGfR8J8ZWvXIvZ8hTeYtpIMybzOOOF0WtOyOaq5CRTJDbklbeWN0fMuYG8k5HyT4Xlb4wqRVPqj9+xO65+b2B2RLxKB3gON2lmge4rck+5jCT/O9J0GHzjwlR75LZeBZF3hKJ+3V7621D5VqAZA1Y6NHItvtzjdg58BrF1slK9tqXHp1/JMv6gNNFa0J/JVA/0O7abg3UyNJ0MpenxkeFhzcaipFOJ0ditBLZ+YzdyF8efVN4AvuGZQvU69ap9qqIDjE0B/tuvrrjdU2FcchOAtqz3ykicA5elhkT5+vfiPY51wagc7YSwpdRmwH0JYOC/6YET5Ap0PBb6og4bTkmgc3JpmAdWDoeZmXt23Tvq5myw9cHSUwCQotzh5CwhOYIF++j/0BIto7byQImXwx8UW24xe7g3ko0CHH5UYSNGhOW9qr6juo4edRw4bOl0W92jVU0BJMGNuvt0e7P+HL/x4GAE="
           },
           {
             "type": "text",
-            "text": "{\"language\":\"en\",\"intent\":\"ticket_prices\",\"intents\":[\"ticket_prices\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.prices.chalong\",\"age-rules\",\"socks\"],\"bubbles\":[\"At Robinson Chalong it's ฿490 per child on weekends (฿390 on weekdays), and the first adult gets in free 😊 Any extra adult is ฿150.\",\"Kids under 1 are free too, and socks are needed on the play floor for kids and adults. Grip socks are sold at reception if you forget yours.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"en\",\"intent\":\"ticket_prices\",\"intents\":[\"ticket_prices\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.prices.chalong\",\"age-rules\",\"socks\"],\"bubbles\":[\"At Robinson Chalong it's ฿490 per child on weekends, and the first adult comes in free 😊\",\"Kids under 1 enter free with a paying adult. Socks are needed on the play floor for kids and adults, and grip socks are sold at reception if you forget yours.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -32,7 +32,7 @@
         "usage": {
           "input_tokens": 214,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 10765,
+          "cache_read_input_tokens": 10900,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
@@ -40,8 +40,8 @@
           "iterations": [
             {
               "input_tokens": 214,
-              "output_tokens": 656,
-              "cache_read_input_tokens": 10765,
+              "output_tokens": 504,
+              "cache_read_input_tokens": 10900,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -51,9 +51,9 @@
               "model": null
             }
           ],
-          "output_tokens": 656,
+          "output_tokens": 504,
           "output_tokens_details": {
-            "thinking_tokens": 428
+            "thinking_tokens": 293
           },
           "service_tier": "standard",
           "inference_geo": "global",
