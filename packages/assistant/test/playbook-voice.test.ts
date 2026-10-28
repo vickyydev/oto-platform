@@ -206,7 +206,7 @@ describe('B. the Russian voice: a warm greeting once, never a formal one on ever
   });
 
   it('the persona version moved with the words', () => {
-    expect(PERSONA_VERSION).toBe('persona-2026-10-28.1');
+    expect(PERSONA_VERSION).toBe('persona-2026-10-28.2');
   });
 
   it("the persona's fixed lines pass the playbook guards", () => {

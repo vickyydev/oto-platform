@@ -16,7 +16,7 @@
 import { EN_PERSONA } from './en';
 import { TH_PERSONA } from './th';
 
-export const PERSONA_VERSION = 'persona-2026-10-28.1';
+export const PERSONA_VERSION = 'persona-2026-10-28.2';
 
 /**
  * §D.7: a disclosure line stays possible without a rebuild. False until the
@@ -47,6 +47,10 @@ export const PROHIBITIONS: ReadonlyArray<{ id: string; text: string }> = [
   {
     id: 'no_refund_promise',
     text: 'Never promise a refund, compensation or a free entry, and never say yes or no to a refund.',
+  },
+  {
+    id: 'no_customer_number_echo',
+    text: 'Never repeat a number the customer wrote — an age, a headcount, a date or a price. Acknowledge warmly without digits; a reply whose numbers are not in your cited sources is silenced.',
   },
   {
     id: 'no_complaint_argument',
