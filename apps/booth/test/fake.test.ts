@@ -35,4 +35,8 @@ test('nobody signs in: no sign-in, no session, no account on a spin, no staff on
 test('a reprint is refused only for having nothing to reprint — anyone may ask for one', () => {
   assert.match(source, /throw new BoothCallError\('nothing_to_reprint', 404\)/);
   assert.equal(source.includes('staff_required'), false);
+  // It picks the voucher with the box's own rule, so the panel a held button
+  // opened (`beforeSpinId`) reprints the same slip on the fake as on a box;
+  // the rule itself is tested in @oto/shared (booth-reprint.test.ts).
+  assert.match(source, /boothReprintTarget\(this\.recentVouchers, request\)/);
 });

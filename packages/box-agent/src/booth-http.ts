@@ -214,16 +214,19 @@ export function createBoothHttp(options: BoothHttpOptions): (
         if (!booth.reprint) return refuse(404, 'not_found', 'No such booth route');
         const body = asRecord(request.body);
         const spinId = readString(body.spinId);
+        const beforeSpinId = readString(body.beforeSpinId);
         const headers = request.headers ?? {};
         /**
          * The same code on new paper, marked "Reprint · <time>" (SCRUM-223),
          * never a new prize. Anyone at the screen may ask for one
          * (SCRUM-694): the copy is recorded as a reprint with no account. The
-         * booth decides which voucher is meant, and a refusal comes back as
-         * the platform's envelope with a code the panel knows.
+         * booth decides which voucher is meant — `spinId`'s, the one before
+         * `beforeSpinId`'s, or its last — and a refusal comes back as the
+         * platform's envelope with a code the panel knows.
          */
         const reprinted = await booth.reprint({
           ...(spinId === undefined ? {} : { spinId }),
+          ...(beforeSpinId === undefined ? {} : { beforeSpinId }),
           actionId: readString(headers[BOOTH_ACTION_HEADER]) ?? null,
         });
         return { status: 200, body: reprinted };

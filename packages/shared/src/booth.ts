@@ -633,7 +633,35 @@ export function boothDutyLabel(input: {
  * draw.
  */
 export interface BoothReprintRequest {
+  /** This spin's voucher. */
   spinId?: string;
+  /**
+   * The voucher issued just before this spin's (SCRUM-694). Sent by the staff
+   * panel a held red button opened: that hold's own press spun the wheel
+   * first, and the slip staff came to reprint is the one before it.
+   */
+  beforeSpinId?: string;
+}
+
+/**
+ * Which of a booth's recent vouchers a reprint means — one rule for the box
+ * and the page's fake transport. `recent` is newest first.
+ *
+ * `spinId` names one; `beforeSpinId` means the one issued just before that
+ * spin's, and — when that spin has no voucher on the list (refused, nothing
+ * won, or not yet written) — the newest, which is then the one before it;
+ * neither means the newest. Undefined: nothing to reprint.
+ */
+export function boothReprintTarget<T extends { spinId: string }>(
+  recent: readonly T[],
+  request: BoothReprintRequest,
+): T | undefined {
+  if (request.spinId) return recent.find((v) => v.spinId === request.spinId);
+  if (request.beforeSpinId) {
+    const at = recent.findIndex((v) => v.spinId === request.beforeSpinId);
+    return at < 0 ? recent[0] : recent[at + 1];
+  }
+  return recent[0];
 }
 
 export interface BoothReprintResponse {

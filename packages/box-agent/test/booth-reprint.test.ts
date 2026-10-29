@@ -338,6 +338,43 @@ test('a reprint of a named spin, one that is not here, and one after a restart',
   }
 });
 
+test('a reprint of the voucher before a spin: what a held red button asks for, over http too', async () => {
+  /**
+   * SCRUM-694 review. On a booth with only the red button, holding it for the
+   * staff panel spins a ready wheel first, so the box's last voucher is that
+   * hold's own. The panel asks for the one before it, which is the slip staff
+   * came to reprint (cut off, or printed with no paper).
+   */
+  const h = open();
+  await publish(h, [entry()]);
+  const family = await h.booth.spin({ idempotencyKey: 'family' });
+  await h.booth.print({ spinId: family.spinId });
+  const held = await h.booth.spin({ idempotencyKey: 'held' });
+  await h.booth.print({ spinId: held.spinId });
+
+  const copy = await h.booth.reprint({ beforeSpinId: held.spinId });
+  assert.equal(copy.spinId, family.spinId, 'the voucher before the hold’s own spin');
+  assert.equal(voucherData(h.submitted.at(-1)?.job).voucherCode, family.voucherCode);
+  assert.equal(voucherData(h.submitted.at(-1)?.job).reprintNote?.startsWith('Reprint'), true);
+
+  // A spin that left no voucher here (refused, or not written yet): the last
+  // voucher is already the one before it.
+  const unknown = await h.booth.reprint({ beforeSpinId: '018f1d2c-0000-7000-8000-0000000000fe' });
+  assert.equal(unknown.spinId, held.spinId);
+
+  // Nothing before the first: nothing to reprint, and no draw.
+  await assert.rejects(
+    () => h.booth.reprint({ beforeSpinId: family.spinId }),
+    (err: unknown) => err instanceof BoothRefusal && err.code === 'nothing_to_reprint',
+  );
+
+  const handle = createBoothHttp({ booth: h.booth, online: () => false });
+  const overHttp = await handle({ method: 'POST', path: '/reprint', body: { beforeSpinId: held.spinId } });
+  assert.equal(overHttp.status, 200);
+  assert.equal((overHttp.body as { spinId: string }).spinId, family.spinId);
+  h.close();
+});
+
 test('with no printer a reprint is still recorded, as a skipped print', async () => {
   const h = open({ print: false });
   await publish(h, [entry()]);

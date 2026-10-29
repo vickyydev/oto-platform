@@ -161,6 +161,19 @@ export default function App() {
   const [staffOpen, setStaffOpen] = useState(false);
   const staffOpenRef = useRef(staffOpen);
   staffOpenRef.current = staffOpen;
+  /**
+   * The spin this page started last, as the box answers it: its id, or null
+   * when the press was refused or never answered.
+   *
+   * Read when a held red button opens the staff panel. A ready wheel takes
+   * that hold's press as a guest's and spins at once (src/press.ts), so the
+   * booth's newest voucher is the hold's own, and the slip staff came to
+   * reprint is the one before it: the panel's Reprint asks the box for the
+   * voucher before this spin (`beforeSpinId`), once the box has answered it.
+   */
+  const latestSpin = useRef<Promise<string | null>>(Promise.resolve(null));
+  /** Set while the open panel came from a hold that spun: Reprint skips that spin. */
+  const [heldSpin, setHeldSpin] = useState<Promise<string | null> | null>(null);
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugRequested, setDebugRequested] = useState(flags.debug);
   const [mismatches, setMismatches] = useState(0);
@@ -429,6 +442,11 @@ export default function App() {
   const startSpin = useCallback(async () => {
     setNotice(null);
     setPhase('starting');
+    // Set before the first await, so a hold whose press this is finds it.
+    let answered: (spinId: string | null) => void = () => undefined;
+    latestSpin.current = new Promise((resolve) => {
+      answered = resolve;
+    });
     try {
       /**
        * One key for this press, reused if the first attempt does not answer.
@@ -451,6 +469,7 @@ export default function App() {
         if (!(err instanceof BoothCallError) || err.code !== 'unreachable') throw err;
         response = await booth.spin({ idempotencyKey: pressKey });
       }
+      answered(response.spinId);
 
       // --- The seam this page has to defend from its own side -------------
       // The box drew from the bundle IT has cached; this page drew its slices
@@ -486,6 +505,8 @@ export default function App() {
       setTargetIndex(index);
       setPhase('spinning');
     } catch (error) {
+      // A refused or unanswered press drew nothing; once answered, a no-op.
+      answered(null);
       noteError(error);
       // An unpaired screen has already been moved to its own state by
       // `noteError`; putting a notice under a wheel it is no longer showing
@@ -566,9 +587,14 @@ export default function App() {
       installPressListener({
         buttonKey,
         // Holding the button three seconds on a ready wheel opens the staff
-        // panel: the only way to Reprint on a booth with no pointer.
+        // panel: the only way to Reprint on a booth with no pointer. The
+        // hold's press has spun the wheel by then (it is a guest's press
+        // until it is held), so the panel's Reprint skips that spin.
         canOpenStaff: () => gateRef.current === null && !staffOpenRef.current && phaseRef.current === 'ready',
-        onOpenStaff: () => setStaffOpen(true),
+        onOpenStaff: ({ pressTaken }) => {
+          setHeldSpin(pressTaken ? latestSpin.current : null);
+          setStaffOpen(true);
+        },
         lockoutMs: () =>
           phaseRef.current === 'result' ? RESULT_PRESS_LOCKOUT_MS : PRESS_LOCKOUT_MS,
         onPress,
@@ -691,7 +717,15 @@ export default function App() {
     }
   }, []);
 
-  const closeStaff = useCallback(() => setStaffOpen(false), []);
+  const closeStaff = useCallback(() => {
+    setStaffOpen(false);
+    setHeldSpin(null);
+  }, []);
+  /** A touch on the chip or the names: no press was taken, nothing to skip. */
+  const openStaff = useCallback(() => {
+    setHeldSpin(null);
+    setStaffOpen(true);
+  }, []);
 
   const changeBooth =
     IN_BOX && (kioskState?.booths.length ?? 0) > 1 ? () => setChoosingBooth(true) : undefined;
@@ -803,8 +837,8 @@ export default function App() {
             </div>
           )}
         </div>
-        <StatusChip status={status} transport={booth.kind} onOpen={() => setStaffOpen(true)} />
-        <OnDutyBadge status={status} onOpen={() => setStaffOpen(true)} />
+        <StatusChip status={status} transport={booth.kind} onOpen={openStaff} />
+        <OnDutyBadge status={status} onOpen={openStaff} />
         {staffOpen && (
           <StaffPanel onClose={closeStaff} onChangeBooth={changeBooth} buttonKey={buttonKey} />
         )}
@@ -864,9 +898,9 @@ export default function App() {
         onClose={requestPlayAgain}
       />
 
-      <StatusChip status={status} transport={booth.kind} onOpen={() => setStaffOpen(true)} />
+      <StatusChip status={status} transport={booth.kind} onOpen={openStaff} />
       {/* Not over a prize card: that moment is the guest's. */}
-      {phase !== 'result' && <OnDutyBadge status={status} onOpen={() => setStaffOpen(true)} />}
+      {phase !== 'result' && <OnDutyBadge status={status} onOpen={openStaff} />}
 
       {staffOpen && (
         <StaffPanel
@@ -874,6 +908,7 @@ export default function App() {
           onChangeBooth={changeBooth}
           onOpenDiagnostics={() => setDebugOpen(true)}
           buttonKey={buttonKey}
+          heldSpin={heldSpin}
         />
       )}
 

@@ -17,6 +17,13 @@ import { isButtonKey, registerButtonOverlay } from '../press';
  * It opens from a touch on the corner chip or the on-duty badge, or from
  * holding the red button for three seconds on a ready wheel.
  *
+ * **A hold spins first.** A ready wheel takes the hold's press as a guest's
+ * and spins at once — holding it back until the button comes up would slow
+ * every guest's press — so on a booth with only the red button the newest
+ * voucher is the hold's own. Opened that way (`heldSpin`), Reprint prints the
+ * voucher issued just before that spin, which is the slip staff came for (cut
+ * off, or printed with no paper), and the panel says so.
+ *
  * A guest can reach it too, which is why it is shaped the way it is: the
  * focus starts on **Close**, so a guest pressing the button twice selects
  * Close; and it closes itself after 45 seconds of nobody using it, and two
@@ -28,6 +35,7 @@ export function StaffPanel({
   onChangeBooth,
   onOpenDiagnostics,
   buttonKey,
+  heldSpin = null,
 }: {
   onClose: () => void;
   /** Set only on a box with more than one booth. */
@@ -35,6 +43,12 @@ export function StaffPanel({
   /** Set only where the diagnostics overlay is on the page (the wheel). */
   onOpenDiagnostics?: () => void;
   buttonKey: string;
+  /**
+   * Set when a held red button opened the panel and its press spun the
+   * wheel: that spin's id once the box answers it, or null when it drew
+   * nothing. Reprint then prints the voucher before it.
+   */
+  heldSpin?: Promise<string | null> | null;
 }) {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -107,12 +121,16 @@ export function StaffPanel({
     setBusy(true);
     touch();
     setMessage(STAFF_COPY.reprinting);
-    void booth
-      .reprint({})
+    // Waits for the held press's spin to be answered, so the box is asked for
+    // the voucher before it rather than for whichever is newest just then.
+    void (heldSpin ?? Promise.resolve(null))
+      .then((spinId) => booth.reprint(spinId ? { beforeSpinId: spinId } : {}))
       .then((result) =>
         setMessage(
           result.printState === 'printed'
-            ? STAFF_COPY.reprinted
+            ? heldSpin
+              ? STAFF_COPY.reprintedBefore
+              : STAFF_COPY.reprinted
             : result.printState === 'no_printer'
               ? STAFF_COPY.reprintNoPrinter
               : STAFF_COPY.reprintQueued,
@@ -136,6 +154,7 @@ export function StaffPanel({
     <div ref={panel} className="k-panel" data-booth-panel="staff" onPointerDown={touch}>
       <div className="k-panel-head">{STAFF_COPY.staffTitle}</div>
       <p className="k-panel-line">{STAFF_COPY.buttonHint}</p>
+      {heldSpin && <p className="k-panel-line">{STAFF_COPY.heldSpinNote}</p>}
       <div className="k-panel-stack">
         <button
           data-button-choice

@@ -112,23 +112,50 @@ test('on the game the button key spins immediately; overlays move, select and re
   assert.equal(seen.presses, 1, 'overlay presses never spin');
   removeOverlay();
   remove();
-  let opened = 0;
+  const holds: Array<{ pressTaken: boolean }> = [];
   let spins = 0;
   const stop = installPressListener({
     buttonKey: 'Space',
     lockoutMs: () => 0,
     onPress: () => spins++,
     canOpenStaff: () => true,
-    onOpenStaff: () => opened++,
+    onOpenStaff: (hold) => holds.push(hold),
   });
   key('keydown', body);
   assert.equal(spins, 1, 'no delay on the ready wheel');
   t.mock.timers.tick(2_999);
-  assert.equal(opened, 0);
+  assert.equal(holds.length, 0);
   t.mock.timers.tick(1);
-  assert.equal(opened, 1);
+  // The panel is told this hold's press spun the wheel, so its Reprint asks
+  // for the voucher before that spin's (SCRUM-694).
+  assert.deepEqual(holds, [{ pressTaken: true }]);
   key('keyup', body);
   assert.equal(spins, 1);
+  stop();
+});
+
+test('a staff hold whose press the lockout ignored says it spun nothing', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 20_000 });
+  const holds: Array<{ pressTaken: boolean }> = [];
+  let spins = 0;
+  const stop = installPressListener({
+    buttonKey: 'Space',
+    lockoutMs: () => 350,
+    onPress: () => spins++,
+    canOpenStaff: () => true,
+    onOpenStaff: (hold) => holds.push(hold),
+  });
+  key('keydown', body);
+  key('keyup', body);
+  assert.equal(spins, 1);
+  // Inside the lockout: no spin, and the hold that opens the panel says so —
+  // the booth's last voucher is then not this hold's.
+  t.mock.timers.tick(100);
+  key('keydown', body);
+  assert.equal(spins, 1);
+  t.mock.timers.tick(3_000);
+  assert.deepEqual(holds, [{ pressTaken: false }]);
+  key('keyup', body);
   stop();
 });
 

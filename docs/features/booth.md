@@ -107,7 +107,11 @@ Owner ruling of 29 October 2026: there is no staff sign-in at the booth.
   no phone and password, no session timer. A staff panel (Reprint, Change
   booth, Booth diagnostics, Close) opens from a 3-second hold of the button or
   a touch on the corner dot or names; it has no credential behind it and
-  closes itself. `#debug` opens the diagnostics directly.
+  closes itself. `#debug` opens the diagnostics directly. A hold's press
+  spins a ready wheel first (a guest's press is never held back), so the
+  panel a hold opens reprints the voucher issued before that spin
+  (`POST /booth/reprint` with `beforeSpinId`; `boothReprintTarget` in
+  `@oto/shared` is the one rule, on the box and the page's fake).
 - **The slip's Staff row is today's roster** from Console → Booths → Today's
   staff (SCRUM-473): the OTO App's shift schedule for the booth, plus anybody
   added by hand, joined as one line ("Tom and Jerry"). The roster is per

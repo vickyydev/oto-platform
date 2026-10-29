@@ -23,9 +23,11 @@
 import {
   BOOTH_CODE_MINT_ATTEMPTS,
   BoothConfigBundleSchema,
+  boothReprintTarget,
   mintBoothCode,
   type BoothConfigBundle,
   type BoothConfigPrize,
+  type BoothReprintRequest,
   type SpinResponse,
 } from '@oto/shared';
 import { flags } from '../flags';
@@ -192,8 +194,8 @@ export class FakeBooth implements BoothTransport {
 
   private readonly bundle: BoothConfigBundle;
   private readonly version: number;
-  /** The last voucher this tab minted, for the fake's reprint. */
-  private lastVoucher: { spinId: string; printState: SpinResponse['printState'] } | null = null;
+  /** The last vouchers this tab minted, newest first, for the fake's reprint. */
+  private recentVouchers: Array<{ spinId: string; printState: SpinResponse['printState'] }> = [];
   private minted = 0;
   private lastSpinAt: string | null = null;
   private capsUsed = new Map<string, number>();
@@ -304,7 +306,8 @@ export class FakeBooth implements BoothTransport {
 
     const spinId = fakeId();
     const printState = flags.printer ?? 'no_printer';
-    this.lastVoucher = { spinId, printState };
+    // Ten, as a box keeps (RECENT_VOUCHERS_KEPT in @oto/box-agent).
+    this.recentVouchers = [{ spinId, printState }, ...this.recentVouchers].slice(0, 10);
     const response: SpinResponse = {
       spinId,
       prizeIndex: index,
@@ -326,10 +329,15 @@ export class FakeBooth implements BoothTransport {
     return after(FAKE_SPIN_LATENCY_MS, response);
   }
 
-  /** The one refusal a box gives (SCRUM-694: anyone may ask): nothing to reprint. */
-  async reprint(): Promise<BoothReprintResponse> {
-    if (!this.lastVoucher) throw new BoothCallError('nothing_to_reprint', 404);
-    return after(FAKE_SPIN_LATENCY_MS, { ...this.lastVoucher });
+  /**
+   * The voucher a box would reprint (`boothReprintTarget`, the box's own
+   * rule), and the one refusal a box gives (SCRUM-694: anyone may ask):
+   * nothing to reprint.
+   */
+  async reprint(request: BoothReprintRequest = {}): Promise<BoothReprintResponse> {
+    const target = boothReprintTarget(this.recentVouchers, request);
+    if (!target) throw new BoothCallError('nothing_to_reprint', 404);
+    return after(FAKE_SPIN_LATENCY_MS, { ...target });
   }
 
   private mintCode(): string {

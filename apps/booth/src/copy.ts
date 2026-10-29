@@ -176,8 +176,14 @@ export const STAFF_COPY = {
   debugTitle: 'Booth diagnostics',
   debugSimulated: 'Simulated draws: nothing is written, printed or capped',
   reprint: 'Reprint last voucher',
+  /**
+   * Under the title when a held red button opened the panel: that hold's
+   * press spun the wheel first (SCRUM-694), and Reprint skips its slip.
+   */
+  heldSpinNote: 'Holding the button spun the wheel. Reprint prints the voucher before that spin.',
   reprinting: 'Printing it again…',
   reprinted: 'The last voucher is printing again — same code',
+  reprintedBefore: 'The voucher before that spin is printing again — same code',
   reprintQueued: 'Sent again — the printer has not printed it yet',
   reprintNoPrinter: 'No printer on this booth — nothing to print on',
   nothingToReprint: 'There is no voucher to reprint yet',

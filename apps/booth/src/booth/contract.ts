@@ -216,7 +216,9 @@ export interface BoothTransport {
   print(request: { spinId: string }): Promise<SpinResponse>;
   /**
    * `POST /booth/reprint` — the booth's last voucher again, same code, marked
-   * "Reprint" (SCRUM-223). Anyone at the screen may ask (SCRUM-694); the box
+   * "Reprint" (SCRUM-223), or with `beforeSpinId` the one issued before that
+   * spin's (the panel a held button opened). An older box ignores
+   * `beforeSpinId` and prints its last. Anyone at the screen may ask (SCRUM-694); the box
    * refuses only with `nothing_to_reprint`. An older box's 403 maps to no
    * code and the panel's generic failure line.
    */

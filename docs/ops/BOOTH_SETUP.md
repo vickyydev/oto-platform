@@ -68,7 +68,7 @@ The roster is per trading day and reaches the booth at the box’s next pull —
 
 ## 4. The staff panel at the booth
 
-There is nothing to set up for it. A touch on the dot in the bottom corner of the booth screen (or on the names in the top corner), or holding the booth’s button for three seconds while the wheel is ready, opens a small panel: **Reprint last voucher** (the last slip again, marked “Reprint”, never a new prize), **Change booth** (on a box that runs more than one booth), **Booth diagnostics** and **Close**. It asks for no PIN or password, and it closes itself after a short while.
+There is nothing to set up for it. A touch on the dot in the bottom corner of the booth screen (or on the names in the top corner), or holding the booth’s button for three seconds while the wheel is ready, opens a small panel: **Reprint last voucher** (the last slip again, marked “Reprint”, never a new prize), **Change booth** (on a box that runs more than one booth), **Booth diagnostics** and **Close**. It asks for no PIN or password, and it closes itself after a short while. Holding the button spins the wheel first — a ready-wheel press is a guest’s — so the panel a hold opens reprints the voucher issued before that spin, and says so; a touch on the dot opens the panel with no spin.
 
 ## 5. Publish — Console → Booths → the booth → Publish
 

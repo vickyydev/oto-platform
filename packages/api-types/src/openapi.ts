@@ -13510,7 +13510,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Print a voucher that has already been issued, again: the SAME code marked "Reprint", never a new draw — this booth’s last voucher, or `spinId`’s. Anyone at the screen may ask (nobody signs in at a booth); the box answers 404 `nothing_to_reprint` for a voucher it no longer holds. The copy reaches the cloud as a `reprint` print of that voucher, filed with no account. */
+        /** @description Print a voucher that has already been issued, again: the SAME code marked "Reprint", never a new draw — this booth’s last voucher, `spinId`’s, or the one issued just before `beforeSpinId`’s (what the staff panel opened by a held red button asks for: that hold spun the wheel first). Anyone at the screen may ask (nobody signs in at a booth); the box answers 404 `nothing_to_reprint` for a voucher it no longer holds. The copy reaches the cloud as a `reprint` print of that voucher, filed with no account. */
         post: {
             parameters: {
                 query?: never;
@@ -13523,6 +13523,8 @@ export interface paths {
                     "application/json": {
                         /** Format: uuid */
                         spinId?: string;
+                        /** Format: uuid */
+                        beforeSpinId?: string;
                     };
                 };
             };

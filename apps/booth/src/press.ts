@@ -27,6 +27,17 @@
  * means something ate the keydown, and that release IS the press.
  */
 
+/** What the press a staff hold began did, told to `onOpenStaff`. */
+export interface StaffHold {
+  /**
+   * The press got through the lockout and reached `onPress` — on a ready
+   * wheel, a spin. The hold does not hold the spin back (a ready-wheel press
+   * spins at once, as a guest's must), so the panel that opens knows the
+   * booth's newest voucher may be this hold's own.
+   */
+  pressTaken: boolean;
+}
+
 export interface PressListenerOptions {
   /**
    * Captured before an immediate spin starts: holding that press for three
@@ -34,7 +45,7 @@ export interface PressListenerOptions {
    * button and no pointer (docs/ops/PI_BOOTH.md).
    */
   canOpenStaff?: () => boolean;
-  onOpenStaff?: () => void;
+  onOpenStaff?: (hold: StaffHold) => void;
   /**
    * `KeyboardEvent.code` (`Space`, `KeyF`, `NumpadEnter`) or `.key`. Both are
    * compared, because a booth is configured by a person reading one of them
@@ -150,10 +161,11 @@ export function installPressListener(options: PressListenerOptions): () => void 
 
   const matches = (event: KeyboardEvent): boolean => isButtonKey(event, buttonKey);
 
-  const accept = (): void => {
+  /** True when the press reached the game's `onPress`. */
+  const accept = (): boolean => {
     if (activeOverlay) {
       overlayPress(activeOverlay);
-      return;
+      return false;
     }
     const now = Date.now();
     // A wall clock that stepped BACK since the last press (time sync correcting
@@ -161,10 +173,11 @@ export function installPressListener(options: PressListenerOptions): () => void 
     // whole step — hours of dead button until a reload resets it (SCRUM-467).
     if (now >= lastPressAt && now - lastPressAt < lockoutMs()) {
       onKeyRecorded?.('press ignored (lockout)');
-      return;
+      return false;
     }
     lastPressAt = now;
     onPress();
+    return true;
   };
 
   const onKeyDown = (event: KeyboardEvent): void => {
@@ -203,10 +216,15 @@ export function installPressListener(options: PressListenerOptions): () => void 
           overlay.touch();
         }, 250);
       }, 600);
-    } else if (options.canOpenStaff?.()) {
-      hold = setTimeout(() => options.onOpenStaff?.(), 3_000);
+      accept();
+      return;
     }
-    accept();
+    // Asked before the press is taken: the spin it starts changes the phase.
+    const staffHold = options.canOpenStaff?.() ?? false;
+    const pressTaken = accept();
+    if (staffHold) {
+      hold = setTimeout(() => options.onOpenStaff?.({ pressTaken }), 3_000);
+    }
   };
 
   const onKeyUp = (event: KeyboardEvent): void => {

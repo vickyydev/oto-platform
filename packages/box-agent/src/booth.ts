@@ -46,6 +46,7 @@ import {
   BoothDutyRosterSchema,
   addDaysToIsoDate,
   boothDutyLabel,
+  boothReprintTarget,
   boothVoucherSlip,
   isoDateInTz,
   mintBoothCode,
@@ -539,6 +540,12 @@ export interface BoothHeartbeatReport {
 export interface BoothReprintRequest {
   /** The spin whose voucher to print again. Absent: this booth's last one. */
   spinId?: string;
+  /**
+   * The voucher issued just before this spin's (SCRUM-694): what the staff
+   * panel a held red button opened asks for, because that hold's own press
+   * spun the wheel first. `boothReprintTarget` in `@oto/shared` decides.
+   */
+  beforeSpinId?: string;
   actionId?: string | null;
 }
 
@@ -553,7 +560,8 @@ export interface Booth {
   refresh(): Promise<boolean>;
   spin(request: BoothSpinRequest): Promise<SpinResponse>;
   /**
-   * Print the last voucher of this booth again, or a given spin's (SCRUM-223).
+   * Print the last voucher of this booth again, a given spin's, or the one
+   * just before a given spin's (SCRUM-223, SCRUM-694).
    *
    * The SAME code on new paper, marked "Reprint · <time>": no draw, no
    * counter, no second voucher, never a new prize. Anyone at the screen may
@@ -1879,9 +1887,7 @@ export function createBooth(options: BoothOptions): BoothModule {
     } catch (err) {
       if (!(err instanceof BoxStoreFeatureMissingError)) throw err;
     }
-    const target = request.spinId
-      ? recent.find((v) => v.spinId === request.spinId)
-      : recent[0];
+    const target = boothReprintTarget(recent, request);
     if (!target) {
       throw new BoothRefusal('nothing_to_reprint', 'There is no voucher to print again');
     }
