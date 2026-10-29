@@ -36,9 +36,10 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** 0078's fifteen, and the assistant's three from 0080_inbox_ai (SCRUM-590). */
+/** 0078's fifteen, the assistant's three from 0080_inbox_ai (SCRUM-590), and its behaviour rules from 0096_inbox_ai_rule (SCRUM-696). */
 const INBOX_TABLES = [
   'ai_example',
+  'ai_rule',
   'ai_turn',
   'assignment',
   'channel_account',
@@ -113,7 +114,7 @@ const operatorByName = async (name: string) =>
   (await db.select({ id: s.operator.id }).from(s.operator).where(eq(s.operator.name, name)).limit(1))[0]!.id;
 
 describe('0078_inbox_schema — structure (I1)', () => {
-  it('creates the inbox schema with its eighteen tables and writes no row', async () => {
+  it('creates the inbox schema with its nineteen tables and writes no row', async () => {
     const tables = await pool.query<{ table_name: string }>(
       `select table_name from information_schema.tables where table_schema = 'inbox' and table_type = 'BASE TABLE' order by 1`,
     );
