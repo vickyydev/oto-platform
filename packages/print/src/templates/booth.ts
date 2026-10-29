@@ -237,7 +237,10 @@ function buildShowcaseVoucher(data: BoothVoucherData, device: DeviceProfile): Pr
       if (th[i] && en[i]) blocks.push(text(th[i]!, small, 'left'));
     }
   }
-  if (data.showStaff !== false && data.staff) blocks.push(text(`Staff: ${data.staff}`, small, 'left'));
+  // The Staff row as the classic slip prints it (SCRUM-694): today's roster,
+  // or "unattributed" when nobody was on it — never a missing row, which
+  // would read the same as a booth that left the row off.
+  if (data.showStaff !== false) blocks.push(text(`Staff: ${data.staff ?? 'unattributed'}`, small, 'left'));
   if (data.footerLine.trim()) blocks.push(space(5), text(data.footerLine, small, 'center'));
   return {
     media: { kind: 'receipt', widthDots: device.widthDots, dpi: 203 },

@@ -167,6 +167,28 @@ describe('the booth voucher slip, customised per booth', () => {
     expect(renderJob(job(data), { device }).bitmap.height).toBeGreaterThan(0);
     expect(renderJob(job(data), { device: PROFILES.escpos512! }).bitmap.height).toBeGreaterThan(0);
   });
+
+  it('prints the showcase Staff row as the classic one: the roster, "unattributed", or off', () => {
+    const design = {
+      layout: 'showcase' as const,
+      venueLine: null,
+      winnerLine: '★ YOU WON ★',
+      winnerLineThai: 'คุณได้รับรางวัล',
+      codeLabel: 'VOUCHER CODE',
+      issuedLabel: 'Issued',
+      expiresLabel: 'Expires',
+      termsLabel: 'TERMS',
+      singleUseLabel: 'Single use',
+    };
+    const staffLines = (data: Partial<BoothVoucherData>) =>
+      documentTexts({ design, ...data }).filter((l) => l.startsWith('Staff'));
+    expect(staffLines({ staff: 'Tom and Jerry' })).toEqual(['Staff: Tom and Jerry']);
+    // Nobody on today's roster (SCRUM-694): the row says so rather than going missing.
+    expect(staffLines({ staff: null })).toEqual(['Staff: unattributed']);
+    // The booth's own choice to leave the row off is the only way to lose it.
+    expect(staffLines({ staff: null, showStaff: false })).toEqual([]);
+    expect(staffLines({ staff: 'Tom and Jerry', showStaff: false })).toEqual([]);
+  });
 });
 
 /**
