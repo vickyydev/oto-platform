@@ -231,8 +231,9 @@ describe('a finalised ticket sale prints its receipt and its signed bands', () =
     expect(done.finalised).toBe(true);
     const kinds = (done.printing.jobs as { kind: string }[]).map((j) => j.kind);
     // S2-14a — 2 Hours Play gives the paying adult their ticket back as credit
-    // (the seeded adults / full_price rule), so a credit voucher follows the bands.
-    expect(kinds).toEqual(['receipt', 'kids_wristband', 'kids_wristband', 'adult_wristband', 'credit_voucher']);
+    // (the seeded adults / full_price rule). That credit prints ON the receipt:
+    // no credit voucher job, so the receipt printer cuts once.
+    expect(kinds).toEqual(['receipt', 'kids_wristband', 'kids_wristband', 'adult_wristband']);
     expect((done.printing.jobs as { status: string }[]).every((j) => j.status === 'queued')).toBe(true);
     expect(done.printing.notes).toEqual([]);
 
@@ -264,7 +265,7 @@ describe('a finalised ticket sale prints its receipt and its signed bands', () =
     const commands = (await ctx.db.select().from(boxCommand).where(eq(boxCommand.kind, 'test_print'))).filter(
       (c) => jobIds.includes((c.payload as { printJobId?: string }).printJobId ?? ''),
     );
-    expect(commands).toHaveLength(5);
+    expect(commands).toHaveLength(4);
     for (const c of commands) {
       expect((c.payload as { document?: string }).document).toBe('platform');
       expect(JSON.stringify(c.payload)).not.toContain(bands[0]!.code);
@@ -283,6 +284,18 @@ describe('a finalised ticket sale prints its receipt and its signed bands', () =
     expect(receipt.job.data.memberNickname).toBe('Mali');
     expect(receipt.job.data.tenders[0]).toMatchObject({ label: 'Cash' });
     expect(receipt.job.data.bandCodes.sort()).toEqual(bands.map((b) => bandShortCode(b.code)).sort());
+    // The adult's credit, on the receipt: the figure, the wallet's QR and the
+    // adult band it is paired with — what the separate voucher used to carry.
+    const adultBand = bands.find((b) => b.kind === 'adult')!;
+    const [grant] = done.grants as { qrCode: string; creditSatang: number }[];
+    expect(receipt.job.data.creditVouchers).toEqual([
+      {
+        balance: `฿${(grant!.creditSatang / 100).toLocaleString('en-US')}`,
+        qrCode: grant!.qrCode,
+        holderName: 'Walk-in guest',
+        bandCode: bandShortCode(adultBand.code),
+      },
+    ]);
 
     // A kids band: the signed code for the QR, the short code under it, the allergy line.
     const kidJob = (done.printing.jobs as { id: string; kind: string; subjectId: string }[]).find(
@@ -684,8 +697,8 @@ describe('reprints from History', () => {
       const [job] = await ctx.db.select().from(printJob).where(eq(printJob.id, b.printedJobId!));
       expect(job!.reprintOf).toBe(was.printedJobId);
     }
-    // Receipt, two kids bands, the adult band and (S2-14a) the adult's credit voucher.
-    expect((done.printing.jobs as unknown[]).length).toBe(5);
+    // Receipt (carrying the adult's S2-14a credit), two kids bands and the adult band.
+    expect((done.printing.jobs as unknown[]).length).toBe(4);
   });
 
   it('refuses a pick-up ticket reprint for a sale with no food on it', async () => {

@@ -121,10 +121,18 @@ async function linesOf(saleId: string) {
 
 type Grant = { walletId: string; role: string; personIndex: number; creditSatang: number; qrCode: string; holderName: string | null; bandShortCode: string | null; gateAccess: boolean };
 
+/** The credit sections the sale's receipt prints, as the box fetches them. */
+async function receiptCreditsOf(done: { printing: { jobs: { id: string; kind: string }[] } }) {
+  const receiptJob = done.printing.jobs.find((j) => j.kind === 'receipt')!;
+  const [row] = await ctx.db.select().from(printJob).where(eq(printJob.id, receiptJob.id));
+  const doc = await buildPrintDocument(ctx.db, { boxId: row!.boxId, operatorId }, receiptJob.id);
+  return ((doc.job.data as { creditVouchers?: { qrCode?: string }[] }).creditVouchers ?? []);
+}
+
 // --- Grants at finalise ---------------------------------------------------------------
 
 describe('a walk-in ticket sale grants credit as it closes', () => {
-  it('2 Hours Play, 2 kids + 1 adult: the adult earns their list price; one wallet, one QR, on their band, with a voucher', async () => {
+  it('2 Hours Play, 2 kids + 1 adult: the adult earns their list price; one wallet, one QR, on their band, on the receipt', async () => {
     const { saleId, done } = await ticketSale(twoHoursId, 2, 1);
     expect(done.finalised).toBe(true);
     const grants = done.grants as Grant[];
@@ -155,16 +163,33 @@ describe('a walk-in ticket sale grants credit as it closes', () => {
     expect(keys.find((k) => k.kind === 'voucher_qr')!.value).toBe(grants[0]!.qrCode);
     expect(keys.find((k) => k.kind === 'band')!.value).toBe(adultBand.code);
 
-    // The paper: a credit voucher after the bands, carrying that same QR.
+    // The paper: ONE receipt carrying the credit and that same QR — no credit
+    // voucher job of its own, so the receipt printer cuts once for the sale.
     const kinds = (done.printing.jobs as { kind: string }[]).map((j) => j.kind);
-    expect(kinds).toEqual(['receipt', 'kids_wristband', 'kids_wristband', 'adult_wristband', 'credit_voucher']);
-    const voucherJob = (done.printing.jobs as { id: string; kind: string; subjectType: string; subjectId: string }[]).find(
-      (j) => j.kind === 'credit_voucher',
-    )!;
-    expect(voucherJob).toMatchObject({ subjectType: 'wallet', subjectId: grants[0]!.walletId });
-    const [jobRow] = await ctx.db.select().from(printJob).where(eq(printJob.id, voucherJob.id));
-    const doc = await buildPrintDocument(ctx.db, { boxId: jobRow!.boxId, operatorId }, voucherJob.id);
-    expect(doc.job).toEqual({
+    expect(kinds).toEqual(['receipt', 'kids_wristband', 'kids_wristband', 'adult_wristband']);
+    const receiptJob = (done.printing.jobs as { id: string; kind: string }[]).find((j) => j.kind === 'receipt')!;
+    const [jobRow] = await ctx.db.select().from(printJob).where(eq(printJob.id, receiptJob.id));
+    const doc = await buildPrintDocument(ctx.db, { boxId: jobRow!.boxId, operatorId }, receiptJob.id);
+    expect(doc.job.kind).toBe('receipt');
+    expect((doc.job.data as { creditVouchers?: unknown }).creditVouchers).toEqual([
+      {
+        balance: `฿${(adultUnit / 100).toLocaleString('en-US')}`,
+        qrCode: grants[0]!.qrCode,
+        holderName: 'Walk-in guest',
+        bandCode: bandShortCode(adultBand.code),
+      },
+    ]);
+    // A credit voucher printed for the wallet on its own still says what it always did.
+    const voucherJobId = newId();
+    await ctx.db.insert(printJob).values({
+      ...jobRow!,
+      id: voucherJobId,
+      kind: 'credit_voucher',
+      subjectType: 'wallet',
+      subjectId: grants[0]!.walletId,
+    });
+    const voucherDoc = await buildPrintDocument(ctx.db, { boxId: jobRow!.boxId, operatorId }, voucherJobId);
+    expect(voucherDoc.job).toEqual({
       kind: 'credit_voucher',
       data: {
         balance: `฿${(adultUnit / 100).toLocaleString('en-US')}`,
@@ -188,7 +213,7 @@ describe('a walk-in ticket sale grants credit as it closes', () => {
     await assertLedgerTruth();
   });
 
-  it('Eat & Play (both, full price): the ฿350 adult and the ฿1,300 kid each get their own wallet and voucher', async () => {
+  it('Eat & Play (both, full price): the ฿350 adult and the ฿1,300 kid each get their own wallet, both on the one receipt', async () => {
     const { saleId, done } = await ticketSale(eatPlayId, 1, 1);
     const grants = done.grants as Grant[];
     expect(grants.map((g) => [g.role, g.creditSatang, g.gateAccess])).toEqual([
@@ -197,7 +222,10 @@ describe('a walk-in ticket sale grants credit as it closes', () => {
     ]);
     expect(new Set(grants.map((g) => g.qrCode)).size).toBe(2);
     const kinds = (done.printing.jobs as { kind: string }[]).map((j) => j.kind);
-    expect(kinds.filter((k) => k === 'credit_voucher')).toHaveLength(2);
+    expect(kinds.filter((k) => k === 'credit_voucher')).toHaveLength(0);
+    expect(kinds.filter((k) => k === 'receipt')).toHaveLength(1);
+    // One section per wallet, in person order, each with its own QR.
+    expect((await receiptCreditsOf(done)).map((c) => c.qrCode)).toEqual(grants.map((g) => g.qrCode));
     // Each wallet is on the band of the person who earned it.
     const bands = await ctx.db.select().from(band).where(eq(band.saleId, saleId));
     for (const g of grants) {
@@ -208,26 +236,30 @@ describe('a walk-in ticket sale grants credit as it closes', () => {
     await assertLedgerTruth();
   });
 
-  it('GET /sales/:id carries the credit vouchers a granting sale printed, and none for a sale that granted nothing (staging F1)', async () => {
-    // Eat & Play: two wallets, two credit vouchers — the read the till's
-    // "Credit Grants to Print" block is decided from must list both.
+  it('GET /sales/:id carries the receipt and the grants the till’s credit block is decided from, and no credit for a sale that granted nothing (staging F1)', async () => {
+    // Eat & Play: two wallets, their credit on the one receipt — the read the
+    // till's "Credit Grants to Print" block is decided from carries the
+    // receipt job and both grants (`reportsCreditVoucher`).
     const { saleId, done } = await ticketSale(eatPlayId, 1, 1);
     const grants = done.grants as Grant[];
-    const read = (await linesOf(saleId)).printJobs as { kind: string; subjectType: string; subjectId: string; reprintOf: string | null }[];
-    const vouchers = read.filter((j) => j.kind === 'credit_voucher');
-    expect(vouchers).toHaveLength(2);
-    expect(vouchers.every((j) => j.subjectType === 'wallet' && j.reprintOf === null)).toBe(true);
-    expect(new Set(vouchers.map((j) => j.subjectId))).toEqual(new Set(grants.map((g) => g.walletId)));
+    const detail = await linesOf(saleId);
+    const read = detail.printJobs as { kind: string; subjectType: string; subjectId: string; reprintOf: string | null }[];
+    expect(read.filter((j) => j.kind === 'credit_voucher')).toHaveLength(0);
+    expect(read.filter((j) => j.kind === 'receipt' && j.reprintOf === null)).toHaveLength(1);
+    expect(new Set((detail.grants as Grant[]).map((g) => g.walletId))).toEqual(new Set(grants.map((g) => g.walletId)));
     // Everything the finalise printed is in the read, nothing more.
     expect(read.map((j) => j.kind).sort()).toEqual((done.printing.jobs as { kind: string }[]).map((j) => j.kind).sort());
 
-    // A ticket sale that grants nothing reads no credit voucher.
+    // A ticket sale that grants nothing prints no credit on its receipt.
     await ctx.db.update(ticketPackage).set({ creditRule: null }).where(eq(ticketPackage.id, twoHoursId));
     try {
       const plain = await ticketSale(twoHoursId, 1, 1);
-      const plainRead = (await linesOf(plain.saleId)).printJobs as { kind: string }[];
+      const plainDetail = await linesOf(plain.saleId);
+      const plainRead = plainDetail.printJobs as { kind: string }[];
       expect(plainRead.some((j) => j.kind === 'credit_voucher')).toBe(false);
       expect(plainRead.map((j) => j.kind).sort()).toEqual(['adult_wristband', 'kids_wristband', 'receipt']);
+      expect(plainDetail.grants).toEqual([]);
+      expect(await receiptCreditsOf(plain.done)).toEqual([]);
     } finally {
       await ctx.db.update(ticketPackage).set({ creditRule: { appliesTo: 'adults', basis: 'full_price' } }).where(eq(ticketPackage.id, twoHoursId));
     }
@@ -245,12 +277,13 @@ describe('a walk-in ticket sale grants credit as it closes', () => {
     await assertLedgerTruth();
   });
 
-  it('a package with no credit rule earns nothing, and prints no voucher', async () => {
+  it('a package with no credit rule earns nothing, and prints no credit', async () => {
     await ctx.db.update(ticketPackage).set({ creditRule: null }).where(eq(ticketPackage.id, twoHoursId));
     try {
       const { done } = await ticketSale(twoHoursId, 1, 2);
       expect(done.grants).toEqual([]);
       expect((done.printing.jobs as { kind: string }[]).some((j) => j.kind === 'credit_voucher')).toBe(false);
+      expect(await receiptCreditsOf(done)).toEqual([]);
     } finally {
       await ctx.db.update(ticketPackage).set({ creditRule: { appliesTo: 'adults', basis: 'full_price' } }).where(eq(ticketPackage.id, twoHoursId));
     }
@@ -337,7 +370,8 @@ describe('a booking redeemed at the counter earns like the walk-in', () => {
     const body = res.json();
     const adultUnit = (quote.lines[0] as unknown as { adultUnitSatang: number }).adultUnitSatang;
     expect((body.grants as Grant[]).map((g) => [g.role, g.creditSatang, g.holderName])).toEqual([['adult', adultUnit, 'Booking guest']]);
-    expect((body.printing.jobs as { kind: string }[]).filter((j) => j.kind === 'credit_voucher')).toHaveLength(1);
+    expect((body.printing.jobs as { kind: string }[]).filter((j) => j.kind === 'credit_voucher')).toHaveLength(0);
+    expect((await receiptCreditsOf(body)).map((c) => c.qrCode)).toEqual((body.grants as Grant[]).map((g) => g.qrCode));
     const entries = await ctx.db.select().from(walletEntry).where(eq(walletEntry.saleId, body.sale.id));
     expect(entries).toHaveLength(1);
     await assertLedgerTruth();

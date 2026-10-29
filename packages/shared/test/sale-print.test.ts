@@ -173,6 +173,22 @@ describe('the receipt', () => {
       { label: 'Promo', amount: '−฿0' },
     ]);
   });
+
+  it('carries each wallet’s credit — figure, QR, holder, band — and none when the sale granted none', () => {
+    expect(saleReceiptDocument(snapshot()).creditVouchers).toBeUndefined();
+    expect(saleReceiptDocument({ ...snapshot(), credits: [] }).creditVouchers).toBeUndefined();
+    const receipt = saleReceiptDocument({
+      ...snapshot(),
+      credits: [
+        { creditSatang: 35_000, qrCode: 'QR-7KMQ4XB9TZ2D5HVR8NWC', holderName: 'Walk-in guest', bandShortCode: 'T1-A7K3M1' },
+        { creditSatang: 130_050, qrCode: null, holderName: null, bandShortCode: null },
+      ],
+    });
+    expect(receipt.creditVouchers).toEqual([
+      { balance: '฿350', qrCode: 'QR-7KMQ4XB9TZ2D5HVR8NWC', holderName: 'Walk-in guest', bandCode: 'T1-A7K3M1' },
+      { balance: '฿1,300.50' },
+    ]);
+  });
 });
 
 describe('the bands, the prep ticket and the voucher', () => {

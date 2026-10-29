@@ -115,18 +115,23 @@ export function prepStationsPrinted(jobs: readonly ApiSalePrintJob[]): PrepStati
 }
 
 /**
- * WHETHER THE PLATFORM REPORTED A CREDIT-VOUCHER PRINTOUT for this sale —
- * SCRUM-208. A ticket sale's F&B credit and item grants print as
- * `credit_voucher` / `item_voucher` jobs. Since S2-14a the platform grants the
- * credit as it closes the sale and queues one `credit_voucher` job per wallet
- * (subject: the wallet), so the payment-done screen's "Credit Grants to Print"
- * block lights up on exactly the sales whose paper carries it. It is still
- * shown only when the sale's own print jobs (not copies) carry one, so it never
- * promises paper that no printer produced.
+ * WHETHER THE PLATFORM REPORTED A CREDIT PRINTOUT for this sale — SCRUM-208.
+ * A ticket sale's item grants print as `item_voucher` jobs. Its F&B credit —
+ * one wallet per person, granted as the platform closes the sale (S2-14a) —
+ * prints ON the receipt, a section per wallet, so a sale that granted wallets
+ * and queued its receipt has put its credit on paper. A sale from before the
+ * credit moved onto the receipt carries `credit_voucher` jobs instead, and
+ * still counts. Only the sale's own print jobs (not copies) are read, so the
+ * payment-done screen's "Credit Grants to Print" block never promises paper
+ * that no printer produced.
  */
-export function reportsCreditVoucher(jobs: readonly ApiSalePrintJob[]): boolean {
-  return jobs.some(
-    (job) =>
-      job.reprintOf === null && (job.kind === 'credit_voucher' || job.kind === 'item_voucher'),
-  );
+export function reportsCreditVoucher(
+  jobs: readonly ApiSalePrintJob[],
+  grants: readonly unknown[] | null = null,
+): boolean {
+  const firstPrints = jobs.filter((job) => job.reprintOf === null);
+  if (firstPrints.some((job) => job.kind === 'credit_voucher' || job.kind === 'item_voucher')) {
+    return true;
+  }
+  return (grants?.length ?? 0) > 0 && firstPrints.some((job) => job.kind === 'receipt');
 }

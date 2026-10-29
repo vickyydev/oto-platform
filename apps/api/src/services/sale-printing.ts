@@ -50,7 +50,7 @@ import {
   type BandView,
 } from './bands';
 import { routeOnBox, templateTypeFor } from './print';
-import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf } from './wallet';
+import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf, saleCreditsOf } from './wallet';
 import { bandHolderOfSale, isPrepaidSetAside } from './band-food';
 import { endOfDayReceiptDocumentOf } from './end-of-day-receipt';
 import { tillVoucherDocumentOf } from './voucher-promotions';
@@ -66,10 +66,11 @@ import type { Exec, Tx } from './tx';
  *   - a TICKET sale (`ticketPrintJobs`): one receipt; a kids band per child
  *     and an adult band per adult (`sale.bracelets`, minted in `bands.ts`);
  *     one item voucher per socks / add-on / free-item grant, aggregated by
- *     label (`buildCreditGrants`), on the receipt printer; and — S2-14a — one
- *     credit voucher per wallet the sale granted (`printRouting.tsx:86-119`),
- *     after the bands and before the item vouchers, on the receipt printer,
- *     carrying that wallet's ONE QR (`services/wallet.ts`);
+ *     label (`buildCreditGrants`), on the receipt printer. S2-14a's credit —
+ *     one wallet per person the tickets pay credit to, each with its ONE QR
+ *     (`services/wallet.ts`) — prints ON the receipt, a section per wallet
+ *     before its cut, where the prototype printed a credit voucher per wallet
+ *     as a slip of its own (`printRouting.tsx:86-119`);
  *   - an F&B order (`fnbPrintJobs`): one receipt carrying only the whole-order
  *     note, and one prep ticket per station that has items — kitchen, then
  *     bar (`groupPrepTickets`) — each with the allergy line, its own items'
@@ -425,7 +426,10 @@ export async function routeSalePrinting(
 
       // What it prints, in order — the receipt, the bands, the item vouchers,
       // the prep tickets — decided by the composer a box with no internet
-      // prints from too (`salePrintRequests` in `@oto/shared`).
+      // prints from too (`salePrintRequests` in `@oto/shared`). The F&B credit
+      // each wallet was granted is not a job of its own: it prints on the
+      // receipt (`SalePrintSnapshot.credits`), so the guest gets one slip with
+      // one cut where the prototype cut a credit voucher per wallet after it.
       const requests: JobRequest[] = salePrintRequests(await salePrintSnapshotOf(sp, saleRow));
       // S2-14a — each grant wallet goes on its person's band, now the band
       // exists. Under its own savepoint: a pairing that cannot be written
@@ -434,21 +438,8 @@ export async function routeSalePrinting(
         try {
           await sp.transaction((inner) => attachSaleBandKeys(inner, saleRow, bandRows, now));
         } catch {
-          notes.push('Credit not linked to the bands — the vouchers still spend by their QR');
+          notes.push('Credit not linked to the bands — it still spends by the QR on the receipt');
         }
-      }
-      // S2-14a — one credit voucher per granted wallet, where the prototype
-      // put them (`ticketPrintJobs`): after the bands, before the item vouchers.
-      const vouchers: JobRequest[] = (await creditVoucherWalletsOf(sp, saleRow.id)).map((walletId) => ({
-        kind: 'credit_voucher',
-        subjectType: 'wallet',
-        subjectId: walletId,
-      }));
-      if (vouchers.length > 0) {
-        const at = requests.findIndex(
-          (r) => r.kind === 'item_voucher' || r.kind === 'kitchen_ticket' || r.kind === 'bar_ticket',
-        );
-        requests.splice(at < 0 ? requests.length : at, 0, ...vouchers);
       }
       const jobs: SalePrintJobView[] = [];
       for (const [index, request] of requests.entries()) {
@@ -922,9 +913,8 @@ export async function reprintSale(
 /**
  * Every print job for a sale, its bands, its lines and — S2-14a — the credit
  * vouchers of the wallets it granted, newest first. A credit voucher's subject
- * is the WALLET (`routeSalePrinting`), so without the last the sale read left
- * them out and the till's "Credit Grants to Print" block, which shows only
- * when the read carries one (`reportsCreditVoucher`), never appeared.
+ * is the WALLET, so without the last the sale read would leave out the slips
+ * a sale printed before its credit moved onto the receipt.
  */
 export async function printJobsOfSale(db: Exec, saleId: string): Promise<SalePrintJobView[]> {
   const bandIds = (await db.select({ id: band.id }).from(band).where(eq(band.saleId, saleId))).map((b) => b.id);
@@ -1204,6 +1194,9 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     bandHolder: await bandHolderOfSale(db, saleRow, lines),
     note: saleRow.note,
     discounts: await discountsOf(db, saleRow),
+    // S2-14a — the credit each grant wallet carries, for the receipt's credit
+    // sections: read as the box asks, so the band paired after minting is on it.
+    credits: await saleCreditsOf(db, saleRow.id),
   };
 }
 

@@ -101,6 +101,16 @@ export const FIXTURES: Fixture[] = [
         tenders: [{ label: 'Cash', amount: '฿1,100' }, { label: 'Change', amount: '฿9.50' }],
         bandCodes: ['HKT1-4821', 'HKT1-4822'],
         creditGrants: ['฿100 credit', '2× Grip socks to collect'],
+        // The sale's F&B credit, on the receipt rather than a slip of its own:
+        // what a station's Test print of the receipt shows on paper.
+        creditVouchers: [
+          {
+            balance: '฿100',
+            qrCode: 'QR-7KMQ4XB9TZ2D5HVR8NWC',
+            holderName: 'Walk-in guest',
+            bandCode: 'HKT1-4822',
+          },
+        ],
       },
     },
   },

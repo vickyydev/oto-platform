@@ -58,6 +58,15 @@ export interface ReceiptData {
   creditGrants?: string[];
   /** F&B receipts carry only the whole-order note (`printRouting.tsx:180-184`). */
   orderNote?: string;
+  /**
+   * The F&B credit this sale loaded, one entry per wallet it granted: what a
+   * separate credit voucher used to carry — the credit, the wallet's ONE QR,
+   * its holder and the band it also spends from — printed at the foot of the
+   * receipt, so a sale comes out as one slip with one cut. Absent or empty
+   * prints no credit section, which is every receipt that granted nothing and
+   * every receipt a box composed offline.
+   */
+  creditVouchers?: CreditVoucherData[];
 }
 
 export interface PrepTicketData {
@@ -107,6 +116,12 @@ export interface CreditVoucherData {
   /** The wallet key; the same QR resolves the wallet the band does. */
   qrCode?: string;
   holderName?: string;
+  /**
+   * The short code of the band this credit is also on (`T1-A7K3M1`), when the
+   * wallet carries one: on a receipt with several credits it says whose each
+   * QR is, which "For Walk-in guest" three times over cannot.
+   */
+  bandCode?: string;
 }
 
 export interface ItemVoucherData {

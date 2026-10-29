@@ -144,7 +144,7 @@ export function renderJob(job: PrintJob, options: RenderJobOptions): RenderedJob
   const type = TEMPLATE_FOR_KIND[job.kind];
   const template = type ? resolveTemplate(templates, type) : undefined;
 
-  const document = buildDocument(job, template, device);
+  const document = buildDocument(job, template, device, templates);
   if (options.finish) Object.assign(document.finish, options.finish);
 
   const layout = layoutDocument(document, options);
@@ -157,15 +157,26 @@ export function renderJob(job: PrintJob, options: RenderJobOptions): RenderedJob
   return { kind: job.kind, template, document, layout, bitmap, bytes, overflow: layout.overflow };
 }
 
-/** The document only, for a caller that wants to inspect or adjust it first. */
+/**
+ * The document only, for a caller that wants to inspect or adjust it first.
+ *
+ * `templates` is the branch's whole set, for the one printout that reads two:
+ * the receipt's credit sections obey the `credit_voucher` template.
+ */
 export function buildDocument(
   job: PrintJob,
   template: PrintTemplate | undefined,
   device: DeviceProfile,
+  templates: readonly PrintTemplate[] = [],
 ): PrintDocument {
   switch (job.kind) {
     case 'receipt':
-      return buildReceipt({ template, data: job.data, device });
+      return buildReceipt({
+        template,
+        creditTemplate: resolveTemplate(templates, 'credit_voucher'),
+        data: job.data,
+        device,
+      });
     case 'kitchen_ticket':
       return buildPrepTicket({ template, type: 'kitchen_ticket', data: job.data, device });
     case 'bar_ticket':

@@ -29,6 +29,61 @@ export const bodyBold: TextStyle = { sizeDots: SIZE.body, weight: 'bold' };
 export const small: TextStyle = { sizeDots: SIZE.small, weight: 'regular' };
 export const smallBold: TextStyle = { sizeDots: SIZE.small, weight: 'bold' };
 
+/**
+ * One printout's type: the five styles its builder draws with and how thick
+ * its rules are, so the same pieces can be drawn at the prep tickets' size or
+ * at the receipt's.
+ */
+export interface TypeScale {
+  /** Footnotes, item notes, the tax-invoice lines, the caption under a QR. */
+  small: TextStyle;
+  body: TextStyle;
+  /** The caps sub-title under the header ("RECEIPT", "CREDIT VOUCHER"). */
+  title: TextStyle;
+  /** The header text at the top. */
+  heading: TextStyle;
+  /** TOTAL, and the credit figure on a voucher. */
+  total: TextStyle;
+  ruleDots: number;
+}
+
+/** What every printout drew with before the receipt had a scale of its own. */
+export const STANDARD_TYPE: TypeScale = {
+  small,
+  body,
+  title: { sizeDots: SIZE.small, weight: 'regular', tracking: 2 },
+  heading: { sizeDots: SIZE.header, weight: 'bold' },
+  total: { sizeDots: SIZE.total, weight: 'bold' },
+  ruleDots: 1,
+};
+
+/**
+ * The receipt's type: every line bold, the body half as big again and the
+ * header and the total twice the body's old size.
+ *
+ * Text reaches the head as raster (`emit/escpos.ts`), so ESC/POS's own
+ * emphasis and character-size commands (`ESC E`, `GS !`, `ESC G`) cannot
+ * touch it: they act on the printer's resident fonts, which this package never
+ * uses. Bigger, bolder and darker is decided here instead, as the em size and
+ * the weight of the face the host rasterises.
+ *
+ * The sizes are chosen against the narrower head. At 32 a bold digit is 18
+ * dots, so the price column (`valueColumnDots`, 198) holds "฿12,345.50"
+ * (165) with room to spare and the label beside it keeps 290 dots on a
+ * 512-dot unit; at 44 the TOTAL row's figure (227 on 273) still fits. Nothing
+ * a receipt prints as a number is ever narrower than its column, so a figure
+ * never wraps. Rules are two dots, not one, so the dividers survive a light
+ * head as well as the text does.
+ */
+export const RECEIPT_TYPE: TypeScale = {
+  small: { sizeDots: 24, weight: 'bold' },
+  body: { sizeDots: 32, weight: 'bold' },
+  title: { sizeDots: 24, weight: 'bold', tracking: 2 },
+  heading: { sizeDots: 44, weight: 'bold' },
+  total: { sizeDots: 44, weight: 'bold' },
+  ruleDots: 2,
+};
+
 export function text(
   value: string,
   style: TextStyle = body,
@@ -42,8 +97,8 @@ export function runsBlock(runs: InlineRun[], style: TextStyle, align: Align = 'l
 }
 
 /** The prototype's `Divider` — a dashed rule (`PrintTemplatePreview.tsx:13`). */
-export function divider(): Block {
-  return { k: 'rule', style: 'dashed', thicknessDots: 1 };
+export function divider(thicknessDots = 1): Block {
+  return { k: 'rule', style: 'dashed', thicknessDots };
 }
 
 export function space(dots: number): Block {
@@ -55,12 +110,12 @@ export function space(dots: number): Block {
  * (`PrintTemplatePreview.tsx:106-110`); on a monochrome head that is an
  * inverted badge, which is the same idea with the same ink.
  */
-export function logoBlock(): Block {
+export function logoBlock(sizeDots: number = SIZE.body): Block {
   return {
     k: 'invert',
     inline: true,
     padDots: 4,
-    children: [text('oto', { sizeDots: SIZE.body, weight: 'bold', tracking: 1 }, 'center')],
+    children: [text('oto', { sizeDots, weight: 'bold', tracking: 1 }, 'center')],
   };
 }
 
@@ -71,27 +126,32 @@ export function logoBlock(): Block {
  * and Header-text controls for the two band types because "OTO name + logo are
  * pre-printed on the band" (`PrintTemplatePreview.tsx:46-47`).
  */
-export function headerBlocks(template: PrintTemplate | undefined, title?: string): Block[] {
+export function headerBlocks(
+  template: PrintTemplate | undefined,
+  title?: string,
+  type: TypeScale = STANDARD_TYPE,
+): Block[] {
   const out: Block[] = [];
   if (template?.showLogo) {
-    out.push({ k: 'group', children: [centre(logoBlock())] });
+    out.push({ k: 'group', children: [centre(logoBlock(type.body.sizeDots))] });
     out.push(space(4));
   }
   if (template?.headerText) {
-    out.push(text(template.headerText, { sizeDots: SIZE.header, weight: 'bold' }, 'center'));
+    out.push(text(template.headerText, type.heading, 'center'));
   }
   if (title) {
-    out.push(
-      text(title.toUpperCase(), { sizeDots: SIZE.small, weight: 'regular', tracking: 2 }, 'center'),
-    );
+    out.push(text(title.toUpperCase(), type.title, 'center'));
   }
   return out;
 }
 
 /** Footer text under a dashed rule, centred (`PrintTemplatePreview.tsx:272-279`). */
-export function footerBlocks(template: PrintTemplate | undefined): Block[] {
+export function footerBlocks(
+  template: PrintTemplate | undefined,
+  type: TypeScale = STANDARD_TYPE,
+): Block[] {
   if (!template?.footerText) return [];
-  return [divider(), text(template.footerText, small, 'center')];
+  return [divider(type.ruleDots), text(template.footerText, type.small, 'center')];
 }
 
 function centre(block: Block): Block {
@@ -106,8 +166,13 @@ function centre(block: Block): Block {
  * means nothing, and the price column is the part of a receipt that has to line
  * up.
  */
-export function moneyRow(label: string, value: string, strong = false): Block {
-  const style: TextStyle = { sizeDots: strong ? SIZE.total : SIZE.body, weight: strong ? 'bold' : 'regular' };
+export function moneyRow(
+  label: string,
+  value: string,
+  strong = false,
+  type: TypeScale = STANDARD_TYPE,
+): Block {
+  const style: TextStyle = strong ? type.total : type.body;
   return {
     k: 'columns',
     gapDots: 8,

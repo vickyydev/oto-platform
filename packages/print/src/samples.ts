@@ -150,6 +150,11 @@ const FULL: PrintSampleSet = {
       bandCodes: ['T1-C9P5Q3', 'T1-C9P5Q4', 'T1-C9P5Q5', 'T1-D0Q6R4', 'T1-D0Q6R5'],
       creditGrants: ['฿500 credit', '3× Grip socks to collect', '1× Birthday cake to collect'],
       orderNote: 'Cake at 16:30, candles on the side.',
+      // Two wallets' credit, each with its QR and its band: the receipt is the one slip.
+      creditVouchers: [
+        { balance: '฿300', qrCode: 'QR-C9P5Q3RTVW2X4Y6Z8A0B', holderName: 'Booking guest', bandCode: 'T1-D0Q6R4' },
+        { balance: '฿200', qrCode: 'QR-D0Q6R4SXYZ3A5B7C9D1E', holderName: 'Booking child', bandCode: 'T1-C9P5Q3' },
+      ],
     },
   },
   kitchen_ticket: {

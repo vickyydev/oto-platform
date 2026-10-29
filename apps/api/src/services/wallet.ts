@@ -31,6 +31,7 @@ import {
   normaliseBandCode,
   normaliseWalletKeyValue,
   parseDayStart,
+  type SalePrintCredit,
   type WalletEntryKind,
   type WalletEntrySource,
   type WalletEntryView,
@@ -1023,6 +1024,22 @@ export async function attachSaleBandKeys(tx: Tx, saleRow: SaleRow, bands: readon
 /** The sale's grant wallets, in person order — one credit voucher each. */
 export async function creditVoucherWalletsOf(db: Exec, saleId: string): Promise<string[]> {
   return (await grantsOfSale(db, saleId)).map((g) => g.walletId);
+}
+
+/**
+ * THE SALE'S CREDIT AS ITS RECEIPT PRINTS IT (`SalePrintSnapshot.credits`):
+ * the same grant wallets, in the same person order, that each printed a
+ * credit voucher of their own until the receipt carried them — the credit
+ * granted, the ONE QR, the holder and the band the wallet is on. Read when
+ * the box asks for the receipt, after the bands are minted and paired.
+ */
+export async function saleCreditsOf(db: Exec, saleId: string): Promise<SalePrintCredit[]> {
+  return (await grantsOfSale(db, saleId)).map((g) => ({
+    creditSatang: g.creditSatang,
+    qrCode: g.qrCode || null,
+    holderName: g.holderName,
+    bandShortCode: g.bandShortCode,
+  }));
 }
 
 /**

@@ -574,6 +574,20 @@ describe('reportsCreditVoucher — whether the platform printed a credit voucher
     ).toBe(false);
     expect(reportsCreditVoucher([])).toBe(false);
   });
+
+  it('is true for a first-print receipt of a sale that granted wallets — the credit prints on the receipt', () => {
+    const grant = { walletId: 'w1' };
+    expect(reportsCreditVoucher([job({ id: 'j1', kind: 'receipt', status: 'queued' })], [grant])).toBe(true);
+    // No wallets granted, no credit on the receipt.
+    expect(reportsCreditVoucher([job({ id: 'j1', kind: 'receipt', status: 'queued' })], [])).toBe(false);
+    expect(reportsCreditVoucher([job({ id: 'j1', kind: 'receipt', status: 'queued' })], null)).toBe(false);
+    // A copy of the receipt is not the sale's own paper.
+    expect(
+      reportsCreditVoucher([job({ id: 'j1', kind: 'receipt', status: 'printed', reprintOf: 'j0' })], [grant]),
+    ).toBe(false);
+    // Wallets but no receipt queued: nothing carries the credit.
+    expect(reportsCreditVoucher([job({ id: 'j1', kind: 'kids_wristband', status: 'queued' })], [grant])).toBe(false);
+  });
 });
 
 describe('refundSliceWords — how each slice of a refund went back', () => {

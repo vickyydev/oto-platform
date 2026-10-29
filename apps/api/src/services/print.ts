@@ -537,6 +537,16 @@ export async function renderTemplatePreview(
    */
   const job =
     printSampleJob(kind, input.sample ?? DEFAULT_PRINT_SAMPLE) ?? (await testPrintJob(kind));
+  /**
+   * The draft in place of its saved row, beside the branch's other templates:
+   * the box renders with all of them, and one printout reads two — the
+   * receipt's credit sections obey the `credit_voucher` template — so a
+   * preview drawn with the draft alone would not be the paper.
+   */
+  const others = await db
+    .select()
+    .from(printTemplate)
+    .where(and(eq(printTemplate.branchId, row.branchId), isNull(printTemplate.archivedAt)));
   const png = renderPreviewPng(job, {
     device: profile,
     templates: [
@@ -549,6 +559,17 @@ export async function renderTemplatePreview(
         footerText: (draft.footerText === undefined ? row.footerText : draft.footerText) ?? undefined,
         fields: (draft.fields ?? row.fields ?? {}) as never,
       },
+      ...others
+        .filter((t) => t.type !== row.type)
+        .map((t) => ({
+          id: t.id,
+          type: t.type,
+          name: t.name,
+          showLogo: t.showLogo,
+          headerText: t.headerText ?? undefined,
+          footerText: t.footerText ?? undefined,
+          fields: (t.fields ?? {}) as never,
+        })),
     ],
   });
   return { png, deviceLabel: routed?.label ?? null, widthDots: profile.widthDots };

@@ -124,8 +124,9 @@ describe('gate seam', () => {
     const f = await post(`/sales/${saleId}/finalise`, reception, {});
     expect(f.statusCode, f.body).toBe(200);
     const jobs = f.json().printing.jobs as { id: string; kind: string; status: string; subjectId: string }[];
-    // S2-14a — the adult's ticket comes back as credit, so its voucher prints after the bands.
-    expect(jobs.map((j) => j.kind)).toEqual(['receipt', 'kids_wristband', 'kids_wristband', 'adult_wristband', 'credit_voucher']);
+    // S2-14a — the adult's ticket comes back as credit, and it prints on the
+    // receipt: one receipt job, no credit voucher job of its own.
+    expect(jobs.map((j) => j.kind)).toEqual(['receipt', 'kids_wristband', 'kids_wristband', 'adult_wristband']);
     const grants = f.json().grants as { walletId: string; qrCode: string }[];
     expect(grants).toHaveLength(1);
 
@@ -141,7 +142,7 @@ describe('gate seam', () => {
     bands = await ctx.db.select().from(band).where(eq(band.saleId, saleId));
     for (const j of jobs) {
       const doc = await documentOf(j.id);
-      const profile = j.kind === 'receipt' || j.kind === 'credit_voucher' ? PROFILES.escpos576! : PROFILES.tspl400!;
+      const profile = j.kind === 'receipt' ? PROFILES.escpos576! : PROFILES.tspl400!;
       const rendered = renderJob(doc.job, { device: profile, templates: TEMPLATES });
       expect(rendered.overflow, j.kind).toEqual([]);
       const t = texts(rendered);
@@ -151,13 +152,15 @@ describe('gate seam', () => {
         expect(all).toContain('ABBREVIATED TAX INVOICE');
         for (const b of bands) expect(all).toContain(bandShortCode(b.code)!);
         for (const b of bands) expect(all).not.toContain(b.code);
-      } else if (j.kind === 'credit_voucher') {
-        // The voucher's QR is the wallet's ONE key — never a band's signed code.
-        const qr = rendered.layout.items.find((i) => i.k === 'qr');
-        if (qr?.k !== 'qr') throw new Error('credit voucher has no QR');
-        expect(j.subjectId).toBe(grants[0]!.walletId);
+        // The credit section's QR is the wallet's ONE key — never a band's
+        // signed code — and the receipt names the adult band it is paired with.
+        const qrs = rendered.layout.items.filter((i) => i.k === 'qr');
+        expect(qrs).toHaveLength(1);
+        const qr = qrs[0];
+        if (qr?.k !== 'qr') throw new Error('the receipt carries no credit QR');
         expect(decodeQrMatrix(qr.matrix)).toBe(grants[0]!.qrCode);
-        for (const b of bands) expect(t.join(' ')).not.toContain(b.code);
+        const adult = bands.find((b) => b.kind === 'adult')!;
+        expect(all).toContain(`Band ${bandShortCode(adult.code)}`);
       } else {
         const qr = rendered.layout.items.find((i) => i.k === 'qr');
         expect(qr, `${j.kind} has no QR`).toBeDefined();

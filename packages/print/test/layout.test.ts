@@ -9,6 +9,7 @@ import {
   wrapTextDetailed,
 } from '../src/index';
 import type { PrintDocument, TextStyle } from '../src/index';
+import { RECEIPT_TYPE } from '../src/templates/common';
 import { PROFILES, TEMPLATES } from './fixtures';
 
 const escpos576 = PROFILES.escpos576!;
@@ -211,7 +212,7 @@ describe('columns are measured, not padded', () => {
     // counts and must still end on the same right edge. TOTAL is excluded: it
     // is set larger and gets a wider value column of its own.
     const money = job.layout.items.filter(
-      (i) => i.k === 'text' && i.text.startsWith('฿') && i.style.sizeDots === 22,
+      (i) => i.k === 'text' && i.text.startsWith('฿') && i.style.sizeDots === RECEIPT_TYPE.body.sizeDots,
     );
     expect(money.length).toBeGreaterThan(3);
     const rights = money.map((i) => (i.k === 'text' ? i.x + i.widthDots : 0));

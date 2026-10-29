@@ -1,96 +1,105 @@
 {
   "widthDots": 576,
-  "heightDots": 388,
+  "heightDots": 539,
   "overflow": [],
   "items": [
     {
       "k": "text",
-      "x": 268,
-      "baselineY": 28,
-      "w": 39,
-      "sizeDots": 22,
+      "x": 260,
+      "baselineY": 35,
+      "w": 56,
+      "sizeDots": 32,
       "weight": "bold",
       "text": "oto"
     },
     {
       "k": "invert",
-      "x": 264,
+      "x": 256,
       "y": 8,
-      "w": 47,
-      "h": 28
+      "w": 64,
+      "h": 35
     },
     {
       "k": "text",
-      "x": 187,
-      "baselineY": 66,
-      "w": 202,
-      "sizeDots": 30,
+      "x": 140,
+      "baselineY": 84,
+      "w": 297,
+      "sizeDots": 44,
       "weight": "bold",
       "text": "Oto Play Park"
     },
     {
       "k": "text",
-      "x": 202,
-      "baselineY": 91,
-      "w": 172,
-      "sizeDots": 18,
-      "weight": "regular",
+      "x": 173,
+      "baselineY": 116,
+      "w": 229,
+      "sizeDots": 24,
+      "weight": "bold",
       "text": "CREDIT VOUCHER"
     },
     {
       "k": "dashes",
       "x": 8,
-      "y": 95,
+      "y": 120,
       "w": 560,
-      "t": 1
+      "t": 2
     },
     {
       "k": "text",
-      "x": 8,
-      "baselineY": 122,
-      "w": 200,
-      "sizeDots": 30,
+      "x": 181,
+      "baselineY": 150,
+      "w": 214,
+      "sizeDots": 32,
       "weight": "bold",
       "text": "Credit loaded"
     },
     {
       "k": "text",
-      "x": 499,
-      "baselineY": 122,
-      "w": 69,
-      "sizeDots": 30,
+      "x": 237,
+      "baselineY": 188,
+      "w": 101,
+      "sizeDots": 44,
       "weight": "bold",
       "text": "฿150"
     },
     {
       "k": "text",
-      "x": 8,
-      "baselineY": 141,
-      "w": 429,
-      "sizeDots": 18,
-      "weight": "regular",
-      "text": "Scan wristband or QR at the F&B counter to spend."
+      "x": 29,
+      "baselineY": 213,
+      "w": 519,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "Scan wristband or QR at the F&B counter to"
     },
     {
       "k": "text",
-      "x": 8,
-      "baselineY": 170,
-      "w": 228,
-      "sizeDots": 22,
-      "weight": "regular",
+      "x": 248,
+      "baselineY": 240,
+      "w": 79,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "spend."
+    },
+    {
+      "k": "text",
+      "x": 113,
+      "baselineY": 279,
+      "w": 349,
+      "sizeDots": 32,
+      "weight": "bold",
       "text": "For Nong Mai · น้องใหม่"
     },
     {
       "k": "dashes",
       "x": 8,
-      "y": 179,
+      "y": 290,
       "w": 560,
-      "t": 1
+      "t": 2
     },
     {
       "k": "qr",
       "x": 213,
-      "y": 183,
+      "y": 295,
       "moduleDots": 6,
       "modules": 25,
       "version": 2,
@@ -98,28 +107,37 @@
     },
     {
       "k": "text",
-      "x": 204,
-      "baselineY": 350,
-      "w": 169,
-      "sizeDots": 18,
-      "weight": "regular",
+      "x": 171,
+      "baselineY": 467,
+      "w": 234,
+      "sizeDots": 24,
+      "weight": "bold",
       "text": "wb-walkin-S10428-0"
     },
     {
       "k": "dashes",
       "x": 8,
-      "y": 354,
+      "y": 471,
       "w": 560,
-      "t": 1
+      "t": 2
     },
     {
       "k": "text",
-      "x": 33,
-      "baselineY": 372,
-      "w": 510,
-      "sizeDots": 18,
-      "weight": "regular",
-      "text": "Scan QR or wristband at the F&B or merch counter to spend."
+      "x": 37,
+      "baselineY": 495,
+      "w": 501,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "Scan QR or wristband at the F&B or merch"
+    },
+    {
+      "k": "text",
+      "x": 182,
+      "baselineY": 522,
+      "w": 211,
+      "sizeDots": 24,
+      "weight": "bold",
+      "text": "counter to spend."
     }
   ]
 }

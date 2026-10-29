@@ -82,6 +82,8 @@ export type Block =
       ecc: QrEcc;
       align: Align;
       caption?: InlineRun[];
+      /** The caption's type; 18 dots regular when absent, as every QR printed before the receipt's. */
+      captionStyle?: TextStyle;
     }
   /**
    * A warning triangle followed by text, on one hanging indent.

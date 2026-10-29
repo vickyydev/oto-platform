@@ -532,7 +532,7 @@ describe('R1 — the clock on the new path: the plain paper never out for a set 
     expect(sales).toHaveLength(1);
     const plain = await plainJobsOf(sales[0]!);
     expect(plain.map((j) => j.kind)).toContain('receipt');
-    expect(plain.map((j) => j.kind), 'the credit package queues its voucher too').toContain('credit_voucher');
+    expect(plain.map((j) => j.kind), 'the credit package’s credit prints on the receipt').not.toContain('credit_voucher');
     await collect(R);
     await until('the plain paper is printed', async () => {
       const rows = await ctx.db.select().from(printJob).where(inArray(printJob.id, plain.map((j) => j.id)));
@@ -544,6 +544,7 @@ describe('R1 — the clock on the new path: the plain paper never out for a set 
     const receiptJob = plain.find((j) => j.kind === 'receipt')!;
     const document = await buildPrintDocument(ctx.db, { boxId: R.boxId, operatorId }, receiptJob.id);
     expect(numberOn(document.job)).toBe(sales[0]!.receiptNumber);
+    expect((document.job.data as { creditVouchers?: unknown[] }).creditVouchers?.length ?? 0, 'the receipt carries the credit').toBeGreaterThan(0);
   }, 60_000);
 });
 

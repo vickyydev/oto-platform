@@ -271,7 +271,7 @@ function layoutBlock(ctx: Ctx, block: Block, x: number, y: number, width: number
         after = layoutText(
           ctx,
           block.caption,
-          { sizeDots: 18, weight: 'regular' },
+          block.captionStyle ?? { sizeDots: 18, weight: 'regular' },
           block.align,
           x,
           after,

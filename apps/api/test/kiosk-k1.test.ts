@@ -426,9 +426,9 @@ describe('check 5 — the kiosk redeems a paid booking for this branch', () => {
     expect(grants.reduce((s, g) => s + g.amountSatang, 0)).toBe(answer.walletCreditSatang);
 
     // Every band printed through the kiosk box, in this request — and no box
-    // command was left behind to print one a second time. The receipt and the
-    // credit voucher are queued to the box with the sale, as a till's are, and
-    // print once it commits (SCRUM-504): nothing of them came out before it.
+    // command was left behind to print one a second time. The receipt — the
+    // sale's credit printed on it — is queued to the box with the sale, as a
+    // till's is, and prints once it commits (SCRUM-504): nothing came out before it.
     const jobs = await ctx.db.select().from(printJob).where(eq(printJob.stationId, kioskId));
     expect(jobs.length).toBeGreaterThanOrEqual(4);
     const bandJobs = jobs.filter((j) => j.kind === 'kids_wristband' || j.kind === 'adult_wristband');
@@ -437,7 +437,7 @@ describe('check 5 — the kiosk redeems a paid booking for this branch', () => {
     expect(bandJobs.filter((j) => j.kind === 'kids_wristband')).toHaveLength(2);
     expect(bandJobs.filter((j) => j.kind === 'adult_wristband')).toHaveLength(1);
     expect(plainJobs.map((j) => j.kind)).toContain('receipt');
-    expect(plainJobs.some((j) => j.kind === 'credit_voucher'), 'the credit voucher is queued too').toBe(true);
+    expect(plainJobs.some((j) => j.kind === 'credit_voucher'), 'the credit prints on the receipt, not a slip of its own').toBe(false);
     expect(plainJobs.every((j) => j.status === 'queued'), JSON.stringify(plainJobs.map((j) => [j.kind, j.status]))).toBe(true);
     const commands = await ctx.db.select().from(boxCommand).where(eq(boxCommand.boxId, kioskBoxId));
     const commanded = new Set(commands.map((c) => (c.payload as { printJobId?: string }).printJobId).filter(Boolean));

@@ -23,9 +23,11 @@ import { summarizeTax, type TaxBreakdown } from './tax';
  * THE ROUTING IS THE PROTOTYPE'S (`lib/printRouting.tsx`), ported rule by rule
  * when S2-11 wrote it for the platform and moved here unchanged:
  *
- *   - a TICKET sale: one receipt; a kids band per child and an adult band per
- *     adult; one item voucher per socks / add-on / free-item grant, grouped by
- *     label;
+ *   - a TICKET sale: one receipt, carrying a credit section — QR and figure —
+ *     for each wallet the sale granted, where the prototype printed a credit
+ *     voucher per wallet on a slip of its own; a kids band per child and an
+ *     adult band per adult; one item voucher per socks / add-on / free-item
+ *     grant, grouped by label;
  *   - an F&B order: one receipt carrying only the whole-order note, and one
  *     prep ticket per station that has items — kitchen, then bar — each with
  *     the allergy line, its own items' notes and the order note;
@@ -134,6 +136,24 @@ export interface SalePrintSnapshot {
    * stored printout) prints exactly as it did.
    */
   discounts?: SalePrintDiscount[];
+  /**
+   * The F&B credit the sale loaded, one wallet per person its tickets paid
+   * credit to (S2-14a), in person order — printed at the foot of the receipt,
+   * where the separate credit vouchers used to follow it. Optional: a box's
+   * offline snapshot grants no wallets, and its receipt prints none.
+   */
+  credits?: SalePrintCredit[];
+}
+
+/** One wallet the sale granted, as its credit section prints it. */
+export interface SalePrintCredit {
+  /** The credit it was granted, not what is left of it. */
+  creditSatang: number;
+  /** The wallet's ONE voucher QR; null when it has none. */
+  qrCode: string | null;
+  holderName: string | null;
+  /** The band the wallet is also on, as its short code; null until a band is paired with it. */
+  bandShortCode: string | null;
 }
 
 /**
@@ -185,10 +205,20 @@ export interface SaleReceiptDocument {
   bandCodes?: string[];
   creditGrants?: string[];
   orderNote?: string;
+  /** One section per wallet the sale granted: `CreditVoucherData` in `@oto/print`. */
+  creditVouchers?: SaleReceiptCreditVoucher[];
   /** Each row of `summarizeTax(sale.tax_breakdown)`: service, VAT included, VAT added. */
   taxRows?: { label: string; amount: string; kind: string }[];
   /** True on a copy History (or the box's reprint) asked for. */
   copy?: boolean;
+}
+
+/** A wallet's credit on the receipt: the figure, its QR, its holder, its band. */
+export interface SaleReceiptCreditVoucher {
+  balance: string;
+  qrCode?: string;
+  holderName?: string;
+  bandCode?: string;
 }
 
 /** A discount on paper: its words, "−฿100", and the small line under it when there is one. */
@@ -295,6 +325,19 @@ export function receiptDiscountRow(d: SalePrintDiscount): SaleReceiptDiscountRow
 }
 
 /**
+ * A wallet's credit section on the receipt: what its credit voucher said —
+ * the credit it was granted, the QR, the holder — and the band it is also on.
+ */
+export function receiptCreditVoucher(credit: SalePrintCredit): SaleReceiptCreditVoucher {
+  return {
+    balance: formatTHB(credit.creditSatang),
+    ...(credit.qrCode ? { qrCode: credit.qrCode } : {}),
+    ...(credit.holderName ? { holderName: credit.holderName } : {}),
+    ...(credit.bandShortCode ? { bandCode: credit.bandShortCode } : {}),
+  };
+}
+
+/**
  * The allergy line for a prep ticket: each child's allergies and medical notes,
  * named. Every child on the order, because the kitchen cannot know which child
  * a plate is for and an allergy left off is the one mistake that matters.
@@ -373,6 +416,7 @@ export function saleReceiptDocument(snapshot: SalePrintSnapshot, copy = false): 
       .map((b) => bandShortCode(b.code))
       .filter((c): c is string => c !== null),
     creditGrants: vouchers.map((v) => `${v.quantity}× ${v.label} to collect`),
+    ...(snapshot.credits?.length ? { creditVouchers: snapshot.credits.map(receiptCreditVoucher) } : {}),
     orderNote: hasFnb && snapshot.note ? snapshot.note : undefined,
     taxRows: rows.map((r) => ({ label: r.label, amount: formatTHB(r.amount), kind: r.kind })),
     copy,
