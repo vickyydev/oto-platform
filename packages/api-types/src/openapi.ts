@@ -19610,6 +19610,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/payments/attempts/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Abandon a gateway payment QR the guest is not going to scan. Only a gateway QR with no money on it (created or sent to the display) can be cancelled: a paid QR is refunded, one awaiting a person is left for them, and a tender on the card terminal keeps its own flow — each refused 409 in those words. The attempt closes as cancelled (audited, with the account), the poller stops asking about it, the sale can then be voided or paid another way, and the gateway is told best effort afterwards. A second cancel of the same QR answers the same. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        reason?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            attempt: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                saleId: string | null;
+                                /** @enum {string} */
+                                method: "cash" | "card" | "qr" | "wallet" | "voucher" | "transfer" | "other";
+                                /** @enum {string} */
+                                provider: "simulator" | "ghl" | "digio" | "2c2p" | "manual";
+                                /** @enum {string} */
+                                status: "created" | "sent_to_terminal" | "approved" | "declined" | "cancelled" | "unknown" | "inquiring" | "not_found" | "awaiting_staff_confirmation" | "awaiting_settlement";
+                                amountSatang: number;
+                                tenderedSatang: number | null;
+                                changeSatang: number | null;
+                                terminalRef: string | null;
+                                inquirySupported?: boolean;
+                                reversalPending?: boolean;
+                                tid: string | null;
+                                approvalCode: string | null;
+                                last4: string | null;
+                                invoiceNo: string | null;
+                                tranRef: string | null;
+                                actionId: string | null;
+                                offline: boolean;
+                                paidAt: string | null;
+                                createdAt: string;
+                            };
+                            replayed: boolean;
+                            outstandingSatang: number | null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/payments/manual": {
         parameters: {
             query?: never;

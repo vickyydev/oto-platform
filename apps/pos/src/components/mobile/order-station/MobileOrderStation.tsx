@@ -456,6 +456,8 @@ export function MobileOrderStation() {
     return () => setPaymentContextLocked('mobile-fnb', false);
   }, [paymentContextLocked]);
   const backFromPayment = () => {
+    // A pending gateway QR: Back abandons it and stays at the method choice.
+    if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
     if (!paymentStage.canBack) return;
     orderEpochRef.current += 1;
     paymentSnapshotRef.current = null;

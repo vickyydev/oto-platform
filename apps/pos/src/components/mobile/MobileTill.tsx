@@ -1802,6 +1802,7 @@ export default function MobileTill() {
     finaliseSale: saleWriter.finalise,
     onComplete: completeSale,
     onLeftBehind: (saleId) => { if (saleId) noteSaleLeftBehind(null, saleId); },
+    onTenderCancelled: () => setPendingPaymentMethod(null),
   });
   const paymentDisplay = completionRetry
     ? { ...paymentStage.display, saleId: completionRetry.sale.id, status: 'paid' as const }
@@ -2017,7 +2018,7 @@ export default function MobileTill() {
   // Back-nav behaviour per step
   const canGoBack = (
     ['tickets', 'configure', 'dropoff-config', 'supervision', 'review', 'payment'] as MobileStep[]
-  ).includes(mStep) && (mStep !== 'payment' || (!completionRetry && paymentStage.canBack));
+  ).includes(mStep) && (mStep !== 'payment' || (!completionRetry && (paymentStage.canBack || paymentStage.canCancel)));
 
   const handleBack = () => {
     switch (mStep) {
@@ -2027,7 +2028,10 @@ export default function MobileTill() {
       case 'supervision': setMStep('tickets'); break;
       case 'review': setMStep('tickets'); break;
       case 'payment':
-        if (completionRetry || !paymentStage.canBack) return;
+        if (completionRetry) return;
+        // A pending gateway QR: Back abandons it and stays at the method choice.
+        if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
+        if (!paymentStage.canBack) return;
         setPendingPaymentMethod(null);
         setMStep('review');
         break;

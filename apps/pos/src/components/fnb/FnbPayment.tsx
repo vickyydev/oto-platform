@@ -285,7 +285,8 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
 
         <div className="mt-6"><PaymentTenderPanel stage={stage} showSubmit={!free && !creditCoversAll} /></div>
         <div className="mt-4">
-          <Button variant="outline" size="lg" className="h-16 px-6 gap-2" disabled={!stage.canBack} onClick={onBack}><ArrowLeft className="w-5 h-5" />Back</Button>
+          <Button variant="outline" size="lg" className="h-16 px-6 gap-2" disabled={!stage.canBack && !stage.canCancel}
+            onClick={stage.canCancel ? () => { void stage.cancel(); } : onBack}><ArrowLeft className="w-5 h-5" />Back</Button>
         </div>
       </div>
     </div>

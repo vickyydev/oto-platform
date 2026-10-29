@@ -46761,6 +46761,194 @@
         }
       }
     },
+    "/payments/attempts/{id}/cancel": {
+      "post": {
+        "description": "Abandon a gateway payment QR the guest is not going to scan. Only a gateway QR with no money on it (created or sent to the display) can be cancelled: a paid QR is refunded, one awaiting a person is left for them, and a tender on the card terminal keeps its own flow — each refused 409 in those words. The attempt closes as cancelled (audited, with the account), the poller stops asking about it, the sale can then be voided or paid another way, and the gateway is told best effort afterwards. A second cancel of the same QR answers the same.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "nullable": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "attempt": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "saleId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "cash",
+                            "card",
+                            "qr",
+                            "wallet",
+                            "voucher",
+                            "transfer",
+                            "other"
+                          ]
+                        },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "simulator",
+                            "ghl",
+                            "digio",
+                            "2c2p",
+                            "manual"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "created",
+                            "sent_to_terminal",
+                            "approved",
+                            "declined",
+                            "cancelled",
+                            "unknown",
+                            "inquiring",
+                            "not_found",
+                            "awaiting_staff_confirmation",
+                            "awaiting_settlement"
+                          ]
+                        },
+                        "amountSatang": {
+                          "type": "integer"
+                        },
+                        "tenderedSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "changeSatang": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "terminalRef": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "inquirySupported": {
+                          "type": "boolean"
+                        },
+                        "reversalPending": {
+                          "type": "boolean"
+                        },
+                        "tid": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "approvalCode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "last4": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "invoiceNo": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "tranRef": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "actionId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "offline": {
+                          "type": "boolean"
+                        },
+                        "paidAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "saleId",
+                        "method",
+                        "provider",
+                        "status",
+                        "amountSatang",
+                        "tenderedSatang",
+                        "changeSatang",
+                        "terminalRef",
+                        "tid",
+                        "approvalCode",
+                        "last4",
+                        "invoiceNo",
+                        "tranRef",
+                        "actionId",
+                        "offline",
+                        "paidAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    },
+                    "outstandingSatang": {
+                      "type": "integer",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "attempt",
+                    "replayed",
+                    "outstandingSatang"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/payments/manual": {
       "post": {
         "description": "Record a card tender taken on a terminal the platform cannot reach: the approval code and TID read off its slip, no device, provider “manual”, audited with the account that keyed it in. This is what a station routed card=manual uses, and what is left when a terminal is unplugged mid-service.",

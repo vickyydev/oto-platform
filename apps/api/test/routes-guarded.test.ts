@@ -263,6 +263,9 @@ describe('route guards (S2-01b)', () => {
       'POST /parties/:id/charges',
       'POST /parties/:id/payments',
       'POST /payments/attempts',
+      // Walking away from a gateway QR is a platform write on the attempt row,
+      // like the press that opened it.
+      'POST /payments/attempts/:id/cancel',
       'POST /payments/attempts/:id/confirm',
       'POST /payments/attempts/:id/inquire',
       'POST /payments/manual',

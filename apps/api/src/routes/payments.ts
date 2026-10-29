@@ -29,6 +29,7 @@ import {
   requestInquiry,
   type TenderActor,
 } from '../services/payments/terminal';
+import { cancelQrAttempt } from '../services/payments/gateway';
 import { startPaymentTender } from '../services/payments/routing';
 
 /**
@@ -46,6 +47,7 @@ import { startPaymentTender } from '../services/payments/routing';
  *   POST /payments/attempts/:id/result      the box says what the terminal did
  *   POST /payments/attempts/:id/inquire     ask the terminal again, by hand
  *   POST /payments/attempts/:id/confirm     a person reads the terminal's screen
+ *   POST /payments/attempts/:id/cancel      staff abandon a gateway QR nobody will scan
  *   POST /payments/manual                   an approval code keyed in off a slip
  *   POST /payments/terminal-simulator       what a simulated terminal will do next
  *
@@ -447,6 +449,47 @@ export async function paymentRoutes(app: App): Promise<void> {
           actionId: actionIdOf(req.headers),
         }),
       }));
+    },
+  );
+
+  // --- Walking away from a QR ------------------------------------------------
+
+  app.post(
+    '/attempts/:id/cancel',
+    {
+      config: { permission: 'pos:payment:capture', stationTrading: true },
+      schema: {
+        description:
+          'Abandon a gateway payment QR the guest is not going to scan. Only a gateway QR with no ' +
+          'money on it (created or sent to the display) can be cancelled: a paid QR is refunded, ' +
+          'one awaiting a person is left for them, and a tender on the card terminal keeps its own ' +
+          'flow — each refused 409 in those words. The attempt closes as cancelled (audited, with ' +
+          'the account), the poller stops asking about it, the sale can then be voided or paid ' +
+          'another way, and the gateway is told best effort afterwards. A second cancel of the same ' +
+          'QR answers the same.',
+        params: IdParams,
+        body: z.object({
+          /** Why, in the words of the person at the counter. Kept with the attempt. */
+          reason: z.string().trim().max(120).nullish(),
+        }),
+        response: {
+          200: z.object({
+            attempt: AttemptSchema,
+            replayed: z.boolean(),
+            outstandingSatang: z.number().int().nullable(),
+          }),
+        },
+      },
+    },
+    async (req, reply) => {
+      const actor = actorOf(req, 'pos:payment:capture');
+      const result = await cancelQrAttempt(app.db, app.env, req.log, opCtx(req), actor, {
+        attemptId: req.params.id,
+        reason: req.body.reason ?? null,
+        actionId: actionIdOf(req.headers),
+      });
+      if (result.replayed) reply.header('x-oto-replay', 'true');
+      return result;
     },
   );
 

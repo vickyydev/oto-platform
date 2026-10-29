@@ -168,7 +168,11 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
       {paymentStage && !unpriced && <PaymentTenderPanel stage={paymentStage} showSubmit={false} />}
 
       <div className="mt-auto pt-6 flex items-center justify-between gap-4">
-        <Button variant="outline" size="lg" className="w-32 h-16" onClick={onBack} disabled={busy || (paymentStage && !paymentStage.canBack)}>
+        {/* While a gateway QR is pending, Back is the way out of it: the QR is
+            cancelled and this step stays, back at "Select Payment Method". */}
+        <Button variant="outline" size="lg" className="w-32 h-16"
+          onClick={paymentStage?.canCancel ? () => { void paymentStage.cancel(); } : onBack}
+          disabled={busy || (paymentStage && !paymentStage.canBack && !paymentStage.canCancel)}>
           Back
         </Button>
         <Button

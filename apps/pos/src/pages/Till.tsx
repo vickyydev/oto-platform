@@ -2831,6 +2831,9 @@ export default function Till() {
     finaliseSale: saleWriter.finalise,
     onComplete: completeSale,
     onLeftBehind: (saleId) => { if (saleId) noteSaleLeftBehind(null, saleId); },
+    // The customer display reads the chosen method off the preview sale: once
+    // the QR is cancelled it goes back to the amount, not "Scan to Pay".
+    onTenderCancelled: () => setPendingPaymentMethod(null),
   });
   const paymentDisplay = completionRetry
     ? { ...paymentStage.display, saleId: completionRetry.sale.id, status: 'paid' as const }
@@ -2940,7 +2943,11 @@ export default function Till() {
   };
 
   const handlePaymentBack = () => {
-    if (completionRetry || !paymentStage.canBack) return;
+    if (completionRetry) return;
+    // A gateway QR is pending: Back abandons it and stays on this step, back
+    // at the method grid; the sale is still rung up for the next tender.
+    if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
+    if (!paymentStage.canBack) return;
     setPendingPaymentMethod(null);
     setStep(4);
   };

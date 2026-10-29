@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
 import { paymentAttempt, paymentNotification, sale, station, type Db } from '@oto/db';
 import {
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
   WEB_INVOICE_STATION_CODE,
   buildInvoiceNo,
   newId,
@@ -25,6 +26,7 @@ import {
   signFrontendReturn,
   signJwt,
   verifyJwt,
+  type CancelResult,
   type CreateHostedPaymentResult,
   type CreateQrResult,
   type FrontendReturnHint,
@@ -61,6 +63,7 @@ import {
   tenderMethodOf,
   type AttemptRow,
 } from './attempt';
+import type { TenderActor } from './terminal';
 import { withTx, type OpContext, type Tx } from '../tx';
 
 /**
@@ -773,6 +776,214 @@ export async function openQrAttempt(
     invoiceNo: shown.invoiceNo!,
     replay: false,
   };
+}
+
+// --- Abandoning a QR nobody is going to scan ----------------------------------
+
+/** The two providers a QR on the display comes from. A terminal's QR has a device. */
+const GATEWAY_PROVIDERS: readonly string[] = ['2c2p', 'simulator'];
+
+/**
+ * The statuses a gateway QR can still be walked away from: the code is on the
+ * display (or still being minted) and no money has moved. Everything else is
+ * either money, a question for a person, or already over.
+ */
+const CANCELLABLE_STATUSES: readonly PaymentAttemptStatus[] = ['created', 'sent_to_terminal'];
+
+export interface CancelQrAttemptInput {
+  attemptId: string;
+  /** Why, in the words of the person at the counter. Optional and kept with the attempt. */
+  reason?: string | null;
+  /** `x-oto-action-id` — the press of Cancel, for the audit row. */
+  actionId?: string | null;
+}
+
+export interface CancelQrAttemptResult {
+  attempt: PaymentAttemptView;
+  /** True when staff had already cancelled this QR and this call wrote nothing. */
+  replayed: boolean;
+  /** What the sale still owes once the QR is out of the way. Null for an attempt with no sale. */
+  outstandingSatang: number | null;
+}
+
+/** What `cancelQrAttempt` leaves on the payload beside decision D-3's `expired`. */
+function cancelledByOf(payload: unknown): { accountId?: unknown } | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const value = (payload as { cancelledBy?: unknown }).cancelledBy;
+  return value && typeof value === 'object' ? (value as { accountId?: unknown }) : null;
+}
+
+/**
+ * STAFF ABANDON A PENDING QR (the till's way out when the guest walks away).
+ *
+ * Until this existed the payment stage was locked for as long as the gateway
+ * QR was pending, the sale could not be voided while the attempt was open
+ * (`PAYMENT_IN_FLIGHT`), and the only thing that freed the till was the
+ * gateway's own expiry twenty minutes later. This closes the attempt the way
+ * the poller closes an expired one — `cancelled`, through `failAttempt`, with a
+ * note on the payload saying which of the two `cancelled` it is (decision D-3
+ * has `expired: true`; this has `cancelledBy`) — so every path downstream
+ * reads it exactly as it reads an expired QR: the poller no longer asks about
+ * it (`PENDING_STATUSES`), the void is allowed (`PAYMENT_ATTEMPT_TERMINAL_STATUSES`),
+ * and a payment the gateway reports against it afterwards goes to the late
+ * payment path in `actOn` rather than closing a sale the till has moved on from.
+ *
+ * ONLY A GATEWAY QR WITH NO MONEY ON IT. A card or a PAX QR on the terminal
+ * keeps its own flow (the box answers for those); a paid attempt is money and
+ * is refunded, not cancelled; an attempt waiting for a person has a gateway
+ * report against it that a cancel would hide. Each refusal is a 409 the till
+ * shows in these words.
+ *
+ * THE GATEWAY IS TOLD, BEST EFFORT, AFTER THE COMMIT. Act 1 is the ledger — the
+ * row is `cancelled` and audited before anything leaves this process, so a
+ * gateway that is slow or will not cancel a QR (`PAYMENT_GATEWAY.md` U4) cannot
+ * hold the till. The gateway's answer is recorded as an `ops_run` and noted on
+ * the payload; a QR the gateway kept alive and a guest then paid is exactly the
+ * late payment `actOn` flags.
+ */
+export async function cancelQrAttempt(
+  db: Db,
+  env: Env,
+  log: FastifyBaseLogger,
+  ctx: OpContext,
+  actor: TenderActor,
+  input: CancelQrAttemptInput,
+): Promise<CancelQrAttemptResult> {
+  const { qr } = gatewayFor(env, log);
+  const reason = input.reason?.trim() || null;
+  // The route's own answer is what the replay store keeps (the onSend hook),
+  // not the ledger half on its own — the same rule `openQrAttempt` follows.
+  const operationCtx = { ...ctx, idempotency: undefined };
+
+  const decided = await withTx(db, operationCtx, 'payment.qr.cancel', async (tx) => {
+    const [live] = await tx
+      .select()
+      .from(paymentAttempt)
+      .where(and(eq(paymentAttempt.id, input.attemptId), eq(paymentAttempt.operatorId, actor.operatorId)))
+      .for('update')
+      .limit(1);
+    if (!live) throw errors.notFound('No such payment attempt');
+    await actor.assertBranchAllowed(live.branchId);
+
+    if (live.deviceId !== null || live.method !== 'qr' || !GATEWAY_PROVIDERS.includes(live.provider) || !live.invoiceNo) {
+      throw errors.conflict(
+        'ATTEMPT_NOT_A_GATEWAY_QR',
+        'Only a payment QR from the gateway can be cancelled here — a tender on the card terminal keeps its own flow',
+        { status: live.status, provider: live.provider },
+      );
+    }
+    if (live.status === 'cancelled' && cancelledByOf(live.payload)) {
+      // Staff already abandoned it: a retry of the press, answered the same.
+      return { row: live, replayed: true };
+    }
+    if (PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(live.status)) {
+      throw errors.conflict(
+        'ATTEMPT_ALREADY_PAID',
+        'This QR has been paid — the money is on the sale, so it is refunded rather than cancelled',
+        { status: live.status },
+      );
+    }
+    if (live.status === 'awaiting_staff_confirmation') {
+      throw errors.conflict(
+        'ATTEMPT_NEEDS_A_PERSON',
+        'The gateway has reported a payment against this QR that a person has to look at — it cannot be cancelled',
+        { status: live.status },
+      );
+    }
+    if (!CANCELLABLE_STATUSES.includes(live.status)) {
+      throw errors.conflict(
+        'ATTEMPT_CLOSED',
+        `This QR is already ${live.status.replaceAll('_', ' ')}; there is nothing to cancel`,
+        { status: live.status },
+      );
+    }
+
+    const closed = await failAttempt(tx, live.id, {
+      status: 'cancelled',
+      payload: mergePayload(live.payload, {
+        cancelledBy: {
+          accountId: actor.accountId,
+          at: new Date().toISOString(),
+          ...(reason ? { reason } : {}),
+        },
+      }),
+    });
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: live.operatorId,
+      branchId: live.branchId,
+      action: 'payment.qr.cancel',
+      entityType: 'payment_attempt',
+      entityId: live.id,
+      actionId: input.actionId ?? live.actionId,
+      requestId: ctx.requestId,
+      before: { status: live.status },
+      after: {
+        status: closed.status,
+        saleId: live.saleId,
+        invoiceNo: live.invoiceNo,
+        amountSatang: live.amountSatang,
+        ...(reason ? { reason } : {}),
+      },
+    });
+    return { row: closed, replayed: false };
+  });
+
+  let row = decided.row;
+  if (!decided.replayed) {
+    // Act 2 — the gateway, outside every transaction, and only ever a note.
+    const startedAt = new Date();
+    let answer: CancelResult;
+    try {
+      answer = await qr.cancel({ invoiceNo: row.invoiceNo! });
+    } catch (err) {
+      answer = { ok: false, reason: 'failed', detail: (err as Error).name };
+    }
+    await recordRun(db, {
+      kind: 'adapter',
+      name: 'adapter:2c2p.cancel',
+      // The gateway answered, one way or the other: a QR it will not cancel is
+      // a fact about the gateway, not a failure of this counter's press.
+      outcome: 'ok',
+      startedAt,
+      requestId: ctx.requestId ?? null,
+      actionId: input.actionId ?? row.actionId,
+      operatorId: row.operatorId,
+      branchId: row.branchId,
+      stationId: row.stationId,
+      detail: {
+        invoiceNo: row.invoiceNo,
+        accepted: answer.ok,
+        ...(answer.ok ? {} : { reason: answer.reason, detail: answer.detail ?? null }),
+      },
+    });
+    const [noted] = await db
+      .update(paymentAttempt)
+      .set({
+        payload: mergePayload(row.payload, {
+          gatewayCancel: {
+            accepted: answer.ok,
+            at: new Date().toISOString(),
+            ...(answer.ok ? {} : { reason: answer.reason, detail: answer.detail ?? null }),
+          },
+        }) as never,
+      })
+      // Still ours to annotate: a late settlement that moved it meanwhile keeps its own payload.
+      .where(and(eq(paymentAttempt.id, row.id), eq(paymentAttempt.status, 'cancelled')))
+      .returning();
+    if (noted) row = noted;
+  }
+
+  let outstandingSatang: number | null = null;
+  if (row.saleId) {
+    const [saleRow] = await db
+      .select({ id: sale.id, grossSatang: sale.grossSatang })
+      .from(sale)
+      .where(eq(sale.id, row.saleId))
+      .limit(1);
+    if (saleRow) outstandingSatang = await outstandingAfter(db, saleRow);
+  }
+  return { attempt: attemptView(row), replayed: decided.replayed, outstandingSatang };
 }
 
 /**
@@ -1575,11 +1786,23 @@ async function actOn(
    * alert asks a person to look.
    */
   const paysABooking = attempt.stationId === null && (await bookingForAttempt(db, attempt.id)) !== null;
-  if (facts.state === 'late_paid' && !paysABooking) {
+  /**
+   * A QR THIS PLATFORM ALREADY CLOSED WITHOUT MONEY — expired by the poller on
+   * our clock, or abandoned at the till (`cancelQrAttempt`) — is late by OUR
+   * reckoning whatever code the gateway sends: its sale has moved on to another
+   * tender or been voided, so a `0000` against it is the same question as a
+   * `5017` and takes the same path. The ledger's one word `cancelled` covers
+   * both closings, which is why the status is what is read here.
+   */
+  const closedWithoutMoney = attempt.status === 'cancelled';
+  if ((facts.state === 'late_paid' || (facts.state === 'paid' && closedWithoutMoney)) && !paysABooking) {
+    const abandoned = closedWithoutMoney && cancelledByOf(attempt.payload) !== null;
     await flagForAPerson(db, env, attempt, {
       reason: 'late_payment',
-      subject: 'A QR was paid after it expired',
-      summary: `Invoice ${attempt.invoiceNo} was paid after it expired. Apply it to the sale if it is still open, or refund it.`,
+      subject: abandoned ? 'A QR was paid after it was cancelled' : 'A QR was paid after it expired',
+      summary: abandoned
+        ? `Invoice ${attempt.invoiceNo} was paid after it was cancelled at the till. Apply it to the sale if it is still open, or refund it.`
+        : `Invoice ${attempt.invoiceNo} was paid after it expired. Apply it to the sale if it is still open, or refund it.`,
       detail: { respCode: facts.respCode, tranRef: facts.tranRef },
       respCode: facts.respCode,
     });

@@ -83,8 +83,10 @@ export function PaymentTenderPanel({ stage, showSubmit = true }: { stage: Paymen
         onClick={() => { void stage.manual({ approvalCode, tid }); }}>{label('manualRecord')}</Button>
     </div>}
     {state.error && <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4" role="alert">{state.error}</div>}
+    {state.cancelRefusal && <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4" role="alert" data-testid="payment-cancel-refusal">{state.cancelRefusal}</div>}
     <div className="flex flex-wrap gap-3">
       {state.retryable && <Button variant="outline" disabled={stage.busy || !stage.online} onClick={() => { void stage.retry(); }}>{label('checkAgain')}</Button>}
+      {stage.canCancel && <Button variant="outline" data-testid="payment-cancel-qr" onClick={() => { void stage.cancel(); }}>{label('cancelQr')}</Button>}
       {stage.canInquire && <Button variant="outline" onClick={() => { void stage.inquire(); }}>{label('askTerminal')}</Button>}
       {stage.canConfirm && <AlertDialog><AlertDialogTrigger asChild><Button variant="outline">{label('review')}</Button></AlertDialogTrigger>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{label('confirmTitle')}</AlertDialogTitle>

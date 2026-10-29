@@ -603,6 +603,8 @@ export default function MerchStation() {
   useHeldBandOnBox(wristband, setWristband, () => stage !== 'confirmation' && !paymentStage.busy
     && paymentStage.state.settlements.length === 0 && paymentStage.state.creditSaleId === null);
   const backFromPayment = () => {
+    // A pending gateway QR: Back abandons it and stays at the method choice.
+    if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
     if (!paymentStage.canBack) return;
     saleEpochRef.current += 1;
     paymentSnapshotRef.current = null;

@@ -1,3 +1,4 @@
+import type { ApiResponse } from '@oto/api-types';
 import type { PaymentAttemptView } from '@oto/shared';
 import { api } from './client';
 import {
@@ -72,6 +73,9 @@ export interface ManualPaymentResult {
   outstandingSatang: number;
 }
 
+/** What the platform answers when staff abandon a pending gateway QR. */
+export type PaymentCancelResult = ApiResponse<'/payments/attempts/{id}/cancel', 'post'>;
+
 // Keep one deliberate gesture's identity across retries. The client never
 // mints a new identity when a previous request has an uncertain outcome.
 const writeOptions = (scope: string, actionId: string) => ({
@@ -114,5 +118,15 @@ export const paymentsApi = {
   manual: (body: ManualPaymentBody) =>
     api.post<ManualPaymentResult>(
       '/payments/manual', body, writeOptions(`${body.saleId}:manual`, body.actionId),
+    ),
+  /**
+   * Staff abandon a gateway QR the guest is not going to scan. The platform's
+   * alone: a gateway QR is minted by the platform and never by a box, so the
+   * box lane has nothing to cancel here (its PAX QR is the terminal's flow).
+   */
+  cancel: (attemptId: string, actionId: string, reason?: string | null) =>
+    api.post<ApiResponse<'/payments/attempts/{id}/cancel', 'post'>>(
+      `/payments/attempts/${encodeURIComponent(attemptId)}/cancel`,
+      { reason: reason ?? null }, writeOptions(`${attemptId}:cancel`, actionId),
     ),
 };

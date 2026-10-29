@@ -36,6 +36,7 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'payment.stage.back': { en: 'Back', zh: '返回', th: 'กลับ', ru: 'Назад', fr: 'Retour' },
   'payment.stage.noMoney': { en: 'No money taken', zh: '未收款', th: 'ไม่ได้รับชำระเงิน', ru: 'Деньги не списаны', fr: 'Aucun paiement reçu' },
   'payment.stage.moneyTaken': { en: 'Money taken', zh: '已收款', th: 'ได้รับชำระเงินแล้ว', ru: 'Деньги списаны', fr: 'Paiement reçu' },
+  'payment.stage.cancelQr': { en: 'Cancel payment QR', zh: '取消付款二维码', th: 'ยกเลิกคิวอาร์ชำระเงิน', ru: 'Отменить QR для оплаты', fr: 'Annuler le QR de paiement' },
   'payment.stage.timeExpired': { en: 'Wait for the payment answer. An expired QR does not confirm that no money was taken.', zh: '请等待付款结果。二维码过期不代表未收款。', th: 'รอผลการชำระเงิน คิวอาร์หมดอายุไม่ได้ยืนยันว่าไม่ได้รับเงิน', ru: 'Дождитесь результата. Истечение QR не доказывает отсутствие оплаты.', fr: "Attendez le résultat. Un QR expiré ne prouve pas l'absence de paiement." },
   'payment.stage.offlineRecorded': { en: 'Payment recorded offline', zh: '付款已离线记录', th: 'บันทึกการชำระเงินแบบออฟไลน์แล้ว', ru: 'Оплата записана без связи', fr: 'Paiement enregistré hors ligne' },
   'payment.stage.status.created': { en: 'Payment created', zh: '付款已创建', th: 'สร้างการชำระเงินแล้ว', ru: 'Платеж создан', fr: 'Paiement créé' },

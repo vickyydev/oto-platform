@@ -76,6 +76,13 @@ export interface PaymentStageState {
   creditRefusalMessage?: string | null;
   /** S2-14a round 3 — counts refusals, so a second identical refusal still takes the toggle off. */
   creditRefusalSeq?: number;
+  /**
+   * Why the platform would not cancel the pending QR, in its words
+   * (`ATTEMPT_ALREADY_PAID`, `ATTEMPT_NEEDS_A_PERSON`, ...). Kept beside the
+   * attempt rather than in `error`, which every poll of the attempt clears;
+   * gone once another method is chosen or the cancel goes through.
+   */
+  cancelRefusal: string | null;
 }
 export interface PaymentStageOptions {
   scope: string | number;
@@ -92,6 +99,12 @@ export interface PaymentStageOptions {
   onLeftBehind?: (saleId: string) => void;
   /** S2-14a round 2 — spend this wallet first, on the confirm press. Null for no credit. */
   wallet?: PaymentStageWallet | null;
+  /**
+   * Staff cancelled the pending gateway QR and the stage is back at "choose a
+   * payment method": a station that keeps its own copy of the chosen method
+   * (the ticket till, for its customer display) lets it go here.
+   */
+  onTenderCancelled?: (saleId: string | null) => void;
 }
 export interface PaymentStageController {
   state: PaymentStageState;
@@ -113,6 +126,8 @@ export interface PaymentStageController {
   creditRefusal: string | null;
   canInquire: boolean;
   canConfirm: boolean;
+  /** A gateway QR is on the display and no money has moved: staff may walk away from it. */
+  canCancel: boolean;
   selectMethod: (token: string) => void;
   setAmountSatang: (amount: number) => void;
   setTenderedSatang: (amount: number) => void;
@@ -121,9 +136,18 @@ export interface PaymentStageController {
   inquire: () => Promise<void>;
   confirm: (took: boolean, details?: Omit<PaymentConfirmationBody, 'took'>) => Promise<void>;
   manual: (details: Pick<ManualPaymentBody, 'approvalCode' | 'tid' | 'last4' | 'reference'>) => Promise<void>;
+  /**
+   * Abandon the pending gateway QR. Resolves true once the stage is back at
+   * "choose a payment method" with the sale still rung up and unpaid; false
+   * when the platform refused (its words are in `state.cancelRefusal`) or the
+   * press was not for a QR that can be cancelled.
+   */
+  cancel: () => Promise<boolean>;
 }
 
 const emptyQr: PaymentQrMetadata = { qrPayload: null, qrImageUrl: null, expiresAt: null, expiryTimerMs: null };
+/** The attempt statuses a gateway QR can still be walked away from: no money has moved. */
+const CANCELLABLE_QR_STATUSES: readonly PaymentAttemptView['status'][] = ['created', 'sent_to_terminal'];
 const money = (value: number): boolean => Number.isSafeInteger(value) && value >= 0;
 const taken = (attempt: PaymentAttemptView): boolean => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(attempt.status);
 const unresolved = (attempt: PaymentAttemptView | null): boolean => Boolean(attempt && (attempt.reversalPending || !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(attempt.status)));
@@ -133,6 +157,7 @@ const initial = (total: number): PaymentStageState => ({
   phase: 'ready', saleId: null, method: null, kind: null, outstandingSatang: total, amountSatang: total,
   tenderedSatang: total, attempt: null, route: null, qr: emptyQr, error: null, retryable: false, settlements: [],
   creditSatang: 0, creditSaleId: null, creditRefusedSaleId: null, creditRefusalMessage: null, creditRefusalSeq: 0,
+  cancelRefusal: null,
 });
 /**
  * S2-14a round 3 — the platform's refusals of a credit press that take
@@ -633,6 +658,54 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       await adopt(ctx, result.attempt, result.outstandingSatang);
     }, ctx);
   };
+  /**
+   * THE WAY OUT OF A PENDING QR. Until the platform could cancel one, the stage
+   * stayed locked for as long as the gateway kept the code alive — twenty
+   * minutes with nothing to press but the simulator's expire. The press goes
+   * to the platform (which closes the attempt the way an expiry closes it and
+   * tells the gateway), and only ITS answer moves the stage: on success the
+   * attempt is gone, the method is unchosen and the sale is still rung up and
+   * unpaid — "choose a payment method"; on a 409 the platform's words stay on
+   * the card and the attempt is read back, because a refusal means the QR has
+   * moved on (paid, or waiting for a person) and the next poll shows which.
+   */
+  const cancel = (): Promise<boolean> => {
+    const snapshot = stateRef.current;
+    if (!onlineRef.current || optionsRef.current.paused || snapshot.route !== 'gateway' || !snapshot.attempt
+      || !CANCELLABLE_QR_STATUSES.includes(snapshot.attempt.status) || snapshot.phase === 'busy' || snapshot.phase === 'complete'
+      || (optionsRef.current.resumeSaleId && resumedSale.current !== optionsRef.current.resumeSaleId)) return Promise.resolve(false);
+    const ctx = context();
+    const attemptId = snapshot.attempt.id;
+    const actionId = newId();
+    let cancelled = false;
+    return perform(async (ctx) => {
+      let result;
+      try {
+        result = await paymentsApi.cancel(attemptId, actionId);
+      } catch (err) {
+        if (!(err instanceof ApiError) || err.status !== 409 || !current(ctx) || stateRef.current.attempt?.id !== attemptId) throw err;
+        update({ cancelRefusal: err.message });
+        retryOperation.current = (ctx) => refresh(ctx, attemptId);
+        await refresh(ctx, attemptId);
+        return;
+      }
+      if (!current(ctx)) { retain(ctx, { saleId: result.attempt.saleId ?? ctx.saleId ?? '', attempt: result.attempt, route: 'gateway' }); return; }
+      if (stateRef.current.attempt?.id !== attemptId) return;
+      if (result.attempt.status !== 'cancelled') {
+        // Answered with an attempt that is not cancelled: the platform's own
+        // reading of it stands, exactly as a poll would adopt it.
+        await adopt(ctx, result.attempt, result.outstandingSatang);
+        return;
+      }
+      const outstanding = result.outstandingSatang !== null && money(result.outstandingSatang)
+        ? result.outstandingSatang : stateRef.current.outstandingSatang;
+      retryOperation.current = null;
+      cancelled = true;
+      update({ phase: 'ready', method: null, kind: null, attempt: null, route: null, qr: emptyQr, error: null, retryable: false,
+        cancelRefusal: null, outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding });
+      optionsRef.current.onTenderCancelled?.(result.attempt.saleId ?? ctx.saleId);
+    }, ctx).then(() => cancelled);
+  };
 
   useEffect(() => {
     if (options.paused) {
@@ -767,11 +840,16 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   const creditPendingSatang = walletOption?.useCredit && walletOption.key && !creditRefusal && (!state.saleId || state.creditSaleId !== state.saleId)
     ? Math.max(0, Math.min(walletOption.previewSatang, state.outstandingSatang)) : 0;
   const creditCoversAll = creditPendingSatang > 0 && creditPendingSatang >= state.outstandingSatang;
+  // A gateway QR on the display with no money on it. A terminal's tender (card,
+  // or the PAX's own QR) is the box's flow and is never offered this.
+  const canCancel = state.route === 'gateway' && Boolean(state.attempt && CANCELLABLE_QR_STATUSES.includes(state.attempt.status))
+    && !busy && !recovering && online && !options.paused && state.phase !== 'complete';
   const canSubmit = !locked && state.phase !== 'complete' && state.phase !== 'manual'
     && (state.outstandingSatang === 0 || creditCoversAll || Boolean(method?.enabled && money(state.amountSatang) && state.amountSatang > 0
       && state.amountSatang <= state.outstandingSatang && (method.kind !== 'cash' || state.tenderedSatang >= state.amountSatang)));
   return {
     state, busy, online, locked, canSubmit: canSubmit && online, creditCoversAll, creditPendingSatang, creditRefusal, canInquire: canInquire && !busy && online && !options.paused, canConfirm: canConfirm && !busy && online && !options.paused,
+    canCancel,
     canBack: !locked && state.settlements.length === 0 && state.phase !== 'complete',
     // Staging F2 — the guest's "left to pay" is the order less the credit from
     // the moment credit is chosen, not once a tender is picked: the tender
@@ -786,13 +864,13 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       const selected = findPaymentMethod(token);
       if (!selected?.enabled) return;
       retryOperation.current = null;
-      update({ method: token, kind: selected.kind, phase: 'ready', attempt: null, route: null, qr: emptyQr, error: null, retryable: false });
+      update({ method: token, kind: selected.kind, phase: 'ready', attempt: null, route: null, qr: emptyQr, error: null, retryable: false, cancelRefusal: null });
     },
     setAmountSatang: (amount) => {
       if (!locked && state.phase !== 'manual' && money(amount)) update({ amountSatang: amount,
         tenderedSatang: stateRef.current.tenderedSatang === stateRef.current.amountSatang ? amount : stateRef.current.tenderedSatang });
     },
     setTenderedSatang: (amount) => { if (!locked && state.phase !== 'manual' && money(amount)) update({ tenderedSatang: amount }); },
-    submit, retry, inquire, confirm, manual,
+    submit, retry, inquire, confirm, manual, cancel,
   };
 }
