@@ -194,7 +194,7 @@ export function MerchCart({
           <p>Tap shop items to add them to the sale.</p>
         </div>
       ) : (
-        <ScrollArea className="flex-1 -mx-2 px-2 [&_[data-radix-scroll-area-viewport]>div]:!block">
+        <ScrollArea className="flex-1 min-h-28 -mx-2 px-2 [&_[data-radix-scroll-area-viewport]>div]:!block">
           <div className="space-y-2">
             {lines.map((line) => (
               <div key={line.id} className="rounded-xl border p-2.5 bg-background">

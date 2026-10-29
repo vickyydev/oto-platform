@@ -658,7 +658,8 @@ export default function MerchStation() {
                 <MerchGrid items={merchItems} quantities={quantities} onAdd={handleAdd} />
               </div>
             </div>
-            <div className="w-[380px] shrink-0 bg-sidebar p-6">
+            {/* Scrolls as a column on a short screen, as the ticket till's panel does. */}
+            <div className="w-[380px] shrink-0 bg-sidebar p-6 overflow-y-auto">
               <MerchCart
                 wristband={wristband}
                 lines={displayLines}

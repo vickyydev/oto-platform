@@ -291,7 +291,7 @@ export function FnbCart({
           <p>Tap menu items to add them to the order.</p>
         </div>
       ) : (
-        <ScrollArea className="flex-1 -mx-2 px-2 [&_[data-radix-scroll-area-viewport]>div]:!block">
+        <ScrollArea className="flex-1 min-h-28 -mx-2 px-2 [&_[data-radix-scroll-area-viewport]>div]:!block">
           <div className="space-y-2">
             {lines.map((line) => {
               const mods = describeModifiers(line.menuItem, line.selectedModifiers);

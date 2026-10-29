@@ -354,7 +354,8 @@ export function PartyTicketModal({
                       hideDropOff
                     />
                   </div>
-                  <div className="w-[380px] shrink-0 bg-sidebar p-6">
+                  {/* Scrolls as a column on a short screen, as the till's panel does. */}
+                  <div className="w-[380px] shrink-0 bg-sidebar p-6 overflow-y-auto">
                     <OrderSummary
                       tier={tier}
                       chargeTarget={chargeTarget}

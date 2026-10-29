@@ -71,8 +71,14 @@ export function ScanWristband({
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-6 animate-in fade-in duration-500">
-      <div className="w-full max-w-2xl">
+    // Centred by the block's own auto margins rather than `justify-center`: a
+    // centred column that is taller than the screen (a tablet held sideways is
+    // 820px tall, and ten demo bands plus the guest button are more) overflows
+    // at BOTH ends, with the heading under the header and "continue as guest"
+    // below the fold and nothing to scroll. Auto margins centre the block when
+    // there is room and give way to a scroll when there is not.
+    <div className="h-full flex flex-col items-center p-6 overflow-y-auto animate-in fade-in duration-500">
+      <div className="w-full max-w-2xl my-auto">
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-20 h-20 rounded-2xl bg-primary/20 text-primary flex items-center justify-center mb-4">
             <ScanLine className="w-10 h-10" />

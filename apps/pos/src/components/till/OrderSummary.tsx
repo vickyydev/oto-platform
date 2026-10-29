@@ -337,7 +337,12 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
         </div>
       )}
 
-      <ScrollArea className="flex-1 -mx-6 px-6">
+      {/* `min-h-28`: the list is the only part of this column allowed to shrink,
+          so on a short screen the block below (promo, voucher, notices, totals,
+          Pay) squeezed it to nothing and then overflowed the column itself.
+          With a floor the list stays readable and the column's own scroll
+          (the till's panel wrapper) takes the rest. */}
+      <ScrollArea className="flex-1 min-h-28 -mx-6 px-6">
         {lines.length === 0 && !voucherLine ? (
           <div className="h-full flex flex-col items-center justify-center text-muted-foreground pt-20">
             <Ticket className="w-16 h-16 mb-4 opacity-20" />

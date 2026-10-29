@@ -3342,9 +3342,15 @@ export default function Till() {
         </div>
       </div>
 
-      {/* RIGHT AREA: ORDER SUMMARY */}
+      {/* RIGHT AREA: ORDER SUMMARY
+          `overflow-y-auto`: on a short screen (a tablet held sideways is 820px
+          tall) the panel's promo, voucher, notice and totals block is taller
+          than the column, and without this it ran off the bottom with Cancel
+          and Pay unreachable. The lines list keeps a minimum height of its own
+          (OrderSummary), so the column scrolls as a whole only when it has to
+          and is unchanged where everything fits. */}
       {step < 6 && (
-        <div className="w-[360px] min-w-0 bg-sidebar flex flex-col p-6" inert={step === 5 && (completionRetry !== null || !paymentStage.canBack)}>
+        <div className="w-[360px] min-w-0 bg-sidebar flex flex-col p-6 overflow-y-auto" inert={step === 5 && (completionRetry !== null || !paymentStage.canBack)}>
           <OrderSummary
             tier={tier}
             customerName={customerNickname.trim() || member?.nickname || ''}
