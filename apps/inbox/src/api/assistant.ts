@@ -22,6 +22,77 @@ export type ExampleVerdict = AiExample['verdict'];
 export type AiExampleCreate = ApiBody<'/inbox/ai/examples', 'post'>;
 export type AiExamplePatch = ApiBody<'/inbox/ai/examples/{id}', 'patch'>;
 
+// --- Behaviour rules and the teach chat (SCRUM-696) -------------------------------------
+// Written out by hand until the api's description carries the routes
+// (`pnpm api-types:generate` at landing turns each into an alias of
+// ApiResponse/ApiBody). They match packages/shared/src/inbox-ai.ts exactly.
+
+export type RuleStatus = 'draft' | 'approved' | 'archived';
+export type RuleCondition = 'always' | 'branch_unknown';
+export type RuleSource = 'teach' | 'manual';
+export interface RuleAskFirst {
+  condition: RuleCondition;
+  question: { en: string; th?: string; ru?: string };
+}
+export interface AiRule {
+  id: string;
+  /** One of the assistant's intents, or 'any'. */
+  intent: string;
+  /** Null: both parks. */
+  branchId: string | null;
+  instruction: string;
+  askFirst: RuleAskFirst | null;
+  status: RuleStatus;
+  /** The sentence typed in the teach chat. */
+  taughtFrom: string | null;
+  source: RuleSource;
+  approvedByAccountId: string | null;
+  approvedAt: string | null;
+  updatedByAccountId: string | null;
+  /** inbox:kb:manage at its park, or operator-wide for a both-parks rule. */
+  canManage: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface RuleList {
+  rules: AiRule[];
+}
+export interface AiRuleCreate {
+  id?: string;
+  branchId?: string | null;
+  intent: string;
+  instruction: string;
+  askFirst?: RuleAskFirst | null;
+}
+export type AiRulePatch = Partial<Omit<AiRuleCreate, 'id'>>;
+export interface TeachMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+export interface TeachRequest {
+  sessionId: string;
+  messages: TeachMessage[];
+}
+export interface TeachCard {
+  kind: 'fact' | 'rule';
+  id: string;
+  title: string;
+  status: 'draft';
+}
+export type TeachOutcome = 'answer' | 'handover' | 'silent_handover' | 'silent' | 'ask_first';
+export interface TeachDryRun {
+  message: string;
+  intent: string | null;
+  outcome: TeachOutcome;
+  bubbles: string[];
+  ruleFired: string | null;
+}
+export interface TeachReply {
+  reply: string;
+  cards: TeachCard[];
+  dryRun: TeachDryRun | null;
+}
+
 export type AiChannelAccount = ApiResponse<'/inbox/ai/channel-accounts', 'get'>['channelAccounts'][number];
 export type AiMode = AiChannelAccount['aiMode'];
 export type AiPauseResult = ApiResponse<'/inbox/conversations/{id}/ai-pause', 'post'>;
@@ -51,6 +122,7 @@ export const NOT_ON_YOUR_ACCESS = 'This is not on your access. Ask an Inbox admi
 const kbAt = (id: string) => `/inbox/kb/${encodeURIComponent(id)}`;
 const exampleAt = (id: string) => `/inbox/ai/examples/${encodeURIComponent(id)}`;
 const convAt = (id: string) => `/inbox/conversations/${encodeURIComponent(id)}`;
+const ruleAt = (id: string) => `/inbox/ai/rules/${encodeURIComponent(id)}`;
 
 export const assistantApi = {
   // --- The knowledge base (inbox:kb:manage) -----------------------------------------
@@ -138,6 +210,30 @@ export const assistantApi = {
   /** A proposed example only: it may still hold a thread's words. */
   deleteExample: (id: string) =>
     api.delete<ApiResponse<'/inbox/ai/examples/{id}', 'delete'>>(exampleAt(id), { idempotencyKey: idemKey() }),
+
+  // --- Behaviour rules (SCRUM-696; inbox:kb:manage, reach as the knowledge base) ----------
+  rules: (status: RuleStatus) => api.get<RuleList>(`/inbox/ai/rules${qs({ status })}`),
+  /** Always saved as a draft. */
+  createRule: (body: AiRuleCreate) =>
+    api.post<AiRule>(
+      '/inbox/ai/rules',
+      { id: body.id, branchId: body.branchId, intent: body.intent, instruction: body.instruction, askFirst: body.askFirst },
+      { idempotencyKey: idemKey() },
+    ),
+  /** A draft is changed in place; an approved rule is replaced at once (the answer carries the new id); archived: 409 RULE_ARCHIVED. */
+  updateRule: (id: string, patch: AiRulePatch) =>
+    api.patch<AiRule>(
+      ruleAt(id),
+      { branchId: patch.branchId, intent: patch.intent, instruction: patch.instruction, askFirst: patch.askFirst },
+      { idempotencyKey: idemKey() },
+    ),
+  approveRule: (id: string) => api.post<AiRule>(`${ruleAt(id)}/approve`, undefined, { idempotencyKey: idemKey() }),
+  archiveRule: (id: string) => api.post<AiRule>(`${ruleAt(id)}/archive`, undefined, { idempotencyKey: idemKey() }),
+
+  // --- The teach chat (SCRUM-696; inbox:kb:manage with operator reach) ---------------------
+  /** The last messages of the chat, newest last, the last one the staff member's; nothing reaches a customer. */
+  teach: (body: TeachRequest) =>
+    api.post<TeachReply>('/inbox/ai/teach', { sessionId: body.sessionId, messages: body.messages }, { idempotencyKey: idemKey() }),
 
   // --- The per-number switch (inbox:ai:manage) ---------------------------------------
   channelAccounts: () => api.get<ApiResponse<'/inbox/ai/channel-accounts', 'get'>>('/inbox/ai/channel-accounts'),

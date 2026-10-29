@@ -14,7 +14,7 @@ import { ARCHIVE_RANGES, type ArchiveRange } from './view';
  *   /?unanswered=1               the unanswered queue: the list's unanswered toggle on
  *   /?tab=handled&range=7d&by=ai the archive's filters (test night 2026-10-21, U11)
  *   /?settings=templates|assistant  a settings page, in place of the workspace (U11)
- *   /?settings=assistant&section=numbers|knowledge|examples  that assistant tab
+ *   /?settings=assistant&section=numbers|knowledge|examples|rules|teach  that assistant tab
  *       (UI round 2026-10-22, F2; its own param since the SCRUM-652 polish — the
  *       first release spelt it `tab=`, which is still read under
  *       settings=assistant for one release so saved links keep working)
@@ -28,7 +28,7 @@ import { ARCHIVE_RANGES, type ArchiveRange } from './view';
  */
 export type SettingsPage = 'templates' | 'assistant';
 /** The assistant page's tabs (owner UI round 2026-10-22, F2): `?settings=assistant&section=…`. */
-export type AssistantTab = 'numbers' | 'knowledge' | 'examples';
+export type AssistantTab = 'numbers' | 'knowledge' | 'examples' | 'rules' | 'teach';
 export type ResolvedBy = 'ai' | 'human';
 
 export interface InboxUrlState {
@@ -47,7 +47,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const isTab = (v: string | null): v is InboxTab => v !== null && (INBOX_TABS as readonly string[]).includes(v);
 const isSettings = (v: string | null): v is SettingsPage => v === 'templates' || v === 'assistant';
-const isAssistantTab = (v: string | null): v is AssistantTab => v === 'numbers' || v === 'knowledge' || v === 'examples';
+const isAssistantTab = (v: string | null): v is AssistantTab =>
+  v === 'numbers' || v === 'knowledge' || v === 'examples' || v === 'rules' || v === 'teach';
 const isRange = (v: string | null): v is ArchiveRange => v !== null && ARCHIVE_RANGES.some(([k]) => k === v);
 const isResolvedBy = (v: string | null): v is ResolvedBy => v === 'ai' || v === 'human';
 

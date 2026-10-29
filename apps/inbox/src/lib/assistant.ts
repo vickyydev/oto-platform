@@ -10,7 +10,17 @@
  */
 import { AI_INTENTS, AI_KB_TOPICS, type AiIntent } from '@oto/assistant/intents';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
-import type { AiMode, ExampleVerdict, KbEntry, KbLanguage, KbStatus } from '@/api/assistant';
+import type {
+  AiMode,
+  ExampleVerdict,
+  KbEntry,
+  KbLanguage,
+  KbStatus,
+  RuleAskFirst,
+  RuleCondition,
+  TeachMessage,
+  TeachOutcome,
+} from '@/api/assistant';
 import type { InboxEvent, Message } from '@/api/inbox';
 
 // --- The per-number switch (§D.4, §B.5) ------------------------------------------------
@@ -297,4 +307,105 @@ export function correctionSource(
     .join('\n')
     .slice(0, EXAMPLE_CUSTOMER_MAX);
   return { customerText: text, customerMessageId: burst[burst.length - 1]?.id ?? null, aiText };
+}
+
+// --- Behaviour rules and the teach chat (SCRUM-696) --------------------------------------
+
+/** `ai_rule_length_check` and `ai_rule_ask_first_check`, counted in characters as the server counts them. */
+export const RULE_INSTRUCTION_MAX = 600;
+export const RULE_QUESTION_MAX = 200;
+/** The teach request's limits (`InboxAiTeachRequestSchema`). */
+export const TEACH_MAX_MESSAGES = 20;
+export const TEACH_MESSAGE_MAX = 2000;
+
+const length = (t: string) => [...t.trim()].length;
+
+/** A rule is for one of the assistant's intents, or for every message. */
+export const RULE_INTENT_ANY = 'any';
+export function ruleIntentLabel(intent: string): string {
+  return intent === RULE_INTENT_ANY ? 'Any message' : intentLabel(intent);
+}
+
+/**
+ * The intents an ask-first question never interrupts: the engine ignores the
+ * question there, and the instruction still reaches the prompt. A copy of
+ * `ASK_FIRST_IGNORED_INTENTS` (packages/assistant/src/intents.ts, SCRUM-696);
+ * once that lands this line becomes a re-export of it.
+ */
+export const ASK_FIRST_IGNORED_INTENTS: readonly AiIntent[] = [
+  'complaint_onsite',
+  'complaint_online',
+  'refund_request',
+  'human_requested',
+  'greeting',
+  'thanks_closing',
+  'identity_question',
+  'other',
+];
+export function askFirstIgnored(intent: string): boolean {
+  return (ASK_FIRST_IGNORED_INTENTS as readonly string[]).includes(intent);
+}
+
+export const RULE_CONDITION_OPTIONS: readonly [RuleCondition, string][] = [
+  ['branch_unknown', 'When the park is not known yet'],
+  ['always', 'Always'],
+];
+export const RULE_CONDITION_LABEL: Record<RuleCondition, string> = {
+  branch_unknown: 'When the park is not known yet',
+  always: 'Always',
+};
+
+export interface RuleDraft {
+  intent: string;
+  instruction: string;
+  askFirst: boolean;
+  condition: RuleCondition;
+  questionEn: string;
+  questionTh: string;
+  questionRu: string;
+}
+
+/** The rule editor's refusals before the server's: one sentence, null when the draft can be saved. */
+export function ruleDraftProblem(d: RuleDraft): string | null {
+  if (d.intent !== RULE_INTENT_ANY && !(INTENTS as readonly string[]).includes(d.intent))
+    return 'Choose the kind of message this rule is for.';
+  if (length(d.instruction) === 0) return 'Write what the assistant should do.';
+  if (length(d.instruction) > RULE_INSTRUCTION_MAX) return `The instruction is at most ${RULE_INSTRUCTION_MAX} characters.`;
+  if (d.askFirst) {
+    if (length(d.questionEn) === 0) return 'Write the question to ask first, in English.';
+    if ([d.questionEn, d.questionTh, d.questionRu].some((q) => length(q) > RULE_QUESTION_MAX))
+      return `A question is at most ${RULE_QUESTION_MAX} characters.`;
+  }
+  return null;
+}
+
+/** The ask-first part as the api takes it: null when unticked; Thai and Russian only when written. */
+export function ruleAskFirst(d: RuleDraft): RuleAskFirst | null {
+  if (!d.askFirst) return null;
+  const th = d.questionTh.trim();
+  const ru = d.questionRu.trim();
+  return { condition: d.condition, question: { en: d.questionEn.trim(), ...(th ? { th } : {}), ...(ru ? { ru } : {}) } };
+}
+
+/** What a dry run says the assistant would do. */
+export const TEACH_OUTCOME_LABEL: Record<TeachOutcome, string> = {
+  answer: 'Answers',
+  handover: 'Hands over to the team',
+  silent_handover: 'Hands over without a word',
+  silent: 'Stays silent',
+  ask_first: 'Asks first',
+};
+
+/**
+ * What the teach chat sends each turn: the last twenty lines, newest last,
+ * starting on one of the staff member's (the api refuses a leading reply and
+ * an empty line).
+ */
+export function teachPayload(lines: readonly TeachMessage[]): TeachMessage[] {
+  const kept = lines.filter((l) => l.text.trim() !== '').slice(-TEACH_MAX_MESSAGES);
+  const first = kept.findIndex((l) => l.role === 'user');
+  return (first < 0 ? [] : kept.slice(first)).map((l) => ({
+    role: l.role,
+    text: [...l.text].slice(0, TEACH_MESSAGE_MAX).join(''),
+  }));
 }
