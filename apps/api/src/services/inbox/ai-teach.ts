@@ -363,7 +363,7 @@ export async function dryRun(
           decision: outcome.decision,
           threadHasBranch: false,
           branchAsked: false,
-          askedRuleIds: new Set(),
+          askedFirst: false,
           silentIntents: null,
         })
       : null;

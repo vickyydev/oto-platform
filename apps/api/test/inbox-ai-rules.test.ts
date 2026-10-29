@@ -249,7 +249,7 @@ describe('the rules API', () => {
     expect((await call(w, chalongEditorCookie, 'POST', '/inbox/ai/rules', { intent: 'hours', instruction: 'Say the hours.' })).status).toBe(403);
   });
 
-  it('an approved rule reaches the prompt after the knowledge, opening with the one sentence', async () => {
+  it('an approved rule reaches the prompt after the knowledge, opening with the one sentence; its question stays the server’s', async () => {
     await archiveAllRules();
     await approvedRule({ intent: 'lost_item', instruction: LOST_RULE, askFirst: { condition: 'branch_unknown', question: { en: QUESTION } } });
     const known = await loadTurnKnowledge(w.ctx.db, w.oto, new Date());
@@ -268,8 +268,9 @@ describe('the rules API', () => {
     });
     if (!built.ok) throw new Error(built.reason);
     expect(built.prompt.system[1].text).toBe(
-      `${known.knowledge.text}\n\n${OPERATOR_RULES_HEADING}\n${OPERATOR_RULES_LEAD}\n- lost_item: ${LOST_RULE}\n  ask first: ${QUESTION}`,
+      `${known.knowledge.text}\n\n${OPERATOR_RULES_HEADING}\n${OPERATOR_RULES_LEAD}\n- lost_item: ${LOST_RULE}`,
     );
+    expect(built.prompt.system[1].text).not.toContain(QUESTION);
     expect(built.prompt.system[0].text).not.toContain('Operator rules');
   });
 });

@@ -10,23 +10,34 @@
  * that index (a cycle). The package index exports it.
  */
 
-import { ASK_FIRST_IGNORED_INTENTS, AI_INTENTS } from '../intents';
+import {
+  ASK_FIRST_IGNORED_INTENTS,
+  AI_INTENTS,
+  BIRTHDAY_INTENTS,
+  BY_BRANCH,
+  INTENT_TABLE,
+  type AiHandoverPlan,
+  type AiIntent,
+  type AiPlanRef,
+} from '../intents';
 import type { InternalAnswerMode } from '../internal-answer';
 import { OPERATOR_RULES_HEADING } from '../operator-rules';
 import { INTENT_MEANING, type SystemBlock } from '../prompt';
 
-export const TEACH_PERSONA_VERSION = 'teach-persona-2026-10-30.1';
+export const TEACH_PERSONA_VERSION = 'teach-persona-2026-10-30.2';
 
 export const TEACH_PERSONA: string = [
   "You help the staff of OTO Play Park (an indoor children's play park in Phuket with two parks, Central Floresta and Robinson Chalong) teach the park's chat assistant, on the Assistant page of the inbox. You talk only to park staff here, never to a customer, and nothing you write is sent to a customer.",
   '',
   '## What you do',
-  '1. Asked what the assistant says today when a customer writes something, answer from the knowledge below: say whether it would answer, hand over to the team, or ask first, and name the [key] of the entry it would cite (or say that no entry covers it). Offer a dry run (the dry_run tool) to show what it would do now.',
+  '1. Asked what the assistant says today when a customer writes something, answer from the knowledge below and from what the playbook does today (the Intents list): say whether it would answer, hand over to the team, or ask first, and name the [key] of the entry it would cite (or say that no entry covers it). Offer a dry run (the dry_run tool) to show what it would do now.',
   '2. Given an instruction, save it as a DRAFT straight away with a tool:',
   '   - a fact (something true about the park): call search_knowledge first so you do not duplicate an entry, then create_fact with a key like faq.lost-property, in the staff member\'s language;',
-  '   - a behaviour rule (what to do when a kind of message comes in): call create_rule with the intent it is about (or any), the instruction in plain English, and askFirst when it says to ask something first (condition branch_unknown when the question is which park, otherwise always).',
+  '   - a behaviour rule (what to do when a kind of message comes in): call create_rule with the intent it is about (or any), the instruction in plain English, and askFirst when it says to ask something first (condition branch_unknown when the question is which park, otherwise always). Always write the question in English, Thai and Russian (en, th and ru): the assistant asks it only in the customer\'s own language, so a question missing a language is never asked in it.',
   '   Then say in one or two sentences what you saved, and that it waits for approval under Assistant → Knowledge (a fact) or Assistant → Rules (a rule). Nothing reaches customers before someone approves it.',
+  '   A rule never backs an answer: only an approved fact can be quoted. Information (hours, prices, what is free, where things are) goes in a fact; behaviour (what to do when a kind of message arrives) goes in a rule. When a rule would duplicate what the playbook already does for that intent, say so and save nothing.',
   '3. When an instruction is ambiguous (which park, which language, which kind of message), ask ONE short clarifying question before saving. Never more than one.',
+  '   To change a draft you saved (another park, other words), call archive_draft with its id from the list below, then save the new one. archive_draft only retires your own drafts of the last day; an approved rule or fact is changed under Assistant → Rules or Assistant → Knowledge.',
   '4. Refuse in plain words, WITHOUT calling a tool, anything that would loosen the assistant\'s safety rules: a price, number or time with no source in the knowledge; promising a date, a booking or a slot; granting a refund, a discount, free entry or compensation; arguing with or dismissing a complaint. Say the team decides those.',
   '5. A multi-step flow, a routing change, the closing lines, the hand-over plans, the languages or a new kind of message is neither a fact nor a rule: say the dev team changes the playbook for that.',
   '',
@@ -75,6 +86,46 @@ export function renderTeachDrafts(drafts: readonly TeachDraftLine[]): string {
   return drafts.map((d) => `- ${d.kind} ${d.id} · ${d.about} · "${clip(d.text, 140)}"`).join('\n');
 }
 
+/** Who a hand-over plan gives the thread to, in the words a park colleague uses. */
+function teamOf(ref: AiPlanRef): string {
+  if (ref === BY_BRANCH) return "the park's reception (the GM when the park is not known)";
+  const plan: AiHandoverPlan = ref;
+  if (plan.route === 'birthdays') return 'the Birthday & events team';
+  if (plan.route === 'gm') return 'the GM';
+  if (plan.route === 'keep') return 'the team that already has the thread';
+  if (plan.route === 'general') return plan.branch === 'central' ? "Central Floresta's reception" : "the park's reception";
+  return `the ${plan.route} team`;
+}
+
+/**
+ * What the playbook does today with one intent, read from `INTENT_TABLE`:
+ * answer (and what follows), hand over to whom, a person-first hand-over, a
+ * silent hand-over, or silence. The curator reads it so it can say "the
+ * assistant already does that" instead of saving a duplicate rule.
+ */
+export function playbookActionOf(intent: AiIntent): string {
+  const rule = INTENT_TABLE[intent];
+  switch (rule.action) {
+    case 'answer': {
+      if (rule.thenHandover) return `answer, then hand over to ${teamOf(rule.thenHandover)}`;
+      const parts = ['answer'];
+      if (rule.general) parts.push('asks which park when none is known');
+      if (BIRTHDAY_INTENTS.has(intent)) parts.push('asks the dates, the headcount and the park in one question');
+      if (intent === 'identity_question') parts.push('a second ask hands over');
+      if (rule.fallback) parts.push(`hands over to ${teamOf(rule.fallback.plan)} when the knowledge does not cover it`);
+      return parts.join('; ');
+    }
+    case 'handover':
+      return rule.answerAlongside
+        ? `hand over to ${teamOf(rule.plan)}`
+        : `person-first: hand over to ${teamOf(rule.plan)}, nothing else answered`;
+    case 'silent_handover':
+      return `silent hand-over to ${teamOf(rule.plan)}: nothing is said to the customer`;
+    case 'silent':
+      return 'silent';
+  }
+}
+
 export function buildTeachSystem(input: TeachSystemInput): {
   system: [SystemBlock, SystemBlock];
   answerMode: InternalAnswerMode;
@@ -83,7 +134,8 @@ export function buildTeachSystem(input: TeachSystemInput): {
     TEACH_PERSONA,
     '',
     '## Intents',
-    ...AI_INTENTS.map((i) => `- ${i}: ${INTENT_MEANING[i]}`),
+    'Each kind of message, and what the playbook does with it today.',
+    ...AI_INTENTS.map((i) => `- ${i}: ${INTENT_MEANING[i]} → today: ${playbookActionOf(i)}`),
     '- any: every kind of message',
     '',
     '## Drafts you already saved (last 24 hours)',

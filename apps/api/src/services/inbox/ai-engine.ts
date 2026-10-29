@@ -378,8 +378,8 @@ async function quietBeforeBurst(
 interface EpisodeFacts {
   state: EpisodeState;
   earlier: { answered: number; brochureSent: boolean; branchAsked: boolean; identityAnswered: boolean; languageOffered: boolean };
-  /** SCRUM-696: the operator rules whose ask-first question was already asked this episode. */
-  askedRuleIds: ReadonlySet<string>;
+  /** SCRUM-696: an operator rule's ask-first question (any rule's) was already asked this episode. */
+  askedFirst: boolean;
 }
 
 /**
@@ -441,7 +441,7 @@ async function episodeFacts(
       identityAnswered,
       languageOffered,
     },
-    askedRuleIds: new Set(payloads.flatMap((p) => (typeof p.askFirstRuleId === 'string' ? [p.askFirstRuleId] : []))),
+    askedFirst: payloads.some((p) => typeof p.askFirstRuleId === 'string'),
   };
 }
 
@@ -623,7 +623,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
         decision: outcome.decision,
         threadHasBranch: conv.branchId !== null,
         branchAsked: facts.earlier.branchAsked,
-        askedRuleIds: facts.askedRuleIds,
+        askedFirst: facts.askedFirst,
         silentIntents: silentIntentsOf(account.silencePolicy),
       })
     : null;

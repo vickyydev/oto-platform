@@ -190,7 +190,6 @@ describe('SCRUM-696: the customer prompt with operator rules', () => {
         OPERATOR_RULES_HEADING,
         OPERATOR_RULES_LEAD,
         '- lost_item: If someone says they lost something, first ask which park they visited.',
-        '  ask first: Which park did you visit, Central Floresta or Robinson Chalong?',
         '- any message: Keep it short.',
       ].join('\n'),
     );
