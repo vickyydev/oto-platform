@@ -32,30 +32,6 @@ export const COPY = {
    */
   starting: { en: 'Starting…', th: 'กำลังเริ่ม…' } satisfies BilingualLine,
   spinning: { en: 'Spinning…', th: 'กำลังหมุน…' } satisfies BilingualLine,
-  /**
-   * Shown instead of "press the button" when nobody is attending the booth.
-   * It is a prompt to staff, NOT a lock: the wheel still spins, and the spin
-   * is recorded unattributed. A booth that refused to play while reception was
-   * busy would be a booth nobody plays — which is why it no longer says
-   * "sign in to start" (SCRUM-223): that read as "you cannot play yet", and
-   * the wheel plays. What signing in changes is whose name is on the slip.
-   */
-  staffSignInPrompt: {
-    en: 'Staff: sign in for your name on the slip',
-    th: 'พนักงาน: เข้าสู่ระบบเพื่อให้ชื่อของคุณอยู่บนคูปอง',
-  } satisfies BilingualLine,
-  /**
-   * The red button was pressed while the staff sign-in form had the keyboard
-   * (SCRUM-223). The key went to the form and nothing was drawn — see
-   * `isTypingTarget` in src/press.ts for why the wheel waits rather than
-   * spins — so the screen says why the press did nothing, over the wheel,
-   * where the staff panel does not cover it.
-   */
-  staffSigningIn: {
-    en: 'Staff are signing in — the wheel is back in a moment',
-    th: 'พนักงานกำลังเข้าสู่ระบบ วงล้อจะกลับมาในอีกสักครู่',
-  } satisfies BilingualLine,
-
   resultPrefix: { en: 'You won', th: 'คุณได้รับ' } satisfies BilingualLine,
   /**
    * Stands in for the prize name when this page cannot name it — the box drew
@@ -193,66 +169,44 @@ export const PAIR_COPY = {
 
 /** Staff-facing words. English only: these appear in panels, never on the game. */
 export const STAFF_COPY = {
-  pinExpired: 'This PIN has expired — ask a manager for a new one',
+  /** The staff panel's title (SCRUM-694): nobody signs in at the booth. */
+  staffTitle: 'Staff',
   buttonHint: 'Press once to move, twice to choose. Hold to keep moving.',
-  pickStaff: 'Choose your name',
-  fiveDigits: 'Enter five digits. The fifth signs you in.',
-  more: 'More…',
-  backToStaff: 'Back to staff',
-  deleteDigit: 'Delete digit',
-  unnamedStaff: 'Staff member',
-  noStaff: 'No staff assigned — ask a manager to add staff in the Console.',
-  noPin: 'No PIN set — ask a manager, or use phone and password.',
-  staffUnavailable: 'The box did not answer — try again.',
-  signInTitle: 'Staff sign-in',
-  /**
-   * The PIN only. Signing in with a badge is not built yet (SCRUM-218): the
-   * box holds no badge to check a scan against, so a scan is always refused
-   * and counts toward the lockout. The panel does not invite one.
-   */
-  signInHint: 'Enter your PIN',
-  signInWrong: 'That was not right',
-  signInLocked: (seconds: number) => `Too many attempts — try again in ${seconds}s`,
-  signInOk: 'Signed in',
-  signOut: 'Sign out',
   cancel: 'Close',
   debugTitle: 'Booth diagnostics',
-  debugNeedsStaff: 'Sign in to open diagnostics',
   debugSimulated: 'Simulated draws: nothing is written, printed or capped',
-  // --- SCRUM-223: signing in with an account, and what a signed-in panel does
-  usePin: 'PIN',
-  useAccount: 'Phone & password',
-  accountHint: 'Your phone number and the password you use on the POS',
-  phoneLabel: 'Phone',
-  passwordLabel: 'Password',
-  signInButton: 'Sign in',
-  working: 'Checking…',
-  /** The exact words the owner asked for when the box has no internet. */
-  offline: 'No internet — sign in with your PIN',
-  notAssigned: 'You are not on this booth’s staff list — ask a manager',
-  notAllowed: 'Your role cannot sign in at a booth — ask a manager',
-  mustChange: 'Change your temporary password on the POS first',
-  /** The cloud answered, and refused this box itself: revoked, replaced or out of service. */
-  boxRefused: 'This box is no longer allowed here — ask a manager to check it in Console → Devices',
-  /** The cloud answered that this booth has moved to another box, or was archived. */
-  boothNotOnBox: 'This booth is not on this box any more — ask a manager to check Console → Devices',
-  /**
-   * S2-21 round 2 (plan H8): a staff benefit QR held up at the booth. It is a
-   * benefit at the F&B order station, never a way to sign in.
-   */
-  notABadge: 'That is a staff benefit QR, not a staff badge — it does not sign anyone in',
-  signedInAs: (who: string) => `Signed in: ${who}`,
-  until: (time: string) => `Until ${time}`,
   reprint: 'Reprint last voucher',
   reprinting: 'Printing it again…',
   reprinted: 'The last voucher is printing again — same code',
   reprintQueued: 'Sent again — the printer has not printed it yet',
   reprintNoPrinter: 'No printer on this booth — nothing to print on',
   nothingToReprint: 'There is no voucher to reprint yet',
-  reprintNeedsStaff: 'Sign in to reprint',
   reprintFailed: 'The reprint did not go through',
   changeBooth: 'Change booth',
 } as const;
+
+/** Where the page is, as the pill under the wheel reads it. */
+export type PromptPhase =
+  | 'boot'
+  | 'unpaired'
+  | 'unsynced'
+  | 'ready'
+  | 'starting'
+  | 'spinning'
+  | 'result';
+
+/**
+ * What the pill under the wheel says: a refusal's line while one is up, the
+ * press's progress, or the invitation to press. It never asks anybody to sign
+ * in — nobody signs in at the booth (SCRUM-694); the slip names today's
+ * roster, or says "unattributed".
+ */
+export function promptFor(phase: PromptPhase, notice: BilingualLine | null): BilingualLine {
+  if (notice !== null) return notice;
+  if (phase === 'boot' || phase === 'starting') return COPY.starting;
+  if (phase === 'spinning') return COPY.spinning;
+  return COPY.pressToSpin;
+}
 
 /**
  * The screens a booth BOX shows before there is a wheel (SCRUM-223): the

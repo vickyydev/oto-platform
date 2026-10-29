@@ -39,7 +39,7 @@
  * wallet, usePaymentStage.
  */
 export const HAND_TYPED: Record<string, number> = {
-  'apps/booth/src/booth/client.ts': 8,
+  'apps/booth/src/booth/client.ts': 6,
   'apps/console/src/api/analytics.ts': 1,
   'apps/console/src/api/bookings.ts': 1,
   'apps/console/src/api/fleet.ts': 27,

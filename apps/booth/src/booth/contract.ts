@@ -31,8 +31,6 @@ import type {
   BoothPrintState,
   BoothReprintRequest,
   BoothReprintResponse,
-  BoothSignInRefusal,
-  BoothStaffOnDuty,
   SpinResponse,
 } from '@oto/shared';
 
@@ -70,56 +68,6 @@ export interface SpinRequest {
   idempotencyKey?: string;
 }
 
-export interface BoothStaffChoice {
-  accountId: string;
-  name: string | null;
-  code: string | null;
-  hasPin: boolean;
-}
-
-/** `POST /booth/staff/sign-in` */
-export interface StaffSignInRequest {
-  accountId?: string;
-  /**
-   * `account` is a phone and password, which the box checks with the cloud
-   * (SCRUM-223); `pin` or nothing is the PIN, checked on the box.
-   */
-  mode?: 'pin' | 'account';
-  /**
-   * The typed PIN, or the scanned badge — never both. **The page holds
-   * neither afterwards** (D15): it posts, reads `ok`, and drops the value.
-   * There is no hash in this browser and no account id beyond the opaque one
-   * the spin response carries.
-   */
-  pin?: string;
-  badge?: string;
-  /** Account sign-in only. Held by the page for as long as the post takes. */
-  phone?: string;
-  password?: string;
-}
-
-export interface StaffSignInResponse {
-  ok: boolean;
-  /**
-   * How long the server will refuse further attempts, when it is refusing.
-   *
-   * The page runs its own backoff so the panel behaves correctly against a
-   * server that never sends this — but a backoff kept in a browser is a
-   * courtesy, not a control: a reload clears it. The real one belongs to
-   * whatever verifies the PIN.
-   */
-  retryAfterMs?: number;
-  /**
-   * Why an account sign-in was refused, when the person can do something
-   * about it: `offline` (use the PIN), `not_assigned`, `not_allowed`,
-   * `must_change_password`, `locked`, and — when the cloud refused the box or
-   * the booth rather than the person — `box_refused` and `booth_not_on_box`,
-   * which a manager fixes in Console → Devices. A code, which the panel words
-   * (D15); `BOOTH_SIGN_IN_REFUSALS` in `@oto/shared` says what each one means.
-   */
-  reason?: BoothSignInRefusal;
-}
-
 /**
  * `GET /booth/status` — what the corner of the screen and the `#debug` panel
  * are drawn from.
@@ -151,15 +99,15 @@ export interface BoothStatus {
   vouchersPending: number;
   /** ISO 8601, or null when this booth has not been played since it started. */
   lastSpinAt: string | null;
-  /** Whether anybody is attending the booth. */
-  staffSignedIn: boolean;
   /**
-   * WHO is attending: name and staff code, and when the session ends by
-   * itself (SCRUM-223). A deliberate change to D15 on the owner's
-   * instruction — the corner of the screen shows the person on duty, as a
-   * name badge would. Never an account id, a phone or anything that signs in.
+   * Today's roster, as the voucher's Staff row prints it (SCRUM-694): the
+   * names merged ("Tom and Jerry"), or null when nobody is on today's roster.
+   * Nobody signs in at the booth. The corner of the screen shows these names,
+   * as a name badge would (the owner's instruction of 24 September); never an
+   * account id. Optional because a box older than SCRUM-694 does not send it,
+   * and absent is read as null.
    */
-  staff?: BoothStaffOnDuty | null;
+  dutyLabel?: string | null;
   /** `booth.booth_prize.id` of the prizes that have hit today's cap. */
   dailyCapsReached: string[];
 }
@@ -216,8 +164,6 @@ export const BOOTH_ERROR_CODES = [
    * and ask for staff.
    */
   'unpaired',
-  /** SCRUM-223 — a reprint asked for with nobody signed in at the booth. */
-  'staff_required',
   /** SCRUM-223 — a reprint with no voucher on the box to print again. */
   'nothing_to_reprint',
   'nothing_to_print',
@@ -262,19 +208,17 @@ export class BoothCallError extends Error {
  * `#debug` panel names the live one so that a person can.
  */
 export interface BoothTransport {
-  getStaff(): Promise<{ staff: BoothStaffChoice[] }>;
   /** Which implementation this is, for the `#debug` header. */
   readonly kind: 'fake' | 'http';
   getConfig(): Promise<BoothConfigResponse>;
   getStatus(): Promise<BoothStatus>;
   spin(request: SpinRequest): Promise<SpinResponse>;
   print(request: { spinId: string }): Promise<SpinResponse>;
-  signIn(request: StaffSignInRequest): Promise<StaffSignInResponse>;
-  signOut(): Promise<void>;
   /**
-   * `POST /booth/reprint` — the booth's last voucher again, same code,
-   * staff only (SCRUM-223). The box refuses with `staff_required` or
-   * `nothing_to_reprint`.
+   * `POST /booth/reprint` — the booth's last voucher again, same code, marked
+   * "Reprint" (SCRUM-223). Anyone at the screen may ask (SCRUM-694); the box
+   * refuses only with `nothing_to_reprint`. An older box's 403 maps to no
+   * code and the panel's generic failure line.
    */
   reprint(request: BoothReprintRequest): Promise<BoothReprintResponse>;
 }
@@ -283,7 +227,5 @@ export type {
   BoothConfigBundle,
   BoothPrintState,
   BoothReprintResponse,
-  BoothSignInRefusal,
-  BoothStaffOnDuty,
   SpinResponse,
 };

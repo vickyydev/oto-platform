@@ -28,7 +28,11 @@
  */
 
 export interface PressListenerOptions {
-  /** Captured before an immediate spin starts: holding that press opens staff. */
+  /**
+   * Captured before an immediate spin starts: holding that press for three
+   * seconds opens the staff panel — the only way to Reprint on a booth with a
+   * button and no pointer (docs/ops/PI_BOOTH.md).
+   */
   canOpenStaff?: () => boolean;
   onOpenStaff?: () => void;
   /**
@@ -41,12 +45,6 @@ export interface PressListenerOptions {
   lockoutMs: () => number;
   /** A press that got through the lockout. */
   onPress: () => void;
-  /**
-   * The button's key arrived while a staff field had the keyboard, so it was
-   * the field's and nothing spun (SCRUM-223). The page says so on screen,
-   * because a press that visibly does nothing reads as a broken booth.
-   */
-  onPressWhileTyping?: () => void;
   /** Every accepted and rejected key, for the `#debug` input line. */
   onKeyRecorded?: (line: string) => void;
 }
@@ -93,20 +91,17 @@ export function isButtonKey(event: { key: string; code: string }, buttonKey: str
 /**
  * A key typed into a field is the field's (SCRUM-223).
  *
- * The staff panel now has a phone and a password field, and a password may
- * well contain the booth's button key — a space, a letter. Typed there, it is
- * part of the password and must not spin the wheel behind the panel.
+ * The one field on the booth's screens today is the claim code a box is set
+ * up with (`ClaimScreen`); nobody signs in at the booth (SCRUM-694). A code
+ * may well contain the booth's button key — a letter — and typed there it is
+ * part of the code and must not spin a wheel.
  *
- * **Why the wheel waits rather than spins** while such a field has the
- * keyboard: the red button and the keyboard's space bar send the same key, and
- * nothing in a browser tells them apart. Spinning on it would give a prize
- * away — and print a voucher nobody pressed for — every time a member of staff
- * typed a space in a password; taking the key away from the field would make
- * such a password impossible to type at the booth. A guest's press in that
- * moment is the cheaper mistake: nothing is drawn, the screen says staff are
- * signing in, and the wheel is back once somebody signs in or the form
- * closes — which it does by itself, however often the button is pressed
- * (`panel-timer.ts`).
+ * **Why a press waits rather than spins** while such a field has the
+ * keyboard: the red button and the keyboard send the same key, and nothing in
+ * a browser tells them apart. Spinning on it would give a prize away every
+ * time somebody typed that letter; taking the key away from the field would
+ * make such a code impossible to type. A guest's press in that moment is the
+ * cheaper mistake: nothing is drawn.
  */
 export function isTypingTarget(target: EventTarget | null): boolean {
   if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) return false;
@@ -118,13 +113,12 @@ export function isTypingTarget(target: EventTarget | null): boolean {
  * Installs the listener and returns its remover.
  *
  * Bubble phase on `window`, not capture: an overlay that wants a key — the
- * sign-in panel taking digits — listens in the capture phase and stops the
- * event there, so it never arrives here. That is the whole arbitration
- * between the panel and the game, and it is why a staff member typing a PIN
- * cannot spin the wheel by reaching the digit that happens to be the button.
+ * staff panel's Escape — listens in the capture phase and stops the event
+ * there, so it never arrives here. That is the whole arbitration between a
+ * panel and the game.
  */
 export function installPressListener(options: PressListenerOptions): () => void {
-  const { buttonKey, lockoutMs, onPress, onPressWhileTyping, onKeyRecorded } = options;
+  const { buttonKey, lockoutMs, onPress, onKeyRecorded } = options;
   let sawKeyDown = false;
   let lastPressAt = 0;
   let single: ReturnType<typeof setTimeout> | undefined;
@@ -179,10 +173,7 @@ export function installPressListener(options: PressListenerOptions): () => void 
     if (isTypingTarget(event.target)) {
       // The field's key, typed into it as it is; never a press. Its release
       // is expected like any other, so it cannot turn into one on the way up.
-      if (!event.repeat) {
-        onKeyRecorded?.('press ignored (a staff field has the keyboard)');
-        onPressWhileTyping?.();
-      }
+      if (!event.repeat) onKeyRecorded?.('press ignored (a field has the keyboard)');
       return;
     }
     event.preventDefault();

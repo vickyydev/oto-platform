@@ -12,7 +12,16 @@ import {
   threadItemKey,
   threadOf,
 } from '@/assistant/shell';
-import { closedForNow, launcherTiles, tileAction, type LauncherTile, type RegistryTile, type SuiteApp } from '@/suite/apps';
+import {
+  closedForNow,
+  directEntryUrl,
+  findApp,
+  launcherTiles,
+  tileAction,
+  type LauncherTile,
+  type RegistryTile,
+  type SuiteApp,
+} from '@/suite/apps';
 
 function view(over: Partial<AskView> = {}): AskView {
   const base = {
@@ -147,6 +156,15 @@ describe('the registry on the tiles (SCRUM-643)', () => {
   it('keeps every existing gate: a registry row never adds a tile the person has no grant for', () => {
     const tiles = launcherTiles(holds('app:pos:access'), [row('pos'), row('console'), row('inbox')]);
     expect(tiles.map((t) => t.app.key)).toEqual(['pos']);
+  });
+
+  it('the Lucky Wheel opens its demonstration wheel with no hand-off (SCRUM-694)', () => {
+    const booth = findApp('booth')!;
+    expect(directEntryUrl({ ...booth, origin: 'https://booth.example' })).toBe('https://booth.example/#fake');
+    const pos = findApp('pos')!;
+    expect(directEntryUrl({ ...pos, origin: 'https://pos.example' })).toBeNull();
+    // No address on this build: nothing to open.
+    expect(directEntryUrl({ ...booth, origin: undefined })).toBeNull();
   });
 
   it('keeps the booth behind its second permission whatever the registry says', () => {

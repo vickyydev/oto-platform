@@ -16,7 +16,11 @@
  */
 
 export interface BoothFlags {
-  /** Open the staff diagnostics overlay. Still requires a signed-in session (D16). */
+  /**
+   * Open the staff diagnostics overlay (D16). Nobody signs in at a booth
+   * (SCRUM-694), so it opens directly; it shows states and counts, never an
+   * account id.
+   */
   debug: boolean;
   /** Force the fake transport even in a production build. */
   fake: boolean;
@@ -51,6 +55,18 @@ export interface BoothFlags {
    * would be modelling a booth that cannot exist.
    */
   spinCap: number | null;
+  /**
+   * Fake only: nobody on today's roster (SCRUM-694), so the slip prints
+   * "unattributed" — `#no-roster`, for photographing that state.
+   */
+  noRoster: boolean;
+  /**
+   * The hash carried a launcher hand-off (`#handoff=…`) from a launcher tab
+   * opened before SCRUM-694. The page never exchanges it any more; it removes
+   * it from the address and opens the demonstration wheel that tab expected.
+   * One release only.
+   */
+  staleHandoff: boolean;
 }
 
 const EMPTY: BoothFlags = {
@@ -62,6 +78,8 @@ const EMPTY: BoothFlags = {
   printer: null,
   drift: null,
   spinCap: null,
+  noRoster: false,
+  staleHandoff: false,
 };
 
 /**
@@ -94,6 +112,15 @@ export function hashTokens(hash: string): string[] {
     .filter((token) => token !== '');
 }
 
+/** The hash with a launcher hand-off removed and every other token kept. */
+export function withoutHandoff(hash: string): string {
+  const kept = hash
+    .replace(/^#/, '')
+    .split(/[,;&\s]+/)
+    .filter((part) => part !== '' && !part.toLowerCase().startsWith('handoff='));
+  return kept.length > 0 ? `#${kept.join(',')}` : '';
+}
+
 export function parseHash(hash: string): BoothFlags {
   const tokens = hashTokens(hash);
 
@@ -116,6 +143,8 @@ export function parseHash(hash: string): BoothFlags {
     live: has('live'),
     unsynced: has('unsynced'),
     offline: has('offline'),
+    noRoster: has('no-roster'),
+    staleHandoff: tokens.some((token) => token.startsWith('handoff=')),
     printer:
       printer === 'printed' ||
       printer === 'queued' ||

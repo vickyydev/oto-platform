@@ -5,15 +5,15 @@ import { PANEL_IDLE_MS, PANEL_OPEN_CAP_MS, createPanelTimer } from '../src/panel
 import { isButtonKey } from '../src/press.ts';
 
 /**
- * SCRUM-223 — the staff panel closes itself, and a guest pressing the red
- * button cannot keep it up.
+ * SCRUM-223, SCRUM-694 — the staff panel closes itself, and a guest pressing
+ * the red button cannot keep it up.
  *
- * The red button and the space bar send the same key. Pressed while the
- * password box had the keyboard, it typed a space into the password, the
- * countdown restarted on the change, and the form — which holds the wheel
- * while it has the keyboard — stayed up for as long as guests kept pressing
- * (the gate measured 92 s with a press every 15 s). The countdown now ignores
- * the button's key, and a cap closes the panel whatever is typed.
+ * The staff panel (Reprint, Change booth, diagnostics, Close) has no
+ * credential behind it, and a guest can open it with a touch on the corner
+ * chip. A countdown that restarted on every press would keep it on a guest's
+ * screen for as long as guests kept pressing (the gate measured 92 s with a
+ * press every 15 s, back when it held a sign-in form). The countdown ignores
+ * the button's key, and a cap closes the panel whatever is pressed.
  *
  * The clock is run by hand: no DOM, no React, no real waiting.
  */
@@ -119,10 +119,10 @@ test('the button is whatever key the booth is set to, and never Enter', () => {
   assert.equal(isButtonKey({ key: 'Enter', code: 'NumpadEnter' }, 'NumpadEnter'), false);
 });
 
-test('signing in turns the panel into staff’s buttons, with both countdowns from then', () => {
+test('open() again restarts both countdowns', () => {
   const { clock, closes, timer } = panel();
   timer.open();
-  // A slow sign-in: somebody typing until the answer comes, a hundred seconds in.
+  // Somebody working the panel until a hundred seconds in.
   for (let at = 30 * S; at <= 90 * S; at += 30 * S) {
     clock.to(at);
     timer.key(LETTER);
@@ -130,7 +130,7 @@ test('signing in turns the panel into staff’s buttons, with both countdowns fr
   clock.to(100 * S);
   timer.open();
   clock.to(PANEL_OPEN_CAP_MS + S);
-  assert.deepEqual(closes, [], 'the form’s cap does not close the signed-in panel');
+  assert.deepEqual(closes, [], 'the first cap does not close the panel opened again');
   clock.to(146 * S);
   assert.deepEqual(closes, [100 * S + PANEL_IDLE_MS]);
 });

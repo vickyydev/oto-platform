@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BOOTH_SIGN_IN_REFUSALS,
   BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
   BOOTH_SPIN_DURATION_MIN_SECONDS,
   BOOTH_SPIN_DURATION_MAX_SECONDS,
-  BOOTH_STAFF_VERIFY_ERRORS,
   BoothConfigBundleSchema,
-  BoothStaffVerifyRequestSchema,
   boothStaffCode,
   boothStaffLabel,
   boothSpinDurationSeconds,
@@ -14,9 +11,10 @@ import {
 import { ROLE_BUNDLES } from '../src/permissions';
 
 /**
- * SCRUM-223 — what the booth, the box and the cloud agree on about the person
- * signed in at a booth: how long they stay signed in, the code on the slip,
- * and which roles may sign in at all.
+ * SCRUM-223, SCRUM-694 — what the booth, the box and the cloud agree on about
+ * a booth's settings and the Staff row: the spin duration, a bundle published
+ * while the booth still had a staff session length, the staff code an older
+ * slip carried, and that nobody signs in at a booth any more.
  */
 
 const bundle = {
@@ -89,41 +87,6 @@ describe('the staff code on a booth voucher', () => {
     expect(boothStaffLabel(null, 'S-7KMQ')).toBe('S-7KMQ');
     expect(boothStaffLabel('Nok', null)).toBe('Nok');
     expect(boothStaffLabel('  ', null)).toBeNull();
-  });
-});
-
-describe('the verify request a box sends', () => {
-  it('names a station by id and bounds what it carries', () => {
-    expect(
-      BoothStaffVerifyRequestSchema.safeParse({
-        stationId: '01a0bbdc-8ca5-7f31-b1cc-feac984d9f72',
-        phone: '0812345678',
-        password: 'x',
-      }).success,
-    ).toBe(true);
-    expect(
-      BoothStaffVerifyRequestSchema.safeParse({ stationId: 'booth-1', phone: '081', password: 'x' })
-        .success,
-    ).toBe(false);
-    expect(
-      BoothStaffVerifyRequestSchema.safeParse({
-        stationId: '01a0bbdc-8ca5-7f31-b1cc-feac984d9f72',
-        phone: '0812345678',
-        password: 'p'.repeat(257),
-      }).success,
-    ).toBe(false);
-  });
-});
-
-describe('what a refused account sign-in can say', () => {
-  it('tells a box the cloud refused, and a booth it moved, apart from no internet', () => {
-    expect(BOOTH_SIGN_IN_REFUSALS).toContain('offline');
-    expect(BOOTH_SIGN_IN_REFUSALS).toContain('box_refused');
-    expect(BOOTH_SIGN_IN_REFUSALS).toContain('booth_not_on_box');
-    // The codes the box reads them from, as the api answers them.
-    expect(BOOTH_STAFF_VERIFY_ERRORS.boothNotOnBox).toBe('BOOTH_NOT_ON_THIS_BOX');
-    expect(BOOTH_STAFF_VERIFY_ERRORS.boxDisabled).toBe('BOX_DISABLED');
-    expect(BOOTH_STAFF_VERIFY_ERRORS.invalid).toBe('INVALID_CREDENTIALS');
   });
 });
 
