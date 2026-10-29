@@ -7,13 +7,22 @@
  * the build afterwards must still produce exactly those bytes.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  OPERATOR_RULES_HEADING,
+  OPERATOR_RULES_LEAD,
+  PERSONA_VERSION,
+  STATIC_SYSTEM_TEXT,
   buildKnowledge,
   buildPrompt,
+  renderOperatorRules,
   type BranchFacts,
   type EpisodeMessage,
   type KnowledgeInput,
+  type OperatorRuleInput,
   type TurnContext,
 } from '@oto/assistant';
 
@@ -123,5 +132,68 @@ describe('SCRUM-696: the customer prompt with no operator rule', () => {
         2,
       ),
     ).toMatchFileSnapshot('./fixtures/inbox-ai-rules/prompt-no-rules.json');
+  });
+});
+
+interface Pinned {
+  system: Array<{ type: 'text'; text: string; cache_control?: unknown }>;
+  messages: unknown;
+  personaVersion: string;
+  kbVersion: string;
+  systemTokens: number;
+}
+
+const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'inbox-ai-rules', 'prompt-no-rules.json');
+
+const RULES: OperatorRuleInput[] = [
+  {
+    id: '01a18895-0000-7000-8000-000000000002',
+    intent: 'any',
+    instruction: 'Keep it short.',
+    askFirst: null,
+  },
+  {
+    id: '01a18895-0000-7000-8000-000000000001',
+    intent: 'lost_item',
+    instruction: 'If someone says they lost something,   first ask which park they visited.',
+    askFirst: { condition: 'branch_unknown', question: { en: 'Which park did you visit, Central Floresta or Robinson Chalong?' } },
+  },
+];
+
+describe('SCRUM-696: the customer prompt with operator rules', () => {
+  const pinned = JSON.parse(readFileSync(FIXTURE, 'utf8')) as Pinned;
+
+  it('an empty rules list is the same prompt as none', () => {
+    const p = buildPrompt({ knowledge: buildKnowledge(KNOWLEDGE_INPUT), episode: EPISODE, context: CONTEXT, rules: [] });
+    if (!p.ok) throw new Error(p.reason);
+    expect(p.prompt.system).toEqual(pinned.system);
+    expect(p.prompt.kbVersion).toBe(pinned.kbVersion);
+    expect(p.prompt.systemTokens).toBe(pinned.systemTokens);
+  });
+
+  it('adds one block after the knowledge, in the variable part; block 1, the episode and the persona stay as pinned', () => {
+    const built = buildPrompt({ knowledge: buildKnowledge(KNOWLEDGE_INPUT), episode: EPISODE, context: CONTEXT, rules: RULES });
+    if (!built.ok) throw new Error(built.reason);
+    const p = built.prompt;
+    expect(p.system[0]).toEqual(pinned.system[0]);
+    expect(p.system[0].text).toBe(STATIC_SYSTEM_TEXT);
+    expect(STATIC_SYSTEM_TEXT).not.toContain('Operator rules');
+    expect(p.system[1].text).toBe(`${pinned.system[1]!.text}\n\n${renderOperatorRules(RULES)}`);
+    expect(p.system[1].cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+    expect(p.messages).toEqual(pinned.messages);
+    expect(p.personaVersion).toBe(pinned.personaVersion);
+    expect(p.personaVersion).toBe(PERSONA_VERSION);
+    expect(p.kbVersion).not.toBe(pinned.kbVersion);
+    expect(p.systemTokens).toBeGreaterThan(pinned.systemTokens);
+    expect(renderOperatorRules(RULES)).toBe(
+      [
+        OPERATOR_RULES_HEADING,
+        OPERATOR_RULES_LEAD,
+        '- lost_item: If someone says they lost something, first ask which park they visited.',
+        '  ask first: Which park did you visit, Central Floresta or Robinson Chalong?',
+        '- any message: Keep it short.',
+      ].join('\n'),
+    );
+    expect(OPERATOR_RULES_LEAD).toBe('These add to the rules above and never override them.');
   });
 });
