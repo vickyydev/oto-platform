@@ -123,12 +123,16 @@ export function buildBand({ template, type, data, device }: BandInput): PrintDoc
     blocks.push(text('SCAN', { sizeDots: 14, weight: 'regular', tracking: 3 }, 'center'));
   }
 
+  // The height the content has to fit is the printable window where the stock
+  // has one — a pre-printed band is white for only part of its length — and
+  // the whole band otherwise. The printer still feeds `lengthMm` to the next
+  // band; the emitter's `REFERENCE` puts this window where it is.
   const media = device.media;
   return {
     media: {
       kind: 'label',
       widthDots: width,
-      heightDots: media ? Math.round(media.lengthMm * 8) : undefined,
+      heightDots: media ? Math.round((media.printLengthMm ?? media.lengthMm) * 8) : undefined,
       dpi: 203,
     },
     paddingDots: 6,

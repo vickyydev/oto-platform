@@ -60,20 +60,66 @@ export type EscposDeviceSettings = z.infer<typeof EscposDeviceSettingsSchema>;
 export const LABEL_LANGUAGES = ['tspl2', 'zpl'] as const;
 export type LabelLanguage = (typeof LABEL_LANGUAGES)[number];
 
+/**
+ * How the printer finds where one band ends and the next begins — a property
+ * of the roll in the machine, not of the printer. `gap` is a see-through gap
+ * between die-cut labels (TSPL `GAP`); `bline` is a black mark printed across
+ * the back of each band, read by the reflective sensor (TSPL `BLINE`). The
+ * park's wristband rolls are the second kind.
+ */
+export const LABEL_SENSING = ['gap', 'bline'] as const;
+export type LabelSensing = (typeof LABEL_SENSING)[number];
+
 export const LabelDeviceSettingsSchema = z
   .object({
     language: z.enum(LABEL_LANGUAGES).optional(),
     /** The band stock actually loaded, in millimetres. */
     labelWidthMm: z.number().min(10).max(120).optional(),
+    /**
+     * The band's full length, mark to mark or gap to gap. This is what the
+     * printer feeds to reach the next band, whatever part of it is printable.
+     */
     labelHeightMm: z.number().min(10).max(400).optional(),
-    /** Gap between labels; 0 for continuous stock. */
+    /**
+     * Gap between labels; 0 for continuous stock. With `sensing: 'bline'` it is
+     * the black mark's height instead: on the TSPL family `BLINE m,n` takes the
+     * mark's height where `GAP m,n` takes the gap, and the offset `n` stays 0.
+     */
     gapMm: z.number().min(0).max(20).optional(),
+    /**
+     * Absent means `gap`, the profile's default. A black-mark roll driven in
+     * gap mode can only be run continuous (`gapMm` 0), and a continuous run
+     * drifts off the perforation after a few bands.
+     */
+    sensing: z.enum(LABEL_SENSING).optional(),
+    /**
+     * A pre-printed band is printable only in a white window part-way along
+     * its length. `printOffsetMm` is the distance from the band's leading edge
+     * to the top of that window (TSPL `REFERENCE 0,<dots>`), `printLengthMm`
+     * the window's usable length, which the band layout fits its content to.
+     * Both absent means today's behaviour: print from the top, use the whole
+     * band. `labelHeightMm` stays the full length either way.
+     */
+    printOffsetMm: z.number().min(0).max(400).optional(),
+    printLengthMm: z.number().min(10).max(400).optional(),
     /** Burn darkness, 0-15 on this family. Too low smudges, too high curls the band. */
     darkness: z.number().int().min(0).max(15).optional(),
     /** Inches per second. */
     speed: z.number().min(1).max(8).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (s) =>
+      s.labelHeightMm === undefined ||
+      s.printOffsetMm === undefined ||
+      s.printLengthMm === undefined ||
+      s.printOffsetMm + s.printLengthMm <= s.labelHeightMm,
+    {
+      message:
+        'The print window runs past the end of the band: printOffsetMm plus printLengthMm must not exceed labelHeightMm',
+      path: ['printLengthMm'],
+    },
+  );
 export type LabelDeviceSettings = z.infer<typeof LabelDeviceSettingsSchema>;
 
 /** How the box reads the scanner (D2, §9.2). */

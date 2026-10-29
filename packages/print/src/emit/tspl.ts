@@ -16,6 +16,7 @@
 
 import type { Bitmap1 } from '../raster/bitmap';
 import type { DeviceProfile, Finish } from '../document';
+import { mmToDots } from '../devices';
 import { concat } from './escpos';
 
 /** TSPL accepts \r\n or \n; the manual's examples and our adapter use \r\n. */
@@ -105,13 +106,17 @@ export function emitTspl(bitmap: Bitmap1, options: TsplJobOptions): Uint8Array {
     throw new Error(`${device.label} is a label printer but its profile carries no media size`);
   }
 
+  // `GAP m,n` for die-cut labels, `BLINE m,n` for stock with a black mark on
+  // the back of each band; `m` is the gap, or the mark's height, and the offset
+  // `n` is 0 for both. `REFERENCE x,y` moves the origin down to a pre-printed
+  // band's white window, so the bitmap drawn at 0,0 lands inside it.
   const setup: string[] = [
     `SIZE ${media.widthMm} mm,${media.lengthMm} mm`,
     media.sensing === 'bline'
       ? `BLINE ${media.gapMm} mm,0 mm`
       : `GAP ${media.gapMm} mm,0 mm`,
     'DIRECTION 1',
-    'REFERENCE 0,0',
+    `REFERENCE 0,${mmToDots(media.printOffsetMm ?? 0)}`,
     `DENSITY ${device.density ?? 10}`,
     `SPEED ${device.speed ?? 4}`,
     'SET TEAR ON',

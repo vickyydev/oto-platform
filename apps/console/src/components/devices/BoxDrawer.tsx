@@ -26,12 +26,19 @@ import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
 import { EmptyState, Fact, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { Chip, StatusMark, StatusPill } from '@/components/Status';
-import { Field, Select, TextInput } from '@/components/Form';
+import { Field, NumberInput, Select, TextInput } from '@/components/Form';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
 import { SimulatorPanel } from '@/components/devices/SimulatorPanel';
 import { PrintPanel } from '@/components/devices/PrintPanel';
 import { StationRefusalsPanel } from '@/components/devices/DisplayDiagnosticsPanel';
 import type { BoxDeviceList } from '@/lib/deviceList';
+import {
+  SENSING_OPTIONS,
+  bandStockOf,
+  gapFieldLabel,
+  withBandStock,
+  type BandStock,
+} from '@/lib/bandStock';
 import {
   boxRetirementOffer,
   boxRoleWord,
@@ -551,6 +558,9 @@ function DeviceRowItem({
  */
 const printsEscpos = (kind: string): boolean => SETTINGS_SECTION_FOR_KIND[kind] === 'escpos';
 
+/** The band printer: its settings are the label section, what is on the roll. */
+const printsBands = (kind: string): boolean => SETTINGS_SECTION_FOR_KIND[kind] === 'label';
+
 const PAPER_WIDTHS: { value: EscposDotsPerLine; label: string }[] = [
   { value: 576, label: '576 dots (most 80 mm printers)' },
   { value: 512, label: '512 dots (some units — see the self-test page)' },
@@ -591,6 +601,57 @@ function PaperWidthField({
   );
 }
 
+/**
+ * `settings.label` for a band printer: what is on the roll, which the printer
+ * cannot tell on its own. The park's wristband stock has a black mark on the
+ * back of each band rather than a gap between labels, and a printer told to
+ * look for a gap can only run such a roll continuous, drifting off the
+ * perforation after a few bands. The same roll is pre-printed, with a white
+ * window part-way along it; the two window fields say where that is, and the
+ * box lays the band out inside it. All but the sensing choice may be left
+ * empty, which keeps the box's own defaults.
+ */
+function BandStockFields({
+  value,
+  onChange,
+}: {
+  value: BandStock;
+  onChange: (next: BandStock) => void;
+}) {
+  return (
+    <>
+      <Field label="Sensing" hint="How the printer finds the start of the next band.">
+        <Select
+          value={value.sensing}
+          onChange={(v) => onChange({ ...value, sensing: v === 'bline' ? 'bline' : 'gap' })}
+          options={SENSING_OPTIONS}
+        />
+      </Field>
+      <Field
+        label={gapFieldLabel(value.sensing)}
+        hint={value.sensing === 'bline' ? 'The black mark, top to bottom.' : '0 for continuous stock.'}
+      >
+        <NumberInput value={value.gapMm} onChange={(gapMm) => onChange({ ...value, gapMm })} min={0} placeholder="3" />
+      </Field>
+      <Field label="Print window starts at (mm)" hint="From the band's leading edge. Empty prints from the top.">
+        <NumberInput
+          value={value.printOffsetMm}
+          onChange={(printOffsetMm) => onChange({ ...value, printOffsetMm })}
+          min={0}
+          placeholder="0"
+        />
+      </Field>
+      <Field label="Print window length (mm)" hint="The white part of the band. Empty uses the whole band.">
+        <NumberInput
+          value={value.printLengthMm}
+          onChange={(printLengthMm) => onChange({ ...value, printLengthMm })}
+          min={10}
+        />
+      </Field>
+    </>
+  );
+}
+
 function AddDeviceForm({
   boxId,
   onClose,
@@ -608,6 +669,7 @@ function AddDeviceForm({
   const [model, setModel] = useState('');
   const [protocol, setProtocol] = useState('');
   const [dotsPerLine, setDotsPerLine] = useState<EscposDotsPerLine>(576);
+  const [bandStock, setBandStock] = useState<BandStock>(() => bandStockOf(undefined));
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -623,7 +685,11 @@ function AddDeviceForm({
         address: address.trim() || undefined,
         model: model.trim() || undefined,
         protocol: protocol.trim() || undefined,
-        settings: printsEscpos(kind) ? { escpos: { dotsPerLine } } : undefined,
+        settings: printsEscpos(kind)
+          ? { escpos: { dotsPerLine } }
+          : printsBands(kind)
+            ? { label: withBandStock(undefined, bandStock) }
+            : undefined,
       }));
       if (!working.isCurrent()) return;
       onAdded();
@@ -668,6 +734,7 @@ function AddDeviceForm({
           <TextInput value={protocol} onChange={setProtocol} placeholder="escpos" />
         </Field>
         {printsEscpos(kind) && <PaperWidthField value={dotsPerLine} onChange={setDotsPerLine} />}
+        {printsBands(kind) && <BandStockFields value={bandStock} onChange={setBandStock} />}
       </div>
       {failed && <p className="text-sm text-destructive break-words">{failed}</p>}
       <div className="flex gap-2 justify-end">
@@ -702,6 +769,7 @@ function EditDeviceForm({
   const [dotsPerLine, setDotsPerLine] = useState<EscposDotsPerLine>(
     device.settings?.escpos?.dotsPerLine ?? 576,
   );
+  const [bandStock, setBandStock] = useState<BandStock>(() => bandStockOf(device.settings?.label));
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [orphaned, setOrphaned] = useState<StationAssignmentRef[] | null>(null);
@@ -718,9 +786,10 @@ function EditDeviceForm({
         protocol: protocol.trim() || null,
         terminalId: terminalId.trim() || null,
         merchantId: merchantId.trim() || null,
-        // Sent whole like every field above, and only for a printer the box
-        // reads as ESC/POS. Whatever else the row holds — a cutter, a drawer
-        // kick, a band printer's label stock — rides along untouched.
+        // Sent whole like every field above, and only for a printer: the
+        // ESC/POS section for a receipt, kitchen or bar printer, the label
+        // section for a band printer. Whatever else the row holds — a cutter,
+        // a drawer kick, the band stock's width — rides along untouched.
         ...(printsEscpos(device.kind)
           ? {
               settings: {
@@ -728,7 +797,14 @@ function EditDeviceForm({
                 escpos: { ...(device.settings?.escpos ?? {}), dotsPerLine },
               },
             }
-          : {}),
+          : printsBands(device.kind)
+            ? {
+                settings: {
+                  ...(device.settings ?? {}),
+                  label: withBandStock(device.settings?.label, bandStock),
+                },
+              }
+            : {}),
       }));
       if (!working.isCurrent()) return;
       onSaved();
@@ -818,6 +894,7 @@ function EditDeviceForm({
         {printsEscpos(device.kind) && (
           <PaperWidthField value={dotsPerLine} onChange={setDotsPerLine} />
         )}
+        {printsBands(device.kind) && <BandStockFields value={bandStock} onChange={setBandStock} />}
         {isTerminal && (
           <>
             <Field label="Terminal id (TID)">

@@ -21455,6 +21455,23 @@
                                     "minimum": 0,
                                     "maximum": 20
                                   },
+                                  "sensing": {
+                                    "type": "string",
+                                    "enum": [
+                                      "gap",
+                                      "bline"
+                                    ]
+                                  },
+                                  "printOffsetMm": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 400
+                                  },
+                                  "printLengthMm": {
+                                    "type": "number",
+                                    "minimum": 10,
+                                    "maximum": 400
+                                  },
                                   "darkness": {
                                     "type": "integer",
                                     "minimum": 0,
@@ -21684,6 +21701,23 @@
                             "minimum": 0,
                             "maximum": 20
                           },
+                          "sensing": {
+                            "type": "string",
+                            "enum": [
+                              "gap",
+                              "bline"
+                            ]
+                          },
+                          "printOffsetMm": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 400
+                          },
+                          "printLengthMm": {
+                            "type": "number",
+                            "minimum": 10,
+                            "maximum": 400
+                          },
                           "darkness": {
                             "type": "integer",
                             "minimum": 0,
@@ -21900,6 +21934,23 @@
                                   "minimum": 0,
                                   "maximum": 20
                                 },
+                                "sensing": {
+                                  "type": "string",
+                                  "enum": [
+                                    "gap",
+                                    "bline"
+                                  ]
+                                },
+                                "printOffsetMm": {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "maximum": 400
+                                },
+                                "printLengthMm": {
+                                  "type": "number",
+                                  "minimum": 10,
+                                  "maximum": 400
+                                },
                                 "darkness": {
                                   "type": "integer",
                                   "minimum": 0,
@@ -22101,6 +22152,23 @@
                             "type": "number",
                             "minimum": 0,
                             "maximum": 20
+                          },
+                          "sensing": {
+                            "type": "string",
+                            "enum": [
+                              "gap",
+                              "bline"
+                            ]
+                          },
+                          "printOffsetMm": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 400
+                          },
+                          "printLengthMm": {
+                            "type": "number",
+                            "minimum": 10,
+                            "maximum": 400
                           },
                           "darkness": {
                             "type": "integer",
@@ -22312,6 +22380,23 @@
                                   "type": "number",
                                   "minimum": 0,
                                   "maximum": 20
+                                },
+                                "sensing": {
+                                  "type": "string",
+                                  "enum": [
+                                    "gap",
+                                    "bline"
+                                  ]
+                                },
+                                "printOffsetMm": {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "maximum": 400
+                                },
+                                "printLengthMm": {
+                                  "type": "number",
+                                  "minimum": 10,
+                                  "maximum": 400
                                 },
                                 "darkness": {
                                   "type": "integer",

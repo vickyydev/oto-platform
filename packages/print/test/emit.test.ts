@@ -160,6 +160,27 @@ describe('TSPL2 job', () => {
     ]);
   });
 
+  it('senses a black mark with BLINE in place of GAP, the mark height where the gap was', () => {
+    const blackMark = emitTspl(job.bitmap, {
+      device: { ...tspl400, media: { ...tspl400.media!, sensing: 'bline' } },
+      finish: { copies: 1 },
+    });
+    const lines = tsplSetupLines(blackMark);
+    expect(lines).toContain('BLINE 3 mm,0 mm');
+    expect(lines.some((line) => line.startsWith('GAP '))).toBe(false);
+  });
+
+  it('moves the origin down to a pre-printed band’s white window, in dots', () => {
+    const windowed = emitTspl(job.bitmap, {
+      device: { ...tspl400, media: { ...tspl400.media!, printOffsetMm: 60, printLengthMm: 120 } },
+      finish: { copies: 1 },
+    });
+    const lines = tsplSetupLines(windowed);
+    expect(lines).toContain('REFERENCE 0,480');
+    // The printer still feeds the whole band to the next gap or mark.
+    expect(lines).toContain('SIZE 50 mm,250 mm');
+  });
+
   it('omits SET RESPONSE unless the profile says the firmware has it', () => {
     expect(setup).not.toContain('SET RESPONSE ON');
     const withAck = emitTspl(job.bitmap, {

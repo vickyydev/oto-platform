@@ -536,7 +536,12 @@ export function profileFor(device: BoxConfigDevice): DeviceProfile {
         widthMm,
         lengthMm: label.labelHeightMm ?? 250,
         gapMm: label.gapMm ?? 3,
-        sensing: 'gap',
+        // The park's wristband rolls carry a black mark per band, but that is
+        // a fact about the roll in the machine, so the row says so; the
+        // profile's default is the die-cut gap the family manual assumes.
+        sensing: label.sensing ?? 'gap',
+        ...(label.printOffsetMm === undefined ? {} : { printOffsetMm: label.printOffsetMm }),
+        ...(label.printLengthMm === undefined ? {} : { printLengthMm: label.printLengthMm }),
       },
       density: label.darkness,
       speed: label.speed,

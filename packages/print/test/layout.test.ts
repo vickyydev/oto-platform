@@ -176,6 +176,33 @@ describe('a label is a fixed die-cut', () => {
     expect(model.overflow.join(' ')).toMatch(/but the label is 80/);
   });
 
+  it('fits a band’s content to the pre-printed white window, not to the whole band', () => {
+    // The park's 25 mm band is 254 mm long but printable only in a window
+    // part-way along it: the layout's bound is the window. 120 mm is room for
+    // the name, the QR, the short code and SCAN; 20 mm is not, and the layout
+    // says so rather than letting the head print onto the pattern below.
+    const data = { holderName: 'Mali', bandCode: 'HKT1:01J8Z4M2QR', shortCode: 'HKT1-4821' };
+    const windowed = (printLengthMm: number) =>
+      renderJob(
+        { kind: 'kids_wristband', data },
+        { device: { ...tspl200, media: { ...tspl200.media!, printOffsetMm: 60, printLengthMm } }, templates: TEMPLATES },
+      );
+    const fits = windowed(120);
+    expect(fits.document.media.heightDots).toBe(960);
+    expect(fits.layout.heightDots).toBeLessThanOrEqual(960);
+    expect(fits.layout.items.some((i) => i.k === 'qr')).toBe(true);
+    expect(fits.overflow).toEqual([]);
+
+    const clipped = windowed(20);
+    expect(clipped.document.media.heightDots).toBe(160);
+    expect(clipped.layout.heightDots).toBeGreaterThan(160);
+    expect(clipped.overflow.join(' ')).toMatch(/but the label is 160/);
+
+    // No window: the whole band is the bound, as before.
+    const whole = renderJob({ kind: 'kids_wristband', data }, { device: tspl200, templates: TEMPLATES });
+    expect(whole.document.media.heightDots).toBe(2032);
+  });
+
   it('shrinks a QR that will not fit and says so', () => {
     const job = renderJob(
       {

@@ -152,9 +152,18 @@ export interface DeviceProfile {
   /** Label media, for TSPL only. Measure the park's band stock. */
   media?: {
     widthMm: number;
+    /** The band's full length: what the printer feeds to reach the next one. */
     lengthMm: number;
+    /** The gap between labels, or with `bline` the black mark's height. */
     gapMm: number;
     sensing: 'gap' | 'bline';
+    /**
+     * A pre-printed band's white window: how far from the leading edge it
+     * starts (`REFERENCE 0,<dots>`) and how long it is, which is the height
+     * the band layout has to fit. Absent: print from the top, whole band.
+     */
+    printOffsetMm?: number;
+    printLengthMm?: number;
   };
   /** TSPL darkness 0-15 (factory 8) and speed in ips (factory 5). */
   density?: number;

@@ -10164,6 +10164,10 @@ export interface paths {
                                         labelWidthMm?: number;
                                         labelHeightMm?: number;
                                         gapMm?: number;
+                                        /** @enum {string} */
+                                        sensing?: "gap" | "bline";
+                                        printOffsetMm?: number;
+                                        printLengthMm?: number;
                                         darkness?: number;
                                         speed?: number;
                                     };
@@ -10227,6 +10231,10 @@ export interface paths {
                                 labelWidthMm?: number;
                                 labelHeightMm?: number;
                                 gapMm?: number;
+                                /** @enum {string} */
+                                sensing?: "gap" | "bline";
+                                printOffsetMm?: number;
+                                printLengthMm?: number;
                                 darkness?: number;
                                 speed?: number;
                             };
@@ -10284,6 +10292,10 @@ export interface paths {
                                         labelWidthMm?: number;
                                         labelHeightMm?: number;
                                         gapMm?: number;
+                                        /** @enum {string} */
+                                        sensing?: "gap" | "bline";
+                                        printOffsetMm?: number;
+                                        printLengthMm?: number;
                                         darkness?: number;
                                         speed?: number;
                                     };
@@ -10391,6 +10403,10 @@ export interface paths {
                                 labelWidthMm?: number;
                                 labelHeightMm?: number;
                                 gapMm?: number;
+                                /** @enum {string} */
+                                sensing?: "gap" | "bline";
+                                printOffsetMm?: number;
+                                printLengthMm?: number;
                                 darkness?: number;
                                 speed?: number;
                             };
@@ -10448,6 +10464,10 @@ export interface paths {
                                         labelWidthMm?: number;
                                         labelHeightMm?: number;
                                         gapMm?: number;
+                                        /** @enum {string} */
+                                        sensing?: "gap" | "bline";
+                                        printOffsetMm?: number;
+                                        printLengthMm?: number;
                                         darkness?: number;
                                         speed?: number;
                                     };
