@@ -1,0 +1,231 @@
+{
+  "ticket": "SCRUM-684",
+  "sourceHead": "4cc504d809526ae4631ce97014d0380a5d39830b",
+  "upstreamMain": "3abce949436abf0d82f0b314434f08fe46febe15",
+  "preparedAt": "2026-10-29T21:43:43.190Z",
+  "root": "C:/oto-lanes/admin684-release-20261030",
+  "allGreen": true,
+  "scopedOnly": true,
+  "fullReleaseClaimed": false,
+  "allProfilesFreshOnThisHead": true,
+  "priorGatesReused": [],
+  "sourceInputCount": 4023,
+  "sourceUnchanged": true,
+  "fullSourceMapPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\full-source-map.json",
+  "fullSourceMapSha256": "f1c617e16f1a3c43c0ca0067b44f151e4d4bfb27068f3c1ed1a697b6446262eb",
+  "runnerPath": "C:/oto-lanes/admin684-resume-20261030/capture.mjs",
+  "runnerSha256": "0677724ec417c80d49b8f3f441d5ca014632f1079f04ce749d6cb747166f0b66",
+  "runs": [
+    {
+      "phase": "contracts",
+      "path": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\contracts-v1.json",
+      "sha256": "eac88f14dca4e92235d326fc3260fd785cc6f2cea0b1503139b0f7dfeb94af1e",
+      "exitCode": 0,
+      "passed": true,
+      "sourceUnchanged": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm api-types:check"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\contracts-v1.log",
+      "logSha256": "a00eb58b08a416aff10a5cec2ab9079ef1a3f39536ef8726c1728e2389484a81",
+      "logBytes": 609,
+      "wholeLogRead": true
+    },
+    {
+      "phase": "typecheck",
+      "path": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\typecheck-v1.json",
+      "sha256": "f47f63207f7864a965df379441f5634682e373fdfad4d68ea4aae0da787f3b88",
+      "exitCode": 0,
+      "passed": true,
+      "sourceUnchanged": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api typecheck"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\typecheck-v1.log",
+      "logSha256": "fc2d25c0103247c89a4f2d6b4c5f9f00066d591babf948aba601e5f4e59cfa60",
+      "logBytes": 100,
+      "wholeLogRead": true
+    },
+    {
+      "phase": "client-typecheck",
+      "path": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\client-typecheck-v1.json",
+      "sha256": "665e8066bdafc1427154f6f0e2009eba89f1b73926659059e9e6c2a3ad42e09d",
+      "exitCode": 0,
+      "passed": true,
+      "sourceUnchanged": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api-types typecheck"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\client-typecheck-v1.log",
+      "logSha256": "974608773cd6b4d5c89dbd3063940c4510aee2e2e940e80071133c5c2564ada8",
+      "logBytes": 116,
+      "wholeLogRead": true
+    },
+    {
+      "phase": "console-typecheck",
+      "path": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\console-typecheck-v1.json",
+      "sha256": "dcfd1fce3cb8235f2ebea0e88d621b95ad64039db18ab05f7bc268f81cfbf605",
+      "exitCode": 0,
+      "passed": true,
+      "sourceUnchanged": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/console typecheck"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\console-typecheck-v1.log",
+      "logSha256": "e1286360c2eb9a281357dfad8da530728496f7d573f8c08efe02fbe408133fb1",
+      "logBytes": 192,
+      "wholeLogRead": true
+    },
+    {
+      "phase": "affected",
+      "path": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\affected-v1.json",
+      "sha256": "cc3f4031ae3563a296fafeab3e1639f4ab25eab21ce645a4967a0149584b2664",
+      "exitCode": 0,
+      "passed": true,
+      "sourceUnchanged": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api test test/s684-nullable-response-contract-review.test.ts test/console-drift-review.test.ts test/menu-api.test.ts test/fleet-api.test.ts test/s622-menu-contracts.test.ts test/menu-tax-seam.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts --maxWorkers=1 --no-file-parallelism"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "tests": {
+        "passed": 257,
+        "failed": 0
+      },
+      "summaryLines": [
+        " Test Files  10 passed (10)",
+        "      Tests  257 passed (257)",
+        "   Duration  154.26s (transform 6.40s, setup 0ms, collect 33.39s, tests 117.61s, environment 1ms, prepare 1.28s)"
+      ],
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\affected-v1.log",
+      "logSha256": "2d423479ab4c6cc5bbd05fc7d9df07f9375dce88c635c9d81ecfbae9526074cb",
+      "logBytes": 44124,
+      "wholeLogRead": true
+    },
+    {
+      "phase": "client-tests",
+      "path": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\client-tests-v1.json",
+      "sha256": "66d227c9dfc4304a3bfd89653c87e55a057215ef125e4b9bbec2fd8b00afbb63",
+      "exitCode": 0,
+      "passed": true,
+      "sourceUnchanged": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api-types test"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "tests": {
+        "passed": 10,
+        "failed": 0
+      },
+      "summaryLines": [
+        " Test Files  1 passed (1)",
+        "      Tests  10 passed (10)",
+        "   Duration  6.10s (transform 749ms, setup 0ms, collect 5.09s, tests 35ms, environment 0ms, prepare 365ms)"
+      ],
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\client-tests-v1.log",
+      "logSha256": "960bbecd05f895150e207fbc1e08a14eb6de3fd0c4bb94a640d0e3419c8f12aa",
+      "logBytes": 405,
+      "wholeLogRead": true
+    },
+    {
+      "phase": "lint",
+      "path": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\lint-v1.json",
+      "sha256": "ac196eda00ebdd3a876f14b529dbec2863f408df994e1e56b222d0d84c709555",
+      "exitCode": 0,
+      "passed": true,
+      "sourceUnchanged": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm exec eslint apps/api/src/routes/console-drift.ts apps/api/src/routes/menu.ts apps/api/src/routes/fleet.ts apps/api/src/lib/nullable-response-enum.ts apps/api/test/s684-nullable-response-contract-review.test.ts apps/console/e2e/page-state-review.spec.ts"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\lint-v1.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logBytes": 0,
+      "wholeLogRead": true
+    }
+  ],
+  "coverage": {
+    "affectedApiAndGuards": 257,
+    "affectedApiFiles": 10,
+    "reviewCases": 14,
+    "reviewIncludedIn257": true,
+    "clientTests": 10,
+    "apiCompilerDiagnostics": 0,
+    "clientCompilerDiagnostics": 0,
+    "consoleCompilerProjects": 3,
+    "consoleCompilerDiagnostics": 0,
+    "lintAuthoredTsFiles": 6,
+    "lintDiagnostics": 0,
+    "contractsMatch": true,
+    "generatedArtifactsChanged": false
+  },
+  "logReview": {
+    "expectedDuplicateConstraintControls": {
+      "station_name_unique": 1,
+      "box_slot_unique": 1,
+      "device_address_unique": 1,
+      "product_sku_unique": 2
+    },
+    "inheritedWarning": "FSTDEP023 disableRequestLogging deprecation",
+    "unexpectedTestFailures": 0,
+    "logsReadWhole": true
+  },
+  "cleanup": {
+    "scope": "only data directories recorded by this affected test run",
+    "recordedClusterCount": 8,
+    "survivingAffectedProcessCount": 0,
+    "sameExecutableRootOtherProcessCount": 0,
+    "postgresRowsWithUnreadableCommand": 0,
+    "nativeReviewDatabaseDropped": true,
+    "nativeReviewServerStopped": true,
+    "noProcessTerminated": true,
+    "receiptPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-final-gates\\runtime-cleanup.json",
+    "receiptSha256": "ccf7fdf555014d2a2a16857b4b7fd4075924e360aa6dee8688110ae79dfe819d",
+    "allSevenCommandsTerminal": true,
+    "dockerUsed": false,
+    "browserStarted": false,
+    "stagingCalls": 0,
+    "providerActions": false
+  },
+  "limits": [
+    "Scoped CLI integration validation only. Root owns its separate full browser run, exact-SHA CI, deployment and staging acceptance.",
+    "All seven profiles actually reran on this source head. All previous receipts and runners remain preserved.",
+    "No source, Git, docs or Jira mutation was performed by this lane. The affected receipt contains real Bash argv and complete before/after source maps."
+  ]
+}
