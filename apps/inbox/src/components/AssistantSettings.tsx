@@ -334,8 +334,8 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="min-w-0 text-[12.5px] text-slate-500 dark:text-slate-400">
           Only approved entries reach the assistant. Opening hours, addresses and ticket prices come from the platform
-          itself; write notes beside them here, never the numbers. An approved entry is not edited: archive it and draft
-          a new one with the same key.
+          itself; write notes beside them here, never the numbers. Editing an approved entry replaces it at once; the
+          previous words stay in the archive.
         </p>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600 dark:text-slate-300">
@@ -381,11 +381,9 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
                   <p className="mt-1 line-clamp-4 whitespace-pre-line break-words text-[12.5px] text-slate-600 dark:text-slate-300">{e.body}</p>
                   {e.status !== 'archived' && e.canManage && (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      {e.status === 'draft' && (
-                        <button type="button" onClick={() => setEditing(e)} className={BUTTON}>
-                          <Pencil className="h-3 w-3" /> Edit
-                        </button>
-                      )}
+                      <button type="button" onClick={() => setEditing(e)} className={BUTTON}>
+                        <Pencil className="h-3 w-3" /> Edit
+                      </button>
                       {e.status === 'draft' && (
                         <button
                           type="button"
@@ -532,7 +530,11 @@ function KbEditor({
       title={entry ? 'Edit entry' : 'New entry'}
       subtitle={
         entry
-          ? `${entry.key} · ${langLabel(entry.language)}`
+          ? `${entry.key} · ${langLabel(entry.language)}${
+              entry.status === 'approved'
+                ? ' · Live: saving replaces it at once; the previous words stay in the archive.'
+                : ''
+            }`
           : 'Saved as a draft. It reaches the assistant once approved.'
       }
       wide

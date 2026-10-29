@@ -72,7 +72,7 @@ export const assistantApi = {
       },
       { idempotencyKey: idemKey() },
     ),
-  /** A DRAFT only (409 KB_NOT_DRAFT otherwise). */
+  /** A draft is changed in place; an approved entry is replaced at once (the answer carries the new id); archived: 409 KB_ARCHIVED. */
   updateKb: (id: string, patch: KbEntryPatch) =>
     api.patch<ApiResponse<'/inbox/kb/{id}', 'patch'>>(
       kbAt(id),

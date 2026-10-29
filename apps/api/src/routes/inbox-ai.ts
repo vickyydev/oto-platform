@@ -172,9 +172,10 @@ export async function inboxAiRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Edit a DRAFT entry: its topic, key, language, park, question, fact or needsTranslation. An approved or ' +
-          'archived entry answers 409 KB_NOT_DRAFT — archive it and draft a new one with the same key. Needs ' +
-          'inbox:kb:manage over the entry as it stands and as it will be.',
+          'Edit an entry: its topic, key, language, park, question, fact or needsTranslation. A draft is changed in ' +
+          'place. An approved entry is revised at once: the row the assistant cited is archived with its words kept, ' +
+          'and the answer is a new row, already approved by the editor, under a new id. An archived entry answers ' +
+          '409 KB_ARCHIVED. Needs inbox:kb:manage over the entry as it stands and as it will be.',
         params: IdParams,
         body: InboxKbPatchSchema,
         response: { 200: InboxKbEntrySchema },

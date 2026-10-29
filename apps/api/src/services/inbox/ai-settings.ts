@@ -126,7 +126,6 @@ export interface SettingsCtx {
 export const KB_MESSAGES = {
   keyTaken:
     'A live entry already stands for this key, language and park — edit that one, or archive it first.',
-  notDraft: 'Only a draft can be edited. Archive this entry and draft a new one with the same key.',
   archived: 'This entry is archived. Draft a new one with the same key instead.',
   exampleNotApproved: 'Only an approved example can be promoted to the knowledge base.',
 } as const;
@@ -291,6 +290,17 @@ export async function createKb(tx: Tx, ctx: SettingsCtx, reach: Reach, input: In
   return kbView(made!, reach);
 }
 
+/**
+ * Edit an entry.
+ *
+ * A DRAFT is changed in place. An APPROVED entry is revised: the row the
+ * assistant has been citing is archived with its words untouched, and a new
+ * row carrying the edited words is inserted already approved, by the editor,
+ * in the same transaction — so a past turn's citation still names exactly
+ * the words it rested on, and the screen gets an "Edit" that works at once.
+ * The replacement answers with its own id. An archived entry is not edited:
+ * 409 KB_ARCHIVED.
+ */
 export async function updateKb(
   tx: Tx,
   ctx: SettingsCtx,
@@ -300,7 +310,7 @@ export async function updateKb(
 ): Promise<InboxKbEntry> {
   const before = await loadKb(tx, ctx.operatorId, id, true);
   requireReach(reach, before.branchId, KB_MANAGE);
-  if (before.status !== 'draft') throw errors.conflict('KB_NOT_DRAFT', KB_MESSAGES.notDraft);
+  if (before.status === 'archived') throw errors.conflict('KB_ARCHIVED', KB_MESSAGES.archived);
   const next = {
     branchId: patch.branchId === undefined ? before.branchId : patch.branchId,
     key: patch.key ?? before.key,
@@ -309,6 +319,7 @@ export async function updateKb(
   requireReach(reach, next.branchId, KB_MANAGE);
   await assertBranchInOperator(tx, ctx.operatorId, next.branchId);
   if (await kbKeyTaken(tx, ctx.operatorId, next, before.id)) throw errors.conflict('KB_KEY_TAKEN', KB_MESSAGES.keyTaken);
+  if (before.status === 'approved') return reviseApprovedKb(tx, ctx, reach, before, next, patch);
   const [after] = await kbWrite(() =>
     tx
       .update(kbEntry)
@@ -340,6 +351,81 @@ export async function updateKb(
     },
   });
   return kbView(after!, reach);
+}
+
+/**
+ * The approved half of `updateKb`: the old row archived (its key freed under
+ * `kb_entry_key_unique`, its words kept), the new row inserted approved by the
+ * editor. Two audit rows, neither holding the words: `inbox.kb.archive` on
+ * the old row naming its replacement, `inbox.kb.revise` on the new row naming
+ * what it replaced.
+ */
+async function reviseApprovedKb(
+  tx: Tx,
+  ctx: SettingsCtx,
+  reach: Reach,
+  before: KbRow,
+  next: { branchId: string | null; key: string; language: string },
+  patch: InboxKbPatch,
+): Promise<InboxKbEntry> {
+  const replacementId = newId();
+  const [retired] = await tx
+    .update(kbEntry)
+    .set({ status: 'archived', updatedByAccountId: ctx.accountId, updatedAt: ctx.now })
+    .where(and(eq(kbEntry.operatorId, ctx.operatorId), eq(kbEntry.id, before.id)))
+    .returning();
+  const [made] = await kbWrite(() =>
+    tx
+      .insert(kbEntry)
+      .values({
+        id: replacementId,
+        operatorId: ctx.operatorId,
+        branchId: next.branchId,
+        topic: patch.topic ?? before.topic,
+        key: next.key,
+        language: next.language as KbRow['language'],
+        question: patch.question ?? before.question,
+        body: patch.body ?? before.body,
+        status: 'approved',
+        needsTranslation: patch.needsTranslation ?? before.needsTranslation,
+        sourceExampleId: before.sourceExampleId,
+        updatedByAccountId: ctx.accountId,
+        approvedByAccountId: ctx.accountId,
+        approvedAt: ctx.now,
+        createdAt: ctx.now,
+        updatedAt: ctx.now,
+      })
+      .returning(),
+  );
+  await audit.record(tx, {
+    actorAccountId: ctx.accountId,
+    action: 'inbox.kb.archive',
+    entityType: 'inbox.kb_entry',
+    entityId: before.id,
+    operatorId: ctx.operatorId,
+    branchId: before.branchId,
+    requestId: ctx.requestId,
+    before: { status: before.status },
+    after: { ...kbAudit(retired!), replacedById: replacementId },
+  });
+  await audit.record(tx, {
+    actorAccountId: ctx.accountId,
+    action: 'inbox.kb.revise',
+    entityType: 'inbox.kb_entry',
+    entityId: replacementId,
+    operatorId: ctx.operatorId,
+    branchId: made!.branchId,
+    requestId: ctx.requestId,
+    before: { ...kbAudit(before), id: before.id },
+    after: {
+      ...kbAudit(made!),
+      approvedByAccountId: ctx.accountId,
+      replacesId: before.id,
+      questionChanged: patch.question !== undefined && patch.question !== before.question,
+      bodyChanged: patch.body !== undefined && patch.body !== before.body,
+    },
+  });
+  return kbView(made!, reach);
 }
 
 /** Draft → approved: the approver and the time recorded (`kb_entry_approved_check`). Approving twice is the same act. */

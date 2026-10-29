@@ -167,13 +167,9 @@ describe('the knowledge base (§C)', () => {
     known = await loadTurnKnowledge(w.ctx.db, w.oto, new Date());
     expect(JSON.stringify(known.knowledge)).toContain('socks.rule');
 
-    // Approving again is the same act; editing an approved entry is refused in a sentence.
+    // Approving again is the same act.
     expect((await call(w, marketingKbCookie, 'POST', `/inbox/kb/${draft.id}/approve`)).status).toBe(200);
     expect(await auditOf('inbox.kb.approve', draft.id)).toHaveLength(1);
-    const late = await call<{ error: { code: string; message: string } }>(w, marketingKbCookie, 'PATCH', `/inbox/kb/${draft.id}`, { body: 'x' });
-    expect(late.status).toBe(409);
-    expect(late.body.error.code).toBe('KB_NOT_DRAFT');
-    expect(late.body.error.message).toMatch(/Only a draft can be edited/);
 
     // Audit: ids, key and lengths — never the words.
     for (const action of ['inbox.kb.create', 'inbox.kb.update', 'inbox.kb.approve']) {
@@ -182,6 +178,37 @@ describe('the knowledge base (§C)', () => {
       expect(row!.after).toMatchObject({ key: 'socks.rule', language: 'en' });
       expect(JSON.stringify([row!.before, row!.after])).not.toMatch(/socks are required|Grip socks/i);
     }
+
+    // Editing the APPROVED entry revises it: the cited row is archived with its
+    // words kept, and a new row carrying the edit is live at once, approved by
+    // the editor, under a new id.
+    const revised = await call(w, marketingKbCookie, 'PATCH', `/inbox/kb/${draft.id}`, { body: 'Grip socks are required; we sell them at reception.' });
+    expect(revised.status, JSON.stringify(revised.body)).toBe(200);
+    expect(revised.body['id']).not.toBe(draft.id);
+    expect(revised.body).toMatchObject({
+      key: 'socks.rule',
+      language: 'en',
+      status: 'approved',
+      approvedByAccountId: marketingKbId,
+      body: 'Grip socks are required; we sell them at reception.',
+      question: 'Do we need socks?',
+    });
+    const [old] = await w.ctx.db.select().from(s.kbEntry).where(eq(s.kbEntry.id, draft.id));
+    expect(old).toMatchObject({ status: 'archived', body: 'Grip socks are required on the play floor.' });
+    known = await loadTurnKnowledge(w.ctx.db, w.oto, new Date());
+    expect(JSON.stringify(known.knowledge)).toContain('we sell them at reception');
+    expect(JSON.stringify(known.knowledge)).not.toContain('on the play floor');
+    const [revisedAudit] = await auditOf('inbox.kb.revise', revised.body['id'] as string);
+    expect(revisedAudit).toBeDefined();
+    expect(revisedAudit!.after).toMatchObject({ key: 'socks.rule', replacesId: draft.id, bodyChanged: true });
+    expect(JSON.stringify([revisedAudit!.before, revisedAudit!.after])).not.toMatch(/socks are required|Grip socks/i);
+    const [retiredAudit] = await auditOf('inbox.kb.archive', draft.id);
+    expect(retiredAudit!.after).toMatchObject({ status: 'archived', replacedById: revised.body['id'] });
+
+    // An archived entry is not edited.
+    const late = await call<{ error: { code: string } }>(w, marketingKbCookie, 'PATCH', `/inbox/kb/${draft.id}`, { body: 'x' });
+    expect(late.status).toBe(409);
+    expect(late.body.error.code).toBe('KB_ARCHIVED');
   });
 
   it('one live entry per key, language and park: 409 KB_KEY_TAKEN; archiving frees the key', async () => {
