@@ -112,6 +112,36 @@ describe('boothDutyLabel — the ladder', () => {
   });
 });
 
+describe('boothDutyLabel — the roster alone (SCRUM-694)', () => {
+  it("joins every name on today's roster", () => {
+    expect(
+      boothDutyLabel({
+        roster: {
+          date: '2026-10-01',
+          people: [
+            { accountId: TOM, displayName: 'Tom' },
+            { accountId: null, displayName: 'Jerry' },
+          ],
+        },
+        today: '2026-10-01',
+      }),
+    ).toBe('Tom and Jerry');
+  });
+
+  it('is null for an empty roster — the slip prints “unattributed”', () => {
+    expect(boothDutyLabel({ roster: { date: '2026-10-01', people: [] }, today: '2026-10-01' })).toBeNull();
+  });
+
+  it('is null for a roster of another trading day', () => {
+    expect(
+      boothDutyLabel({
+        roster: { date: '2026-09-30', people: [{ accountId: TOM, displayName: 'Tom' }] },
+        today: '2026-10-01',
+      }),
+    ).toBeNull();
+  });
+});
+
 describe('BoothDutyRosterSchema', () => {
   it('reads a roster with a casual, and refuses a malformed date', () => {
     const parsed = BoothDutyRosterSchema.parse({
