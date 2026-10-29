@@ -11,15 +11,13 @@ import {
 } from '@oto/shared';
 
 import { checkBenefitOnBox, encodeBenefitCredential } from '../src/benefit-credential';
-import { BOOTH_STAFF_THROTTLE_SCOPE, createBooth, type BoothCacheEntry } from '../src/booth';
-import { createBoothHttp } from '../src/booth-http';
 import { ScanRouter } from '../src/scan';
-import { generateSyncKeyPair, uuidv7 } from '../src/signing';
+import { uuidv7 } from '../src/signing';
 import { redactScanForCustomer } from '../src/station-session';
 import { SqlBoxStore } from '../src/store-sql';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
 import type { StationScanMessage } from '../src/contract';
-import { BOX_ID, BRANCH_ID, OPERATOR_ID, STATION_ID } from './_support';
+import { BOX_ID, STATION_ID } from './_support';
 
 /**
  * SCRUM-218 review of lane I round 2 — the benefit QR on the box, attacked
@@ -31,10 +29,10 @@ import { BOX_ID, BRANCH_ID, OPERATOR_ID, STATION_ID } from './_support';
  *   - expiry is exact to the second;
  *   - no handler registered later can take a benefit QR from the router;
  *   - the screen facing the guest never hears a scannable QR — not in
- *     `benefitCode`, and not inside a refusal's words either;
- *   - the booth's badge path, driven through its own HTTP surface with a QR
- *     the platform really signed, says `not_a_badge`, signs nobody in and
- *     counts nothing.
+ *     `benefitCode`, and not inside a refusal's words either.
+ *
+ * (The booth's badge path went with booth sign-in, SCRUM-694: nobody signs in
+ * at the booth, so there is no badge path for a benefit QR to be tried at.)
  */
 
 function keypair() {
@@ -226,98 +224,4 @@ test('the screen facing the guest never hears a scannable QR — handled, or ref
     );
   }
   t.close();
-});
-
-// --- The booth's badge path, through its own HTTP surface ----------------------------
-
-const BOOTH_STATION = '018f1d2c-0000-7000-8000-0000000057b1';
-const ACCOUNT_ID = '018f1d2c-0000-7000-8000-00000000fb01';
-
-function boothEntry(): BoothCacheEntry {
-  return {
-    stationId: BOOTH_STATION,
-    configVersionId: '018f1d2c-0000-7000-8000-00000000fc01',
-    version: 1,
-    bundleHash: 'a'.repeat(64),
-    allowedStaff: [ACCOUNT_ID],
-    dutyRoster: null,
-    voucherDefinitions: [],
-    bundle: {
-      schemaVersion: 1,
-      settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null },
-      layout: {
-        id: '018f1d2c-0000-7000-8000-00000000fa00',
-        name: 'Classic wheel',
-        version: 1,
-        design: {},
-        assetManifest: {},
-      },
-      prizes: [],
-    },
-  };
-}
-
-test('the booth’s badge path, driven over HTTP with a QR the platform signed: not_a_badge, nobody signed in, nothing counted', async () => {
-  const db = new DatabaseSync(':memory:');
-  prepareSqliteBoxStore(db);
-  const store = new SqlBoxStore({ driver: sqliteBoxDriver(db), now: () => NOW });
-  const syncKeys = generateSyncKeyPair();
-  const code = qr(ANAN);
-  const tried: string[] = [];
-  const booth = createBooth({
-    boxId: BOX_ID,
-    store,
-    station: () => ({ id: BOOTH_STATION, name: 'Booth 1', codePrefix: 'B1' }),
-    branch: () => ({
-      id: BRANCH_ID,
-      operatorId: OPERATOR_ID,
-      name: 'HKT Central',
-      timezone: 'Asia/Bangkok',
-      businessDayStart: '05:00',
-    }),
-    privateKey: () => syncKeys.privateKeyPem,
-    print: null,
-    // A badge hash that WOULD match the QR: the header is refused before any
-    // hash is tried, so even this signs nobody in.
-    staff: () => [
-      {
-        accountId: ACCOUNT_ID,
-        status: 'active',
-        pinHash: 'argon2:73910',
-        badgeHash: `argon2:${code}`,
-        staffCode: 'S-014',
-      },
-    ],
-    verifySecret: async (hash, secret) => {
-      tried.push(secret);
-      return hash === `argon2:${secret}`;
-    },
-    now: () => NOW,
-  });
-  await store.init(BOX_ID);
-  await store.writeBundle(BOX_ID, {
-    scope: 'booth',
-    schemaVersion: 1,
-    cursorSeq: 1,
-    payload: { items: [boothEntry()] },
-    appliedAt: NOW.toISOString(),
-  });
-  await booth.refresh();
-  const handle = createBoothHttp({ booth, online: () => true });
-
-  for (const badge of [code, code.toLowerCase(), ` ${code}\n`]) {
-    for (let i = 0; i < 4; i += 1) {
-      const res = await handle({ method: 'POST', path: '/staff/sign-in', body: { badge } });
-      assert.equal(res.status, 200);
-      assert.deepEqual(res.body, { ok: false, reason: 'not_a_badge' });
-    }
-  }
-  assert.equal(await booth.staffSession(), null);
-  assert.deepEqual(tried, [], 'no hash was ever tried against a benefit QR');
-  const held = await store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, BOOTH_STATION);
-  assert.equal(held?.failures ?? 0, 0, 'twelve refusals, none counted');
-  // The booth still signs a real person in at once.
-  const pin = await handle({ method: 'POST', path: '/staff/sign-in', body: { pin: '73910' } });
-  assert.deepEqual(pin.body, { ok: true });
-  db.close();
 });

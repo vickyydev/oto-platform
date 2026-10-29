@@ -122,12 +122,14 @@ export const openNodeSqlite: OpenDatabase = async (file, options) => {
 };
 
 /**
- * argon2id verification for booth PINs, from `@node-rs/argon2`.
+ * argon2id verification for the offline till unlock, from `@node-rs/argon2`:
+ * the verifier the station bridge checks a till's password with when the box
+ * has no internet. (The booth checks nothing since SCRUM-694: nobody signs in
+ * there.)
  *
  * The one native module a box needs, loaded here rather than imported so that
- * a box whose prebuilt binary failed to install still runs its wheel: PINs are
- * then refused (said loudly in the log) and a phone-and-password sign-in, which
- * the cloud checks, still works.
+ * a box whose prebuilt binary failed to install still runs: an offline till
+ * unlock is then refused (said loudly in the log), and the wheel is unaffected.
  */
 export async function loadArgon2Verifier(
   log: AgentLog,
@@ -146,7 +148,7 @@ export async function loadArgon2Verifier(
   } catch (err) {
     log.error(
       { module: 'runner', err: String(err) },
-      'argon2 could not be loaded: booth PIN sign-in is refused until @node-rs/argon2 is installed',
+      'argon2 could not be loaded: the offline till unlock is refused until @node-rs/argon2 is installed',
     );
     return null;
   }

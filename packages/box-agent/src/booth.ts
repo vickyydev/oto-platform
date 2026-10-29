@@ -46,34 +46,21 @@ import {
   BoothDutyRosterSchema,
   addDaysToIsoDate,
   boothDutyLabel,
-  boothStaffLabel,
-  boothStaffSessionMinutes,
   boothVoucherSlip,
   isoDateInTz,
   mintBoothCode,
   businessDate as businessDateFor,
-  hasBenefitCredentialHeader,
   parseDayStart,
   type BoothConfigBundle,
   type BoothConfigPrize,
-  type BoothDutyRoster,
   type BoothPrintState,
   type BoothReprintResponse,
-  type BoothSignInMethod,
-  type BoothSignInRefusal,
-  type BoothStaffOnDuty,
   type SpinResponse,
 } from '@oto/shared';
 import type { PrintJob as RenderPrintJob } from '@oto/print';
 
 import { cappedPrizeIds, drawPrize, judgePrizes, type RandomIndex } from './booth-draw';
-import type {
-  BoxStaffSession,
-  BoxStore,
-  PrintJobRecord,
-  QueuedFact,
-  ThrottleRecord,
-} from './store';
+import type { BoxStore, PrintJobRecord, QueuedFact } from './store';
 import { BoxStoreFeatureMissingError } from './store';
 import { sealEnvelope, uuidv7 } from './signing';
 import { silentLog, type AgentLog } from './transport';
@@ -100,16 +87,13 @@ import { silentLog, type AgentLog } from './transport';
  *    `SpinResponse.configVersion` against anything.
  *  - `configVersionId` — `booth.spin.booth_config_version_id` is NOT NULL and
  *    references the row, so the number alone will not write a spin.
- *  - `allowedStaff` — who may sign in at this booth
- *    (`booth.booth_staff_assignment`). The `staff` cache scope says who may
- *    work at the branch, which is a different and much wider question.
  *  - `dutyRoster` — the day's booth staff (SCRUM-473): the trading day it is
- *    for, and every name on the booth that day with the account that may
- *    sign in, when there is one. The voucher's Staff row prints the names
- *    merged into one label, and the accounts may sign in that day beside
- *    `allowedStaff`. Optional: a cloud older than this field serves none, and
- *    a roster that cannot be read is dropped rather than taking the booth off
- *    the air — the slip then prints the signed-in person, as it always did.
+ *    for, and every name on the booth that day with their account, when they
+ *    have one. The voucher's Staff row prints the names merged into one
+ *    label. Nobody signs in at the booth (SCRUM-694): the roster is the whole
+ *    of the attribution. Optional: a cloud older than this field serves none,
+ *    and a roster that cannot be read is dropped rather than taking the booth
+ *    off the air — the slip then prints "unattributed".
  *  - `voucherDefinitions` — the terms and the expiry of the types the
  *    bundle's prizes point at, as they are now, refreshed at every pull. The
  *    bundle carries no type's expiry, so `resolveExpiry` reads it here when a
@@ -143,9 +127,11 @@ export const BoothCacheEntrySchema = z.object({
   /** SHA-256 over the canonical JSON of the bundle AS PUBLISHED, lower-case hex. */
   bundleHash: z.string().regex(/^[0-9a-f]{64}$/),
   bundle: BoothConfigBundleSchema,
-  /** `core.account.id` of everybody on this booth's staff list. */
-  allowedStaff: z.array(z.string().uuid()).default([]),
-  /** See above. `.catch(null)`: a malformed roster is no roster, never a booth off the air. */
+  /**
+   * See above. `.catch(null)`: a malformed roster is no roster, never a booth
+   * off the air. An older cloud's `allowedStaff` beside it is stripped on
+   * parse, never refused: this is a plain (non-strict) object.
+   */
   dutyRoster: BoothDutyRosterSchema.nullable().default(null).catch(null),
   voucherDefinitions: z.array(BoothVoucherDefinitionSchema).default([]),
 });
@@ -220,38 +206,6 @@ export interface BoothPrinterHealth {
   paperStatus: 'unknown' | 'ok' | 'low' | 'out';
 }
 
-/** One person, as the booth needs them: the `staff` scope plus the booth's fields. */
-export interface BoothStaffRecord {
-  accountId: string;
-  status: string;
-  /** argon2id over the booth PIN. Null for somebody who has not been given one. */
-  pinHash?: string | null;
-  pinExpiresAt?: string | null;
-  /** argon2id over the badge secret. Nothing writes this yet — see `signIn`. */
-  badgeHash?: string | null;
-  /** The short code a person types before their PIN. Not a secret. */
-  staffCode?: string | null;
-  /**
-   * The nickname or name the slip prints beside the code (SCRUM-223). Sent
-   * only for people on a booth of this box; null for everybody else.
-   */
-  displayName?: string | null;
-}
-
-/**
- * What the cloud said about a phone and password typed at this booth
- * (SCRUM-223).
- *
- * The box never checks a password itself: it holds no password hashes it is
- * allowed to use for this, and "is this person on this booth, with a role
- * that may sign in here" is the cloud's to answer. So account sign-in is a
- * question the agent forwards, and every way it can fail comes back as one of
- * these refusals — `offline` whenever the question could not be asked at all.
- */
-export type BoothAccountVerdict =
-  | { ok: true; accountId: string; displayName: string | null; staffCode: string | null }
-  | { ok: false; reason: BoothSignInRefusal; retryAfterMs?: number };
-
 export interface BoothOptions {
   boxId: string;
   store: BoxStore;
@@ -268,31 +222,6 @@ export interface BoothOptions {
   print?: BoothPrintPort | null;
   /** Measured health per device id. Never defaulted; see `heartbeat`. */
   printerHealth?: () => Record<string, BoothPrinterHealth>;
-  /**
-   * Who may work at this branch, from the `staff` cache scope, with the
-   * booth's own fields on each entry. Intersected with the booth's
-   * `allowedStaff` before anything is verified.
-   */
-  staff?: () => readonly BoothStaffRecord[];
-  /**
-   * argon2id verification. Injected so this package needs no native
-   * dependency, exactly as `OfflineAuthOptions.verifyPassword` is.
-   */
-  verifySecret?: (hash: string, secret: string) => Promise<boolean>;
-  /**
-   * Check a phone and password with the cloud (SCRUM-223).
-   *
-   * Injected, like `verifySecret` and for the same reason D2 gives: this
-   * module has no way to reach the cloud and must not grow one. The agent
-   * supplies it, forwarding to `BOOTH_STAFF_VERIFY_PATH` under the box's own
-   * credential. Without it — or with the box offline — an account sign-in is
-   * refused `offline` and the television says to use the PIN.
-   */
-  verifyAccount?: (request: {
-    stationId: string;
-    phone: string;
-    password: string;
-  }) => Promise<BoothAccountVerdict>;
   /**
    * **Read by nothing, and kept only so the agent's wiring still compiles.**
    *
@@ -372,27 +301,6 @@ export const BOOTH_CONFIG_REFRESH_MS = 60_000;
  */
 export const BOOTH_CLOCK_SUSPECT_MS = 10 * 60_000;
 
-/**
- * The sign-in backoff, which must not disagree with the panel's copy in
- * `apps/booth/src/staff-backoff.ts`.
- *
- * Restated rather than imported: that file is browser code in another package,
- * and this one runs on a Pi. Drift between the two is survivable in one
- * direction only, and it is the direction the panel already documents — it
- * waits for the longer of its own countdown and the `retryAfterMs` this side
- * sends, so a booth that is stricter than the panel is merely a countdown that
- * runs out a moment early. A booth that were LAXER would be the panel refusing
- * attempts the box would have taken, which is why these numbers are the same
- * numbers and not smaller ones.
- *
- * Five wrong attempts are free: a booth is worked standing up, in a mall, by
- * somebody who has often just come on shift. The sixth starts a 30-second
- * wait, and each further wrong attempt doubles it to a fifteen-minute ceiling.
- */
-export const BOOTH_STAFF_FREE_ATTEMPTS = 5;
-export const BOOTH_STAFF_FIRST_BACKOFF_MS = 30_000;
-export const BOOTH_STAFF_MAX_BACKOFF_MS = 15 * 60_000;
-
 /** The `box_counter` scope holding "how many of this prize, today". */
 export const BOOTH_PRIZE_COUNTER_SCOPE = 'booth_prize';
 /** The `box_counter` scope holding "has this press already been recorded". */
@@ -410,8 +318,6 @@ export const BOOTH_PRESS_COUNTER_SCOPE = 'booth_press';
  * counts each one's day separately rather than adding them together.
  */
 export const BOOTH_SPIN_COUNTER_SCOPE = 'booth_spin';
-/** The `box_throttle` scope holding failed sign-ins, keyed by station. */
-export const BOOTH_STAFF_THROTTLE_SCOPE = 'booth_staff';
 
 /** How many press replies are kept in memory for a retry. See `spin`. */
 const REPLAY_LIMIT = 64;
@@ -483,11 +389,11 @@ function lastMomentOfDate(isoDate: string, timeZone: string): number {
  * Why a press was refused.
  *
  * These are CODES, and the television maps each to its own copy — no message
- * written here reaches a screen in a shopping centre (D15). The page knows six
+ * written here reaches a screen in a shopping centre (D15). The page knows five
  * of them (`BOOTH_ERROR_CODES` in apps/booth/src/booth/contract.ts):
  * `not_configured`, `daily_spin_cap_reached` and `duplicate_press` have lines
- * of their own under the wheel, `staff_required` and `nothing_to_reprint` on
- * the staff panel's Reprint, and `booth_not_ready` is said with the page's
+ * of their own under the wheel, `nothing_to_reprint` on the staff panel's
+ * Reprint, and `booth_not_ready` is said with the page's
  * fixed line, "Booth not ready — please call staff". `runtime_unavailable`
  * and `cannot_record` are not on its list and end on that same fixed line:
  * `#debug` shows only their status, and the box log says which it was, which
@@ -532,12 +438,6 @@ export const BOOTH_REFUSAL_CODES = [
    * H1; see `spin`).
    */
   'duplicate_press',
-  /**
-   * A reprint asked for with nobody signed in (SCRUM-223). A reprint puts a
-   * second copy of a live code on paper, so it is staff-only, and the account
-   * signed in when it was asked for is written on the record of it.
-   */
-  'staff_required',
   /** A reprint with nothing to reprint: no voucher yet, or not that spin's. */
   'nothing_to_reprint',
   'nothing_to_print',
@@ -586,15 +486,14 @@ export interface BoothStatusReport {
   paperStatus: BoothPrinterHealth['paperStatus'];
   vouchersPending: number;
   lastSpinAt: string | null;
-  staffSignedIn: boolean;
   dailyCapsReached: string[];
   /**
-   * Who is attending, for the corner of the television (SCRUM-223). Null when
-   * nobody is. Name and staff code only — see `BoothStaffOnDuty`. Optional in
-   * the type because a booth older than this field does not send it; the
-   * booth here always does.
+   * The label the slip would print now, for the corner of the television
+   * (SCRUM-694): today's roster names merged ("Tom and Jerry"), or null when
+   * nobody is on today's roster. Names only, as the corner already showed
+   * under the owner's ruling of 24 September; never an account id.
    */
-  staff?: BoothStaffOnDuty | null;
+  dutyLabel: string | null;
 }
 
 /** The booth's trading day so far, counted on the box (SCRUM-419). */
@@ -620,36 +519,21 @@ export interface BoothHeartbeatReport {
    */
   pendingUnit: 'vouchers' | 'events';
   lastSpinAt: string | null;
-  staffSignedIn: boolean;
+  /**
+   * Whether today's roster names anybody on this box (SCRUM-694): the slip
+   * prints names when true and "unattributed" when false. A boolean, never
+   * who.
+   */
+  rostered: boolean;
+  /**
+   * Retired by SCRUM-694, always false: nobody signs in at the booth. Sent
+   * only so an api older than SCRUM-694, whose heartbeat schema requires the
+   * field, still accepts the heartbeat. Drop it next round.
+   */
+  staffSignedIn: false;
   dailyCapsReached: string[];
   /** Null where there is no wheel or branch to count a day against. */
   today: BoothDayCounts | null;
-}
-
-export interface BoothSignInRequest {
-  pin?: string;
-  accountId?: string;
-  badge?: string;
-  /**
-   * A phone and password, checked by the cloud (SCRUM-223). Never held after
-   * the call: forwarded once, and the answer is who it was.
-   */
-  account?: { phone: string; password: string };
-}
-
-export interface BoothSignInResult {
-  ok: boolean;
-  /** How long this box will refuse further attempts. Absent when it will not. */
-  retryAfterMs?: number;
-  /** The account that signed in. Never sent to the television. */
-  accountId?: string;
-  /**
-   * Why an ACCOUNT sign-in was refused, when the reason is something the
-   * person can act on (SCRUM-223): no internet, not on this booth, a role that
-   * may not sign in here. Absent for a wrong PIN or password, which is the
-   * shape every PIN refusal has always had.
-   */
-  reason?: BoothSignInRefusal;
 }
 
 export interface BoothReprintRequest {
@@ -659,7 +543,6 @@ export interface BoothReprintRequest {
 }
 
 export interface Booth {
-  staffList?(): { accountId: string; name: string | null; code: string | null; hasPin: boolean }[];
   print?(request: { spinId: string; actionId?: string | null }): Promise<SpinResponse>;
   /** Adopt whatever the cache holds and pick up any vouchers still to print. */
   start(): Promise<void>;
@@ -669,20 +552,16 @@ export interface Booth {
   /** Re-read the cache and apply a newer version whole. True when it changed. */
   refresh(): Promise<boolean>;
   spin(request: BoothSpinRequest): Promise<SpinResponse>;
-  signIn(request: BoothSignInRequest): Promise<BoothSignInResult>;
-  signOut(): Promise<void>;
-  /** The live session, or null — an expired one is ended here, not honoured. */
-  staffSession(): Promise<BoxStaffSession | null>;
   /**
    * Print the last voucher of this booth again, or a given spin's (SCRUM-223).
    *
-   * The SAME code on new paper: no draw, no counter, no second voucher. Staff
-   * only — it refuses with `staff_required` when nobody is signed in — and the
-   * copy is reported to the cloud as a `reprint` print of that voucher, with
-   * the account signed in at the booth when it was asked for: the session's,
-   * not a check of who pressed the button. Optional in the type so a stand-in
-   * booth in a test need not grow one; `createBooth` always has it, and the
-   * http contract answers 404 for a booth without it.
+   * The SAME code on new paper, marked "Reprint · <time>": no draw, no
+   * counter, no second voucher, never a new prize. Anyone at the screen may
+   * ask for one (SCRUM-694: nobody signs in at the booth), and the copy is
+   * reported to the cloud as a `reprint` print of that voucher, with no
+   * account. Optional in the type so a stand-in booth in a test need not grow
+   * one; `createBooth` always has it, and the http contract answers 404 for a
+   * booth without it.
    */
   reprint?(request: BoothReprintRequest): Promise<BoothReprintResponse>;
   status(opts: { online: boolean }): Promise<BoothStatusReport>;
@@ -711,19 +590,12 @@ export interface Booth {
 
 /**
  * A voucher's paper this booth is responsible for reporting (D20), and why
- * it was printed: the first copy after a spin, or a copy asked for while
- * somebody was signed in.
+ * it was printed: the first copy after a spin, or a copy somebody asked for.
  */
 interface OwnedPrintJob {
   voucherId: string | null;
   voucherCode: string;
   reason: 'initial' | 'reprint';
-  /**
-   * For a reprint, the account signed in at the booth when the copy was asked
-   * for — the session's account, which is all the box knows; it cannot tell
-   * who pressed the button. Null for the automatic first print.
-   */
-  requestedByAccountId: string | null;
   /**
    * The booth the voucher was won at, which is the station its outcome is
    * filed under (SCRUM-223). Not "the booth this box serves now": on a box
@@ -760,20 +632,12 @@ const FINISHED_PRINT_JOBS_KEPT = 200;
 
 /** `box_runtime` keys, per booth station. */
 const recentVouchersKey = (stationId: string): string => `booth.recent_vouchers:${stationId}`;
-const staffNameKey = (stationId: string): string => `booth.staff_name:${stationId}`;
 /**
  * The `box_runtime` key under which one voucher code this box has minted is
  * remembered — one row per code, for as long as the card lasts (SCRUM-414).
  * Exported for the test that proves a repeat is drawn again.
  */
 export const boothMintedCodeKey = (code: string): string => `booth.minted_code:${code}`;
-
-/** The session's credential kind as the store spells it, to the method the screen shows. */
-function methodOf(credentialKind: string): BoothSignInMethod {
-  if (credentialKind === 'password') return 'account';
-  if (credentialKind === 'badge') return 'badge';
-  return 'pin';
-}
 
 /** What `createBooth` builds: a `Booth` whose reprint is always there. */
 export type BoothModule = Booth & Required<Pick<Booth, 'reprint' | 'print'>>;
@@ -882,12 +746,6 @@ export function createBooth(options: BoothOptions): BoothModule {
       answer: Promise<SpinResponse> | null;
     }
   >();
-  /**
-   * The sign-in attempt each station is working through; the next one waits
-   * for it (closing audit M11). Holds a promise that never rejects, so one
-   * attempt that throws does not stop the attempts behind it. See `signIn`.
-   */
-  const signInQueue = new Map<string, Promise<void>>();
 
   function note(
     level: 'info' | 'warn' | 'error',
@@ -973,20 +831,19 @@ export function createBooth(options: BoothOptions): BoothModule {
       }
       if (applied && entry.version === applied.version && entry.bundleHash === applied.bundleHash) {
         /**
-         * The same wheel — and possibly a different staff list or different
-         * voucher terms beside it (SCRUM-223).
+         * The same wheel — and possibly a different roster for today or
+         * different voucher terms beside it (SCRUM-223, SCRUM-473).
          *
          * Neither is part of the published bundle, so neither moves the
-         * version: somebody added to a booth in the Console used to be unable
-         * to sign in there until the next publish, because an entry with an
-         * unchanged hash was skipped whole. The wheel is still not touched;
-         * only what rides beside it is taken.
+         * version: somebody added to today's staff in the Console reaches the
+         * slip at the box's next pull, with no publish. The wheel is still
+         * not touched; only what rides beside it is taken.
          */
         if (!sameSideData(applied, entry)) {
           applied = entry;
-          note('info', 'the booth staff list or voucher terms were refreshed', {
+          note('info', "today's roster or the voucher terms were refreshed", {
             version: entry.version,
-            allowedStaff: entry.allowedStaff.length,
+            rostered: entry.dutyRoster?.people.length ?? 0,
           });
         }
         continue;
@@ -999,78 +856,15 @@ export function createBooth(options: BoothOptions): BoothModule {
         bundleHash: entry.bundleHash.slice(0, 12),
       });
     }
-    await endRevokedSession(stationId, held.appliedAt);
     return adopted;
   }
 
-  /** The staff list and the voucher terms, compared as the box holds them. */
+  /** Today's roster and the voucher terms, compared as the box holds them. */
   function sameSideData(a: BoothCacheEntry, b: BoothCacheEntry): boolean {
     return (
-      JSON.stringify([...a.allowedStaff].sort()) === JSON.stringify([...b.allowedStaff].sort()) &&
       JSON.stringify(a.dutyRoster) === JSON.stringify(b.dutyRoster) &&
       JSON.stringify(a.voucherDefinitions) === JSON.stringify(b.voucherDefinitions)
     );
-  }
-
-  /**
-   * End a session whose holder lost the right to it AFTER signing in
-   * (SCRUM-223).
-   *
-   * A sign-in lasts the booth's session length and does not lapse on idle,
-   * so without this somebody taken off the booth — or deactivated — at ten in
-   * the morning would go on attributing spins until the evening. Two tests,
-   * each against a list that arrived after the sign-in:
-   *
-   *  - the booth's own staff list, when a pull newer than the sign-in no
-   *    longer names them;
-   *  - the branch staff scope, when a pull newer than the sign-in no longer
-   *    carries them as active.
-   *
-   * "Newer than the sign-in" is the guard that matters. An account sign-in is
-   * checked live by the cloud and can be seconds ahead of this box's last
-   * pull; judging it against the older list would sign out somebody the
-   * cloud has just let in.
-   */
-  async function endRevokedSession(stationId: string, boothAppliedAt: string | null): Promise<void> {
-    let session: BoxStaffSession | null;
-    try {
-      session = await store.readStaffSession(stationId);
-    } catch {
-      return;
-    }
-    if (!session) return;
-    const holder = session.accountId;
-    const signedInMs = Date.parse(session.signedInAt);
-    const newer = (at: string | null | undefined): boolean => {
-      if (typeof at !== 'string') return false;
-      const ms = Date.parse(at);
-      return Number.isFinite(ms) && Number.isFinite(signedInMs) && ms > signedInMs;
-    };
-    let reason: string | null = null;
-    if (
-      applied &&
-      newer(boothAppliedAt) &&
-      !applied.allowedStaff.includes(holder) &&
-      !todaysRoster().some((p) => p.accountId === holder)
-    ) {
-      reason = 'no longer on the staff list or today’s roster of this booth';
-    }
-    if (reason === null) {
-      const list = options.staff?.() ?? [];
-      const staffHeld = await store.readBundle(boxId, 'staff').catch(() => null);
-      if (list.length > 0 && newer(staffHeld?.appliedAt)) {
-        const record = list.find((r) => r.accountId === holder);
-        if (!record || record.status !== 'active') reason = 'no longer an active member of staff';
-      }
-    }
-    if (reason === null) return;
-    try {
-      await store.clearStaffSession(stationId);
-    } catch (err) {
-      note('error', 'a revoked staff session could not be ended', { err: String(err) });
-      return;
-    }
-    note('warn', `a staff session was ended: ${reason}`, { accountId: holder });
   }
 
   /**
@@ -1090,13 +884,14 @@ export function createBooth(options: BoothOptions): BoothModule {
   }
 
   /**
-   * Today's roster (SCRUM-473), or nobody: a roster for any other trading day
-   * — a box offline since yesterday — names nobody today.
+   * The label the slip would print now (SCRUM-694): today's roster names
+   * merged, or null when there is no branch, no roster, or a roster for
+   * another trading day — a box offline since yesterday names nobody today.
+   * What the corner of the television and the heartbeat read; a press works
+   * its own label out from the entry it drew under.
    */
-  function todaysRoster(today: string | null = todayForRoster()): BoothDutyRoster['people'] {
-    const roster = applied?.dutyRoster ?? null;
-    if (!roster || today === null || roster.date !== today) return [];
-    return roster.people;
+  function currentDutyLabel(): string | null {
+    return boothDutyLabel({ roster: applied?.dutyRoster ?? null, today: todayForRoster() ?? '' });
   }
 
   function readStationId(raw: unknown): string | null {
@@ -1186,479 +981,6 @@ export function createBooth(options: BoothOptions): BoothModule {
       await store.markTimeSeen(boxId, at);
     } catch (err) {
       if (err instanceof BoxStoreFeatureMissingError) return;
-      throw err;
-    }
-  }
-
-  // --- Staff --------------------------------------------------------------
-
-  /**
-   * Who is signed in, read in a way that can never take the booth down.
-   *
-   * A sign-in problem must never stop the wheel (`docs/features/booth.md`), so
-   * every failure here degrades to "nobody" and the spin is recorded
-   * unattributed — which is a real and expected state, and the one the
-   * `booth.unattributed` condition is raised from. The one failure NOT
-   * swallowed at the press is a store with no booth runtime at all: a daily
-   * cap that silently does not count is the defect those tables exist to
-   * prevent, and `spin` refuses before it reaches here.
-   */
-  async function staffOnDutyQuietly(
-    stationId: string,
-  ): Promise<{ accountId: string; name: string | null; label: string | null } | null> {
-    try {
-      const held = await onDuty(stationId);
-      if (!held) return null;
-      return {
-        accountId: held.session.accountId,
-        name: held.duty.name,
-        label: boothStaffLabel(held.duty.name, held.duty.code),
-      };
-    } catch (err) {
-      note('warn', 'the booth could not read its staff session; the spin is unattributed', {
-        err: String(err),
-      });
-      return null;
-    }
-  }
-
-  /**
-   * The session at this station, if it is still running (SCRUM-223).
-   *
-   * A session ends when the booth's session length has passed — never on
-   * idle — and an ended one is closed here, on the read, rather than by a
-   * timer: a box that was switched off through the end of a shift comes back
-   * with nobody signed in, which is the truth. Throws only what the store
-   * throws; the callers that must never fail the wheel catch it.
-   */
-  async function liveSession(stationId: string): Promise<BoxStaffSession | null> {
-    const session = await store.readStaffSession(stationId);
-    if (!session) return null;
-    if (session.expiresAt !== null) {
-      const ends = Date.parse(session.expiresAt);
-      if (Number.isFinite(ends) && ends <= clock().getTime()) {
-        try {
-          await store.clearStaffSession(stationId);
-        } catch (err) {
-          note('warn', 'an ended staff session could not be cleared', { err: String(err) });
-        }
-        note('info', 'a staff session reached the end of its time and was closed', {
-          accountId: session.accountId,
-        });
-        return null;
-      }
-    }
-    return session;
-  }
-
-  /**
-   * Who is attending, as the television and the slip name them.
-   *
-   * The name comes from the staff scope when the box holds a record for the
-   * person — the freshest copy — and otherwise from what the cloud said at
-   * sign-in, kept beside the session. The code is the one the sign-in
-   * resolved, which is the same derivation either way.
-   */
-  async function onDuty(
-    stationId: string,
-  ): Promise<{ session: BoxStaffSession; duty: BoothStaffOnDuty } | null> {
-    const session = await liveSession(stationId);
-    if (!session) return null;
-    const record = (options.staff?.() ?? []).find((r) => r.accountId === session.accountId);
-    let name = record?.displayName ?? null;
-    if (name === null) {
-      try {
-        const raw = await store.readRuntimeValue(boxId, staffNameKey(stationId));
-        const held = raw ? (JSON.parse(raw) as { accountId?: unknown; name?: unknown }) : null;
-        if (held?.accountId === session.accountId && typeof held.name === 'string') name = held.name;
-      } catch {
-        // A name that cannot be read is a slip that prints the code alone.
-      }
-    }
-    return {
-      session,
-      duty: {
-        name,
-        code: session.staffCode ?? record?.staffCode ?? null,
-        method: methodOf(session.credentialKind),
-        signedInAt: session.signedInAt,
-        expiresAt: session.expiresAt,
-      },
-    };
-  }
-
-  /**
-   * Put somebody on duty: the session, the name to show, and a clean slate
-   * on the throttle, in one transaction.
-   *
-   * The session runs for the booth's session length from NOW
-   * (`staffSessionMinutes` in the published wheel, twelve hours when it names
-   * none). It is not extended by activity and not ended by its absence.
-   */
-  async function openSession(
-    station: BoothStationContext,
-    who: { accountId: string; staffCode: string | null; displayName: string | null },
-    kind: 'pin' | 'badge' | 'password',
-    at: { nowIso: string; nowMs: number },
-  ): Promise<void> {
-    const minutes = boothStaffSessionMinutes(applied?.bundle.settings ?? {});
-    await store.atomically(async (tx) => {
-      await tx.writeStaffSession({
-        stationId: station.id,
-        boxId,
-        accountId: who.accountId,
-        credentialKind: kind,
-        staffCode: who.staffCode,
-        signedInAt: at.nowIso,
-        lastSeenAt: at.nowIso,
-        expiresAt: new Date(at.nowMs + minutes * 60_000).toISOString(),
-      });
-      await tx.writeRuntimeValue(
-        boxId,
-        staffNameKey(station.id),
-        JSON.stringify({ accountId: who.accountId, name: who.displayName }),
-        at.nowIso,
-      );
-      await tx.clearThrottle(boxId, BOOTH_STAFF_THROTTLE_SCOPE, station.id);
-    });
-  }
-
-  /**
-   * A phone and password, checked by the cloud (SCRUM-223).
-   *
-   * Forwarded once through `verifyAccount` and never kept. A wrong password
-   * counts against this booth's throttle exactly as a wrong PIN does — the
-   * cloud keeps its own count per phone as well — and every other refusal is
-   * handed back with its reason, because each asks for something different
-   * of the person at the booth: find the internet, find a manager, or use
-   * the POS to change a temporary password.
-   */
-  async function signInWithAccount(
-    station: BoothStationContext,
-    account: { phone: string; password: string },
-    at: { nowIso: string; nowMs: number; held: ThrottleRecord | null },
-  ): Promise<BoothSignInResult> {
-    const phone = typeof account.phone === 'string' ? account.phone.trim() : '';
-    const password = typeof account.password === 'string' ? account.password : '';
-    if (phone === '' || password === '') return { ok: false };
-    const verify = options.verifyAccount;
-    if (!verify) return { ok: false, reason: 'offline' };
-    let verdict: BoothAccountVerdict;
-    try {
-      verdict = await verify({ stationId: station.id, phone, password });
-    } catch (err) {
-      note('warn', 'an account sign-in could not be checked with the cloud', { err: String(err) });
-      return { ok: false, reason: 'offline' };
-    }
-    if (verdict.ok) {
-      await openSession(
-        station,
-        {
-          accountId: verdict.accountId,
-          staffCode: verdict.staffCode,
-          displayName: verdict.displayName,
-        },
-        'password',
-        at,
-      );
-      note('info', 'somebody signed in at the booth', { kind: 'account' });
-      return { ok: true, accountId: verdict.accountId };
-    }
-    if (verdict.reason === 'wrong') {
-      const { record, retryAfterMs } = await countFailure(station.id, at.held, at);
-      note('warn', 'a booth sign-in was refused', { kind: 'account', failures: record.failures });
-      return retryAfterMs > 0 ? { ok: false, retryAfterMs } : { ok: false };
-    }
-    note('info', 'an account sign-in was refused', { reason: verdict.reason });
-    return verdict.retryAfterMs === undefined
-      ? { ok: false, reason: verdict.reason }
-      : { ok: false, reason: verdict.reason, retryAfterMs: verdict.retryAfterMs };
-  }
-
-  function backoffFor(failures: number): number {
-    if (failures <= BOOTH_STAFF_FREE_ATTEMPTS) return 0;
-    const doublings = failures - BOOTH_STAFF_FREE_ATTEMPTS - 1;
-    return Math.min(BOOTH_STAFF_FIRST_BACKOFF_MS * 2 ** doublings, BOOTH_STAFF_MAX_BACKOFF_MS);
-  }
-
-  /**
-   * How long a station refuses sign-in, read from its throttle record: the
-   * later of the lock written on the row and the one its COUNT calls for,
-   * counted from its last failure (closing audit M11).
-   *
-   * The count decides. `lockedUntil` is written in the same statement that
-   * counts a failure, from the count this module expected; the count itself
-   * moves inside that statement. A second process counting failures on the
-   * same store between this one's read and its write would leave a count that
-   * calls for a lock beside a `lockedUntil` that does not carry it — so the
-   * lock is also worked out from the count, and the later of the two holds.
-   * In this process the two agree: sign-ins at a station run one at a time.
-   */
-  function lockRemaining(record: ThrottleRecord | null, nowMs: number): number {
-    if (!record) return 0;
-    const written = record.lockedUntil ? Date.parse(record.lockedUntil) : Number.NaN;
-    const owed = backoffFor(record.failures);
-    const last = Date.parse(record.lastFailureAt);
-    const counted = owed > 0 && Number.isFinite(last) ? last + owed : Number.NaN;
-    const until = Math.max(
-      Number.isFinite(written) ? written : Number.NEGATIVE_INFINITY,
-      Number.isFinite(counted) ? counted : Number.NEGATIVE_INFINITY,
-    );
-    return until > nowMs ? until - nowMs : 0;
-  }
-
-  /**
-   * Count one wrong attempt at a station, and say how long it is now locked.
-   *
-   * The answer comes from the record the STORE returns, whose count moved
-   * inside the statement, not from the count read before the argon2 checks
-   * (closing audit M11): that read is the one two overlapping attempts could
-   * both have made. The lock written on the row is the one this attempt
-   * expects to have earned; `lockRemaining` makes the stored count win if the
-   * two ever differ.
-   */
-  async function countFailure(
-    stationId: string,
-    held: ThrottleRecord | null,
-    at: { nowIso: string; nowMs: number },
-  ): Promise<{ record: ThrottleRecord; retryAfterMs: number }> {
-    const expected = (held?.failures ?? 0) + 1;
-    const wait = backoffFor(expected);
-    const record = await store.recordThrottleFailure(boxId, BOOTH_STAFF_THROTTLE_SCOPE, stationId, {
-      now: at.nowIso,
-      lockedUntil: wait > 0 ? new Date(at.nowMs + wait).toISOString() : undefined,
-    });
-    if (record.failures !== expected) {
-      note(
-        'warn',
-        'the sign-in count moved while an attempt was being checked; the stored count decides the lock',
-        { expected, stored: record.failures },
-      );
-    }
-    return { record, retryAfterMs: lockRemaining(record, at.nowMs) };
-  }
-
-  /**
-   * Sign somebody in by PIN or badge (D18).
-   *
-   * **It iterates and verifies; it cannot look up.** argon2id salts per row,
-   * so there is no query — online or offline — that turns four typed digits
-   * into an account. The booth therefore tries each of its own allowed staff
-   * in turn and argon2-verifies against that person's hash. No pepper, no
-   * lookup index: under fifty people on a booth's list makes that cheap, and
-   * the alternative is a deterministic digest, which is a lookup key for
-   * whoever holds the disk as much as for the booth.
-   *
-   * The cost of iterating is also the defence's shape: the throttle counts
-   * against the STATION, not the account, because until a verification
-   * succeeds there is no account to count against. That is the right subject
-   * anyway — four digits against a whole booth's staff list is the brute force
-   * worth slowing down.
-   *
-   * **Badge sign-in verifies the same way and finds nobody today.** Nothing
-   * writes `badgeHash` yet (see `BoothStaffCacheFields`), so a scan is checked
-   * against an empty set of hashes and refused. That is the honest behaviour
-   * until PIN and badge management lands, and it is not a silent one — the
-   * refusal is logged with the reason.
-   *
-   * **One attempt at a time per station** (closing audit M11). The throttle
-   * is read before the argon2 checks and counted after them, and argon2 is
-   * slow on purpose, so attempts that overlapped all read the same count: a
-   * script firing sixty at once had every one checked — a right PIN among
-   * them signed in — and the lock never came on. Each attempt now waits for
-   * the one before it at the same station, so it reads the count the last
-   * one left. The queue lives here, not in the Pi's page server, because this
-   * module is what both the Pi and staging's in-process box run. The booth's
-   * own PIN pad sends one attempt at a time anyway; what this closes is a
-   * script on the Pi's loopback, or at staging's relay with a paired screen's
-   * credential. An account sign-in waits its turn too: a wrong password is
-   * counted on the same throttle.
-   */
-  async function signIn(request: BoothSignInRequest): Promise<BoothSignInResult> {
-    const station = options.station();
-    if (!station) return { ok: false };
-    const previous = signInQueue.get(station.id) ?? Promise.resolve();
-    const attempt = previous.then(() => signInInTurn(station, request));
-    const done = attempt.then(
-      () => undefined,
-      () => undefined,
-    );
-    signInQueue.set(station.id, done);
-    void done.then(() => {
-      // The last attempt in the queue takes the queue away with it.
-      if (signInQueue.get(station.id) === done) signInQueue.delete(station.id);
-    });
-    return attempt;
-  }
-
-  /** One sign-in attempt, run when the station's attempts before it are done. */
-  async function signInInTurn(
-    station: BoothStationContext,
-    request: BoothSignInRequest,
-  ): Promise<BoothSignInResult> {
-    // The clock is read when the attempt's turn comes, not when it arrived:
-    // an attempt that waited behind another is judged by the lock as it
-    // stands now.
-    const nowMs = clock().getTime();
-    const at = { nowIso: new Date(nowMs).toISOString(), nowMs };
-
-    let held: ThrottleRecord | null;
-    try {
-      held = await store.readThrottle(boxId, BOOTH_STAFF_THROTTLE_SCOPE, station.id);
-    } catch (err) {
-      if (err instanceof BoxStoreFeatureMissingError) {
-        // A booth whose store cannot count failures cannot be defended by a
-        // count. Refusing the sign-in is the safe side of that: the wheel goes
-        // on spinning unattributed, which is the outcome the specification
-        // already requires to keep working.
-        note('error', 'this box cannot keep a sign-in throttle, so the booth refuses sign-in', {
-          missing: err.missing,
-        });
-        return { ok: false };
-      }
-      throw err;
-    }
-    const lockedForMs = lockRemaining(held, nowMs);
-    if (lockedForMs > 0) return { ok: false, retryAfterMs: lockedForMs };
-
-    /**
-     * S2-21 round 2 (plan H8) — a staff benefit QR is not a staff badge.
-     *
-     * It is a credential for something else entirely — a benefit at the F&B
-     * order station — and it opens no session anywhere. Refused here by its
-     * header, before any hash is tried, with its own reason so the booth says
-     * what it is rather than "wrong", and NOT counted towards the lock: it can
-     * never sign anybody in, so there is nothing to slow down, and counting it
-     * would lock the booth against everybody else each time somebody held up
-     * the wrong card.
-     */
-    if (request.badge !== undefined && hasBenefitCredentialHeader(request.badge)) {
-      note('info', 'a staff benefit QR was presented at the booth badge path and refused', {});
-      return { ok: false, reason: 'not_a_badge' };
-    }
-
-    if (request.account) {
-      return signInWithAccount(station, request.account, { ...at, held });
-    }
-
-    const secret = request.badge ?? request.pin ?? '';
-    const kind: 'badge' | 'pin' = request.badge !== undefined ? 'badge' : 'pin';
-    const verify = options.verifySecret;
-    const validShape = kind !== 'pin' || /^\d{5}$/.test(secret);
-    const candidates = eligibleStaff().filter((person) =>
-      kind !== 'pin' || request.accountId === undefined || person.accountId === request.accountId);
-    /**
-     * Every candidate is checked, not the first that matches (closing audit
-     * M10).
-     *
-     * Two people can hold the same digits: a PIN belongs to the person at
-     * every booth they work, adding somebody to a booth brings their PIN
-     * along, and nothing compares one person's with another's when it is set
-     * — a check there would tell whoever sets PINs which digits a colleague
-     * already uses. Stopping at the first match signed in whoever came first
-     * in the list the cloud sent, in no set order, and every slip, spin and
-     * reprint then carried that person's name. So a PIN that matches two
-     * people signs nobody in. It is refused like a wrong one, and it is NOT
-     * counted towards the lock: it can never sign anybody in, so there is
-     * nothing to slow down, and counting it would lock the booth against
-     * everybody else each time one of the two tried it. It is logged with how
-     * many it matched and never whom.
-     */
-    const matched: BoothStaffRecord[] = [];
-    if (verify && secret !== '' && validShape) {
-      for (const candidate of candidates) {
-        const hash = kind === 'badge' ? candidate.badgeHash : candidate.pinHash;
-        if (!hash) continue;
-        // Awaited in sequence rather than raced, so a booth cannot be made to
-        // run fifty argon2 verifications in parallel by somebody holding the
-        // button down. argon2 is deliberately slow; that is the point of it.
-        // That bounds ONE attempt; what bounds a stream of them is the
-        // throttle, and the queue in `signIn` that runs them one at a time.
-        if (await verify(hash, secret)) matched.push(candidate);
-      }
-    }
-
-    const live = kind === 'pin' ? matched.filter((person) => person.pinExpiresAt == null || Date.parse(person.pinExpiresAt) > nowMs) : matched;
-    if (live.length > 1) {
-      note(
-        'warn',
-        'a sign-in matched more than one person on this booth, so nobody was signed in',
-        { kind, matches: matched.length },
-      );
-      return { ok: false };
-    }
-
-    const person = live[0];
-    if (!person && matched.length > 0) return { ok: false, reason: 'pin_expired' };
-    if (!person) {
-      const { record, retryAfterMs } = await countFailure(station.id, held, at);
-      note('warn', 'a booth sign-in was refused', {
-        kind,
-        failures: record.failures,
-        candidates: candidates.length,
-        hashesHeld: candidates.filter((c) => (kind === 'badge' ? c.badgeHash : c.pinHash)).length,
-      });
-      return retryAfterMs > 0 ? { ok: false, retryAfterMs } : { ok: false };
-    }
-
-    /**
-     * The session runs for the booth's session length (SCRUM-223). It used to
-     * be open-ended; it now ends by itself at the end of a shift, and still
-     * never on idle — see `openSession`.
-     */
-    await openSession(
-      station,
-      {
-        accountId: person.accountId,
-        staffCode: person.staffCode ?? null,
-        displayName: person.displayName ?? null,
-      },
-      kind,
-      at,
-    );
-    note('info', 'somebody signed in at the booth', { kind });
-    return { ok: true, accountId: person.accountId };
-  }
-
-  /**
-   * The branch's staff, narrowed to who may sign in at this booth today and to
-   * active accounts: the standing list and today's roster together (SCRUM-473,
-   * D5.2). A casual on the roster has no account and so is never here.
-   *
-   * Somebody on the roster only is here only if the `staff` scope carries
-   * them, which is what holds their PIN hash; a person the scope does not
-   * carry signs in with their phone and password, which the platform checks
-   * against the same union.
-   */
-  function eligibleStaff(): BoothStaffRecord[] {
-    const allowed = new Set([
-      ...(applied?.allowedStaff ?? []),
-      ...todaysRoster().flatMap((p) => (p.accountId ? [p.accountId] : [])),
-    ]);
-    if (allowed.size === 0) return [];
-    return (options.staff?.() ?? []).filter(
-      (record) => allowed.has(record.accountId) && record.status === 'active',
-    );
-  }
-
-  async function signOut(): Promise<void> {
-    const station = options.station();
-    if (!station) return;
-    try {
-      await store.clearStaffSession(station.id);
-    } catch (err) {
-      if (err instanceof BoxStoreFeatureMissingError) return;
-      throw err;
-    }
-  }
-
-  async function staffSession(): Promise<BoxStaffSession | null> {
-    const station = options.station();
-    if (!station) return null;
-    try {
-      return await liveSession(station.id);
-    } catch (err) {
-      if (err instanceof BoxStoreFeatureMissingError) return null;
       throw err;
     }
   }
@@ -1807,8 +1129,21 @@ export function createBooth(options: BoothOptions): BoothModule {
       );
     }
 
-    const onDutyNow = await staffOnDutyQuietly(station.id);
-    const staffAccountId = onDutyNow?.accountId ?? null;
+    /**
+     * Who the slip names (SCRUM-694, D2/D3/D7): today's roster, from the
+     * entry this press drew under — never `applied`, so a refresh in the
+     * middle of a press cannot split the label from the wheel. Nobody signs
+     * in at the booth. Any spin on the trading day gets the day's names,
+     * whatever the time; nobody rostered is null, which prints "unattributed"
+     * and never blocks the press. The account ids are the rostered people
+     * who have one (a casual has none); they travel to the cloud only, never
+     * to the television.
+     */
+    const staffLabel = boothDutyLabel({ roster: entry.dutyRoster, today: timing.businessDate });
+    const dutyAccountIds =
+      entry.dutyRoster?.date === timing.businessDate
+        ? [...new Set(entry.dutyRoster.people.flatMap((p) => (p.accountId ? [p.accountId] : [])))]
+        : [];
 
     if (request.simulate) {
       /**
@@ -1826,7 +1161,7 @@ export function createBooth(options: BoothOptions): BoothModule {
         voucherCode: null,
         expiresAt: null,
         printState: 'no_printer',
-        staffAccountId,
+        staffLabel,
         clockSuspect: timing.clockSuspect,
       };
     }
@@ -1871,8 +1206,8 @@ export function createBooth(options: BoothOptions): BoothModule {
       type: 'booth.spin_recorded',
       occurredAt: timing.occurredAt,
       stationId: station.id,
-      actorKind: staffAccountId ? 'account' : 'device',
-      actorAccountId: staffAccountId,
+      actorKind: 'device',
+      actorAccountId: null,
       actionId: request.actionId ?? null,
       payload: {
         spinId,
@@ -1881,7 +1216,11 @@ export function createBooth(options: BoothOptions): BoothModule {
         outcome: 'prize',
         prizeId: outcome.prize.id,
         voucherId,
-        staffAccountId,
+        // The attribution (SCRUM-694): what the Staff row printed, and the
+        // rostered accounts. Sent whatever `voucherShowStaff` says, because
+        // attribution does not depend on paper.
+        staffLabel,
+        dutyAccountIds,
         clockSuspect: timing.clockSuspect,
         simulated: false,
         businessDate: timing.businessDate,
@@ -1892,8 +1231,8 @@ export function createBooth(options: BoothOptions): BoothModule {
       type: 'promo.voucher_issued',
       occurredAt: timing.occurredAt,
       stationId: station.id,
-      actorKind: staffAccountId ? 'account' : 'device',
-      actorAccountId: staffAccountId,
+      actorKind: 'device',
+      actorAccountId: null,
       actionId: request.actionId ?? null,
       payload: {
         voucherId,
@@ -1920,23 +1259,12 @@ export function createBooth(options: BoothOptions): BoothModule {
       expiresAt,
       issuedAtMs: timing.stampMs,
       /**
-       * The day's merged label (SCRUM-473, D6): every name on today's roster
-       * — plus the signed-in person when they are a stand-in not on it — or,
-       * before anyone is attributed today (no roster, or an empty one),
-       * exactly the signed-in "Nok (S-7KMQ)" of before, or null
-       * ("unattributed") when nobody is. Once the day's roster holds anyone
-       * — the rota's people, or a stand-in the cloud self-assigned at their
-       * first sign-in — the label is names only for the rest of the day (the
-       * owner's format ruling). The spin itself still records the one
-       * signed-in account (`staffAccountId`), as it always did.
+       * Today's roster label (SCRUM-473, SCRUM-694): every name on today's
+       * roster merged ("Tom and Jerry"), or null, which prints
+       * "unattributed". The same value the spin fact carries, so the slip
+       * and the attribution can never disagree.
        */
-      staffLabel: boothDutyLabel({
-        roster: applied?.dutyRoster ?? null,
-        today: timing.businessDate,
-        signedIn: onDutyNow
-          ? { accountId: onDutyNow.accountId, name: onDutyNow.name, label: onDutyNow.label }
-          : null,
-      }),
+      staffLabel,
     });
     const heldUntil = new Date(Date.parse(timing.occurredAt) + BOOTH_PRINT_HOLD_MS);
     const printJob = options.print ? { ...slip, nextAttemptAt: heldUntil.toISOString() } : null;
@@ -2087,7 +1415,7 @@ export function createBooth(options: BoothOptions): BoothModule {
         )?.fixedCode ?? voucherCode,
       expiresAt,
       printState: printJob ? 'queued' : 'no_printer',
-      staffAccountId,
+      staffLabel,
       clockSuspect: timing.clockSuspect,
     };
     const port = options.print;
@@ -2108,7 +1436,6 @@ export function createBooth(options: BoothOptions): BoothModule {
         voucherId,
         voucherCode,
         reason: 'initial',
-        requestedByAccountId: null,
         stationId: station.id,
       });
       // The durable job is already saved. Holding never opens the printer.
@@ -2363,7 +1690,7 @@ export function createBooth(options: BoothOptions): BoothModule {
       voucherCode: string;
       expiresAt: string | null;
       issuedAtMs: number;
-      /** "Nok (S-7KMQ)", or null for an unattributed spin. */
+      /** Today's roster label, "Tom and Jerry", or null, which prints "unattributed". */
       staffLabel: string | null;
     },
   ): PrintJobRecord {
@@ -2433,12 +1760,10 @@ export function createBooth(options: BoothOptions): BoothModule {
         issuedDate: formatStamp(new Date(detail.issuedAtMs), branch.timezone, { time: false }),
         booth: `${branch.name} · ${station.name}`,
         /**
-         * Name and staff code — "Nok (S-7KMQ)" — of whoever was on duty
-         * (SCRUM-223), or null, which the template prints as "unattributed":
-         * the wheel plays with nobody signed in and the slip says so. The
-         * account id is never printed; the staff scope now carries the name
-         * and the code for the people on this box's booths, and an account
-         * sign-in brings both from the cloud.
+         * Today's roster label — "Tom and Jerry" — from Console → Booths →
+         * Today's staff (SCRUM-694), or null, which the template prints as
+         * "unattributed": nobody was on today's roster and the slip says so.
+         * No account id is ever printed.
          */
         staff: detail.staffLabel,
         expiresAt:
@@ -2548,15 +1873,6 @@ export function createBooth(options: BoothOptions): BoothModule {
     if (!station) {
       throw new BoothRefusal('not_configured', 'This box is not serving a booth station');
     }
-    let session: BoxStaffSession | null = null;
-    try {
-      session = await liveSession(station.id);
-    } catch (err) {
-      if (!(err instanceof BoxStoreFeatureMissingError)) throw err;
-    }
-    if (!session) {
-      throw new BoothRefusal('staff_required', 'A reprint needs a member of staff signed in');
-    }
     let recent: RecentVoucher[] = [];
     try {
       recent = await readRecentVouchers(station.id);
@@ -2592,17 +1908,16 @@ export function createBooth(options: BoothOptions): BoothModule {
     const job = reprintedJob(target.job, options.branch()?.timezone ?? 'UTC', now);
     /**
      * Owned before it is submitted, so the outcome — whenever it comes — is
-     * reported as a REPRINT of this voucher, with the account signed in when
-     * it was asked for, and never through the cloud's print route (D20). No
-     * counter moves and no fact about a spin or a voucher is queued: the only
-     * record a reprint makes is the print itself, which is what the cloud
-     * counts copies from.
+     * reported as a REPRINT of this voucher, with no account (anyone at the
+     * screen may ask for one since SCRUM-694), and never through the cloud's
+     * print route (D20). No counter moves and no fact about a spin or a
+     * voucher is queued: the only record a reprint makes is the print itself,
+     * which is what the cloud counts copies from.
      */
     ownedPrintJobs.set(jobId, {
       voucherId: target.voucherId,
       voucherCode: target.voucherCode,
       reason: 'reprint',
-      requestedByAccountId: session.accountId,
       stationId: station.id,
     });
     const port = options.print;
@@ -2745,18 +2060,13 @@ export function createBooth(options: BoothOptions): BoothModule {
             errorCode: outcome.errorCode,
             errorMessage: outcome.errorMessage,
             /**
-             * `reprint` with the account signed in at the booth when the copy
-             * was asked for, or `initial` (SCRUM-223). The cloud files a
+             * `reprint` or `initial` (SCRUM-223). The cloud files a
              * `booth.voucher_print` row per job and counts the copies of the
              * code, so two slips with one code at reception is answerable:
-             * which one is the reprint, and who was signed in when it was
-             * made. The box cannot say who pressed the button — only whose
-             * session was open.
+             * which one is the reprint. A reprint names no account: anyone at
+             * the screen may ask for one (SCRUM-694).
              */
             reason: printed.reason,
-            ...(printed.requestedByAccountId
-              ? { requestedByAccountId: printed.requestedByAccountId }
-              : {}),
           },
         },
         (draft) => sealEnvelope(draft, boxId, key),
@@ -2797,16 +2107,7 @@ export function createBooth(options: BoothOptions): BoothModule {
    * that it could not ask.
    */
   async function measure(): Promise<BoothHeartbeatReport> {
-    const station = options.station();
     const health = healthForBooth();
-    let staffSignedIn = false;
-    try {
-      staffSignedIn = station ? (await liveSession(station.id)) !== null : false;
-    } catch {
-      // A store that cannot answer is reported as nobody signed in, which is
-      // the same thing the spin path does with the same failure.
-      staffSignedIn = false;
-    }
     const pending = await pendingCount();
     return {
       configVersion: applied?.version ?? null,
@@ -2815,7 +2116,8 @@ export function createBooth(options: BoothOptions): BoothModule {
       vouchersPending: pending.count,
       pendingUnit: pending.unit,
       lastSpinAt,
-      staffSignedIn,
+      rostered: currentDutyLabel() !== null,
+      staffSignedIn: false,
       dailyCapsReached: await cappedToday(),
       today: await countsToday(),
     };
@@ -2919,17 +2221,12 @@ export function createBooth(options: BoothOptions): BoothModule {
   }
 
   async function status(opts: { online: boolean }): Promise<BoothStatusReport> {
-    const measured = await measure();
-    const station = options.station();
-    let staff: BoothStaffOnDuty | null = null;
-    try {
-      staff = station ? ((await onDuty(station.id))?.duty ?? null) : null;
-    } catch {
-      staff = null;
-    }
+    // The heartbeat-only fields stay off the television's answer: it reads
+    // `dutyLabel`, and the retired `staffSignedIn` is for an older api only.
+    const { rostered: _rostered, staffSignedIn: _retired, ...measured } = await measure();
     return {
       online: opts.online,
-      staff,
+      dutyLabel: currentDutyLabel(),
       /**
        * "Never synced" is a different screen from "offline", and the
        * difference is whether a wheel has ever been applied — not whether the
@@ -2988,9 +2285,8 @@ export function createBooth(options: BoothOptions): BoothModule {
       for (const job of leftBehind) {
         if (job.job.kind !== 'booth_voucher') continue;
         // A job this process raised itself keeps what it knows — the voucher
-        // id and, for a reprint, who was signed in — when the booth is started
-        // again (a `restart` command stops and starts it while slips are still
-        // waiting).
+        // id — when the booth is started again (a `restart` command stops and
+        // starts it while slips are still waiting).
         if (ownedPrintJobs.has(job.id)) continue;
         /**
          * The voucher id is gone with the process that minted it — nothing on
@@ -3003,11 +2299,8 @@ export function createBooth(options: BoothOptions): BoothModule {
           voucherId: null,
           voucherCode: job.job.data.voucherCode,
           // A copy made on request carries its note on the job itself, which
-          // is what lets a restart still report it as a reprint. Who was
-          // signed in when it was asked for is not on the paper and is not
-          // recovered.
+          // is what lets a restart still report it as a reprint.
           reason: job.job.data.reprintNote ? 'reprint' : 'initial',
-          requestedByAccountId: null,
           // On the stored job, so a restart keeps it.
           stationId: job.stationId,
         });
@@ -3028,19 +2321,10 @@ export function createBooth(options: BoothOptions): BoothModule {
     config,
     refresh,
     spin,
-    signIn,
-    signOut,
-    staffSession,
     reprint,
     status,
     heartbeat,
     ownsPrintJob,
-    staffList: () => eligibleStaff().map((person) => ({
-      accountId: person.accountId,
-      name: person.displayName ?? null,
-      code: person.staffCode ?? null,
-      hasPin: Boolean(person.pinHash),
-    })).sort((a, b) => (a.name ?? a.code ?? '').localeCompare(b.name ?? b.code ?? '')),
     print,
     async reportPrint(outcome) {
       if (outcome.deviceId) lastPrintDeviceId = outcome.deviceId;

@@ -772,45 +772,6 @@ test('counters are per scope, per key and per trading day', async () => {
   harness.close();
 });
 
-test('one station holds one staff session, and signing in replaces it', async () => {
-  const harness = openTestStore(AT);
-  await harness.store.init(BOX_ID);
-
-  await harness.store.writeStaffSession({
-    stationId: STATION_ID,
-    boxId: BOX_ID,
-    accountId: 'acct-som',
-    credentialKind: 'pin',
-    staffCode: 'S-014',
-    signedInAt: AT,
-    lastSeenAt: AT,
-    expiresAt: null,
-  });
-  await harness.store.touchStaffSession(STATION_ID, plus(AT, 60_000));
-  let held = await harness.store.readStaffSession(STATION_ID);
-  assert.equal(held?.accountId, 'acct-som');
-  assert.equal(held?.lastSeenAt, plus(AT, 60_000), 'a touch moves the clock, not the person');
-  assert.equal(held?.signedInAt, AT);
-
-  await harness.store.writeStaffSession({
-    stationId: STATION_ID,
-    boxId: BOX_ID,
-    accountId: 'acct-nok',
-    credentialKind: 'badge',
-    staffCode: null,
-    signedInAt: plus(AT, 120_000),
-    lastSeenAt: plus(AT, 120_000),
-    expiresAt: null,
-  });
-  held = await harness.store.readStaffSession(STATION_ID);
-  assert.equal(held?.accountId, 'acct-nok', 'two people signed in at one booth is not a state');
-  assert.equal(held?.credentialKind, 'badge');
-
-  await harness.store.clearStaffSession(STATION_ID);
-  assert.equal(await harness.store.readStaffSession(STATION_ID), null);
-  harness.close();
-});
-
 test('the throttle counts failures and keeps a lock the caller does not mention', async () => {
   const harness = openTestStore(AT);
   await harness.store.init(BOX_ID);

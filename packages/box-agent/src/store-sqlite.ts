@@ -224,7 +224,8 @@ create table if not exists box_counter (
   primary key (box_id, scope, counter_key, business_date)
 );
 
--- Who is signed in at a station, kept where a restart cannot lose it.
+-- Retired by SCRUM-694: nothing reads or writes it; kept so older stores open.
+-- It held who was signed in at a booth station, which nobody does any more.
 create table if not exists box_staff_session (
   station_id text primary key,
   box_id text not null,
@@ -239,8 +240,9 @@ create table if not exists box_staff_session (
 
 create index if not exists box_staff_session_box_idx on box_staff_session (box_id);
 
--- Failed sign-ins, counted on disk. In memory a lockout would last until
--- somebody pulled the booth's power lead, which is not a lockout.
+-- Failed sign-ins (the station bridge's offline till unlock), counted on disk.
+-- In memory a lockout would last until somebody pulled the power lead, which
+-- is not a lockout.
 create table if not exists box_throttle (
   box_id text not null,
   scope text not null,
@@ -258,7 +260,7 @@ create table if not exists box_throttle (
 -- believe in (how a Pi with no clock battery can tell that the time it booted
 -- with is behind a moment it has already lived through), the last measurement
 -- of its clock against the platform and the boot it was made in (SCRUM-402),
--- the booth's last vouchers and who is signed in — and, one key per code,
+-- the booth's last vouchers — and, one key per code,
 -- every voucher code the booth has minted, so a repeat is drawn again
 -- (SCRUM-414).
 create table if not exists box_runtime (

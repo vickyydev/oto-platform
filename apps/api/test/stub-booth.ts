@@ -3,11 +3,9 @@ import {
   type Booth,
   type BoothConfigBundle,
   type BoothReprintRequest,
-  type BoothSignInRequest,
   type BoothSpinRequest,
   type BoothStatusReport,
   type BoxAgent,
-  type BoxStaffSession,
 } from '@oto/box-agent';
 import type { BoothReprintResponse, SpinResponse } from '@oto/shared';
 import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
@@ -23,18 +21,17 @@ import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
  * drifted from it would be proving nothing.
  *
  * **Every default answer is one the real booth gives**, for a booth with
- * nobody on its staff list and nobody signed in. It is one module because the
- * two files used to carry a copy each, and a copy is where a stub grows a path
- * the box has not (closing audit 2026-09-25, L35: the television page's own
- * fake accepted a badge, invented an expiry and kept a fixed session). So:
- *  - a press draws, unattributed (`staffAccountId: null`);
- *  - a sign-in is refused, PIN or badge alike. The box verifies against the
- *    hashes on its cached staff list and this booth holds none — and a badge
- *    finds nobody on any box today (`booth.ts`, `signIn`);
- *  - there is no live session, so the status says nobody is signed in and
- *    carries `staff: null`, which the booth always sends;
- *  - a reprint is refused `staff_required`, which is what a box with no
- *    session answers (`booth.ts`, `reprint`). Every real booth has the
+ * nobody on today's roster and no voucher printed yet. It is one module
+ * because the two files used to carry a copy each, and a copy is where a stub
+ * grows a path the box has not (closing audit 2026-09-25, L35: the television
+ * page's own fake accepted a badge, invented an expiry and kept a fixed
+ * session). So:
+ *  - a press draws, unattributed (`staffLabel: null`: nobody on today's
+ *    roster). Nobody signs in at a booth (SCRUM-694), and the box has no
+ *    staff routes at all;
+ *  - the status carries `dutyLabel: null`, which the booth always sends;
+ *  - a reprint is refused `nothing_to_reprint`, which is what a box that has
+ *    printed nothing answers (`booth.ts`, `reprint`). Every real booth has the
  *    reprint path; the http contract's 404 for a booth without one is for an
  *    older box, and nothing here stands in for that.
  * A test that needs another answer overrides that one member, and says why.
@@ -43,15 +40,13 @@ import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
 /** What the stub was asked, in order, for the assertions that read it. */
 export interface BoothCalls {
   spin: BoothSpinRequest[];
-  signIn: BoothSignInRequest[];
-  signOut: number;
   reprint: BoothReprintRequest[];
   /** What `status()` was told about the box's link — the api's own contribution. */
   statusOnline: boolean[];
 }
 
 export function newCalls(): BoothCalls {
-  return { spin: [], signIn: [], signOut: 0, reprint: [], statusOnline: [] };
+  return { spin: [], reprint: [], statusOnline: [] };
 }
 
 /** The draw this booth answers every press with. */
@@ -63,11 +58,11 @@ export const SPIN: SpinResponse = {
   voucherCode: 'B1H7K2M9PQ',
   expiresAt: '2026-10-05T00:00:00.000Z',
   printState: 'printed',
-  staffAccountId: null,
+  staffLabel: null,
   clockSuspect: false,
 };
 
-/** The same code on new paper: what a box with somebody signed in answers a reprint. */
+/** The same code on new paper: what a box that has printed a voucher answers a reprint. */
 export const REPRINT: BoothReprintResponse = {
   spinId: SPIN.spinId,
   printState: 'printed',
@@ -88,9 +83,8 @@ export const STATUS: BoothStatusReport = {
   paperStatus: 'ok',
   vouchersPending: 0,
   lastSpinAt: null,
-  staffSignedIn: false,
   dailyCapsReached: [],
-  staff: null,
+  dutyLabel: null,
 };
 
 export function stubBooth(calls: BoothCalls, overrides: Partial<Booth> = {}): Booth {
@@ -103,17 +97,9 @@ export function stubBooth(calls: BoothCalls, overrides: Partial<Booth> = {}): Bo
       calls.spin.push(request);
       return SPIN;
     },
-    signIn: async (request) => {
-      calls.signIn.push(request);
-      return { ok: false };
-    },
-    signOut: async () => {
-      calls.signOut += 1;
-    },
-    staffSession: async (): Promise<BoxStaffSession | null> => null,
     reprint: async (request) => {
       calls.reprint.push(request);
-      throw new BoothRefusal('staff_required', 'A reprint needs a member of staff signed in');
+      throw new BoothRefusal('nothing_to_reprint', 'There is no voucher to print again');
     },
     status: async ({ online }) => {
       calls.statusOnline.push(online);

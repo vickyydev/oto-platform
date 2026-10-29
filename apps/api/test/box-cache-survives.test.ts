@@ -471,10 +471,6 @@ describe('a box that runs only a booth holds the booth’s cache and nothing els
     await boothAgent.setOffline(true, { reason: 'test' });
     online = false;
 
-    const signedIn = await booth!.signIn({ pin: PIN });
-    expect(signedIn.ok, 'the booth refused a PIN its own cache carries').toBe(true);
-    expect(signedIn.accountId).toBe(personId);
-
     const spun = await booth!.spin({ idempotencyKey: newId() });
     expect(spun.spinId).toBeTruthy();
     expect(spun.voucherCode, 'the booth minted no code for the prize it drew').toBeTruthy();

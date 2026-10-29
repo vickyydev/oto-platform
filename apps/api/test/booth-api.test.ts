@@ -353,43 +353,11 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     expect(res.json().online).toBe(false);
   });
 
-  it('sign-in and sign-out are the box’s decisions, carried', async () => {
-    const calls = newCalls();
-    attachBooth(
-      stubBooth(calls, {
-        signIn: async (request) => {
-          calls.signIn.push(request);
-          return { ok: false, retryAfterMs: 30_000 };
-        },
-      }),
-    );
-
-    const refused = await ctx.app.inject({
-      method: 'POST',
-      url: '/booth/staff/sign-in',
-      headers: deviceHeader,
-      payload: { pin: '0000' },
-    });
-    // A refusal is 200 with `ok: false`: the panel shows a countdown somebody
-    // can act on, and a booth whose sign-in is being retried is not a booth
-    // that is broken — the wheel is still spinning.
-    expect(refused.statusCode).toBe(200);
-    expect(refused.json()).toEqual({ ok: false, retryAfterMs: 30_000 });
-    expect(calls.signIn).toEqual([{ pin: '0000' }]);
-
-    const out = await ctx.app.inject({
-      method: 'POST',
-      url: '/booth/staff/sign-out',
-      headers: deviceHeader,
-      payload: {},
-    });
-    expect(out.statusCode).toBe(204);
-    expect(calls.signOut).toBe(1);
-  });
-
-  it('a reprint never draws — the box’s copy is relayed whole, and its refusal with nobody signed in is the box’s 403', async () => {
-    // A box with somebody signed in: the same code goes onto new paper and the
-    // box says what became of it (SCRUM-223). Every real booth has this path.
+  it('a reprint never draws — the box’s copy is relayed whole with nobody signed in, and its refusal is the box’s', async () => {
+    // A box that has printed a voucher: the same code goes onto new paper and
+    // the box says what became of it (SCRUM-223). Nobody signs in at a booth
+    // (SCRUM-694): anyone at the screen may ask, and there is no
+    // `staff_required` any more. Every real booth has this path.
     const calls = newCalls();
     attachBooth(
       stubBooth(calls, {
@@ -407,31 +375,30 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
       payload: { spinId: SPIN.spinId },
     });
 
-    // A reprint needs the voucher, the printer and the staff session, and all
-    // three are on the box: the api hands the request over as it came — the
-    // spin asked for and the action id — and hands the answer back unchanged.
+    // A reprint needs the voucher and the printer, and both are on the box:
+    // the api hands the request over as it came — the spin asked for and the
+    // action id — and hands the answer back unchanged.
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual(REPRINT);
     expect(calls.reprint).toEqual([{ spinId: SPIN.spinId, actionId: 'act-reprint-0199a0f0' }]);
     // Nothing was drawn, printed anew or minted on the way: a copy, not a draw.
     expect(calls.spin).toEqual([]);
 
-    // A box with nobody signed in — the stub's own state — refuses it with its
-    // code, and the api carries that as the 403 the panel knows: "sign in
-    // first", which is not a broken booth.
-    const nobody = newCalls();
+    // A box with nothing to reprint — the stub's own state — refuses it with
+    // its code, and the api carries that as the box's 404.
+    const nothing = newCalls();
     detachStubBoxes();
-    attachBooth(stubBooth(nobody));
+    attachBooth(stubBooth(nothing));
     const refused = await ctx.app.inject({
       method: 'POST',
       url: '/booth/reprint',
       headers: deviceHeader,
       payload: {},
     });
-    expect(refused.statusCode).toBe(403);
-    expect(refused.json().error.code).toBe('staff_required');
-    expect(nobody.reprint).toEqual([{ actionId: null }]);
-    expect(nobody.spin).toEqual([]);
+    expect(refused.statusCode).toBe(404);
+    expect(refused.json().error.code).toBe('nothing_to_reprint');
+    expect(nothing.reprint).toEqual([{ actionId: null }]);
+    expect(nothing.spin).toEqual([]);
   });
 
   it('nothing on the booth surface names a station, a box or a person (D15)', async () => {
@@ -447,38 +414,21 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     const status = await ctx.app.inject({ method: 'GET', url: '/booth/status', headers: deviceHeader });
     // The document is the box's; what this pins is that the api adds nothing
     // to it on the way past — no station, no box, no branch, no account. The
-    // shape's own rule, that `staffSignedIn` is a boolean rather than a
-    // person and `staff` a name and a staff code for the corner of the
-    // television (null, as here, when nobody is), is kept where the shape is.
+    // corner of the television reads `dutyLabel`: today's roster names, null
+    // (as here) when nobody is on it (SCRUM-694). No `staff`, no
+    // `staffSignedIn`: nobody signs in at a booth.
     expect(Object.keys(status.json()).sort()).toEqual([
       'configVersion',
       'dailyCapsReached',
+      'dutyLabel',
       'lastSpinAt',
       'neverSynced',
       'online',
       'paperStatus',
       'printerReachable',
-      'staff',
-      'staffSignedIn',
       'vouchersPending',
     ]);
-    expect(status.json().staff).toBeNull();
-
-    // A sign-in the box accepts tells the box WHO it was, and the surface
-    // tells the television only that it worked: the account id stops at the
-    // box (`BoothSignInResult.accountId`, "never sent to the television").
-    const signedIn = '0199a0f0-0000-7000-8000-00000000a001';
-    detachStubBoxes();
-    attachBooth(stubBooth(newCalls(), { signIn: async () => ({ ok: true, accountId: signedIn }) }));
-    const ok = await ctx.app.inject({
-      method: 'POST',
-      url: '/booth/staff/sign-in',
-      headers: deviceHeader,
-      payload: { pin: '2468' },
-    });
-    expect(ok.statusCode).toBe(200);
-    expect(ok.json()).toEqual({ ok: true });
-    expect(ok.body).not.toContain(signedIn);
+    expect(status.json().dutyLabel).toBeNull();
   });
 });
 

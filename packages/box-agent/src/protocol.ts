@@ -129,11 +129,12 @@ export type DeviceReport = z.infer<typeof DeviceReportSchema>;
  *
  * Counts and states, like everything else on this wire: no code, no prize
  * name, no member, and — the one that matters here — no staff identity.
- * `staffSignedIn` is a boolean rather than an account id on purpose. Health
- * needs to know that vouchers are printing with nobody attending the booth;
- * it does not need to know who is standing there, and a telemetry stream is
- * the last place to put a name that nothing reads until something has already
- * gone wrong.
+ * `rostered` is a boolean saying today's roster is on the box, never who
+ * (SCRUM-694: nobody signs in at the booth; the slip names today's roster).
+ * Health needs to know that vouchers are printing with nobody on today's
+ * roster; it does not need to know who is standing there, and a telemetry
+ * stream is the last place to put a name that nothing reads until something
+ * has already gone wrong.
  *
  * **One booth per box.** The block is a single object, not a list keyed by
  * station, because a booth box boots into the game and runs one wheel. A box
@@ -167,8 +168,18 @@ export const BoothHeartbeatSchema = z.object({
   vouchersPending: z.number().int().min(0),
   /** The box's own stamp, as with every other time on this wire. Null: no spin yet. */
   lastSpinAt: z.string().datetime().nullable(),
-  /** Whether SOMEBODY is signed in. Never who. See the note above. */
-  staffSignedIn: z.boolean(),
+  /**
+   * Retired by SCRUM-694: nothing reads it. An older agent sends whether
+   * somebody was signed in; a new one sends `false` so an api older than
+   * SCRUM-694, whose schema required it, still accepts the heartbeat.
+   */
+  staffSignedIn: z.boolean().optional(),
+  /**
+   * Whether today's roster names anybody on this box (SCRUM-694). Never who.
+   * Absent from an agent older than SCRUM-694. Declared here, or zod strips
+   * it before `box.last_status` stores it.
+   */
+  rostered: z.boolean().optional(),
   /**
    * The prizes that have hit their daily cap on this booth today, by
    * `booth.booth_prize.id`. Configuration, not people — which is why ids are

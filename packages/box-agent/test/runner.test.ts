@@ -30,7 +30,6 @@ const BOX = '018f1d2c-0000-7000-8000-0000000b0c01';
 const STATION_A = '018f1d2c-0000-7000-8000-0000000057d1';
 const STATION_B = '018f1d2c-0000-7000-8000-0000000057d2';
 const PRINTER = '018f1d2c-0000-7000-8000-0000000de0d1';
-const ACCOUNT = '018f1d2c-0000-7000-8000-00000000fb21';
 const quiet = { info() {}, warn() {}, error() {} };
 
 function tempHome(): string {
@@ -94,7 +93,7 @@ function boothEntry(stationId: string, prefixName: string) {
     configVersionId: stationId.replace(/57d/, 'fc0'),
     version: 3,
     bundleHash: (stationId === STATION_A ? 'a' : 'b').repeat(64),
-    allowedStaff: [ACCOUNT],
+    dutyRoster: null,
     voucherDefinitions: [],
     bundle: {
       schemaVersion: 1,
@@ -180,19 +179,13 @@ interface FakeCloud {
   /** Everything after this throws, as a dropped mall line does. */
   down: boolean;
   twoBooths: boolean;
-  verifyAnswer: { status: number; body: unknown };
 }
 
 async function fakeCloud(): Promise<FakeCloud> {
-  const pinHash = await argonHash('73910');
   const cloud: FakeCloud = {
     calls: [],
     down: false,
     twoBooths: false,
-    verifyAnswer: {
-      status: 200,
-      body: { accountId: ACCOUNT, displayName: 'Nok', staffCode: 'S-7KMQ' },
-    },
     fetch: async (url, init) => {
       if (cloud.down) throw new TypeError('fetch failed');
       const path = new URL(url).pathname;
@@ -252,21 +245,9 @@ async function fakeCloud(): Promise<FakeCloud> {
             truncated: [],
             scopes: {
               deny_list: { items: [{ revokedAccountIds: [], revokedTokenIds: [] }], nextCursor: null },
-              staff: {
-                items: [
-                  {
-                    accountId: ACCOUNT,
-                    passwordHash: null,
-                    status: 'active',
-                    mustChangePassword: false,
-                    lastTokenAt: null,
-                    pinHash,
-                    staffCode: 'S-7KMQ',
-                    displayName: 'Nok',
-                  },
-                ],
-                nextCursor: null,
-              },
+              // A booth-only box is served the staff scope with nobody in it
+              // (SCRUM-694): the booth reads no staff at all.
+              staff: { items: [], nextCursor: null },
               booth: {
                 items: cloud.twoBooths
                   ? [boothEntry(STATION_A, 'Booth A'), boothEntry(STATION_B, 'Booth B')]
@@ -291,8 +272,6 @@ async function fakeCloud(): Promise<FakeCloud> {
           });
         case '/box/v1/commands/poll':
           return reply(200, { commands: [], serverTime: new Date().toISOString() });
-        case '/box/v1/booth/staff/verify':
-          return reply(cloud.verifyAnswer.status, cloud.verifyAnswer.body);
         default:
           // The outbox push and the print-result route: not what this file is
           // about, and a 503 makes the agent keep its facts and try later.
@@ -735,14 +714,11 @@ test('a box that boots with no internet still plays: the config copy on disk car
     // SCRUM-419 (L16): the number beside the dot is vouchers — one press, one.
     assert.equal(status.vouchersPending, 1, 'and the voucher waits for the line');
 
-    // An account sign-in needs the cloud: refused with the words for the PIN.
-    const account = await hit(second.port, 'POST', '/booth/staff/sign-in', {
-      body: { mode: 'account', phone: '0812345678', password: 'pw' },
-    });
-    assert.deepEqual(account.json(), { ok: false, reason: 'offline' });
-    // The PIN is checked on the box, against the real argon2 hash.
-    const pin = await hit(second.port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '73910' } });
-    assert.deepEqual(pin.json(), { ok: true });
+    // Nobody signs in at the booth (SCRUM-694): a copy of the last voucher is
+    // anyone's to ask for, with no internet too.
+    const reprint = await hit(second.port, 'POST', '/booth/reprint', { body: {} });
+    assert.equal(reprint.status, 200);
+    assert.equal((await hit(second.port, 'POST', '/booth/staff/sign-in', { body: {} })).status, 404);
   } finally {
     await second.stop();
   }
@@ -806,20 +782,6 @@ test('a cloud that takes the connection and never answers: the television is up 
     const spin = await hit(port, 'POST', '/booth/spin', { body: { idempotencyKey: 'stall-1' } });
     assert.equal(spin.status, 200);
     assert.match((spin.json() as { voucherCode: string }).voucherCode, /^BA/);
-
-    // A PIN is the box's to check; an account sign-in asks the cloud, gives up
-    // inside the allowance, and says so rather than hanging the panel.
-    const pin = await hit(port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '73910' } });
-    assert.deepEqual(pin.json(), { ok: true });
-    const askedBefore = stalled.connections();
-    const account = await hit(port, 'POST', '/booth/staff/sign-in', {
-      body: { mode: 'account', phone: '0812345678', password: 'pw' },
-    });
-    // "offline" is what the box answers once the cloud has been asked and has
-    // not answered: proven by the connection the stalled cloud took, not by a
-    // stopwatch on this machine (SCRUM-423). A hang would fail the run itself.
-    assert.deepEqual(account.json(), { ok: false, reason: 'offline' });
-    assert.ok(stalled.connections() > askedBefore, 'the cloud was asked, and given up on');
 
     const box = await booting;
     assert.ok(startedAfter !== null && startedAfter >= 1_200, `start gave up on four calls (${startedAfter} ms)`);
@@ -998,77 +960,7 @@ test('the Console’s offline switch on at boot: a press, back online, one heart
   assert.deepEqual(printFacts(home).map((fact) => fact.status), ['printed']);
 });
 
-// --- Signing in and printing --------------------------------------------------
-
-test('an account sign-in goes to the cloud under the box credential, and names the person', async () => {
-  const home = tempHome();
-  const cloud = await fakeCloud();
-  const box = await run(home, cloud);
-  try {
-    await hit(box.port, 'POST', '/kiosk/claim', { body: { code: CODE } });
-    const signed = await hit(box.port, 'POST', '/booth/staff/sign-in', {
-      body: { mode: 'account', phone: '0812345678', password: 'secret-pw' },
-    });
-    assert.deepEqual(signed.json(), { ok: true });
-    const asked = cloud.calls.find((c) => c.path === '/box/v1/booth/staff/verify');
-    assert.deepEqual(asked?.body, {
-      stationId: STATION_A,
-      phone: '0812345678',
-      password: 'secret-pw',
-    });
-    const status = (await hit(box.port, 'GET', '/booth/status')).json() as {
-      staff: { name: string; code: string; method: string };
-    };
-    assert.deepEqual(
-      { name: status.staff.name, code: status.staff.code, method: status.staff.method },
-      { name: 'Nok', code: 'S-7KMQ', method: 'account' },
-    );
-
-    cloud.verifyAnswer = {
-      status: 403,
-      body: { error: { code: 'BOOTH_STAFF_NOT_ASSIGNED', message: 'x' } },
-    };
-    const refused = await hit(box.port, 'POST', '/booth/staff/sign-in', {
-      body: { mode: 'account', phone: '0899999999', password: 'pw' },
-    });
-    assert.deepEqual(refused.json(), { ok: false, reason: 'not_assigned' });
-  } finally {
-    await box.stop();
-  }
-});
-
-test('a sign-in the cloud refuses because of the BOX says so, and is not "no internet"', async () => {
-  const home = tempHome();
-  const cloud = await fakeCloud();
-  const box = await run(home, cloud);
-  try {
-    await hit(box.port, 'POST', '/kiosk/claim', { body: { code: CODE } });
-    const signIn = async () =>
-      (
-        await hit(box.port, 'POST', '/booth/staff/sign-in', {
-          body: { mode: 'account', phone: '0812345678', password: 'pw' },
-        })
-      ).json();
-
-    // This box's credential revoked or replaced in the Console.
-    cloud.verifyAnswer = { status: 401, body: { error: { code: 'BOX_UNAUTHORIZED', message: 'x' } } };
-    assert.deepEqual(await signIn(), { ok: false, reason: 'box_refused' });
-    // This box taken out of service.
-    cloud.verifyAnswer = { status: 403, body: { error: { code: 'BOX_DISABLED', message: 'x' } } };
-    assert.deepEqual(await signIn(), { ok: false, reason: 'box_refused' });
-    // The booth moved to another box, or archived.
-    cloud.verifyAnswer = { status: 404, body: { error: { code: 'BOOTH_NOT_ON_THIS_BOX', message: 'x' } } };
-    assert.deepEqual(await signIn(), { ok: false, reason: 'booth_not_on_box' });
-    // A wrong password is still only a wrong password.
-    cloud.verifyAnswer = { status: 401, body: { error: { code: 'INVALID_CREDENTIALS', message: 'x' } } };
-    assert.deepEqual(await signIn(), { ok: false });
-    // Answering the panel is not the refusal path: the credential stays for
-    // the heartbeat to test, once a minute at most.
-    assert.equal(box.agent.state.registered, true);
-  } finally {
-    await box.stop();
-  }
-});
+// --- Printing -----------------------------------------------------------------
 
 test('the booth prints over TCP 9100 to the printer config.json names, at its width', async () => {
   const home = tempHome();
@@ -1104,8 +996,8 @@ test('the booth prints over TCP 9100 to the printer config.json names, at its wi
     assert.equal(onDisk.stations[0]?.devices[0]?.transport, 'simulated');
     assert.equal(onDisk.stations[0]?.devices[0]?.address, '192.168.88.207:9100');
 
-    // Staff reprint the voucher: the same code comes out of the same printer.
-    await hit(box.port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '73910' } });
+    // A reprint of the voucher, with nobody signed in (SCRUM-694): the same
+    // code comes out of the same printer.
     const before = printer.received().length;
     const reprint = (await hit(box.port, 'POST', '/booth/reprint', { body: {} })).json() as {
       printState: string;
@@ -1181,7 +1073,10 @@ test('with no printer answering the code goes to the screen and the job waits on
   }
 });
 
-test('the PIN verifier is @node-rs/argon2, and it checks the hashes the api writes', async () => {
+test('the box’s password verifier is @node-rs/argon2, and it checks the hashes the api writes', async () => {
+  // The verifier the runner hands the agent as `booth.verifySecret`, which the
+  // station bridge's offline till unlock uses (agent.ts: the bridge's default
+  // verifier). The booth itself verifies nothing since SCRUM-694.
   const verify = await loadArgon2Verifier(quiet);
   assert.ok(verify, 'the native module loaded on this machine');
   const stored = await argonHash('73910');

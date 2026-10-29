@@ -9,10 +9,8 @@ import {
   boothPrize,
   boothSettings,
   boothStaffAssignment,
-  boxCommand,
   branch,
   credential,
-  idempotencyKey,
   operator,
   station,
   type Db,
@@ -40,7 +38,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
-import { drawUnsharedBoothPin, listBooths } from '../src/services/booth-admin';
+import { listBooths } from '../src/services/booth-admin';
 import { provisionVirtualBox } from '../src/services/box';
 
 /**
@@ -1210,170 +1208,6 @@ describe('voucher definitions (S2-07b)', () => {
  * Run last, and in this order on purpose — the box's sign-in throttle counts
  * failures per booth, so the refusal goes after the success rather than
  * locking it out.
- */
-describe('the booth PIN (S2-07b)', () => {
-  /** Issued by the platform in the first test (SCRUM-428), and read by the rest. */
-  let PIN = '';
-
-  it('refuses a typed PIN by name: booth PINs are issued, not chosen (SCRUM-428)', async () => {
-    for (const payload of [{ pin: '13570' }, { generate: false }]) {
-      const res = await ctx.app.inject({
-        method: 'PUT',
-        url: `/booths/${boothId}/staff/${receptionAccountId}/pin`,
-        headers: { cookie: adminCookie, 'idempotency-key': newId() },
-        payload,
-      });
-      expect(res.statusCode, res.body).toBe(400);
-      expect(res.json().error.code).toBe('BOOTH_PIN_ISSUED_ONLY');
-    }
-  });
-
-  it('issues a PIN shown once and nobody can read back, and the booth then lets that person in', async () => {
-    const res = await ctx.app.inject({
-      method: 'PUT',
-      url: `/booths/${boothId}/staff/${receptionAccountId}/pin`,
-      headers: { cookie: adminCookie, 'idempotency-key': newId() },
-      payload: {},
-    });
-    expect(res.statusCode, res.body).toBe(200);
-    expect(res.json()).toEqual({
-      accountId: receptionAccountId,
-      hasPin: true,
-      pinExpiresAt: null,
-      pin: expect.stringMatching(/^\d{5}$/),
-    });
-    PIN = res.json().pin as string;
-
-    const [row] = await db
-      .select()
-      .from(credential)
-      .where(
-        and(
-          eq(credential.accountId, receptionAccountId),
-          eq(credential.kind, 'pin'),
-          eq(credential.active, true),
-        ),
-      )
-      .limit(1);
-    expect(row, 'no live PIN credential was written').toBeTruthy();
-    expect(row!.secretHash.startsWith('$argon2'), 'the PIN was not hashed with argon2id').toBe(true);
-    expect(await verifyArgon2(row!.secretHash, PIN)).toBe(true);
-
-    /**
-     * Where the five digits must NOT be, each checked rather than asserted in
-     * a comment.
-     */
-    const [entry] = await db
-      .select({ after: auditLog.after, before: auditLog.before })
-      .from(auditLog)
-      .where(eq(auditLog.action, 'booth_pin.set'))
-      .orderBy(desc(auditLog.createdAt))
-      .limit(1);
-    expect(entry, 'a PIN was set with no audit row').toBeTruthy();
-    expect(JSON.stringify(entry)).not.toContain(PIN);
-    expect(JSON.stringify(entry)).not.toContain(row!.secretHash);
-
-    // The idempotency store keeps a request hash for a day, and five digits
-    // behind a plain SHA-256 is one hundred thousand guesses. The route declares
-    // `secretResponse`, so no key is claimed at all.
-    const keys = await db.select().from(idempotencyKey);
-    const pinKeys = keys.filter((k) => k.requestHash && k.responseBody !== null && JSON.stringify(k).includes('/pin'));
-    expect(pinKeys, 'the PIN request entered the idempotency store').toEqual([]);
-
-    // And never on the box command queue, whose payloads are stored and shown
-    // on a Console screen.
-    const commands = await db.select().from(boxCommand);
-    expect(JSON.stringify(commands)).not.toContain(PIN);
-
-    // The seam: the hash reaches the box on the staff cache scope, and the
-    // booth verifies the typed digits against it.
-    await agent.syncCache();
-    const signedIn = await booth.signIn({ pin: PIN });
-    expect(signedIn.ok, 'the booth refused a PIN the Console had just set').toBe(true);
-    expect(signedIn.accountId).toBe(receptionAccountId);
-  });
-
-  /**
-   * SCRUM-428 (audit M10, T29) — an issued PIN is one nobody else on the
-   * person's booths holds. A colleague's digits drawn are drawn again, and
-   * never reported: nobody chose them, so the clash tells nobody anything.
-   */
-  it('draws again when the digits are a colleague’s on the same booth, and gives up rather than issue a shared PIN', async () => {
-    const [b1] = await db
-      .select({ operatorId: station.operatorId })
-      .from(station)
-      .where(eq(station.id, boothId))
-      .limit(1);
-    const [other] = await db
-      .select({ id: account.id })
-      .from(account)
-      .where(eq(account.operatorId, b1!.operatorId))
-      .limit(50)
-      .then((rows) => rows.filter((r) => r.id !== receptionAccountId));
-    expect(other, 'no second account to put on the booth').toBeTruthy();
-    const planted = newId();
-    await db.insert(boothStaffAssignment).values({
-      id: planted,
-      stationId: boothId,
-      accountId: other!.id,
-      addedBy: receptionAccountId,
-    });
-    try {
-      const free = PIN === '24680' ? '13579' : '24680';
-      const sequence = [PIN, PIN, free];
-      const drawn = await drawUnsharedBoothPin(db, other!.id, () => sequence.shift()!);
-      expect(drawn, 'the colleague’s PIN was issued again').toBe(free);
-      await expect(drawUnsharedBoothPin(db, other!.id, () => PIN)).rejects.toMatchObject({
-        code: 'BOOTH_PIN_UNAVAILABLE',
-      });
-    } finally {
-      await db.delete(boothStaffAssignment).where(eq(boothStaffAssignment.id, planted));
-    }
-  });
-
-  it('attributes the spin that follows to the person who signed in', async () => {
-    const spun = await booth.spin({ idempotencyKey: newId() });
-    expect(spun.staffAccountId, 'the spin was recorded unattributed').toBe(receptionAccountId);
-  });
-
-  it('refuses the same PIN once it is withdrawn and the box has pulled', async () => {
-    await booth.signOut();
-    const res = await ctx.app.inject({
-      method: 'DELETE',
-      url: `/booths/${boothId}/staff/${receptionAccountId}/pin?reason=left%20the%20booth`,
-      headers: asAdmin(),
-    });
-    expect(res.statusCode, res.body).toBe(200);
-
-    const [row] = await db
-      .select()
-      .from(credential)
-      .where(and(eq(credential.accountId, receptionAccountId), eq(credential.kind, 'pin')))
-      .orderBy(desc(credential.createdAt))
-      .limit(1);
-    // Revoked with a reason, never deleted: "whose PIN was withdrawn, and
-    // when" has to stay answerable.
-    expect(row!.active).toBe(false);
-    expect(row!.revokedAt).toBeTruthy();
-    expect(row!.revokedReason).toBe('left the booth');
-
-    await agent.syncCache();
-    const refused = await booth.signIn({ pin: PIN });
-    expect(refused.ok, 'a withdrawn PIN still opened the booth after a pull').toBe(false);
-  });
-});
-
-/**
- * SCRUM-267 — the booth list is the one `/branches/:branchId/…` route that took
- * the branch id on trust.
- *
- * Its twelve siblings refuse another operator's branch id with a 404 and this
- * one answered 200 with that operator's booth, to the administrator of a park
- * that does not own it. The guard cannot catch it: an operator-scoped grant
- * matches on the operator alone and has no way to know which operator a branch
- * id belongs to, so the branch has to be LOADED. Driven as the operator
- * administrator, because they are the caller the guard lets through — a branch
- * manager was already refused by scope and proves nothing about this.
  */
 describe('the booth list stops at the operator (SCRUM-267)', () => {
   let ownBranchId: string;
