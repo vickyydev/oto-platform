@@ -48,9 +48,14 @@ let parkTester: string; // console:integration:test + admin:health:read at ONE p
 let fetchCalls = 0;
 let restoreFetch: () => void;
 
+// Two independent picks from 90 numbers collided about one run in 90; one
+// random start, stepped per account, keeps each run's numbers distinct.
+const phoneStart = Math.floor(Math.random() * 90);
+let accountsMade = 0;
+
 async function accountWith(name: string, permissions: Permission[], scope: { type: 'operator' | 'branch'; id: string | null }) {
   const id = newId(), roleId = newId(), password = randomBytes(18).toString('hex');
-  const phone = normalizePhone(`+669006450${String(Math.floor(Math.random() * 90) + 10)}`)!;
+  const phone = normalizePhone(`+669006450${String(((phoneStart + accountsMade++) % 90) + 10)}`)!;
   await ctx.db.insert(account).values({ id, operatorId, phone, passwordHash: await hash(password), status: 'active',
     mustChangePassword: false, phoneVerifiedAt: new Date() });
   await ctx.db.insert(role).values({ id: roleId, operatorId, name: `ZZ TEST 645 ${name}` });
