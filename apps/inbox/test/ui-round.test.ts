@@ -162,9 +162,9 @@ describe("F2 — the assistant page's three tabs", () => {
   const selected = (html: string, label: string) =>
     new RegExp(`aria-selected="true"[^>]*>${label}<`).test(html);
 
-  it('offers Numbers on inbox:ai:manage, Knowledge and Examples on inbox:kb:manage, in that order', () => {
-    expect(assistantSections({ ai: true, kb: true }).map(([, l]) => l)).toEqual(['Numbers', 'Knowledge', 'Examples']);
-    expect(assistantSections({ ai: false, kb: true }).map(([s]) => s)).toEqual(['knowledge', 'examples']);
+  it('offers Numbers on inbox:ai:manage, Knowledge, Examples, Rules and Teach on inbox:kb:manage, in that order', () => {
+    expect(assistantSections({ ai: true, kb: true }).map(([, l]) => l)).toEqual(['Numbers', 'Knowledge', 'Examples', 'Rules', 'Teach']);
+    expect(assistantSections({ ai: false, kb: true }).map(([s]) => s)).toEqual(['knowledge', 'examples', 'rules', 'teach']);
     expect(assistantSections({ ai: true, kb: false }).map(([s]) => s)).toEqual(['numbers']);
     expect(assistantSections({ ai: false, kb: false })).toEqual([]);
   });

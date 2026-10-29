@@ -22,6 +22,8 @@ import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
 import { FIELD, Field } from '@/components/CorrectAssistant';
 import { Dialog } from '@/components/Dialog';
+import { RulesPanel } from '@/components/RulesPanel';
+import { TeachPanel } from '@/components/TeachPanel';
 import { BackToInbox } from '@/components/TemplateSettings';
 import {
   AI_MODE_OPTIONS,
@@ -70,8 +72,9 @@ function said(err: unknown, fallback: string): string {
 
 /**
  * The page's tabs, by the viewer's rights (owner UI round 2026-10-22, F2):
- * Numbers (inbox:ai:manage), Knowledge and Examples (inbox:kb:manage). Pure,
- * so the tests read the real thing; the first is the default tab.
+ * Numbers (inbox:ai:manage), Knowledge, Examples, Rules and Teach
+ * (inbox:kb:manage; the last two SCRUM-696). Pure, so the tests read the real
+ * thing; the first is the default tab.
  */
 export function assistantSections(caps: { ai: boolean; kb: boolean }): [AssistantTab, string][] {
   return [
@@ -80,6 +83,8 @@ export function assistantSections(caps: { ai: boolean; kb: boolean }): [Assistan
       ? ([
           ['knowledge', 'Knowledge'],
           ['examples', 'Examples'],
+          ['rules', 'Rules'],
+          ['teach', 'Teach'],
         ] as [AssistantTab, string][])
       : []),
   ];
@@ -153,6 +158,8 @@ export function AssistantSettings({
       {section === 'numbers' && caps.ai && <ChannelModes me={me} />}
       {section === 'knowledge' && caps.kb && <KnowledgeBase me={me} />}
       {section === 'examples' && caps.kb && <ExamplesQueue me={me} />}
+      {section === 'rules' && caps.kb && <RulesPanel me={me} />}
+      {section === 'teach' && caps.kb && <TeachPanel me={me} onTab={onTab} />}
     </div>
   );
 }
