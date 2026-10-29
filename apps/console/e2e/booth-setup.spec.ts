@@ -4,15 +4,13 @@ import { CENTRAL_FLORESTA, chooseBranch, openSection, signInAndWait } from './co
 /**
  * SCRUM-400 — what the park sets up for a booth before the owner's bench
  * test, in the Console, the way he will do it: the voucher types (what a prize
- * is worth and what its slip says), who may sign in at the booth with which
- * PIN, and how long a sign-in lasts.
+ * is worth and what its slip says) and the booth itself. Nobody signs in at a
+ * booth (SCRUM-694): the slip names today's staff, so there is no staff list,
+ * PIN or session length to set up here.
  *
  * Each case asserts the reading a manager acts on after the press — the list
- * line that says what the till will do, the staff row that says a PIN is set,
- * the review line that says how long a sign-in will last, the staff note that
- * says how long one lasts now — and not merely that a request went out. The
- * PIN case also asserts where the digits are NOT once they are saved: anywhere
- * on the page.
+ * line that says what the till will do — and not merely that a request went
+ * out.
  */
 
 /**
@@ -38,19 +36,17 @@ function draftReads(page: Page): { outstanding: () => number } {
  * WHY IT WAITS FOR THE READS (SCRUM-256). The settings form holds an edit, and
  * every read of the booth that lands replaces it with the API's values
  * (`BoothSettingsPanel`: "a fresh read of the booth replaces what is on
- * screen"). The session-length case typed its 10 hours while a second read
- * was still out; about one run in nine that read landed between the typing
- * and the press, put the field back to empty, and Save — enabled only while
- * the form differs from the draft — stayed disabled until the click gave up at
- * the 15 s action timeout. Holding that read until the hours are typed gives
- * the same "locator.click: Timeout 15000ms exceeded … element is not enabled"
- * every run.
+ * screen"). A case that typed into the form while a second read was still
+ * out would, about one run in nine, have that read land between the typing
+ * and the press, put the field back, and leave Save — enabled only while the
+ * form differs from the draft — disabled until the click gave up at the 15 s
+ * action timeout.
  *
  * The second read was this helper's own doing, when the booth list had come
  * back before the branch was chosen. Playwright's `selectOption` dispatches a
  * change event even for the option already chosen, which a person's browser
  * never does, and the Booths page answers a branch change by dropping the
- * selected booth while the draft it had read stays on screen. So the "Booth
+ * selected booth while the draft it had read stays on screen. So the "Today's
  * staff" heading was already there, and pressing Booth 1 selected it again and
  * sent another read. The branch is now chosen only when it is not the one
  * shown, and the helper returns only once no draft read is out and the booth
@@ -68,7 +64,7 @@ async function openBooth1(page: Page): Promise<void> {
   await booth.click();
   await expect(page.getByText(/^Booth 1 · Prefix:/)).toBeVisible({ timeout: 30_000 });
   await expect.poll(drafts.outstanding, { timeout: 30_000 }).toBe(0);
-  await expect(page.getByRole('heading', { name: 'Booth staff', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today’s staff', exact: true })).toBeVisible();
 }
 
 test('Booths: changing booth hides the previous slip while the new draft loads', async ({ page }) => {
@@ -247,102 +243,6 @@ test('Voucher types: changing what the 100 THB Voucher is worth asks first, “K
   await words.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(words).toHaveCount(0, { timeout: 30_000 });
   await expect(hundred).toContainText('Slip: the park’s own words, once a booth using it is published');
-});
-
-test('Booths: somebody is added to Booth 1, given a PIN that is never shown again, and taken off', async ({
-  page,
-}) => {
-  await signInAndWait(page);
-  await openBooth1(page);
-
-  const panel = page
-    .locator('section')
-    .filter({ has: page.getByRole('heading', { name: 'Booth staff', exact: true }) });
-  // The seed puts reception on Booth 1 with a PIN.
-  const reception = panel.getByRole('listitem').filter({ hasText: 'Som (Reception)' });
-  await expect(reception).toBeVisible({ timeout: 30_000 });
-  await expect(reception).toContainText('PIN set');
-  await expect(reception).toContainText(/S-[0-9A-Z]{4}/);
-  // The note names the roles that may sign in with their own phone and password.
-  await expect(panel).toContainText('Reception, Staff');
-
-  await panel.getByLabel('Person').selectOption({ label: 'Khun Lek (Manager) — +66900000004' });
-  await panel.getByRole('button', { name: 'Add to booth', exact: true }).click();
-  const manager = panel.getByRole('listitem').filter({ hasText: 'Khun Lek (Manager)' });
-  await expect(manager).toBeVisible({ timeout: 30_000 });
-  await expect(manager).toContainText('no PIN');
-
-  // SCRUM-428 — the PIN is issued by the platform with one press, shown once.
-  await manager.getByRole('button', { name: 'Issue PIN', exact: true }).click();
-  await expect(panel).toContainText('PIN issued for Khun Lek (Manager)', { timeout: 30_000 });
-  await expect(manager).toContainText('PIN set');
-  const issued = (await manager.locator('strong.font-mono').innerText()).trim();
-  expect(issued).toMatch(/^\d{5}$/);
-  // Nobody types one: no PIN field is offered anywhere on the row.
-  await expect(manager.locator('input[type="password"]')).toHaveCount(0);
-  // Done takes the digits off the page, and they are nowhere after that.
-  await manager.getByRole('button', { name: 'Done', exact: true }).click();
-  expect(await page.locator('body').innerText()).not.toContain(issued);
-  // Replacing it is the same single press.
-  await expect(manager.getByRole('button', { name: 'Issue new PIN', exact: true })).toBeVisible();
-
-  await manager.getByRole('button', { name: 'Remove', exact: true }).click();
-  await manager.getByRole('button', { name: 'Remove', exact: true }).click();
-  await expect(manager).toHaveCount(0, { timeout: 30_000 });
-});
-
-test('Booths: the staff session length is saved as 10 hours, is in the review before publishing, and reaches the staff note with the publish', async ({
-  page,
-}) => {
-  await signInAndWait(page);
-  await openBooth1(page);
-
-  // The settings are a summary on the page and the form is in a drawer the
-  // summary opens (SCRUM-468) — the same fields, the same Save.
-  const summary = page
-    .locator('section')
-    .filter({ has: page.getByRole('heading', { name: 'Booth settings', exact: true }) });
-  await expect(summary).toContainText('12 hours (default)');
-  const edit = summary.getByRole('button', { name: 'Edit settings', exact: true });
-  await edit.click();
-  const settings = page.getByRole('dialog', { name: 'Booth settings' });
-  const length = settings.getByLabel('Staff session length');
-  const save = settings.getByRole('button', { name: 'Save settings', exact: true });
-  await expect(length).toHaveValue('');
-  // More than a day is refused before it is sent.
-  await length.fill('25');
-  await expect(save).toBeDisabled();
-  await length.fill('10');
-  // Save opens when the form differs from the draft and is valid — with no
-  // read left to land (openBooth1), the 10 typed above is what it compares.
-  await expect(save).toBeEnabled();
-  await save.click();
-  // Accepted, the drawer closes and the booth is read again: the summary
-  // reads the API's value, not what was typed.
-  await expect(settings).toHaveCount(0, { timeout: 30_000 });
-  await expect(summary).toContainText('10 hours', { timeout: 30_000 });
-  // Opened again, the form holds the saved 10 with nothing left to save.
-  await edit.click();
-  await expect(length).toHaveValue('10');
-  await expect(save).toBeDisabled();
-  await settings.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(settings).toHaveCount(0);
-
-  // Until the publish the box still grants the published twelve hours, and the
-  // staff panel says both.
-  const staffPanel = page
-    .locator('section')
-    .filter({ has: page.getByRole('heading', { name: 'Booth staff', exact: true }) });
-  await expect(staffPanel).toContainText('lasts 12 hours (10 hours for sign-ins after the next publish)');
-
-  const publish = page
-    .locator('section')
-    .filter({ has: page.getByRole('heading', { name: 'Publish', exact: true }) });
-  await publish.getByRole('button', { name: 'Review and publish', exact: true }).click();
-  await expect(publish).toContainText('lasts 10 hours');
-  await publish.getByRole('button', { name: /^Publish version \d+$/ }).click();
-  await expect(publish).toContainText(/Version \d+ published/, { timeout: 30_000 });
-  await expect(staffPanel).toContainText('lasts 10 hours — set under Booth settings', { timeout: 30_000 });
 });
 
 /**

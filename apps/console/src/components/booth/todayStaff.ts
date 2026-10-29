@@ -24,7 +24,8 @@ const SOURCE_TAIL: Record<BoothDutySource, string> = {
   app_schedule: 'rota sync',
   app_duty_block: 'duty block',
   manual: 'added by hand',
-  self_assigned: 'signed in at the booth',
+  // Historical: written by a booth sign-in before SCRUM-694; nothing writes it now.
+  self_assigned: 'joined as a stand-in',
 };
 
 /** What the last sync found about the OTO App, when it is not simply "read". */
@@ -47,7 +48,7 @@ export const UNMATCHED_REASON: Record<BoothDutyUnmatched['reason'], string> = {
 export function labelLine(label: string | null): string {
   return label
     ? `On every voucher today: ${label}`
-    : 'Nobody is on today’s roster: a voucher prints whoever is signed in, or “unattributed”.';
+    : 'Nobody is on today’s roster: every voucher prints “unattributed”. Sync now, or add today’s staff below.';
 }
 
 /** "Initials" for the round badge: the first letter of the name. */

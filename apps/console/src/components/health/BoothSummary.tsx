@@ -15,13 +15,13 @@ import { formatWhen, timeAgo } from '@/lib/time';
  * already said elsewhere: it is on the Boxes panel above like every other box,
  * and its printer is on Devices with the rest of the park's printers. What
  * this section adds is the half of a booth that no box-shaped view can show —
- * which wheel it is running, whether anybody is signed in at it, how many
- * vouchers it is still holding, and the two conditions that are the booth's
- * own: prizes it has given away with nobody signed in, and prizes it has no
- * more of today.
+ * which wheel it is running, whether today's roster names anybody on its box,
+ * how many vouchers it is still holding, and the two conditions that are the
+ * booth's own: vouchers it has printed with nobody on today's roster, and
+ * prizes it has no more of today. Nobody signs in at a booth (SCRUM-694).
  *
  * **Most of this is what the box last REPORTED, and one reading is not.** The
- * wheel, the printer, the sign-in and the queue are the booth's own
+ * wheel, the printer, today's staff and the queue are the booth's own
  * measurements off its last heartbeat, so a booth that went offline at
  * lunchtime shows lunchtime's answers and the heartbeat's age beside them is
  * how a reader tells. The unattributed count is the opposite: it is counted
@@ -57,7 +57,7 @@ export function BoothSummary({
       span={12}
       icon={FerrisWheel}
       title="Booths"
-      note="the Lucky Wheel at each branch: the wheel it is running, who is signed in, and what it is still holding"
+      note="the Lucky Wheel at each branch: the wheel it is running, today’s staff, and what it is still holding"
     >
       <div className="flex flex-col gap-3">
         {withBooths.flatMap((box) =>
@@ -165,13 +165,15 @@ function BoothCard({
           )}
         </Reading>
 
-        <Reading label="Signed in">
+        <Reading label="Today's staff">
           {reported === null ? (
             <Muted>not reported</Muted>
-          ) : reported.staffSignedIn ? (
-            'somebody is at the booth'
+          ) : reported.rostered === null ? (
+            <Muted>not reported by this agent version</Muted>
+          ) : reported.rostered ? (
+            'on the box; the slip names them'
           ) : (
-            'nobody'
+            'nobody on today’s roster; slips print “unattributed”'
           )}
         </Reading>
 
@@ -249,11 +251,11 @@ function BoothCard({
           {booth.unattributedToday === null ? (
             <Muted>could not be counted</Muted>
           ) : booth.unattributedToday === 0 ? (
-            'none — every voucher has a name against it'
+            'none — every voucher named today’s roster'
           ) : (
             <span className="inline-flex items-center gap-1.5 text-status-warn">
               <StatusMark tone="warn" className="w-2.5 h-2.5" />
-              {booth.unattributedToday} voucher(s) with nobody signed in
+              {booth.unattributedToday} voucher(s) printed with nobody on today’s roster
             </span>
           )}
         </Reading>

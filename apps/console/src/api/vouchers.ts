@@ -30,6 +30,13 @@ export interface VoucherLedgerRow {
   prize: { id: string; nameEn: string } | null;
   value: VoucherValue;
   place: { kind: 'booth' | 'counter' | 'import'; stationId: string | null; name: string };
+  /**
+   * The names a booth slip printed — today's roster (SCRUM-694). Null for a
+   * counter voucher, or a slip that named nobody. Optional so an older api
+   * still reads.
+   */
+  staffLabel?: string | null;
+  /** The account that issued it at a counter, or was signed in at an older booth. */
   issuedBy: LedgerPerson | null;
   codeLast4: string;
   source: string;
@@ -75,6 +82,12 @@ export interface VoucherLedger {
 export interface BoothSpinRow {
   id: string;
   occurredAt: string;
+  /**
+   * The names the slip printed — today's roster (SCRUM-694). Optional so an
+   * older api still reads; null with no `staff` either is unattributed.
+   */
+  staffLabel?: string | null;
+  /** The account signed in at a booth older than SCRUM-694. */
   staff: LedgerPerson | null;
   outcome: 'prize' | 'no_prize';
   prize: { id: string; nameEn: string } | null;

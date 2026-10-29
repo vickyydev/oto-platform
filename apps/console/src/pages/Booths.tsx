@@ -15,14 +15,11 @@ import { formatWhen, timeAgo } from '@/lib/time';
 import {
   boothApi,
   isMissingRoute,
-  publishedSessionMinutes,
   type BoothDraft,
   type BoothLayoutRow,
   type BoothListRow,
   type BoothPrizeDraft,
   type BoothScreenRow,
-  type BoothStaffRow,
-  type BoothPinResult,
   type BoothStatus,
   type BoothVersionRow,
   type MintedPairingCode,
@@ -39,7 +36,6 @@ import {
 } from '@/components/booth/BoothSettingsPanel';
 import { BoothSpinsPanel } from '@/components/booth/BoothSpinsPanel';
 import { BoothSetupChecklist } from '@/components/booth/BoothSetupChecklist';
-import { BoothStaffPanel } from '@/components/booth/BoothStaffPanel';
 import { boothSetupSteps } from '@/components/booth/boothState';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
 import { ArchivedPrizes, PrizeTable } from '@/components/booth/PrizeTable';
@@ -86,7 +82,7 @@ import {
  * up, whether its box is online and which wheel is published. The booths at
  * the branch are the chip row under it. Then the twelve-column sheet: four
  * tiles for today, a wide column for the wheel and what runs it — the prizes,
- * the publish, who may sign in, the day's spins, the versions — and a rail
+ * the publish, the day's spins, the versions — and a rail
  * for the day and the box: today's staff, the voucher slip, the box's own
  * report, the wheel as the television draws it, the settings, the screens.
  * Every card is the height of what it holds and no taller: the two columns
@@ -101,7 +97,7 @@ import {
  * table — its refusal is drawn beside the list, not above a table's height of
  * rows.
  */
-type WriteSite = 'prizes' | 'archived' | 'settings' | 'slip' | 'publish' | 'screens' | 'staff';
+type WriteSite = 'prizes' | 'archived' | 'settings' | 'slip' | 'publish' | 'screens';
 
 /** Today's spins as the Spins card read them, and whether every one is on screen. */
 interface TodaySpins {
@@ -114,7 +110,7 @@ export function Booths() {
   const { me, has } = useSession();
   const canManage = has('admin:booth:manage');
   const canPublish = has('admin:booth:publish');
-  /** Who works the booth is a different decision from its odds (`@oto/shared`), and a different permission. */
+  /** Who works the booth today is a different decision from its odds (`@oto/shared`), and a different permission. */
   const canAssignStaff = has('admin:booth:staff_assign');
 
   const [branches, setBranches] = useState<BranchRow[] | null>(null);
@@ -153,7 +149,6 @@ export function Booths() {
   const [screens, setScreens] = useState<Read<BoothScreenRow[]>>(() =>
     unread<BoothScreenRow[]>([]),
   );
-  const [staff, setStaff] = useState<Read<BoothStaffRow[]>>(() => unread<BoothStaffRow[]>([]));
   /**
    * The pairing code just minted (SCRUM-244).
    *
@@ -281,7 +276,6 @@ export function Booths() {
     if (!current()) return;
     setVersions((held) => reading(held));
     setStatus((held) => reading(held));
-    setStaff((held) => reading(held));
 
     // Each read is settled on its own, so one failing does not empty the page.
     await Promise.allSettled([
@@ -313,16 +307,6 @@ export function Booths() {
           { if (!current()) return; return setScreens((held) =>
             isMissingRoute(reason)
               ? readAbsent<BoothScreenRow[]>([])
-              : readFailed(held, readFailureMessage(reason), []),
-          ); },
-        ),
-      working.run(() => boothApi
-        .staff(id))
-        .then((r) => { if (!current()) return; return setStaff(readOk(r.staff)); })
-        .catch((reason: unknown) =>
-          { if (!current()) return; return setStaff((held) =>
-            isMissingRoute(reason)
-              ? readAbsent<BoothStaffRow[]>([])
               : readFailed(held, readFailureMessage(reason), []),
           ); },
         ),
@@ -365,9 +349,7 @@ export function Booths() {
   }, [branchId, loadBooths]);
 
   useEffect(() => {
-    // Another booth's staff list is not this booth's while the read is out:
-    // who may sign in where is exactly the thing not to show under a wrong name.
-    setStaff(unread<BoothStaffRow[]>([]));
+    // Another booth's readings are not this booth's while the reads are out.
     setVersions(unread<BoothVersionRow[]>([]));
     setScreens(unread<BoothScreenRow[]>([]));
     setStatus(unread<BoothStatus | null>(null));
@@ -416,38 +398,6 @@ export function Booths() {
     }
   };
 
-  /**
-   * The staff card's writes (SCRUM-400), apart from `run` on purpose.
-   *
-   * `run` reads any 404 as "this deployment has no such route" and closes
-   * every form on the page. A 404 from the staff routes is nearly always the
-   * other thing — a colleague took the person off the booth, or withdrew the
-   * PIN, a moment before this press — so it is said in the staff card, and
-   * the list is read again either way so the card shows what is now true.
-   */
-  const runStaff = async (write: (current: () => boolean) => Promise<unknown>): Promise<boolean> => {
-    if (!working.isCurrent()) return false;
-    if (!selectedId) return false;
-    const current = captureSelection(selectedId);
-    if (!current()) return false;
-    setBusy(true);
-    setWriteError(null);
-    try {
-      await working.run(() => write(current));
-      if (!current()) return false;
-      return true;
-    } catch (reason) {
-      if (!current()) return false;
-      setWriteError({ where: 'staff', message: readFailureMessage(reason) });
-      return false;
-    } finally {
-      if (current()) {
-        await loadBooth(selectedId);
-        if (current()) setBusy(false);
-      }
-    }
-  };
-
   // A previous booth's draft cannot offer edits while the next one loads.
   const selected = draft.value?.booth.id === selectedId ? draft.value : null;
   const selectedRow = booths.value.find((b) => b.id === selectedId) ?? null;
@@ -458,14 +408,13 @@ export function Booths() {
    * The setup steps, ticked from the readings in hand (`boothSetupSteps`),
    * and whether they are all done — which is what folds the checklist into
    * the bar's chip. Nothing until a draft is on screen: a checklist over a
-   * booth whose draft has not come back would tick nothing and say "0 of 6"
+   * booth whose draft has not come back would tick nothing and say "0 of 5"
    * about a booth that may be fully set up.
    */
   const steps = selected
     ? boothSetupSteps(
         draft.state === 'read' ? draft.value : null,
         status.state === 'read' ? status.value : null,
-        staff.state === 'read' ? staff.value : null,
       )
     : null;
   const stepsDone = steps ? steps.filter((s) => s.done).length : 0;
@@ -783,47 +732,6 @@ export function Booths() {
                 </CardShell>
               )}
 
-              <BoothStaffPanel
-                id="booth-staff"
-                className="scroll-mt-24"
-                // The PIN form holds digits for one booth; another booth is another card.
-                key={selected.booth.id}
-                branchId={selected.booth.branchId}
-                staff={staff}
-                // What the box grants now is the PUBLISHED length; the draft's
-                // reaches it with the next publish, and the note says both.
-                session={{
-                  running: publishedSessionMinutes(selected),
-                  next: selected.settings.staffSessionMinutes ?? null,
-                }}
-                busy={busy}
-                readOnly={!canAssignStaff}
-                error={errorAt('staff')}
-                onAdd={(accountId) =>
-                  void runStaff(() => working.run(() => boothApi.addStaff(selected.booth.id, accountId)))
-                }
-                onRemove={(accountId) =>
-                  void runStaff(() => working.run(() => boothApi.removeStaff(selected.booth.id, accountId)))
-                }
-                onSetPin={async (accountId, input) => {
-                  if (!working.isCurrent()) return null;
-                  let result: BoothPinResult | null = null;
-                  const saved = await runStaff(async (current) => {
-                    if (!current()) return null;
-                    result = await working.run(() => boothApi.setPin(selected.booth.id, accountId, input));
-                    if (!current()) return null;
-                  });
-                  if (!saved) return null;
-                  return result;
-                }}
-                onClearPin={(accountId) =>
-                  void runStaff(() =>
-                    working.run(() => boothApi.clearPin(selected.booth.id, accountId, 'withdrawn from the Console')),
-                  )
-                }
-                onRetry={() => void loadBooth(selectedId)}
-              />
-
               <BoothSpinsPanel
                 key={'spins-' + selected.booth.id}
                 id={selected.booth.id}
@@ -891,7 +799,7 @@ export function Booths() {
                 {/*
                   Today's staff (SCRUM-473): the day's roster from the OTO App's
                   rota and the one label every voucher prints. It reads and
-                  writes its own routes; Booth staff is who may ever sign in.
+                  writes its own routes. Nobody signs in at the booth (SCRUM-694).
                 */}
                 <TodayStaffPanel
                   id="booth-today-staff"
@@ -1101,7 +1009,7 @@ function TodayBand({
       : null;
   const summary = today?.spins.summary ?? null;
   const capReached = s !== null && s.today.spinCap !== null && s.today.spins >= s.today.spinCap;
-  /** The share of today's spins with somebody signed in, once there are any. */
+  /** The share of today's spins whose slip named today's roster, once there are any. */
   const attribution =
     s && s.today.spins > 0
       ? {
@@ -1162,7 +1070,7 @@ function TodayBand({
             : attribution === null
               ? 'no spins yet today'
               : attribution.unattributed > 0
-                ? `${attribution.unattributed} with nobody signed in`
+                ? `${attribution.unattributed} printed with no name on today’s roster`
                 : 'every spin has a name against it'
         }
       />

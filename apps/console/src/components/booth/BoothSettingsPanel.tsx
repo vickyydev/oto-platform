@@ -6,8 +6,6 @@ import {
   BOOTH_SPIN_DURATION_MIN_SECONDS,
   BOOTH_SPIN_DURATION_MAX_SECONDS,
   boothSpinDurationSeconds,
-  BOOTH_STAFF_SESSION_DEFAULT_MINUTES,
-  BOOTH_STAFF_SESSION_MAX_MINUTES,
   type BoothEligibilityMode,
 } from '@oto/shared';
 import { Drawer } from '@/components/Drawer';
@@ -26,17 +24,11 @@ function eligibilityLabel(mode: BoothEligibilityMode): string {
   return mode === 'none' ? 'Anybody' : mode === 'band' ? 'One spin per wristband' : 'One spin per phone';
 }
 
-/** A staff sign-in's length in hours, as the summary says it. */
-function sessionHoursText(minutes: number | null | undefined): string {
-  if (minutes == null) return `${BOOTH_STAFF_SESSION_DEFAULT_MINUTES / 60} hours (default)`;
-  const hours = minutes / 60;
-  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)} hour${hours === 1 ? '' : 's'}`;
-}
-
 /**
  * The booth's own settings, as saved to the draft (SCRUM-468): the design it
  * draws, who may spin, the key the red button sends, how many spins a day it
- * will allow, how long a spin lasts and how long a staff sign-in lasts.
+ * will allow and how long a spin lasts. (Nobody signs in at a booth, SCRUM-694,
+ * so there is no session length.)
  *
  * A summary on the page and the form in a drawer (`BoothSettingsEditor`), so
  * the page reads at a glance and the form has the screen to itself while it
@@ -118,7 +110,6 @@ export function BoothSettingsPanel({
         </FactLine>
         <FactLine label="Spins per day">{s.dailySpinCap ?? 'no cap'}</FactLine>
         <FactLine label="Spin duration (seconds)">{boothSpinDurationSeconds(s)}</FactLine>
-        <FactLine label="Staff session length">{sessionHoursText(s.staffSessionMinutes)}</FactLine>
         <FactLine label="Button key">
           <code className="font-mono text-sm">{s.buttonKey === ' ' ? 'Space' : s.buttonKey}</code>
         </FactLine>
@@ -201,23 +192,11 @@ export function BoothSettingsEditor({
     settings.eligibility !== draft.settings.eligibility ||
     settings.buttonKey !== draft.settings.buttonKey ||
     settings.dailySpinCap !== draft.settings.dailySpinCap ||
-    settings.spinDurationSeconds !== boothSpinDurationSeconds(draft.settings) ||
-    (settings.staffSessionMinutes ?? null) !== (draft.settings.staffSessionMinutes ?? null);
+    settings.spinDurationSeconds !== boothSpinDurationSeconds(draft.settings);
 
-  /**
-   * The session length is typed in hours and stored in minutes. Empty is the
-   * box's own twelve hours; anything else is more than nothing and at most the
-   * box's ceiling of a day, which the API refuses past as well.
-   */
-  const sessionMinutes = settings.staffSessionMinutes ?? null;
   const spinDuration = settings.spinDurationSeconds;
   const spinDurationValid = typeof spinDuration === 'number' && Number.isInteger(spinDuration) &&
     spinDuration >= BOOTH_SPIN_DURATION_MIN_SECONDS && spinDuration <= BOOTH_SPIN_DURATION_MAX_SECONDS;
-  const sessionValid =
-    sessionMinutes === null ||
-    (Number.isInteger(sessionMinutes) &&
-      sessionMinutes >= 1 &&
-      sessionMinutes <= BOOTH_STAFF_SESSION_MAX_MINUTES);
 
   return (
     <Drawer
@@ -229,7 +208,7 @@ export function BoothSettingsEditor({
           <Button
             className="rounded-full px-4 font-bold"
             onClick={() => onSave(settings)}
-            disabled={!dirty || !sessionValid || !spinDurationValid || saving || unavailable || readOnly}
+            disabled={!dirty || !spinDurationValid || saving || unavailable || readOnly}
           >
             {saving ? 'Saving…' : 'Save settings'}
           </Button>
@@ -301,34 +280,6 @@ export function BoothSettingsEditor({
         </Field>
 
         <Field
-          label="Staff session length"
-          hint={
-            sessionValid ? (
-              `How long a sign-in at the booth lasts before it ends by itself — never because nobody pressed anything. Hours; left empty it is ${BOOTH_STAFF_SESSION_DEFAULT_MINUTES / 60}, at most ${BOOTH_STAFF_SESSION_MAX_MINUTES / 60}. Reaches the booth with the next published version.`
-            ) : (
-              <span className="text-status-down">
-                More than nothing and at most {BOOTH_STAFF_SESSION_MAX_MINUTES / 60} hours.
-              </span>
-            )
-          }
-        >
-          <div className="flex items-center gap-2">
-            <NumberInput
-              value={sessionMinutes === null ? null : sessionMinutes / 60}
-              min={1}
-              placeholder={`${BOOTH_STAFF_SESSION_DEFAULT_MINUTES / 60} (default)`}
-              onChange={(hours) =>
-                setSettings({
-                  ...settings,
-                  staffSessionMinutes: hours === null ? null : Math.round(hours * 60),
-                })
-              }
-            />
-            <span className="text-sm text-muted-foreground shrink-0">hours</span>
-          </div>
-        </Field>
-
-        <Field
           label="Button key"
           hint={
             <>
@@ -386,6 +337,5 @@ function edit(settings: BoothSettingsDraft): BoothSettingsEdit {
     eligibility: settings.eligibility,
     dailySpinCap: settings.dailySpinCap,
     spinDurationSeconds: boothSpinDurationSeconds(settings),
-    staffSessionMinutes: settings.staffSessionMinutes ?? null,
   };
 }

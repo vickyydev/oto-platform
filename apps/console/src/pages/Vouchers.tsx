@@ -401,7 +401,7 @@ function LedgerRow({ row: r, timezone }: { row: VoucherLedgerRow; timezone?: str
           {formatWhen(r.issuedAt, timezone)} · {r.place.name}
         </span>
         <span className="block text-xs text-muted-foreground">
-          {r.issuedBy ? `${r.issuedBy.name ?? 'Staff'} (${r.issuedBy.code})` : 'Unattributed'}
+          {r.staffLabel ?? (r.issuedBy ? `${r.issuedBy.name ?? 'Staff'} (${r.issuedBy.code})` : 'Unattributed')}
         </span>
       </Cell>
       <Cell label="Expires" className="text-muted-foreground">

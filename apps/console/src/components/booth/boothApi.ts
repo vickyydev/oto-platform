@@ -92,6 +92,10 @@ export interface BoothStatus {
   today: {
     businessDate: string;
     spins: number;
+    /**
+     * Spins whose slip named nobody on today's roster (SCRUM-694; an older
+     * box's signed-in account still counts as attributed).
+     */
     unattributed: number;
     /** `booth.booth_prize.id` of the prizes that have hit their cap today. */
     dailyCapsReached: string[];
@@ -147,12 +151,6 @@ export interface BoothSettingsDraft {
   dailySpinCap: number | null;
   /** Optional when reading an older deployment; absent means ten seconds. */
   spinDurationSeconds?: number;
-  /**
-   * How long a staff sign-in at this booth lasts, in minutes (SCRUM-400).
-   * Null is the box's own twelve hours. Optional on the read because a
-   * deployment older than the column does not send it.
-   */
-  staffSessionMinutes?: number | null;
   /**
    * The booth's voucher slip (SCRUM-471): show the logo, a header line under
    * the venue line, a footer line, show the Staff row, show the terms. All
@@ -222,8 +220,7 @@ export interface BoothDraft {
   published: BoothVersionRow | null;
   /**
    * The document the booth is running now, as stored — null when nothing has
-   * been published. Left unparsed like `bundle`; `publishedSessionMinutes`
-   * reads the one field the page needs from it.
+   * been published. Left unparsed like `bundle`.
    */
   publishedBundle?: unknown;
   /** Whether the draft differs from the published wheel at all. */
@@ -232,20 +229,6 @@ export interface BoothDraft {
   lastEditedAt: string | null;
   /** Empty means this draft can be published as it stands. */
   blockers: PublishBlocker[];
-}
-
-/**
- * How long a staff sign-in lasts at the booth NOW, in minutes: the published
- * wheel's `settings.staffSessionMinutes`, or null — the box's own twelve
- * hours — when nothing is published or the version names no length. A length
- * saved under Booth settings is the draft's until it is published, and the
- * box grants this one meanwhile (SCRUM-400).
- */
-export function publishedSessionMinutes(draft: BoothDraft): number | null {
-  const published = draft.publishedBundle as
-    { settings?: { staffSessionMinutes?: unknown } } | null | undefined;
-  const minutes = published?.settings?.staffSessionMinutes;
-  return typeof minutes === 'number' && Number.isInteger(minutes) && minutes > 0 ? minutes : null;
 }
 
 export interface BoothLayoutRow {
@@ -378,33 +361,6 @@ export interface VoucherLinkOptions {
     priceSatang: number;
   }>;
   packages: Array<{ id: string; name: string; branchId: string; branchName: string }>;
-}
-
-/**
- * Somebody who may sign in at a booth (`GET /booths/:id/staff`). Never a PIN
- * and never its hash — whether they have one is the whole answer.
- */
-export interface BoothStaffRow {
-  accountId: string;
-  addedAt: string;
-  addedBy: string;
-  hasPin: boolean;
-  pinExpiresAt: string | null;
-}
-
-/**
- * Issuing a booth PIN (SCRUM-428): the platform draws it, so the only thing
- * asked is when it ends. There is no typed PIN — the api refuses one.
- */
-export interface BoothPinInput {
-  expiresAt?: string | null;
-}
-export interface BoothPinResult {
-  accountId: string;
-  hasPin: true;
-  pinExpiresAt: string | null;
-  /** The issued PIN, answered once. */
-  pin: string;
 }
 
 /** What a prize create or edit sends. Every field but the name is optional. */
@@ -640,40 +596,6 @@ export const boothApi = {
       { idempotencyKey: idemKey() },
     ),
 
-  // --- Who may sign in at the booth (SCRUM-400) ------------------------------
-
-  staff: (id: string) => api.get<{ staff: BoothStaffRow[] }>(`${at(id)}/staff`),
-
-  addStaff: (id: string, accountId: string) =>
-    api.put<{ staff: BoothStaffRow[] }>(`${at(id)}/staff/${encodeURIComponent(accountId)}`, undefined, {
-      idempotencyKey: idemKey(),
-    }),
-
-  /** Their PIN stays theirs — withdraw it separately when that is what is meant. */
-  removeStaff: (id: string, accountId: string) =>
-    api.delete<{ staff: BoothStaffRow[] }>(`${at(id)}/staff/${encodeURIComponent(accountId)}`, {
-      idempotencyKey: idemKey(),
-    }),
-
-  /**
-   * Set or replace somebody's booth PIN.
-   *
-   * **No idempotency key, by the API's rule.** The route declares
-   * `secretResponse` for its REQUEST: the replay store keeps a hash of the
-   * body for a day, and four digits behind a plain hash are ten thousand
-   * guesses, so no key is claimed. A retry sets the same PIN again. The digits
-   * go in this one request body and nowhere else — not in state after the
-   * form clears, not in a log, not on screen.
-   */
-  setPin: (id: string, accountId: string, input: BoothPinInput) =>
-    api.put<BoothPinResult>(`${at(id)}/staff/${encodeURIComponent(accountId)}/pin`, input),
-
-  clearPin: (id: string, accountId: string, reason: string) =>
-    api.delete<{ accountId: string; hasPin: false }>(
-      `${at(id)}/staff/${encodeURIComponent(accountId)}/pin?reason=${encodeURIComponent(reason)}`,
-      { idempotencyKey: idemKey() },
-    ),
-
   // --- The day's booth staff (SCRUM-473) -------------------------------------
 
   duty: (id: string) => api.get<BoothDutyView>(`${at(id)}/duty`),
@@ -711,7 +633,7 @@ export type BoothDutyAppState = 'ok' | 'app_not_installed' | 'no_app_branch' | '
 
 export interface BoothDutyAssignment {
   id: string;
-  /** Null for a casual worker: named on the voucher, never signs in. */
+  /** Null for a casual worker: named on the voucher, with no account. */
   accountId: string | null;
   displayName: string;
   source: BoothDutySource;

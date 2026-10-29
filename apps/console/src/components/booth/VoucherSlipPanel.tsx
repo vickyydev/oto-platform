@@ -224,7 +224,7 @@ export function VoucherSlipEditor({
             disabled={locked}
             onChange={(showStaff) => set({ showStaff })}
             label="Print the Staff row"
-            detail="Who was signed in when the prize was won — “unattributed” when nobody was."
+            detail="Today’s staff from Booths > Today’s staff, “unattributed” when nobody is on the roster."
           />
           <CheckRow
             checked={edit.showTerms}

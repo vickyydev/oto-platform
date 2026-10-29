@@ -29,8 +29,11 @@ import {
  * staff" card, on the page's sheet (SCRUM-474). The card reads and writes its
  * own routes, so the rest of the page is not re-read on every change here.
  *
- * On the page's card language: the people as striped rows like Booth staff,
- * the label on a primary wash, a warning with its triangle, the forms in the
+ * Nobody signs in at the booth (SCRUM-694): this roster is the whole of who a
+ * voucher names, and nobody on it prints "unattributed".
+ *
+ * On the page's card language: the people as striped rows, the label on a
+ * primary wash, a warning with its triangle, the forms in the
  * bordered boxes every card uses for them, and the log on the ruled foot.
  */
 export function TodayStaffPanel({
@@ -198,7 +201,7 @@ export function TodayStaffPanel({
                         is the one thing this row exists to show. */}
                     <div className="break-words text-[13.5px] font-semibold">{person.displayName}</div>
                     <div className="text-xs text-muted-foreground">
-                      {person.accountId ? 'May sign in today' : 'No login — named on the voucher only'}
+                      {person.accountId ? 'Linked to their account' : 'Named on the voucher only (no account)'}
                     </div>
                   </div>
                   <StatusChip tone={DUTY_SOURCE[person.source].tone}>{DUTY_SOURCE[person.source].label}</StatusChip>
@@ -284,7 +287,7 @@ export function TodayStaffPanel({
                 </Button>
               </div>
               <div className="grid gap-3 @md:grid-cols-[1fr_auto] @md:items-end">
-                <Field label="Or a name alone" hint="Somebody with no login — named on the voucher, never signs in.">
+                <Field label="Or a name alone" hint="Somebody with no account — named on the voucher.">
                   <TextInput value={name} onChange={setName} placeholder="e.g. Nok" disabled={busy} />
                 </Field>
                 <Button

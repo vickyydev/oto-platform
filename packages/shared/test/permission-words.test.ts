@@ -67,7 +67,7 @@ describe('plain permission sentences (SCRUM-612)', () => {
     for (const permission of appEntries) {
       expect(PERMISSION_WORDS[permission]).toMatch(/^Open .+actions.*own permissions/);
     }
-    expect(PERMISSION_WORDS['booth:staff:sign_in']).toMatch(/also assigned as staff/);
+    expect(PERMISSION_WORDS['admin:booth:staff_assign']).toMatch(/for the day/);
     expect(PERMISSION_WORDS['admin:operator:all']).toMatch(/whole operator.*without adding other permissions/);
     expect(PERMISSION_WORDS['assistant:ask:use']).toMatch(/existing access allows/);
   });

@@ -270,7 +270,7 @@ export function Health() {
           Under the boxes, because a booth IS one of them and the card above is
           where a reader has just seen it go quiet. This adds the half of a booth
           that a box-shaped row cannot carry: the wheel it is running, whether
-          anybody is signed in, and the two conditions that belong to the booth
+          today's roster names anybody, and the two conditions that belong to the booth
           rather than to the machine under it. It renders nothing at all where no
           box drives a booth.
         */}
