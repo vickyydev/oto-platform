@@ -3,7 +3,6 @@ import {
   account,
   boothConfigVersion,
   boothPrize,
-  boothStaffAssignment,
   spin,
   station,
   voucher,
@@ -18,12 +17,8 @@ import { z } from 'zod';
 import { AppError } from '../lib/errors';
 import type { BoxAuth } from './box';
 import { audit } from './audit';
-import {
-  boothBusinessDate,
-  boothDutyRosterForBox,
-  isOnBoothDuty,
-  selfAssignBoothDuty,
-} from './booth-duty';
+import { normaliseStaffLabel } from './booth-attribution';
+import { boothBusinessDate, boothDutyRosterForBox } from './booth-duty';
 import { raiseAlert } from './ops';
 import type { Tx } from './tx';
 import type { EventHandler, PreparedEvent } from './sync';
@@ -80,17 +75,27 @@ const SpinRecordedSchema = z.object({
   prizeId: z.string().uuid().nullish(),
   voucherId: z.string().uuid().nullish(),
   /**
-   * Who was signed in at the booth. Null is a real and expected value: a
-   * sign-in problem must never take the booth down, and D13's standing
-   * condition is what makes the gap visible without blocking a child.
+   * The account signed in at the booth, from a box older than SCRUM-694 with
+   * a session still open. Stored as sent, after `assertOurAccount`. A
+   * SCRUM-694 box never sends it: nobody signs in at the booth, and the
+   * column stays null.
    *
    * Taken from the payload rather than from the envelope's `actorAccountId`.
    * They answer different questions — the envelope's actor is who caused the
-   * fact, and for a booth press that is a visitor the park has no record of,
-   * while this is the staff member the booth's own overlay had signed in. The
-   * box is the authority on the second, because the session is its own.
+   * fact, and for a booth press that is a visitor the park has no record of.
    */
   staffAccountId: z.string().uuid().nullish(),
+  /**
+   * The Staff-row text the slip printed (SCRUM-694): today's roster names
+   * merged, "Tom and Jerry", or null when nobody was on today's roster and
+   * the slip said "unattributed". Sent whatever the slip shows. No column
+   * holds it: it is read back from this event's ledger row, or the
+   * `spin.record` audit row (`services/booth-attribution.ts`). No length
+   * limit and `.catch(null)`, so a printed fact is never quarantined for it.
+   */
+  staffLabel: z.string().nullish().catch(null),
+  /** The rostered accounts behind the label; a casual has none. */
+  dutyAccountIds: z.array(z.string().uuid()).max(100).default([]).catch([]),
   clockSuspect: z.boolean().default(false),
   simulated: z.boolean().default(false),
 });
@@ -105,10 +110,11 @@ const SpinRecordedSchema = z.object({
  * and "never expires".
  *
  * **Who issued it is NOT in the payload**, and that is the box's shape rather
- * than an omission: the fact is minted with `actorAccountId` set to whoever
- * the booth's own overlay had signed in, and reading a second copy out of the
- * payload would be two answers to one question. The handler takes the
- * envelope's.
+ * than an omission: the handler takes the envelope's `actorAccountId`. A box
+ * older than SCRUM-694 set it to whoever was signed in at the booth; a
+ * SCRUM-694 box files the fact as the device, with no account, so a booth
+ * voucher's `issued_by_account_id` is null and its attribution is the spin's
+ * Staff-row label (`services/booth-attribution.ts`).
  */
 const VoucherIssuedSchema = z.object({
   voucherId: z.string().uuid(),
@@ -175,7 +181,12 @@ const VoucherPrintedSchema = z.object({
   /** `booth.voucher_print.id`, when the box minted one. */
   printId: z.string().uuid().optional(),
   reason: z.enum(VOUCHER_PRINT_REASONS).default('initial'),
-  /** Null for the automatic first print; a reprint is staff-only. */
+  /**
+   * Null for the automatic first print, and for every reprint from a
+   * SCRUM-694 booth: anyone at the screen may ask for a copy, and nobody is
+   * signed in. A box older than that names the account whose session was
+   * open; it is checked against this operator and stored as sent.
+   */
   requestedByAccountId: z.string().uuid().nullish(),
   /** When the box queued it. Defaults to when the outcome was reported. */
   queuedAt: z.string().datetime().optional(),
@@ -283,9 +294,10 @@ async function linkVoucherIfPresent(
  * handle would be undone along with the refusal it exists to report. Same
  * reasoning as the failure audit row `withTx` writes after a rollback, on a
  * separate connection, because by definition it has to outlive the
- * transaction that failed. The unattributed alert is on a path that succeeds
- * and would sit happily inside the transaction; it comes here because
- * `raiseAlert` takes the pool handle.
+ * transaction that failed. The unattributed alert — raised from the SPIN
+ * since SCRUM-694, when its slip named nobody on today's roster — is on a
+ * path that succeeds and would sit happily inside the transaction; it comes
+ * here because `raiseAlert` takes the pool handle.
  *
  * What that costs, for both: the alert is on its own connection, so it commits
  * whatever happens to the batch afterwards. If the push transaction then
@@ -423,7 +435,7 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         tx,
         operatorId,
         payload.staffAccountId,
-        'the staff member signed in at the booth',
+        'the staff member signed in at the booth (a box older than SCRUM-694)',
       );
 
       await tx.insert(spin).values({
@@ -457,25 +469,9 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         await linkVoucherIfPresent(tx, payload.spinId, payload.voucherId, operatorId);
       }
 
-      /**
-       * A stand-in joins the day's roster (SCRUM-473, D5.2). The box let
-       * this person sign in — the roster or the standing list — and has
-       * already printed their name on the slip as part of the day's label;
-       * when they are not on this day's roster, this is the platform hearing
-       * of it. A simulated spin proves nobody worked the booth, and adds
-       * nobody.
-       */
-      if (staffAccountId && !payload.simulated) {
-        await selfAssignBoothDuty(tx, {
-          stationId,
-          operatorId,
-          branchId: scope.auth.branchId,
-          businessDate: event.businessDate,
-          accountId: staffAccountId,
-          via: 'spin',
-          sourceEventId: event.envelope.eventId,
-        });
-      }
+      // Nobody joins the roster from a spin (SCRUM-694): the roster is the
+      // attribution, and the label the slip printed travels on this fact.
+      const staffLabel = normaliseStaffLabel(payload.staffLabel);
 
       await audit.record(tx, {
         actorAccountId: event.envelope.actorAccountId ?? null,
@@ -485,19 +481,45 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         entityType: 'spin',
         entityId: payload.spinId,
         // What was drawn, not what it is worth: an audit row is read on a
-        // Console page, and the money is on the voucher.
+        // Console page, and the money is on the voucher. `staffLabel` here is
+        // the durable copy of the attribution, read once the ledger row has
+        // been swept (`services/booth-attribution.ts`).
         after: {
           stationId,
           prizeId: payload.prizeId ?? null,
           outcome: payload.outcome,
           businessDate: event.businessDate,
           staffAccountId,
+          staffLabel,
+          dutyAccountIds: payload.dutyAccountIds,
           simulated: payload.simulated,
         },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
       });
+
+      if (!payload.simulated && payload.voucherId && staffAccountId === null && staffLabel === null) {
+        /**
+         * D13. One condition with a count, not one alert per voucher: sixty
+         * unattributed vouchers at one booth bump one row sixty times, because
+         * what somebody has to act on is "this booth is printing prizes with
+         * nobody on today's roster", once. Raised from the spin since
+         * SCRUM-694, by the same rule `SPIN_UNATTRIBUTED` counts with, so the
+         * alert opens and closes on one meaning.
+         */
+        await raiseBoothAlert(scope.db, scope.auth, {
+          key: `booth.unattributed:${stationId}`,
+          category: 'booth.unattributed',
+          summary: `${scope.auth.name} is printing booth vouchers with nobody on today's roster: the wheel keeps working, and the slips print "unattributed". Add today's staff in Console > Booths > Today's staff.`,
+          detail: {
+            stationId,
+            boxId: scope.auth.boxId,
+            spinId: payload.spinId,
+            voucherId: payload.voucherId,
+          },
+        });
+      }
 
       return { entityType: 'spin', entityId: payload.spinId };
     },
@@ -656,9 +678,9 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
       }
 
       /**
-       * From the envelope: the box mints this fact with `actorAccountId` set
-       * to whoever its own overlay had signed in, and null when nobody was.
-       * See the note on the schema for why the payload does not repeat it.
+       * From the envelope: null for every booth voucher from a SCRUM-694 box,
+       * which files the fact as the device; an account only from an older
+       * box with somebody signed in. See the note on the schema.
        */
       const issuedByAccountId = await assertOurAccount(
         tx,
@@ -707,21 +729,6 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
       });
-
-      if (!issuedByAccountId) {
-        /**
-         * D13. One condition with a count, not one alert per voucher: sixty
-         * unattributed vouchers at one booth bump one row sixty times, because
-         * what somebody has to act on is "this booth is giving prizes away
-         * with nobody signed in", once.
-         */
-        await raiseBoothAlert(scope.db, scope.auth, {
-          key: `booth.unattributed:${stationId}`,
-          category: 'booth.unattributed',
-          summary: `${scope.auth.name} is issuing booth vouchers with nobody signed in — the wheel keeps working, but the prizes are attributed to no one`,
-          detail: { stationId, boxId: scope.auth.boxId, latestVoucherId: created!.id },
-        });
-      }
 
       return { entityType: 'voucher', entityId: created!.id };
     },
@@ -860,48 +867,15 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         tx,
         operatorId,
         payload.requestedByAccountId,
-        'the staff member who asked for the print',
+        'the staff member signed in when the copy was asked for (a box older than SCRUM-694)',
       );
       /**
-       * SCRUM-413 (audit L8) — a reprint is asked for by somebody on this
-       * booth's staff list, or it is not one this booth made.
-       *
-       * The box lets nobody else sign in at the booth (`allowedStaff` on the
-       * cache scope is `booth_staff_assignment`, served whole), so a fact
-       * naming anyone else was not produced by the booth's own reprint. The
-       * list is read as it is now: a member of staff taken off the booth
-       * between asking for a copy and the box syncing it is quarantined for a
-       * person to look at, which is the cheaper mistake. Null is the
-       * automatic first print, and names nobody.
+       * Nobody is refused for who asked (SCRUM-694). A booth reprint names no
+       * account — anyone at the screen may ask for a copy — and an older box
+       * naming the account whose session was open is stored as sent once it is
+       * this operator's (above). The paper is already printed: refusing the
+       * fact would only quarantine a slip that exists.
        */
-      if (requestedByAccountId) {
-        const [onStaff] = await tx
-          .select({ id: boothStaffAssignment.id })
-          .from(boothStaffAssignment)
-          .where(
-            and(
-              eq(boothStaffAssignment.stationId, stationId),
-              eq(boothStaffAssignment.accountId, requestedByAccountId),
-            ),
-          )
-          .limit(1);
-        /**
-         * Or on the day's roster (SCRUM-473): sign-in at a booth is the
-         * roster and the standing list together, so a reprint asked for by
-         * somebody the rota put on the booth today is the booth's own.
-         */
-        const onDuty =
-          !onStaff &&
-          (await isOnBoothDuty(tx, stationId, event.businessDate, requestedByAccountId));
-        if (!onStaff && !onDuty) {
-          throw new AppError(
-            422,
-            'BOOTH_PRINT_REQUESTER_NOT_STAFF',
-            'The account this print names as its requester is not on this booth’s staff list',
-          );
-        }
-      }
-
       const printId = payload.printId ?? newId();
       await tx.insert(voucherPrint).values({
         id: printId,
@@ -998,24 +972,18 @@ export interface BoothCacheItem {
    */
   bundle: unknown;
   /**
-   * Who may sign in AT THIS BOOTH — `booth.booth_staff_assignment`, not the
-   * `staff` scope, which answers the much wider question of who may work at
-   * the branch. Served whole: withdrawal of access travels on the deny-list,
-   * which the `staff` scope may not be served without.
-   */
-  allowedStaff: string[];
-  /**
    * The day's roster (SCRUM-473): the branch's trading day as the cloud
    * reckons it now, and everybody on the booth that day — the names the
-   * voucher's Staff row joins into one label, and the account ids that may
-   * sign in that day beside `allowedStaff`. Casual workers carry no account.
+   * voucher's Staff row joins into one label, with the account ids of those
+   * who have one (a casual has none). Nobody signs in at the booth
+   * (SCRUM-694): the roster is the whole of the attribution, and it reaches
+   * the box at its next pull, with no publish.
    *
    * A box built before this field ignores it: `BoothCacheEntrySchema` is a
    * plain zod object, which strips a key it does not declare, and the bundle
-   * hash is over `bundle` alone — so an older box goes on printing the
-   * signed-in person, exactly as it did. The names are the one personal thing
-   * on this scope besides the ids, and they are what the owner decided the
-   * slip prints.
+   * hash is over `bundle` alone. The names are the one personal thing on this
+   * scope besides the ids, and they are what the owner decided the slip
+   * prints.
    */
   dutyRoster: BoothDutyRoster;
   /**
@@ -1090,12 +1058,11 @@ function definitionIdsIn(bundle: unknown): string[] {
  *
  * **What is personal here, and what is not.** A published wheel is prize
  * names, colours, weights and printed terms — nothing about anybody. The
- * exception is `allowedStaff`, which is a list of opaque account ids and the
- * least a booth can be given and still refuse a sign-in: no name, no phone, no
- * PIN and no hash. Those live on the `staff` scope, which the api will not
- * serve without the deny-list beside it. Same rule as the rest of the bundle,
- * for the same reason: it is going to a Raspberry Pi in a shopping mall that
- * anybody can carry out of a storeroom.
+ * exception is `dutyRoster`: today's names for the slip and the account ids
+ * behind them — no phone, no PIN and no hash (SCRUM-694 retired the standing
+ * `allowedStaff` list, and a booth-only box is served no staff at all). Same
+ * rule as the rest of the bundle, for the same reason: it is going to a
+ * Raspberry Pi in a shopping mall that anybody can carry out of a storeroom.
  */
 export async function boothCacheItems(db: Db, auth: BoxAuth): Promise<BoothCacheItem[]> {
   const booths = await db
@@ -1125,12 +1092,6 @@ export async function boothCacheItems(db: Db, auth: BoxAuth): Promise<BoothCache
       .orderBy(desc(boothConfigVersion.version))
       .limit(1);
     if (!current) continue;
-
-    const staff = await db
-      .select({ accountId: boothStaffAssignment.accountId })
-      .from(boothStaffAssignment)
-      .where(eq(boothStaffAssignment.stationId, booth.id))
-      .orderBy(asc(boothStaffAssignment.accountId));
 
     const dutyRoster = await boothDutyRosterForBox(
       db,
@@ -1165,7 +1126,6 @@ export async function boothCacheItems(db: Db, auth: BoxAuth): Promise<BoothCache
       version: current.version,
       bundleHash: current.bundleHash,
       bundle: current.bundle,
-      allowedStaff: staff.map((s) => s.accountId),
       dutyRoster,
       voucherDefinitions: definitions,
     });

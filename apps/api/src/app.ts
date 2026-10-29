@@ -568,7 +568,6 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(stationBridgeRoutes);
   // S2-20 K2 — the self-service kiosk's pairing, the staff desk, the Kiosk tile and the virtual kiosk's simulator.
   await app.register(kioskRoutes);
-  await app.register((await import('./routes/box-booth-staff')).boxBoothStaffRoutes);
   await app.register(publicRoutes);
 
   return app;

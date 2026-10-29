@@ -70,9 +70,16 @@ export interface VoucherView {
   hold: { saleId: string; stationId: string; stationName: string; heldAt: string } | null;
   redeemableOffline: boolean;
   /**
-   * Who was signed in at the booth when it printed — the slip's Staff line:
-   * the name it prints (null for an account with no employee) and the staff
-   * code beside it. Null when the spin was unattributed.
+   * The Staff line a booth slip printed (SCRUM-694): today's roster names,
+   * "Tom and Jerry". Null for a counter voucher, and for a booth voucher whose
+   * slip named nobody on today's roster.
+   */
+  staffLabel: string | null;
+  /**
+   * The account behind the voucher: who issued it at a counter, or who was
+   * signed in at a booth older than SCRUM-694 — the name it prints (null for an
+   * account with no employee) and the staff code beside it. Null for every
+   * voucher from a SCRUM-694 booth, whose attribution is `staffLabel`.
    */
   issuedBy: { name: string | null; code: string } | null;
 }

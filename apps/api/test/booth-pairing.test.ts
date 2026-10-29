@@ -176,15 +176,13 @@ describe('an unpaired screen cannot press the button (SCRUM-244)', () => {
       ['GET', '/booth/config'],
       ['GET', '/booth/status'],
       ['POST', '/booth/spin'],
-      ['POST', '/booth/staff/sign-in'],
-      ['POST', '/booth/staff/sign-out'],
       ['POST', '/booth/reprint'],
     ];
     for (const [method, url] of routes) {
       const res = await ctx.app.inject({
         method: method as 'GET' | 'POST',
         url,
-        ...(method === 'POST' ? { payload: url.endsWith('sign-in') ? { pin: '2468' } : {} } : {}),
+        ...(method === 'POST' ? { payload: {} } : {}),
       });
       expect(res.statusCode, `${method} ${url}`).toBe(401);
       expect(res.json().error.code, `${method} ${url}`).toBe('BOOTH_UNPAIRED');

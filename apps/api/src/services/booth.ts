@@ -22,6 +22,7 @@ import {
 } from '@oto/box-agent';
 import type { FastifyBaseLogger } from 'fastify';
 import { AppError } from '../lib/errors';
+import { SPIN_LABEL_JOINS, SPIN_UNATTRIBUTED } from './booth-attribution';
 import { boxSettings, inProcessBox } from './box';
 import { boothUnpaired, type BoothDeviceAuth } from './device-credential';
 
@@ -384,7 +385,11 @@ export interface BoothConsoleStatus {
   today: {
     businessDate: string;
     spins: number;
-    /** Spins with no staff member signed in — the D13 condition's raw number. */
+    /**
+     * Spins whose slip named nobody on today's roster (and no signed-in account
+     * from a box older than SCRUM-694) — the D13 condition's raw number,
+     * counted by `SPIN_UNATTRIBUTED` (`services/booth-attribution.ts`).
+     */
     unattributed: number;
     /** `booth.booth_prize.id` of the prizes that have hit their cap today. */
     dailyCapsReached: string[];
@@ -508,21 +513,15 @@ export async function boothConsoleStatus(
    * the draw, not a morning's play, and counting it would make every figure
    * on this panel unusable the moment somebody opened that table.
    */
-  const [counts] = await db
-    .select({
-      spins: count(),
-      unattributed: sql<number>`count(*) filter (where ${spin.staffAccountId} is null)`.mapWith(
-        Number,
-      ),
-    })
-    .from(spin)
-    .where(
-      and(
-        eq(spin.stationId, row.stationId),
-        eq(spin.businessDate, today),
-        eq(spin.simulated, false),
-      ),
-    );
+  const {
+    rows: [counts],
+  } = await db.execute<{ spins: number; unattributed: number }>(sql`
+    select count(*)::int as spins,
+           (count(*) filter (where ${SPIN_UNATTRIBUTED}))::int as unattributed
+      from booth.spin s ${SPIN_LABEL_JOINS}
+     where s.station_id = ${row.stationId}
+       and s.business_date = ${today}
+       and s.simulated = false`);
 
   const [lastSpin] = await db
     .select({ occurredAt: spin.occurredAt })

@@ -605,9 +605,18 @@ export const BoothReportSchema = ReportScopeSchema.extend({
   prizes: z.array(
     BoothFunnelSchema.extend({ boothId: z.string().uuid(), prizeId: z.string().uuid(), name: z.string() }),
   ),
-  /** Per booth and staff member signed in; `accountId` null is unattributed. */
+  /**
+   * Per booth and Staff row (SCRUM-694): `label` is the roster names the
+   * slips printed, `accountId` an older box's signed-in account; both null is
+   * unattributed.
+   */
   staff: z.array(
-    BoothFunnelSchema.extend({ boothId: z.string().uuid(), accountId: z.string().uuid().nullable(), name: z.string() }),
+    BoothFunnelSchema.extend({
+      boothId: z.string().uuid(),
+      accountId: z.string().uuid().nullable(),
+      label: z.string().nullable(),
+      name: z.string(),
+    }),
   ),
   /** Per booth and trading day. */
   days: z.array(BoothFunnelSchema.extend({ boothId: z.string().uuid(), businessDate: Day })),

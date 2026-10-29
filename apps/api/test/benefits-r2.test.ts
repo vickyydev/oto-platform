@@ -49,9 +49,10 @@ import { provisionVirtualBox } from '../src/services/box';
  *     revoked' and changes nothing" — at the cloud at once, and on the box
  *     from its next pull of the `benefits` scope;
  *   - check 6's "a benefit QR is refused at sign-in and at the gate reader" —
- *     sign-in and the till's badge path here; the gate reader and the booth
- *     badge path on the box (`packages/box-agent/test/gate-host.test.ts`,
- *     `booth.test.ts`, `benefit-credential.test.ts`).
+ *     sign-in and the till's badge path here; the gate reader on the box
+ *     (`packages/box-agent/test/gate-host.test.ts`, `benefit-credential.test.ts`).
+ *     The booth's badge path went with booth sign-in (SCRUM-694), and
+ *     `booth-reprint.test.ts` pins that the booth has no staff route left.
  *
  * The box half is the real agent on the store the routes read, pulling
  * `GET /box/v1/cache` through `app.inject`, as the shift-token suite does.

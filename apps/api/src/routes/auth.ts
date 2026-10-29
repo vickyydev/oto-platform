@@ -326,7 +326,8 @@ export async function authRoutes(app: App): Promise<void> {
          * and no credential: no cookie, and never the session token in the
          * body. Decided by the audience signed INTO the token, not by anything
          * the caller asks for, so a cookie app's token cannot be talked into
-         * this shape and a booth token can never yield a cookie.
+         * this shape and a booth token can never yield a cookie. Nothing mints
+         * a booth token since SCRUM-694; the branch stays as that fence.
          */
         const identityOnly = IDENTITY_ONLY_AUDIENCES.has(result.audience);
         const identity = identityOnly ? await handoffIdentity(app.db, result) : null;

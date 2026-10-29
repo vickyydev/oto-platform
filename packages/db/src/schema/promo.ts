@@ -394,12 +394,14 @@ export const voucher = promo.table(
     /** Captured from the definition at issue. See the note at the top of the file. */
     costSatang: integer('cost_satang').notNull().default(0),
     /**
-     * The staff member signed in at the booth when it was issued. **Null is a
-     * real and expected value**: the specification is explicit that a login
-     * problem must never take the booth down, so a spin with nobody signed in
-     * still prints a voucher and the voucher is flagged unattributed. The
-     * alert that opens on the first one (`booth.unattributed`) is what makes
-     * that visible without blocking a child at the wheel.
+     * Who issued it. A counter voucher names its issuer. **Null for every booth
+     * voucher from a SCRUM-694 box**: nobody signs in at a booth, and a booth
+     * voucher's attribution is its spin's Staff-row label — today's roster,
+     * read through `apps/api/src/services/booth-attribution.ts`. A box older
+     * than that names the account that was signed in. A booth voucher with no
+     * label and no account is unattributed; the alert that opens on the first
+     * one (`booth.unattributed`) makes that visible without blocking a child
+     * at the wheel.
      */
     issuedByAccountId: uuid('issued_by_account_id').references(() => account.id, {
       onDelete: 'restrict',

@@ -101,7 +101,11 @@ const LedgerQuery = z.object({
   definitionId: z.string().uuid().optional(),
   /** The booth whose spins minted them. */
   stationId: z.union([z.string().uuid(), z.literal('counter')]).optional(),
-  /** Who was signed in when it was issued, or `unattributed`. */
+  /**
+   * The account that issued it at a counter (or was signed in at a booth older
+   * than SCRUM-694), or `unattributed`: no issuing account and, for a booth
+   * voucher, a slip that named nobody on today's roster.
+   */
   issuedBy: z.union([z.string().uuid(), z.literal('unattributed')]).optional(),
   status: z.enum(VOUCHER_LEDGER_STATUSES).optional(),
 });
@@ -138,6 +142,8 @@ const LedgerResponse = z.object({
         stationId: z.string().uuid().nullable(),
         name: z.string(),
       }),
+      /** The names a booth slip printed (today's roster); null for a counter voucher or nobody rostered. */
+      staffLabel: z.string().nullable(),
       issuedBy: LedgerPersonSchema.nullable(),
       codeLast4: z.string(),
       source: z.string(),
@@ -186,7 +192,7 @@ export async function voucherRoutes(app: App): Promise<void> {
       config: { permission: 'admin:booth:read', target: { branchId: 'query.branchId' } },
       schema: {
         description:
-          'Every voucher issued at a branch, whatever made it — a booth spin, a counter issue, the import of the old system’s codes — newest first and paged: when, its type and the prize it was won as, what it hands over (and, once used, what the till took off for it), the booth or counter, who was signed in (null: unattributed), the last four characters of its code and never the whole code, its status, and where, when, by whom and on which sale it was redeemed. Filtered by trading day (from, to — today when absent, at most 366 days), voucher type, booth, who issued it and status. Status is read from the whole row: redeemed, void, held on a till’s cart, expired once its date has passed, printed once paper exists, issued otherwise. `totals` has one line per voucher type over all filters: issued, redeemed, the redemption rate, expired, and the money the tills took off for the redeemed ones.',
+          'Every voucher issued at a branch, whatever made it — a booth spin, a counter issue, the import of the old system’s codes — newest first and paged: when, its type and the prize it was won as, what it hands over (and, once used, what the till took off for it), the booth or counter, the names the slip printed (`staffLabel`, today’s roster) or the account that issued it at a counter (`issuedBy`; both null: unattributed), the last four characters of its code and never the whole code, its status, and where, when, by whom and on which sale it was redeemed. Filtered by trading day (from, to — today when absent, at most 366 days), voucher type, booth, who issued it and status. Status is read from the whole row: redeemed, void, held on a till’s cart, expired once its date has passed, printed once paper exists, issued otherwise. `totals` has one line per voucher type over all filters: issued, redeemed, the redemption rate, expired, and the money the tills took off for the redeemed ones.',
         querystring: LedgerQuery.extend({
           limit: z.coerce.number().int().min(1).max(200).default(50),
           offset: z.coerce.number().int().min(0).default(0),

@@ -11,11 +11,9 @@ import {
   account,
   auditLog,
   boothConfigVersion,
-  boothStaffAssignment,
   box,
   branch,
   child,
-  credential,
   employee,
   member,
   opsRun,
@@ -31,7 +29,6 @@ import {
 import {
   SYNC_EVENT_SCHEMA_VERSION,
   addDaysToIsoDate,
-  boothStaffCode,
   businessDate,
   canonicalSyncBytes,
   newId,
@@ -1838,37 +1835,30 @@ describe('the cache bundle', () => {
     );
     expect(staff.map((s) => s.accountId)).not.toContain(chalongManager!.id);
     /**
-     * What an offline unlock and a booth sign-in need, and nothing that
-     * identifies the person to somebody holding the disk. `lastTokenAt` is
-     * when THIS box last minted a shift token for them — the "seen here" half
-     * of the 30-day offline sign-in, and a timestamp rather than a name
-     * (S2-06). `pinHash` is argon2id over the booth PIN or null (S2-07b): a
-     * booth verifies a PIN on the box, so the hash has to reach it, and it is
-     * the same class of secret as the password hash beside it.
+     * What an offline unlock needs, and nothing that identifies the person to
+     * somebody holding the disk. `lastTokenAt` is when THIS box last minted a
+     * shift token for them — the "seen here" half of the 30-day offline
+     * sign-in, and a timestamp rather than a name (S2-06).
      *
      * A field added to this list is a field that lands on a Raspberry Pi in a
      * shopping mall, which is why the list is pinned and has to be edited on
-     * purpose. `displayName` and `staffCode` were added on purpose (SCRUM-223):
-     * a booth prints "Staff: Nok (S-7KMQ)" with no internet. Both are null for
-     * anybody not on a booth of the box being served. `permissions` was added
-     * on purpose (offline plan Round 3, OD-11): what the account may do at
-     * this branch, as permission strings, so a counter with no internet
-     * decides a member create or a discount the way the platform would.
+     * purpose. `permissions` was added on purpose (offline plan Round 3,
+     * OD-11): what the account may do at this branch, as permission strings,
+     * so a counter with no internet decides a member create or a discount the
+     * way the platform would. The booth's `pinHash`, `pinExpiresAt`,
+     * `displayName` and `staffCode` went with booth sign-in (SCRUM-694).
      */
     expect(Object.keys(staff[0]!).sort()).toEqual([
       'accountId',
-      'displayName',
       'lastTokenAt',
       'mustChangePassword',
       'passwordHash',
       'permissions',
-      'pinExpiresAt',
-      'pinHash',
-      'staffCode',
       'status',
     ]);
-    // Null for everybody the seed gives no booth PIN, rather than absent.
-    expect(staff.every((s) => 'pinHash' in s)).toBe(true);
+    for (const retired of ['pinHash', 'pinExpiresAt', 'displayName', 'staffCode']) {
+      expect(staff.some((s) => retired in s), retired).toBe(false);
+    }
   });
 });
 
@@ -1912,7 +1902,7 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     'wallets',
   ];
   const BOOTH_SCOPES = ['booth', 'deny_list', 'staff'];
-  const MALI = { phone: '+66900004121', pin: '2580' };
+  const MALI = { phone: '+66900004121' };
   const ANAN = { phone: '+66900004122' };
 
   let operatorId: string;
@@ -2036,19 +2026,6 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     tillBox = (await boxWith('counter', [{ name: 'Role Till', kind: 'till', codePrefix: 'RT' }]))
       .box;
 
-    await ctx.db.insert(boothStaffAssignment).values([
-      { id: newId(), stationId: boothStation, accountId: maliId, addedBy: adminId },
-      { id: newId(), stationId: other.stationIds[0]!, accountId: ananId, addedBy: adminId },
-    ]);
-    await ctx.db.insert(credential).values({
-      id: newId(),
-      operatorId,
-      accountId: maliId,
-      kind: 'pin',
-      secretHash: await argonHash(MALI.pin),
-      createdByAccountId: adminId,
-    });
-
     // Booth 1's published wheel, on booth A, as a publish from the Console
     // would leave one there.
     const [booth1] = await ctx.db
@@ -2075,35 +2052,30 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     });
   });
 
-  it('sends a box that runs only booths its wheel, the deny-list and its own booth staff — nothing else', async () => {
+  it("sends a box that runs only booths its wheel and the deny-list: its staff scope carries nobody, and booth items carry no allowedStaff", async () => {
     const { status, etag, body } = await bundleOf(boothBox);
     expect(status).toBe(200);
     expect(Object.keys(body.scopes).sort()).toEqual(BOOTH_SCOPES);
     expect(body.truncated).toEqual([]);
 
     /**
-     * Its own booth's people and nobody else. Not Anan, who is on a booth of
-     * another box; not reception, who works the till and Booth 1 on the
-     * virtual box; not the manager or the administrator, whom booth A's
-     * `all_staff` access rule used to bring along. All five are staff of this
-     * branch, which is exactly why "the branch" was the wrong list.
+     * Nobody signs in at a booth (SCRUM-694), so a booth-only box is served
+     * its staff scope with no rows — which REPLACES the scope the box holds
+     * and so takes any password or PIN hash an older release left on the Pi.
+     * Not Mali, not the manager or the administrator, whom booth A's
+     * `all_staff` access rule used to bring along.
      */
-    const staff = body.scopes.staff!.items as Array<Record<string, unknown>>;
-    expect(staff.map((s) => s.accountId)).toEqual([maliId]);
-    const [mali] = staff;
-    expect(String(mali!.pinHash)).toMatch(/^\$argon2/);
-    expect(String(mali!.passwordHash)).toMatch(/^\$argon2/);
-    expect(mali!.displayName).toBe('Mali');
-    expect(mali!.staffCode).toBe(boothStaffCode(maliId));
+    expect(body.scopes.staff!.items).toEqual([]);
 
     // The deny-list, whole, beside it.
     const [deny] = body.scopes.deny_list!.items as Array<{ revokedAccountIds: unknown }>;
     expect(Array.isArray(deny!.revokedAccountIds)).toBe(true);
 
-    // Its wheel, with the list a sign-in at it is checked against.
-    const wheels = body.scopes.booth!.items as Array<{ stationId: string; allowedStaff: string[] }>;
+    // Its wheel, with today's roster beside it and no standing staff list.
+    const wheels = body.scopes.booth!.items as Array<Record<string, unknown>>;
     expect(wheels.map((w) => w.stationId)).toEqual([boothStation]);
-    expect(wheels[0]!.allowedStaff).toEqual([maliId]);
+    expect('allowedStaff' in wheels[0]!).toBe(false);
+    expect(wheels[0]!.dutyRoster).toBeTruthy();
 
     // Not one member of the park anywhere in it.
     const members = await ctx.db
@@ -2124,11 +2096,10 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     expect(again.statusCode).toBe(304);
   });
 
-  it('carries each booth box its own people: somebody on another box’s booth is not on this one', async () => {
+  it('carries another booth box nobody either', async () => {
     const { body } = await bundleOf(otherBoothBox);
     expect(Object.keys(body.scopes).sort()).toEqual(BOOTH_SCOPES);
-    const staff = body.scopes.staff!.items as Array<{ accountId: string }>;
-    expect(staff.map((s) => s.accountId)).toEqual([ananId]);
+    expect(body.scopes.staff!.items).toEqual([]);
     // Booth B has nothing published, so it has no wheel to send — and no
     // wheel of booth A's either.
     expect(body.scopes.booth!.items).toEqual([]);
@@ -2221,15 +2192,12 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     expect(Object.keys(body.scopes).sort()).toEqual(EVERY_SCOPE);
     expect(body.scopes.members!.items.length).toBeGreaterThan(0);
     // Its till is open to the branch, so the branch's staff are on it, as
-    // they were — the booth people among them, unnamed: no booth is here.
-    const staff = body.scopes.staff!.items as Array<{
-      accountId: string;
-      displayName: string | null;
-    }>;
+    // they were, and no entry names anybody for a booth.
+    const staff = body.scopes.staff!.items as Array<Record<string, unknown>>;
     expect(staff.map((s) => s.accountId)).toEqual(
       expect.arrayContaining([adminId, receptionId, managerId, maliId, ananId]),
     );
-    expect(staff.every((s) => s.displayName === null)).toBe(true);
+    expect(staff.some((s) => 'displayName' in s)).toBe(false);
     expect(body.scopes.booth!.items).toEqual([]);
   });
 
@@ -2239,23 +2207,17 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     const { body } = await bundleOf(mixed);
     expect(Object.keys(body.scopes).sort()).toEqual(EVERY_SCOPE);
     expect(body.scopes.members!.items.length).toBeGreaterThan(0);
-    const staff = body.scopes.staff!.items as Array<{
-      accountId: string;
-      displayName: string | null;
-      pinHash: string | null;
-    }>;
-    const byId = new Map(staff.map((s) => [s.accountId, s]));
-    // The till's: the manager works no booth and is carried for the till.
-    expect(byId.get(managerId)?.displayName).toBeNull();
-    // The booth's: reception, with the name the slip prints and the seeded PIN.
-    expect(byId.get(receptionId)?.displayName).toEqual(expect.any(String));
-    expect(String(byId.get(receptionId)?.pinHash)).toMatch(/^\$argon2/);
-    // Mali is branch staff, so the till carries her, but her booth is on
-    // another box, so nothing here names her.
-    expect(byId.get(maliId)?.displayName).toBeNull();
-    const wheels = body.scopes.booth!.items as Array<{ allowedStaff: string[] }>;
+    const staff = body.scopes.staff!.items as Array<Record<string, unknown>>;
+    const ids = staff.map((s) => s.accountId);
+    // The till's people, for its offline unlock: the branch's staff.
+    expect(ids).toEqual(expect.arrayContaining([managerId, receptionId]));
+    // Nothing for the booth beside it (SCRUM-694): no PIN, no name, no code.
+    for (const retired of ['pinHash', 'pinExpiresAt', 'displayName', 'staffCode']) {
+      expect(staff.some((s) => retired in s), retired).toBe(false);
+    }
+    const wheels = body.scopes.booth!.items as Array<Record<string, unknown>>;
     expect(wheels).toHaveLength(1);
-    expect(wheels[0]!.allowedStaff).toContain(receptionId);
+    expect('allowedStaff' in wheels[0]!).toBe(false);
   });
 });
 

@@ -525,79 +525,7 @@ export interface SpinResponse {
   clockSuspect: boolean;
 }
 
-// --- What the `staff` cache scope gains -------------------------------------
-
-/**
- * The fields the booth adds to each entry of the `staff` cache scope.
- *
- * **Why the existing scope gains fields rather than getting one of its own.**
- * `staff` already carries a rule the booth would otherwise have to re-earn:
- * the api refuses to serve it unless the deny-list is pulled in the same
- * request, and the agent refuses to apply it otherwise (`planCacheApply`). A
- * box may not hold a list of who may work here without the list of whose
- * access has been withdrawn. A new `booth_staff` scope would start life
- * outside that pairing, and the first person to notice would be somebody
- * whose PIN still opened a booth a week after they left.
- *
- * These are ADDITIONS to the entry `apps/api/src/services/sync.ts` already
- * builds and `OfflineStaffRecord` in `@oto/box-agent` already reads —
- * `accountId`, `passwordHash`, `status`, `mustChangePassword`, `lastTokenAt`.
- * All three are optional and nullable, so a box older than this ticket parses
- * a bundle carrying them and a cloud older than this ticket serves entries
- * without them.
- */
-export interface BoothStaffCacheFields {
-  /**
-   * argon2id over the booth PIN, from `core.credential` (kind `pin`).
-   *
-   * **It is not a lookup key and cannot be made into one.** argon2id salts per
-   * row, so there is no query — online or offline — that turns four typed
-   * digits into an account. Whatever screen takes a PIN has to know whose PIN
-   * it is first, which is what `staffCode` is for. A "type any PIN and we will
-   * find you" overlay cannot be built on this field: it would mean verifying
-   * the typed digits against every cached staff row in turn, which is both
-   * slow by design and a four-digit brute force against the whole branch.
-   */
-  pinHash?: string | null;
-  /** ISO 8601; null means the PIN does not expire. */
-  pinExpiresAt?: string | null;
-  /**
-   * The badge secret's digest, from `core.credential` (kind `badge`).
-   *
-   * **Open decision, flagged rather than assumed.** A scan is meant to sign
-   * somebody in on its own, and that requires finding an account FROM the
-   * scanned value — which an argon2id hash cannot do, for the reason above. A
-   * deterministic keyed digest (HMAC over the badge number with a per-operator
-   * key) can be looked up and is what this field would have to hold for
-   * badge-scan sign-in to work offline; `core.credential.secret_hash` as it
-   * stands is argon2id for every kind. Whoever builds PIN and badge management
-   * (S2-07b) settles this: either this field carries a keyed digest and the
-   * credential row says which, or a badge scan produces a staff code and the
-   * PIN path below is the only one. Nothing writes it today.
-   */
-  badgeHash?: string | null;
-  /**
-   * The short code that says WHICH account is signing in — what a person types
-   * before their PIN, or what a badge resolves to.
-   *
-   * **No column holds this yet.** It is in the contract because the PIN cannot
-   * be a lookup key and something has to be, and because a field invented
-   * later by whichever slice needs it first is how two surfaces end up
-   * disagreeing about what a staff member types at a booth. The slice that
-   * builds PIN management owns where it lives and how it is allocated.
-   */
-  staffCode?: string | null;
-  /**
-   * What the slip and the television call this person: the employee's
-   * nickname, or their name when they have none (SCRUM-223).
-   *
-   * **Carried only for people on a booth of the box being served**, because
-   * it is the one field here that names somebody to whoever holds the disk. A
-   * booth needs it to print "Staff: Nok (S-7KMQ)" with no internet, and a till
-   * does not need it at all, so a till's box is not sent it.
-   */
-  displayName?: string | null;
-}
+// --- Staff codes ------------------------------------------------------------
 
 /**
  * The alphabet a staff code is written in: the thirty characters the booth
@@ -654,21 +582,20 @@ export function boothStaffLabel(
 
 /**
  * The day's roster of one booth, as the box receives it on the `booth` cache
- * scope beside `allowedStaff` (SCRUM-473, plan decisions D4-D6).
+ * scope (SCRUM-473, plan decisions D4-D6).
  *
  * `date` is the branch's trading day the roster is for; a box compares it with
  * its own trading day and treats a roster for any other day as empty, so a box
  * that has been offline since yesterday does not print yesterday's names.
  *
- * Each person carries the name the slip prints and, when they have one, the
- * account that may sign in. A casual worker has no account and never will:
- * named on the slip, never signed in (the owner's decision). The account ids
- * are ALSO sign-in eligibility on that day — the union of the roster and the
- * standing `allowedStaff` list (D5.2).
+ * Each person carries the name the slip prints and, when they have one, their
+ * account — which says who was named; nobody signs in at the booth
+ * (SCRUM-694). A casual worker has no account and never will: named on the
+ * slip (the owner's decision).
  *
  * **Optional on the entry, and old boxes ignore it**: the box's cache entry
  * schema is a plain (non-strict) zod object, so a box built before this field
- * strips it and goes on printing the signed-in person, exactly as before.
+ * strips it.
  */
 export const BoothDutyRosterSchema = z.object({
   /** `YYYY-MM-DD`, the branch's trading day. */
@@ -711,53 +638,22 @@ export function joinBoothStaffNames(names: readonly (string | null | undefined)[
 }
 
 /**
- * The Staff row of a booth voucher, merged for the day (SCRUM-473, D6).
- *
- * The ladder, in order:
- *
- *  1. **A roster for today** — every name on it, joined naturally, plus the
- *     person signed in when they are not already on it (a stand-in who signed
- *     in through the standing list joins the day's label: D5.2). The signed-in
- *     person is added by NAME only; the roster is names, and "Tom, Jerry and
- *     Nok (S-7KMQ)" would print one person's code as though it were all three.
- *     A stand-in with no name on record prints their code instead.
- *  2. **Nobody attributed today** (no roster, or an empty one) and somebody
- *     signed in — exactly today's slip: `signedInLabel` ("Nok (S-7KMQ)")
- *     unchanged, byte for byte.
- *  3. **Neither** — null, which the template prints as "unattributed", as today.
- *
- * The untouched-slip guarantee of step 2 is scoped to BEFORE anyone is
- * attributed today. The moment the day's roster holds anyone — the rota's
- * people, a manual add, or a stand-in self-assigned at their first sign-in at
- * a booth with no rota — step 1 applies and the label is names only for the
- * rest of the day: "Nok" replacing "Nok (S-7KMQ)" after the first attribution
- * of the day is the owner's format ruling, not a regression.
+ * The Staff row of a booth voucher, merged for the day (SCRUM-473, D6;
+ * SCRUM-694): every name on today's roster, joined naturally ("Tom and
+ * Jerry"), or null when nobody is on it — which the template prints as
+ * "unattributed". Nobody signs in at the booth, so the roster is the whole
+ * label.
  *
  * `roster` is taken only when its `date` is `today`; any other day's roster is
- * treated as absent.
- *
- * From SCRUM-694 nobody signs in at the booth, and the label is called with
- * the roster alone (`signedIn` absent, read as null).
+ * treated as absent, so a box offline since yesterday names nobody today.
  */
 export function boothDutyLabel(input: {
   roster: BoothDutyRoster | null | undefined;
   today: string;
-  signedIn?: {
-    accountId: string;
-    name: string | null;
-    /** `boothStaffLabel(name, code)` — what the slip prints today. */
-    label: string | null;
-  } | null;
 }): string | null {
   const people =
     input.roster && input.roster.date === input.today ? input.roster.people : [];
-  if (people.length === 0) return input.signedIn?.label ?? null;
-  const names: (string | null)[] = people.map((p) => p.displayName);
-  const who = input.signedIn;
-  if (who && !people.some((p) => p.accountId === who.accountId)) {
-    names.push(who.name ?? who.label);
-  }
-  return joinBoothStaffNames(names);
+  return joinBoothStaffNames(people.map((p) => p.displayName));
 }
 
 // --- Signing in at the booth (SCRUM-223) ------------------------------------

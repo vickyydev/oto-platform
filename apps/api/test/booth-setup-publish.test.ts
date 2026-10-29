@@ -5,6 +5,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
   auditLog,
   boothPrize,
+  boothSettings,
   boxPrintJob,
   branch,
   product,
@@ -128,7 +129,7 @@ afterAll(async () => {
 });
 
 async function draft(): Promise<{
-  settings: { staffSessionMinutes: number | null; spinDurationSeconds: number };
+  settings: Record<string, unknown> & { spinDurationSeconds: number };
   bundle: {
     settings: Record<string, unknown>;
     voucherDefinitions?: Array<Record<string, unknown>>;
@@ -222,7 +223,7 @@ async function spinForSlip(): Promise<{ prizeId: string; prizeLine: string; term
 describe('a booth nobody has set up publishes what it always did (SCRUM-400)', () => {
   it('adds no session length and no wording to the bundle, so the seeded wheel is unchanged', async () => {
     const d = await draft();
-    expect(d.settings.staffSessionMinutes).toBeNull();
+    expect('staffSessionMinutes' in d.settings).toBe(false);
     expect('staffSessionMinutes' in d.bundle.settings).toBe(false);
     expect(d.settings.spinDurationSeconds).toBe(10);
     expect('spinDurationSeconds' in d.bundle.settings).toBe(false);
@@ -231,34 +232,21 @@ describe('a booth nobody has set up publishes what it always did (SCRUM-400)', (
   });
 });
 
-describe('the session length, from the Console to the box (SCRUM-400)', () => {
-  it('saves ten hours on the booth, audits it, and puts it in the draft bundle', async () => {
-    const res = await settings({ staffSessionMinutes: 600 });
-    expect(res.statusCode, res.body).toBe(200);
-    expect(res.json().settings.staffSessionMinutes).toBe(600);
-
+describe('the retired session length (SCRUM-694)', () => {
+  it('a retired staff_session_minutes never reaches the draft bundle, and moves no hash', async () => {
+    const before = await draft();
+    // Set the column directly, as a booth saved before SCRUM-694 holds it.
+    await db.update(boothSettings).set({ staffSessionMinutes: 600 }).where(eq(boothSettings.stationId, boothId));
     const d = await draft();
-    expect(d.settings.staffSessionMinutes).toBe(600);
-    expect(d.bundle.settings.staffSessionMinutes).toBe(600);
-    expect(d.changed).toBe(true);
-
-    const [entry] = await db
-      .select({ before: auditLog.before, after: auditLog.after })
-      .from(auditLog)
-      .where(and(eq(auditLog.action, 'booth_settings.update'), eq(auditLog.entityId, boothId)))
-      .orderBy(desc(auditLog.createdAt))
-      .limit(1);
-    expect(entry, 'a settings change with no audit row').toBeTruthy();
-    expect(entry!.before).toMatchObject({ staffSessionMinutes: null });
-    expect(entry!.after).toMatchObject({ staffSessionMinutes: 600 });
+    expect('staffSessionMinutes' in d.bundle.settings).toBe(false);
+    expect('staffSessionMinutes' in d.settings).toBe(false);
+    expect(d.changed, 'nothing nobody reads is published').toBe(before.changed);
+    await db.update(boothSettings).set({ staffSessionMinutes: null }).where(eq(boothSettings.stationId, boothId));
   });
 
-  it('refuses nothing and more than a day', async () => {
-    for (const minutes of [0, -60, 1_441, 90.5]) {
-      const res = await settings({ staffSessionMinutes: minutes });
-      expect(res.statusCode, `${minutes}: ${res.body}`).toBe(400);
-    }
-    expect((await draft()).settings.staffSessionMinutes, 'a refusal changed the booth').toBe(600);
+  it('the settings route no longer takes one: a patch with only the session length is nothing to change', async () => {
+    const res = await settings({ staffSessionMinutes: 600 });
+    expect(res.statusCode, res.body).toBe(400);
   });
 });
 

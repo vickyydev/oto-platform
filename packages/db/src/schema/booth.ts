@@ -188,7 +188,11 @@ export const boothSettings = booth.table(
       .notNull()
       .default('none'),
     /**
-     * How long a member of staff stays signed in at this booth, in minutes
+     * **Retired by SCRUM-694 (29 Oct 2026): nothing reads or writes it; kept so older rows and older boxes stay valid.**
+     * Nobody signs in at a booth any more, and the publish no longer emits
+     * the field; the CHECK stays with the column.
+     *
+     * How long a member of staff stayed signed in at this booth, in minutes
      * (SCRUM-400, migration 0022). Set by the administrator in Console →
      * Booths → Booth settings and published into the wheel as
      * `settings.staffSessionMinutes`, which the box reads
@@ -483,7 +487,11 @@ export const boothConfigVersion = booth.table(
 );
 
 /**
- * Who may sign in on a booth.
+ * **Retired by SCRUM-694 (29 Oct 2026): nothing reads or writes it; kept so older rows and older boxes stay valid.**
+ * The booth's standing staff list fed booth sign-in, which is gone; today's
+ * staff is `booth_duty_assignment` below.
+ *
+ * Who could sign in on a booth.
  *
  * Distinct from `core.station_staff`, which decides who SEES a station in the
  * POS picker. This is a different question with a different answer: a booth is
@@ -527,8 +535,11 @@ export const boothStaffAssignment = booth.table(
  *     group, department or role matches the booth's rule;
  *   - `app_duty_block` — a duty block in the OTO App whose name matches it;
  *   - `manual` — an administrator added them in the Console;
- *   - `self_assigned` — they were not on the roster, signed in at the booth
- *     anyway through the standing list, and so joined the day's label.
+ *   - `self_assigned` — historical: they were not on the roster, signed in
+ *     at the booth anyway through the standing list, and so joined the day's
+ *     label. Nobody signs in at a booth since SCRUM-694, so nothing writes it
+ *     any more; the CHECK, the route enum and the Console chip keep it for
+ *     the rows already there.
  *
  * The two `app_*` sources belong to the sync, which adds and removes them to
  * match the app; `manual` and `self_assigned` belong to people, and a sync
@@ -541,16 +552,17 @@ export type BoothDutySource = (typeof BOOTH_DUTY_SOURCES)[number];
  * Who is on a booth on one trading day — the dated roster (SCRUM-473, plan
  * decisions D4-D6, migration 0040).
  *
- * Distinct from `booth_staff_assignment`, which is the STANDING list of who
- * may ever sign in at a booth. This is the day's: the people whose names print
- * together on every voucher the booth gives out that day ("Tom and Jerry"),
- * and who may sign in on that day as well as the standing list.
+ * Distinct from `booth_staff_assignment`, the retired STANDING list of who
+ * could sign in at a booth. This is the day's: the people whose names print
+ * together on every voucher the booth gives out that day ("Tom and Jerry").
+ * Nobody signs in at a booth (SCRUM-694): this roster is a spin's whole
+ * attribution, and nobody on it prints "unattributed".
  *
  * **`account_id` is nullable on purpose.** A casual worker in the OTO App has
  * no user and never will, and an employee the sync cannot follow to a platform
  * account (no app user, or a user with no linked account) has none either. The
- * owner's decision is that a casual appears in the printed label and can never
- * sign in — a row with a name and no account is exactly that. An employee with
+ * owner's decision is that a casual appears in the printed label — a row with
+ * a name and no account is exactly that. An employee with
  * no account is NOT written here: the sync lists them as unmatched instead
  * (`booth_duty_sync.unmatched`), so somebody fixes the link rather than the
  * label quietly carrying a name nobody can attribute.
@@ -579,7 +591,7 @@ export const boothDutyAssignment = booth.table(
       .references(() => station.id, { onDelete: 'restrict' }),
     /** The branch's trading day (`businessDate` in `@oto/shared`), not a calendar date. */
     businessDate: date('business_date').notNull(),
-    /** Null for a casual worker: named on the slip, never signs in. */
+    /** Null for a casual worker: named on the slip, with no account. */
     accountId: uuid('account_id').references(() => account.id, { onDelete: 'restrict' }),
     /** The nickname the slip prints. Required: a roster row is, above all, a name. */
     displayName: text('display_name').notNull(),
@@ -732,9 +744,14 @@ export const spin = booth.table(
     prizeId: uuid('prize_id').references(() => boothPrize.id, { onDelete: 'restrict' }),
     voucherId: uuid('voucher_id').references(() => voucher.id, { onDelete: 'restrict' }),
     /**
-     * The staff member signed in at the booth. **Null means unattributed**, a
-     * state the specification requires to keep working: a login problem must
-     * never take the booth down. The alert is what makes it visible.
+     * Null from every SCRUM-694 box: nobody signs in at a booth. A box older
+     * than that may still send the account that was signed in, and that is
+     * still an attribution. The attribution of a SCRUM-694 spin is the
+     * `staffLabel` (today's roster, as the slip printed it) on the spin's
+     * ledger event or its `spin.record` audit row — no column holds it; read
+     * it through `apps/api/src/services/booth-attribution.ts`. With neither,
+     * the spin is unattributed, a state the booth keeps working through; the
+     * alert is what makes it visible.
      */
     staffAccountId: uuid('staff_account_id').references(() => account.id, {
       onDelete: 'restrict',
@@ -811,7 +828,11 @@ export const spin = booth.table(
   ],
 );
 
-/** Why paper was produced. A reprint is staff-only and never draws a new prize. */
+/**
+ * Why paper was produced. A reprint repeats the same code, marked "Reprint",
+ * and never draws a new prize; since SCRUM-694 anyone at the booth's screen may
+ * ask for one.
+ */
 export const VOUCHER_PRINT_REASONS = ['initial', 'reprint'] as const;
 export type VoucherPrintReason = (typeof VOUCHER_PRINT_REASONS)[number];
 
@@ -857,9 +878,10 @@ export const voucherPrint = booth.table(
     printJobId: uuid('print_job_id'),
     reason: text('reason').$type<VoucherPrintReason>().notNull().default('initial'),
     /**
-     * Who asked. Null for the automatic first print that follows a spin; a
-     * reprint is staff-only, so a `reprint` row with nobody on it is the thing
-     * an investigation is looking for.
+     * Who asked. Null for the automatic first print that follows a spin, and
+     * for every reprint from a SCRUM-694 booth, which names nobody: anyone at
+     * the screen may ask for a copy. A box older than that names the account
+     * whose session was open.
      */
     requestedByAccountId: uuid('requested_by_account_id').references(() => account.id, {
       onDelete: 'restrict',

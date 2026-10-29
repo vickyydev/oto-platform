@@ -293,7 +293,8 @@ describe('every seeded press is one sync-booth would have filed from a box', () 
       expect(claims, label).toEqual([{ id: s.id, stationId: booth.id }]);
     }
 
-    // The roster: the person signed in joins the day once, named as `selfAssignBoothDuty` names her.
+    // The roster: the demo day keeps the one `self_assigned` row a booth sign-in wrote before
+    // SCRUM-694 (nothing writes one now), named as that sign-in named her.
     const roster = await ctx.db
       .select()
       .from(boothDutyAssignment)

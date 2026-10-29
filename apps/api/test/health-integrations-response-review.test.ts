@@ -20,7 +20,7 @@ const boxKeys = ['id', 'name', 'slot', 'role', 'status', 'state', 'branchId', 'b
   'minAgentVersion', 'agentBelowMinimum', 'lastHeartbeatAt', 'heartbeatAgeSeconds', 'uptimeSeconds', 'outboxDepth',
   'oldestUnackedAgeS', 'quarantineOpen', 'lastSyncAt', 'clockOffsetMs', 'tempC', 'currentEpoch', 'configVersion', 'devices', 'booths', 'conditions', 'detail'].sort();
 const reported = { configVersion: 2.5, printerReachable: 'ZZ TEST raw reachability', paperStatus: 'ZZ TEST raw paper',
-  vouchersPending: 1.5, pendingUnit: 'vouchers', lastSpinAt: 'ZZ TEST raw reported time', staffSignedIn: false,
+  vouchersPending: 1.5, pendingUnit: 'vouchers', lastSpinAt: 'ZZ TEST raw reported time', rostered: null,
   dailyCapsReached: ['ZZ TEST raw cap'], today: { businessDate: 'ZZ TEST raw business date', spins: 0, vouchers: 0 }, pointerPresent: null };
 let restoreFetch: (() => void) | undefined, providerProbeCount = 0;
 

@@ -772,6 +772,13 @@ async function classifyLostClaim(
  * hold anything that acts. The exchange therefore returns an identity and
  * stops there: the token is spent, its origin and audience are checked, and
  * nothing leaves the api that a script on that origin could replay.
+ *
+ * **Nothing mints a booth token since SCRUM-694**: the Lucky Wheel takes no
+ * sign-on, and the launcher's tile opens the demonstration wheel directly.
+ * This branch stays all the same, as the fence that stops a booth-audience
+ * token — from a launcher tab opened before that release — ever yielding a
+ * cookie: removing it would make 'booth' a cookie app. 'booth' also stays in
+ * `HANDOFF_AUDIENCES` and its CHECK constraint (no migration this round).
  */
 export const IDENTITY_ONLY_AUDIENCES: ReadonlySet<HandoffApp> = new Set<HandoffApp>(['booth']);
 
