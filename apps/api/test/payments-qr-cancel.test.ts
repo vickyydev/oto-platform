@@ -19,6 +19,7 @@ import {
   openQrAttempt,
   pendingAttemptsQuery,
 } from '../src/services/payments/gateway';
+import { scrubDetail } from '../src/services/ops';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
@@ -263,7 +264,12 @@ describe('staff abandon a pending gateway QR', () => {
       .orderBy(desc(opsRun.startedAt))
       .limit(1);
     expect(run).toMatchObject({ outcome: 'ok', actionId });
-    expect((run!.detail as { invoiceNo: string; accepted: boolean })).toMatchObject({ invoiceNo: shown.invoiceNo, accepted: true });
+    // The invoice as the record keeps it: every run's detail passes the one
+    // redactor, which masks any 14-19 digit run that passes the card checksum,
+    // so the trading day decides (the first number of 30 Oct 2026 is masked).
+    expect((run!.detail as { invoiceNo: string; accepted: boolean })).toMatchObject(
+      scrubDetail({ invoiceNo: shown.invoiceNo, accepted: true }) as Record<string, unknown>,
+    );
 
     // Audited, by the person who pressed it.
     const audited = await auditRowsOf(shown.attempt.id, 'payment.qr.cancel');
