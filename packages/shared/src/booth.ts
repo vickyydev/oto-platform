@@ -161,23 +161,13 @@ export const BoothConfigSettingsSchema = z.object({
    * would disagree with the paper the booth has already printed.
    */
   dailySpinCap: z.number().int().positive().nullable(),
-  /**
-   * How long a member of staff stays signed in at this booth, in minutes
-   * (SCRUM-223).
-   *
-   * The session ends when this has passed or when somebody signs out — never
-   * because nobody pressed anything for a while: a booth is attended for a
-   * shift, and a sign-in that lapsed mid-afternoon would produce exactly the
-   * unattributed vouchers staff sign in to avoid.
-   *
-   * **Optional, and present only when an administrator has set one**
-   * (Console → Booths → Booth settings, stored in
-   * `booth.booth_settings.staff_session_minutes`, SCRUM-400). Absent, a box
-   * uses `BOOTH_STAFF_SESSION_DEFAULT_MINUTES`. Optional rather than defaulted
-   * here because a bundle is hashed AS STORED, and a schema that filled the
-   * field in would hand the box a document nobody published.
+  /*
+   * `staffSessionMinutes` (SCRUM-223) is retired by SCRUM-694: nobody signs in
+   * at the booth. A bundle published before then may still carry it; this is
+   * a plain (non-strict) object, so the field is dropped on parse, never
+   * refused, and a box compares the cloud-sent `bundleHash` rather than
+   * re-hashing what it parsed, so dropping it re-applies nothing.
    */
-  staffSessionMinutes: z.number().int().positive().nullable().optional(),
   /** Optional so parsing an older bundle never inserts a field into its hashed document. */
   spinDurationSeconds: z.number().int()
     .min(BOOTH_SPIN_DURATION_MIN_SECONDS).max(BOOTH_SPIN_DURATION_MAX_SECONDS).optional(),
@@ -186,7 +176,7 @@ export const BoothConfigSettingsSchema = z.object({
    * Voucher slip, stored on `booth.booth_settings.voucher_*`.
    *
    * **Each is optional, and present only when it differs from its default**
-   * (`BOOTH_VOUCHER_SLIP_DEFAULTS`), for the reason `staffSessionMinutes`
+   * (`BOOTH_VOUCHER_SLIP_DEFAULTS`), for the reason `spinDurationSeconds`
    * gives: a bundle is hashed as stored, so a booth nobody has customised
    * publishes the document — and the hash — it always did, and a box reading
    * a bundle without them prints the slip it always printed. Read them through

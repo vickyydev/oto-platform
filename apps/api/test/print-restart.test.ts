@@ -4,8 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import pg from 'pg';
-import { eq } from 'drizzle-orm';
-import { account, station } from '@oto/db';
+import { station } from '@oto/db';
 import { FIXTURES } from '@oto/print/fixtures';
 import {
   EDGE_BOX_LOCAL_TABLES_SQL,
@@ -25,7 +24,7 @@ import {
   type PrintSubsystem,
 } from '@oto/box-agent';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '@oto/box-agent/sqlite';
-import { ADMIN, boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
+import { boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
 
 /**
  * S2-07a — the print queue survives a restart, and both dialects can hold it.
@@ -396,7 +395,6 @@ describe('the same store over Postgres (S2-07a)', () => {
   let store: SqlBoxStore;
   let boxId: string;
   let stationId: string;
-  let accountId: string;
   let seal: EnvelopeSealer;
 
   beforeAll(async () => {
@@ -416,12 +414,6 @@ describe('the same store over Postgres (S2-07a)', () => {
     boxId = seeded.id;
     const [till] = await ctx.db.select().from(station).limit(1);
     stationId = till!.id;
-    const [admin] = await ctx.db
-      .select()
-      .from(account)
-      .where(eq(account.phone, ADMIN.phone))
-      .limit(1);
-    accountId = admin!.id;
 
     store = new SqlBoxStore({ driver: postgresBoxDriver(pool as PgPoolLike) });
     await store.init(boxId);
@@ -487,18 +479,6 @@ describe('the same store over Postgres (S2-07a)', () => {
     expect(await store.bumpCounter(boxId, key)).toBe(1);
     expect(await store.bumpCounter(boxId, key, 2)).toBe(3);
     expect(await store.readCounters(boxId, 'booth_prize', '2026-09-21')).toEqual({ 'prize-1': 3 });
-
-    await store.writeStaffSession({
-      stationId,
-      boxId,
-      accountId,
-      credentialKind: 'pin',
-      staffCode: 'S-014',
-      signedInAt: '2026-09-21T03:00:00.000Z',
-      lastSeenAt: '2026-09-21T03:00:00.000Z',
-      expiresAt: null,
-    });
-    expect((await store.readStaffSession(stationId))?.accountId).toBe(accountId);
 
     await store.recordThrottleFailure(boxId, 'booth_pin', stationId, {
       now: '2026-09-21T03:00:00.000Z',

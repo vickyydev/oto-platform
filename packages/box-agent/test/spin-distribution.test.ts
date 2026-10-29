@@ -270,7 +270,6 @@ test('the debug table draws through the same code a real press draws through (D1
     configVersionId: CONFIG_VERSION_ID,
     version: 1,
     bundleHash: 'a'.repeat(64),
-    allowedStaff: [],
     dutyRoster: null,
     voucherDefinitions: [],
     bundle: {

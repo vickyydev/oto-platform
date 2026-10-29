@@ -3,7 +3,6 @@ import { verify as verifyArgon2 } from '@node-rs/argon2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
-  account,
   auditLog,
   boothPrize,
   boxPrintJob,
@@ -26,7 +25,7 @@ import {
 } from '@oto/box-agent';
 import { renderJob } from '@oto/print';
 import { PROFILES } from '@oto/print/fixtures';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { provisionVirtualBox } from '../src/services/box';
 
 /**
@@ -55,7 +54,6 @@ let agent: BoxAgent;
 let booth: Booth;
 let adminCookie: string;
 let boothId: string;
-let receptionAccountId: string;
 let pizzaId: string;
 
 function injectTransport(): AgentFetch {
@@ -86,12 +84,6 @@ beforeAll(async () => {
 
   const [seededBooth] = await db.select().from(station).where(eq(station.name, 'Booth 1')).limit(1);
   boothId = seededBooth!.id;
-  const [reception] = await db
-    .select({ id: account.id })
-    .from(account)
-    .where(eq(account.phone, RECEPTION.phone))
-    .limit(1);
-  receptionAccountId = reception!.id;
   const [pizza] = await db
     .select({ id: product.id })
     .from(product)
@@ -342,30 +334,13 @@ describe('a prize that never expires, worded by the park, published and printed 
 
     const after = await draft();
     expect(after.changed).toBe(false);
-    expect(after.publishedBundle!.settings.staffSessionMinutes).toBe(600);
     expect(after.publishedBundle!.voucherDefinitions).toHaveLength(1);
   });
 
-  it('the box runs it: a PIN sign-in lasts ten hours, and the slip carries the words and no expiry', async () => {
+  it('the box runs it: the slip carries the words and no expiry', async () => {
     await agent.syncCache();
     const running = booth.config();
     expect(running!.version, 'the box is not on the version just published').toBe(2);
-    expect(running!.bundle.settings.staffSessionMinutes).toBe(600);
-
-    // A PIN issued through the Console's route (SCRUM-428) and hashed there;
-    // the box verifies the typed digits against that hash.
-    const pin = await ctx.app.inject({
-      method: 'PUT',
-      url: `/booths/${boothId}/staff/${receptionAccountId}/pin`,
-      headers: { cookie: adminCookie },
-      payload: {},
-    });
-    expect(pin.statusCode, pin.body).toBe(200);
-    await agent.syncCache();
-    const signedIn = await booth.signIn({ pin: pin.json().pin as string });
-    expect(signedIn.ok, 'the booth refused the PIN the Console set').toBe(true);
-    const session = await booth.staffSession();
-    expect(Date.parse(session!.expiresAt!) - Date.parse(session!.signedInAt)).toBe(600 * 60_000);
 
     const spun = await booth.spin({ idempotencyKey: newId() });
     expect(spun.prizeId).toBe(pizzaPrizeId);
@@ -404,8 +379,6 @@ describe('a prize that never expires, worded by the park, published and printed 
     expect(words).toContain('FREE KIDS PIZZA');
     expect(words).toContain('รับพิซซ่าเด็กฟรี 1 ถาด');
     expect(rendered.overflow, rendered.overflow.join('; ')).toEqual([]);
-
-    await booth.signOut();
   });
 });
 

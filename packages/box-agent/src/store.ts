@@ -353,33 +353,18 @@ export interface CounterKey {
   businessDate: string;
 }
 
-/** Who is signed in at a station, as the box remembers it across a restart. */
-export interface BoxStaffSession {
-  stationId: string;
-  boxId: string;
-  accountId: string;
-  /** How they proved it: `pin`, `badge`, `password`. */
-  credentialKind: string;
-  /** The lookup value the sign-in resolved, where there is one. */
-  staffCode: string | null;
-  signedInAt: string;
-  lastSeenAt: string;
-  /** Null for a session that ends only when somebody signs out. */
-  expiresAt: string | null;
-}
-
 /**
  * Failed attempts against one subject, counted on disk.
  *
  * On disk and not in memory, because a lockout a restart clears is not a
- * lockout: a booth in a mall is a kiosk anybody can reach the power lead of,
- * and "five wrong PINs, then wait" has to mean the same thing after somebody
+ * lockout: a box is a machine anybody can reach the power lead of, and
+ * "five wrong passwords, then wait" has to mean the same thing after somebody
  * has pulled the plug as before.
  *
  * The store counts and remembers; it does not decide. `lockedUntil` is written
  * by the caller that owns the policy — how many failures, how long, whether it
- * doubles — because that policy belongs to the service being defended and is
- * different for a booth PIN and a till password.
+ * doubles — because that policy belongs to the service being defended (the
+ * station bridge's offline till unlock, today).
  */
 export interface ThrottleRecord {
   boxId: string;
@@ -406,7 +391,11 @@ export interface ThrottleRecord {
 export interface BoxStoreFeatures {
   /** `box_print_job`: a job waiting on paper survives a restart. */
   printJobs: boolean;
-  /** `box_counter`, `box_staff_session`, `box_throttle`, `box_runtime`. */
+  /**
+   * `box_counter`, `box_staff_session`, `box_throttle`, `box_runtime`.
+   * `box_staff_session` is retired by SCRUM-694 and read by nothing, but it is
+   * still among the tables this flag checks, so an older store opens as before.
+   */
   boothRuntime: boolean;
   /**
    * `box_overlay`: the members, children and visits a counter recorded offline
@@ -674,13 +663,6 @@ export interface BoxStore extends PrintJobStore {
    */
   readCounters(boxId: string, scope: string, businessDate: string): Promise<Record<string, number>>;
 
-  readStaffSession(stationId: string): Promise<BoxStaffSession | null>;
-  /** Sign somebody in at a station. One station holds one session. */
-  writeStaffSession(session: BoxStaffSession): Promise<void>;
-  /** Keep a session alive without changing who is in it. */
-  touchStaffSession(stationId: string, now: string): Promise<void>;
-  clearStaffSession(stationId: string): Promise<void>;
-
   readThrottle(boxId: string, scope: string, subject: string): Promise<ThrottleRecord | null>;
   /**
    * Count one failure and return the record as it now stands.
@@ -722,8 +704,7 @@ export interface BoxStore extends PrintJobStore {
    *
    * `box_runtime` already holds `last_good_time`; these two open it to the
    * booth's other singletons — the last vouchers it printed, so a reprint
-   * after a power cut still has the slip to reprint, and the name of whoever
-   * is signed in — and, one key per code, to every voucher code the booth
+   * after a power cut still has the slip to reprint — and, one key per code, to every voucher code the booth
    * has minted, so a repeat is drawn again (SCRUM-414) — and to the agent's
    * last measurement of its clock, with the boot it was made in (SCRUM-402).
    * Text in, text out: the caller owns the encoding. The key

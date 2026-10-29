@@ -10,7 +10,6 @@ import {
   BOOTH_PRINT_WAIT_MS,
   BOOTH_PRIZE_COUNTER_SCOPE,
   BOOTH_SPIN_COUNTER_SCOPE,
-  BOOTH_STAFF_THROTTLE_SCOPE,
   BoothRefusal,
   boothMintedCodeKey,
   createBooth,
@@ -18,7 +17,6 @@ import {
   type BoothCacheEntry,
   type BoothPrintPort,
   type BoothPrintSubmitOutcome,
-  type BoothStaffRecord,
 } from '../src/booth';
 import { createBoothHttp } from '../src/booth-http';
 import { drawPrize } from '../src/booth-draw';
@@ -89,7 +87,6 @@ function entry(over: Partial<BoothCacheEntry> = {}): BoothCacheEntry {
     configVersionId: CONFIG_VERSION_ID,
     version: 1,
     bundleHash: 'a'.repeat(64),
-    allowedStaff: [],
     dutyRoster: null,
     voucherDefinitions: [],
     bundle: {
@@ -124,7 +121,6 @@ const keys = generateSyncKeyPair();
 
 interface HarnessOptions {
   entries?: BoothCacheEntry[];
-  staff?: BoothStaffRecord[];
   /**
    * The draw's rolls, in order; 0 when none are scripted, so every test is
    * deterministic. They steer the DRAW only — see `randomIndex` below.
@@ -142,8 +138,6 @@ interface HarnessOptions {
   timezone?: string;
   /** How long a press waits on the printer. The booth's own default unless set. */
   printWaitMs?: number;
-  /** Replaces the stand-in argon2 check, to count or slow the verifications. */
-  verifySecret?: (hash: string, secret: string) => Promise<boolean>;
   log?: AgentLog;
 }
 
@@ -192,13 +186,6 @@ function openBooth(options: HarnessOptions = {}): Harness {
     }),
     privateKey: () => (options.privateKey === undefined ? keys.privateKeyPem : options.privateKey),
     print: options.print === false ? null : port,
-    staff: () => options.staff ?? [],
-    // A stand-in for argon2id: the SHAPE under test is "iterate the booth's
-    // allowed staff and verify against each hash" (D18), and a real hash would
-    // prove nothing more about that while making every sign-in test pay for
-    // argon2. The real verifier is `@node-rs/argon2`, injected by the runner
-    // and by the api; `runner.test.ts` checks it against a real hash.
-    verifySecret: options.verifySecret ?? (async (hash, secret) => hash === `argon2:${secret}`),
     ...(options.printWaitMs === undefined ? {} : { printWaitMs: options.printWaitMs }),
     ...(options.log ? { log: options.log } : {}),
     randomIndex: (max) => {
@@ -445,7 +432,7 @@ test('a press writes the spin, mints a code, queues the print and moves the coun
   const printed = await h.booth.print({ spinId: response.spinId });
   assert.equal(printed.printState, 'printed');
   assert.deepEqual(await h.booth.print({ spinId: response.spinId }), printed);
-  assert.equal(response.staffAccountId, null, 'nobody is signed in, and that is allowed');
+  assert.equal(response.staffLabel, null, 'nobody is on today’s roster, and that is allowed');
   assert.equal(response.clockSuspect, false);
   // The prize the page will animate to is the prize the box drew.
   assert.equal(h.booth.config()?.bundle.prizes[response.prizeIndex]?.id, response.prizeId);
@@ -1259,273 +1246,38 @@ test('a clock inside the ten-minute tolerance is not flagged', async () => {
   h.close();
 });
 
-// --- D18: staff sign-in -----------------------------------------------------
+// --- Today's roster (SCRUM-694) ---------------------------------------------
 
-const staffRecord = (over: Partial<BoothStaffRecord> = {}): BoothStaffRecord => ({
-  accountId: ACCOUNT_ID,
-  status: 'active',
-  pinHash: 'argon2:73910',
-  badgeHash: null,
-  staffCode: 'S-014',
-  ...over,
-});
-
-test('a PIN is verified by iterating the booth’s own staff, and signs somebody in', async () => {
-  const h = openBooth({ staff: [staffRecord()] });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-
-  assert.deepEqual(await h.booth.signIn({ pin: '11111' }), { ok: false });
-  const ok = await h.booth.signIn({ pin: '73910' });
-  assert.equal(ok.ok, true);
-  assert.equal(ok.accountId, ACCOUNT_ID);
-
-  const session = await h.booth.staffSession();
-  assert.equal(session?.accountId, ACCOUNT_ID);
-  assert.equal(session?.credentialKind, 'pin');
-  assert.equal(session?.staffCode, 'S-014');
-  h.close();
-});
-
-test('somebody not on this booth’s list cannot sign in, however good their PIN', async () => {
-  const h = openBooth({ staff: [staffRecord()] });
-  // A wheel with an empty `allowedStaff` — which is every booth today, since
-  // nothing fills the scope yet.
-  await seed(h, [entry({ allowedStaff: [] })]);
-  assert.deepEqual(await h.booth.signIn({ pin: '73910' }), { ok: false });
-  assert.equal(await h.booth.staffSession(), null);
-  h.close();
-});
-
-test('five wrong PINs are free; the sixth starts a wait that a restart does not clear', async () => {
-  const h = openBooth({ staff: [staffRecord()] });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-
-  for (let attempt = 1; attempt <= 5; attempt += 1) {
-    const result = await h.booth.signIn({ pin: '00000' });
-    assert.deepEqual(result, { ok: false }, `attempt ${attempt} is free`);
-  }
-  const sixth = await h.booth.signIn({ pin: '00000' });
-  assert.equal(sixth.ok, false);
-  assert.equal(sixth.retryAfterMs, 30_000);
-
-  /**
-   * The point of keeping the count on disk: a booth in a mall is a kiosk
-   * anybody can reach the power lead of, and "five wrong PINs, then wait" has
-   * to mean the same thing after somebody has pulled the plug.
-   */
-  const restarted = openBooth({ staff: [staffRecord()], store: h.store });
-  await restarted.booth.refresh();
-  const afterRestart = await restarted.booth.signIn({ pin: '73910' });
-  assert.equal(afterRestart.ok, false, 'the correct PIN is refused while the lock stands');
-  assert.equal(typeof afterRestart.retryAfterMs, 'number');
-
-  const held = await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_ID);
-  assert.equal(held?.failures, 6);
-  restarted.close();
-  h.close();
-});
-
-/**
- * Closing audit M11 — attempts that overlap.
- *
- * The throttle is read before the argon2 check and counted after it, and a
- * real argon2 check takes a while. Attempts fired together all read the same
- * count: sixty of them were all checked, a right PIN among them signed in,
- * and the lock never came on. The stand-in check below waits a few
- * milliseconds so that the attempts really do overlap.
- */
-const slowCheck =
-  (counted: { checks: number }) =>
-  async (hash: string, secret: string): Promise<boolean> => {
-    counted.checks += 1;
-    await new Promise<void>((resolve) => setTimeout(resolve, 5));
-    return hash === `argon2:${secret}`;
-  };
-
-test('overlapping wrong PINs are taken one at a time, and the lock holds after the allowance', async () => {
-  const counted = { checks: 0 };
-  const h = openBooth({ staff: [staffRecord()], verifySecret: slowCheck(counted) });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-
-  const results = await Promise.all(
-    Array.from({ length: 12 }, () => h.booth.signIn({ pin: '00000' })),
-  );
-  for (let i = 0; i < 5; i += 1)
-    assert.deepEqual(results[i], { ok: false }, `attempt ${i + 1} is free`);
-  assert.equal(results[5]?.retryAfterMs, 30_000, 'the sixth starts the wait');
-  for (const late of results.slice(6)) {
-    assert.equal(late.ok, false);
-    assert.ok((late.retryAfterMs ?? 0) > 0, 'refused by the lock');
-  }
-  assert.equal(counted.checks, 6, 'the six within the allowance were checked; the rest never were');
-  const held = await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_ID);
-  assert.equal(
-    held?.failures,
-    6,
-    'an attempt refused by the lock is not a guess and is not counted',
-  );
-  h.close();
-});
-
-test('a right PIN inside a burst, after the lock has come on, is refused', async () => {
-  const h = openBooth({ staff: [staffRecord()], verifySecret: slowCheck({ checks: 0 }) });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-  const burst = ['00000', '00000', '00000', '00000', '00000', '00000', '73910'];
-  const results = await Promise.all(burst.map((pin) => h.booth.signIn({ pin })));
-  const right = results[6];
-  assert.equal(
-    right?.ok,
-    false,
-    'the right PIN arrived after the sixth wrong one and waited behind it',
-  );
-  assert.ok((right?.retryAfterMs ?? 0) > 0);
-  assert.equal(await h.booth.staffSession(), null, 'nobody signed in');
-  h.close();
-});
-
-test('the lock follows the count the store returns, not the count read before the check', async () => {
-  /**
-   * Another writer counts a failure between this booth's read of the throttle
-   * and its own count — what a second process on the same store would do. The
-   * booth read four failures and expected its own to be the fifth, which is
-   * still free; the store comes back with six, which is not.
-   */
-  const base = openBooth({ staff: [staffRecord()] });
-  await seed(base, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-  for (let i = 0; i < 4; i += 1) await base.booth.signIn({ pin: '00000' });
-
-  const racing = openBooth({ staff: [staffRecord()], store: countsAnotherFailureOnce(base.store) });
-  await racing.booth.refresh();
-  const fifth = await racing.booth.signIn({ pin: '00000' });
-  assert.equal(fifth.ok, false);
-  assert.equal(fifth.retryAfterMs, 30_000, 'six failures stored: the wait the sixth earns');
-
-  // And the next attempt, the right PIN, is refused by that lock.
-  const right = await racing.booth.signIn({ pin: '73910' });
-  assert.equal(right.ok, false);
-  assert.ok((right.retryAfterMs ?? 0) > 0);
-  assert.equal(await racing.booth.staffSession(), null);
-  racing.close();
-  base.close();
-});
-
-/**
- * Closing audit M10 — two people holding the same digits. The booth used to
- * sign in whichever of them the cloud's list happened to name first.
- */
-test('a PIN two people hold signs nobody in, is not counted, and the log names neither', async () => {
-  const OTHER_ACCOUNT_ID = '018f1d2c-0000-7000-8000-00000000fb02';
-  const THIRD_ACCOUNT_ID = '018f1d2c-0000-7000-8000-00000000fb03';
-  const lines: string[] = [];
-  const counted = { checks: 0 };
-  const h = openBooth({
-    staff: [
-      staffRecord(),
-      staffRecord({ accountId: OTHER_ACCOUNT_ID, staffCode: 'S-015' }),
-      staffRecord({ accountId: THIRD_ACCOUNT_ID, staffCode: 'S-016', pinHash: 'argon2:25800' }),
-    ],
-    verifySecret: slowCheck(counted),
-    log: keptLog(lines),
-  });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID, OTHER_ACCOUNT_ID, THIRD_ACCOUNT_ID] })]);
-
-  assert.deepEqual(await h.booth.signIn({ pin: '73910' }), { ok: false }, 'the ordinary refusal');
-  assert.equal(await h.booth.staffSession(), null);
-  assert.equal(
-    counted.checks,
-    3,
-    'every person on the booth was checked, not the first match only',
-  );
-  assert.equal(
-    await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_ID),
-    null,
-    'a PIN two people hold is not a guess, and is not counted',
-  );
-  // So trying it again and again never locks the booth against everybody else.
-  for (let i = 0; i < 6; i += 1) {
-    assert.deepEqual(await h.booth.signIn({ pin: '73910' }), { ok: false });
-  }
-
-  const said = lines.join('\n');
-  assert.match(said, /more than one person/);
-  for (const secret of [ACCOUNT_ID, OTHER_ACCOUNT_ID, 'S-014', 'S-015', '73910']) {
-    assert.equal(said.includes(secret), false, 'the log names nobody and repeats no PIN');
-  }
-
-  // A PIN only one person holds still signs that person in.
-  const third = await h.booth.signIn({ pin: '25800' });
-  assert.equal(third.ok, true);
-  assert.equal(third.accountId, THIRD_ACCOUNT_ID);
-  h.close();
-});
-
-test('a sign-in problem never stops the wheel', async () => {
-  const h = openBooth({ rolls: [0], staff: [staffRecord()] });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-  for (let attempt = 0; attempt < 8; attempt += 1) await h.booth.signIn({ pin: '00000' });
+test('nobody on today’s roster: the wheel plays, the slip prints unattributed, and the spin names nobody', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h);
 
   const response = await h.booth.spin({ idempotencyKey: 'press-1' });
-  assert.equal(response.staffAccountId, null, 'unattributed, which is a real and expected state');
+  assert.equal(response.staffLabel, null, 'unattributed, which is a real and expected state');
   assert.notEqual(response.voucherCode, null, 'and the child still got a voucher');
-  h.close();
-});
-
-test('a signed-in booth attributes the spin and prints the staff code', async () => {
-  const h = openBooth({ rolls: [0], staff: [staffRecord()] });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-  await h.booth.signIn({ pin: '73910' });
-
-  const response = await h.booth.spin({ idempotencyKey: 'press-1' });
-  assert.equal(response.staffAccountId, ACCOUNT_ID);
   const pending = await h.store.loadPendingPrintJobs(BOX_ID);
-  const data = voucherData(pending[0]?.job);
-  assert.equal(data.staff, 'S-014', 'the code, never a name — the slip is read at a counter');
+  assert.equal(voucherData(pending[0]?.job).staff, null, 'which the template prints as "unattributed"');
 
-  await h.booth.signOut();
-  assert.equal(await h.booth.staffSession(), null);
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  const spin = batch.events.find((e) => e.type === 'booth.spin_recorded');
+  assert.equal(spin?.payload.staffLabel, null);
+  assert.deepEqual(spin?.payload.dutyAccountIds, []);
+  assert.equal('staffAccountId' in (spin?.payload ?? {}), false, 'no signed-in account travels');
   h.close();
 });
 
-test('a badge is verified the same way, and finds nobody while no badge hash is cached', async () => {
-  const h = openBooth({ staff: [staffRecord({ badgeHash: null })] });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-  assert.deepEqual(await h.booth.signIn({ badge: 'BADGE-12345' }), { ok: false });
-
-  // And it works the moment something writes one, which is what makes this a
-  // seam rather than a gap: the verification path is the same iteration.
-  const withBadge = openBooth({
-    staff: [staffRecord({ badgeHash: 'argon2:BADGE-12345' })],
-    store: h.store,
-  });
-  await withBadge.booth.refresh();
-  const ok = await withBadge.booth.signIn({ badge: 'BADGE-12345' });
-  assert.equal(ok.ok, true);
-  assert.equal((await withBadge.booth.staffSession())?.credentialKind, 'badge');
-  withBadge.close();
-  h.close();
-});
-
-test('a staff benefit QR at the badge path is refused as not a badge, signs nobody in and is never counted (S2-21 round 2, H8)', async () => {
-  const BENEFIT_QR =
-    'OTO-BEN:v1:018f1d2c-0000-7000-8000-00000000e001:018f1d2c-0000-7000-8000-00000000e002:1893456000:0123456789abcdef.' +
-    'A'.repeat(86);
-  // Even a badge hash that would match it signs nobody in: the header is
-  // refused before any hash is tried.
-  const h = openBooth({ staff: [staffRecord({ badgeHash: `argon2:${BENEFIT_QR}` })] });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-  for (let i = 0; i < 8; i += 1) {
-    assert.deepEqual(await h.booth.signIn({ badge: BENEFIT_QR }), { ok: false, reason: 'not_a_badge' });
-  }
-  // Lower case, as a scanner set to change case would type it, is the same QR.
-  assert.deepEqual(await h.booth.signIn({ badge: BENEFIT_QR.toLowerCase() }), {
-    ok: false,
-    reason: 'not_a_badge',
-  });
-  assert.equal(await h.booth.staffSession(), null);
-  // Nine refusals and no lock: nothing was counted against the booth.
-  const held = await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_ID);
-  assert.equal(held?.failures ?? 0, 0);
-  assert.equal((await h.booth.signIn({ pin: '73910' })).ok, true);
+test('the heartbeat says whether today’s roster names anybody, never who', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h, [
+    entry({
+      dutyRoster: { date: BUSINESS_DATE, people: [{ accountId: ACCOUNT_ID, displayName: 'Tom' }] },
+    }),
+  ]);
+  const beat = await h.booth.heartbeat();
+  assert.equal(beat?.rostered, true);
+  assert.equal(beat?.staffSignedIn, false, 'the retired field an older api still requires');
+  assert.equal(JSON.stringify(beat).includes(ACCOUNT_ID), false);
+  assert.equal(JSON.stringify(beat).includes('Tom'), false, 'a boolean, never a name');
   h.close();
 });
 
@@ -1540,7 +1292,8 @@ test('the heartbeat block is measured, not defaulted', async () => {
   assert.equal(before?.printerReachable, 'unknown', 'nothing has been asked of a printer yet');
   assert.equal(before?.paperStatus, 'unknown');
   assert.equal(before?.lastSpinAt, null);
-  assert.equal(before?.staffSignedIn, false);
+  assert.equal(before?.rostered, false, 'nobody on today’s roster');
+  assert.equal(before?.staffSignedIn, false, 'the retired field, always false');
   assert.equal(before?.vouchersPending, 0);
 
   assert.equal(before?.pendingUnit, 'vouchers');
@@ -1803,8 +1556,8 @@ test('the http handler answers the contract the page was written against', async
   assert.equal(spin.status, 200);
   assert.notEqual((spin.body as { voucherCode: string | null }).voucherCode, null);
 
-  const signOut = await handle({ method: 'POST', path: '/staff/sign-out', body: {} });
-  assert.equal(signOut.status, 204);
+  // Nobody signs in at the booth (SCRUM-694): the staff routes are gone.
+  assert.equal((await handle({ method: 'POST', path: '/staff/sign-in', body: { pin: '73910' } })).status, 404);
 
   assert.equal((await handle({ method: 'GET', path: '/nope' })).status, 404);
   assert.equal((await handle({ method: 'GET', path: '/spin' })).status, 405);
@@ -1838,21 +1591,6 @@ test('a refused press comes back as the platform envelope with a code the page k
   // path, because the page must be able to ignore it safely (D15).
   assert.doesNotMatch(envelope.error.message, new RegExp(STATION_ID));
   assert.doesNotMatch(envelope.error.message, /HKT Central|Booth 1/);
-  h.close();
-});
-
-test('a sign-in refusal is 200 with ok:false, so the panel shows a countdown and not a fault', async () => {
-  const h = openBooth({ staff: [staffRecord()] });
-  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-  const handle = createBoothHttp({ booth: h.booth, online: () => true });
-  for (let i = 0; i < 6; i += 1) {
-    await handle({ method: 'POST', path: '/staff/sign-in', body: { pin: '00000' } });
-  }
-  const locked = await handle({ method: 'POST', path: '/staff/sign-in', body: { pin: '00000' } });
-  assert.equal(locked.status, 200);
-  const body = locked.body as { ok: boolean; retryAfterMs?: number };
-  assert.equal(body.ok, false);
-  assert.ok((body.retryAfterMs ?? 0) > 0);
   h.close();
 });
 
@@ -1906,39 +1644,6 @@ function staleCount(store: BoxStore): BoxStore {
       if (prop === 'readCounter') {
         return async (boxId: string, key: CounterKey): Promise<number> =>
           key.scope === BOOTH_SPIN_COUNTER_SCOPE ? 0 : target.readCounter(boxId, key);
-      }
-      const value = Reflect.get(target, prop, target) as unknown;
-      return typeof value === 'function'
-        ? (value as (...args: unknown[]) => unknown).bind(target)
-        : value;
-    },
-  });
-}
-
-/**
- * A store on which somebody else counts one failure just before this booth
- * counts its own, the first time it does.
- *
- * What it models is a second writer landing between a booth's read of the
- * throttle and its write: the other failure is counted with no lock, as a
- * writer following the free allowance would, and then the booth's own count
- * runs as it was asked to. Everything else is the real store.
- */
-function countsAnotherFailureOnce(store: BoxStore): BoxStore {
-  let done = false;
-  return new Proxy(store, {
-    get(target, prop) {
-      if (prop === 'recordThrottleFailure') {
-        return async (
-          ...args: Parameters<BoxStore['recordThrottleFailure']>
-        ): ReturnType<BoxStore['recordThrottleFailure']> => {
-          if (!done) {
-            done = true;
-            const [boxId, scope, subject, opts] = args;
-            await target.recordThrottleFailure(boxId, scope, subject, { now: opts?.now });
-          }
-          return target.recordThrottleFailure(...args);
-        };
       }
       const value = Reflect.get(target, prop, target) as unknown;
       return typeof value === 'function'

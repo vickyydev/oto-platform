@@ -8,6 +8,7 @@ import {
   type BoothCacheEntry,
   type BoothPrintPort,
 } from '../src/booth';
+import { createBoothHttp } from '../src/booth-http';
 import { generateSyncKeyPair } from '../src/signing';
 import { SqlBoxStore } from '../src/store-sql';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
@@ -16,28 +17,23 @@ import { escposProfile, renderJob } from '@oto/print';
 import { BOX_ID, BRANCH_ID, OPERATOR_ID, seededIndex } from './_support';
 
 /**
- * SCRUM-473 (plan D5, D6) — the day's booth staff on the box.
+ * SCRUM-473, SCRUM-694 — the day's booth staff on the box.
  *
- * The voucher's Staff row becomes the MERGED label of today's roster ("Tom
- * and Jerry"), plus a stand-in who signed in; before anyone is attributed
- * today (no roster, or an empty one) it is exactly the signed-in person it
- * always was, and with nobody at all it is still "unattributed". Once the
- * day's roster holds anyone — a stand-in the cloud self-assigned at their
- * first sign-in included — the label is names only for the rest of the day
- * (the owner's format ruling). Sign-in is the standing list and today's
- * roster together. The spin still records the one signed-in account.
+ * Nobody signs in at the booth. The voucher's Staff row is the MERGED label
+ * of today's roster ("Tom and Jerry"), from Console → Booths → Today's staff;
+ * with nobody on today's roster it is "unattributed", and the press is never
+ * blocked. The spin carries the same label to the cloud, with the rostered
+ * accounts, and the facts are filed by the device, not by an account.
  */
 
 const STATION_ID = '018f1d2c-0000-7000-8000-0000000047a1';
 const LAYOUT_ID = '018f1d2c-0000-7000-8000-00000000fa00';
 const CONFIG_VERSION_ID = '018f1d2c-0000-7000-8000-00000000fc01';
 const DEFINITION_ID = '018f1d2c-0000-7000-8000-00000000fd01';
-/** On the standing list: Nok. */
+/** On the standing list of an older cloud: Nok. */
 const NOK = '018f1d2c-0000-7000-8000-00000000fb01';
-/** On today's roster only: Tom. */
+/** On today's roster: Tom. */
 const TOM = '018f1d2c-0000-7000-8000-00000000fb02';
-/** On neither: Ploy. */
-const PLOY = '018f1d2c-0000-7000-8000-00000000fb03';
 /** 13:00 in Bangkok: trading day 2026-09-21. */
 const AT = '2026-09-21T06:00:00.000Z';
 const TODAY = '2026-09-21';
@@ -47,8 +43,11 @@ let nextSeed = 473;
 
 type Roster = { date: string; people: Array<{ accountId: string | null; displayName: string }> };
 
-/** The cache item as the cloud serves it; `dutyRoster` absent is an older cloud. */
-function item(dutyRoster?: Roster | unknown): Record<string, unknown> {
+/**
+ * The cache item as the cloud serves it; `dutyRoster` absent is an older cloud.
+ * `allowedStaff` is what a cloud older than SCRUM-694 still sends beside it.
+ */
+function item(dutyRoster?: Roster | unknown, settings: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     stationId: STATION_ID,
     configVersionId: CONFIG_VERSION_ID,
@@ -59,7 +58,7 @@ function item(dutyRoster?: Roster | unknown): Record<string, unknown> {
     voucherDefinitions: [{ id: DEFINITION_ID, expiryDays: 14, termsEn: 'One per family.', termsTh: null }],
     bundle: {
       schemaVersion: 1,
-      settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null },
+      settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null, ...settings },
       layout: { id: LAYOUT_ID, name: 'Classic wheel', version: 1, design: {}, assetManifest: {} },
       prizes: [
         {
@@ -107,12 +106,6 @@ function open() {
     }),
     privateKey: () => keys.privateKeyPem,
     print: port,
-    staff: () => [
-      { accountId: NOK, status: 'active', pinHash: 'pin:73910', staffCode: 'S-7KMQ', displayName: 'Nok' },
-      { accountId: TOM, status: 'active', pinHash: 'pin:11111', staffCode: 'S-TTTT', displayName: 'Tom' },
-      { accountId: PLOY, status: 'active', pinHash: 'pin:22222', staffCode: 'S-PPPP', displayName: 'Ploy' },
-    ],
-    verifySecret: async (hash, secret) => hash === `pin:${secret}`,
     randomIndex: seededIndex(nextSeed++),
     now: () => now,
   });
@@ -121,7 +114,7 @@ function open() {
 
 type Harness = ReturnType<typeof open>;
 
-async function publish(h: Harness, raw: Record<string, unknown>, cursorSeq = 1): Promise<void> {
+async function publish(h: Harness, raw: Record<string, unknown>, cursorSeq = 1): Promise<boolean> {
   await h.store.init(BOX_ID);
   await h.store.writeBundle(BOX_ID, {
     scope: 'booth',
@@ -130,7 +123,7 @@ async function publish(h: Harness, raw: Record<string, unknown>, cursorSeq = 1):
     payload: { items: [raw] },
     appliedAt: AT,
   });
-  await h.booth.refresh();
+  return h.booth.refresh();
 }
 
 function voucherData(job: RenderPrintJob | undefined): BoothVoucherData {
@@ -139,12 +132,12 @@ function voucherData(job: RenderPrintJob | undefined): BoothVoucherData {
   return job.data;
 }
 
-/** One press, printed; what the Staff row said and whom the spin named. */
-async function press(h: Harness, key: string): Promise<{ staff: string | null; staffAccountId: string | null; data: BoothVoucherData }> {
+/** One press, printed; what the Staff row said and what the press answered. */
+async function press(h: Harness, key: string): Promise<{ staff: string | null; staffLabel: string | null; data: BoothVoucherData }> {
   const spin = await h.booth.spin({ idempotencyKey: key });
   await h.booth.print({ spinId: spin.spinId });
   const data = voucherData(h.submitted[h.submitted.length - 1]);
-  return { staff: data.staff ?? null, staffAccountId: spin.staffAccountId ?? null, data };
+  return { staff: data.staff ?? null, staffLabel: spin.staffLabel ?? null, data };
 }
 
 const rosterToday = (people: Roster['people'], date = TODAY): Roster => ({ date, people });
@@ -162,8 +155,20 @@ test('the Staff row is every name on today’s roster, casuals included', async 
   );
   const out = await press(h, 'press-1');
   assert.equal(out.staff, 'Tom and Jerry');
-  // Nobody signed in: the spin is unattributed underneath, as today.
-  assert.equal(out.staffAccountId, null);
+  assert.equal(out.staffLabel, 'Tom and Jerry', 'the press answers what the slip printed');
+
+  // The spin carries the same label and the rostered accounts — the casual
+  // has none — and both facts are filed by the device, with no account.
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  const spin = batch.events.find((e) => e.type === 'booth.spin_recorded');
+  const voucher = batch.events.find((e) => e.type === 'promo.voucher_issued');
+  assert.equal(spin?.payload.staffLabel, 'Tom and Jerry');
+  assert.deepEqual(spin?.payload.dutyAccountIds, [TOM]);
+  assert.equal('staffAccountId' in (spin?.payload ?? {}), false);
+  for (const fact of [spin, voucher]) {
+    assert.equal(fact?.actorKind, 'device', `${fact?.type} is filed by the device`);
+    assert.equal(fact?.actorAccountId ?? null, null, `${fact?.type} names no account`);
+  }
   h.db.close();
 });
 
@@ -174,88 +179,59 @@ test('a single name on the roster prints alone', async () => {
   h.db.close();
 });
 
-test('a stand-in who signs in joins the label; the spin records them alone', async () => {
+test('the label travels whatever the slip shows: a booth that hides the Staff row still attributes the spin', async () => {
   const h = open();
-  await publish(
-    h,
-    item(
-      rosterToday([
-        { accountId: TOM, displayName: 'Tom' },
-        { accountId: null, displayName: 'Jerry' },
-      ]),
-    ),
-  );
-  // Nok is on the standing list and not on today's roster.
-  assert.deepEqual(await h.booth.signIn({ pin: '73910' }), { ok: true, accountId: NOK });
+  await publish(h, item(rosterToday([{ accountId: TOM, displayName: 'Tom' }]), { voucherShowStaff: false }));
   const out = await press(h, 'press-1');
-  assert.equal(out.staff, 'Tom, Jerry and Nok');
-  assert.equal(out.staffAccountId, NOK);
+  assert.equal(out.data.showStaff, false);
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  assert.equal(batch.events.find((e) => e.type === 'booth.spin_recorded')?.payload.staffLabel, 'Tom');
   h.db.close();
 });
 
-test('somebody on the roster who signs in is not said twice', async () => {
-  const h = open();
-  await publish(
-    h,
-    item(
-      rosterToday([
-        { accountId: TOM, displayName: 'Tom' },
-        { accountId: null, displayName: 'Jerry' },
-      ]),
-    ),
-  );
-  // Tom is on the roster only — sign-in eligibility is the union (D5.2).
-  assert.deepEqual(await h.booth.signIn({ pin: '11111' }), { ok: true, accountId: TOM });
-  const out = await press(h, 'press-1');
-  assert.equal(out.staff, 'Tom and Jerry');
-  assert.equal(out.staffAccountId, TOM);
-  h.db.close();
-});
-
-test('somebody on neither the standing list nor the roster cannot sign in', async () => {
+test('a simulated press answers the label too, and records nothing', async () => {
   const h = open();
   await publish(h, item(rosterToday([{ accountId: TOM, displayName: 'Tom' }])));
-  const refused = await h.booth.signIn({ pin: '22222' });
-  assert.equal(refused.ok, false);
+  const simulated = await h.booth.spin({ idempotencyKey: 'sim-1', simulate: true });
+  assert.equal(simulated.staffLabel, 'Tom');
+  assert.equal('staffAccountId' in simulated, false);
+  assert.equal((await h.store.takeBatch(BOX_ID, { now: AT })).events.length, 0);
   h.db.close();
 });
 
-test('yesterday’s roster names nobody today, and gives nobody sign-in', async () => {
+test('yesterday’s roster names nobody today', async () => {
   const h = open();
   await publish(h, item(rosterToday([{ accountId: TOM, displayName: 'Tom' }], '2026-09-20')));
-  assert.equal((await h.booth.signIn({ pin: '11111' })).ok, false);
-  assert.equal((await press(h, 'press-1')).staff, null);
+  const out = await press(h, 'press-1');
+  assert.equal(out.staff, null);
+  assert.equal(out.staffLabel, null);
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  const spin = batch.events.find((e) => e.type === 'booth.spin_recorded');
+  assert.equal(spin?.payload.staffLabel, null);
+  assert.deepEqual(spin?.payload.dutyAccountIds, []);
   h.db.close();
 });
 
-test('before anyone is attributed today, an empty roster prints exactly the slip an older cloud’s entry prints — signed in or not', async () => {
+test('an empty roster prints the byte-identical slip an older cloud’s entry prints', async () => {
   // The differential: the same booth and the same press, once with no roster
   // field at all (an older cloud) and once with an empty roster for today.
-  // Scoped to "before anyone is attributed today": the cloud self-assigns a
-  // stand-in at their first sign-in, and from the next pull the roster is
-  // non-empty and the label is names only (the owner's format ruling).
-  const results: Array<{ signedIn: string | null; nobody: string | null; bytes: Buffer }> = [];
+  const results: Array<{ staff: string | null; bytes: Buffer }> = [];
   for (const raw of [item(), item(rosterToday([]))]) {
     const h = open();
     await publish(h, raw);
-    const nobody = (await press(h, 'press-1')).staff;
-    await h.booth.signIn({ pin: '73910' });
-    const out = await press(h, 'press-2');
+    const out = await press(h, 'press-1');
     const device = escposProfile({ id: 'booth', label: 'Booth printer', model: 'sample', widthDots: 576 });
     // Render with the code and the time pinned, so the bytes compare the slip and not the draw.
     const pinned = { ...out.data, voucherCode: 'B1XXXXXX', issuedAt: '21 Sep 2026 13:00', expiresAt: null };
     results.push({
-      signedIn: out.staff,
-      nobody,
+      staff: out.staff,
       bytes: Buffer.from(renderJob({ kind: 'booth_voucher', data: pinned }, { device }).bytes),
     });
     h.db.close();
   }
   const [older, empty] = results;
-  assert.equal(older!.signedIn, 'Nok (S-7KMQ)');
-  assert.equal(empty!.signedIn, 'Nok (S-7KMQ)');
-  assert.equal(older!.nobody, null);
-  assert.equal(empty!.nobody, null);
+  assert.equal(older!.staff, null);
+  assert.equal(empty!.staff, null);
   assert.ok(older!.bytes.equals(empty!.bytes), 'the slip is not byte-identical');
 });
 
@@ -265,6 +241,24 @@ test('a roster the box cannot read is dropped, never the booth', async () => {
   // The wheel was adopted and plays; the Staff row falls back as with no roster.
   assert.equal((await press(h, 'press-1')).staff, null);
   h.db.close();
+});
+
+test('the television’s status names today’s roster, and nothing on another day or with none', async () => {
+  for (const [roster, expected] of [
+    [rosterToday([{ accountId: TOM, displayName: 'Tom' }, { accountId: null, displayName: 'Jerry' }]), 'Tom and Jerry'],
+    [rosterToday([{ accountId: TOM, displayName: 'Tom' }], '2026-09-20'), null],
+    [undefined, null],
+  ] as const) {
+    const h = open();
+    await publish(h, item(roster));
+    const handle = createBoothHttp({ booth: h.booth, online: () => true });
+    const status = (await handle({ method: 'GET', path: '/status' })).body as Record<string, unknown>;
+    assert.equal(status.dutyLabel, expected);
+    assert.equal(JSON.stringify(status).includes(TOM), false, 'never an account id');
+    const beat = await h.booth.heartbeat();
+    assert.equal(beat?.rostered, expected !== null);
+    h.db.close();
+  }
 });
 
 test('a box built before the roster reads an entry carrying one', () => {
@@ -278,4 +272,23 @@ test('a box built before the roster reads an entry carrying one', () => {
     date: TODAY,
     people: [{ accountId: null, displayName: 'Jerry' }],
   });
+});
+
+test('an older cloud’s entry — allowedStaff and a session length — still applies, and the sent hash decides', async () => {
+  const h = open();
+  const older = item(rosterToday([{ accountId: TOM, displayName: 'Tom' }]), { staffSessionMinutes: 600 });
+  // Parsed: the retired fields are dropped, never refused.
+  const parsed = BoothCacheEntrySchema.parse(older);
+  assert.equal('allowedStaff' in parsed, false);
+  assert.equal('staffSessionMinutes' in parsed.bundle.settings, false);
+
+  assert.equal(await publish(h, older), true, 'applied');
+  assert.equal(h.booth.config()?.version, 1);
+  assert.equal((await press(h, 'press-1')).staff, 'Tom');
+
+  // The same entry again, as the next pull delivers it: the box compares the
+  // hash the cloud sent, not one of the document it parsed, so nothing is
+  // re-applied for the field it dropped.
+  assert.equal(await publish(h, older, 2), false, 'no re-apply');
+  h.db.close();
 });

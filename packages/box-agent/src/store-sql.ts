@@ -15,7 +15,6 @@ import {
   OUTBOX_BACKOFF_CAP_MS,
   type BoxPrintJobState,
   type BoxStateRecord,
-  type BoxStaffSession,
   type BoxStore,
   type BoxStoreFeatures,
   type CachedBundle,
@@ -132,6 +131,9 @@ export function normaliseParam(value: unknown, dialect: SqlDialect): unknown {
  * something.
  *
  * `EDGE_BOX_LOCAL_TABLES_SQL` below is the exact Postgres shape they must have.
+ *
+ * `box_staff_session`: retired by SCRUM-694 — nothing reads or writes it; kept
+ * so older stores open (and so this list, the probe and the DDL do not move).
  */
 export const BOX_LOCAL_TABLES = [
   'box_print_job',
@@ -1348,66 +1350,6 @@ export class SqlBoxStore implements BoxStore {
     return out;
   }
 
-  async readStaffSession(stationId: string): Promise<BoxStaffSession | null> {
-    this.requireFeature('boothRuntime');
-    const rows = await this.driver.query(
-      `select * from ${this.table('box_staff_session')} where station_id = ?`,
-      [stationId],
-    );
-    const row = rows[0];
-    return row ? decodeStaffSession(row) : null;
-  }
-
-  async writeStaffSession(session: BoxStaffSession): Promise<void> {
-    this.requireFeature('boothRuntime');
-    // One station holds one session: signing in replaces whoever was there.
-    // Two people signed in at one booth is not a state the screen could show.
-    await this.driver.query(
-      `insert into ${this.table('box_staff_session')} (
-         station_id, box_id, account_id, credential_kind, staff_code,
-         signed_in_at, last_seen_at, expires_at, updated_at
-       ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       on conflict (station_id) do update set
-         box_id = excluded.box_id,
-         account_id = excluded.account_id,
-         credential_kind = excluded.credential_kind,
-         staff_code = excluded.staff_code,
-         signed_in_at = excluded.signed_in_at,
-         last_seen_at = excluded.last_seen_at,
-         expires_at = excluded.expires_at,
-         updated_at = excluded.updated_at`,
-      [
-        session.stationId,
-        session.boxId,
-        session.accountId,
-        session.credentialKind,
-        session.staffCode,
-        session.signedInAt,
-        session.lastSeenAt,
-        session.expiresAt,
-        this.nowIso(),
-      ],
-    );
-  }
-
-  async touchStaffSession(stationId: string, now: string): Promise<void> {
-    this.requireFeature('boothRuntime');
-    await this.driver.query(
-      `update ${this.table('box_staff_session')}
-          set last_seen_at = ?, updated_at = ?
-        where station_id = ?`,
-      [now, now, stationId],
-    );
-  }
-
-  async clearStaffSession(stationId: string): Promise<void> {
-    this.requireFeature('boothRuntime');
-    await this.driver.query(
-      `delete from ${this.table('box_staff_session')} where station_id = ?`,
-      [stationId],
-    );
-  }
-
   async readThrottle(
     boxId: string,
     scope: string,
@@ -1809,19 +1751,6 @@ function decodePrintJob(row: SqlRow): PrintJobRecord {
     lastErrorMessage: row.last_error_message ? String(row.last_error_message) : null,
     queuedAt: toIso(row.queued_at) ?? new Date(0).toISOString(),
     updatedAt: toIso(row.updated_at) ?? new Date(0).toISOString(),
-  };
-}
-
-function decodeStaffSession(row: SqlRow): BoxStaffSession {
-  return {
-    stationId: String(row.station_id),
-    boxId: String(row.box_id),
-    accountId: String(row.account_id),
-    credentialKind: String(row.credential_kind),
-    staffCode: row.staff_code ? String(row.staff_code) : null,
-    signedInAt: toIso(row.signed_in_at) ?? new Date(0).toISOString(),
-    lastSeenAt: toIso(row.last_seen_at) ?? new Date(0).toISOString(),
-    expiresAt: toIso(row.expires_at),
   };
 }
 

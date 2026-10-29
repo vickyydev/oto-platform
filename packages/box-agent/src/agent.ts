@@ -3,10 +3,8 @@ import {
   BoothRefusal,
   createBooth,
   type Booth,
-  type BoothAccountVerdict,
   type BoothBranchContext,
   type BoothClockStanding,
-  type BoothStaffRecord,
   type BoothStationContext,
 } from './booth';
 import { planCacheApply, type CacheFaultReason } from './cache-apply';
@@ -101,8 +99,6 @@ import {
   type TerminalSettlementResult,
 } from './terminal/index';
 import {
-  BOOTH_STAFF_VERIFY_ERRORS,
-  BOOTH_STAFF_VERIFY_PATH,
   PrintTemplateSchema,
   businessDate,
   childPhotosEnabled,
@@ -337,8 +333,9 @@ export interface BoxAgentOptions {
    */
   bridge?: {
     /**
-     * argon2id verification for the till's password at unlock. Defaults to the
-     * booth's `verifySecret`, which both the api and a Pi already pass.
+     * argon2id verification for the till's password at unlock. Defaults to
+     * `booth.verifySecret`, the argon2id verifier both the api and a Pi
+     * already pass as the host's.
      */
     verifyPassword?: (hash: string, password: string) => Promise<boolean>;
     options?: StationBridgeOptions;
@@ -372,13 +369,15 @@ export interface BoxAgentOptions {
     /** Off only for a test that wants the agent without it. */
     enabled?: boolean;
     /**
-     * argon2id verification for a booth PIN or badge.
+     * The argon2id verifier the host supplies. The station bridge's offline
+     * till unlock uses it when `bridge.verifyPassword` is absent, which is
+     * how both hosts (the api's virtual box and a Pi's runner) wire it. The
+     * booth itself verifies nothing since SCRUM-694: nobody signs in there.
      *
      * Injected for the reason `OfflineAuthOptions.verifyPassword` is: this
      * package has no native dependency, and the api and a Pi supply the same
-     * function from different places. Without it a booth still spins and every
-     * spin is unattributed, which is the state the specification requires to
-     * keep working anyway.
+     * function from different places. Do not drop it: without it, and without
+     * `bridge.verifyPassword`, an offline till unlock refuses every password.
      */
     verifySecret?: (hash: string, secret: string) => Promise<boolean>;
     /** The draw's randomness (D3). `node:crypto`'s `randomInt` by default. */
@@ -664,17 +663,6 @@ const RECEIPT_SERIES = 'receipt_series' satisfies CachedBundle['scope'];
 const OFFLINE_COMMAND_KINDS: readonly BoxCommandKind[] = ['go_online'];
 
 /**
- * How long an account sign-in at the booth waits for the cloud (SCRUM-223).
- *
- * Under the six seconds the television gives the box (`REQUEST_TIMEOUT_MS` in
- * the booth page's client), so the page hears the box's own answer — "No
- * internet — sign in with your PIN" — instead of giving up first, while a
- * check still running behind it could sign the person in after the screen
- * said it had not. A healthy answer takes a few hundred milliseconds.
- */
-const BOOTH_ACCOUNT_VERIFY_TIMEOUT_MS = 5_000;
-
-/**
  * One measurement of the box's clock against the platform's (SCRUM-402), as
  * it is kept in `box_runtime` under `CLOCK_MEASUREMENT_KEY`.
  */
@@ -943,17 +931,6 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let bridge: StationBridge | null = null;
   let photoStore: BlobStore | null = null;
   let photoUploader: PhotoUploader | null = null;
-  /**
-   * The `staff` cache scope, as the booth's sign-in reads it.
-   *
-   * Held here rather than read per attempt because the booth's `staff` option
-   * is synchronous and a cache read is not. Refreshed wherever the cache
-   * changes — on attach, so a box that comes back from a power cut knows its
-   * people before the first pull, and after every successful pull, so somebody
-   * removed from the list stops being able to sign in on the next one rather
-   * than at the next restart.
-   */
-  let boothStaff: readonly BoothStaffRecord[] = [];
   /** The `sync_change` sequence the cache bundles were current to. */
   let cacheCursorSeq = 0;
   /**
@@ -2216,7 +2193,6 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      * answered by the config bundle, below.
      */
     if (options.booth?.enabled !== false) {
-      await refreshBoothStaff(boxId);
       booth = createBooth({
         boxId,
         store,
@@ -2230,9 +2206,6 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
             }
           : null,
         printerHealth: () => printing?.jobs.health() ?? {},
-        staff: () => boothStaff,
-        ...(options.booth?.verifySecret ? { verifySecret: options.booth.verifySecret } : {}),
-        verifyAccount: (request) => verifyBoothAccount(request),
         printTemplates: () => cachedTemplates,
         ...(options.booth?.randomIndex ? { randomIndex: options.booth.randomIndex } : {}),
         now: () => new Date(clock()),
@@ -2300,92 +2273,6 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   }
 
   /**
-   * Ask the cloud whether a phone and password may sign in at this booth
-   * (SCRUM-223), under this box's own credential.
-   *
-   * Every way of not getting a verdict — the Console's offline switch, no
-   * credential yet, a dropped line, no answer within
-   * `BOOTH_ACCOUNT_VERIFY_TIMEOUT_MS`, the cloud not serving — is `offline`,
-   * and the television then says to use the PIN, which the box can check
-   * alone. The password is sent once in the body and kept nowhere.
-   *
-   * An answer that refuses the BOX is not `offline`, because the internet is
-   * fine and saying otherwise sends staff to check a cable: a 401 that is not
-   * a wrong password, or `BOX_DISABLED`, is this box's own credential refused
-   * (`box_refused`); `BOOTH_NOT_ON_THIS_BOX` is a booth moved or archived in
-   * the Console (`booth_not_on_box`). Neither drops the credential here: the
-   * box's own calls — the command poll, the heartbeat, the pulls — meet the
-   * same 401 within seconds and take the refusal path, which registers again
-   * at most once a minute (`reregister.ts`).
-   */
-  async function verifyBoothAccount(req: {
-    stationId: string;
-    phone: string;
-    password: string;
-  }): Promise<BoothAccountVerdict> {
-    if (!credential || state.offline) return { ok: false, reason: 'offline' };
-    let answer: { status: number; body: unknown };
-    try {
-      answer = await request<unknown>(BOOTH_STAFF_VERIFY_PATH, {
-        method: 'POST',
-        body: req,
-        answerTimeoutMs: BOOTH_ACCOUNT_VERIFY_TIMEOUT_MS,
-      });
-    } catch {
-      return { ok: false, reason: 'offline' };
-    }
-    const body =
-      typeof answer.body === 'object' && answer.body !== null
-        ? (answer.body as Record<string, unknown>)
-        : null;
-    if (answer.status === 200 && body && typeof body.accountId === 'string') {
-      return {
-        ok: true,
-        accountId: body.accountId,
-        displayName: typeof body.displayName === 'string' ? body.displayName : null,
-        staffCode: typeof body.staffCode === 'string' ? body.staffCode : null,
-      };
-    }
-    const error = (body?.error ?? null) as { code?: unknown; details?: unknown } | null;
-    const code = typeof error?.code === 'string' ? error.code : null;
-    switch (code) {
-      case BOOTH_STAFF_VERIFY_ERRORS.invalid:
-        return { ok: false, reason: 'wrong' };
-      case BOOTH_STAFF_VERIFY_ERRORS.notAllowed:
-        return { ok: false, reason: 'not_allowed' };
-      case BOOTH_STAFF_VERIFY_ERRORS.notAssigned:
-        return { ok: false, reason: 'not_assigned' };
-      case BOOTH_STAFF_VERIFY_ERRORS.mustChangePassword:
-        return { ok: false, reason: 'must_change_password' };
-      case BOOTH_STAFF_VERIFY_ERRORS.locked: {
-        const seconds = (error?.details as { retryAfterS?: unknown } | undefined)?.retryAfterS;
-        return typeof seconds === 'number'
-          ? { ok: false, reason: 'locked', retryAfterMs: seconds * 1000 }
-          : { ok: false, reason: 'locked' };
-      }
-      case BOOTH_STAFF_VERIFY_ERRORS.boothNotOnBox:
-        note('warn', 'the cloud says this booth is not on this box any more', {
-          stationId: req.stationId,
-        });
-        return { ok: false, reason: 'booth_not_on_box' };
-      case BOOTH_STAFF_VERIFY_ERRORS.boxDisabled:
-        note('warn', 'the cloud refused a booth sign-in: this box is taken out of service');
-        return { ok: false, reason: 'box_refused' };
-    }
-    if (answer.status === 401) {
-      // Not a wrong password — that is `INVALID_CREDENTIALS`, above — so the
-      // credential refused is this box's own.
-      note('warn', 'the cloud refused a booth sign-in: this box’s credential is not accepted', {
-        code,
-      });
-      return { ok: false, reason: 'box_refused' };
-    }
-    if (answer.status === 429) return { ok: false, reason: 'locked' };
-    note('warn', 'the cloud could not check a booth sign-in', { status: answer.status, code });
-    return { ok: false, reason: 'offline' };
-  }
-
-  /**
    * The branch, which is what turns an instant into a trading day.
    *
    * Null when the box has not applied a config bundle yet — and that null is
@@ -2404,46 +2291,6 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       timezone: branch.timezone,
       businessDayStart: branch.businessDayStart,
     };
-  }
-
-  /**
-   * Re-read the cached staff list the booth's sign-in verifies against.
-   *
-   * The booth fields (`pinHash`, `badgeHash`, `staffCode`) are optional on
-   * every entry, so a bundle built before they existed parses and simply
-   * yields nobody who can sign in — which is the current state of the fleet,
-   * because nothing writes them yet. The cast is narrow and checked: anything
-   * without a string `accountId` is dropped rather than carried as a record
-   * with a hole in it.
-   */
-  async function refreshBoothStaff(boxId: string): Promise<void> {
-    if (!store) return;
-    try {
-      const held = await store.readBundle(boxId, 'staff');
-      const items = held?.payload?.items;
-      if (!Array.isArray(items)) {
-        boothStaff = [];
-        return;
-      }
-      const records: BoothStaffRecord[] = [];
-      for (const raw of items) {
-        if (typeof raw !== 'object' || raw === null) continue;
-        const entry = raw as Record<string, unknown>;
-        if (typeof entry.accountId !== 'string') continue;
-        records.push({
-          accountId: entry.accountId,
-          status: typeof entry.status === 'string' ? entry.status : 'unknown',
-          pinHash: typeof entry.pinHash === 'string' ? entry.pinHash : null,
-          pinExpiresAt: typeof entry.pinExpiresAt === 'string' ? entry.pinExpiresAt : null,
-          badgeHash: typeof entry.badgeHash === 'string' ? entry.badgeHash : null,
-          staffCode: typeof entry.staffCode === 'string' ? entry.staffCode : null,
-          displayName: typeof entry.displayName === 'string' ? entry.displayName : null,
-        });
-      }
-      boothStaff = records;
-    } catch (err) {
-      note('warn', 'the cached staff list could not be read for the booth', { err: String(err) });
-    }
   }
 
   /** Which of this box's stations a device is assigned to, if any. */
@@ -3053,14 +2900,6 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     // in the bundle happens to change.
     cacheBundleVersion = plan.skipped.length === 0 ? body.bundleVersion : null;
     /**
-     * A pull can carry a newer wheel and a changed staff list, and both are
-     * adopted here rather than on the booth's own minute timer — so a publish
-     * an administrator has just made reaches the television as soon as the box
-     * has it, instead of up to a minute later. The timer remains the floor,
-     * for a box whose pull happens while nobody is watching.
-     */
-    if (applied.includes('staff')) await refreshBoothStaff(boxId);
-    /**
      * The overlay's end (offline plan §2.3): a record this counter wrote
      * offline, whose fact the platform has since accepted, is now in the
      * members copy that just landed — the cache speaks for it again.
@@ -3071,11 +2910,14 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       });
     }
     /**
-     * A staff pull reaches the booth too (SCRUM-223): its `refresh` is where a
-     * session whose holder has since been deactivated is ended, and that
-     * check reads the staff list refreshed on the line above.
+     * A pull can carry a newer wheel, today's roster or changed voucher terms,
+     * and all three are adopted here rather than on the booth's own minute
+     * timer — so a publish an administrator has just made, or a name added
+     * to today's staff, reaches the booth as soon as the box has it. The
+     * timer remains the floor, for a box whose pull happens while nobody is
+     * watching. The staff scope no longer concerns the booth (SCRUM-694).
      */
-    if (applied.includes('booth') || applied.includes('staff')) {
+    if (applied.includes('booth')) {
       await booth?.refresh().catch((err) => {
         note('error', 'a newly pulled wheel could not be applied', { err: String(err) });
       });

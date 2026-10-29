@@ -195,8 +195,6 @@ afterAll(async () => {
 
 describe('a booth reaches the Health page (S2-07a)', () => {
   it('reports the wheel it is running, what it is holding, and that nobody is signed in', async () => {
-    await booth.signOut();
-
     /**
      * Two presses, and only the first is handed over.
      *

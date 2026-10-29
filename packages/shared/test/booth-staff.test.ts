@@ -62,36 +62,21 @@ describe('the published spin duration', () => {
 });
 
 describe('the booth session length (staffSessionMinutes)', () => {
-  it('a bundle published before the field existed still parses, and runs on the default', () => {
-    const parsed = BoothConfigBundleSchema.parse(bundle);
-    expect(parsed.settings.staffSessionMinutes).toBeUndefined();
-    expect(boothStaffSessionMinutes(parsed.settings)).toBe(BOOTH_STAFF_SESSION_DEFAULT_MINUTES);
-    expect(BOOTH_STAFF_SESSION_DEFAULT_MINUTES).toBe(720);
-  });
-
-  it('a bundle that names one is honoured, and kept through the parse', () => {
-    const parsed = BoothConfigBundleSchema.parse({
-      ...bundle,
-      settings: { ...bundle.settings, staffSessionMinutes: 90 },
-    });
-    expect(parsed.settings.staffSessionMinutes).toBe(90);
-    expect(boothStaffSessionMinutes(parsed.settings)).toBe(90);
-  });
-
   it('null means the default; a day is the ceiling', () => {
+    expect(BOOTH_STAFF_SESSION_DEFAULT_MINUTES).toBe(720);
     expect(boothStaffSessionMinutes({ staffSessionMinutes: null })).toBe(720);
     expect(boothStaffSessionMinutes({ staffSessionMinutes: 5000 })).toBe(BOOTH_STAFF_SESSION_MAX_MINUTES);
   });
+});
 
-  it('refuses a length that is not a positive whole number of minutes', () => {
-    for (const bad of [0, -5, 1.5]) {
-      expect(
-        BoothConfigBundleSchema.safeParse({
-          ...bundle,
-          settings: { ...bundle.settings, staffSessionMinutes: bad },
-        }).success,
-      ).toBe(false);
-    }
+describe('a bundle published before SCRUM-694', () => {
+  it('still parses with its retired staffSessionMinutes, and the parsed settings drop it', () => {
+    const older = { ...bundle, settings: { ...bundle.settings, staffSessionMinutes: 600 } };
+    const parsed = BoothConfigBundleSchema.safeParse(older);
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && 'staffSessionMinutes' in parsed.data.settings).toBe(false);
+    // Nothing a box needs is lost with it.
+    expect(parsed.success && parsed.data.settings.buttonKey).toBe('Space');
   });
 });
 

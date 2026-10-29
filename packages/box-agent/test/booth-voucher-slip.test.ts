@@ -24,7 +24,6 @@ const STATION_ID = '018f1d2c-0000-7000-8000-0000000057b1';
 const LAYOUT_ID = '018f1d2c-0000-7000-8000-00000000fa00';
 const CONFIG_VERSION_ID = '018f1d2c-0000-7000-8000-00000000fc01';
 const DEFINITION_ID = '018f1d2c-0000-7000-8000-00000000fd01';
-const ACCOUNT_ID = '018f1d2c-0000-7000-8000-00000000fb01';
 const AT = '2026-09-21T06:00:00.000Z';
 
 const keys = generateSyncKeyPair();
@@ -38,7 +37,6 @@ function entry(settings: Partial<Settings> = {}, version = 1, fixedCode: string 
     configVersionId: CONFIG_VERSION_ID,
     version,
     bundleHash: String(version).repeat(64),
-    allowedStaff: [ACCOUNT_ID],
     dutyRoster: null,
     voucherDefinitions: [
       { id: DEFINITION_ID, expiryDays: 14, termsEn: 'Cannot be combined with other offers.', termsTh: null, fixedCode },
@@ -93,11 +91,6 @@ function open() {
     }),
     privateKey: () => keys.privateKeyPem,
     print: port,
-    // A reprint needs somebody signed in; the PIN check is the test's own.
-    staff: () => [
-      { accountId: ACCOUNT_ID, status: 'active', pinHash: 'pin:73910', staffCode: 'S-7KMQ', displayName: 'Nok' },
-    ],
-    verifySecret: async (hash, secret) => hash === `pin:${secret}`,
     randomIndex: seededIndex(nextSeed++),
     now: () => now,
   });
@@ -222,7 +215,7 @@ test('a reprint after a new publish is the same slip as its first copy', async (
   assert.notEqual(spin.voucherCode, legacyQrPayload);
 
   await publish(h, entry({ voucherFooterText: 'Second footer', voucherShowLogo: false }, 2), 2);
-  assert.deepEqual(await h.booth.signIn({ pin: '73910' }), { ok: true, accountId: ACCOUNT_ID });
+  // Anyone at the screen may ask for a copy (SCRUM-694): no sign-in.
   const reprint = await h.booth.reprint({ spinId: spin.spinId });
   assert.equal(reprint.spinId, spin.spinId);
   const copy = voucherData(h.submitted[h.submitted.length - 1]);

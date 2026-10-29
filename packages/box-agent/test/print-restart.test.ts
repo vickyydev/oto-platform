@@ -265,21 +265,11 @@ test('a sign-in lockout is still in force after somebody pulls the plug', async 
   rmSync(file, { force: true });
 });
 
-test('the booth remembers who is signed in and what it has given away today', async () => {
+test('the booth remembers what it has given away today', async () => {
   const file = tempFile('booth-state');
   const first = bootBox(file);
   await first.store.init(BOX_ID);
 
-  await first.store.writeStaffSession({
-    stationId: STATION_ID,
-    boxId: BOX_ID,
-    accountId: 'acct-som',
-    credentialKind: 'pin',
-    staffCode: 'S-014',
-    signedInAt: AT,
-    lastSeenAt: AT,
-    expiresAt: null,
-  });
   await first.store.bumpCounter(BOX_ID, {
     scope: 'booth_prize',
     key: 'prize-cash-100',
@@ -295,7 +285,6 @@ test('the booth remembers who is signed in and what it has given away today', as
 
   const second = bootBox(file, plus(AT, 30_000));
   await second.store.init(BOX_ID);
-  assert.equal((await second.store.readStaffSession(STATION_ID))?.accountId, 'acct-som');
   assert.equal(
     await second.store.readCounter(BOX_ID, {
       scope: 'booth_prize',
