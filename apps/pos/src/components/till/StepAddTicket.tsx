@@ -111,10 +111,14 @@ export function StepAddTicket({
           <Ticket className="w-4 h-4" />
           <span>Add ticket — select a play ticket for kids and adults</span>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          {tickets.map((t) => (
-            <TicketCard key={t.id} ticket={t} tier={tier} onClick={() => onSelectTicket(t)} />
-          ))}
+        {/* The step's host clips at its own height, so a ticket list taller
+            than the screen scrolls here rather than being cut off. */}
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 gap-4">
+            {tickets.map((t) => (
+              <TicketCard key={t.id} ticket={t} tier={tier} onClick={() => onSelectTicket(t)} />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -142,7 +146,10 @@ export function StepAddTicket({
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col gap-6">
+      {/* The scroll area. Without it the add-on grid overflowed this box and was
+          drawn under the footer on a tablet in portrait, hiding the last row's
+          steppers; the footer below is pinned and the list scrolls past it. */}
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-6 pr-1 pb-1">
         <div>
           <h3 className="text-xl font-semibold mb-3">Participants</h3>
           <div className="grid grid-cols-2 gap-4">
@@ -173,7 +180,7 @@ export function StepAddTicket({
         </div>
       </div>
 
-      <div className="mt-6 pt-6 border-t grid grid-cols-2 gap-4">
+      <div className="shrink-0 mt-6 pt-6 border-t grid grid-cols-2 gap-4">
         <Button variant="outline" size="lg" className="h-16 text-lg" onClick={onBackToGrid}>
           Add Another Ticket
         </Button>
