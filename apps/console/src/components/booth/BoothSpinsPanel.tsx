@@ -169,7 +169,7 @@ export function BoothSpinsPanel({
   );
 }
 
-/** One press: when, what it landed on, who was signed in, and the paper it minted. */
+/** One press: when, what it landed on, whom the slip named, and the paper it minted. */
 function SpinLine({
   spin: s,
   timezone,
@@ -204,7 +204,7 @@ function SpinLine({
         </span>
       </span>
       <span className="min-w-0 break-words text-muted-foreground">
-        {s.staff ? `${s.staff.name ?? 'Staff'} (${s.staff.code})` : 'Unattributed'}
+        {s.staffLabel ?? (s.staff ? `${s.staff.name ?? 'Staff'} (${s.staff.code})` : 'Unattributed')}
       </span>
       <span
         className={cn(

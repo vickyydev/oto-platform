@@ -153,9 +153,6 @@ export function PublishPanel({
                 <FactLine label="Cost">
                   {plan.summary.costPerSpin} a spin · {plan.summary.costPerHundred} per 100 spins
                 </FactLine>
-                <FactLine label="Staff sign-in">
-                  {sessionText(draft.settings.staffSessionMinutes ?? null)}
-                </FactLine>
                 <FactLine label="Spin duration">
                   {boothSpinDurationSeconds(draft.settings)} seconds
                 </FactLine>
@@ -234,13 +231,6 @@ export function PublishPanel({
       )}
     </CardShell>
   );
-}
-
-/** How long a staff sign-in lasts at the booth, as the confirmation says it (SCRUM-400). */
-function sessionText(minutes: number | null): string {
-  if (minutes === null) return 'lasts 12 hours (the default)';
-  const hours = minutes / 60;
-  return `lasts ${Number.isInteger(hours) ? hours : hours.toFixed(1)} hour${hours === 1 ? '' : 's'}`;
 }
 
 /**

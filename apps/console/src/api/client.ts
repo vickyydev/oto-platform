@@ -168,8 +168,7 @@ export const api = {
     request<T>('POST', path, body, opts),
   patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
     request<T>('PATCH', path, body, opts),
-  // Booth staff are PUT onto a booth and a PIN is PUT onto a person (SCRUM-400):
-  // the api's verbs for "make this so", which a retry repeats harmlessly.
+  // A PUT is the api's verb for "make this so", which a retry repeats harmlessly.
   put: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
     request<T>('PUT', path, body, opts),
   // A DELETE is a write like any other, and the platform's rule is that every

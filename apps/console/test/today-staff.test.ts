@@ -9,7 +9,9 @@ import { initialOf, labelLine, logLineText, logTime } from '../src/components/bo
 describe('Today’s staff — the words', () => {
   it('previews the day’s label, and says plainly when there is none', () => {
     expect(labelLine('Tom and Jerry')).toBe('On every voucher today: Tom and Jerry');
-    expect(labelLine(null)).toMatch(/unattributed/);
+    expect(labelLine(null)).toBe(
+      'Nobody is on today’s roster: every voucher prints “unattributed”. Sync now, or add today’s staff below.',
+    );
   });
 
   it('reads each log line as a person would', () => {
@@ -19,7 +21,7 @@ describe('Today’s staff — the words', () => {
     ).toBe('Tom assigned to today’s booth duty · rota sync');
     expect(
       logLineText({ at, action: 'booth_duty.assign', actorAccountId: null, detail: { displayName: 'Nok', source: 'self_assigned' } }),
-    ).toBe('Nok assigned to today’s booth duty · signed in at the booth');
+    ).toBe('Nok assigned to today’s booth duty · joined as a stand-in');
     expect(logLineText({ at, action: 'booth_duty.unassign', actorAccountId: null, detail: { displayName: 'Tom' } })).toBe(
       'Tom taken off today’s booth duty',
     );

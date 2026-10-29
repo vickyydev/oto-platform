@@ -32,8 +32,9 @@ import { formatWhen, timeAgo } from '@/lib/time';
  * range of trading days, read from `analytics.fact_booth_daily` — spins,
  * prizes won, vouchers issued and redeemed, the redemption rate and lag, and
  * what the prizes cost where a cost is set. By booth, by prize and by the
- * staff member signed in; the CSV carries every day, booth, staff member and
- * prize. The `#debug` distribution run is never in it.
+ * names on the slip — today's roster, read from the spins (SCRUM-694; an older
+ * box's signed-in account where there is one); the CSV carries every day,
+ * booth, Staff row and prize. The `#debug` distribution run is never in it.
  */
 export function BoothReport() {
   const working = useWorkingAuthority();
@@ -219,12 +220,12 @@ export function BoothReport() {
                   }))}
                 />
               </CardShell>
-              <CardShell span={12} title="By staff" note="who was signed in at the booth">
+              <CardShell span={12} title="By staff" note="the names on the slip (today’s roster)">
                 <FunnelTable
                   label="Staff"
                   first="Staff"
                   rows={data.staff.map((s) => ({
-                    key: `${s.boothId}|${s.accountId ?? ''}`,
+                    key: `${s.boothId}|${s.accountId ?? ''}|${s.label ?? ''}`,
                     name: s.name,
                     sub: boothName(s.boothId),
                     funnel: s,

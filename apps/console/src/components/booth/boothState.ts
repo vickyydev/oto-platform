@@ -2,7 +2,6 @@ import type { Tone } from '@/components/Status';
 import type {
   BoothArchivedPrize,
   BoothDraft,
-  BoothStaffRow,
   BoothStatus,
   VoucherDefinitionRow,
 } from './boothApi';
@@ -24,19 +23,15 @@ export interface SetupStep {
 }
 
 /**
- * The six steps, in the order a booth is set up, each ticked from the
- * readings the page holds.
+ * The five steps, in the order a booth is set up, each ticked from the
+ * readings the page holds. Nobody signs in at a booth (SCRUM-694), so there
+ * is no staff or PIN step: today's staff is a day's roster, not setup.
  *
  * A reading that is not in hand — not read yet, failed, or kept from before a
  * failed refresh — is passed as null and ticks nothing: a tick is a claim
  * about the booth, and "the request did not answer" is not evidence for it.
  */
-export function boothSetupSteps(
-  draft: BoothDraft | null,
-  status: BoothStatus | null,
-  staff: readonly BoothStaffRow[] | null,
-  now: number = Date.now(),
-): SetupStep[] {
+export function boothSetupSteps(draft: BoothDraft | null, status: BoothStatus | null): SetupStep[] {
   const active = draft?.prizes.filter((p) => p.active) ?? [];
   return [
     { id: 'booth-printer', label: 'Printer added to the box', done: Boolean(status?.printer) },
@@ -47,19 +42,8 @@ export function boothSetupSteps(
     },
     {
       id: 'booth-settings',
-      label: 'Layout and session length saved',
-      done: Boolean(
-        draft?.settings.layoutId &&
-        (draft.settings.staffSessionMinutes == null || draft.settings.staffSessionMinutes > 0),
-      ),
-    },
-    {
-      id: 'booth-staff',
-      label: 'Staff with PINs',
-      done:
-        staff !== null &&
-        staff.length > 0 &&
-        staff.every((p) => p.hasPin && (!p.pinExpiresAt || Date.parse(p.pinExpiresAt) > now)),
+      label: 'Layout saved',
+      done: Boolean(draft?.settings.layoutId),
     },
     {
       id: 'booth-prizes',

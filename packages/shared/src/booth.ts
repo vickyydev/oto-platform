@@ -304,34 +304,6 @@ export function boothVoucherSlipBundleFields(slip: Omit<BoothVoucherSlip, 'desig
   };
 }
 
-/**
- * The session length a box uses when the published wheel names none: twelve
- * hours, which covers the longest shift the park runs at a mall booth.
- */
-export const BOOTH_STAFF_SESSION_DEFAULT_MINUTES = 720;
-
-/**
- * The longest session a box will grant, whatever a bundle says: one day.
- *
- * A session that outlived the trading day would carry yesterday's sign-in into
- * tomorrow's first spins, and nobody would have proved who they were that
- * morning. A larger number in a bundle is honoured up to this ceiling rather
- * than refused, because refusing it would take the whole wheel off the air
- * over a staff setting.
- */
-export const BOOTH_STAFF_SESSION_MAX_MINUTES = 24 * 60;
-
-/** The session length, in minutes, a booth running these settings grants. */
-export function boothStaffSessionMinutes(settings: {
-  staffSessionMinutes?: number | null;
-}): number {
-  const configured = settings.staffSessionMinutes;
-  if (typeof configured !== 'number' || !Number.isInteger(configured) || configured <= 0) {
-    return BOOTH_STAFF_SESSION_DEFAULT_MINUTES;
-  }
-  return Math.min(configured, BOOTH_STAFF_SESSION_MAX_MINUTES);
-}
-
 export const BoothConfigLayoutSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),

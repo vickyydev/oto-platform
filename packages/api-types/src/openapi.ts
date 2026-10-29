@@ -1867,7 +1867,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:integration:test" | "console:integration:manage" | "console:money:read" | "console:money:investigate" | "console:support:lookup" | "console:support:trace" | "console:support:impersonate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "booth:staff:sign_in" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:integration:test" | "console:integration:manage" | "console:money:read" | "console:money:investigate" | "console:support:lookup" | "console:support:trace" | "console:support:impersonate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -13423,7 +13423,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Counts and states for the corner of the television and the #debug panel: link, config version, printer, paper, vouchers pending sync, last spin, whether anybody is signed in, and which prizes have hit their cap today. Whether the box has the cloud is the agent’s answer; everything else is the booth’s. Never who is signed in. */
+        /** @description Counts and states for the corner of the television and the #debug panel: link, config version, printer, paper, vouchers pending sync, last spin, which prizes have hit their cap today, and `dutyLabel` — today’s roster names as the voucher’s Staff row prints them, null when nobody is on today’s roster (nobody signs in at a booth). Whether the box has the cloud is the agent’s answer; everything else is the booth’s. Never an account id. */
         get: {
             parameters: {
                 query?: never;
@@ -13532,121 +13532,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/booth/staff": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Assigned active booth staff, with names, codes and whether a PIN is set. No credentials. */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/booth/staff/sign-in": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Sign a staff member in at this booth by PIN or badge, checked on the box against the booth’s allowed staff — or, with `mode: "account"`, by phone and password, which the box forwards to the cloud under its own credential. Nothing typed is held by anybody afterwards. A refusal is 200 with `ok: false`, how long to wait, and for an account sign-in a `reason` code (`offline`, `not_assigned`, `not_allowed`, `must_change_password`, or `box_refused` / `booth_not_on_box` when the cloud refused the box or no longer has this booth on it) — not a 4xx, because a sign-in problem must never look like the booth being broken. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        accountId?: string;
-                        /** @enum {string} */
-                        mode?: "pin" | "account";
-                        pin?: string;
-                        badge?: string;
-                        phone?: string;
-                        password?: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/booth/staff/sign-out": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description End the booth’s staff session. The wheel keeps spinning afterwards and the spins are recorded unattributed, which is the specification’s rule: a sign-in problem must never take the booth down. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/booth/reprint": {
         parameters: {
             query?: never;
@@ -13656,7 +13541,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Print a voucher that has already been issued, again: the SAME code, never a new draw — this booth’s last voucher, or `spinId`’s. Staff-only, and the box is what enforces that: 403 `staff_required` with nobody signed in at the booth, 404 `nothing_to_reprint` for a voucher the box no longer holds. The copy reaches the cloud as a `reprint` print of that voucher, recorded against the account signed in at the booth when it was made: the booth cannot tell who pressed Reprint, only whose session was open. */
+        /** @description Print a voucher that has already been issued, again: the SAME code marked "Reprint", never a new draw — this booth’s last voucher, or `spinId`’s. Anyone at the screen may ask (nobody signs in at a booth); the box answers 404 `nothing_to_reprint` for a voucher it no longer holds. The copy reaches the cloud as a `reprint` print of that voucher, filed with no account. */
         post: {
             parameters: {
                 query?: never;
@@ -13857,7 +13742,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Change the booth itself: its wheel design, button key, spin eligibility, daily spin cap, spin duration (`spinDurationSeconds`, whole seconds from 2 to 20), staff sign-in length (`staffSessionMinutes`, at most 1440; null is twelve hours), and its voucher slip (`voucherShowLogo`, `voucherHeaderText` up to 200 characters, `voucherFooterText` up to 400, `voucherShowStaff`, `voucherShowTerms`; blank text is saved as no line). Saved to the draft until published — the slip changes reach the booth only with a publish. Eligibility `band` and `phone` can be saved and cannot be published until there is a booth inside the park. */
+        /** @description Change the booth itself: its wheel design, button key, spin eligibility, daily spin cap, spin duration (`spinDurationSeconds`, whole seconds from 2 to 20), and its voucher slip (`voucherShowLogo`, `voucherHeaderText` up to 200 characters, `voucherFooterText` up to 400, `voucherShowStaff`, `voucherShowTerms`; blank text is saved as no line). Saved to the draft until published — the slip changes reach the booth only with a publish. Eligibility `band` and `phone` can be saved and cannot be published until there is a booth inside the park. */
         patch: {
             parameters: {
                 query?: never;
@@ -13877,7 +13762,6 @@ export interface paths {
                         eligibility?: "none" | "band" | "phone";
                         dailySpinCap?: number | null;
                         spinDurationSeconds?: number;
-                        staffSessionMinutes?: number | null;
                         voucherShowLogo?: boolean;
                         voucherHeaderText?: string | null;
                         voucherFooterText?: string | null;
@@ -14235,7 +14119,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Every press of this booth’s button on one trading day (`date`, today at the branch when absent), newest first and paged: when, whose session was open (null: unattributed), the prize or no prize, the last four characters of the voucher code, whether its slip reached paper — printed, failed (the box reported an attempt that produced none) or not reported yet — and whether a till has redeemed it. The day’s counts beside them. Simulated `#debug` spins are left out, and a press the box has not synced yet is not here. */
+        /** @description Every press of this booth’s button on one trading day (`date`, today at the branch when absent), newest first and paged: when, the names the slip printed (`staffLabel`: today’s roster; with no staff account either, unattributed), the account an older box had signed in (`staff`), the prize or no prize, the last four characters of the voucher code, whether its slip reached paper — printed, failed (the box reported an attempt that produced none) or not reported yet — and whether a till has redeemed it. The day’s counts beside them. Simulated `#debug` spins are left out, and a press the box has not synced yet is not here. */
         get: {
             parameters: {
                 query?: {
@@ -14270,6 +14154,7 @@ export interface paths {
                                 /** Format: uuid */
                                 id: string;
                                 occurredAt: string;
+                                staffLabel: string | null;
                                 staff: {
                                     /** Format: uuid */
                                     accountId: string;
@@ -14368,7 +14253,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The day’s staff of this booth (SCRUM-473): the dated roster with where each person came from (the OTO App’s shift schedule, a duty block, a manual add, or a stand-in who signed in), the merged label every voucher prints that day, the last sync and the names it could not match to an account, the booth’s match rule, and the day’s log lines. `date` defaults to the branch’s trading day now. */
+        /** @description The day’s staff of this booth (SCRUM-473): the dated roster with where each person came from (the OTO App’s shift schedule, a duty block, a manual add, or a stand-in who signed in at a booth before SCRUM-694), the merged label every voucher is named with that day, the last sync and the names it could not match to an account, the booth’s match rule, and the day’s log lines. `date` defaults to the branch’s trading day now. */
         get: {
             parameters: {
                 query?: {
@@ -14435,7 +14320,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** @description Put somebody on today’s roster by hand (audited `booth_duty.assign`, source `manual`): an account of the booth’s branch staff — refused 400 `STAFF_NOT_AT_BRANCH` otherwise — or a name alone for somebody with no account, who is named on the voucher and can never sign in. Adding somebody already on the roster changes nothing. */
+        /** @description Put somebody on today’s roster by hand (audited `booth_duty.assign`, source `manual`): an account of the booth’s branch staff — refused 400 `STAFF_NOT_AT_BRANCH` otherwise — or a name alone for somebody with no account, who is named on the voucher. Adding somebody already on the roster changes nothing. */
         post: {
             parameters: {
                 query?: never;
@@ -14647,221 +14532,6 @@ export interface paths {
                 };
             };
         };
-        trace?: never;
-    };
-    "/booths/{id}/staff": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Who may sign in at this booth, when they were added and by whom, whether each has a booth PIN, and when that PIN stops working (`pinExpiresAt`, null for never — a PIN past it is still listed and opens nothing). Never a PIN and never its hash — "can they get in" is the whole question this answers. */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            staff: {
-                                /** Format: uuid */
-                                accountId: string;
-                                addedAt: string;
-                                /** Format: uuid */
-                                addedBy: string;
-                                hasPin: boolean;
-                                pinExpiresAt: string | null;
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/booths/{id}/staff/{accountId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description Let this account sign in at this booth. Separate from the station picker’s `station_staff`: a booth is unattended hardware in a mall and the person at it identifies with a PIN, not a password at a till. Only the staff of the booth’s branch can be added — an employee there, somebody holding a role scoped to that branch, or an operator-wide administrator — as on a till’s staff list; anybody else is refused with 400 `STAFF_NOT_AT_BRANCH`. The list is not in the published bundle: it rides beside it on the box’s `booth` cache scope, so a booth picks up an addition at the box’s next pull with no publish — the PIN works from then — while a phone-and-password sign-in is checked against this list by the platform itself, at once. */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    accountId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            staff: {
-                                /** Format: uuid */
-                                accountId: string;
-                                addedAt: string;
-                                /** Format: uuid */
-                                addedBy: string;
-                                hasPin: boolean;
-                                pinExpiresAt: string | null;
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        post?: never;
-        /** @description Take an account off this booth. Their PIN is NOT withdrawn by this — a PIN belongs to the person and may open another booth — so when that is what is meant, withdraw it FIRST: a PIN can be withdrawn only through a booth whose list still names the person. */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    accountId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            staff: {
-                                /** Format: uuid */
-                                accountId: string;
-                                addedAt: string;
-                                /** Format: uuid */
-                                addedBy: string;
-                                hasPin: boolean;
-                                pinExpiresAt: string | null;
-                            }[];
-                        };
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/booths/{id}/staff/{accountId}/pin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description Issue this person’s booth PIN: the platform draws 5 random digits that nobody else on any of this person’s booths holds, and answers them ONCE in `pin` (SCRUM-428). Booth PINs are issued, never typed: a `pin` in the body, or `generate: false`, is refused with 400 `BOOTH_PIN_ISSUED_ONLY`; `generate: true` is accepted and changes nothing. Issuing again is the one action that replaces a PIN. `expiresAt` (ISO 8601, in the future, else 400 `BOOTH_PIN_EXPIRY_PAST`) is when it stops working; absent or null, never. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one, at every booth they work — and it reaches a booth only as that hash, with its expiry, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen; the box checks expiry with its corrected clock. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log. Because the PIN is the person’s, the person must be yours: somebody who does not work at this booth’s branch is refused with 403 `OUT_OF_BRANCH_SCOPE`, and somebody holding a role you do not hold in full — an operator administrator, to a branch manager — with 403 `ROLE_NOT_DOMINATED`, as a temporary password is. They must also be on this booth (400 `BOOTH_STAFF_NOT_FOUND`). 503 `BOOTH_PIN_UNAVAILABLE` if no unshared PIN could be drawn. */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    accountId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        pin?: string;
-                        generate?: boolean;
-                        /** Format: date-time */
-                        expiresAt?: string | null;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: uuid */
-                            accountId: string;
-                            /** @enum {boolean} */
-                            hasPin: true;
-                            pinExpiresAt: string | null;
-                            pin: string;
-                        };
-                    };
-                };
-            };
-        };
-        post?: never;
-        /** @description Withdraw this person’s booth PIN — the Console’s Remove PIN — at every booth at once. Marked revoked with a reason rather than deleted, so "whose PIN was withdrawn, and when" stays answerable. It stops working at a booth when its box next pulls — minutes online, and however long it stays offline otherwise, which is the same window the deny-list has. Refused as setting one is — 403 `OUT_OF_BRANCH_SCOPE` for somebody who does not work at this booth’s branch, 403 `ROLE_NOT_DOMINATED` for somebody holding a role you do not hold in full — and with 400 `BOOTH_STAFF_NOT_FOUND` for somebody not on this booth. */
-        delete: {
-            parameters: {
-                query?: {
-                    reason?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                    accountId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: uuid */
-                            accountId: string;
-                            /** @enum {boolean} */
-                            hasPin: false;
-                        };
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/booths/{id}/screens": {
@@ -15161,7 +14831,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Every voucher issued at a branch, whatever made it — a booth spin, a counter issue, the import of the old system’s codes — newest first and paged: when, its type and the prize it was won as, what it hands over (and, once used, what the till took off for it), the booth or counter, who was signed in (null: unattributed), the last four characters of its code and never the whole code, its status, and where, when, by whom and on which sale it was redeemed. Filtered by trading day (from, to — today when absent, at most 366 days), voucher type, booth, who issued it and status. Status is read from the whole row: redeemed, void, held on a till’s cart, expired once its date has passed, printed once paper exists, issued otherwise. `totals` has one line per voucher type over all filters: issued, redeemed, the redemption rate, expired, and the money the tills took off for the redeemed ones. */
+        /** @description Every voucher issued at a branch, whatever made it — a booth spin, a counter issue, the import of the old system’s codes — newest first and paged: when, its type and the prize it was won as, what it hands over (and, once used, what the till took off for it), the booth or counter, the names the slip printed (`staffLabel`, today’s roster) or the account that issued it at a counter (`issuedBy`; both null: unattributed), the last four characters of its code and never the whole code, its status, and where, when, by whom and on which sale it was redeemed. Filtered by trading day (from, to — today when absent, at most 366 days), voucher type, booth, who issued it and status. Status is read from the whole row: redeemed, void, held on a till’s cart, expired once its date has passed, printed once paper exists, issued otherwise. `totals` has one line per voucher type over all filters: issued, redeemed, the redemption rate, expired, and the money the tills took off for the redeemed ones. */
         get: {
             parameters: {
                 query: {
@@ -15224,6 +14894,7 @@ export interface paths {
                                     stationId: string | null;
                                     name: string;
                                 };
+                                staffLabel: string | null;
                                 issuedBy: {
                                     /** Format: uuid */
                                     accountId: string;
@@ -26407,7 +26078,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Console > Booths > Report, from `analytics.fact_booth_daily` (never the spins): per booth, per prize, per staff member and per trading day — spins, prizes won, vouchers issued and redeemed (on the day the voucher was spun), redemption rate, mean issue-to-redemption lag, and the prize cost frozen on each voucher. Simulated spins are never in it. Per branch on analytics:read: without `branches`, every live branch the caller may read; a requested branch of the operator the caller may not read is listed in `omitted` and never added in; 403 when none may be read; 404 for an id that is not a branch of the operator. `from`..`to` are business dates, at most a year and a day. */
+        /** @description Console > Booths > Report, from `analytics.fact_booth_daily`: per booth, per prize and per trading day, and per Staff row — read live from the spins, by the names the slips printed (today’s roster) or an older box’s signed-in account — per trading day — spins, prizes won, vouchers issued and redeemed (on the day the voucher was spun), redemption rate, mean issue-to-redemption lag, and the prize cost frozen on each voucher. Simulated spins are never in it. Per branch on analytics:read: without `branches`, every live branch the caller may read; a requested branch of the operator the caller may not read is listed in `omitted` and never added in; 403 when none may be read; 404 for an id that is not a branch of the operator. `from`..`to` are business dates, at most a year and a day. */
         get: {
             parameters: {
                 query: {
@@ -26480,6 +26151,7 @@ export interface paths {
                                 boothId: string;
                                 /** Format: uuid */
                                 accountId: string | null;
+                                label: string | null;
                                 name: string;
                             }[];
                             days: {
@@ -26516,7 +26188,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The booth report as a CSV file: one row per trading day, booth, staff member and prize, amounts in baht, every cell guarded against formula injection. Per branch on analytics:read: without `branches`, every live branch the caller may read; a requested branch of the operator the caller may not read is listed in `omitted` and never added in; 403 when none may be read; 404 for an id that is not a branch of the operator. `from`..`to` are business dates, at most a year and a day. */
+        /** @description The booth report as a CSV file: one row per trading day, booth, Staff row (the names the slips printed) and prize, read from the spins, amounts in baht, every cell guarded against formula injection. Per branch on analytics:read: without `branches`, every live branch the caller may read; a requested branch of the operator the caller may not read is listed in `omitted` and never added in; 403 when none may be read; 404 for an id that is not a branch of the operator. `from`..`to` are business dates, at most a year and a day. */
         get: {
             parameters: {
                 query: {
@@ -31265,7 +30937,7 @@ export interface paths {
                                         /** @enum {string} */
                                         pendingUnit: "vouchers" | "events";
                                         lastSpinAt: string | null;
-                                        staffSignedIn: boolean;
+                                        rostered: boolean | null;
                                         dailyCapsReached: string[];
                                         today: {
                                             businessDate: string;
@@ -35922,7 +35594,8 @@ export interface paths {
                             vouchersPending: number;
                             /** Format: date-time */
                             lastSpinAt: string | null;
-                            staffSignedIn: boolean;
+                            staffSignedIn?: boolean;
+                            rostered?: boolean;
                             /** @default [] */
                             dailyCapsReached?: string[];
                             /** @enum {string} */
@@ -37930,56 +37603,6 @@ export interface paths {
                                 faults: string[];
                             }[];
                             actionId: string;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/box/v1/booth/staff/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description A booth box forwards a phone and password typed at one of its own booths. Answers who it is — account id, display name, staff code — when the password is right, the role carries `booth:staff:sign_in` at the booth’s branch, and an administrator has put the account on the booth’s staff list. A wrong phone or password is one 401 whatever the reason, counted against the same per-phone bucket as the sign-in screen and against the booth; 403 names the reason only once the password was right; 429 carries `retryAfterS`. The password is verified and kept nowhere. */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        stationId: string;
-                        phone: string;
-                        password: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** Format: uuid */
-                            accountId: string;
-                            displayName: string | null;
-                            staffCode: string;
                         };
                     };
                 };

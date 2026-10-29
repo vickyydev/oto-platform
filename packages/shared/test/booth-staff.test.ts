@@ -4,14 +4,11 @@ import {
   BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
   BOOTH_SPIN_DURATION_MIN_SECONDS,
   BOOTH_SPIN_DURATION_MAX_SECONDS,
-  BOOTH_STAFF_SESSION_DEFAULT_MINUTES,
-  BOOTH_STAFF_SESSION_MAX_MINUTES,
   BOOTH_STAFF_VERIFY_ERRORS,
   BoothConfigBundleSchema,
   BoothStaffVerifyRequestSchema,
   boothStaffCode,
   boothStaffLabel,
-  boothStaffSessionMinutes,
   boothSpinDurationSeconds,
 } from '../src/booth';
 import { ROLE_BUNDLES } from '../src/permissions';
@@ -58,14 +55,6 @@ describe('the published spin duration', () => {
       }).success).toBe(false);
       expect(boothSpinDurationSeconds({ spinDurationSeconds: bad })).toBe(10);
     }
-  });
-});
-
-describe('the booth session length (staffSessionMinutes)', () => {
-  it('null means the default; a day is the ceiling', () => {
-    expect(BOOTH_STAFF_SESSION_DEFAULT_MINUTES).toBe(720);
-    expect(boothStaffSessionMinutes({ staffSessionMinutes: null })).toBe(720);
-    expect(boothStaffSessionMinutes({ staffSessionMinutes: 5000 })).toBe(BOOTH_STAFF_SESSION_MAX_MINUTES);
   });
 });
 
@@ -138,10 +127,10 @@ describe('what a refused account sign-in can say', () => {
   });
 });
 
-describe('who may sign in at a booth (booth:staff:sign_in)', () => {
-  it('every counter role carries it, and so do both administrator roles', () => {
+describe('nobody signs in at a booth (SCRUM-694)', () => {
+  it('no role carries the retired booth sign-in permission', () => {
     for (const role of ['staff', 'reception', 'branch_manager', 'operator_admin', 'platform_admin'] as const) {
-      expect(ROLE_BUNDLES[role]).toContain('booth:staff:sign_in');
+      expect(ROLE_BUNDLES[role] as readonly string[]).not.toContain('booth:staff:sign_in');
     }
   });
 });

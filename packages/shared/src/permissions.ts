@@ -122,23 +122,14 @@ export const PERMISSIONS = [
   'admin:booth:manage',
   /** Publish a config version the booths then pull. */
   'admin:booth:publish',
-  'admin:booth:staff_assign',
   /**
-   * Sign in AT a booth as the person attending it (SCRUM-223).
-   *
-   * Not an `admin:booth:*` permission: those configure a booth from the
-   * Console, and this is the act of standing at one. It is the role half of a
-   * two-part rule — an account signs in at a booth only when its role carries
-   * this AND an administrator has put it on that booth's staff list
-   * (`booth.booth_staff_assignment`). Checked by the cloud when somebody signs
-   * in with their phone and password; a booth PIN was already confined to the
-   * booth's list.
-   *
-   * Carried by every counter role, `staff` included: `staff` already opens the
-   * booth app (`app:booth:access`), and which booth anybody may work is the
-   * assignment's decision, not the role's.
+   * Put people on a booth's roster for the day (Today's staff). Nobody signs
+   * in at a booth (SCRUM-694): the roster is the name its slips print. The
+   * permission that let an account sign in AT a booth, `booth:staff:sign_in`,
+   * is retired with the sign-in; a role row that still carries it reads as the
+   * raw string and grants nothing.
    */
-  'booth:staff:sign_in',
+  'admin:booth:staff_assign',
   // Admin console — running the platform (S2-03)
   'admin:health:read',
   /** Retry a failed run, acknowledge an alert, resolve an expectation. */
@@ -605,7 +596,6 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'app:pos:access',
     'app:console:access',
     'app:booth:access',
-    'booth:staff:sign_in',
     // SCRUM-591: the internal assistant, in every staff bundle (plan §E.2).
     'assistant:ask:use',
   ],
@@ -652,7 +642,6 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:benefit:apply',
     'app:pos:access',
     'app:booth:access',
-    'booth:staff:sign_in',
     'assistant:ask:use',
   ],
   // `pos:cash:day_close` is NOT here (SCRUM-606): `staff` is the read-mostly
@@ -665,7 +654,6 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:benefit:apply',
     'app:pos:access',
     'app:booth:access',
-    'booth:staff:sign_in',
     'assistant:ask:use',
   ],
   /**
