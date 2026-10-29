@@ -1,0 +1,140 @@
+{
+  "kind": "read-only-current-main-compatibility",
+  "base": "19eb72bf2e765bfd879213619483288dd262a500",
+  "candidate": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+  "main": "867baab8e8cccf46fa182ee67cb7de0e2c7ea415",
+  "ownProductionFiles": [
+    "apps/api/src/lib/nullable-response-enum.ts",
+    "apps/api/src/routes/console-drift.ts",
+    "apps/api/src/routes/fleet.ts",
+    "apps/api/src/routes/menu.ts",
+    "apps/api/test/s684-nullable-response-contract-review.test.ts",
+    "packages/api-types/openapi.json"
+  ],
+  "incomingOwnSourceOverlaps": [
+    "packages/api-types/openapi.json"
+  ],
+  "incomingSharedDocOverlaps": [
+    "docs/progress/STATUS.md"
+  ],
+  "incomingConsoleFiles": [
+    "apps/console/src/components/devices/BoxDrawer.tsx",
+    "apps/console/src/lib/bandStock.ts",
+    "apps/console/test/band-stock.test.ts"
+  ],
+  "incomingAdminScreenFiles": [],
+  "inventoryAnchors": [
+    {
+      "file": "apps/console/src/App.tsx",
+      "unchanged": true
+    },
+    {
+      "file": "apps/console/src/components/consoleSections.tsx",
+      "unchanged": true
+    }
+  ],
+  "operations": [
+    {
+      "path": "/console/analytics/drift",
+      "baseSha256": "e21a98089cf17ba17b6a9bb823b1736cf0ebe4a0aa84a7ffca1400ff4f4e529e",
+      "mainSha256": "e21a98089cf17ba17b6a9bb823b1736cf0ebe4a0aa84a7ffca1400ff4f4e529e",
+      "candidateSha256": "d5b34758ffd8e2d5be3ada94f4c1eb0adfde078fd37a77a4c3748aee624882ab",
+      "mainUnchangedSinceBase": true
+    },
+    {
+      "path": "/branches/{branchId}/menu",
+      "baseSha256": "69fa5c2691c775f9c931516b070f178a093719837c925cf8f04f72f325a3c5c4",
+      "mainSha256": "69fa5c2691c775f9c931516b070f178a093719837c925cf8f04f72f325a3c5c4",
+      "candidateSha256": "8de8e1917334c51b20fa24ea3765e9203dd492a9c6a855ea1a9d8c841bea42fe",
+      "mainUnchangedSinceBase": true
+    },
+    {
+      "path": "/branches/{branchId}/credentials",
+      "baseSha256": "5d1236bc21a54cdf16f2071fa90f3d6c3811d1323e10f50517993d8e78d2bac5",
+      "mainSha256": "5d1236bc21a54cdf16f2071fa90f3d6c3811d1323e10f50517993d8e78d2bac5",
+      "candidateSha256": "7f4d9e009589efd0094561412dc650c09ed782b4def787fbcde2c00b0c09bdd0",
+      "mainUnchangedSinceBase": true
+    }
+  ],
+  "previewPins": [
+    {
+      "file": "apps/api/src/routes/print.ts",
+      "recordedSha256": "7b3e70014bee6a27535c32fbb3b0fc649ea2043c06c2eb5cf7cdf2f92d4d2d6b",
+      "baseSha256": "7b3e70014bee6a27535c32fbb3b0fc649ea2043c06c2eb5cf7cdf2f92d4d2d6b",
+      "mainSha256": "7b3e70014bee6a27535c32fbb3b0fc649ea2043c06c2eb5cf7cdf2f92d4d2d6b",
+      "changed": false
+    },
+    {
+      "file": "apps/api/src/routes/booth.ts",
+      "recordedSha256": "aab36337836f03efe55ae9caca280ff162968826d930c4c66827e00c5608576a",
+      "baseSha256": "aab36337836f03efe55ae9caca280ff162968826d930c4c66827e00c5608576a",
+      "mainSha256": "aab36337836f03efe55ae9caca280ff162968826d930c4c66827e00c5608576a",
+      "changed": false
+    },
+    {
+      "file": "apps/api/src/services/print.ts",
+      "recordedSha256": "725cc8b7f72b288739841ac5b2e53a1a3d99af50b78a7b1aec42bcd3e03e2aff",
+      "baseSha256": "725cc8b7f72b288739841ac5b2e53a1a3d99af50b78a7b1aec42bcd3e03e2aff",
+      "mainSha256": "ba814579a28310517f7c0ed2d168ed29a0f9b41d13fafd23db8c1c0849908766",
+      "changed": true
+    },
+    {
+      "file": "apps/api/src/services/booth-admin.ts",
+      "recordedSha256": "9082601be4506822df1664d962cffd059cbbe44b893846ef4ae4cc58b4bfc12c",
+      "baseSha256": "9082601be4506822df1664d962cffd059cbbe44b893846ef4ae4cc58b4bfc12c",
+      "mainSha256": "9082601be4506822df1664d962cffd059cbbe44b893846ef4ae4cc58b4bfc12c",
+      "changed": false
+    },
+    {
+      "file": "packages/shared/src/print.ts",
+      "recordedSha256": "42b3cb00085f10f171a4b022916101279af0402600b8fd084c4f2ad84a8032df",
+      "baseSha256": "42b3cb00085f10f171a4b022916101279af0402600b8fd084c4f2ad84a8032df",
+      "mainSha256": "42b3cb00085f10f171a4b022916101279af0402600b8fd084c4f2ad84a8032df",
+      "changed": false
+    }
+  ],
+  "migrationTail": [
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1793168159266,
+      "tag": "0093_support_impersonation",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1793175675990,
+      "tag": "0094_inbox_playbook",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1793202677105,
+      "tag": "0095_inbox_booking_closing",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1793292797424,
+      "tag": "0096_inbox_ai_rule",
+      "breakpoints": true
+    }
+  ],
+  "nextPlatformMigration": "0097",
+  "freshBrowserBindingRequired": true,
+  "oldAffectedReceiptCanBindCurrentMain": false,
+  "repoMutations": false,
+  "testsRun": false,
+  "browserRun": false,
+  "jiraOrLiveApiCalls": false,
+  "notes": [
+    "The only shared production file with the six-file684 patch is generated openapi.json; three route source files are unchanged on main.",
+    "Only STATUS.md changed among the six shared documentation files, so its prepended block is the likely text conflict; preserve the planner top block and retain684 history.",
+    "Main adds BoxDrawer band-stock fields plus bandStock.ts and its unit test; the old683 browser source manifest is stale.",
+    "Existing preview service remains read-only: its added query reads same-branch nonarchived print templates, then renders the fixture sample. Re-review and update its pin; package print rendering/sample content also changed.",
+    "Migration0096 is on main and described live by latest STATUS; no684 migration is required."
+  ]
+}

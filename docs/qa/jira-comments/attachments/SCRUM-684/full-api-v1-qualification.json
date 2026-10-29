@@ -1,0 +1,9 @@
+{
+  "ticket": "SCRUM-684",
+  "attempt": "v1",
+  "releaseEvidenceEligible": false,
+  "reason": "The coordinator rebased the source commit over the documentation-only main advance while this local run was active. Final source hashes can match, but they do not prove that no file was briefly reset while a worker read it. Preserve this attempt as diagnostic only and run the release battery again on the frozen rebased source.",
+  "sourceBeforeRebase": "b01853e9",
+  "rebasedSource": "8a24d08b15960df634a5e4952b81d3418e0b3e21",
+  "next": "Do not change or rebase source while the replacement full suite runs. Candidate CI also validates the rebased full SHA."
+}

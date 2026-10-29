@@ -1,0 +1,42 @@
+{
+  "ticket": "SCRUM-684",
+  "kind": "whole-generated-openapi-diff",
+  "passed": true,
+  "originalSha256": "810343a53c08c9ad3c5576b3a1a3858ba0455e8826a2bf365f22e075024850e3",
+  "candidateSha256": "df9a56d7f5efb16160ce1e39bee1165370c3927343de73a0e5138a87ce915394",
+  "edits": [
+    {
+      "pointer": "#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/taxableCategory/enum",
+      "change": "append-null-to-enum"
+    },
+    {
+      "pointer": "#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/defaultPrepStation/enum",
+      "change": "append-null-to-enum"
+    },
+    {
+      "pointer": "#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/effectiveTaxCategory/enum",
+      "change": "append-null-to-enum"
+    },
+    {
+      "pointer": "#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/categories/items/properties/effectivePrepStation/enum",
+      "change": "append-null-to-enum"
+    },
+    {
+      "pointer": "#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/prepStationOverride/enum",
+      "change": "append-null-to-enum"
+    },
+    {
+      "pointer": "#/paths/~1branches~1{branchId}~1menu/get/responses/200/content/application~1json/schema/properties/products/items/properties/taxCategoryOverride/enum",
+      "change": "append-null-to-enum"
+    },
+    {
+      "pointer": "#/paths/~1branches~1{branchId}~1credentials/get/responses/200/content/application~1json/schema/properties/credentials/items/properties/lastRejectedCode/enum",
+      "change": "append-null-to-enum"
+    },
+    {
+      "pointer": "#/paths/~1console~1analytics~1drift/get/responses/200/content/application~1json/schema/properties/comparisons/items/properties/reason/enum",
+      "change": "append-null-to-enum"
+    }
+  ],
+  "otherChanges": 0
+}

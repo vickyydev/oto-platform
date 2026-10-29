@@ -1,0 +1,38 @@
+{
+  "ticket": "SCRUM-684",
+  "phase": "focus",
+  "headSha": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+  "startedAt": "2026-10-29T21:05:59.158Z",
+  "finishedAt": "2026-10-29T21:07:32.560Z",
+  "nativeExitCode": 0,
+  "workerExitCode": 0,
+  "workerResult": {
+    "nativeChildExitCode": 0,
+    "databaseDropped": true,
+    "embeddedStopped": true,
+    "cleanupFailure": false,
+    "setupFailureName": null,
+    "exitCode": 0
+  },
+  "discovered": 6,
+  "passed": 6,
+  "failed": 0,
+  "skipped": 0,
+  "countsReconciled": true,
+  "sourceFiles": 3993,
+  "sourceBeforeSha256": "7be8402c24df57c41adeedfd8257fea9a36e9b1cfe58073f1e62337108170589",
+  "sourceAfterSha256": "7be8402c24df57c41adeedfd8257fea9a36e9b1cfe58073f1e62337108170589",
+  "sourceBytesUnchanged": true,
+  "gitStillClean": true,
+  "headUnchanged": true,
+  "logSha256": "f01812e0af351f0b9409bcdded5ba12544e0e6664f139667e7bccbdf56af53b8",
+  "embeddedStopped": true,
+  "tests": [
+    {
+      "file": "apps/console/e2e/page-state-review.spec.ts",
+      "sha256": "58b106ca46229c9ad44a2920ebf3ca85cc86cd4ea65282df377300b08283debe"
+    }
+  ],
+  "staging": false,
+  "docker": false
+}

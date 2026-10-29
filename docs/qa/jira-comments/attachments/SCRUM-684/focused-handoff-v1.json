@@ -1,0 +1,260 @@
+{
+  "ticket": "SCRUM-684",
+  "kind": "focused-implementation-handoff",
+  "preparedAt": "2026-10-28T22:33:52.042Z",
+  "testedBase": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "lane": "C:/oto-lanes/admin684-contract-nulls-20261029",
+  "sourceFrozen": true,
+  "scopedChecksPassed": true,
+  "fullReleaseClaimed": false,
+  "sourceFiles": {
+    "apps/api/src/routes/console-drift.ts": "53867323f86d5c7adc3c73cdeb9efb62bfc1499c2c80117aa4556a98f332fb06",
+    "apps/api/src/routes/menu.ts": "5c5a034028098616e023a6fe397d0c3e1e3e8237fadec1461ed7c018e4c8fba8",
+    "apps/api/src/routes/fleet.ts": "ea207709ff30a299f06a8476d8456acf75c269e1e15f7f6ca6e50bbb1f124c5f",
+    "apps/api/src/lib/nullable-response-enum.ts": "fd0a23fc6755fce6f352a55831907e4e3faa4b0b7467c942031ecd30417abca2",
+    "apps/api/test/s684-nullable-response-contract-review.test.ts": "c755f998539c35bb017ab7aa2ccc509c1d197f7d53364408d2a3ec2eccea89c0",
+    "packages/api-types/openapi.json": "df9a56d7f5efb16160ce1e39bee1165370c3927343de73a0e5138a87ce915394"
+  },
+  "change": "Three route-local Swagger callbacks document null explicitly in eight existing nullable response enums. Native Zod, response producers, inputs, permissions and other operations are unchanged.",
+  "originalRedTest": {
+    "path": "C:/oto-lanes/admin684-evidence-20261029/red-test-source.ts.txt",
+    "sha256": "f5ecfd53671e012041a17beb3d9bd6988245bad385f9384c7a3decd21ff61471",
+    "matchesActualRedReceipt": true
+  },
+  "originalEightFailureAssertionsUnchanged": true,
+  "controls": "Strict no-coercion/default/removal JSON-schema consumer; every declared string, null, unknown literal and boolean/number/object/array types; nonnullable fields, unrelated route, malformed requests, authentication and owned native read controls.",
+  "runs": [
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/red-v1.json",
+      "receiptSha256": "7b89bc416ef15d99c059182c7634d0ac3a2b93b982a3a86737a7972967053cb3",
+      "phase": "red",
+      "passed": false,
+      "exitCode": 1,
+      "sourceUnchanged": true,
+      "tests": {
+        "passed": 6,
+        "failed": 8
+      },
+      "summaryLines": [
+        " Test Files  1 failed (1)",
+        "      Tests  8 failed | 6 passed (14)",
+        "   Duration  27.72s (transform 3.77s, setup 0ms, collect 14.84s, tests 12.36s, environment 0ms, prepare 297ms)"
+      ],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\red-v1.log",
+      "logSha256": "77a69afc11ee5e292231c1784e4acb853193dda43d21fbf2dca7c0b2c7504b12",
+      "logBytes": 10406,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/green-v1.json",
+      "receiptSha256": "df4e16aa721a8a3d07d828cb34f6d10849adb6f5ba0c6c3c138b3924f64d7da4",
+      "phase": "green",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "tests": {
+        "passed": 14,
+        "failed": 0
+      },
+      "summaryLines": [
+        " Test Files  1 passed (1)",
+        "      Tests  14 passed (14)",
+        "   Duration  14.81s (transform 3.26s, setup 0ms, collect 6.21s, tests 8.36s, environment 0ms, prepare 84ms)"
+      ],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\green-v1.log",
+      "logSha256": "b8ea33cbe5fa97cf23c64aaffddf72ecb421022e82001e4c2e9ba52fe789114a",
+      "logBytes": 5073,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/green-v2-v1.json",
+      "receiptSha256": "0af7604af40996f72601951fd83d6abaeaa2de86f42b2ce39545e0281ccb6d49",
+      "phase": "green-v2",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "tests": {
+        "passed": 14,
+        "failed": 0
+      },
+      "summaryLines": [
+        " Test Files  1 passed (1)",
+        "      Tests  14 passed (14)",
+        "   Duration  14.56s (transform 3.24s, setup 0ms, collect 6.14s, tests 8.18s, environment 0ms, prepare 86ms)"
+      ],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\green-v2-v1.log",
+      "logSha256": "ef92a503dcabc25e3431daeb46ffe2e1aeffb476141a448a0ddc3a38431ae3de",
+      "logBytes": 5018,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/affected-v1.json",
+      "receiptSha256": "cbce621f04b6cdbe4c42e623cb088cbb27ebd7274f17e93088c4b61cec952103",
+      "phase": "affected",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "tests": {
+        "passed": 257,
+        "failed": 0
+      },
+      "summaryLines": [
+        " Test Files  10 passed (10)",
+        "      Tests  257 passed (257)",
+        "   Duration  111.56s (transform 3.43s, setup 0ms, collect 23.24s, tests 86.10s, environment 1ms, prepare 864ms)"
+      ],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\affected-v1.log",
+      "logSha256": "5096ebb2a39b7e1c7d5fe55b2d44947c7aa8accbbe0c3351fc21462f0897e5d2",
+      "logBytes": 43380,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/typecheck-v1.json",
+      "receiptSha256": "6bf9a817a8af1e9f1c50161625f6c65874d873dfebad510a79305c1d20681131",
+      "phase": "typecheck",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\typecheck-v1.log",
+      "logSha256": "096d4733f68adeff4f2b8c66fb32e02ea69274e130f470fb3c098835df498fed",
+      "logBytes": 107,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/generate-v1.json",
+      "receiptSha256": "f8884f7489a7de6f30a79929822cdba2cc35cfe84b1a6efe6afe0b5d5f9e570a",
+      "phase": "generate",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": false,
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\generate-v1.log",
+      "logSha256": "4a3948c6f545e02dd0b8d2f801213fc32f759710168b0eca2c6be069ca30f91e",
+      "logBytes": 649,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/contracts-v1.json",
+      "receiptSha256": "63b3b615f5b2ccd5250a1a3175f1dfc19f7b2213d82e210d779f9cd7487f8107",
+      "phase": "contracts",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\contracts-v1.log",
+      "logSha256": "df89b5466e32a4bb681b93cbce3a362f81e7d3261e4c332747847b3dca3672fd",
+      "logBytes": 623,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/client-tests-v1.json",
+      "receiptSha256": "d637e2b7e051c391a714f0fedfce43f0e0136564638a9ae0f69b52869c0698e5",
+      "phase": "client-tests",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "summaryLines": [
+        " Test Files  1 passed (1)",
+        "      Tests  10 passed (10)",
+        "   Duration  4.09s (transform 583ms, setup 0ms, collect 3.57s, tests 33ms, environment 0ms, prepare 191ms)"
+      ],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\client-tests-v1.log",
+      "logSha256": "9812b5e5d0e8314f8e4be16938e1d11c8c230bee651b7ad3ac9bfcdfbe4321b8",
+      "logBytes": 419,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/client-typecheck-v1.json",
+      "receiptSha256": "a487ff0717f820df296a8542cefb40f6391d6c1d87171b315fa1d58873b555e9",
+      "phase": "client-typecheck",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\client-typecheck-v1.log",
+      "logSha256": "3816083778afc23ba9afe4ef1338c5a682dbea5cf8a758738c7b6dd3aac506f4",
+      "logBytes": 123,
+      "wholeLogRead": true
+    },
+    {
+      "receiptPath": "C:/oto-lanes/admin684-evidence-20261029/lint-v1.json",
+      "receiptSha256": "e25593ee9a61570c643aea5f1ea1c517be7eae8bbfab49700934c9ea6a232926",
+      "phase": "lint",
+      "passed": true,
+      "exitCode": 0,
+      "sourceUnchanged": true,
+      "summaryLines": [],
+      "logPath": "C:\\oto-lanes\\admin684-evidence-20261029\\lint-v1.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logBytes": 0,
+      "wholeLogRead": true
+    }
+  ],
+  "sourceScopeProof": {
+    "path": "C:/oto-lanes/admin684-evidence-20261029/source-scope-v1.json",
+    "sha256": "6bc9575cf6076d67d743d7fbb0062ffb1a280df3e701c4974d5a579f03c0e0bc",
+    "allThreeRouteAstsOtherwiseIdentical": true
+  },
+  "wholeOpenApiDiff": {
+    "path": "C:/oto-lanes/admin684-evidence-20261029/openapi-diff-v1.json",
+    "sha256": "edee83260e92853dc0175b9db29696560fc81cce95f9c31e84fa0c826408b79c",
+    "enumNullAdditions": 8,
+    "otherChanges": 0,
+    "changedGeneratedFiles": [
+      "packages/api-types/openapi.json"
+    ]
+  },
+  "coverage": {
+    "originalRed": {
+      "failed": 8,
+      "passed": 6
+    },
+    "strictReview": {
+      "passed": 14,
+      "failed": 0
+    },
+    "affected": {
+      "files": 10,
+      "passed": 257,
+      "failed": 0,
+      "review14Included": true
+    },
+    "seam": {
+      "passed": 10
+    },
+    "apiCompilerDiagnostics": 0,
+    "apiTypesCompilerDiagnostics": 0,
+    "lintAuthoredTsFiles": 5,
+    "lintErrors": 0,
+    "note": "Review14 is included in257; do not add repeated green runs to unique API coverage."
+  },
+  "wholeAffectedLog": {
+    "lines": 964,
+    "expectedDuplicateConstraintControls": {
+      "station_name_unique": 1,
+      "box_slot_unique": 1,
+      "device_address_unique": 1,
+      "product_sku_unique": 2
+    },
+    "unexpectedTestFailures": 0,
+    "inheritedWarning": "FSTDEP023 disableRequestLogging deprecation"
+  },
+  "scopedRuntimeCleanup": {
+    "nativeTestReportsDatabaseDroppedAndServerStopped": true,
+    "ownedPostgresSurvivorsBeforeCoordinatorHandoff": 0,
+    "observationToolChunk": "9fbab9",
+    "allAgentTestProcessesTerminal": true,
+    "coordinatorLaterFullApiWorkersExcluded": true,
+    "dockerUsed": false,
+    "browserStarted": false,
+    "stagingCalls": 0,
+    "providerActions": false
+  },
+  "historicalCorrection": "Earlier suggestion to classify nullable-enum null rejection as a validator limitation is superseded. OpenAPI nullable does not extend enum; the confirmed response-contract defect is corrected in published schemas, with the audit validator unchanged.",
+  "limits": [
+    "Scoped local handoff only. Root owns full API, rebase, candidate/main CI, Render, final native679 walk, docs/Jira and landing.",
+    "No Console/shared/engine/DB schema/migration behavior changed.",
+    "The prior359-browser frontend source bridge remains a separate root-owned validation; no browser was rerun by this agent."
+  ]
+}

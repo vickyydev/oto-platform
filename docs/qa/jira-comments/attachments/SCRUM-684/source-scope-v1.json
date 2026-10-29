@@ -1,0 +1,30 @@
+{
+  "ticket": "SCRUM-684",
+  "kind": "source-scope-and-original-assertion-proof",
+  "base": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "passed": true,
+  "routes": [
+    {
+      "file": "apps/api/src/routes/console-drift.ts",
+      "originalSha256": "cacc62412b8c59db05e0994c1083ac3b2cbca3989ac266b9ffeb1cbbc580e75b",
+      "candidateSha256": "53867323f86d5c7adc3c73cdeb9efb62bfc1499c2c80117aa4556a98f332fb06",
+      "identicalAstAfterRemovingOnlyNewImportAndSwaggerProperty": true
+    },
+    {
+      "file": "apps/api/src/routes/menu.ts",
+      "originalSha256": "ff71d4718ea3be6d3525042171a02a5483c68aeb59ada6f281dcb2d067cdf410",
+      "candidateSha256": "5c5a034028098616e023a6fe397d0c3e1e3e8237fadec1461ed7c018e4c8fba8",
+      "identicalAstAfterRemovingOnlyNewImportAndSwaggerProperty": true
+    },
+    {
+      "file": "apps/api/src/routes/fleet.ts",
+      "originalSha256": "1b105a1bdbc55025496cb4dadf2b76df4b0b4f57d4fe5e4544f92830ff5f1dec",
+      "candidateSha256": "ea207709ff30a299f06a8476d8456acf75c269e1e15f7f6ca6e50bbb1f124c5f",
+      "identicalAstAfterRemovingOnlyNewImportAndSwaggerProperty": true
+    }
+  ],
+  "originalEightFailureAssertionsUnchanged": true,
+  "originalRedTestSha256": "f5ecfd53671e012041a17beb3d9bd6988245bad385f9384c7a3decd21ff61471",
+  "currentTestSha256": "c755f998539c35bb017ab7aa2ccc509c1d197f7d53364408d2a3ec2eccea89c0",
+  "servicesSchemasInputsPermissionsHandlersUnchanged": true
+}
