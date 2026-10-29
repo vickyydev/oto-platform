@@ -1,0 +1,47 @@
+{
+  "ticket": "SCRUM-684",
+  "sourceSha": "add5a7128ae43ccedaefe369e58d1a9205569b2f",
+  "runId": "40960649687",
+  "branch": "lane/admin684-release-20261030",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/40960649687",
+  "verifiedAt": "2026-10-29T22:11:04.106Z",
+  "green": true,
+  "jobs": [
+    {
+      "name": "ci",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T21:47:03Z",
+      "completedAt": "2026-10-29T22:00:34Z"
+    },
+    {
+      "name": "api-tests (1)",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T21:47:03Z",
+      "completedAt": "2026-10-29T22:05:36Z"
+    },
+    {
+      "name": "oto-app",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T21:47:03Z",
+      "completedAt": "2026-10-29T21:57:07Z"
+    },
+    {
+      "name": "pos-tests",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T21:47:03Z",
+      "completedAt": "2026-10-29T21:48:44Z"
+    },
+    {
+      "name": "api-tests (2)",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T21:47:03Z",
+      "completedAt": "2026-10-29T22:04:43Z"
+    },
+    {
+      "name": "api-tests (3)",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T21:47:03Z",
+      "completedAt": "2026-10-29T22:09:07Z"
+    }
+  ]
+}
