@@ -144,6 +144,31 @@ describe('the teach chat', () => {
     expect(await threadCounts()).toEqual(before);
   });
 
+  it('the curator is told what it already saved, and saving the same rule again returns that draft, not a second row', async () => {
+    const same = {
+      intent: 'lost_item',
+      instruction: '  if someone says they LOST something, first ask which park they visited. ',
+      askFirst: { condition: 'branch_unknown', question: { en: QUESTION } },
+    };
+    const fake = new FakeToolLoopClient([tool('create_rule', same), final('That one is already waiting for approval under Assistant → Rules.')]);
+    w.ctx.app.inboxAi.teacher = fake;
+    const res = await teachCall(editorCookie, [
+      { role: 'user', text: TAUGHT },
+      { role: 'assistant', text: 'Saved a draft rule.' },
+      { role: 'user', text: 'Did you actually save it? Save it please.' },
+    ]);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    // The system prompt names the earlier draft, so the curator knows it exists.
+    const system = fake.calls[0]!.system.map((b) => b.text).join('\n');
+    expect(system).toContain('Drafts you already saved');
+    expect(system).toContain(`rule ${draftId} · lost_item`);
+    // The repeat answers with the existing draft; the table has one such row, not two.
+    expect(toolResultsSeen(fake)[0]).toMatchObject({ isError: false, data: { id: draftId, alreadySaved: true } });
+    expect(res.body.cards).toEqual([expect.objectContaining({ kind: 'rule', id: draftId, status: 'draft' })]);
+    const rows = await w.ctx.db.select({ id: s.aiRule.id }).from(s.aiRule).where(eq(s.aiRule.intent, 'lost_item'));
+    expect(rows.map((r) => r.id)).toEqual([draftId]);
+  });
+
   it('the server is the floor: an unsafe rule the model tries to save is refused, with no row and no card', async () => {
     const rows = await w.ctx.db.select({ id: s.aiRule.id }).from(s.aiRule);
     const fake = new FakeToolLoopClient([

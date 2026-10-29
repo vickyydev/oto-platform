@@ -1,4 +1,4 @@
-import { and, asc, eq, ne } from 'drizzle-orm';
+import { and, asc, eq, gte, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   AI_BRANCH_KEYS,
@@ -8,8 +8,10 @@ import {
   buildPrompt,
   buildTeachSystem,
   renderOperatorRules,
+  renderTeachDrafts,
   type AiBranchKey,
   type PriorTurn,
+  type TeachDraftLine,
   type ToolCallRequest,
   type ToolCallResult,
   type ToolDefinition,
@@ -254,6 +256,59 @@ async function searchKnowledge(deps: TeachDeps, ctx: SettingsCtx, knowledge: Tur
   };
 }
 
+/** "  Ask  which PARK " → "ask which park": the sameness test for a repeated instruction. */
+const sameText = (a: string, b: string): boolean =>
+  a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
+
+interface RecentDrafts {
+  rules: Array<{ id: string; intent: string; branchId: string | null; instruction: string }>;
+  facts: Array<{ id: string; key: string; language: string; branchId: string | null; question: string }>;
+}
+
+/**
+ * What the caller saved as drafts in the last day. The curator reads it as a
+ * list in its system prompt (the transcript it is sent holds words only, not
+ * its earlier tool calls — without this list a curator that had saved a rule
+ * on an earlier turn concluded it had not, apologised, and saved it again),
+ * and `create_rule` / `create_fact` answer a repeat from it instead of
+ * inserting a second row.
+ */
+async function recentDrafts(deps: TeachDeps, ctx: SettingsCtx): Promise<RecentDrafts> {
+  const since = new Date(ctx.now.getTime() - TEACH_DRAFT_WINDOW_MS);
+  const rules = await deps.db
+    .select({ id: aiRule.id, intent: aiRule.intent, branchId: aiRule.branchId, instruction: aiRule.instruction })
+    .from(aiRule)
+    .where(
+      and(
+        eq(aiRule.operatorId, ctx.operatorId),
+        eq(aiRule.status, 'draft'),
+        eq(aiRule.updatedByAccountId, ctx.accountId),
+        gte(aiRule.createdAt, since),
+      ),
+    )
+    .orderBy(asc(aiRule.createdAt), asc(aiRule.id));
+  const facts = await deps.db
+    .select({ id: kbEntry.id, key: kbEntry.key, language: kbEntry.language, branchId: kbEntry.branchId, question: kbEntry.question })
+    .from(kbEntry)
+    .where(
+      and(
+        eq(kbEntry.operatorId, ctx.operatorId),
+        eq(kbEntry.status, 'draft'),
+        eq(kbEntry.updatedByAccountId, ctx.accountId),
+        gte(kbEntry.createdAt, since),
+      ),
+    )
+    .orderBy(asc(kbEntry.createdAt), asc(kbEntry.id));
+  return { rules, facts };
+}
+
+function draftLines(d: RecentDrafts): TeachDraftLine[] {
+  return [
+    ...d.rules.map((r) => ({ kind: 'rule' as const, id: r.id, about: r.intent, text: r.instruction })),
+    ...d.facts.map((f) => ({ kind: 'fact' as const, id: f.id, about: `${f.key} (${f.language})`, text: f.question })),
+  ];
+}
+
 /**
  * The dry run (see the file note): decision, gate and ask-first on a
  * synthetic one-message episode on a main channel with no park, in memory.
@@ -342,9 +397,11 @@ export async function teach(
   if (!teacher) throw new AppError(503, 'TEACH_UNAVAILABLE', TEACH_LINES.unavailable);
   const knowledge = await loadTurnKnowledge(deps.db, ctx.operatorId, ctx.now);
   const approved = knowledge.rules ?? [];
+  const drafts = await recentDrafts(deps, ctx);
   const built = buildTeachSystem({
     knowledgeText: knowledge.knowledge.text,
     rulesText: renderOperatorRules(approved),
+    draftsText: renderTeachDrafts(draftLines(drafts)),
     answerMode: teacher.answerMode,
   });
   const { question, priorTurns } = teachTurns(input.messages);
@@ -369,7 +426,16 @@ export async function teach(
           if (branchId === null) return badInput(UNKNOWN_PARK);
           const body = InboxKbCreateSchema.safeParse({ ...fact, branchId: branchId ?? null });
           if (!body.success) return badInput(firstIssue(body.error));
+          // The same draft again (this turn or an earlier one today): the one that exists, no second row.
+          const sameFact = drafts.facts.find(
+            (f) => f.key === body.data.key && f.language === body.data.language && (f.branchId ?? null) === (body.data.branchId ?? null),
+          );
+          if (sameFact) {
+            cards.push({ kind: 'fact', id: sameFact.id, title: clip(`${sameFact.key} · ${sameFact.question}`, 120), status: 'draft' });
+            return { ok: true, data: { id: sameFact.id, key: sameFact.key, language: sameFact.language, status: 'draft', alreadySaved: true, approveAt: 'Assistant → Knowledge' } };
+          }
           const made = await withTx(deps.db, deps.op, 'inbox.kb.create', (tx) => createKb(tx, ctx, reach, body.data));
+          drafts.facts.push({ id: made.id, key: made.key, language: made.language, branchId: made.branchId, question: made.question });
           cards.push({ kind: 'fact', id: made.id, title: clip(`${made.key} · ${made.question}`, 120), status: 'draft' });
           return { ok: true, data: { id: made.id, key: made.key, language: made.language, status: 'draft', approveAt: 'Assistant → Knowledge' } };
         }
@@ -381,11 +447,20 @@ export async function teach(
           if (branchId === null) return badInput(UNKNOWN_PARK);
           const body = InboxAiRuleCreateSchema.safeParse({ ...rule, branchId: branchId ?? null, askFirst: askFirst ?? null });
           if (!body.success) return badInput(firstIssue(body.error));
+          const labelOf = (intent: string) => (intent === 'any' ? 'Any message' : intent.replace(/_/g, ' '));
+          // The same rule again (this turn or an earlier one today): the one that exists, no second row.
+          const sameRule = drafts.rules.find(
+            (r) => r.intent === body.data.intent && (r.branchId ?? null) === (body.data.branchId ?? null) && sameText(r.instruction, body.data.instruction),
+          );
+          if (sameRule) {
+            cards.push({ kind: 'rule', id: sameRule.id, title: clip(`${labelOf(sameRule.intent)}: ${sameRule.instruction}`, 120), status: 'draft' });
+            return { ok: true, data: { id: sameRule.id, intent: sameRule.intent, status: 'draft', alreadySaved: true, approveAt: 'Assistant → Rules' } };
+          }
           const made = await withTx(deps.db, deps.op, 'inbox.ai_rule.create', (tx) =>
             createRule(tx, ctx, reach, body.data, { source: 'teach', taughtFrom }),
           );
-          const label = made.intent === 'any' ? 'Any message' : made.intent.replace(/_/g, ' ');
-          cards.push({ kind: 'rule', id: made.id, title: clip(`${label}: ${made.instruction}`, 120), status: 'draft' });
+          drafts.rules.push({ id: made.id, intent: made.intent, branchId: made.branchId, instruction: made.instruction });
+          cards.push({ kind: 'rule', id: made.id, title: clip(`${labelOf(made.intent)}: ${made.instruction}`, 120), status: 'draft' });
           return { ok: true, data: { id: made.id, intent: made.intent, status: 'draft', approveAt: 'Assistant → Rules' } };
         }
         case 'dry_run': {
