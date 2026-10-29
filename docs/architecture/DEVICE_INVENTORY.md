@@ -365,9 +365,17 @@ fact until the bench check; see the "confirm on site" lists._
 
 Minimal wristband label in the recommended language (TSPL2, Code 128 plus QR).
 203 dpi is 8 dots/mm, so a 50 mm band is 400 dots across. **The `SIZE` and
-`GAP` values are placeholders** — measure the park's stock first (typical
-thermal wristbands are 25 mm x 254 mm; if the bands are 25 mm wide, use
-`SIZE 25 mm,254 mm` and halve the x coordinates).
+`GAP` values below are the pre-measurement placeholders.** The park's stock was
+measured on a 4B-2082A on 29 Oct 2026 with a printed ruler: pre-printed bands
+**25 mm wide, 246 mm print length plus a 4 mm black mark on the back** (pitch
+250 mm), loaded pattern side up; the white printable window runs about 38–138
+mm from the mark, and the chosen print window is **50 mm from the mark, 80 mm
+long**. That is `SIZE 25 mm,246 mm` + `BLINE 4 mm,0 mm` + `REFERENCE 0,400`;
+gap sensing or continuous feeding drifts off the window after a band or two.
+On the device row these are `label.sensing = bline`, `gapMm = 4` (the mark
+height), `labelWidthMm = 25`, `labelHeightMm = 246`, `printOffsetMm = 50`,
+`printLengthMm = 80` (SCRUM-689). Calibrate the sensor once per new roll: hold
+FEED at power-on and release during the red blinks.
 
 ```
 SIZE 50 mm,250 mm
@@ -403,7 +411,7 @@ line_ending: "\r\n"
 encoding: ascii           # label text; Thai via BITMAP (host-rendered 1-bpp) or downloaded TTF + CODEPAGE UTF-8
 dpi: 203                  # [inferred from model number; confirm on self-test page]
 dots_per_mm: 8
-media: { width_mm: 50, length_mm: 250, gap_mm: 3, sensing: gap }   # measure on site; may be 25 x 254
+media: { width_mm: 25, length_mm: 246, mark_mm: 4, sensing: bline, print_offset_mm: 50, print_length_mm: 80 }   # measured 29 Oct 2026 on the park's pre-printed bands (white window ~38–138 mm from the mark)
 status_poll: "\x1b!?"     # 1 byte; 0x00 ready; bit flags 01 head-open 02 jam 04 paper-out 08 ribbon 10 pause 20 printing 80 other
 status_ext:  "\x1b!S"     # optional, <STX>xxxx<ETX>\r\n; [unconfirmed on this firmware]
 identify:    "~!T"        # model string; "~!I" codepage,country; "~!@" mileage; "~!A" free memory
