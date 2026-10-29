@@ -156,16 +156,16 @@ In this order — details per screen in [BOOTH_SETUP.md](BOOTH_SETUP.md):
 2. Devices → **New station**: this box · a name · Kind **Booth** · Code prefix two
    capitals/digits nobody uses (e.g. `P1`) · the printer from step 1 ·
    Who may use it: **Only the people I name**, nobody named → Create.
-3. Booths → the booth → **Booth settings**: Layout "Classic wheel (v1)" + staff session
-   length → Save.
-4. Booths → the booth → **Booth staff**: add yourself, set your 5-digit PIN.
+3. Booths → the booth → **Booth settings**: Layout "Classic wheel (v1)" → Save.
+4. Booths → the booth → **Today's staff**: add yourself for today if the rota does not
+   name you (your name prints on the slip; nobody signs in at the booth).
 5. Voucher types first, then **Add prize** per prize until chances total exactly 100%.
 6. **Review and publish** → Publish. The TV shows the wheel within a minute.
 
 ## E. Play
 
-Red button into a black USB port (it sends Space; nothing to set). Type your PIN on the
-keyboard to sign in, press the button, the slip prints. No slip within 3 seconds → the
+Red button into a black USB port (it sends Space; nothing to set). Nobody signs in:
+press the button, the slip prints with today's staff in its Staff row. No slip within 3 seconds → the
 code and QR show on the TV, and the slip follows once the printer answers. Redeem the
 slip at a till per [COUNTER_VOUCHERS.md](COUNTER_VOUCHERS.md).
 

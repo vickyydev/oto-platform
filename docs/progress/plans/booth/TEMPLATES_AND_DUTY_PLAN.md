@@ -1,5 +1,17 @@
 # Booth templates and the day's staff — the plan of 1 October 2026
 
+> **Superseded in part on 29 October 2026 (SCRUM-694).** The owner ruled that
+> nobody signs in at a booth. Everything below about booth sign-in no longer
+> holds: D5 step 2 (a stand-in signing in with a password and joining the day's
+> roster as `self_assigned`), the part of D6 that keeps the signed-in account on
+> the spin and "password sign-in on the booth keyboard", open decisions 2 and 3
+> where they mention sign-in, and "the standing allowed list and PIN sign-in" in
+> §5. What stands: the duty sync, the log, the manual add, the merged label on
+> the slip, and "nobody on the roster: the wheel still plays, spins record
+> unattributed". The slip's Staff row is now the whole of the attribution; the
+> current behaviour is in [docs/features/booth.md](../../../features/booth.md),
+> "Staff attribution - SCRUM-694".
+
 _Written from four read-only studies: the print-template system, the booth's staff
 attribution end to end, the OTO App's scheduling tables (with the production dump's
 real usage), and a survey of modern template-editor UX. Nothing here is built yet

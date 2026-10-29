@@ -1,6 +1,6 @@
 # Lucky Wheel vouchers at the counter
 
-For reception and restaurant staff. A family brings a slip from the Lucky Wheel booth. It shows the prize, a code of 11 letters and digits that starts with the booth's own two characters (`B2…` for a booth whose prefix is B2), the same code as a QR, the booth, the name of whoever was signed in there ("Staff"), and when it expires. A slip is used **once**, **one per sale**, never together with a promo code, and only at a till that is **online**.
+For reception and restaurant staff. A family brings a slip from the Lucky Wheel booth. It shows the prize, a code of 11 letters and digits that starts with the booth's own two characters (`B2…` for a booth whose prefix is B2), the same code as a QR, the booth, the names of the booth's staff that day ("Staff" — or "unattributed" when nobody was on the booth's roster), and when it expires. A slip is used **once**, **one per sale**, never together with a promo code, and only at a till that is **online**.
 
 ## 1. Which till
 
@@ -17,7 +17,7 @@ The ticket till is the POS's **Tickets** tab; the restaurant till is its **F&B**
 
 1. Start the sale as usual: the member or a walk-in, and whatever else they are buying.
 2. Type the code off the slip into **Redeem voucher**, under the promo code box, and press **Redeem** — or scan the slip's QR with the counter's scanner, which does the same. Spaces, dashes and small letters do not matter. After its first two characters a code never has a 0, 1, I, L, O or U in it.
-3. The **voucher card** appears, in green. Check it against the slip: the prize, the code, the booth and when it was printed, the last day it is valid, and "Printed by" — the name on the slip's Staff line. (The card writes dates its own way — "9 Oct 2026" where the slip has "09 Oct 2026", and "Sep" where the slip has "Sept" — but they are the same dates.)
+3. The **voucher card** appears, in green. Check it against the slip: the prize, the code, the booth and when it was printed, the last day it is valid, and "Printed by" — the names on the slip's Staff line ("Printed by: unattributed" when the slip says unattributed; that slip is honoured like any other). (The card writes dates its own way — "9 Oct 2026" where the slip has "09 Oct 2026", and "Sep" where the slip has "Sept" — but they are the same dates.)
 4. Do what the card says (section 4).
 5. **Pay** → the *Customer Details* screen (the family's display asks for their details; the till waits until they finish or skip) → how the family pays → **Confirm Payment Received**. When the sale comes to ฿0 there is nothing to choose: the screen says "No payment needed" — press **Complete Sale**. The voucher is used up only now; the confirmation says "Voucher … used".
 
