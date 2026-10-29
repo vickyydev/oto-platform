@@ -162,21 +162,36 @@ export interface DrawerPulseResult {
 }
 
 /**
- * Whether one printer has answered a status query in this process: what tells
- * a printer that has stopped from a unit that never answers, when either is
- * silent before a job (case 5 in `queue.ts`'s header; SCRUM-431).
+ * Whether one printer has shown, in this process, that it answers a status
+ * query when it is idle and ready: what tells a printer that has stopped from
+ * a unit that never answers, when either is silent before a job (case 5 in
+ * `queue.ts`'s header; SCRUM-431).
  *
  * The queue keeps it for each device, beside its health map, and hands it to
- * every adapter it builds. An answer to a job's read before or after the job,
- * or to the heartbeat's probe, is remembered, and nothing forgets one but a
- * restart. That is accepted: after a restart the unit is one never heard from
- * until it answers again, and a job that meets its silence is printed blind,
- * as case (b) in `readAfterJob` says.
+ * every adapter it builds. What counts as shown is the adapter's to say, by
+ * family, because the two families answer differently when idle:
+ *
+ *  - **The receipt family** answers `DLE EOT` whenever it is on and reading,
+ *    idle or busy, whatever its state (§9.3). Any answer counts: to a job's
+ *    read before or after the job, or to the heartbeat's probe.
+ *  - **The band family** answers `ESC ! ?` only while it has something to
+ *    say: in an error state (bands out, 0x04), or during and just after a
+ *    `PRINT`; idle and ready, it answers nothing (SCRUM-688, measured on a
+ *    4B-2082A). So only a READY byte (0x00) to a read made outside a job —
+ *    the probe's, or the read before a job — counts. An error byte, or any
+ *    answer read during or after `PRINT`, proves only that the unit was not
+ *    ready or not idle, and the memory stays as it was. Without this, bands
+ *    running out armed the memory with their 0x04, the reloaded unit went
+ *    back to its silence, and every band after it was held until a restart.
+ *
+ * Nothing forgets an answer but a restart. That is accepted: after a restart
+ * the unit is one never heard from until it answers again, and a job that
+ * meets its silence is printed blind, as case (b) in `readAfterJob` says.
  */
 export interface StatusMemory {
-  /** True once the unit has answered a status query in this process. */
+  /** True once the unit has shown it answers a status query when idle and ready. */
   answered(): boolean;
-  /** The unit has just answered one. */
+  /** The unit has just shown it. */
   heard(): void;
 }
 
@@ -202,8 +217,8 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * A printer the box has heard answer status is silent before a job: case 5 in
- * `queue.ts`'s header (SCRUM-431).
+ * A printer the box knows answers status when it is ready (`StatusMemory`) is
+ * silent before a job: case 5 in `queue.ts`'s header (SCRUM-431).
  *
  * Thrown before a byte of the job is written, which is what makes it
  * `retryable` and never `partial`: nothing can have reached the paper, so the
@@ -578,9 +593,13 @@ const LABEL_POLL_MS = 100;
  * firmware, so this is the baseline and the only thing polled.
  *
  * A null before a band job means what it means before a slip
- * (`readEscposStatus`): from a unit the box has heard answer, the job is not
- * sent and waits, `PRINTER_SILENT_BEFORE_JOB` (case 5 in `queue.ts`'s header;
- * SCRUM-431); from one never heard, it is sent anyway.
+ * (`readEscposStatus`): from a unit the box knows answers when ready, the job
+ * is not sent and waits, `PRINTER_SILENT_BEFORE_JOB` (case 5 in `queue.ts`'s
+ * header; SCRUM-431); from any other, it is sent anyway. What the band family
+ * has to do to be known is narrower than a slip printer (`StatusMemory`;
+ * SCRUM-688): the 4B-2082A answers `ESC ! ?` only in an error state or around
+ * a `PRINT`, and says nothing at all when it is idle and ready — so for it
+ * the null before a job is the ordinary case, and the job goes blind.
  */
 async function readLabelStatus(channel: PrinterChannel): Promise<LabelStatus | null> {
   const reply = await channel.query(TSPL.statusQuery, 1, CHANNEL_TIMEOUTS.statusMs);
@@ -622,10 +641,19 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
     }
   }
 
-  /** `readLabelStatus`, with an answer remembered (`StatusMemory`; SCRUM-431). */
-  async function readStatus(channel: PrinterChannel): Promise<LabelStatus | null> {
+  /**
+   * A read made outside a job — the probe's, or the one before a job — with
+   * what it proves remembered (`StatusMemory`; SCRUM-431, SCRUM-688).
+   *
+   * Only a READY byte arms the memory. An error byte says the unit answers in
+   * that state, which every unit in this family does, and nothing about
+   * whether it answers once the fault is cleared; and the reads during and
+   * after a `PRINT` go through `readLabelStatus` directly, because the
+   * family answers around a job whatever it does when idle.
+   */
+  async function readIdleStatus(channel: PrinterChannel): Promise<LabelStatus | null> {
     const status = await readLabelStatus(channel);
-    if (status !== null) memory?.heard();
+    if (status?.ready === true) memory?.heard();
     return status;
   }
 
@@ -636,7 +664,9 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
     async probe() {
       const at = now().toISOString();
       try {
-        return await withChannel(async (channel) => healthFromLabel(await readStatus(channel), at));
+        return await withChannel(async (channel) =>
+          healthFromLabel(await readIdleStatus(channel), at),
+        );
       } catch (err) {
         return {
           ...unknownHealth(at),
@@ -648,9 +678,12 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
     async print(attempt) {
       const startedAt = Date.now();
       return withChannel(async (channel) => {
-        const beforeStatus = await readStatus(channel);
-        // Silent, from a unit that has answered before: stopped, so the band
+        const beforeStatus = await readIdleStatus(channel);
+        // Silent, from a unit known to answer when ready: stopped, so the band
         // is not sent into it, as a slip is not (`escposAdapter`; SCRUM-431).
+        // From a unit that has only ever answered in error or around a
+        // `PRINT`, silence is what ready looks like, and the band goes blind
+        // (SCRUM-688); the poll after it still catches bands running out.
         if (beforeStatus === null && memory?.answered()) throw silentBeforeJob(label);
         const before = healthFromLabel(beforeStatus, now().toISOString());
         if (before.paperStatus === 'out') {
@@ -686,12 +719,17 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
          * were flushed would report success while the band was still coming
          * out — and would miss the media running out mid-label, which is
          * exactly what the next queued band needs to know.
+         *
+         * Nothing read here is remembered (`StatusMemory`): the family
+         * answers during and just after a `PRINT` whether or not it answers
+         * when idle, so a ready byte here says nothing about the read before
+         * the next job (SCRUM-688).
          */
         const deadline = Date.now() + CHANNEL_TIMEOUTS.jobCompleteMs;
-        let status = await readStatus(channel);
+        let status = await readLabelStatus(channel);
         while (status?.printing === true && Date.now() < deadline) {
           await sleep(LABEL_POLL_MS);
-          status = await readStatus(channel);
+          status = await readLabelStatus(channel);
         }
         const health = healthFromLabel(status, now().toISOString());
         if (health.paperStatus === 'out') {

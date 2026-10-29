@@ -75,11 +75,13 @@ export type PrinterErrorCode =
   | 'PRINTER_NO_STATUS'
   /**
    * The printer answered nothing to the status read before the job, and it
-   * is a printer that has answered one in this process — so it has stopped,
-   * rather than being a unit whose firmware never answers (case 5 in
-   * `queue.ts`'s header; SCRUM-431). Nothing was written, so it is
-   * `retryable` and never `partial`: the job stays queued, and the queue's
-   * retry sends it once the printer answers again.
+   * is a printer that has shown in this process that it answers when idle and
+   * ready — so it has stopped, rather than being a unit whose firmware never
+   * answers when idle (case 5 in `queue.ts`'s header; SCRUM-431; what counts
+   * as shown is `StatusMemory` in `adapter.ts`, by family, SCRUM-688).
+   * Nothing was written, so it is `retryable` and never `partial`: the job
+   * stays queued, and the queue's retry sends it once the printer answers
+   * again.
    */
   | 'PRINTER_SILENT_BEFORE_JOB'
   /**

@@ -156,8 +156,13 @@ const AFTER_JOB_SILENT = -2;
 /** `stopAfter` or `resumeAfterMs` not set. */
 const UNSET = -1;
 
-/** A band printer's state: whether it answers `ESC ! ?`, and the band bytes it has read. */
-const BAND_SLOT = { answering: 0, taken: 1 } as const;
+/**
+ * A band printer's state: the byte it answers `ESC ! ?` with before a band has
+ * arrived on a session and the one after, `BAND_SILENT` for no answer, and
+ * the band bytes it has read.
+ */
+const BAND_SLOT = { before: 0, after: 1, taken: 2 } as const;
+const BAND_SILENT = -1;
 
 /**
  * The fake printers, as the thread that serves them runs them.
@@ -290,14 +295,21 @@ function escposPrinter(state) {
 
 function bandPrinter(state) {
   return (socket) => {
+    let jobSeen = false;
     socket.on('data', (data) => {
       let queries = 0;
       for (let i = 0; i + 2 < data.length; i += 1) {
         if (data[i] === 0x1b && data[i + 1] === 0x21 && data[i + 2] === 0x3f) queries += 1;
       }
-      Atomics.add(state, BAND_SLOT.taken, data.length - 3 * queries);
-      if (Atomics.load(state, BAND_SLOT.answering) !== 1) return;
-      for (let q = 0; q < queries; q += 1) socket.write(Buffer.from([${LABEL_READY}]));
+      const bandBytes = data.length - 3 * queries;
+      if (bandBytes > 0) {
+        jobSeen = true;
+        Atomics.add(state, BAND_SLOT.taken, bandBytes);
+      }
+      // A query that shares a read with the tail of a band is one after it.
+      const reply = Atomics.load(state, jobSeen ? BAND_SLOT.after : BAND_SLOT.before);
+      if (reply === ${BAND_SILENT}) return;
+      for (let q = 0; q < queries; q += 1) socket.write(Buffer.from([reply]));
     });
   };
 }
@@ -596,34 +608,44 @@ function shown(printing: PrintSubsystem) {
 
 /** "Ready": the idle reply to `ESC ! ?` (§9.1). */
 const LABEL_READY = 0x00;
+/** Bands out: bit 2 of the reply to `ESC ! ?` (§9.1). */
+const LABEL_BANDS_OUT = 0x04;
 
 interface FakeBandPrinter {
   port: number;
   /** Band bytes read: everything but the status queries. */
   taken(): number;
-  /** Whether it answers `ESC ! ?` from here on. */
-  answering(on: boolean): void;
+  /**
+   * What it answers `ESC ! ?` with from here on: `before` to a query read
+   * before any band bytes on its session, `after` to one read once a band has
+   * arrived. Null is no answer. A unit that answers only in error or around a
+   * `PRINT` (SCRUM-688) is `replies(null, LABEL_READY)`.
+   */
+  replies(before: number | null, after: number | null): void;
   close(): Promise<void>;
 }
 
 /**
- * A band printer on loopback, as far as the read before a band needs one: it
- * answers `ESC ! ?` with "ready" while it is answering, and counts every other
- * byte it reads as the band's. The bands sent to it are filler, with no
- * `ESC ! ?` inside them to find. Served from the printers' thread
- * (`printerThread`), as the receipt printers are.
+ * A band printer on loopback, as far as the reads around a band need one: it
+ * answers `ESC ! ?` with the byte it is told to — one before a band has
+ * arrived on the session, one after — and counts every other byte it reads as
+ * the band's. The bands sent to it are filler, with no `ESC ! ?` inside them
+ * to find. Served from the printers' thread (`printerThread`), as the receipt
+ * printers are. It starts out answering "ready" to everything.
  */
 async function fakeBandPrinter(): Promise<FakeBandPrinter> {
-  const shared = new SharedArrayBuffer(2 * Int32Array.BYTES_PER_ELEMENT);
+  const shared = new SharedArrayBuffer(3 * Int32Array.BYTES_PER_ELEMENT);
   const state = new Int32Array(shared);
-  Atomics.store(state, BAND_SLOT.answering, 1);
+  const replies = (before: number | null, after: number | null): void => {
+    Atomics.store(state, BAND_SLOT.before, before ?? BAND_SILENT);
+    Atomics.store(state, BAND_SLOT.after, after ?? BAND_SILENT);
+  };
+  replies(LABEL_READY, LABEL_READY);
   const { id, port } = await printerThread().open('band', shared);
   return {
     port,
     taken: () => Atomics.load(state, BAND_SLOT.taken),
-    answering: (on) => {
-      Atomics.store(state, BAND_SLOT.answering, on ? 1 : 0);
-    },
+    replies,
     close: () => printerThread().close(id),
   };
 }
@@ -1101,7 +1123,7 @@ describe('the read after a job (SCRUM-429)', { concurrency: true }, () => {
       }
     });
 
-    test('(6) the band printers keep the same rule', async () => {
+    test('(6) a band printer that answers ready when idle keeps the same rule', async () => {
       const printer = await fakeBandPrinter();
       const bandBytes = 2_000;
       let heard = false;
@@ -1122,9 +1144,9 @@ describe('the read after a job (SCRUM-429)', { concurrency: true }, () => {
         });
       try {
         assert.equal((await band(remembered).probe()).statusUnknown, false);
-        assert.equal(heard, true, 'its answer to the probe is remembered');
+        assert.equal(heard, true, 'its ready answer to the probe is remembered');
 
-        printer.answering(false);
+        printer.replies(null, null);
         const { error, ms } = await timedFailure(
           band(remembered).print({ bytes: filler(bandBytes) }),
         );
@@ -1201,6 +1223,102 @@ describe('the read after a job (SCRUM-429)', { concurrency: true }, () => {
         box.close();
         await remembered.close();
         await never.close();
+      }
+    });
+
+    /**
+     * A band printer that answers status only in error (SCRUM-688).
+     *
+     * The 4B-2082A answers `ESC ! ?` while its bands are out, and during and
+     * just after a `PRINT`; idle and ready, it answers nothing. Its 0x04 to a
+     * read used to arm the memory, so once the bands were reloaded and it went
+     * back to its silence, every band was held `PRINTER_SILENT_BEFORE_JOB`
+     * until the box restarted, and the backlog then printed at once. Now only
+     * a ready byte to a read outside a job arms it: an error byte, or any
+     * answer read during or after the `PRINT`, leaves it as it was.
+     */
+    test('(9) a band printer that answers only in error: bands out arms nothing, and the band after the reload goes blind, not held', async () => {
+      const printer = await fakeBandPrinter();
+      const bandBytes = 2_000;
+      let heard = false;
+      const remembered: StatusMemory = {
+        answered: () => heard,
+        heard: () => {
+          heard = true;
+        },
+      };
+      const band = () =>
+        tsplAdapter({
+          deviceId: DEVICE_ID,
+          label: 'Band printer',
+          target: { host: '127.0.0.1', port: printer.port },
+          open: tcpChannel,
+          now: () => new Date(),
+          memory: remembered,
+        });
+      const bandsOut = async (): Promise<PrinterError> => {
+        const { error } = await timedFailure(band().print({ bytes: filler(bandBytes) }));
+        assert.ok(error instanceof PrinterError, `the band ended ${String(error)}`);
+        assert.equal(error.code, 'PRINTER_PAPER_OUT');
+        return error;
+      };
+      try {
+        // Bands out: the heartbeat's probe and the read before a band both
+        // hear its 0x04. The job waits on bands, as it should, and the memory
+        // is as it was.
+        printer.replies(LABEL_BANDS_OUT, LABEL_BANDS_OUT);
+        assert.equal((await band().probe()).paperStatus, 'out');
+        assert.equal(heard, false, 'an error byte to the probe arms nothing');
+        const out = await bandsOut();
+        assert.equal(out.retryable, true, 'waiting on bands, as before');
+        assert.equal(out.partial, false);
+        assert.equal(printer.taken(), 0, 'not a byte of the band was sent');
+        assert.equal(heard, false, 'an error byte to the read before a band arms nothing');
+
+        // Reloaded, and ready: silent, as this unit is when ready. The band
+        // is sent blind, as to a unit never heard from — not held.
+        printer.replies(null, null);
+        const blind = await band().print({ bytes: filler(bandBytes) });
+        assert.equal(blind.written, 1, 'sent, not held');
+        assert.equal(blind.health.statusUnknown, true);
+        assert.equal(blind.health.paperStatus, 'unknown');
+        assert.equal(printer.taken(), bandBytes, 'the band reached it');
+        assert.equal(heard, false);
+
+        // Answering around the PRINT, as it does: ready to the poll after the
+        // band. That is the band's health, and it arms nothing, so the next
+        // band meets the same silence before it and goes too.
+        printer.replies(null, LABEL_READY);
+        const confirmed = await band().print({ bytes: filler(bandBytes) });
+        assert.equal(confirmed.written, 1);
+        assert.equal(confirmed.health.statusUnknown, false, 'what it said after the band is kept');
+        assert.equal(confirmed.health.paperStatus, 'ok');
+        assert.equal(heard, false, 'a ready byte read after the PRINT arms nothing');
+        const next = await band().print({ bytes: filler(bandBytes) });
+        assert.equal(next.written, 1, 'and the next band is not held');
+        assert.equal(printer.taken(), 3 * bandBytes);
+
+        // Bands running out mid-band: the poll after the band still catches
+        // it, and that 0x04 arms nothing either.
+        printer.replies(null, LABEL_BANDS_OUT);
+        const midBand = await bandsOut();
+        assert.equal(midBand.partial, true, 'some of the band may be out');
+        assert.equal(midBand.retryable, false, 'so nothing sends it again by itself');
+        assert.equal(printer.taken(), 4 * bandBytes);
+        assert.equal(heard, false);
+
+        // A ready byte to a read outside a job is what arms it, and then the
+        // rule of (6) holds: silence before the next band is a stopped printer.
+        printer.replies(LABEL_READY, LABEL_READY);
+        assert.equal((await band().probe()).statusUnknown, false);
+        assert.equal(heard, true, 'a ready byte to the probe is remembered');
+        printer.replies(null, null);
+        const { error: held } = await timedFailure(band().print({ bytes: filler(bandBytes) }));
+        assert.ok(held instanceof PrinterError, `the band ended ${String(held)}`);
+        assert.equal(held.code, 'PRINTER_SILENT_BEFORE_JOB');
+        assert.equal(printer.taken(), 4 * bandBytes, 'not a byte of it was sent');
+      } finally {
+        await printer.close();
       }
     });
 

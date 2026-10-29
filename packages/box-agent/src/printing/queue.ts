@@ -56,11 +56,18 @@
  *     after case 1's silent ending — a jam, the roll out, its input buffer
  *     full — answered the next job's read with nothing too, and that job was
  *     recorded printed with no paper out of the machine. So the box
- *     remembers, for each printer, that it has answered a status query in
- *     this process — a job's read before or after the job, or the
- *     heartbeat's probe — and silence from one it remembers is a printer
- *     that has stopped, not firmware that never answers. Nothing has reached
- *     the paper, so waiting costs no second slip: the booth's press answers
+ *     remembers, for each printer, that it has shown in this process that it
+ *     answers a status query when idle and ready, and silence from one it
+ *     remembers is a printer that has stopped, not firmware that never
+ *     answers. What shows it depends on the family (`StatusMemory` in
+ *     `adapter.ts`): a receipt printer answers `DLE EOT` in every state, so
+ *     any answer counts — a job's read before or after the job, or the
+ *     heartbeat's probe; a band printer answers `ESC ! ?` only in an error
+ *     state or around a `PRINT` and nothing when idle and ready, so only a
+ *     ready byte to the probe or to the read before a job counts (SCRUM-688:
+ *     bands running out used to arm it with their error byte, and every band
+ *     after the reload was held until a restart). Nothing has reached the
+ *     paper, so waiting costs no second slip: the booth's press answers
  *     `queued`, the television shows the code and its QR, and the slip comes
  *     out once the printer answers again. The memory is this process's
  *     alone. A restart forgets it, and until the unit answers again it is
@@ -601,10 +608,12 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
   const queue: PendingJob[] = [];
   const health: Record<string, PrinterHealth> = {};
   /**
-   * The printers that have answered a status query in this process, by device
-   * id: case 5 in the header (SCRUM-431). The adapters put a printer here when
-   * it answers a job's read before or after the job, or the heartbeat's probe
-   * (`StatusMemory` in `adapter.ts`), and nothing takes one out but a restart.
+   * The printers that have shown, in this process, that they answer a status
+   * query when idle and ready, by device id: case 5 in the header (SCRUM-431).
+   * Each adapter puts a printer here on the answer that shows it for its
+   * family — any answer from a receipt printer, a ready byte outside a job
+   * from a band printer (`StatusMemory` in `adapter.ts`; SCRUM-688) — and
+   * nothing takes one out but a restart.
    */
   const answered = new Set<string>();
   /** One promise per device id: the tail of the chain of jobs for that printer. */
