@@ -1,0 +1,15 @@
+{
+  "run": "40961297724",
+  "job": "123759151583",
+  "rawLogSaved": false,
+  "rawLogSha256": "e1a92f23a5126a64cf3e919ce1bf7e2438c4adeb450ee6eefd1e5dc768eeec1b",
+  "snippets": [
+    "Error: Failed query: insert into [VALUE].[VALUE] ([VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE]) values ($1, $2, default, $3, $4, $5, $6, $7, default, default, default, default)",
+    "Caused by: error: duplicate key value violates unique constraint [VALUE]",
+    "Serialized Error: { length: 265, severity: [VALUE], code: [VALUE], detail: [VALUE], hint: undefined, position: undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: [VALUE], table: [VALUE], dataType: undefined, constraint: [VALUE], file: [VALUE], routine: [VALUE] }",
+    "##[error]Error: Failed query: insert into [VALUE].[VALUE] ([VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE]) values ($1, $2, default, $3, $4, $5, $6, $7, default, default, default, default)",
+    "api-tests (1)\tApi tests (shard 1 of 3)\tSerialized Error: { query: [VALUE], params: [ [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], [VALUE], false ] }",
+    "api-tests (1)\tApi tests (shard 1 of 3)\tCaused by: Caused by: error: duplicate key value violates unique constraint [VALUE]",
+    "api-tests (1)\tApi tests (shard 1 of 3)\tSerialized Error: { length: 265, severity: [VALUE], code: [VALUE], detail: [VALUE], hint: undefined, position: undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: [VALUE], table: [VALUE], dataType: undefined, constraint: [VALUE], file: [VALUE], routine: [VALUE] }"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "runId": "40961297724",
+  "jobId": "123759151583",
+  "sourceSha": "302a3b5cc47db07f94cd76d9f9c237f43333af39",
+  "readAt": "2026-10-29T22:27:14.446Z",
+  "rawLogSha256": "e1a92f23a5126a64cf3e919ce1bf7e2438c4adeb450ee6eefd1e5dc768eeec1b",
+  "rawLogSaved": false,
+  "snippets": [
+    " FAIL  test/integration-controls.test.ts [ test/integration-controls.test.ts ]",
+    " Test Files  1 failed | 136 passed | 2 skipped (139)",
+    "      Tests  2007 passed | 119 skipped (2126)"
+  ]
+}

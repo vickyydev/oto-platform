@@ -1,0 +1,52 @@
+{
+  "kind": "4b-gate-and-browser-binding-preparation",
+  "preparedAt": "2026-10-29T22:34:28.295Z",
+  "sourceSha": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+  "runnerPath": "C:\\oto-lanes\\admin684-resume-20261030\\capture.mjs",
+  "runnerSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+  "backupPath": "C:\\oto-lanes\\admin684-resume-20261030\\capture-before-4b.mjs",
+  "backupSha256": "b6de7cd005408940cd3d8a8c1455ed7cfcceaced847485317b634e6a2fed73eb",
+  "runnerChanges": [
+    "Frozen HEAD and external output directory updated.",
+    "Added two external whole-file/package test profiles and included them in native test counting.",
+    "Existing affected command, all other existing commands, environment stripping, sanitization, before/after map rules and time limits remain unchanged."
+  ],
+  "profiles": [
+    "affected",
+    "contracts",
+    "typecheck",
+    "client-typecheck",
+    "console-typecheck",
+    "client-tests",
+    "lint",
+    "main-ci-fixtures",
+    "telemetry-tests"
+  ],
+  "resultsDirectory": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results",
+  "frontendReuse": {
+    "reusable": true,
+    "originalReceiptPath": "C:/oto-lanes/admin684-resume-20261030/rebased-browser-all-v1-frontend.json",
+    "originalReceiptSha256": "5b3e08acd9e397108eec14ec7073341f5b4d893d225db1b225b11d907166950d",
+    "originalManifestPath": "C:/oto-lanes/admin684-resume-20261030/rebased-browser-all-v1-frontend-source.json",
+    "originalManifestSha256": "0f47945fc575dbca155a5b051289556cc8ff048d2968fb6ca91a6171a87f0831",
+    "descriptorPath": "C:\\oto-lanes\\admin684-resume-20261030\\rebased-browser-all-v1-frontend-descriptor.json",
+    "descriptorSha256": "ca661932d240946ea40635cb257d422a0e080dfc51c3a978510a5ed35beb490a",
+    "originalPassed": 357,
+    "originalFailed": 0,
+    "originalSkipped": 0,
+    "matchedSourceFiles": 446,
+    "currentFilesAndNewCommitGitBlobsBothMatch": true,
+    "newBrowserRunClaimed": false,
+    "backendValidation": "Fresh candidate CI and current full-map API receipt remain required."
+  },
+  "upstreamChangedPaths": [
+    "apps/api/test/integration-controls.test.ts",
+    "apps/api/test/payments-qr-cancel.test.ts"
+  ],
+  "frontendIntersection": [],
+  "liveCalls": 0,
+  "browserStarted": false,
+  "docker": false,
+  "productEdits": false,
+  "gitMutations": false
+}
