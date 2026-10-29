@@ -9,28 +9,30 @@
  *
  * WHAT IT WRITES. Once, when there is no such booth: a booth at Demo Branch 2
  * (`Demo Booth 1`, code prefix `DB`), its settings, a three-slice wheel of the
- * park's money vouchers with their cost prices, version 1 of that wheel, and
- * the demo cashier on its staff list. After that the Console owns the booth and
- * the seed writes none of it again (`ensureDemoBooth`). Per demo day: a handful
- * of presses at that booth (`DEMO_BOOTH_DAY`), each drawn from the wheel the
- * booth runs and with the voucher it printed. The demo day's
+ * park's money vouchers with their cost prices, and version 1 of that wheel.
+ * After that the Console owns the booth and the seed writes none of it again
+ * (`ensureDemoBooth`). Per demo day: the demo cashier on the booth's roster for
+ * that day, as a manager adds somebody in Console → Booths → Today's staff,
+ * and a handful of presses at that booth (`DEMO_BOOTH_DAY`), each drawn from
+ * the wheel the booth runs and with the voucher it printed. The demo day's
  * `voucher-discount` sale redeems one more voucher won at this booth that
  * morning (`writeDemoBoothPress`, from `demo-day.ts`), which is how some of the
  * day's vouchers are redeemed: a voucher is only ever used up by a sale.
  *
- * SHAPED AS A BOOTH BOX FILED THEM BEFORE SCRUM-694, said plainly: a box of
- * that release signed somebody in and named them on the spin, the voucher and
- * a `self_assigned` roster row, and these rows keep that shape because the
- * s216 tests pin them. They stay valid — a spin with a signed-in account is
- * still attributed to it — though a SCRUM-694 box names nobody and sends the
- * slip's roster label instead. The rows are the ones `services/sync-booth.ts`
- * filed when such a box reported a press: the spin (never `simulated` — H12
- * keeps simulated spins out of the figures, and these are presses the figures
- * are for), the voucher (source `booth`, its code minted by `mintBoothCode`
- * from the booth's prefix, its cost frozen from the prize and its expiry the
- * box's own rule), the paper (`booth.voucher_print`, the automatic first print,
- * printed), and the signed-in person's place on the day's roster (the
- * `self_assigned` row the platform wrote then; nothing writes one now).
+ * SHAPED AS A SCRUM-694 BOOTH BOX FILES THEM: nobody signs in at the booth, so
+ * no account is named on the spin or the voucher, and the press is attributed
+ * to the Staff row its slip printed — today's roster, merged into one label —
+ * carried on the spin's `spin.record` audit row as `staffLabel` (with the
+ * roster's account ids as `dutyAccountIds`), which is where
+ * `services/booth-attribution.ts` reads it for a spin with no ledger event.
+ * The rows are the ones `services/sync-booth.ts` files when such a box reports
+ * a press: the spin (never `simulated` — H12 keeps simulated spins out of the
+ * figures, and these are presses the figures are for), its audit row, the
+ * voucher (source `booth`, its code minted by `mintBoothCode` from the booth's
+ * prefix, its cost frozen from the prize and its expiry the box's own rule),
+ * and the paper (`booth.voucher_print`, the automatic first print, printed).
+ * The retired booth staff list (`booth.booth_staff_assignment`) is never
+ * written.
  *
  * WHAT IT NEVER TOUCHES. No real branch, booth, prize, wheel version or staff
  * list is written — FWBooth1 and the park's Booth 1 included. Three operator-wide
@@ -60,6 +62,7 @@ import {
   addDaysToIsoDate,
   BOOTH_CODE_MINT_ATTEMPTS,
   BoothConfigPrizeSchema,
+  boothDutyLabel,
   isoDateInTz,
   mintBoothCode,
   newId,
@@ -147,10 +150,14 @@ export interface DemoBooth {
   prizes: ReadonlyMap<DemoBoothPrizeCode, DemoBoothPrize>;
 }
 
-/** Who is signed in at the booth: an account, and the name the day's roster shows. */
+/**
+ * Who is on the booth's roster for the day (Console → Booths → Today's staff):
+ * an account, the name the slip prints, and who added them by hand.
+ */
 export interface DemoBoothStaff {
   accountId: string;
   displayName: string;
+  addedByAccountId: string;
 }
 
 /**
@@ -158,15 +165,14 @@ export interface DemoBoothStaff {
  *
  * MADE ONCE. When there is no live `Demo Booth 1` at the demo branch, this
  * makes one: the box it stands on, the station, its settings, its prizes
- * (`DEMO_BOOTH_PRIZES`), version 1 of its wheel, and the demo cashier on its
- * staff list — all in one transaction, under one lock per operator, so two
- * presses at once make one booth. The prefix is checked first against the
- * Console's own rule: no two live booths of an operator share one.
+ * (`DEMO_BOOTH_PRIZES`) and version 1 of its wheel — all in one transaction,
+ * under one lock per operator, so two presses at once make one booth. The
+ * prefix is checked first against the Console's own rule: no two live booths
+ * of an operator share one.
  *
  * FOUND AFTER, AND LEFT ALONE. Once the booth exists the Console owns it: its
- * prizes, its wheel and its staff list are never written again, so a prize
- * somebody archived, renamed or re-costed, and a person somebody took off the
- * list, stay as they left them.
+ * prizes and its wheel are never written again, so a prize somebody archived,
+ * renamed or re-costed stays as they left it.
  *
  * WHAT A PRESS DRAWS. The slices of the wheel the booth runs — its latest
  * published version — read from that version's bundle, as a box draws from
@@ -179,7 +185,6 @@ export interface DemoBoothStaff {
 export async function ensureDemoBooth(
   db: Db,
   branch: { id: string; operatorId: string; timezone: string },
-  staff: { accountId: string; addedByAccountId: string },
 ): Promise<DemoBooth> {
   const { id: branchId, operatorId } = branch;
   return db.transaction(async (tx) => {
@@ -217,7 +222,7 @@ export async function ensureDemoBooth(
           `${DEMO_BOOTH_NAME} at the demo branch has no published wheel. Publish it from Console > Booths, then add the demo day again.`,
         );
       }
-      version = await makeDemoWheel(tx, { stationId: station.id, branchId, operatorId, staff });
+      version = await makeDemoWheel(tx, { stationId: station.id, branchId, operatorId });
     }
 
     const prizes = await drawableSlices(tx, operatorId, version.bundle);
@@ -314,14 +319,14 @@ async function makeDemoBoothStation(
 
 /**
  * The new booth's wheel, made once with the booth: its settings, its prizes,
- * version 1 read back from them as the park's seed reads its own, and the demo
- * cashier on its staff list. Never run for a booth that already has a wheel.
+ * and version 1 read back from them as the park's seed reads its own. Never
+ * run for a booth that already has a wheel.
  */
 async function makeDemoWheel(
   tx: SeedWriter,
-  input: { stationId: string; branchId: string; operatorId: string; staff: { accountId: string; addedByAccountId: string } },
+  input: { stationId: string; branchId: string; operatorId: string },
 ): Promise<{ id: string; bundle: unknown }> {
-  const { stationId, branchId, operatorId, staff } = input;
+  const { stationId, branchId, operatorId } = input;
 
   const [layout] = await tx
     .select()
@@ -419,13 +424,6 @@ async function makeDemoWheel(
     note: 'Seeded demo wheel: the three money vouchers, at their face value.',
   });
 
-  // The demo cashier on the standing list a booth's box checked before
-  // SCRUM-694 (retired; kept because the s216 tests pin the demo booth's rows).
-  await tx
-    .insert(s.boothStaffAssignment)
-    .values({ id: newId(), stationId, accountId: staff.accountId, addedBy: staff.addedByAccountId })
-    .onConflictDoNothing({ target: [s.boothStaffAssignment.stationId, s.boothStaffAssignment.accountId] });
-
   return { id, bundle };
 }
 
@@ -481,11 +479,13 @@ export interface DemoBoothPress {
 }
 
 /**
- * One press of the red button, filed as `sync-booth.ts` files a box's report
- * of it: the voucher the box minted (status `issued`, the prize's cost frozen
- * on it, the box's expiry), the spin naming it, the automatic first print and
- * the person on the day's roster. On the caller's transaction, which holds the
- * press's lock. `key` names every id, so the same press is the same rows.
+ * One press of the red button, filed as `sync-booth.ts` files a SCRUM-694
+ * box's report of it: the day's roster the slip names, the voucher the box
+ * minted (status `issued`, the prize's cost frozen on it, the box's expiry, no
+ * account), the spin naming it (no account), the spin's `spin.record` audit
+ * row carrying the Staff row the slip printed, and the automatic first print.
+ * On the caller's transaction, which holds the press's lock. `key` names every
+ * id, so the same press is the same rows.
  */
 export async function writeDemoBoothPress(
   writer: SeedWriter,
@@ -526,7 +526,8 @@ export async function writeDemoBoothPress(
         source: 'booth',
         status: 'issued',
         costSatang: prize.costSatang,
-        issuedByAccountId: input.staff.accountId,
+        // A SCRUM-694 box files the voucher as the device: nobody signs in.
+        issuedByAccountId: null,
         issuedAt: input.at,
         expiresAt,
         // The automatic first print, below, came out: one copy of this code.
@@ -548,7 +549,8 @@ export async function writeDemoBoothPress(
     outcome: 'prize',
     prizeId: prize.id,
     voucherId,
-    staffAccountId: input.staff.accountId,
+    // Null for every spin of a SCRUM-694 box; the attribution is the label below.
+    staffAccountId: null,
     clockSuspect: false,
     // A child at the wheel, never the `#debug` distribution run (H12).
     simulated: false,
@@ -557,6 +559,42 @@ export async function writeDemoBoothPress(
     receivedAt: input.at,
     actionId: input.actionId,
   });
+
+  /**
+   * The spin's audit row, as the push writes it, with `staffLabel` — the Staff
+   * row the slip printed, today's roster merged as the box merges it
+   * (`boothDutyLabel`) — and the roster's account ids. A seeded spin has no
+   * ledger event, so this row is where the reports, the voucher ledger and the
+   * till's "Printed by" read the label (`services/booth-attribution.ts`).
+   */
+  await writer
+    .insert(s.auditLog)
+    .values({
+      id: stableId(`${input.key}/spin-record`, input.at),
+      operatorId: booth.operatorId,
+      branchId: booth.branchId,
+      actorAccountId: null,
+      requestId: null,
+      action: 'spin.record',
+      entityType: 'spin',
+      entityId: spinId,
+      after: {
+        stationId: booth.stationId,
+        prizeId: prize.id,
+        outcome: 'prize',
+        businessDate: input.on,
+        staffAccountId: null,
+        staffLabel: boothDutyLabel({
+          roster: { date: input.on, people: [{ accountId: input.staff.accountId, displayName: input.staff.displayName }] },
+          today: input.on,
+        }),
+        dutyAccountIds: [input.staff.accountId],
+        simulated: false,
+      },
+      actionId: input.actionId,
+      createdAt: input.at,
+    })
+    .onConflictDoNothing();
 
   await writer.insert(s.voucherPrint).values({
     id: stableId(`${input.key}/print`, input.at),
@@ -573,8 +611,8 @@ export async function writeDemoBoothPress(
     actionId: input.actionId,
   });
 
-  // The signed-in person joins the day's roster, once, as the platform's
-  // self-assignment did before SCRUM-694 (nothing writes `self_assigned` now).
+  // The person the slip names, on the day's roster once, as a manager adds
+  // somebody by hand in Today's staff (`addManualBoothDuty`).
   await writer
     .insert(s.boothDutyAssignment)
     .values({
@@ -585,7 +623,8 @@ export async function writeDemoBoothPress(
       businessDate: input.on,
       accountId: input.staff.accountId,
       displayName: input.staff.displayName,
-      source: 'self_assigned',
+      source: 'manual',
+      addedByAccountId: input.staff.addedByAccountId,
     })
     .onConflictDoNothing();
 

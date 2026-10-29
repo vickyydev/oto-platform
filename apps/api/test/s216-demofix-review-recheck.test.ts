@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
   boothConfigVersion,
+  boothDutyAssignment,
   boothPrize,
   boothStaffAssignment,
   box,
@@ -159,7 +160,7 @@ afterAll(async () => {
 });
 
 describe('first use: two presses at once make one booth', () => {
-  it('one booth, one box, one wheel of three slices, one staff row; each sale and press once, and the counts add up', async () => {
+  it('one booth, one box, one wheel of three slices, one roster row; each sale and press once, and the counts add up', async () => {
     const [a, b] = firstRun;
     expect(a!.sales + b!.sales).toBe(11);
     expect(a!.sales + a!.skipped).toBe(11);
@@ -175,9 +176,15 @@ describe('first use: two presses at once make one booth', () => {
     expect(await ctx.db.select().from(box).where(eq(box.branchId, demo))).toHaveLength(1);
     expect(await ctx.db.select().from(boothPrize).where(eq(boothPrize.stationId, booths[0]!.id))).toHaveLength(3);
     expect(await ctx.db.select().from(boothConfigVersion).where(eq(boothConfigVersion.stationId, booths[0]!.id))).toHaveLength(1);
-    expect(await ctx.db.select().from(boothStaffAssignment).where(eq(boothStaffAssignment.stationId, booths[0]!.id))).toEqual([
-      expect.objectContaining({ accountId: somId }),
-    ]);
+    // SCRUM-694: Som on the day's roster once, however many presses raced to
+    // put her there; the retired booth staff list is never written.
+    expect(
+      await ctx.db
+        .select()
+        .from(boothDutyAssignment)
+        .where(and(eq(boothDutyAssignment.stationId, booths[0]!.id), eq(boothDutyAssignment.businessDate, T))),
+    ).toEqual([expect.objectContaining({ accountId: somId, source: 'manual' })]);
+    expect(await ctx.db.select().from(boothStaffAssignment).where(eq(boothStaffAssignment.stationId, booths[0]!.id))).toEqual([]);
     expect(await ctx.db.select().from(sale).where(and(eq(sale.branchId, demo), eq(sale.businessDate, T)))).toHaveLength(11);
     expect(await ctx.db.select().from(spin).where(eq(spin.stationId, booths[0]!.id))).toHaveLength(6);
   });

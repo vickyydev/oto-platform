@@ -688,13 +688,14 @@ export async function seedDemoDay(
 
   // Demo Branch 2's own booth: the voucher sale spends a voucher won there,
   // and the booth's day is filed after the sales. Som works it, as the park's
-  // reception works its Booth 1; the manager put her on its staff list.
-  const booth: DemoBooth = await ensureDemoBooth(
-    db,
-    { id: branchId, operatorId, timezone },
-    { accountId: cashier.id, addedByAccountId: manager?.id ?? cashier.id },
-  );
-  const boothStaff: DemoBoothStaff = { accountId: cashier.id, displayName: cashierName };
+  // reception works its Booth 1: the manager puts her on the day's roster in
+  // Today's staff, and every slip names her (SCRUM-694).
+  const booth: DemoBooth = await ensureDemoBooth(db, { id: branchId, operatorId, timezone });
+  const boothStaff: DemoBoothStaff = {
+    accountId: cashier.id,
+    displayName: cashierName,
+    addedByAccountId: manager?.id ?? cashier.id,
+  };
 
   const terminals: Record<'edc1' | 'edc3', string | null> = { edc1: null, edc3: null };
   for (const [slot, label] of [

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import {
   account,
+  auditLog,
   boothConfigVersion,
   boothPrize,
   boothStaffAssignment,
@@ -293,11 +294,23 @@ describe('the demo day files a funnel at Demo Branch 2’s own booth', () => {
       .from(voucher)
       .where(inArray(voucher.id, spins.map((s) => s.voucherId!)));
     expect(vouchers).toHaveLength(6);
+    // SCRUM-694: nobody signs in at a booth, so no account is named on a
+    // spin or a voucher; each spin's audit row carries the slip's Staff row.
+    const records = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'spin.record'), inArray(auditLog.entityId, spins.map((s) => s.id))));
+    expect(records).toHaveLength(6);
     for (const s of spins) {
-      expect(s).toMatchObject({ branchId: demo, boxId: booth.boxId, outcome: 'prize', simulated: false, staffAccountId: somId });
+      expect(s).toMatchObject({ branchId: demo, boxId: booth.boxId, outcome: 'prize', simulated: false, staffAccountId: null });
       expect(s.prizeId).not.toBeNull();
+      expect(records.find((r) => r.entityId === s.id)!.after).toMatchObject({
+        staffLabel: 'Som (Reception)',
+        dutyAccountIds: [somId],
+        staffAccountId: null,
+      });
       const v = vouchers.find((x) => x.id === s.voucherId)!;
-      expect(v).toMatchObject({ branchId: demo, source: 'booth', issuedByAccountId: somId, printCount: 1 });
+      expect(v).toMatchObject({ branchId: demo, source: 'booth', issuedByAccountId: null, printCount: 1 });
       expect(v.code).toMatch(/^DB[0-9A-Z]{9}$/);
       expect(v.issuedAt.toISOString()).toBe(s.occurredAt.toISOString());
       expect(v.expiresAt!.getTime()).toBeGreaterThan(v.issuedAt.getTime());
@@ -333,7 +346,8 @@ describe('the demo day files a funnel at Demo Branch 2’s own booth', () => {
     // Won at 11:10, spent at 13:55.
     expect(facts.lag).toBe(2 * 3600 + 45 * 60);
     expect(new Set(facts.rows.map((r) => r.boothId))).toEqual(new Set([booth.id]));
-    expect(new Set(facts.rows.map((r) => r.staffAccountId))).toEqual(new Set([somId]));
+    // No account on a SCRUM-694 spin: the report's By staff reads the label.
+    expect(new Set(facts.rows.map((r) => r.staffAccountId))).toEqual(new Set([null]));
     expect(facts.rows).toHaveLength(3);
   });
 
@@ -504,6 +518,8 @@ describe('a demo booth edited in the Console stays as they left it, and a press 
     const booth = await demoBooth();
     const before = await boothRows(booth.id);
     expect(before.versions).toHaveLength(1);
+    // The retired booth staff list is never written (SCRUM-694).
+    expect(before.staff).toEqual([]);
     const named = (name: string) => before.prizes.find((p) => p.nameEn === name && p.archivedAt === null)!;
     const p100 = named('100 THB Voucher');
     const p150 = named('150 THB Voucher');

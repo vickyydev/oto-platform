@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
+  auditLog,
   boothConfigVersion,
   boothDutyAssignment,
   boothPrize,
@@ -230,7 +231,8 @@ describe('every seeded press is one sync-booth would have filed from a box', () 
     for (const s of spins) {
       const label = `spin ${s.id} at ${s.occurredAt.toISOString()}`;
       // H12: a child at the wheel, never the #debug run; a prize, with its voucher.
-      expect(s, label).toMatchObject({ simulated: false, clockSuspect: false, outcome: 'prize', operatorId, branchId: demo, boxId: booth.boxId, staffAccountId: somId });
+      // SCRUM-694: no account on the spin; the slip's Staff row is the attribution.
+      expect(s, label).toMatchObject({ simulated: false, clockSuspect: false, outcome: 'prize', operatorId, branchId: demo, boxId: booth.boxId, staffAccountId: null });
       // The trading day as `prepareEvent` resolves it from the branch's own day start.
       expect(s.businessDate, label).toBe(businessDate(s.occurredAt, where!.timezone, parseDayStart(where!.day_start)));
       expect(s.businessDate, label).toBe(T);
@@ -250,7 +252,7 @@ describe('every seeded press is one sync-booth would have filed from a box', () 
         branchId: demo,
         source: 'booth',
         voucherDefinitionId: prize!.voucherDefinitionId,
-        issuedByAccountId: somId,
+        issuedByAccountId: null,
         memberId: null,
       });
       // BOOTH_VOUCHER_TYPE_NOT_ON_WHEEL: the type is on a published bundle of this booth.
@@ -268,7 +270,7 @@ describe('every seeded press is one sync-booth would have filed from a box', () 
       expect(v!.costSatang, label).toBe(prize!.costSatang);
       expect(v!.costSatang, label).toBe(bundle.prizes.find((p) => p.id === prize!.id)!.costSatang);
       expect(v!.costSatang, label).toBeGreaterThan(0);
-      // Issued at the press, by the person signed in at the booth.
+      // Issued at the press, as the device: nobody signs in at a booth.
       expect(v!.issuedAt.toISOString(), label).toBe(s.occurredAt.toISOString());
       // The box's expiry: the end of (the day it was won + the prize's days, else its type's), Bangkok time.
       const [type] = await ctx.db.select().from(voucherDefinition).where(eq(voucherDefinition.id, v!.voucherDefinitionId));
@@ -293,15 +295,25 @@ describe('every seeded press is one sync-booth would have filed from a box', () 
       expect(claims, label).toEqual([{ id: s.id, stationId: booth.id }]);
     }
 
-    // The roster: the demo day keeps the one `self_assigned` row a booth sign-in wrote before
-    // SCRUM-694 (nothing writes one now), named as that sign-in named her.
+    // The roster: Som on the day's Today's staff, added by hand as a manager adds
+    // somebody (SCRUM-694), and every spin's audit row carries the Staff row the
+    // slip printed from it — her name, and her account among the roster's.
+    const name = som!.nickname?.trim() || som!.name.trim();
     const roster = await ctx.db
       .select()
       .from(boothDutyAssignment)
       .where(and(eq(boothDutyAssignment.stationId, booth.id), eq(boothDutyAssignment.businessDate, T)));
     expect(roster).toEqual([
-      expect.objectContaining({ accountId: somId, source: 'self_assigned', displayName: som!.nickname?.trim() || som!.name.trim(), branchId: demo }),
+      expect.objectContaining({ accountId: somId, source: 'manual', displayName: name, branchId: demo }),
     ]);
+    expect(roster[0]!.addedByAccountId).not.toBeNull();
+    const records = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'spin.record'), inArray(auditLog.entityId, spins.map((s) => s.id))));
+    expect(records.map((r) => r.after)).toEqual(
+      spins.map(() => expect.objectContaining({ staffLabel: name, dutyAccountIds: [somId], staffAccountId: null })),
+    );
   });
 
   it('the one redeemed voucher was spent as the till spends one: held, applied, consumed, then named by its sale', async () => {
