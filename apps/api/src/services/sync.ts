@@ -5,7 +5,6 @@ import {
   employee,
   band,
   bandEvent,
-  boothStaffAssignment,
   booking,
   bookingRedemption,
   box,
@@ -74,7 +73,6 @@ import {
   OfflineVisitCreatedSchema,
   SYNC_EVENT_SCHEMA_VERSION,
   SyncEventEnvelopeSchema,
-  boothStaffCode,
   businessDate,
   canonicalSyncBytes,
   newId,
@@ -146,7 +144,6 @@ import { stockCacheItem, withStockOversold } from './sync-stock';
 import { eventsCacheItem } from './events';
 import { benefitsCacheItem } from './benefit-credentials';
 import { describeRegressedPaidFact, type RegressedPaidFact } from './sync-epoch-regressed';
-import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
 import { TIER_REVOKED_EVIDENCE_TYPE } from './member-tier';
@@ -4619,10 +4616,12 @@ function isVolatileScope(name: string): boolean {
 }
 
 /**
- * What a box that runs only booths is sent (SCRUM-412): its wheels, the
- * deny-list, and a staff list narrowed to the people on its own booths — the
- * three things a booth reads with no internet (`booth.ts` and
- * `refreshBoothStaff` in `@oto/box-agent`). In `CACHE_SCOPES` order, so the
+ * What a box that runs only booths is sent (SCRUM-412): its wheels and today's
+ * roster (the `booth` scope), the deny-list, and the `staff` scope with nobody
+ * in it — nobody signs in at a booth since SCRUM-694, so a booth box reads no
+ * staff at all. The staff scope is still served, empty, because an empty
+ * scope REPLACES the one the box holds and so purges any password or PIN
+ * hash an older release left on the Pi. In `CACHE_SCOPES` order, so the
  * version of a booth box's bundle is hashed over the same order on every ask.
  *
  * `receipt_series` is not in it: a booth mints voucher codes, not receipt
@@ -5124,15 +5123,13 @@ export async function cacheBundle(
        * agree, because a person the picker lets stand at a till and the bundle
        * does not cache is a person the till cannot let back in.
        *
-       * **A box that runs only booths holds its booths' people and nobody
-       * else** (SCRUM-412). A booth station's access rule and its
-       * `station_staff` list answer who sees it in the POS picker, which
-       * nobody at a booth uses: a booth signs somebody in by PIN on the box or
-       * by password through the cloud, and both refuse anybody who is not on
-       * the booth's own list (`booth.booth_staff_assignment`, the
-       * `allowedStaff` of the `booth` scope). An `all_staff` booth used to
-       * put every password hash at the branch on the Pi for that reason
-       * alone. A box with a till keeps the rule above whole.
+       * **A box that runs only booths holds nobody** (SCRUM-412, SCRUM-694).
+       * A booth station's access rule and its `station_staff` list answer who
+       * sees it in the POS picker, which nobody at a booth uses, and nobody
+       * signs in at a booth: the slip names today's roster, which rides on the
+       * `booth` scope. So a booth-only box is served this scope with no rows,
+       * which replaces what it holds and takes any old hash off the Pi. A box
+       * with a till keeps the rule above whole; a booth on it adds nobody.
        */
       const boothOnly = role === 'booth_only';
       const [openStation] = boothOnly
@@ -5158,25 +5155,6 @@ export async function cacheBundle(
            and st.archived_at is null
       )`;
 
-      /**
-       * Everybody an administrator has put on a booth of THIS box (SCRUM-223).
-       *
-       * A booth's staff list is `booth.booth_staff_assignment`, not
-       * `station_staff`, so a booth box whose only station is a booth used to
-       * cache whoever the station's access rule happened to cover — and a PIN
-       * set for somebody on the booth's list but outside that rule could never
-       * be checked. They may stand at this box, so they are in its scope.
-       */
-      const onABoothOfThisBox = sql`exists (
-        select 1
-          from booth.booth_staff_assignment bsa
-          join core.station st on st.id = bsa.station_id
-         where bsa.account_id = ${account.id}
-           and st.box_id = ${auth.boxId}
-           and st.kind = 'booth'
-           and st.archived_at is null
-      )`;
-
       const rows = await db
         .selectDistinct({
           id: account.id,
@@ -5195,10 +5173,10 @@ export async function cacheBundle(
             // has left. `atBranch` says the same thing for its own half.
             sql`${account.status} <> 'inactive'`,
             boothOnly
-              ? onABoothOfThisBox
+              ? sql`false`
               : openStation
-                ? or(atBranch(branchId), namedOnThisBox, onABoothOfThisBox)
-                : or(namedOnThisBox, onABoothOfThisBox),
+                ? or(atBranch(branchId), namedOnThisBox)
+                : namedOnThisBox,
           ),
         )
         .limit(limit);
@@ -5213,65 +5191,6 @@ export async function cacheBundle(
        * disagree.
        */
       const lastToken = await lastTokenByAccountOnBox(db, auth.boxId);
-      /**
-       * The booth PIN hashes (S2-07b).
-       *
-       * A booth verifies a PIN on the BOX — a television in a shopping centre
-       * is given nothing (D15) — so a PIN set in the Console reaches a booth
-       * only here, as the argon2id hash `BoothStaffCacheFields.pinHash` in
-       * `@oto/shared` was declared for. Without this the admin panel would be
-       * setting PINs that no booth could ever verify.
-       *
-       * It adds no new class of secret to the bundle: this scope already
-       * carries each account's password hash for the offline unlock, under the
-       * same rule that will not serve it without the deny-list beside it.
-       * Accounts with no PIN carry null.
-       *
-       * `pinExpiresAt` rides beside it (migration 0027): when the PIN stops
-       * working, or null for never. The box checks this against its corrected
-       * clock on every PIN sign-in, including while offline.
-       */
-      const pins = await livePinsByAccount(
-        db,
-        rows.map((a) => a.id),
-      );
-      /**
-       * The name and staff code a booth prints — "Staff: Nok (S-7KMQ)" — for
-       * the people on this box's booths, and for nobody else (SCRUM-223).
-       *
-       * A booth has to print them with no internet, so they have to be on the
-       * box; and they are the one thing in this scope that names a person, so
-       * a till's box, which never prints them, is not sent them. The name is
-       * the employee's nickname, or their name when they have none; the code
-       * is derived from the account id (`boothStaffCode`).
-       */
-      const boothPeople =
-        rows.length > 0
-          ? await db
-              .selectDistinct({
-                accountId: boothStaffAssignment.accountId,
-                name: employee.name,
-                nickname: employee.nickname,
-              })
-              .from(boothStaffAssignment)
-              .innerJoin(station, eq(station.id, boothStaffAssignment.stationId))
-              .innerJoin(account, eq(account.id, boothStaffAssignment.accountId))
-              .leftJoin(employee, eq(employee.id, account.employeeId))
-              .where(
-                and(
-                  eq(station.boxId, auth.boxId),
-                  eq(station.kind, 'booth'),
-                  isNull(station.archivedAt),
-                  inArray(
-                    boothStaffAssignment.accountId,
-                    rows.map((a) => a.id),
-                  ),
-                ),
-              )
-          : [];
-      const onBooth = new Map(
-        boothPeople.map((p) => [p.accountId, p.nickname ?? p.name ?? null] as const),
-      );
       const permissionsAt = await staffPermissionsAtBranch(
         db,
         operatorId,
@@ -5288,13 +5207,6 @@ export async function cacheBundle(
           status: a.status,
           mustChangePassword: a.mustChangePassword,
           lastTokenAt: lastToken.get(a.id)?.toISOString() ?? null,
-          /** argon2id over the booth PIN, or null. Never the PIN. */
-          pinHash: pins.get(a.id)?.secretHash ?? null,
-          /** When that PIN stops working, ISO 8601, or null: never, or no PIN. */
-          pinExpiresAt: pins.get(a.id)?.expiresAt?.toISOString() ?? null,
-          /** Null for anybody not on a booth of this box. See above. */
-          displayName: onBooth.get(a.id) ?? null,
-          staffCode: onBooth.has(a.id) ? boothStaffCode(a.id) : null,
           /**
            * What this account may do at THIS branch (offline plan §2.3, OD-11):
            * the permission strings its grants cover here, resolved exactly as

@@ -1,14 +1,13 @@
 import { randomInt } from 'node:crypto';
 import { hash as argonHash, verify as verifyArgon2 } from '@node-rs/argon2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import {
   account,
   boothConfigVersion,
-  boothStaffAssignment,
+  boothDutyAssignment,
   box,
   boxCache,
-  credential,
   employee,
   station,
   ticketPackage,
@@ -26,6 +25,7 @@ import {
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { issueClaimCode, provisionVirtualBox } from '../src/services/box';
 import { boxStoreFor } from '../src/lib/box-store';
+import { boothBusinessDate } from '../src/services/booth-duty';
 
 /**
  * SCRUM-275, half one — the cache a box holds is a ROW, not a process.
@@ -317,8 +317,8 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
 
 /**
  * SCRUM-412 — the agent's half: a box that runs only a booth pulls the booth's
- * three scopes and holds nothing else, and the booth still signs somebody in by
- * PIN and plays from them with the internet gone.
+ * three scopes and holds nothing else, and the booth plays from them with the
+ * internet gone, its slip naming today's roster (SCRUM-694: nobody signs in).
  *
  * The real agent, the real store on Postgres and the real routes, as above — on
  * a box of its own with one booth on it, built the way the Console builds one,
@@ -326,7 +326,6 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
  * Booth 1's published version, set on this booth as a publish would leave it.
  */
 describe('a box that runs only a booth holds the booth’s cache and nothing else (SCRUM-412)', () => {
-  const PIN = '36910';
   let boothBoxId: string;
   let personId: string;
   let boothAgent: BoxAgent;
@@ -382,7 +381,7 @@ describe('a box that runs only a booth holds the booth’s cache and nothing els
       note: 'SCRUM-412: Booth 1’s wheel',
     });
 
-    // Somebody on this booth's list, and on no other, with a PIN.
+    // Somebody on today's roster of this booth, and of no other.
     const phone = '+66900004131';
     const employeeId = newId();
     await ctx.db.insert(employee).values({
@@ -402,19 +401,17 @@ describe('a box that runs only a booth holds the booth’s cache and nothing els
       passwordHash: await argonHash('kanya-pw-1'),
       status: 'active',
     });
-    await ctx.db.insert(boothStaffAssignment).values({
-      id: newId(),
-      stationId: boothStationId,
-      accountId: personId,
-      addedBy: receptionAccountId,
-    });
-    await ctx.db.insert(credential).values({
+    // Kanya on today's roster of this booth (SCRUM-694): the slip names her,
+    // and nobody signs in at the booth.
+    await ctx.db.insert(boothDutyAssignment).values({
       id: newId(),
       operatorId,
+      branchId,
+      stationId: boothStationId,
+      businessDate: await boothBusinessDate(ctx.db, branchId),
       accountId: personId,
-      kind: 'pin',
-      secretHash: await argonHash(PIN),
-      createdByAccountId: receptionAccountId,
+      displayName: 'Kanya',
+      source: 'manual',
     });
 
     const wire = injectTransport();
@@ -455,14 +452,20 @@ describe('a box that runs only a booth holds the booth’s cache and nothing els
     const rows = await ctx.db.select().from(boxCache).where(eq(boxCache.boxId, boothBoxId));
     expect(rows.map((r) => r.scope).sort()).toEqual(['booth', 'deny_list', 'staff']);
 
-    // Kanya, and not reception, who works the till and the virtual box's booth.
+    // Nobody at all (SCRUM-694): a booth reads no staff, and an empty scope
+    // replaces whatever an older release left on the card. Kanya travels on
+    // the booth scope's roster instead, as the name the slip prints.
     const staff = (
       rows.find((r) => r.scope === 'staff')!.payload as { items: Array<{ accountId: string }> }
     ).items;
-    expect(staff.map((s) => s.accountId)).toEqual([personId]);
+    expect(staff).toEqual([]);
+    const wheels = (rows.find((r) => r.scope === 'booth')!.payload as {
+      items: Array<{ dutyRoster: { people: Array<{ accountId: string | null; displayName: string }> } }>;
+    }).items;
+    expect(wheels[0]!.dutyRoster.people).toEqual([{ accountId: personId, displayName: 'Kanya' }]);
   });
 
-  it('signs the person in by PIN and plays, with the internet gone', async () => {
+  it('plays with the internet gone and the slip names today’s roster', async () => {
     const booth = boothAgent.booth();
     expect(booth, 'the agent built no booth module').toBeTruthy();
     await booth!.start();
@@ -474,8 +477,29 @@ describe('a box that runs only a booth holds the booth’s cache and nothing els
     const spun = await booth!.spin({ idempotencyKey: newId() });
     expect(spun.spinId).toBeTruthy();
     expect(spun.voucherCode, 'the booth minted no code for the prize it drew').toBeTruthy();
-    expect(spun.staffAccountId, 'the spin was recorded unattributed').toBe(personId);
+    expect(spun.staffLabel, 'the slip did not name today’s roster').toBe('Kanya');
 
     expect(callsWhileOffline, 'the booth reached for the internet').toEqual([]);
+
+    // The fact waiting in this box's outbox is the device's, with no account
+    // on it, and carries the name the slip printed. (The cloud's half — the
+    // label landing in the ledger — is booth-attribution.test.ts: this
+    // fixture copies Booth 1's wheel, whose prizes are Booth 1's slices.)
+    const { rows } = await ctx.db.execute<{
+      actor_kind: string;
+      actor_account_id: string | null;
+      payload: { spinId: string; staffLabel: string | null; dutyAccountIds: string[] };
+    }>(sql`
+      select actor_kind, actor_account_id, payload
+        from edge.box_outbox
+       where box_id = ${boothBoxId}::uuid and type = 'booth.spin_recorded'`);
+    expect(rows).toHaveLength(1);
+    const queued = rows[0]!;
+    expect(queued.actor_kind).toBe('device');
+    expect(queued.actor_account_id).toBeNull();
+    const payload = typeof queued.payload === 'string' ? JSON.parse(queued.payload) : queued.payload;
+    expect(payload.spinId).toBe(spun.spinId);
+    expect(payload.staffLabel).toBe('Kanya');
+    expect(payload.dutyAccountIds).toEqual([personId]);
   });
 });

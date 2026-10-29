@@ -58,7 +58,7 @@ const FILES = {
   r3Recheck: 'apps/api/test/s221-r3-review-recheck.test.ts',
   boxCredential: 'packages/box-agent/test/benefit-credential.test.ts',
   boxOffline: 'packages/box-agent/test/s221-r3-offline-benefit.test.ts',
-  boxBooth: 'packages/box-agent/test/booth.test.ts',
+  boxBoothReprint: 'packages/box-agent/test/booth-reprint.test.ts',
   boxGate: 'packages/box-agent/test/gate-host.test.ts',
   sharedCheckout: 'packages/shared/test/s221-r3-benefit-checkout.test.ts',
   posCheckout: 'apps/pos/test/s221-r3-checkout.test.ts',
@@ -103,7 +103,9 @@ const HAZARDS: Record<string, Named[]> = {
   H8: [
     ['r2', 'sign-in: a QR read into the phone field opens no session and is no attempt on anybody'],
     ['r2', 'the till’s badge path: refused before the box sees it — no tape line, nothing handed to a screen'],
-    ['boxBooth', 'a staff benefit QR at the badge path is refused as not a badge, signs nobody in and is never counted (S2-21 round 2, H8)'],
+    // The booth's badge path went with booth sign-in (SCRUM-694): the booth's
+    // http surface has no staff route for a benefit QR to be tried at.
+    ['boxBoothReprint', 'the http contract reprints with nobody signed in, has no staff routes, and names the roster only'],
     ['boxGate', 'a staff benefit QR at the gate reader is not a band: "scan your wristband", nothing opens, nothing is journalled (S2-21 round 2, H8)'],
     ['boxCredential', 'H8: the gate’s decision refuses a benefit QR as not a band, in either direction'],
   ],

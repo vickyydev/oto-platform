@@ -345,7 +345,6 @@ const PLATFORM_NAMED: Record<string, string> = {
   // is made once by its Idempotency-Key, and online only.
   'POST /vouchers/issue': 'derived: a voucher minted with its platform-drawn code, printed at the till; one press per Idempotency-Key',
   'POST /voucher-campaigns': 'derived: a batch of platform-drawn codes and the row recording it; one batch per Idempotency-Key',
-  'PUT /booths/:id/staff/:accountId/pin': 'derived: one PIN row per account and booth, named by the path',
   'PUT /checkin/config/confirmations':
     "derived: the list is replaced whole and each item is named by the client's code, unique per branch while live; the row id is never referred to",
 };

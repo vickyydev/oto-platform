@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import {
-  BoothDutyRosterSchema,
-  boothDutyLabel,
-  boothStaffLabel,
-  joinBoothStaffNames,
-} from '../src/booth';
+import { BoothDutyRosterSchema, boothDutyLabel, joinBoothStaffNames } from '../src/booth';
 
 /**
- * SCRUM-473 (plan D6) — the voucher's Staff row as the day's merged label.
+ * SCRUM-473 (plan D6), SCRUM-694 — the voucher's Staff row as the day's
+ * merged roster label. Nobody signs in at the booth.
  */
 
 const TOM = '0190f000-0000-7000-8000-000000000001';
@@ -29,14 +25,13 @@ describe('joinBoothStaffNames', () => {
   });
 });
 
-describe('boothDutyLabel — the ladder', () => {
+describe('boothDutyLabel — the roster alone (SCRUM-694)', () => {
   const roster = (people: Array<{ accountId: string | null; displayName: string }>, date = '2026-10-01') => ({
     date,
     people,
   });
-  const nok = { accountId: NOK, name: 'Nok', label: boothStaffLabel('Nok', 'S-7KMQ') };
 
-  it('prints every roster name for today', () => {
+  it("joins every name on today's roster, casuals included", () => {
     expect(
       boothDutyLabel({
         roster: roster([
@@ -44,98 +39,30 @@ describe('boothDutyLabel — the ladder', () => {
           { accountId: null, displayName: 'Jerry' },
         ]),
         today: '2026-10-01',
-        signedIn: null,
       }),
     ).toBe('Tom and Jerry');
-  });
-
-  it('does not repeat a signed-in person already on the roster', () => {
     expect(
       boothDutyLabel({
         roster: roster([
           { accountId: TOM, displayName: 'Tom' },
           { accountId: JERRY, displayName: 'Jerry' },
+          { accountId: NOK, displayName: 'Nok' },
         ]),
         today: '2026-10-01',
-        signedIn: { accountId: TOM, name: 'Tom', label: 'Tom (S-AAAA)' },
-      }),
-    ).toBe('Tom and Jerry');
-  });
-
-  it('adds a stand-in who signed in, by name', () => {
-    expect(
-      boothDutyLabel({
-        roster: roster([
-          { accountId: TOM, displayName: 'Tom' },
-          { accountId: JERRY, displayName: 'Jerry' },
-        ]),
-        today: '2026-10-01',
-        signedIn: nok,
       }),
     ).toBe('Tom, Jerry and Nok');
   });
 
-  it('before anyone is attributed today (no roster, or an empty one), prints the signed-in person exactly as before', () => {
-    expect(boothDutyLabel({ roster: null, today: '2026-10-01', signedIn: nok })).toBe('Nok (S-7KMQ)');
-    expect(boothDutyLabel({ roster: roster([]), today: '2026-10-01', signedIn: nok })).toBe(
-      'Nok (S-7KMQ)',
-    );
+  it('is null for an empty roster, and for none at all — the slip prints “unattributed”', () => {
+    expect(boothDutyLabel({ roster: roster([]), today: '2026-10-01' })).toBeNull();
+    expect(boothDutyLabel({ roster: undefined, today: '2026-10-01' })).toBeNull();
+    expect(boothDutyLabel({ roster: null, today: '2026-10-01' })).toBeNull();
   });
 
-  it('once anyone is attributed today — a self-assigned stand-in alone included — the label is names only', () => {
-    // The owner's format ruling: the merged day label applies the moment the
-    // day's roster is non-empty, so after the first sign-in of the day at a
-    // booth with no rota self-assigns Nok, the slip reads "Nok", not
-    // "Nok (S-7KMQ)". Intended, and scoped: the untouched slip is "before
-    // anyone is attributed today".
-    expect(
-      boothDutyLabel({
-        roster: roster([{ accountId: NOK, displayName: 'Nok' }]),
-        today: '2026-10-01',
-        signedIn: nok,
-      }),
-    ).toBe('Nok');
-  });
-
-  it('with nobody at all, is null — the slip prints “unattributed”', () => {
-    expect(boothDutyLabel({ roster: undefined, today: '2026-10-01', signedIn: null })).toBeNull();
-  });
-
-  it('treats a roster for another day as none', () => {
+  it('a roster for another day is null', () => {
     expect(
       boothDutyLabel({
         roster: roster([{ accountId: TOM, displayName: 'Tom' }], '2026-09-30'),
-        today: '2026-10-01',
-        signedIn: nok,
-      }),
-    ).toBe('Nok (S-7KMQ)');
-  });
-});
-
-describe('boothDutyLabel — the roster alone (SCRUM-694)', () => {
-  it("joins every name on today's roster", () => {
-    expect(
-      boothDutyLabel({
-        roster: {
-          date: '2026-10-01',
-          people: [
-            { accountId: TOM, displayName: 'Tom' },
-            { accountId: null, displayName: 'Jerry' },
-          ],
-        },
-        today: '2026-10-01',
-      }),
-    ).toBe('Tom and Jerry');
-  });
-
-  it('is null for an empty roster — the slip prints “unattributed”', () => {
-    expect(boothDutyLabel({ roster: { date: '2026-10-01', people: [] }, today: '2026-10-01' })).toBeNull();
-  });
-
-  it('is null for a roster of another trading day', () => {
-    expect(
-      boothDutyLabel({
-        roster: { date: '2026-09-30', people: [{ accountId: TOM, displayName: 'Tom' }] },
         today: '2026-10-01',
       }),
     ).toBeNull();

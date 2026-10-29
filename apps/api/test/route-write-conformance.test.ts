@@ -408,8 +408,6 @@ const NO_DIRECT_WRITE = [
   'POST /booth/print',
   'POST /booth/reprint',
   'POST /booth/spin',
-  'POST /booth/staff/sign-in',
-  'POST /booth/staff/sign-out',
   // SCRUM-232: the import's first step parses, validates and diffs a workbook
   // and writes nothing at all — that is the whole point of a preview. The
   // second step, `POST /branches/:branchId/menu/import`, does the writing and
@@ -717,16 +715,7 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /booth/print [credential:booth]',
   'POST /booth/reprint [credential:booth]',
   'POST /booth/spin [credential:booth]',
-  'POST /booth/staff/sign-in [credential:booth]',
-  'POST /booth/staff/sign-out [credential:booth]',
   'POST /booths/:id/pairing-codes [secretResponse]',
-  /**
-   * SCRUM-223 — a booth box forwards a phone and password typed at its booth.
-   * `secretResponse` for the REQUEST: its body is a password, and nothing may
-   * keep a hash of it. A retry is a second attempt and counts as one, exactly
-   * as a second `POST /auth/sign-in` does.
-   */
-  'POST /box/v1/booth/staff/verify [secretResponse,credential:box]',
   'POST /box/v1/commands/:commandId/result [credential:box]',
   'POST /box/v1/commands/poll [credential:box]',
   'POST /box/v1/heartbeat [credential:box]',
@@ -806,7 +795,6 @@ const OUTSIDE_THE_REPLAY_STORE = [
   // callbacks return its saved result. eod-r3-settlement tests pin replay.
   'POST /settlements/batches/:batchId/terminal-result [credential:box]',
   'POST /stations/:id/credentials [secretResponse]',
-  'PUT /booths/:id/staff/:accountId/pin [secretResponse]',
   'PUT /me/session/station [secretResponse]',
 ];
 

@@ -449,10 +449,12 @@ export const dailyDiscountSummary = analytics.table(
 /**
  * THE BOOTH'S DAY, by booth, staff member and prize (plan §5; filled by round
  * 5): spins, vouchers issued and redeemed, the summed issue-to-redeem lag,
- * the booth's uptime and the prize cost. A spin with nobody signed in has no
- * staff member and a spin that won nothing has no prize, so the unique index
- * reads both through `coalesce` — two unattributed rows of one booth's day
- * are the same row.
+ * the booth's uptime and the prize cost. `staff_account_id` is an older box's
+ * signed-in account; every SCRUM-694 spin has none (nobody signs in at a
+ * booth), so the report's By staff reads the slip's roster label from the
+ * spins instead. A spin with no account and a spin that won nothing has no
+ * prize, so the unique index reads both through `coalesce` — two such rows of
+ * one booth's day are the same row.
  */
 const NO_ID = sql.raw(`'00000000-0000-0000-0000-000000000000'::uuid`);
 

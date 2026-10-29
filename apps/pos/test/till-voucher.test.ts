@@ -81,6 +81,7 @@ function voucher(overrides: Partial<VoucherView> = {}): VoucherView {
     legacyFormat: false,
     hold: null,
     redeemableOffline: false,
+    staffLabel: null,
     issuedBy: null,
     ...overrides,
   };

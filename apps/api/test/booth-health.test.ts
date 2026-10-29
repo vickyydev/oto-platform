@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq, isNotNull, like, or, sql } from 'drizzle-orm';
-import { account, alert, box, boxOutbox, branch, spin, station, voucher, type Db } from '@oto/db';
+import { and, eq, like, or, sql } from 'drizzle-orm';
+import { alert, box, boxOutbox, branch, spin, station, type Db } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   createBoxAgent,
@@ -100,7 +100,7 @@ interface HealthBody {
         vouchersPending: number | null;
         pendingUnit: string;
         lastSpinAt: string | null;
-        staffSignedIn: boolean;
+        rostered: boolean | null;
         dailyCapsReached: string[];
       } | null;
       unattributedToday: number | null;
@@ -194,19 +194,19 @@ afterAll(async () => {
 });
 
 describe('a booth reaches the Health page (S2-07a)', () => {
-  it('reports the wheel it is running, what it is holding, and that nobody is signed in', async () => {
+  it('reports the wheel it is running, what it is holding, and that nobody is on today’s roster', async () => {
     /**
      * Two presses, and only the first is handed over.
      *
      * The first is what the cloud can count: D13's condition is evaluated from
-     * `promo.voucher.issued_by_account_id`, which does not exist here until a
+     * the spin's Staff-row label (SCRUM-694), which does not exist here until a
      * push arrives. The second is what the box is still holding, which is what
      * the heartbeat reports and what the panel calls "waiting to sync". A
      * single press could only ever show one of the two.
      */
     const first = await booth.spin({ idempotencyKey: newId() });
     await booth.print!({ spinId: first.spinId });
-    expect(first.staffAccountId, 'the booth attributed a spin nobody signed in for').toBeNull();
+    expect(first.staffLabel, 'the booth named somebody with nobody on today’s roster').toBeNull();
     const pushed = await agent.outbox()!.flush();
     expect(pushed.state).toBe('pushed');
 
@@ -237,7 +237,8 @@ describe('a booth reaches the Health page (S2-07a)', () => {
     expect(reported.configVersion).toBe(booth.config()!.version);
     expect(reported.configVersion).toBe(first.configVersion);
 
-    expect(reported.staffSignedIn).toBe(false);
+    // Nobody on today's roster: a boolean, never who (SCRUM-694).
+    expect(reported.rostered).toBe(false);
     expect(reported.lastSpinAt, 'a booth that has spun twice reported no last spin').toBeTruthy();
     // SCRUM-419 (L16): the one voucher still held, not the facts around it.
     expect(reported.vouchersPending).toBe(1);
@@ -248,8 +249,8 @@ describe('a booth reaches the Health page (S2-07a)', () => {
     expect(reported.paperStatus).toBe('ok');
     expect(reported.dailyCapsReached).toEqual([]);
 
-    // And the one number only this side can answer: the voucher that arrived
-    // with nobody's name against it.
+    // And the one number only this side can answer: the voucher whose slip
+    // named nobody on today's roster.
     expect(seen.unattributedToday).toBe(1);
     expect(seen.businessDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -263,18 +264,17 @@ describe('a booth reaches the Health page (S2-07a)', () => {
       .select()
       .from(alert)
       .where(eq(alert.key, `booth.unattributed:${boothStationId}`));
-    expect(raised, 'a booth gave a prize away to nobody and nothing was raised').toBeTruthy();
+    expect(raised, 'a booth printed a prize naming nobody and nothing was raised').toBeTruthy();
     expect(raised!.status).toBe('open');
     expect(raised!.category).toBe('booth.unattributed');
     /**
      * The wording is not asserted beyond the phrase both sides share. The push
-     * raises this row naming the BOX ("Virtual box 1 is issuing booth vouchers
-     * with nobody signed in") and the evaluation here raises it naming the
-     * BOOTH, so whichever wrote last decides how the row reads. That is a real
-     * disagreement, and it belongs to the file that raises from the push
-     * rather than to this one.
+     * raises this row from the spin naming the BOX ("Virtual box 1 is printing
+     * booth vouchers with nobody on today's roster") and the evaluation here
+     * raises it naming the BOOTH, so whichever wrote last decides how the row
+     * reads.
      */
-    expect(raised!.summary).toContain('nobody signed in');
+    expect(raised!.summary).toContain("nobody on today's roster");
   });
 
   it('counts vouchers, not presses: three more unattributed ones move the count on the one row', async () => {
@@ -299,48 +299,47 @@ describe('a booth reaches the Health page (S2-07a)', () => {
     expect(rows[0]!.status).toBe('open');
   });
 
-  it('does not count a voucher that arrived with a name against it', async () => {
+  it('does not count a spin whose slip named today’s roster', async () => {
     /**
-     * Attributed on the row rather than at the wheel, and the reason is worth
-     * stating: **no booth can sign anybody in today.** The seed hashes a PIN
-     * into `core.credential`, the box verifies against `pinHash` on its cached
-     * staff list, and the cloud's `staff` cache scope does not carry that field
-     * — so `booth.signIn({ pin })` refuses on every box, and every voucher the
-     * park issues is unattributed until S2-07b fills the scope in.
-     *
-     * What is under test here is this side's rule, and the rule is which
-     * column it reads: `promo.voucher.issued_by_account_id`, the same column
-     * the push raises D13 from. So one arrived voucher is given an issuer and
-     * the count must drop by exactly one.
+     * The real path: somebody is put on today's staff in the Console, the box
+     * pulls today's roster beside its wheel, and the next slip names them.
+     * That spin carries the label and is attributed, so the count does not
+     * move — the rule is the label the slip printed (SCRUM-694), not an
+     * account column, which a booth no longer fills.
      */
+    await agent.outbox()!.flush();
     const before = (await theBooth()).booth.unattributedToday!;
-    expect(before, 'this case needs an unattributed voucher to attribute').toBeGreaterThan(0);
 
-    const [mine] = await ctx.db
-      .select({ voucherId: spin.voucherId })
-      .from(spin)
-      .where(and(eq(spin.stationId, boothStationId), isNotNull(spin.voucherId)))
-      .limit(1);
-    const [admin] = await ctx.db
-      .select({ id: account.id })
-      .from(account)
-      .where(eq(account.phone, ADMIN.phone))
-      .limit(1);
-    await ctx.db
-      .update(voucher)
-      .set({ issuedByAccountId: admin!.id })
-      .where(eq(voucher.id, mine!.voucherId!));
+    const added = await ctx.app.inject({
+      method: 'POST',
+      url: `/booths/${boothStationId}/duty`,
+      headers: { cookie: adminCookie, 'idempotency-key': newId() },
+      payload: { displayName: 'Tom' },
+    });
+    expect(added.statusCode, added.body).toBe(200);
+    await agent.syncCache();
+    await booth.refresh();
+
+    const named = await booth.spin({ idempotencyKey: newId() });
+    expect(named.staffLabel).toBe('Tom');
+    await agent.outbox()!.flush();
 
     const { booth: seen } = await theBooth();
-    expect(seen.unattributedToday, 'a voucher with an issuer was still counted').toBe(before - 1);
+    expect(seen.unattributedToday, 'a spin that named the roster was still counted').toBe(before);
+
+    // And the heartbeat says somebody is rostered — never who.
+    await agent.heartbeat();
+    const { booth: reportedNow } = await theBooth();
+    expect(reportedNow.reported!.rostered).toBe(true);
+    expect(JSON.stringify(reportedNow.reported)).not.toContain('Tom');
   });
 
   it('closes the condition when the trading day it counted has rolled over', async () => {
     /**
      * The rollover, staged as the rows it changes.
      *
-     * Within one trading day this count only grows — a spin filed with nobody
-     * signed in keeps its null for ever — so the only thing that ever closes
+     * Within one trading day this count only grows — a slip already printed
+     * keeps the label it printed — so the only thing that ever closes
      * this condition is the day turning over. Moving yesterday's presses back
      * a day is that, expressed as data, and it is what a watchdog tick at five
      * past five in the morning sees.
@@ -362,7 +361,7 @@ describe('a booth reaches the Health page (S2-07a)', () => {
       .where(eq(alert.key, `booth.unattributed:${boothStationId}`));
     expect(row!.status).toBe('resolved');
     expect(row!.resolvedAt).toBeTruthy();
-    // Not "recovered": nobody fixed a sign-in, the day turned over.
+    // Not "recovered": nothing was fixed on the paper, the day turned over.
     expect(row!.resolvedReason).toBe('nothing unattributed today');
 
     /**

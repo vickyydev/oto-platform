@@ -33,7 +33,7 @@ const DeviceHealth = z.object({
 // times/cap ids are strings and finite numbers need not be positive integers.
 const BoothReport = z.object({
   configVersion: NullableNumber, printerReachable: z.string(), paperStatus: z.string(), vouchersPending: NullableNumber,
-  pendingUnit: z.enum(['vouchers', 'events']), lastSpinAt: NullableText, staffSignedIn: z.boolean(),
+  pendingUnit: z.enum(['vouchers', 'events']), lastSpinAt: NullableText, rostered: z.boolean().nullable(),
   dailyCapsReached: z.array(z.string()),
   today: z.object({ businessDate: z.string(), spins: z.number(), vouchers: z.number() }).nullable(),
   pointerPresent: z.boolean().nullable(),

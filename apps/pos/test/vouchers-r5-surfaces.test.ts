@@ -4,7 +4,7 @@ import { vouchersApi, type VoucherView } from '@/api/vouchers';
 import { voucherPromotionsApi } from './support/admin-contracts';
 import { findSection, visibleNavigation } from '../../console/src/components/consoleSections';
 import { ADMIN_PANEL_TARGETS } from '@/api/admin-entry';
-import { voucherIsGift, voucherSourceLabel } from '@/components/till/RedeemVoucher';
+import { voucherIsGift, voucherPrintedBy, voucherSourceLabel } from '@/components/till/RedeemVoucher';
 import type { HeldVoucher } from '@/lib/tillVoucher';
 
 /**
@@ -31,6 +31,7 @@ const view = (effect: VoucherView['effect'], source = 'booth'): VoucherView => (
   legacyFormat: false,
   hold: null,
   redeemableOffline: false,
+  staffLabel: null,
   issuedBy: null,
 });
 
@@ -103,5 +104,29 @@ describe('the Voucher Promotions panel is offered to the booth admin’s read', 
     const offered = (perms: string[]) => visibleNavigation(p => perms.includes(p), false).flatMap(area => area.sections.map(page => page.id));
     expect(offered(['catalog:menu:read', 'admin:booth:read'])).toContain('voucher-campaigns');
     expect(offered(['catalog:menu:read', 'pos:sale:create'])).not.toContain('voucher-campaigns');
+  });
+});
+
+describe('the voucher card names whom the slip named (SCRUM-694)', () => {
+  const effect: VoucherView['effect'] = {
+    type: 'amount_off',
+    appliesTo: 'tickets',
+    target: { kind: 'tickets' },
+    label: 'the ticket order',
+    valueSatang: 15_000,
+  } as VoucherView['effect'];
+
+  it('a booth slip prints today’s roster, and the card says the same names', () => {
+    expect(voucherPrintedBy({ ...view(effect), staffLabel: 'Tom and Jerry' })).toBe('Printed by Tom and Jerry');
+  });
+
+  it('nobody on the roster and no account: unattributed', () => {
+    expect(voucherPrintedBy({ ...view(effect), staffLabel: null, issuedBy: null })).toBe('Printed by: unattributed');
+  });
+
+  it('a counter voucher names the person who issued it', () => {
+    expect(
+      voucherPrintedBy({ ...view(effect, 'manual'), staffLabel: null, issuedBy: { name: 'Nok', code: 'S-7KMQ' } }),
+    ).toBe('Printed by Nok (S-7KMQ)');
   });
 });

@@ -432,8 +432,9 @@ export async function analyticsRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Console > Booths > Report, from `analytics.fact_booth_daily` (never the spins): per booth, per prize, per ' +
-          'staff member and per trading day — spins, prizes won, vouchers issued and redeemed (on the day the voucher ' +
+          'Console > Booths > Report, from `analytics.fact_booth_daily`: per booth, per prize and per trading day, and ' +
+          'per Staff row — read live from the spins, by the names the slips printed (today’s roster) or an older ' +
+          'box’s signed-in account — per trading day — spins, prizes won, vouchers issued and redeemed (on the day the voucher ' +
           'was spun), redemption rate, mean issue-to-redemption lag, and the prize cost frozen on each voucher. ' +
           'Simulated spins are never in it. ' +
           REPORT_SCOPE_WORDS,
@@ -450,7 +451,7 @@ export async function analyticsRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'The booth report as a CSV file: one row per trading day, booth, staff member and prize, amounts in baht, ' +
+          'The booth report as a CSV file: one row per trading day, booth, Staff row (the names the slips printed) and prize, read from the spins, amounts in baht, ' +
           'every cell guarded against formula injection. ' +
           REPORT_SCOPE_WORDS,
         querystring: BoothReportQuerySchema,

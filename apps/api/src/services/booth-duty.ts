@@ -48,8 +48,10 @@ import { withTx, type Exec, type OpContext } from './tx';
  * re-declaration in `packages/db/src/schema/otoapp.ts`, the same seam
  * `oto-app-users.ts` uses, and ONLY reads it: the rota is the staff app's and
  * nothing here writes to it — and writes the booth's dated roster,
- * `booth.booth_duty_assignment`, which the box receives beside `allowedStaff`
- * and prints as one merged label on every voucher that day ("Tom and Jerry").
+ * `booth.booth_duty_assignment`, which the box receives on its `booth` cache
+ * scope and prints as one merged label on every voucher that day ("Tom and
+ * Jerry"). Nobody signs in at the booth (SCRUM-694): this roster is the whole
+ * of a spin's attribution, and nobody on it prints "unattributed".
  *
  * **The match rule** is per booth, on `booth_settings`, and its defaults are
  * the recommended rule: a shift row whose group, department or one of whose
@@ -62,11 +64,12 @@ import { withTx, type Exec, type OpContext } from './tx';
  * **Who ends up on the roster, and who does not:**
  *
  *   - an employee the app's own rule links to a platform account of this
- *     operator — named, and may sign in that day. The account is read from
+ *     operator — named on the slip, with the account beside the name. The
+ *     account is read from
  *     the app's employee view through the employee repository, the column the
  *     employee copy reads too (S2-17b round 2): `user_id` first, else the
  *     app's email match;
- *   - a casual worker — named on the slip, never signs in (no account ever);
+ *   - a casual worker — named on the slip, with no account (ever);
  *   - an employee with no app user, or a user with no linked account — NOT on
  *     the roster, and listed by name as unmatched in the sync's own record and
  *     in its answer. Never silently dropped (D5): somebody has to link them.
@@ -78,8 +81,9 @@ import { withTx, type Exec, type OpContext } from './tx';
  * writes no roster row and no audit row — not even its own `booth_duty.sync`
  * line or the day's sync record, which are written only by the day's first
  * sync and by a sync that changed the roster, the app state or the unmatched
- * list. Rows people made — `manual` and
- * `self_assigned` — belong to people, and a sync never removes them. When the
+ * list. Rows people made — `manual`, and the historical `self_assigned` a
+ * booth sign-in wrote before SCRUM-694 — belong to people, and a sync never
+ * removes them. When the
  * app cannot be read at all (not installed on this deployment, the branch not
  * mapped into it), the sync removes nothing: an unreadable rota is not an
  * empty one.
@@ -919,101 +923,6 @@ export async function removeBoothDuty(
 }
 
 /**
- * A stand-in joins the day's roster (D5.2): somebody who signed in at the
- * booth through the standing list without being on today's roster.
- *
- * Called from two places, and they are the whole mechanism:
- *
- *   - the staff-verify path (`box-booth-staff.ts`), the moment the platform
- *     lets a phone-and-password sign-in through — so the Console shows the
- *     stand-in at once;
- *   - the spin's arrival (`sync-booth.ts`), for a sign-in the box checked on
- *     its own — a PIN, possibly offline — because the spin names the signed-in
- *     account and its trading day, and the box has printed their name on the
- *     slip by then. No new sync event: the fact that proves the stand-in
- *     worked the booth is the one that already travels.
- *
- * Runs on the caller's executor (a transaction there), inserts nothing when
- * the person is already on the day's roster by any source, and audits
- * `booth_duty.assign` with source `self_assigned` exactly once.
- */
-export async function selfAssignBoothDuty(
-  exec: Exec,
-  input: {
-    stationId: string;
-    operatorId: string;
-    branchId: string;
-    businessDate: string;
-    accountId: string;
-    displayName?: string | null;
-    via: 'sign_in' | 'spin';
-    requestId?: string | null;
-    sourceEventId?: string | null;
-  },
-): Promise<boolean> {
-  const displayName =
-    (input.displayName ?? '').trim().slice(0, BOOTH_DUTY_NAME_MAX_CHARS) ||
-    (await platformNameOf(exec, input.accountId));
-  if (!displayName) return false;
-  const id = newId();
-  const inserted = await exec
-    .insert(boothDutyAssignment)
-    .values({
-      id,
-      operatorId: input.operatorId,
-      branchId: input.branchId,
-      stationId: input.stationId,
-      businessDate: input.businessDate,
-      accountId: input.accountId,
-      displayName,
-      source: 'self_assigned',
-    })
-    .onConflictDoNothing()
-    .returning({ id: boothDutyAssignment.id });
-  if (inserted.length === 0) return false;
-  await audit.record(exec, {
-    actorAccountId: input.accountId,
-    operatorId: input.operatorId,
-    branchId: input.branchId,
-    action: 'booth_duty.assign',
-    entityType: 'booth_duty_assignment',
-    entityId: id,
-    after: {
-      stationId: input.stationId,
-      businessDate: input.businessDate,
-      accountId: input.accountId,
-      displayName,
-      source: 'self_assigned',
-      via: input.via,
-    },
-    requestId: input.requestId ?? null,
-    sourceEventId: input.sourceEventId ?? null,
-  });
-  return true;
-}
-
-/** Whether an account is on a booth's roster for a day — sign-in eligibility's other half. */
-export async function isOnBoothDuty(
-  exec: Exec,
-  stationId: string,
-  date: string,
-  accountId: string,
-): Promise<boolean> {
-  const [row] = await exec
-    .select({ id: boothDutyAssignment.id })
-    .from(boothDutyAssignment)
-    .where(
-      and(
-        eq(boothDutyAssignment.stationId, stationId),
-        eq(boothDutyAssignment.businessDate, date),
-        eq(boothDutyAssignment.accountId, accountId),
-      ),
-    )
-    .limit(1);
-  return row !== undefined;
-}
-
-/**
  * The roster as the box receives it: the day, the names, the account ids.
  * Ordered by when each person joined, so the label reads in the same order on
  * every pull and a person added later is said last.
@@ -1043,7 +952,7 @@ export interface BoothDutyView {
   businessDate: string;
   rule: BoothDutyRule;
   roster: BoothDutyAssignmentView[];
-  /** What prints on every voucher today when nobody else signs in. Null prints "unattributed". */
+  /** What prints on every voucher today (today's roster names); null prints "unattributed". */
   label: string | null;
   lastSync: {
     syncedAt: string;
@@ -1101,7 +1010,6 @@ export async function boothDutyView(
     label: boothDutyLabel({
       roster: { date, people: roster.map((r) => ({ accountId: r.accountId, displayName: r.displayName })) },
       today: date,
-      signedIn: null,
     }),
     lastSync: sync
       ? {

@@ -39,6 +39,7 @@ import { businessDate, newId, parseDayStart } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { isPgError, scrubPgError } from '../lib/scrub';
 import type { BranchReach } from './access-control';
+import { SPIN_LABEL_JOINS, SPIN_UNATTRIBUTED } from './booth-attribution';
 import { boxSettings, withinOpeningHours } from './box';
 import {
   evidenceIncomplete,
@@ -1113,8 +1114,12 @@ export interface BoothReport {
    */
   pendingUnit: 'vouchers' | 'events';
   lastSpinAt: string | null;
-  /** Whether SOMEBODY is signed in. Never who. */
-  staffSignedIn: boolean;
+  /**
+   * Whether today's roster names anybody on the box (SCRUM-694): the slips
+   * print names when true and "unattributed" when false. Never who. Null
+   * where the agent is older than SCRUM-694 and does not say.
+   */
+  rostered: boolean | null;
   /** `booth.booth_prize` ids at their cap today — configuration, not people. */
   dailyCapsReached: string[];
   /**
@@ -1141,8 +1146,9 @@ export interface BoxBoothHealth {
    */
   reported: BoothReport | null;
   /**
-   * Vouchers this booth issued on the trading day below with nobody signed in
-   * (D13) — counted from the cloud's own rows, not from the heartbeat.
+   * Vouchers this booth printed on the trading day below with nobody on that
+   * day's roster (D13, SCRUM-694) — counted from the cloud's own rows by
+   * `SPIN_UNATTRIBUTED`, not from the heartbeat.
    *
    * **Null means it could not be counted**, which is a third answer and not
    * zero: `fleetHealth` leaves it null when the query fails, and the condition
@@ -1373,8 +1379,8 @@ function isJournalWait(fault: ReportedFault): boolean {
  *
  * A field that is present but the wrong type falls back to the answer the box
  * itself gives when it cannot measure: `unknown` for the two device states,
- * null for the version, the count and the last spin, `false` for signed-in and
- * an empty list for the caps. Nothing here is defaulted upwards — the two that
+ * null for the version, the count, the last spin and `rostered` (an agent
+ * older than SCRUM-694 sends none), and an empty list for the caps. Nothing here is defaulted upwards — the two that
  * are not nullable are the two whose false answer is the quiet one.
  */
 function boothReport(status: Record<string, unknown> | null): BoothReport | null {
@@ -1397,7 +1403,7 @@ function boothReport(status: Record<string, unknown> | null): BoothReport | null
         : null,
     pendingUnit: b.pendingUnit === 'vouchers' ? 'vouchers' : 'events',
     lastSpinAt: typeof b.lastSpinAt === 'string' ? b.lastSpinAt : null,
-    staffSignedIn: b.staffSignedIn === true,
+    rostered: typeof b.rostered === 'boolean' ? b.rostered : null,
     dailyCapsReached: caps,
     today: dayCounts(b.today),
     pointerPresent: typeof b.pointerPresent === 'boolean' ? b.pointerPresent : null,
@@ -2081,18 +2087,19 @@ export function evaluateBox(
     const mine = booths.length === 1 ? reportedBooth : null;
 
     /**
-     * **Vouchers issued with nobody signed in** (D13).
+     * **Vouchers printed with nobody on today's roster** (D13, SCRUM-694).
      *
      * One condition carrying a count, never one alert per voucher: sixty
      * unattributed vouchers at one booth bump one row sixty times, because
-     * what somebody has to act on is "this booth is giving prizes away with
-     * nobody signed in", once.
+     * what somebody has to act on is "this booth is printing prizes with
+     * nobody on today's roster", once.
      *
      * It is raised twice over, from two directions, exactly as
-     * `sync.quarantine` is: the push opens it the moment an unattributed
-     * voucher lands (`services/sync-booth.ts`), and this closes it from the
-     * count when it stops being true. The same key, so the two cannot tell
-     * different stories, and neither leaves a row nothing will ever resolve.
+     * `sync.quarantine` is: the push opens it the moment a spin whose slip
+     * named nobody lands (`services/sync-booth.ts`), and this closes it from
+     * the count when it stops being true. The same key and the same rule
+     * (`SPIN_UNATTRIBUTED`), so the two cannot tell different stories, and
+     * neither leaves a row nothing will ever resolve.
      *
      * No `expectedAlive` guard, for the same reason quarantine has none: the
      * rows are already in this database and the booth that issued them may
@@ -2113,7 +2120,7 @@ export function evaluateBox(
         subject: name,
         ...scope,
         active: n > 0,
-        summary: `${name} has issued ${n} voucher(s) today with nobody signed in — the wheel keeps working, and the prizes are attributed to no one`,
+        summary: `${name} has printed ${n} voucher(s) today with nobody on today's roster: the wheel keeps working, and the slips print "unattributed"`,
         detail: {
           slot: row.slot,
           stationId: b.stationId,
@@ -2122,15 +2129,15 @@ export function evaluateBox(
         },
         /**
          * A plain statement of what is now true rather than a claim about why.
-         * Within one trading day this count only ever grows — a spin filed
-         * with no staff member keeps its null — so in practice it closes when
+         * Within one trading day this count only ever grows — a slip already
+         * printed keeps the label it printed — so in practice it closes when
          * the day rolls over, and saying "recovered" would read as somebody
-         * having fixed the sign-in.
+         * having fixed something on the slips already in people's hands.
          */
         clear: {
           category: 'booth.unattributed',
           reason: 'nothing unattributed today',
-          summary: `${name} has issued no unattributed vouchers on ${b.businessDate}`,
+          summary: `${name} has printed no unattributed vouchers on ${b.businessDate}`,
         },
       });
     }
@@ -2468,14 +2475,15 @@ async function boxBooths(
   });
 
   /**
-   * Vouchers issued at each booth today with nobody signed in.
+   * Vouchers printed at each booth today with nobody on today's roster
+   * (SCRUM-694).
    *
-   * It reads `promo.voucher.issued_by_account_id` — **the very column the push
-   * raises D13's alert from** — rather than `booth.spin.staff_account_id`
-   * beside it. The two are written from one booth session and should agree,
-   * but they are two columns from two sources, and this count is what CLOSES
-   * the alert that column opened. Reading a second copy would let the
-   * condition close an alert the push was still right to raise.
+   * Counted by `SPIN_UNATTRIBUTED` (`services/booth-attribution.ts`) over the
+   * spin each voucher was won by — **the very rule the push raises D13's
+   * alert from** on `booth.spin_recorded` — so the count that CLOSES the
+   * alert reads what opened it. Not `promo.voucher.issued_by_account_id`,
+   * which is null for every voucher of a SCRUM-694 booth and would count
+   * them all.
    *
    * What it cannot see is a voucher whose spin has not arrived: the link is
    * `booth.spin.voucher_id`, and until both facts land the pair is not joined.
@@ -2484,8 +2492,7 @@ async function boxBooths(
    * own condition.
    *
    * `simulated = false` leaves out the `#debug` distribution run, which must
-   * not raise anything about attribution: nobody is meant to be signed in for
-   * it.
+   * not raise anything about attribution.
    */
   const counts = await evidenceOr(
     async () => {
@@ -2503,12 +2510,12 @@ async function boxBooths(
         n: string;
       }>(
         sql`select s.station_id, s.business_date::text as business_date, count(*)::text as n
-              from booth.spin s
+              from booth.spin s ${SPIN_LABEL_JOINS}
               join promo.voucher v on v.id = s.voucher_id
              where s.station_id in (${ids})
                and s.business_date in (${dates})
                and s.simulated = false
-               and v.issued_by_account_id is null
+               and ${SPIN_UNATTRIBUTED}
              group by s.station_id, s.business_date`,
       );
       return counted;

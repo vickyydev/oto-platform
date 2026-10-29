@@ -187,22 +187,18 @@ describe('fix round: casuals sharing a nickname, and what a quiet re-run still l
   });
 });
 
-describe('the label once somebody is attributed today (decided: names only)', () => {
-  it('a roster holding one self-assigned stand-in prints the name alone; the code was the slip before anyone was attributed today', () => {
+describe('the label is the roster’s names (decided: names only, SCRUM-694)', () => {
+  it('a roster holding one person prints the name alone, never a staff code', () => {
     const accountId = newId();
-    const before = boothStaffLabel('Nok', 'S-7KMQ');
-    const afterPull = boothDutyLabel({
+    const label = boothDutyLabel({
       roster: { date: '2026-10-01', people: [{ accountId, displayName: 'Nok' }] },
       today: '2026-10-01',
-      signedIn: { accountId, name: 'Nok', label: before },
     });
-    expect(before).toBe('Nok (S-7KMQ)');
-    // The owner's format ruling: the merged day label is names only and
-    // applies the moment the day's roster is non-empty — a stand-in
-    // self-assigned at a booth with no rota included. The untouched-slip
-    // guarantee is scoped to "before anyone is attributed today"; this is
-    // after, so "Nok" replacing "Nok (S-7KMQ)" is the intended behaviour.
-    expect(afterPull).toBe('Nok');
+    // The owner's format ruling: the merged day label is names only. The
+    // staff code a signed-in slip used to print ("Nok (S-7KMQ)") is gone with
+    // booth sign-in.
+    expect(label).toBe('Nok');
+    expect(boothStaffLabel('Nok', 'S-7KMQ')).toBe('Nok (S-7KMQ)');
   });
 });
 

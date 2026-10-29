@@ -49,6 +49,7 @@ import {
 } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
+import { SPIN_LABEL_JOINS, SPIN_STAFF_LABEL } from './booth-attribution';
 import { raiseAlert } from './ops';
 import type { Exec, Tx } from './tx';
 import {
@@ -1132,15 +1133,32 @@ export interface VoucherView {
    */
   redeemableOffline: boolean;
   /**
-   * Who was signed in at the booth when it printed — the Staff line of the
-   * slip, so the counter can match the paper in the guest's hand: the name the
-   * slip prints (the employee's nickname, else their name; null for an account
-   * with no employee) and the staff code beside it (`boothStaffCode`, derived
-   * from the account id exactly as the booth derived it). Null when the spin
-   * was unattributed — nobody signed in, which a booth allows so that a login
-   * problem never stops the wheel (`voucher.issued_by_account_id`).
+   * The Staff line a booth slip printed (SCRUM-694): today's roster names,
+   * "Tom and Jerry", read through the voucher's spin
+   * (`services/booth-attribution.ts`). Null for a counter voucher, and for a
+   * booth voucher whose slip named nobody on today's roster.
+   */
+  staffLabel: string | null;
+  /**
+   * The account behind the voucher (`voucher.issued_by_account_id`): who
+   * issued it at a counter, or who was signed in at a booth older than
+   * SCRUM-694 — the name the slip prints (the employee's nickname, else their
+   * name; null for an account with no employee) and the staff code beside it
+   * (`boothStaffCode`, derived from the account id). Null for every booth
+   * voucher from a SCRUM-694 box, whose attribution is `staffLabel`; with
+   * `staffLabel` null too, the voucher is unattributed.
    */
   issuedBy: { name: string | null; code: string } | null;
+}
+
+/** The Staff-row label a booth voucher's slip printed, through its spin; null otherwise. */
+export async function spinStaffLabelOf(db: Exec, voucherId: string): Promise<string | null> {
+  const { rows } = await db.execute<{ label: string | null }>(sql`
+    select ${SPIN_STAFF_LABEL} as label
+      from booth.spin s ${SPIN_LABEL_JOINS}
+     where s.voucher_id = ${voucherId}::uuid
+     limit 1`);
+  return rows[0]?.label ?? null;
 }
 
 /** The Staff line of the slip, from the account the booth recorded. */
@@ -1206,6 +1224,7 @@ async function viewOf(
     legacyFormat,
     hold,
     redeemableOffline: redeemableOffline(v, def),
+    staffLabel: booth ? await spinStaffLabelOf(db, v.id) : null,
     issuedBy: await issuedByOf(db, v.issuedByAccountId),
   };
 }

@@ -52,13 +52,16 @@ export function voucherProvenance(view: VoucherView): string[] {
 }
 
 /**
- * Who was signed in at the booth when it printed, named the way the slip's
- * Staff line names them (`boothStaffLabel`: "Nok (S-7KMQ)") so the counter can
- * hold the card against the paper. A spin with nobody signed in still printed
- * — a login problem never stops the wheel — and the card says so rather than
- * leaving the line out.
+ * Who the slip names, the way its Staff line names them, so the counter can
+ * hold the card against the paper: a booth slip's roster label ("Tom and
+ * Jerry", SCRUM-694), else the account that issued it at a counter
+ * (`boothStaffLabel`: "Nok (S-7KMQ)"). A booth slip with nobody on that day's
+ * roster still printed — nobody on the roster never stops the wheel — and
+ * the card says so rather than leaving the line out.
  */
 export function voucherPrintedBy(view: VoucherView): string {
+  const label = view.staffLabel?.trim();
+  if (label) return `Printed by ${label}`;
   const who = view.issuedBy ? boothStaffLabel(view.issuedBy.name, view.issuedBy.code) : null;
   return who ? `Printed by ${who}` : 'Printed by: unattributed';
 }

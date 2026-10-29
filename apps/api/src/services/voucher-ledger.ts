@@ -9,6 +9,7 @@ import {
 } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import type { BoothStationRow } from './booth';
+import { SPIN_LABEL_JOINS, SPIN_STAFF_LABEL, SPIN_UNATTRIBUTED } from './booth-attribution';
 
 export const VOUCHER_LEDGER_STATUSES = [
   'issued',
@@ -40,6 +41,13 @@ export interface VoucherLedgerRow {
   prize: { id: string; nameEn: string } | null;
   value: VoucherValue;
   place: { kind: 'booth' | 'counter' | 'import'; stationId: string | null; name: string };
+  /**
+   * The names a booth slip printed in its Staff row — today's roster
+   * (SCRUM-694) — read through the voucher's spin; null for a counter voucher,
+   * and for a booth voucher whose slip named nobody.
+   */
+  staffLabel: string | null;
+  /** The account that issued it at a counter, or that was signed in at a booth older than SCRUM-694. */
   issuedBy: LedgerPerson | null;
   codeLast4: string;
   source: string;
@@ -94,6 +102,7 @@ const LEDGER_FROM = sql`
   from promo.voucher v
   join promo.voucher_definition d on d.id = v.voucher_definition_id
   left join booth.spin s on s.voucher_id = v.id
+  ${SPIN_LABEL_JOINS}
   left join booth.booth_prize bp on bp.id = s.prize_id
   left join core.station bs on bs.id = s.station_id
   left join core.account ia on ia.id = v.issued_by_account_id
@@ -181,7 +190,10 @@ function whereOf(
     conditions.push(sql`v.voucher_definition_id = ${filters.definitionId}::uuid`);
   if (filters.stationId === 'counter') conditions.push(sql`v.source = 'manual' and s.id is null`);
   else if (filters.stationId) conditions.push(sql`s.station_id = ${filters.stationId}::uuid`);
-  if (filters.issuedBy === 'unattributed') conditions.push(sql`v.issued_by_account_id is null`);
+  // Unattributed: no issuing account, and — for a booth voucher — a slip that
+  // named nobody on today's roster (SCRUM-694; `services/booth-attribution.ts`).
+  if (filters.issuedBy === 'unattributed')
+    conditions.push(sql`v.issued_by_account_id is null and (s.id is null or ${SPIN_UNATTRIBUTED})`);
   else if (filters.issuedBy)
     conditions.push(sql`v.issued_by_account_id = ${filters.issuedBy}::uuid`);
   if (filters.status) conditions.push(sql`${STATUS} = ${filters.status}`);
@@ -215,6 +227,7 @@ interface RawLedgerRow extends Record<string, unknown> {
   prize_name_en: string | null;
   booth_id: string | null;
   booth_name: string | null;
+  staff_label: string | null;
   issued_by: string | null;
   issuer_name: string | null;
   redeemed_by: string | null;
@@ -231,6 +244,7 @@ const ROW_COLUMNS = sql`
   d.kind as def_kind, d.value_type, d.value_satang, d.value_bp,
   p.name as product_name, tp.name as package_name,
   bp.id as prize_id, bp.name_en as prize_name_en, bs.id as booth_id, bs.name as booth_name,
+  ${SPIN_STAFF_LABEL} as staff_label,
   v.issued_by_account_id as issued_by, coalesce(ie.nickname, ie.name) as issuer_name,
   v.redeemed_by_account_id as redeemed_by, coalesce(re.nickname, re.name) as redeemer_name,
   rb.name as redeemed_branch_name, rs.name as redeemed_station_name, sa.receipt_number,
@@ -340,6 +354,7 @@ function rowOf(r: RawLedgerRow): VoucherLedgerRow {
       redeemedSatang,
     ),
     place: placeOf(r),
+    staffLabel: r.staff_label,
     issuedBy: personOf(r.issued_by, r.issuer_name),
     codeLast4: r.code.slice(-4),
     source: r.source,
@@ -516,7 +531,8 @@ export async function voucherLedgerCsv(
         r.value.text,
         r.value.redeemedSatang === null ? '' : (r.value.redeemedSatang / 100).toFixed(2),
         r.place.name,
-        r.issuedBy ? (r.issuedBy.name ?? 'Unnamed account') : 'Unattributed',
+        // The names the slip printed, or the issuer at a counter (SCRUM-694).
+        r.staffLabel ?? (r.issuedBy ? (r.issuedBy.name ?? 'Unnamed account') : 'Unattributed'),
         r.issuedBy?.code ?? '',
         r.codeLast4,
         STATUS_WORDS[r.status],
@@ -544,6 +560,12 @@ export async function voucherLedgerCsv(
 export interface BoothSpinRow {
   id: string;
   occurredAt: string;
+  /**
+   * The names the slip printed in its Staff row — today's roster (SCRUM-694).
+   * Null with no account either is an unattributed spin.
+   */
+  staffLabel: string | null;
+  /** The account signed in at a booth older than SCRUM-694; null from a SCRUM-694 box. */
   staff: LedgerPerson | null;
   outcome: 'prize' | 'no_prize';
   prize: { id: string; nameEn: string } | null;
@@ -578,6 +600,7 @@ export async function listBoothSpins(
     clock_suspect: boolean;
     staff_account_id: string | null;
     staff_name: string | null;
+    staff_label: string | null;
     prize_id: string | null;
     prize_name: string | null;
     voucher_id: string | null;
@@ -589,10 +612,11 @@ export async function listBoothSpins(
   }>(sql`
     select s.id, s.occurred_at, s.outcome, s.clock_suspect, s.staff_account_id,
            coalesce(e.nickname, e.name) as staff_name,
+           ${SPIN_STAFF_LABEL} as staff_label,
            bp.id as prize_id, bp.name_en as prize_name,
            v.id as voucher_id, v.code, v.print_count, v.status as voucher_status, v.redeemed_at,
            exists (select 1 from booth.voucher_print vp where vp.voucher_id = v.id) as print_attempted
-      from booth.spin s
+      from booth.spin s ${SPIN_LABEL_JOINS}
       left join promo.voucher v on v.id = s.voucher_id
       left join booth.booth_prize bp on bp.id = s.prize_id
       left join core.account a on a.id = s.staff_account_id
@@ -610,10 +634,10 @@ export async function listBoothSpins(
     redeemed: number;
   }>(sql`
     select count(*)::int as spins,
-           (count(*) filter (where s.staff_account_id is null))::int as unattributed,
+           (count(*) filter (where ${SPIN_UNATTRIBUTED}))::int as unattributed,
            (count(*) filter (where v.print_count > 0))::int as printed,
            (count(*) filter (where v.status = 'redeemed'))::int as redeemed
-      from booth.spin s
+      from booth.spin s ${SPIN_LABEL_JOINS}
       left join promo.voucher v on v.id = s.voucher_id
      where s.station_id = ${row.stationId}::uuid
        and s.business_date = ${day}::date
@@ -632,6 +656,7 @@ export async function listBoothSpins(
     spins: rows.map((r) => ({
       id: r.id,
       occurredAt: new Date(r.occurred_at).toISOString(),
+      staffLabel: r.staff_label,
       staff: personOf(r.staff_account_id, r.staff_name),
       outcome: r.outcome,
       prize: r.prize_id ? { id: r.prize_id, nameEn: r.prize_name ?? '' } : null,

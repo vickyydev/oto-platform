@@ -171,7 +171,10 @@ async function issue(
     issuedAt?: Date;
     expiresAt?: Date | null;
     branchId?: string;
-    /** Who was signed in at the booth; left out, the spin was unattributed. */
+    /**
+     * The account behind it: a counter issuer, or who was signed in at a booth
+     * older than SCRUM-694. Left out, as for every SCRUM-694 booth voucher.
+     */
     issuedByAccountId?: string | null;
   } = {},
 ): Promise<{ id: string; code: string }> {
@@ -637,9 +640,53 @@ describe('a scan says at once what the voucher is, and uses nothing up', () => {
       code: boothStaffCode(bareId),
     });
 
-    // Unattributed: a spin with nobody signed in still printed, and says so.
+    // Unattributed: a slip with nobody on today's roster still printed, and says so.
     const nobody = await issue(defs['spin-voucher-150']!);
-    expect((await lookup(tillA, nobody.code)).json().voucher.issuedBy).toBeNull();
+    const nobodyView = (await lookup(tillA, nobody.code)).json().voucher;
+    expect(nobodyView.issuedBy).toBeNull();
+    expect(nobodyView.staffLabel).toBeNull();
+  });
+
+  it('a booth voucher shows the names its slip printed, read through its spin (SCRUM-694)', async () => {
+    const [booth1] = await ctx.db.select().from(station).where(eq(station.name, 'Booth 1')).limit(1);
+    const { rows: [wheel] } = await ctx.db.execute<{ id: string; prize_id: string }>(sql`
+      select v.id, p.id as prize_id
+        from booth.booth_config_version v
+        join booth.booth_prize p on p.station_id = v.station_id
+       where v.station_id = ${booth1!.id}::uuid
+       limit 1`);
+    /** A spin as a SCRUM-694 box files one: no account, and its label on the audit row. */
+    const spunWith = async (voucherId: string, staffLabel: string | null): Promise<void> => {
+      const spinId = newId();
+      await ctx.db.execute(sql`
+        insert into booth.spin (id, operator_id, branch_id, station_id, box_id, booth_config_version_id,
+                                outcome, prize_id, voucher_id, staff_account_id, clock_suspect, simulated,
+                                occurred_at, business_date)
+        values (${spinId}::uuid, ${operatorId}::uuid, ${booth1!.branchId}::uuid, ${booth1!.id}::uuid,
+                ${booth1!.boxId}::uuid, ${wheel!.id}::uuid, 'prize', ${wheel!.prize_id}::uuid,
+                ${voucherId}::uuid, null, false, false, now(), current_date)`);
+      await ctx.db.insert(auditLog).values({
+        id: newId(),
+        operatorId,
+        branchId: booth1!.branchId,
+        action: 'spin.record',
+        entityType: 'spin',
+        entityId: spinId,
+        after: { staffLabel },
+      });
+    };
+
+    const named = await issue(defs['spin-voucher-150']!);
+    await spunWith(named.id, 'Tom and Jerry');
+    const view = (await lookup(tillA, named.code)).json().voucher;
+    expect(view.staffLabel).toBe('Tom and Jerry');
+    expect(view.issuedBy, 'nobody signs in at a booth').toBeNull();
+
+    const unnamed = await issue(defs['spin-voucher-150']!);
+    await spunWith(unnamed.id, null);
+    const empty = (await lookup(tillA, unnamed.code)).json().voucher;
+    expect(empty.staffLabel).toBeNull();
+    expect(empty.issuedBy).toBeNull();
   });
 
   it('says what kind of product a free item is — the menu’s or the shop’s — so a till knows whose it is', async () => {

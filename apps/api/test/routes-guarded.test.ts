@@ -454,7 +454,6 @@ describe('route guards (S2-01b)', () => {
       .sort();
     expect(boothRoutes).toEqual([
       'GET /booth/config [booth]',
-      'GET /booth/staff [booth]',
       'GET /booth/status [booth]',
       // The pairing exchange, and the only open one. It is on the open list
       // above as well, deliberately: it belongs to both surfaces and a reader
@@ -463,8 +462,6 @@ describe('route guards (S2-01b)', () => {
       'POST /booth/print [booth]',
       'POST /booth/reprint [booth]',
       'POST /booth/spin [booth]',
-      'POST /booth/staff/sign-in [booth]',
-      'POST /booth/staff/sign-out [booth]',
     ]);
   });
 
@@ -502,10 +499,6 @@ describe('route guards (S2-01b)', () => {
       // command.
       'GET /box/v1/print-jobs/:id/document [box]',
       'GET /box/v1/sync/pull [box]',
-      // SCRUM-223: a booth box asks whether a phone and password typed at one
-      // of ITS booths may sign in there. The password is the body; the box is
-      // the caller.
-      'POST /box/v1/booth/staff/verify [box]',
       'POST /box/v1/commands/:commandId/result [box]',
       'POST /box/v1/commands/poll [box]',
       'POST /box/v1/heartbeat [box]',
@@ -551,7 +544,8 @@ describe('route guards (S2-01b)', () => {
         r.method !== 'HEAD' &&
         r.method !== 'OPTIONS',
     );
-    expect(boxUrls.length).toBe(14);
+    // Thirteen since SCRUM-694 took the booth staff verify route away.
+    expect(boxUrls.length).toBe(13);
 
     const bodies: Record<string, unknown> = {
       'POST:/box/v1/register': { claimCode: undefined, agentVersion: '0.1.0' },

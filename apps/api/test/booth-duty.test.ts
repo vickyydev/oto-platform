@@ -4,21 +4,19 @@ import { and, eq, sql } from 'drizzle-orm';
 import {
   account,
   auditLog,
-  box,
   boothConfigVersion,
   boothDutyAssignment,
   boothDutySync,
-  boothStaffAssignment,
   employee,
-  role,
-  roleAssignment,
   station,
   type Db,
 } from '@oto/db';
 import { newId } from '@oto/shared';
-import { BoothCacheEntrySchema, boxCredential } from '@oto/box-agent';
+import { BoothCacheEntrySchema } from '@oto/box-agent';
 import {
   ADMIN,
+  BRANCH_MANAGER,
+  CHALONG_MANAGER,
   RECEPTION,
   createTestContext,
   signInAs,
@@ -30,7 +28,6 @@ import {
   boothBusinessDate,
   matchBoothDuty,
   runMorningBoothDutySync,
-  selfAssignBoothDuty,
   syncBoothDuty,
   type AppAssignmentRow,
   type AppCasualRow,
@@ -39,9 +36,9 @@ import {
 } from '../src/services/booth-duty';
 import { loadBoothStation } from '../src/services/booth';
 import { BOOTH_HANDLERS, boothCacheItems } from '../src/services/sync-booth';
+import { SPIN_LABEL_JOINS, SPIN_STAFF_LABEL } from '../src/services/booth-attribution';
 import { buildDefaultJobs } from '../src/services/jobs';
 import { loadEnv } from '../src/env';
-import { issueClaimCode } from '../src/services/box';
 
 /**
  * SCRUM-473 — the day's booth staff, synced from the OTO App's rota and
@@ -53,8 +50,8 @@ import { issueClaimCode } from '../src/services/box';
  * the platform cannot follow to an account. Then the whole path against a
  * database carrying the app's own tables: Sync now, a re-run that changes
  * nothing, the rota changing under it, manual add and remove, permissions,
- * the audit rows, the stand-in at sign-in and on a spin's arrival, the bundle
- * the box receives, and the morning job.
+ * the audit rows, a spin's arrival adding nobody (SCRUM-694: nobody signs in
+ * at the booth), the bundle the box receives, and the morning job.
  */
 
 // --- The matcher, no database ------------------------------------------------
@@ -479,6 +476,66 @@ describe('manual add and remove', () => {
     expect(unassigned).toBeDefined();
   });
 
+  /**
+   * Rewritten from booth-admin's M9 case (closing audit of 25 September), which
+   * tested the same rule through the booth staff list that SCRUM-694 removed:
+   * the person's branch decides, so the operator administrator is refused
+   * somebody from another park too, and an operator-wide administrator is
+   * staff of every branch, so a branch manager may still put one on.
+   */
+  it('refuses somebody from another park with STAFF_NOT_AT_BRANCH, and still takes the operator administrator', async () => {
+    const accountIdOf = async (phone: string): Promise<string> => {
+      const [row] = await db.select({ id: account.id }).from(account).where(eq(account.phone, phone)).limit(1);
+      return row!.id;
+    };
+    const managerCookie = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
+    const chalongManagerId = await accountIdOf(CHALONG_MANAGER.phone);
+    const adminId = await accountIdOf(ADMIN.phone);
+    const add = (cookie: string, accountId: string) =>
+      ctx.app.inject({
+        method: 'POST',
+        url: `/booths/${boothId}/duty`,
+        headers: { cookie, ...idem() },
+        payload: { accountId },
+      });
+
+    for (const cookie of [managerCookie, adminCookie]) {
+      const res = await add(cookie, chalongManagerId);
+      expect(res.statusCode, res.body).toBe(400);
+      expect(res.json().error.code).toBe('STAFF_NOT_AT_BRANCH');
+    }
+    const onRoster = async (accountId: string) =>
+      (
+        await db
+          .select({ id: boothDutyAssignment.id })
+          .from(boothDutyAssignment)
+          .where(and(eq(boothDutyAssignment.stationId, boothId), eq(boothDutyAssignment.accountId, accountId)))
+      ).length > 0;
+    expect(await onRoster(chalongManagerId), 'somebody from another park is on Booth 1’s roster').toBe(false);
+    const assigned = await db
+      .select({ after: auditLog.after })
+      .from(auditLog)
+      .where(eq(auditLog.action, 'booth_duty.assign'));
+    expect(
+      assigned.filter((r) => (r.after as { accountId?: string } | null)?.accountId === chalongManagerId),
+      'a refused addition left an audit row',
+    ).toEqual([]);
+
+    const admin = await add(managerCookie, adminId);
+    expect(admin.statusCode, admin.body).toBe(200);
+    expect(await onRoster(adminId)).toBe(true);
+    const row = (admin.json() as { roster: Array<{ id: string; accountId: string | null }> }).roster.find(
+      (r) => r.accountId === adminId,
+    );
+    // Off again, so nothing after this reads an extra name on today's label.
+    const removed = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/booths/${boothId}/duty/${row!.id}`,
+      headers: { cookie: adminCookie, ...idem() },
+    });
+    expect(removed.statusCode, removed.body).toBe(200);
+  });
+
   it('changes the match rule, audited, without touching the published wheel', async () => {
     const res = await ctx.app.inject({
       method: 'PATCH',
@@ -500,78 +557,8 @@ describe('manual add and remove', () => {
   });
 });
 
-describe('the stand-in (D5.2)', () => {
-  let benchBooth: string;
-  let boxAuth: Record<string, string>;
-
-  beforeAll(async () => {
-    const benchBox = newId();
-    await db.insert(box).values({ id: benchBox, operatorId, branchId, name: 'Duty box', slot: 'duty-test', role: 'booth' });
-    benchBooth = newId();
-    await db.insert(station).values({ id: benchBooth, operatorId, branchId, boxId: benchBox, name: 'Duty Booth', kind: 'booth', codePrefix: 'DT' });
-    const { code } = await issueClaimCode(db, benchBox);
-    const registered = await ctx.app.inject({
-      method: 'POST',
-      url: '/box/v1/register',
-      payload: { claimCode: code, agentVersion: '0.1.0', hostname: 'duty-pi' },
-    });
-    const body = registered.json() as { boxId: string; secret: string };
-    boxAuth = { authorization: `Bearer ${boxCredential(body.boxId, body.secret)}` };
-    // Reception is on the standing list of the bench booth, and on nobody's roster.
-    await db.insert(boothStaffAssignment).values({ id: newId(), stationId: benchBooth, accountId: receptionId, addedBy: receptionId });
-  });
-
-  const verify = (phone: string, password: string) =>
-    ctx.app.inject({
-      method: 'POST',
-      url: '/box/v1/booth/staff/verify',
-      headers: boxAuth,
-      payload: { stationId: benchBooth, phone, password },
-    });
-
-  it('a standing-list sign-in not on today’s roster joins it as self_assigned, once', async () => {
-    expect((await verify(RECEPTION.phone, RECEPTION.password)).statusCode).toBe(200);
-    expect((await verify(RECEPTION.phone, RECEPTION.password)).statusCode).toBe(200);
-    const rows = await db
-      .select()
-      .from(boothDutyAssignment)
-      .where(and(eq(boothDutyAssignment.stationId, benchBooth), eq(boothDutyAssignment.accountId, receptionId)));
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.source).toBe('self_assigned');
-    const lines = await db
-      .select()
-      .from(auditLog)
-      .where(and(eq(auditLog.action, 'booth_duty.assign'), eq(auditLog.entityId, rows[0]!.id)));
-    expect(lines).toHaveLength(1);
-    expect(lines[0]!.after).toMatchObject({ source: 'self_assigned', via: 'sign_in' });
-  });
-
-  it('somebody on today’s roster only may sign in — the union, not the standing list alone', async () => {
-    // Tom: not on the bench booth's standing list. Without a roster row, refused.
-    await db.insert(roleAssignment).values({
-      id: newId(),
-      accountId: tomAccount,
-      roleId: (await db.select({ id: role.id }).from(role).where(eq(role.name, 'reception')).limit(1))[0]!.id,
-      scopeType: 'branch',
-      scopeId: branchId,
-    });
-    expect((await verify('+66900000401', 'Tom-pw-1')).statusCode).toBe(403);
-    await db.transaction((tx) =>
-      selfAssignBoothDuty(tx, {
-        stationId: benchBooth,
-        operatorId,
-        branchId,
-        businessDate: today,
-        accountId: tomAccount,
-        displayName: 'Tom',
-        via: 'sign_in',
-      }),
-    );
-    expect((await verify('+66900000401', 'Tom-pw-1')).statusCode).toBe(200);
-  });
-
-  it('a spin by somebody not on the roster adds them when it arrives — a PIN sign-in the box checked alone', async () => {
-    // Jerry is on Booth 1's roster from the rota; the reception account is not.
+describe('a spin’s arrival (SCRUM-694)', () => {
+  it('adds nobody to the roster, and the spin reads the label its slip printed', async () => {
     const [booth1] = await db.select().from(station).where(eq(station.id, boothId)).limit(1);
     const [version] = await db
       .select({ id: boothConfigVersion.id })
@@ -579,74 +566,51 @@ describe('the stand-in (D5.2)', () => {
       .where(eq(boothConfigVersion.stationId, boothId))
       .limit(1);
     const handler = BOOTH_HANDLERS['booth.spin_recorded']!;
-    const spinFor = (staffAccountId: string, simulated = false) =>
-      db.transaction((tx) =>
-        handler.apply(
-          tx as never,
-          { auth: { operatorId, branchId, boxId: booth1!.boxId! } } as never,
-          {
-            envelope: { stationId: boothId, eventId: newId(), actionId: null, actorAccountId: staffAccountId },
-            occurredAt: new Date(),
-            businessDate: today,
-            clockTrust: 'trusted',
-          } as never,
-          {
-            spinId: newId(),
-            boothConfigVersionId: version!.id,
-            outcome: 'no_prize',
-            prizeId: null,
-            voucherId: null,
-            staffAccountId,
-            clockSuspect: false,
-            simulated,
-          } as never,
-        ),
-      );
-
-    await spinFor(receptionId, true);
-    const onRoster = () =>
-      db
-        .select()
-        .from(boothDutyAssignment)
-        .where(
-          and(
-            eq(boothDutyAssignment.stationId, boothId),
-            eq(boothDutyAssignment.businessDate, today),
-            eq(boothDutyAssignment.accountId, receptionId),
-          ),
-        );
-    // A simulated spin proves nobody worked the booth.
-    expect(await onRoster()).toHaveLength(0);
-
-    await spinFor(receptionId);
-    await spinFor(receptionId);
-    const rows = await onRoster();
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.source).toBe('self_assigned');
-
-    // Somebody already on the roster is not added again.
+    const spinId = newId();
     const before = (await roster()).length;
-    await spinFor(jerryAccount);
-    expect((await roster()).length).toBe(before);
-  });
-
-  it('a self-assign that is already on the roster writes nothing', async () => {
-    const wrote = await db.transaction((tx) =>
-      selfAssignBoothDuty(tx, {
-        stationId: benchBooth,
-        operatorId,
-        branchId,
-        businessDate: today,
-        accountId: receptionId,
-        via: 'spin',
-      }),
+    await db.transaction((tx) =>
+      handler.apply(
+        tx as never,
+        { db, auth: { operatorId, branchId, boxId: booth1!.boxId!, name: 'Booth box', slot: 'b' } } as never,
+        {
+          envelope: { stationId: boothId, eventId: newId(), actionId: null, actorAccountId: null },
+          occurredAt: new Date(),
+          businessDate: today,
+          clockTrust: 'trusted',
+        } as never,
+        {
+          spinId,
+          boothConfigVersionId: version!.id,
+          outcome: 'no_prize',
+          prizeId: null,
+          voucherId: null,
+          staffLabel: 'Jerry and Tom',
+          dutyAccountIds: [jerryAccount, tomAccount],
+          clockSuspect: false,
+          simulated: false,
+        } as never,
+      ),
     );
-    expect(wrote).toBe(false);
+    // Nobody signs in at a booth: a spin adds nobody to the day's roster.
+    expect((await roster()).length).toBe(before);
+    const { rows } = await db.execute<{ staff_account_id: string | null; label: string | null }>(sql`
+      select s.staff_account_id, ${SPIN_STAFF_LABEL} as label
+        from booth.spin s ${SPIN_LABEL_JOINS}
+       where s.id = ${spinId}::uuid`);
+    expect(rows[0]).toEqual({ staff_account_id: null, label: 'Jerry and Tom' });
   });
 });
 
 describe('the bundle the box receives', () => {
-  it('ships today’s roster beside allowedStaff, and the box reads it', async () => {
+  it('ships today’s roster with the wheel, and the box reads it', async () => {
+    // Reception on today's roster by hand, as a manager adds a stand-in.
+    const added = await ctx.app.inject({
+      method: 'POST',
+      url: `/booths/${boothId}/duty`,
+      headers: { cookie: adminCookie, ...idem() },
+      payload: { accountId: receptionId },
+    });
+    expect(added.statusCode, added.body).toBe(200);
     const [booth] = await db.select().from(station).where(eq(station.id, boothId)).limit(1);
     const items = await boothCacheItems(db, {
       boxId: booth!.boxId!,
@@ -655,12 +619,14 @@ describe('the bundle the box receives', () => {
     } as Parameters<typeof boothCacheItems>[1]);
     const item = items.find((i) => i.stationId === boothId)!;
     expect(item.dutyRoster.date).toBe(today);
-    // The rota's three, Ploy by hand, and the stand-in whose spin arrived above.
+    // The rota's three, Ploy by hand, and reception added above.
     expect(item.dutyRoster.people.map((p) => p.displayName)).toEqual(
       expect.arrayContaining(['Jerry', 'Nok', 'Ploy', 'Tom']),
     );
     expect(item.dutyRoster.people.some((p) => p.accountId === receptionId)).toBe(true);
     expect(item.dutyRoster.people.find((p) => p.displayName === 'Nok')!.accountId).toBeNull();
+    // Nobody signs in at a booth (SCRUM-694): no standing list rides beside it.
+    expect('allowedStaff' in item).toBe(false);
 
     // The agent's own schema, over what the cloud serves: the roundtrip.
     const parsed = BoothCacheEntrySchema.safeParse(JSON.parse(JSON.stringify(item)));

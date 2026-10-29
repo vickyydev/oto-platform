@@ -6,7 +6,6 @@ import {
   alert,
   auditLog,
   boothConfigVersion,
-  boothStaffAssignment,
   boxPrintJob,
   spin,
   station,
@@ -614,60 +613,44 @@ describe('a booth fact is checked against the booth it names', () => {
     expect(untouched!.printCount).toBe(0);
   });
 
-  it('SCRUM-413: a reprint asked for by somebody off this booth’s staff list is quarantined; by somebody on it, filed', async () => {
+  it('SCRUM-694: a reprint naming nobody is filed, and one an older box names with an account is filed as sent', async () => {
     const won = await wonHere();
     const admin = await accountByPhone(ADMIN.phone);
-    const reception = await accountByPhone(RECEPTION.phone);
-    // The seed puts reception on Booth 1's list; the administrator is not on it.
-    const staff = (
-      await ctx.db
-        .select({ accountId: boothStaffAssignment.accountId })
-        .from(boothStaffAssignment)
-        .where(eq(boothStaffAssignment.stationId, boothStationId))
-    ).map((s) => s.accountId);
-    expect(staff).toContain(reception);
-    expect(staff).not.toContain(admin);
 
-    const job = newId();
-    const before = await quarantinedIds('booth.voucher_printed');
+    // Anyone at the screen may ask for a copy: the booth names nobody.
+    const anyone = newId();
+    await printFact({ voucherId: won.id, voucherCode: won.code, printJobId: anyone, reason: 'reprint' });
+    const first = await agent.outbox()!.flush();
+    expect(first.state).toBe('pushed');
+    if (first.state !== 'pushed') throw new Error('unreachable');
+    expect(first.quarantined).toBe(0);
+    expect(await printsOf(won.id, anyone)).toEqual([
+      expect.objectContaining({ reason: 'reprint', requestedByAccountId: null, stationId: boothStationId }),
+    ]);
+
+    // A box older than SCRUM-694 names the account whose session was open.
+    // The paper is already printed, so nobody is refused for who asked; the
+    // account is checked against the operator and kept as sent.
+    const older = newId();
     await printFact({
       voucherId: won.id,
       voucherCode: won.code,
-      printJobId: job,
+      printJobId: older,
       reason: 'reprint',
       requestedByAccountId: admin,
-    });
-    const refused = await agent.outbox()!.flush();
-    expect(refused.state).toBe('pushed');
-    expect(await refusedSince('booth.voucher_printed', before)).toEqual([
-      'BOOTH_PRINT_REQUESTER_NOT_STAFF',
-    ]);
-    expect(await printsOf(won.id, job)).toHaveLength(0);
-
-    // The same copy, asked for by the person the booth would have signed in.
-    await printFact({
-      voucherId: won.id,
-      voucherCode: won.code,
-      printJobId: job,
-      reason: 'reprint',
-      requestedByAccountId: reception,
     });
     const filed = await agent.outbox()!.flush();
     expect(filed.state).toBe('pushed');
     if (filed.state !== 'pushed') throw new Error('unreachable');
     expect(filed.quarantined).toBe(0);
-    const prints = await printsOf(won.id, job);
+    const prints = await printsOf(won.id, older);
     expect(prints).toHaveLength(1);
-    expect(prints[0]).toMatchObject({
-      reason: 'reprint',
-      requestedByAccountId: reception,
-      stationId: boothStationId,
-    });
+    expect(prints[0]).toMatchObject({ reason: 'reprint', requestedByAccountId: admin, stationId: boothStationId });
     const [counted] = await ctx.db
       .select({ printCount: voucher.printCount })
       .from(voucher)
       .where(eq(voucher.id, won.id));
-    expect(counted!.printCount).toBe(won.printCount + 1);
+    expect(counted!.printCount).toBe(won.printCount + 2);
   });
 
   it('SCRUM-410: a second original of one voucher is quarantined; a copy is filed and audited as a reprint', async () => {

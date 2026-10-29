@@ -1,5 +1,4 @@
-import { createHash, randomInt } from 'node:crypto';
-import { hash as argonHash, verify as argonVerify } from '@node-rs/argon2';
+import { createHash } from 'node:crypto';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import {
   account,
@@ -7,9 +6,7 @@ import {
   boothLayout,
   boothPrize,
   boothSettings,
-  boothStaffAssignment,
   branch,
-  credential,
   employee,
   spin,
   station,
@@ -34,9 +31,7 @@ import { escposProfile, renderPreviewPng } from '@oto/print';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { atBranch } from '../lib/staff-scope';
-import { assertDominatesAccount, outOfBranchScope } from './access-control';
 import { audit } from './audit';
-import type { EffectivePermission } from './permissions';
 import { withTx, type Exec, type OpContext } from './tx';
 import type { BoothStationRow } from './booth';
 
@@ -132,8 +127,6 @@ const SETTINGS_DEFAULTS = {
   buttonKey: 'Space',
   eligibility: 'none' as BoothEligibilityMode,
   dailySpinCap: null as number | null,
-  /** Null is the box's own twelve hours (`BOOTH_STAFF_SESSION_DEFAULT_MINUTES`). */
-  staffSessionMinutes: null as number | null,
   spinDurationSeconds: BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
   /** The voucher slip (SCRUM-471): today's slip, the column defaults of migration 0039. */
   voucherShowLogo: BOOTH_VOUCHER_SLIP_DEFAULTS.showLogo,
@@ -209,8 +202,6 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
       buttonKey: settingsRow?.buttonKey ?? SETTINGS_DEFAULTS.buttonKey,
       eligibility: settingsRow?.eligibility ?? SETTINGS_DEFAULTS.eligibility,
       dailySpinCap: settingsRow?.dailySpinCap ?? SETTINGS_DEFAULTS.dailySpinCap,
-      staffSessionMinutes:
-        settingsRow?.staffSessionMinutes ?? SETTINGS_DEFAULTS.staffSessionMinutes,
       spinDurationSeconds: settingsRow?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
       voucherShowLogo: settingsRow?.voucherShowLogo ?? SETTINGS_DEFAULTS.voucherShowLogo,
       voucherHeaderText: settingsRow?.voucherHeaderText ?? SETTINGS_DEFAULTS.voucherHeaderText,
@@ -298,17 +289,15 @@ function bundleFrom(draft: BoothDraft): Record<string, unknown> | null {
       ...(draft.settings.spinDurationSeconds !== BOOTH_SPIN_DURATION_DEFAULT_SECONDS
         ? { spinDurationSeconds: draft.settings.spinDurationSeconds }
         : {}),
-      /**
-       * Only when the administrator set one (SCRUM-400). Absent is the box's
-       * own twelve hours, and absent rather than null keeps the hash of every
-       * booth nobody has set — the reason `@oto/shared` made it optional.
+      /*
+       * `staffSessionMinutes` is retired by SCRUM-694 (nobody signs in at the
+       * booth) and is never emitted: a booth whose retired column is still set
+       * shows a changed draft once, and republishing drops it. Everybody else's
+       * bundle, and its hash, are unchanged.
        */
-      ...(draft.settings.staffSessionMinutes !== null
-        ? { staffSessionMinutes: draft.settings.staffSessionMinutes }
-        : {}),
       /**
        * The voucher slip (SCRUM-471), each field only when it differs from
-       * its default — the same rule, for the same hash, as the two above. The
+       * its default — the same rule, for the same hash, as the duration above. The
        * box reads them back with `boothVoucherSlip`.
        */
       ...boothVoucherSlipBundleFields({
@@ -618,8 +607,6 @@ export interface BoothDraftView {
     buttonKey: string;
     eligibility: BoothEligibilityMode;
     dailySpinCap: number | null;
-    /** Minutes a staff sign-in lasts; null is the box's own twelve hours. */
-    staffSessionMinutes: number | null;
     spinDurationSeconds: number;
   } & BoothVoucherSlipSettings;
   prizes: BoothPrizeView[];
@@ -748,7 +735,6 @@ export async function boothDraft(
       buttonKey: draft.settings.buttonKey,
       eligibility: draft.settings.eligibility,
       dailySpinCap: draft.settings.dailySpinCap,
-      staffSessionMinutes: draft.settings.staffSessionMinutes,
       spinDurationSeconds: draft.settings.spinDurationSeconds,
       voucherShowLogo: draft.settings.voucherShowLogo,
       voucherHeaderText: draft.settings.voucherHeaderText,
@@ -1048,8 +1034,6 @@ export interface BoothSettingsPatch {
   buttonKey?: string;
   eligibility?: BoothEligibilityMode;
   dailySpinCap?: number | null;
-  /** Minutes, at most one trading day; null goes back to the box's twelve hours. */
-  staffSessionMinutes?: number | null;
   spinDurationSeconds?: number;
   /** The voucher slip (SCRUM-471). Blank text is stored as null — "no line". */
   voucherShowLogo?: boolean;
@@ -1154,7 +1138,6 @@ export async function updateBoothSettings(
             buttonKey: before.buttonKey,
             eligibility: before.eligibility,
             dailySpinCap: before.dailySpinCap,
-            staffSessionMinutes: before.staffSessionMinutes,
             spinDurationSeconds: before.spinDurationSeconds,
             voucherShowLogo: before.voucherShowLogo,
             voucherHeaderText: before.voucherHeaderText,
@@ -1191,10 +1174,6 @@ function mergedSettings(
     eligibility: patch.eligibility ?? before?.eligibility ?? SETTINGS_DEFAULTS.eligibility,
     dailySpinCap:
       patch.dailySpinCap !== undefined ? patch.dailySpinCap : (before?.dailySpinCap ?? null),
-    staffSessionMinutes:
-      patch.staffSessionMinutes !== undefined
-        ? patch.staffSessionMinutes
-        : (before?.staffSessionMinutes ?? null),
     spinDurationSeconds:
       patch.spinDurationSeconds ?? before?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
     voucherShowLogo:
@@ -1824,91 +1803,21 @@ function layoutConflict(err: unknown): unknown {
   return err;
 }
 
-// --- Who may work the booth, and what they type -----------------------------
-
-export interface BoothStaffView {
-  accountId: string;
-  addedAt: string;
-  addedBy: string;
-  /**
-   * Whether this person has a booth PIN on record — set and not withdrawn.
-   * **Never the PIN and never its hash** — the question a manager asks is "can
-   * they get in", and that is all this and the next field answer.
-   */
-  hasPin: boolean;
-  /**
-   * When that PIN stops working (migration 0027), ISO 8601; null when it
-   * never does or there is no PIN. A PIN past it is still `hasPin` — nobody
-   * withdrew it — and opens no booth: the Console shows it as expired.
-   */
-  pinExpiresAt: string | null;
-}
-
-export async function listBoothStaff(
-  db: Db,
-  stationId: string,
-): Promise<{ staff: BoothStaffView[] }> {
-  const rows = await db
-    .select({
-      accountId: boothStaffAssignment.accountId,
-      addedAt: boothStaffAssignment.addedAt,
-      addedBy: boothStaffAssignment.addedBy,
-    })
-    .from(boothStaffAssignment)
-    .where(eq(boothStaffAssignment.stationId, stationId))
-    .orderBy(asc(boothStaffAssignment.addedAt));
-  if (rows.length === 0) return { staff: [] };
-
-  const pins = await db
-    .select({ accountId: credential.accountId, expiresAt: credential.expiresAt })
-    .from(credential)
-    .where(
-      and(
-        inArray(credential.accountId, rows.map((r) => r.accountId)),
-        eq(credential.kind, 'pin'),
-        eq(credential.active, true),
-      ),
-    );
-  const held = new Map(pins.map((p) => [p.accountId, p.expiresAt] as const));
-  return {
-    staff: rows.map((r) => ({
-      accountId: r.accountId,
-      addedAt: r.addedAt.toISOString(),
-      addedBy: r.addedBy,
-      hasPin: held.has(r.accountId),
-      pinExpiresAt: held.get(r.accountId)?.toISOString() ?? null,
-    })),
-  };
-}
-
-/** An account of this operator that could actually sign in, or 400/404. */
-async function requireStaffAccount(exec: Exec, operatorId: string, accountId: string): Promise<void> {
-  const [row] = await exec
-    .select({ id: account.id, operatorId: account.operatorId, status: account.status })
-    .from(account)
-    .where(eq(account.id, accountId))
-    .limit(1);
-  if (!row || row.operatorId !== operatorId) {
-    throw new AppError(404, 'ACCOUNT_NOT_FOUND', 'No account with that id');
-  }
-  if (row.status === 'inactive') {
-    throw new AppError(
-      400,
-      'ACCOUNT_INACTIVE',
-      'That account is deactivated, so it would be refused at the booth anyway',
-    );
-  }
-}
+// --- Branch staff ----------------------------------------------------------
 
 /**
  * Whether this account is one of the staff of the branch the booth stands in
- * (M9, closing audit of 25 September 2026).
+ * (M9, closing audit of 25 September 2026) — what a manual add to today's
+ * roster is checked against (`addManualBoothDuty`).
  *
  * The same definition a till's staff list and the Console's person picker use
  * (`atBranch` in `lib/staff-scope.ts`): an employee record at the branch, a
  * role scoped to it, or an operator-wide administrator, and never a
  * deactivated account. The join to `employee` is required: the predicate
  * reads the employee's branch.
+ *
+ * The booth's standing staff list and its PINs went with booth sign-in
+ * (SCRUM-694); their tables stay, retired, for older rows.
  */
 export async function isBranchStaff(
   exec: Exec,
@@ -1925,505 +1834,6 @@ export async function isBranchStaff(
   return row !== undefined;
 }
 
-/** Whether this account is on this booth's staff list. */
-async function isOnBooth(exec: Exec, stationId: string, accountId: string): Promise<boolean> {
-  const [assigned] = await exec
-    .select({ id: boothStaffAssignment.id })
-    .from(boothStaffAssignment)
-    .where(
-      and(eq(boothStaffAssignment.stationId, stationId), eq(boothStaffAssignment.accountId, accountId)),
-    )
-    .limit(1);
-  return assigned !== undefined;
-}
-
-/**
- * The caller of a PIN write: who they are, and every grant they hold.
- *
- * The grants are here because the dominance rule reads them
- * (`assertDominatesAccount`), and only the route has resolved them
- * (`req.effectivePermissions()`).
- */
-export interface BoothPinActor {
-  accountId: string;
-  operatorId: string;
-  effective: EffectivePermission[];
-}
-
-/**
- * Whose booth PIN this caller may set or withdraw (M9).
- *
- * A PIN signs somebody in at a booth, where the spins, the reprints and the
- * "Printed by" line then carry their name, and it is the PERSON's — one live
- * PIN per account, so a change here changes it at every booth they work. So
- * setting or withdrawing one is an act on that person, and it is fenced the
- * way a temporary password is (`routes/accounts.ts`), in the same order:
- *
- *   1. **The person works at this booth's branch**, or 403
- *      `OUT_OF_BRANCH_SCOPE`. The route has already checked that the caller
- *      holds `admin:booth:staff_assign` at that branch, so this is "is the
- *      person yours". It is the check that holds for somebody with no role
- *      at all, for whom rule 2 has nothing to walk.
- *   2. **The caller holds every permission of every role the person holds**,
- *      at a scope that covers it, or 403 `ROLE_NOT_DOMINATED`. An
- *      operator-wide administrator counts as staff of every branch, so rule 1
- *      alone would let a branch manager give the owner a PIN the manager
- *      chose and then sign in at the booth as the owner.
- *
- * Before these, a branch manager could set or withdraw the PIN of anybody in
- * the operator, at any park, from his own booth.
- */
-async function requirePinTarget(
-  db: Db,
-  actor: BoothPinActor,
-  row: BoothStationRow,
-  accountId: string,
-): Promise<void> {
-  if (!(await isBranchStaff(db, actor.operatorId, row.branchId, accountId))) {
-    throw outOfBranchScope(
-      'That account does not work at this booth’s branch, so its booth PIN cannot be set or withdrawn here',
-    );
-  }
-  await assertDominatesAccount(db, actor.effective, actor.operatorId, accountId);
-}
-
-/**
- * Put somebody on this booth's staff list.
- *
- * **Only the staff of the booth's branch** (M9): the same rule a till's staff
- * list keeps, with the same refusal, 400 `STAFF_NOT_AT_BRANCH`
- * (`validateStationWrite` in `services/fleet.ts`). An operator administrator
- * is staff of every branch and can still be added. Before this, a branch
- * manager could put anybody in the operator on his booth by a hand-made call,
- * and so put their password hash on his booth's box: the box's `staff` cache
- * scope carries it for everybody on the list of one of its booths
- * (`services/sync.ts`).
- */
-export async function addBoothStaff(
-  db: Db,
-  ctx: OpContext,
-  actor: { accountId: string; operatorId: string },
-  row: BoothStationRow,
-  accountId: string,
-): Promise<{ staff: BoothStaffView[] }> {
-  await requireStaffAccount(db, actor.operatorId, accountId);
-  if (!(await isBranchStaff(db, actor.operatorId, row.branchId, accountId))) {
-    throw new AppError(
-      400,
-      'STAFF_NOT_AT_BRANCH',
-      'That account is not among this branch’s staff, so it cannot be put on this booth',
-      { accountId },
-    );
-  }
-  await withTx(db, ctx, 'booth_staff.add', async (tx) => {
-    const added = await tx
-      .insert(boothStaffAssignment)
-      .values({ id: newId(), stationId: row.stationId, accountId, addedBy: actor.accountId })
-      .onConflictDoNothing({
-        target: [boothStaffAssignment.stationId, boothStaffAssignment.accountId],
-      })
-      .returning({ id: boothStaffAssignment.id });
-    // Already on the list: no row, and no audit entry claiming a change.
-    if (added.length === 0) return;
-    await audit.record(tx, {
-      actorAccountId: actor.accountId,
-      operatorId: row.operatorId,
-      branchId: row.branchId,
-      action: 'booth_staff.add',
-      entityType: 'booth_staff_assignment',
-      entityId: added[0]!.id,
-      after: { stationId: row.stationId, accountId },
-      requestId: ctx.requestId,
-    });
-  });
-  return listBoothStaff(db, row.stationId);
-}
-
-/**
- * Take somebody off this booth.
- *
- * A plain delete, as on `station_staff`: who was on the list and when is
- * carried by the audit row, which is where that question is asked from anyway.
- *
- * **Their PIN is not revoked by this.** A PIN belongs to the ACCOUNT — one
- * live PIN per person, `credential_active_kind_unique` — and somebody taken
- * off Booth 1 may still work Booth 2. What stops them at this booth is
- * `allowedStaff`, which rides beside the published bundle on the `booth`
- * cache scope (`sync-booth.ts`) rather than inside it — so it reaches the box
- * at its next pull, with no publish — and which the box checks before it
- * verifies anything; revoking the PIN as well is the separate act below, and
- * it comes FIRST: a PIN is withdrawn only through a booth whose list still
- * names the person (`clearBoothPin`).
- */
-export async function removeBoothStaff(
-  db: Db,
-  ctx: OpContext,
-  actor: { accountId: string; operatorId: string },
-  row: BoothStationRow,
-  accountId: string,
-): Promise<{ staff: BoothStaffView[] }> {
-  await withTx(db, ctx, 'booth_staff.remove', async (tx) => {
-    const gone = await tx
-      .delete(boothStaffAssignment)
-      .where(
-        and(
-          eq(boothStaffAssignment.stationId, row.stationId),
-          eq(boothStaffAssignment.accountId, accountId),
-        ),
-      )
-      .returning({ id: boothStaffAssignment.id });
-    if (gone.length === 0) {
-      throw new AppError(404, 'BOOTH_STAFF_NOT_FOUND', 'That account is not on this booth');
-    }
-    await audit.record(tx, {
-      actorAccountId: actor.accountId,
-      operatorId: row.operatorId,
-      branchId: row.branchId,
-      action: 'booth_staff.remove',
-      entityType: 'booth_staff_assignment',
-      entityId: gone[0]!.id,
-      before: { stationId: row.stationId, accountId },
-      requestId: ctx.requestId,
-    });
-  });
-  return listBoothStaff(db, row.stationId);
-}
-
-/**
- * A booth PIN is EXACTLY five digits (owner, 28 September): typed at the api,
- * in the Console and on the box's number pad, and refused anywhere else with
- * the same sentence. A fixed length is what lets the box's pad know a PIN is
- * complete, and one fewer thing to get wrong at a wheel.
- */
-export const BOOTH_PIN_LENGTH = 5;
-const BOOTH_PIN_SHAPE = new RegExp(`^[0-9]{${BOOTH_PIN_LENGTH}}$`);
-export const BOOTH_PIN_RULE = `A booth PIN is exactly ${BOOTH_PIN_LENGTH} digits (0–9).`;
-
-export function isBoothPin(pin: string | null | undefined): pin is string {
-  return typeof pin === 'string' && BOOTH_PIN_SHAPE.test(pin);
-}
-
-/**
- * Five digits drawn by the platform, from the operating system's secure
- * source. Every one of the hundred thousand is equally likely — leading zeros
- * included, which is why it is padded rather than drawn from 10000 upwards.
- */
-function drawBoothPin(): string {
-  return String(randomInt(0, 10 ** BOOTH_PIN_LENGTH)).padStart(BOOTH_PIN_LENGTH, '0');
-}
-
-/**
- * What issuing a PIN takes: when it ends, and nothing else (SCRUM-428).
- *
- * Booth PINs are ISSUED by the platform — five random digits shown once to
- * the person issuing them — and never chosen or typed by staff. A typed `pin`
- * is refused by name (`BOOTH_PIN_ISSUED_ONLY`) rather than ignored, so an
- * older Console or a script that still sends one learns why. `generate: true`
- * is still accepted, because issuing is all this does now; `false` is refused
- * with the same reason.
- */
-export interface BoothPinInput {
-  /** Refused: booth PINs are issued, not typed. Present only to be named. */
-  pin?: string;
-  /** Accepted for older callers; issuing is the only thing this does. */
-  generate?: boolean;
-  /** When it stops working. Null or absent: never. Must be in the future. */
-  expiresAt?: Date | null;
-}
-
-export interface BoothPinSetResult {
-  accountId: string;
-  hasPin: true;
-  pinExpiresAt: string | null;
-  /**
-   * The PIN the platform drew. This answer is the only place it exists in
-   * clear: the row holds its argon2id hash, the audit row says only that one
-   * was issued, and the route declares `secretResponse`, so the replay store
-   * never keeps this body.
-   */
-  pin: string;
-}
-
-/** How many draws before issuing gives up; a clash is 1 in 100,000 per colleague. */
-const BOOTH_PIN_DRAWS = 20;
-
-/**
- * The live PIN hashes of everybody who shares a booth with this person.
- *
- * "The person's booths" is every booth whose staff list names them, because
- * their PIN is theirs at all of them (one live PIN per account), and a box
- * tries a PIN against its own booth's list only. Expired PINs are included:
- * they open nothing, but they are still somebody's digits on a list.
- */
-async function colleaguePinHashes(db: Db, accountId: string): Promise<string[]> {
-  const mine = await db
-    .select({ stationId: boothStaffAssignment.stationId })
-    .from(boothStaffAssignment)
-    .where(eq(boothStaffAssignment.accountId, accountId));
-  if (mine.length === 0) return [];
-  const others = await db
-    .selectDistinct({ accountId: boothStaffAssignment.accountId })
-    .from(boothStaffAssignment)
-    .where(inArray(boothStaffAssignment.stationId, mine.map((m) => m.stationId)));
-  const colleagues = others.map((o) => o.accountId).filter((id) => id !== accountId);
-  const pins = await livePinsByAccount(db, colleagues);
-  return [...pins.values()].map((p) => p.secretHash);
-}
-
-/**
- * Five random digits that nobody else on this person's booths holds (M10, T29).
- *
- * The check is not an oracle, which is why it is safe here and was refused
- * at a typed PIN: nobody chose these digits, so a clash tells nobody
- * anything, and it is never reported — the platform simply draws again. Each
- * comparison is an argon2id verify against a list the size of a booth's
- * staff.
- *
- * Two people issued PINs at the same instant could in principle draw the same
- * digits; the box's own rule — a PIN that matches two people signs in nobody
- * and does not count toward the lock — is what holds then.
- */
-export async function drawUnsharedBoothPin(
-  db: Db,
-  accountId: string,
-  /** The draw itself; a test passes a fixed sequence to make a clash happen. */
-  draw: () => string = drawBoothPin,
-): Promise<string> {
-  const taken = await colleaguePinHashes(db, accountId);
-  for (let attempt = 0; attempt < BOOTH_PIN_DRAWS; attempt += 1) {
-    const candidate = draw();
-    const clashes = await Promise.all(
-      taken.map((hash) => argonVerify(hash, candidate).catch(() => false)),
-    );
-    if (!clashes.some(Boolean)) return candidate;
-  }
-  throw new AppError(
-    503,
-    'BOOTH_PIN_UNAVAILABLE',
-    'A PIN nobody else on these booths holds could not be drawn. Try again.',
-  );
-}
-
-/**
- * Issue somebody's booth PIN: five digits the platform draws and hands back
- * once, with an optional moment it stops working (`expiresAt`, migration
- * 0027). Issuing again is the one action that replaces it (SCRUM-428).
- *
- * **Three rules, and each of them is about where the five digits go.**
- *
- *   - **Never onto the box command queue.** `edge.box_command.payload` is
- *     stored and rendered on a Console screen, which is why S2-07a left badge
- *     and PIN out of the simulator panel. The PIN reaches a booth only as an
- *     argon2id hash on the `staff` cache scope, which is the same path the
- *     password hash already takes.
- *   - **Never into the idempotency store.** The answer carries the PIN itself.
- *     The route declares `secretResponse: true` so no key is claimed and the
- *     answer is never kept to be replayed.
- *   - **Never in the audit row.** The row says a PIN was issued, by whom, for
- *     whom and when it expires. Not what it is, and not its hash.
- *
- * The PIN is the ACCOUNT's, not this booth's: `credential_active_kind_unique`
- * allows one live `pin` per person, so issuing a new one revokes the old in
- * the same transaction and the person types the same digits at every booth
- * they are allowed to work — which is why the draw avoids every colleague on
- * every one of those booths (`drawUnsharedBoothPin`). Who may issue it is
- * decided about the person, not the booth (`requirePinTarget`, M9): they must
- * work at this booth's branch, and the caller must hold every role they hold.
- */
-export async function setBoothPin(
-  db: Db,
-  ctx: OpContext,
-  actor: BoothPinActor,
-  row: BoothStationRow,
-  accountId: string,
-  input: BoothPinInput,
-): Promise<BoothPinSetResult> {
-  if (input.pin !== undefined || input.generate === false) {
-    throw new AppError(
-      400,
-      'BOOTH_PIN_ISSUED_ONLY',
-      'Booth PINs are issued by the platform, not typed. Issue a new PIN and read it off the screen.',
-    );
-  }
-  const expiresAt = input.expiresAt ?? null;
-  if (expiresAt && expiresAt.getTime() <= Date.now()) {
-    throw new AppError(
-      400,
-      'BOOTH_PIN_EXPIRY_PAST',
-      'A PIN’s expiry has to be in the future. Leave it empty for a PIN that does not expire.',
-    );
-  }
-  await requireStaffAccount(db, actor.operatorId, accountId);
-  await requirePinTarget(db, actor, row, accountId);
-  if (!(await isOnBooth(db, row.stationId, accountId))) {
-    throw new AppError(
-      400,
-      'BOOTH_STAFF_NOT_FOUND',
-      'That account is not on this booth. Add them to the booth before giving them a PIN.',
-    );
-  }
-
-  const pin = await drawUnsharedBoothPin(db, accountId);
-  const secretHash = await argonHash(pin);
-  await withTx(db, ctx, 'booth_pin.set', async (tx) => {
-    const now = new Date();
-    // One live PIN per person: the old one is revoked, not replaced in place,
-    // so "this person's PIN was changed on the 3rd" stays on the record.
-    await tx
-      .update(credential)
-      .set({ active: false, revokedAt: now, revokedReason: 'replaced', updatedAt: now })
-      .where(
-        and(eq(credential.accountId, accountId), eq(credential.kind, 'pin'), eq(credential.active, true)),
-      );
-    const id = newId();
-    await tx.insert(credential).values({
-      id,
-      operatorId: actor.operatorId,
-      accountId,
-      kind: 'pin',
-      secretHash,
-      label: `Booth PIN (${row.name})`,
-      createdByAccountId: actor.accountId,
-      expiresAt,
-    });
-    await audit.record(tx, {
-      actorAccountId: actor.accountId,
-      operatorId: row.operatorId,
-      branchId: row.branchId,
-      action: 'booth_pin.set',
-      entityType: 'credential',
-      entityId: id,
-      // The fact, never the secret and never its hash — "issued by the
-      // platform" is said, the digits it drew are not.
-      after: {
-        accountId,
-        kind: 'pin',
-        stationId: row.stationId,
-        generated: true,
-        expiresAt: expiresAt?.toISOString() ?? null,
-      },
-      requestId: ctx.requestId,
-    });
-  });
-  return {
-    accountId,
-    hasPin: true,
-    pinExpiresAt: expiresAt?.toISOString() ?? null,
-    pin,
-  };
-}
-
-/**
- * Withdraw a booth PIN.
- *
- * `active = false` with a reason, never a delete: "this person's PIN was
- * withdrawn on the 3rd" is the fact an investigation needs.
- *
- * **What it does NOT do is reach the booth.** A box holds the cached staff
- * list until its next pull, and the withdrawal takes effect at the booth only
- * then: about a minute on a running box, whose agent pulls its cache on a
- * timer and on the Apply config command (SCRUM-275), and however long it
- * stays offline otherwise — an offline box cannot be told anything, which is
- * the price of a booth that keeps working without internet. The deny-list has
- * the same window, for the same reason.
- *
- * **Who may withdraw it (M9)** is decided as for setting one
- * (`requirePinTarget`), and the person must also be on THIS booth's list:
- * the PIN is withdrawn at every booth at once, and before this a branch
- * manager could withdraw a colleague's PIN at another park through his own
- * booth without that colleague being on it. Withdraw before taking somebody
- * off a booth. The PIN of somebody already off every booth's list cannot be
- * withdrawn here, and it opens no booth: a box tries a PIN only against its
- * own booth's list, so once each box has pulled that list the PIN does
- * nothing until the person is put on a booth again, when it can be withdrawn.
- */
-export async function clearBoothPin(
-  db: Db,
-  ctx: OpContext,
-  actor: BoothPinActor,
-  row: BoothStationRow,
-  accountId: string,
-  reason: string | null,
-): Promise<{ accountId: string; hasPin: false }> {
-  await requireStaffAccount(db, actor.operatorId, accountId);
-  await requirePinTarget(db, actor, row, accountId);
-  if (!(await isOnBooth(db, row.stationId, accountId))) {
-    throw new AppError(
-      400,
-      'BOOTH_STAFF_NOT_FOUND',
-      'That account is not on this booth, so its booth PIN cannot be withdrawn here. Withdraw it from a booth they are on.',
-    );
-  }
-  await withTx(db, ctx, 'booth_pin.revoke', async (tx) => {
-    const now = new Date();
-    const revoked = await tx
-      .update(credential)
-      .set({ active: false, revokedAt: now, revokedReason: reason ?? 'withdrawn', updatedAt: now })
-      .where(
-        and(eq(credential.accountId, accountId), eq(credential.kind, 'pin'), eq(credential.active, true)),
-      )
-      .returning({ id: credential.id });
-    if (revoked.length === 0) {
-      throw new AppError(404, 'BOOTH_PIN_NOT_SET', 'That account has no booth PIN');
-    }
-    await audit.record(tx, {
-      actorAccountId: actor.accountId,
-      operatorId: row.operatorId,
-      branchId: row.branchId,
-      action: 'booth_pin.revoke',
-      entityType: 'credential',
-      entityId: revoked[0]!.id,
-      after: { accountId, kind: 'pin', stationId: row.stationId, reason: reason ?? 'withdrawn' },
-      requestId: ctx.requestId,
-    });
-  });
-  return { accountId, hasPin: false };
-}
-
-/** A PIN a box may verify: its argon2id hash, and when it stops working. */
-export interface LiveBoothPin {
-  secretHash: string;
-  /** Null never expires. */
-  expiresAt: Date | null;
-}
-
-/**
- * The live PINs of a set of accounts, for the `staff` cache scope.
- *
- * Exported because the scope is built in `services/sync.ts` and the query
- * belongs beside the table it is about. Returns argon2id hashes and their
- * expiry and nothing else — the same class of secret that scope already
- * carries in `passwordHash`, and the reason `BoothStaffCacheFields.pinHash` in
- * `@oto/shared` exists.
- *
- * Active PINs include their expiry even after it passes, so the box can
- * explain an expired PIN consistently before and after a cache pull.
- */
-export async function livePinsByAccount(
-  db: Db,
-  accountIds: string[],
-): Promise<Map<string, LiveBoothPin>> {
-  if (accountIds.length === 0) return new Map();
-  const rows = await db
-    .select({
-      accountId: credential.accountId,
-      secretHash: credential.secretHash,
-      expiresAt: credential.expiresAt,
-    })
-    .from(credential)
-    .where(
-      and(
-        inArray(credential.accountId, accountIds),
-        eq(credential.kind, 'pin'),
-        eq(credential.active, true),
-      ),
-    );
-  return new Map(
-    rows.map((r) => [r.accountId, { secretHash: r.secretHash, expiresAt: r.expiresAt }] as const),
-  );
-}
-
-/** The total the active slices must add up to, for the routes' descriptions. */
 export const BOOTH_TOTAL_WEIGHT_BP = TOTAL_WEIGHT_BP;
 
 /** The canonical hash of a bundle document, for whoever needs to compare one. */

@@ -785,8 +785,10 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      * `job:rollup.booth` — THE BOOTH'S DAY (S2-15b round 5, plan §5, §8):
      * today at every live branch, and every day a booth fact marked (a spin
      * filed, its voucher linked, a booth voucher redeemed — migration 0065),
-     * into `analytics.fact_booth_daily` per booth, staff member and prize. The
-     * `#debug` distribution run never reaches it.
+     * into `analytics.fact_booth_daily` per booth, staff account and prize
+     * (null for every SCRUM-694 spin; the report's By staff reads the slip's
+     * roster label from the spins). The `#debug` distribution run never
+     * reaches it.
      */
     {
       name: ROLLUP_BOOTH_JOB,

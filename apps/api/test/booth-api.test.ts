@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { station } from '@oto/db';
+import { box, station } from '@oto/db';
 import {
   BOOTH_ACTION_HEADER,
   BOOTH_IDEMPOTENCY_HEADER,
@@ -11,7 +11,18 @@ import {
   type BoxAgent,
 } from '@oto/box-agent';
 import { BOOTH_DEVICE_HEADER } from '@oto/shared';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  CENTRAL_BRANCH_CODE,
+  RECEPTION,
+  branchIdByCode,
+  createTestContext,
+  operatorIdByName,
+  OTO_OPERATOR_NAME,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 import { BUNDLE, REPRINT, SPIN, attachStubBox, detachStubBoxes, newCalls, stubBooth } from './stub-booth';
 
 /**
@@ -145,8 +156,6 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
       ['GET', '/booth/config'],
       ['GET', '/booth/status'],
       ['POST', '/booth/spin'],
-      ['POST', '/booth/staff/sign-in'],
-      ['POST', '/booth/staff/sign-out'],
       ['POST', '/booth/reprint'],
     ];
     for (const [method, url] of routes) {
@@ -154,7 +163,7 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
         method: method as 'GET' | 'POST',
         url,
         headers: deviceHeader,
-        ...(method === 'POST' ? { payload: url.endsWith('sign-in') ? { pin: '2468' } : {} } : {}),
+        ...(method === 'POST' ? { payload: {} } : {}),
       });
       expect(res.statusCode, `${method} ${url}`).toBe(503);
       expect(res.json().error.code, `${method} ${url}`).toBe('BOOTH_NOT_ON_THIS_BOX');
@@ -453,14 +462,14 @@ describe('the booth surface declares its guards (S2-07a)', () => {
       .sort();
     expect(television).toEqual([
       'GET /booth/config',
-      'GET /booth/staff',
       'GET /booth/status',
       'POST /booth/print',
       'POST /booth/reprint',
       'POST /booth/spin',
-      'POST /booth/staff/sign-in',
-      'POST /booth/staff/sign-out',
     ]);
+    // Nobody signs in at a booth (SCRUM-694): no staff route is left on the
+    // television's surface, guarded or open.
+    expect(ctx.app.routeRegistry.some((r) => r.url.startsWith('/booth/staff'))).toBe(false);
     const open = ctx.app.routeRegistry
       .filter((r) => r.url.startsWith('/booth') && r.config.public && r.method !== 'HEAD')
       .map((r) => `${r.method} ${r.url}`)
@@ -530,5 +539,28 @@ describe('the Console’s booth status (S2-07a)', () => {
     const res = await statusOf(tillStationId);
     expect(res.statusCode).toBe(404);
     expect(res.json().error.code).toBe('BOOTH_NOT_FOUND');
+  });
+});
+
+// Moved here from box-booth-staff.test.ts (SCRUM-694 removed the verify route
+// that file tested): the rows the booth tests rely on, read back rather than
+// assumed — the seeded booth and its box sit at the seeded branch under the
+// seeded operator.
+describe('the seeded booth', () => {
+  it('sits at the seeded branch, on a box of that branch, under the seeded operator', async () => {
+    const operatorId = await operatorIdByName(ctx.db, OTO_OPERATOR_NAME);
+    const branchId = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
+    const [booth] = await ctx.db
+      .select({ branchId: station.branchId, operatorId: station.operatorId, boxId: station.boxId })
+      .from(station)
+      .where(eq(station.id, boothStationId))
+      .limit(1);
+    expect(booth).toEqual({ branchId, operatorId, boxId: boothBoxId });
+    const [itsBox] = await ctx.db
+      .select({ branchId: box.branchId, operatorId: box.operatorId })
+      .from(box)
+      .where(eq(box.id, boothBoxId))
+      .limit(1);
+    expect(itsBox).toEqual({ branchId, operatorId });
   });
 });

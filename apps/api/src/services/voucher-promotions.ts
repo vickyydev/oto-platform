@@ -47,6 +47,7 @@ import {
   VOUCHER_HOLD_LAPSE_MS,
   formatVoucherDate,
   formatVoucherDateTime,
+  spinStaffLabelOf,
   type RedemptionStation,
 } from './vouchers';
 import { voucherCreditWalletOf, walletViewOf } from './wallet';
@@ -983,6 +984,10 @@ function termsOf(def: DefinitionRow): string[] {
  * title and instruction where it has them, its terms, the code twice (QR and
  * text), when it was printed, where and by whom, until when, and — round 5 —
  * the promotion's window when it has one.
+ *
+ * The Staff row of a till's copy of a BOOTH voucher is the label that booth's
+ * slip printed — today's roster then (SCRUM-694) — so both copies name the
+ * same people; a counter voucher names its issuer, as before.
  */
 export async function tillVoucherDocumentOf(
   db: Exec,
@@ -1001,8 +1006,8 @@ export async function tillVoucherDocumentOf(
   const [st] = stationId
     ? await db.select({ name: station.name }).from(station).where(eq(station.id, stationId)).limit(1)
     : [];
-  let staff: string | null = null;
-  if (v.issuedByAccountId) {
+  let staff: string | null = await spinStaffLabelOf(db, v.id);
+  if (staff === null && v.issuedByAccountId) {
     const [who] = await db
       .select({ name: employee.name, nickname: employee.nickname })
       .from(account)

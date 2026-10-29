@@ -901,8 +901,10 @@ export async function recordHeartbeat(
      * whose bundle names no station of kind `booth` sends no block rather than
      * a block full of nulls.
      *
-     * Nothing in it names a person. `staffSignedIn` is a boolean and never
-     * who, and `dailyCapsReached` holds `booth.booth_prize` ids, which are
+     * Nothing in it names a person. `rostered` is a boolean (today's roster
+     * names somebody) and never who (SCRUM-694; an older agent's retired
+     * `staffSignedIn` is a boolean too), and `dailyCapsReached` holds
+     * `booth.booth_prize` ids, which are
      * configuration. That is what lets it sit on `box.last_status`, which the
      * Console reads over somebody's shoulder in a back office.
      */
@@ -1204,14 +1206,13 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
  * What a box's offline cache has to serve, read off the stations it drives
  * (SCRUM-412). `cacheScopesOffered` in `sync.ts` turns the answer into scopes.
  *
- * `booth_only` — every live station on the box is a booth. A booth reads three
- * things with no internet: its wheel, the deny-list, and the PIN hashes of the
- * people on its own staff list. (Their entries still carry the password hash
- * a till's offline unlock reads; nothing at a booth reads it, because an
- * account sign-in there is checked by the cloud.) It sells nothing, looks
- * nobody up and unlocks no till, so a box like this is not sent the operator's
- * members, the branch's prices, its bookings and bands, or anybody who works
- * only at a counter.
+ * `booth_only` — every live station on the box is a booth. A booth reads its
+ * wheel and today's roster with no internet, and no staff at all: nobody signs
+ * in at a booth since SCRUM-694, so its `staff` scope is served empty (which
+ * also takes any hash an older release left off the Pi). It sells nothing,
+ * looks nobody up and unlocks no till, so a box like this is not sent the
+ * operator's members, the branch's prices, its bookings and bands, or anybody
+ * who works at a counter.
  *
  * `counter` — anything with a till, a kiosk, a gate or a display on it, alone
  * or beside a booth. It is sent what every box was sent before this existed,
@@ -1772,13 +1773,10 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
      */
     store: boxStoreFor(db),
     /**
-     * How the booth checks a PIN (S2-07b).
-     *
-     * `createBooth` verifies a typed PIN against the argon2id hashes on its
-     * cached staff list, and it takes the verifier from here because a box
-     * does not choose its own hashing — without one supplied, `signIn` matches
-     * nobody and every sign-in at the booth is refused whatever PIN has been
-     * set in the Console. A Raspberry Pi passes the same function.
+     * The argon2id verifier this box checks passwords with. The station
+     * bridge's offline till unlock uses it (it is the bridge's default when
+     * `bridge.verifyPassword` is absent); the booth verifies nothing since
+     * SCRUM-694. A Raspberry Pi passes the same function.
      */
     booth: { verifySecret: (hash, secret) => verifyArgon2(hash, secret) },
     /**

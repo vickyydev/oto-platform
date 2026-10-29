@@ -11,6 +11,7 @@ import {
   type RollupBranchClock,
 } from './analytics-rollup';
 import type { ReportScope } from './analytics-reports';
+import { SPIN_LABEL_JOINS, SPIN_STAFF_LABEL } from './booth-attribution';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -19,8 +20,12 @@ import type { Exec, Tx } from './tx';
  * screen — the plan and question 14 define it).
  *
  * `job:rollup.booth` writes `analytics.fact_booth_daily`: per branch, trading
- * day, booth, staff member signed in and prize, from `booth.spin` and the
- * vouchers the spins issued (`promo.voucher`):
+ * day, booth, `staff_account_id` and prize, from `booth.spin` and the vouchers
+ * the spins issued (`promo.voucher`). Nobody signs in at a booth since
+ * SCRUM-694, so `staff_account_id` is null for every spin of such a box (an
+ * older box's signed-in account otherwise) and the booth, prize and day sums
+ * stay exact; the report's By staff rows read the slip's roster label from
+ * the spins instead (`boothStaffFacts`):
  *
  *   spins               every press, the `#debug` distribution run left out
  *                       (`simulated`), whatever it landed on;
@@ -395,12 +400,113 @@ function add(into: FunnelSums, f: BoothReportFact): void {
 
 const UNATTRIBUTED = 'Unattributed';
 
+/** One row of the report's By staff: a stored-fact shape, with the slip's label. */
+export interface BoothStaffFact extends BoothReportFact {
+  /**
+   * The names the slips printed in their Staff row (SCRUM-694: today's
+   * roster), or null — with `staffAccountId` null too, an unattributed spin.
+   */
+  staffLabel: string | null;
+}
+
+/**
+ * The report's By staff rows, read LIVE from the spins (SCRUM-694).
+ *
+ * Nobody signs in at a booth any more, so `analytics.fact_booth_daily`'s
+ * `staff_account_id` is null for every spin of a SCRUM-694 box and cannot
+ * say who was on duty. What can is the Staff-row label the slip printed,
+ * which travels on the spin fact and is read through
+ * `services/booth-attribution.ts` — no column holds it. So these rows are
+ * grouped by trading day, booth, account (an older box's signed-in person),
+ * label and prize, with the same sums `boothFactsOf` takes. Booth, prize and
+ * day totals still come from the rollup, so for today the two can differ
+ * until the next `job:rollup.booth` run.
+ */
+export async function boothStaffFacts(db: Exec, scope: ReportScope): Promise<BoothStaffFact[]> {
+  if (scope.branches.length === 0) return [];
+  const ids = sql.join(
+    scope.branches.map((b) => sql`${b.branchId}::uuid`),
+    sql`, `,
+  );
+  const { rows } = await db.execute<{
+    business_date: string;
+    branch_id: string;
+    branch_name: string;
+    booth_id: string;
+    booth_name: string;
+    staff_account_id: string | null;
+    staff_name: string | null;
+    staff_label: string | null;
+    prize_id: string | null;
+    prize_name: string | null;
+    spins: number;
+    vouchers_issued: number;
+    vouchers_redeemed: number;
+    redemption_lag_sum_s: string | number;
+    prize_cost_satang: string | number;
+  }>(sql`
+    select x.business_date::text as business_date, x.branch_id, b.name as branch_name, x.booth_id, st.name as booth_name,
+           a.id as staff_account_id, coalesce(e.nickname, e.name) as staff_name, x.label as staff_label,
+           bp.id as prize_id, bp.name_en as prize_name,
+           count(*)::int as spins,
+           count(x.voucher_id)::int as vouchers_issued,
+           (count(x.voucher_id) filter (where x.status = 'redeemed' and x.redeemed_at is not null))::int as vouchers_redeemed,
+           coalesce(sum(greatest(0, round(extract(epoch from (x.redeemed_at - x.issued_at)))))
+                      filter (where x.status = 'redeemed' and x.redeemed_at is not null), 0)::bigint as redemption_lag_sum_s,
+           coalesce(sum(x.cost_satang) filter (where x.prize_id is not null), 0)::bigint as prize_cost_satang
+      from (
+        select s.business_date, s.operator_id, s.branch_id, s.station_id as booth_id, s.staff_account_id,
+               s.prize_id, ${SPIN_STAFF_LABEL} as label,
+               v.id as voucher_id, v.status, v.redeemed_at, v.issued_at, v.cost_satang
+          from booth.spin s ${SPIN_LABEL_JOINS}
+          left join promo.voucher v on v.id = s.voucher_id
+         where s.branch_id in (${ids})
+           and s.business_date between ${scope.from}::date and ${scope.to}::date
+           and s.simulated = false
+      ) x
+      join core.branch b on b.id = x.branch_id and b.operator_id = x.operator_id
+      join core.station st on st.id = x.booth_id and st.operator_id = x.operator_id and st.branch_id = x.branch_id
+      left join booth.booth_prize bp on bp.id = x.prize_id and bp.operator_id = x.operator_id
+        and bp.branch_id = x.branch_id and bp.station_id = x.booth_id
+      left join core.account a on a.id = x.staff_account_id and a.operator_id = x.operator_id
+      left join core.employee e on e.id = a.employee_id and e.operator_id = a.operator_id
+     group by x.business_date, x.branch_id, b.name, x.booth_id, st.name, a.id, e.nickname, e.name, x.label, bp.id, bp.name_en
+     order by x.business_date, b.name, st.name, x.booth_id, bp.id nulls first, a.id nulls first, x.label nulls first`);
+  return rows.map((r) => ({
+    businessDate: String(r.business_date).slice(0, 10),
+    branchId: r.branch_id,
+    branchName: r.branch_name,
+    boothId: r.booth_id,
+    boothName: r.booth_name,
+    staffAccountId: r.staff_account_id,
+    staffName: r.staff_name,
+    staffLabel: r.staff_label,
+    prizeId: r.prize_id,
+    prizeName: r.prize_name,
+    spins: Number(r.spins),
+    vouchersIssued: Number(r.vouchers_issued),
+    vouchersRedeemed: Number(r.vouchers_redeemed),
+    redemptionLagSumS: Number(r.redemption_lag_sum_s),
+    prizeCostSatang: Number(r.prize_cost_satang),
+  }));
+}
+
+/** The Staff cell: the slip's names, an older box's signed-in person, or nobody. */
+function staffNameOf(f: BoothStaffFact): string {
+  return f.staffLabel ?? (f.staffAccountId ? (f.staffName ?? 'Unnamed account') : UNATTRIBUTED);
+}
+
+
 /** Console > Booths > Report: the funnel per booth, per prize, per staff member and per day. */
 export async function boothReportOf(db: Exec, scope: ReportScope): Promise<BoothReport> {
   const facts = await boothReportFacts(db, scope);
+  const staffFacts = await boothStaffFacts(db, scope);
   const booths = new Map<string, { head: { boothId: string; name: string; branchId: string; branchName: string }; sums: FunnelSums }>();
   const prizes = new Map<string, { head: { boothId: string; prizeId: string; name: string }; sums: FunnelSums }>();
-  const staff = new Map<string, { head: { boothId: string; accountId: string | null; name: string }; sums: FunnelSums }>();
+  const staff = new Map<
+    string,
+    { head: { boothId: string; accountId: string | null; label: string | null; name: string }; sums: FunnelSums }
+  >();
   const days = new Map<string, { head: { boothId: string; businessDate: string }; sums: FunnelSums }>();
   for (const f of facts) {
     const booth = booths.get(f.boothId) ?? {
@@ -418,17 +524,19 @@ export async function boothReportOf(db: Exec, scope: ReportScope): Promise<Booth
       add(prize.sums, f);
       prizes.set(key, prize);
     }
-    const staffKey = `${f.boothId}|${f.staffAccountId ?? ''}`;
-    const person = staff.get(staffKey) ?? {
-      head: { boothId: f.boothId, accountId: f.staffAccountId, name: f.staffAccountId ? (f.staffName ?? 'Unnamed account') : UNATTRIBUTED },
-      sums: emptySums(),
-    };
-    add(person.sums, f);
-    staff.set(staffKey, person);
     const dayKey = `${f.boothId}|${f.businessDate}`;
     const day = days.get(dayKey) ?? { head: { boothId: f.boothId, businessDate: f.businessDate }, sums: emptySums() };
     add(day.sums, f);
     days.set(dayKey, day);
+  }
+  for (const f of staffFacts) {
+    const staffKey = `${f.boothId}|${f.staffAccountId ?? ''}|${f.staffLabel ?? ''}`;
+    const person = staff.get(staffKey) ?? {
+      head: { boothId: f.boothId, accountId: f.staffAccountId, label: f.staffLabel, name: staffNameOf(f) },
+      sums: emptySums(),
+    };
+    add(person.sums, f);
+    staff.set(staffKey, person);
   }
   const parks =
     scope.branches.length === 0
@@ -472,11 +580,13 @@ function csvCell(value: string | number | null): string {
 }
 
 /**
- * The booth funnel as a CSV, one row per trading day, booth, staff member and
- * prize — the fact as stored, with names — for the scope's branches and dates.
+ * The booth funnel as a CSV, one row per trading day, booth, staff and prize,
+ * with names, for the scope's branches and dates. The rows are read from the
+ * spins (`boothStaffFacts`, SCRUM-694) so the Staff cell is the names the slips
+ * printed; the figures are the same sums the rollup takes.
  */
 export async function boothReportCsv(db: Exec, scope: ReportScope): Promise<{ filename: string; csv: string }> {
-  const facts = await boothReportFacts(db, scope);
+  const facts = await boothStaffFacts(db, scope);
   const header = [
     'Trading day',
     'Branch',
@@ -503,7 +613,7 @@ export async function boothReportCsv(db: Exec, scope: ReportScope): Promise<{ fi
         f.businessDate,
         f.branchName,
         f.boothName,
-        f.staffAccountId ? (f.staffName ?? 'Unnamed account') : UNATTRIBUTED,
+        staffNameOf(f),
         f.prizeId ? (f.prizeName ?? 'Prize') : 'No prize',
         f.spins,
         f.prizeId ? f.spins : 0,

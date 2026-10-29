@@ -409,7 +409,11 @@ export const boxCounter = edge.table(
 );
 
 /**
- * Who is signed in at a station, kept where a restart cannot lose it.
+ * **Retired by SCRUM-694 (29 Oct 2026): nothing reads or writes it; kept so
+ * older rows and older boxes stay valid.** Nobody signs in at a booth any
+ * more; the box keeps the same table in its own store for the same reason.
+ *
+ * Who was signed in at a station, kept where a restart could not lose it.
  *
  * One row per station: signing in replaces whoever was there, because two
  * people signed in at one booth is not a state the screen could show. The

@@ -15,7 +15,7 @@
  * demo rows (accounts, members, children) are created once and then left
  * alone, so a password changed or a note edited on staging survives a sync.
  */
-import { createHash, randomInt } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import {
   businessDate,
@@ -613,7 +613,7 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
     { role: 'platform_admin', scopeType: 'operator', scopeId: null }, // platform-wide
     { role: 'operator_admin', scopeType: 'operator', scopeId: operatorId },
   ]);
-  const receptionAccountId = await mkAccount(empSom, '+66900000002', 'reception1234', [
+  await mkAccount(empSom, '+66900000002', 'reception1234', [
     { role: 'reception', scopeType: 'branch', scopeId: branchId },
   ]);
 
@@ -1741,40 +1741,8 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
     });
   }
 
-  /**
-   * Somebody to sign in at the booth, and a PIN to do it with.
-   *
-   * Reception rather than the administrator: the booth is worked by whoever is
-   * looking after it, and this is also the account S2-07b's PIN management is
-   * demonstrated on. A new seed receives a random five-digit PIN, stored
-   * only as its hash. Set or generate a usable PIN from the Console.
-   */
-  await db
-    .insert(s.boothStaffAssignment)
-    .values({
-      id: newId(),
-      stationId: boothId,
-      accountId: receptionAccountId,
-      addedBy: adminAccountId,
-    })
-    .onConflictDoNothing({
-      target: [s.boothStaffAssignment.stationId, s.boothStaffAssignment.accountId],
-    });
-  const [existingPin] = await db
-    .select({ id: s.credential.id })
-    .from(s.credential)
-    .where(and(eq(s.credential.accountId, receptionAccountId), eq(s.credential.kind, 'pin')))
-    .limit(1);
-  if (!existingPin) {
-    await db.insert(s.credential).values({
-      id: newId(),
-      operatorId,
-      accountId: receptionAccountId,
-      kind: 'pin',
-      secretHash: await hash(String(randomInt(100_000)).padStart(5, '0')),
-      createdByAccountId: adminAccountId,
-    });
-  }
+  // Nobody signs in at the booth (SCRUM-694): today's staff comes from the OTO
+  // App rota (Console > Booths > Today's staff > Sync now) or a manual add.
 
   await seedSecondOperator(db, roleIds);
 

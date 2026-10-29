@@ -500,7 +500,7 @@ describe('a demo booth edited in the Console stays as they left it, and a press 
     });
   }
 
-  it('archiving, renaming and re-costing a slice and taking Som off the list are kept; the next press draws the published wheel', async () => {
+  it('archiving, renaming and re-costing a slice are kept; the next press draws the published wheel', async () => {
     const booth = await demoBooth();
     const before = await boothRows(booth.id);
     expect(before.versions).toHaveLength(1);
@@ -510,17 +510,16 @@ describe('a demo booth edited in the Console stays as they left it, and a press 
     const p200 = named('200 THB Voucher');
 
     // In the Console, none of it published: the 200 off the wheel, the 150
-    // renamed, the 100 re-costed, and Som off the booth's staff list.
+    // renamed, the 100 re-costed. (The booth's staff list went with booth
+    // sign-in, SCRUM-694, so there is no one to take off it.)
     for (const res of [
       await send('DELETE', `/booths/${booth.id}/prizes/${p200.id}`),
       await send('PATCH', `/booths/${booth.id}/prizes/${p150.id}`, { nameEn: '150 THB Gift' }),
       await send('PATCH', `/booths/${booth.id}/prizes/${p100.id}`, { costSatang: 9_999 }),
-      await send('DELETE', `/booths/${booth.id}/staff/${somId}`),
     ]) {
       expect(res.statusCode, res.body).toBe(200);
     }
     const edited = await boothRows(booth.id);
-    expect(edited.staff.map((r) => r.accountId)).not.toContain(somId);
 
     // The next press puts nothing back: no prize made, no wheel published, nobody re-added.
     const R = addDaysToIsoDate(T, -12);

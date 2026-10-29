@@ -18,14 +18,19 @@
  * morning (`writeDemoBoothPress`, from `demo-day.ts`), which is how some of the
  * day's vouchers are redeemed: a voucher is only ever used up by a sale.
  *
- * SHAPED AS THE BOOTH WRITES THEM. The rows are the ones `services/sync-booth.ts`
- * files when a booth's box reports a press: the spin (never `simulated` — H12
+ * SHAPED AS A BOOTH BOX FILED THEM BEFORE SCRUM-694, said plainly: a box of
+ * that release signed somebody in and named them on the spin, the voucher and
+ * a `self_assigned` roster row, and these rows keep that shape because the
+ * s216 tests pin them. They stay valid — a spin with a signed-in account is
+ * still attributed to it — though a SCRUM-694 box names nobody and sends the
+ * slip's roster label instead. The rows are the ones `services/sync-booth.ts`
+ * filed when such a box reported a press: the spin (never `simulated` — H12
  * keeps simulated spins out of the figures, and these are presses the figures
  * are for), the voucher (source `booth`, its code minted by `mintBoothCode`
  * from the booth's prefix, its cost frozen from the prize and its expiry the
  * box's own rule), the paper (`booth.voucher_print`, the automatic first print,
- * printed), and the signed-in person's place on the day's roster
- * (`selfAssignBoothDuty`'s `self_assigned` row).
+ * printed), and the signed-in person's place on the day's roster (the
+ * `self_assigned` row the platform wrote then; nothing writes one now).
  *
  * WHAT IT NEVER TOUCHES. No real branch, booth, prize, wheel version or staff
  * list is written — FWBooth1 and the park's Booth 1 included. Three operator-wide
@@ -414,7 +419,8 @@ async function makeDemoWheel(
     note: 'Seeded demo wheel: the three money vouchers, at their face value.',
   });
 
-  // The demo cashier may sign in here: the standing list a booth's box checks.
+  // The demo cashier on the standing list a booth's box checked before
+  // SCRUM-694 (retired; kept because the s216 tests pin the demo booth's rows).
   await tx
     .insert(s.boothStaffAssignment)
     .values({ id: newId(), stationId, accountId: staff.accountId, addedBy: staff.addedByAccountId })
@@ -567,7 +573,8 @@ export async function writeDemoBoothPress(
     actionId: input.actionId,
   });
 
-  // The signed-in person joins the day's roster, once (`selfAssignBoothDuty`).
+  // The signed-in person joins the day's roster, once, as the platform's
+  // self-assignment did before SCRUM-694 (nothing writes `self_assigned` now).
   await writer
     .insert(s.boothDutyAssignment)
     .values({
