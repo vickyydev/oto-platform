@@ -1196,7 +1196,12 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
     discounts: await discountsOf(db, saleRow),
     // S2-14a — the credit each grant wallet carries, for the receipt's credit
     // sections: read as the box asks, so the band paired after minting is on it.
-    credits: await saleCreditsOf(db, saleRow.id),
+    // A sale the box filed (`origin = 'box'`) printed its receipt from the
+    // box's own snapshot, which knows no wallet — they are granted when the
+    // sale lands — so that paper carries no credit, and the platform's copy of
+    // it carries none either: one paper from either end, and History reprints
+    // what the guest was handed.
+    credits: saleRow.origin === 'box' ? [] : await saleCreditsOf(db, saleRow.id),
   };
 }
 
