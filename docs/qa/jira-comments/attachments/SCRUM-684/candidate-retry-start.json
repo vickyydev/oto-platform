@@ -1,0 +1,14 @@
+{
+  "ticket": "SCRUM-684",
+  "status": {
+    "status": "Testing",
+    "summary": "Keep published Console response enums faithful to unset values"
+  },
+  "runId": "40781396308",
+  "sourceSha": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+  "attempt": 2,
+  "localPassed": 6,
+  "localLogSha256": "f01812e0af351f0b9409bcdded5ba12544e0e6664f139667e7bccbdf56af53b8",
+  "at": "2026-10-29T21:09:45.278Z",
+  "commentId": "12706"
+}
