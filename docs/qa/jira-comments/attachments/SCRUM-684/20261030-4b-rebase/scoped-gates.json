@@ -1,0 +1,373 @@
+{
+  "ticket": "SCRUM-684",
+  "sourceSha": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+  "base": "4b50ddd9ae32e786cab989f87c55fac9de7273e5",
+  "passed": true,
+  "phases": [
+    {
+      "phase": "affected",
+      "receiptSha256": "0c9e7791f3c96876c1aaf08c374ad7ba951ef41adb5fb4d81f29d3efe01c41ae",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:34:33.551Z",
+      "completedAt": "2026-10-29T22:36:18.597Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api test test/s684-nullable-response-contract-review.test.ts test/console-drift-review.test.ts test/menu-api.test.ts test/fleet-api.test.ts test/s622-menu-contracts.test.ts test/menu-tax-seam.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts --maxWorkers=1 --no-file-parallelism"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "tests": {
+        "passed": 257,
+        "failed": 0
+      },
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\affected-v1.log",
+      "logSha256": "858fc78116224a9e8454e8ba004cee9c4cc5ce1dfb7fb4adfca5911f06fe1230",
+      "logBytes": 43876,
+      "redactionChanged": false,
+      "summaryLines": [
+        " Test Files  10 passed (10)",
+        "      Tests  257 passed (257)",
+        "   Duration  103.75s (transform 3.35s, setup 0ms, collect 23.46s, tests 78.06s, environment 1ms, prepare 878ms)"
+      ],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    },
+    {
+      "phase": "contracts",
+      "receiptSha256": "bde16536f4bfacb2febb67f3784893768b8e496f22a2405d6836c33e46cf26e3",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:36:29.302Z",
+      "completedAt": "2026-10-29T22:36:34.611Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm api-types:check"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\contracts-v1.log",
+      "logSha256": "8b465bcfdf9344e2da17412d16bb609eace231e71df5ceba799b689e9f97faa6",
+      "logBytes": 609,
+      "redactionChanged": false,
+      "summaryLines": [],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    },
+    {
+      "phase": "typecheck",
+      "receiptSha256": "160ae147b2eda7a21aeaad1b3e59fcc98d616eaccabb4ca74997ae71c601fd25",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:36:37.669Z",
+      "completedAt": "2026-10-29T22:37:07.983Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api typecheck"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\typecheck-v1.log",
+      "logSha256": "fc2d25c0103247c89a4f2d6b4c5f9f00066d591babf948aba601e5f4e59cfa60",
+      "logBytes": 100,
+      "redactionChanged": false,
+      "summaryLines": [],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    },
+    {
+      "phase": "client-typecheck",
+      "receiptSha256": "00d602d29d32b2f1c8f6c668e7077d878635127301afe70a7b35ace655aef42f",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:37:36.988Z",
+      "completedAt": "2026-10-29T22:37:41.120Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api-types typecheck"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\client-typecheck-v1.log",
+      "logSha256": "974608773cd6b4d5c89dbd3063940c4510aee2e2e940e80071133c5c2564ada8",
+      "logBytes": 116,
+      "redactionChanged": false,
+      "summaryLines": [],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    },
+    {
+      "phase": "console-typecheck",
+      "receiptSha256": "775a572754d85eac5ce957a8217e5dabb2d55e433c42bddea1322e6567cd20eb",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:37:44.339Z",
+      "completedAt": "2026-10-29T22:37:52.176Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/console typecheck"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\console-typecheck-v1.log",
+      "logSha256": "e1286360c2eb9a281357dfad8da530728496f7d573f8c08efe02fbe408133fb1",
+      "logBytes": 192,
+      "redactionChanged": false,
+      "summaryLines": [],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    },
+    {
+      "phase": "client-tests",
+      "receiptSha256": "963888e1bf8a7c2066074efb22c3c684248587d3b7647330285f1b31a4ab7325",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:37:54.940Z",
+      "completedAt": "2026-10-29T22:37:58.958Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api-types test"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "tests": {
+        "passed": 10,
+        "failed": 0
+      },
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\client-tests-v1.log",
+      "logSha256": "06a488a0098660c43ec1503f6891c5edeaa38cb3edaa445ebda12cf0bb4d7bac",
+      "logBytes": 405,
+      "redactionChanged": false,
+      "summaryLines": [
+        " Test Files  1 passed (1)",
+        "      Tests  10 passed (10)",
+        "   Duration  2.80s (transform 430ms, setup 0ms, collect 2.38s, tests 18ms, environment 0ms, prepare 153ms)"
+      ],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    },
+    {
+      "phase": "lint",
+      "receiptSha256": "1bfec2e20039ce8d3fd18a5cff3a898d28afa35ae56ea1698339ba974fd6a00c",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:38:05.279Z",
+      "completedAt": "2026-10-29T22:38:07.706Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm exec eslint apps/api/src/routes/console-drift.ts apps/api/src/routes/menu.ts apps/api/src/routes/fleet.ts apps/api/src/lib/nullable-response-enum.ts apps/api/test/s684-nullable-response-contract-review.test.ts apps/console/e2e/page-state-review.spec.ts"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\lint-v1.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logBytes": 0,
+      "redactionChanged": false,
+      "summaryLines": [],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    },
+    {
+      "phase": "main-ci-fixtures",
+      "receiptSha256": "56fbd248e646c79524d14e8eb0af46000fd1af3fe529c946b32ee85831f80697",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:38:10.242Z",
+      "completedAt": "2026-10-29T22:38:36.516Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/api test test/integration-controls.test.ts test/payments-qr-cancel.test.ts --maxWorkers=1 --no-file-parallelism --reporter=verbose"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "tests": {
+        "passed": 20,
+        "failed": 0
+      },
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\main-ci-fixtures-v1.log",
+      "logSha256": "249b7cf0608237821293a28333f174bba71c30343376639c79aba1d3663f1a36",
+      "logBytes": 12161,
+      "redactionChanged": false,
+      "summaryLines": [
+        " Test Files  2 passed (2)",
+        "      Tests  20 passed (20)",
+        "   Duration  24.97s (transform 3.04s, setup 0ms, collect 7.69s, tests 16.83s, environment 0ms, prepare 171ms)"
+      ],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    },
+    {
+      "phase": "telemetry-tests",
+      "receiptSha256": "de13b47d9ba0c343a075f724fd5af51d58f4091954cd65ce895f4c96f00d7a99",
+      "ticket": "SCRUM-684",
+      "sourceHead": "b35a36adc4df623686f6fad5897ce9792e3707c8",
+      "startedAt": "2026-10-29T22:38:40.907Z",
+      "completedAt": "2026-10-29T22:38:42.842Z",
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "passed": true,
+      "command": {
+        "executable": "C:/Program Files/Git/bin/bash.exe",
+        "args": [
+          "-c",
+          "set -eo pipefail; pnpm --filter @oto/telemetry test"
+        ],
+        "cwd": "C:/oto-lanes/admin684-release-20261030"
+      },
+      "sourceInputCount": 4025,
+      "sourceUnchanged": true,
+      "changedPaths": [],
+      "tests": {
+        "passed": 36,
+        "failed": 0
+      },
+      "helperSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df",
+      "logPath": "C:\\oto-lanes\\admin684-resume-20261030\\final-gates-4b\\results\\telemetry-tests-v1.log",
+      "logSha256": "906b3266d549127ef017c3b3fdc4989bd4a6d24935dbeb3efa65945c4db1c564",
+      "logBytes": 522,
+      "redactionChanged": false,
+      "summaryLines": [
+        " Test Files  4 passed (4)",
+        "      Tests  36 passed (36)",
+        "   Duration  720ms (transform 242ms, setup 0ms, collect 601ms, tests 70ms, environment 0ms, prepare 833ms)"
+      ],
+      "databaseEnvironmentRemoved": [
+        "DATABASE_URL",
+        "TEST_DATABASE_URL"
+      ],
+      "providerEnvironmentRemoved": true,
+      "docker": false,
+      "staging": false,
+      "providerActions": false
+    }
+  ]
+}

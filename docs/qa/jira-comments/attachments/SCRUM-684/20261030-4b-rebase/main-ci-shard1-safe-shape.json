@@ -1,0 +1,11 @@
+{
+  "constraint": "account_phone_unique",
+  "positions": [
+    "src/pg-core/session.ts:73:11",
+    "test/integration-controls.test.ts:54:3",
+    "test/integration-controls.test.ts:86:16",
+    "src/node-postgres/session.ts:149:14",
+    "src/pg-core/session.ts:71:12"
+  ],
+  "insert": "\"core\".\"account\""
+}

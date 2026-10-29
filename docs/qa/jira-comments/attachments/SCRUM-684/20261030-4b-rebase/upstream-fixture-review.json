@@ -1,0 +1,202 @@
+{
+  "reviewDate": "2026-10-30",
+  "kind": "independent-read-only-semantic-review",
+  "result": "PASS",
+  "baseCommit": "302a3b5cc47db07f94cd76d9f9c237f43333af39",
+  "upstreamCommits": [
+    "0c271ce3edbc0c3a7cde78bf65eaaf89709ddcbc",
+    "4b50ddd9ae32e786cab989f87c55fac9de7273e5"
+  ],
+  "commits": [
+    {
+      "sha": "0c271ce3edbc0c3a7cde78bf65eaaf89709ddcbc",
+      "changedPaths": [
+        "apps/api/test/payments-qr-cancel.test.ts"
+      ]
+    },
+    {
+      "sha": "4b50ddd9ae32e786cab989f87c55fac9de7273e5",
+      "changedPaths": [
+        "apps/api/test/integration-controls.test.ts"
+      ]
+    }
+  ],
+  "testFiles": [
+    {
+      "path": "apps/api/test/payments-qr-cancel.test.ts",
+      "commit": "0c271ce3edbc0c3a7cde78bf65eaaf89709ddcbc",
+      "sha256": "9592e146d7b765d66d008a07096dd7586870320cc70030182712fa36f8ebb03a",
+      "baseSha256": "48ece34113b5aa867903e5836609c26d441dfa37ddcdd6a14c12f90c5be40f6d",
+      "sourceItCalls": 7,
+      "assertionCountBefore": 68,
+      "assertionCountAfter": 68,
+      "changedExpectedExpressionCount": 1,
+      "otherExpectExpressionsIdentical": true
+    },
+    {
+      "path": "apps/api/test/integration-controls.test.ts",
+      "commit": "4b50ddd9ae32e786cab989f87c55fac9de7273e5",
+      "sha256": "cefda87fc9df21a2d445aa737af99b0f779c2f7e7e28ed89b141e335bd45fd7b",
+      "baseSha256": "f01dc159a4e91b3dcc5c39e0c3bca956fc03918700c6864f5288441489c3fcf7",
+      "allExpectExpressionsIdentical": true
+    }
+  ],
+  "productionSources": [
+    {
+      "path": "apps/api/src/services/ops.ts",
+      "baseSha256": "8cf4efb5d7003b1a45f2e40901812fbc7905ac398401ed233c135d102d0c6b22",
+      "upstreamSha256": "8cf4efb5d7003b1a45f2e40901812fbc7905ac398401ed233c135d102d0c6b22",
+      "unchangedBetweenReviewedSources": true
+    },
+    {
+      "path": "apps/api/src/services/payments/gateway.ts",
+      "baseSha256": "96cb4ff50d1744888ee8d6a1b9ebfb82f4c4a975c9d5b3e2309daa1a3c5791dd",
+      "upstreamSha256": "96cb4ff50d1744888ee8d6a1b9ebfb82f4c4a975c9d5b3e2309daa1a3c5791dd",
+      "unchangedBetweenReviewedSources": true
+    },
+    {
+      "path": "packages/telemetry/src/redact.ts",
+      "baseSha256": "5883187bd4abd87ce032e3c650bdedd7b8dd1fb0da6f0f1dd40bd4af4c780edc",
+      "upstreamSha256": "5883187bd4abd87ce032e3c650bdedd7b8dd1fb0da6f0f1dd40bd4af4c780edc",
+      "unchangedBetweenReviewedSources": true
+    },
+    {
+      "path": "packages/shared/src/payments.ts",
+      "baseSha256": "c994cdf9ec42d1ba73b38c0c4e3962fbc833de478e17cdf30169a52942a187aa",
+      "upstreamSha256": "c994cdf9ec42d1ba73b38c0c4e3962fbc833de478e17cdf30169a52942a187aa",
+      "unchangedBetweenReviewedSources": true
+    },
+    {
+      "path": "packages/db/src/schema/tenancy.ts",
+      "baseSha256": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569",
+      "upstreamSha256": "ffe7b37b05a68296ddf87a7f3354b652ffaf99ae36e1a04ec97aeb61c6ea5569",
+      "unchangedBetweenReviewedSources": true
+    },
+    {
+      "path": "apps/api/test/helpers.ts",
+      "baseSha256": "ca251491f244253e6bf7833455068adb2a62c86fdbbd2af391db07f754b4cb2c",
+      "upstreamSha256": "ca251491f244253e6bf7833455068adb2a62c86fdbbd2af391db07f754b4cb2c",
+      "unchangedBetweenReviewedSources": true
+    }
+  ],
+  "productionContract": [
+    {
+      "path": "apps/api/src/services/ops.ts",
+      "line": 85,
+      "fact": "scrubDetail is the approved telemetry redact alias."
+    },
+    {
+      "path": "apps/api/src/services/ops.ts",
+      "line": 181,
+      "fact": "recordRun persists the scrubbed detail, rather than promising a raw invoice string."
+    },
+    {
+      "path": "packages/telemetry/src/redact.ts",
+      "line": 227,
+      "fact": "The approved value-shape guard covers14-to19-digit runs and applies the existing Luhn check. No guard change is part of these commits."
+    },
+    {
+      "path": "apps/api/src/services/payments/gateway.ts",
+      "line": 938,
+      "fact": "The real stored invoice still reaches the gateway cancellation call; log scrubbing does not change it."
+    }
+  ],
+  "retainedQrAssertions": [
+    {
+      "category": "Operation outcome and action identifier",
+      "line": 266
+    },
+    {
+      "category": "Gateway acceptance retained on attempt payload",
+      "line": 258
+    },
+    {
+      "category": "Actual simulator inquiry uses the original live invoice",
+      "line": 259
+    },
+    {
+      "category": "Single cancel audit row with actor and action identity",
+      "line": 276
+    },
+    {
+      "category": "Idempotent stored response replay",
+      "line": 301
+    },
+    {
+      "category": "Paid-attempt refusal remains explicit",
+      "line": 328
+    },
+    {
+      "category": "Sale becomes voidable after cancellation",
+      "line": 287
+    },
+    {
+      "category": "Late notification preserves awaiting-confirmation and open sale",
+      "line": 389
+    },
+    {
+      "category": "Plain paid notification after cancel takes the same late-paid path",
+      "line": 415
+    }
+  ],
+  "qrExpectation": {
+    "line": 271,
+    "meaning": "Compare ops-run detail with its approved persisted representation. Other QR expectations remain identical.",
+    "qualification": "This assertion is a storage-consistency check, not independent proof that the redactor itself is correct. Independent telemetry native tests remain necessary and are bound by a separate root receipt.",
+    "independentSuite": {
+      "path": "packages/telemetry/test/redact.test.ts",
+      "sha256": "45e19e2b81c469ba197051a70bbcae55cdf0229e83174f50b517a476ddbd0200",
+      "baseBytesIdentical": true
+    },
+    "nativeTelemetryResultClaimed": false
+  },
+  "phoneFixture": {
+    "allocationLine": 53,
+    "callSites": [
+      90,
+      91
+    ],
+    "rangeSize": 90,
+    "twoConsecutivePositionsDistinctForEveryStart": true,
+    "samePrefixAndTwoDigitLengthAsBefore": true,
+    "prefixFingerprint": "acf531b100d4d415c4afbadecc08bdcd6938509f7bca4d63e40753d9b6eac986",
+    "seedFilesScanned": 17,
+    "seedPrefixCollisionFound": false,
+    "seedSourceCensusSha256": "55120174ca4ae1480810ce8d07655c76007c098ba65bbbc0c483392cd12ed23f",
+    "uniqueConstraint": {
+      "path": "packages/db/src/schema/tenancy.ts",
+      "line": 180,
+      "columns": [
+        "operator_id",
+        "phone"
+      ]
+    },
+    "isolation": {
+      "path": "apps/api/test/helpers.ts",
+      "line": 44,
+      "fact": "Each createTestContext uses a fresh migrated seeded database. Other test files do not share these two synthetic accounts."
+    },
+    "scope": "The two currently declared helper calls are distinct even when the90-position range wraps. Password generation, permissions, operator/park scope, sign-in flow and test assertions remain unchanged."
+  },
+  "validationRecommendation": [
+    "Retain the original exact-main failing CI/local evidence.",
+    "Run the entire seven-case QR file and entire integration-controls file with their existing assertions.",
+    "Run the independent existing telemetry native suite to pin redaction behavior separately.",
+    "No new project suite or alternate fixture repair is required."
+  ],
+  "reviewExecution": {
+    "sourceReads": true,
+    "astAnalysis": true,
+    "sourceArithmeticCheck": true,
+    "nativeTests": false,
+    "browser": false,
+    "auth": false,
+    "network": false,
+    "jira": false,
+    "productionChanges": false,
+    "testChanges": false,
+    "gitMutations": false
+  },
+  "rawValuesRecorded": false,
+  "fullSourceRecorded": false
+}
