@@ -26,8 +26,6 @@ import {
   handoffConfig,
   HandoffRejected,
   HANDOFF_APPS,
-  handoffIdentity,
-  IDENTITY_ONLY_AUDIENCES,
   issueHandoffAudited,
   type HandoffConfig,
 } from '../services/handoff';
@@ -59,14 +57,12 @@ const HandoffExchangeBaseSchema = z.object({
     actorName: z.string().nullable(), subjectName: z.string().nullable(),
   }).strict().optional(),
 });
+/**
+ * No `booth` branch: the Lucky Wheel takes no sign-on since SCRUM-694, and a
+ * booth token is refused at the exchange (`RETIRED_HANDOFF_AUDIENCES`), so
+ * the answer never names it.
+ */
 const HandoffExchangeResponseSchema = z.union([
-  HandoffExchangeBaseSchema.extend({
-    audience: z.literal('booth'),
-    identity: z.object({
-      accountId: z.string().uuid(), name: z.string().nullable(), code: z.string(),
-      expiresAt: z.string().datetime(),
-    }),
-  }),
   HandoffExchangeBaseSchema.extend({
     audience: z.literal('oto_app'),
     otoApp: z.object({
@@ -235,7 +231,8 @@ export async function authRoutes(app: App): Promise<void> {
       // does not have to know the trick.
       config: { dynamicPermission: true, secretResponse: true },
       schema: {
-        description: 'Issue a short-lived signed hand-off token for one app origin',
+        description:
+          'Issue a short-lived signed hand-off token for one app origin. `booth` is refused 410 `HANDOFF_APP_RETIRED`: the Lucky Wheel takes no sign-on, and its launcher tile opens it directly.',
         body: z.object({ app: z.enum(HANDOFF_APPS) }),
         response: { 200: z.object({
           token: z.string(), audience: z.enum(HANDOFF_APPS), origin: z.string(),
@@ -301,7 +298,7 @@ export async function authRoutes(app: App): Promise<void> {
       config: { ...ipLimited, public: true },
       schema: {
         description:
-          'Exchange a hand-off token for a session cookie on this origin. An app with no server of its own (booth) gets no cookie and no credential: the answer names who signed on (`identity`) and nothing more.',
+          'Exchange a hand-off token for a session cookie on this origin. A booth token (minted before the Lucky Wheel stopped taking a sign-on) is spent and refused 401 with reason `audience`, and yields no cookie.',
         body: z.object({ token: z.string().min(20).max(8192) }),
         response: { 200: HandoffExchangeResponseSchema },
       },
@@ -321,24 +318,12 @@ export async function authRoutes(app: App): Promise<void> {
           requestId: req.id,
         });
 
-        /**
-         * SCRUM-528 — an app with no server (the Lucky Wheel) gets an identity
-         * and no credential: no cookie, and never the session token in the
-         * body. Decided by the audience signed INTO the token, not by anything
-         * the caller asks for, so a cookie app's token cannot be talked into
-         * this shape and a booth token can never yield a cookie. Nothing mints
-         * a booth token since SCRUM-694; the branch stays as that fence.
-         */
-        const identityOnly = IDENTITY_ONLY_AUDIENCES.has(result.audience);
-        const identity = identityOnly ? await handoffIdentity(app.db, result) : null;
-
-        if (!identityOnly) {
-          // The SAME session row, so signing out anywhere ends every app at
-          // once; the cookie is host-only to this origin and never outlives
-          // the session behind it.
-          const remainingHours = (result.sessionExpiresAt.getTime() - Date.now()) / 3600_000;
-          setSessionCookie(reply, result.sessionToken, remainingHours, app.env.COOKIE_SECURE);
-        }
+        // The SAME session row, so signing out anywhere ends every app at
+        // once; the cookie is host-only to this origin and never outlives the
+        // session behind it. A booth token never gets this far: the exchange
+        // refuses it (SCRUM-694).
+        const remainingHours = (result.sessionExpiresAt.getTime() - Date.now()) / 3600_000;
+        setSessionCookie(reply, result.sessionToken, remainingHours, app.env.COOKIE_SECURE);
 
         await runWithAuditContext(result.auditAuth, () => audit.record(app.db, {
           actorAccountId: result.accountId,
@@ -346,7 +331,7 @@ export async function authRoutes(app: App): Promise<void> {
           action: 'auth.handoff_exchange',
           entityType: 'session',
           entityId: result.sessionId,
-          after: { jti: result.jti, audience: result.audience, ...(identityOnly ? { identityOnly: true } : {}) },
+          after: { jti: result.jti, audience: result.audience },
           requestId: req.id,
         }));
 
@@ -355,7 +340,6 @@ export async function authRoutes(app: App): Promise<void> {
           audience: result.audience,
           mustChangePassword: result.mustChangePassword,
           sessionLocked: result.sessionLocked,
-          ...(identity ? { identity } : {}),
           ...(result.otoApp ? { otoApp: result.otoApp } : {}),
           ...(result.impersonation ? { impersonation: { ...result.impersonation,
             expiresAt: result.impersonation.expiresAt.toISOString(),

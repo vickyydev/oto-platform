@@ -81,10 +81,9 @@ describe('SCRUM-629 handoff role integration', () => {
     const pos = await exchange((await mint('pos')).token, 'pos');
     expect(pos.statusCode).toBe(200);
     expect(pos.json()).not.toHaveProperty('otoApp');
-    const booth = await exchange((await mint('booth')).token, 'booth');
-    // Identity-only app access is rechecked independently and remains refused without a grant.
-    expect(booth.statusCode).toBe(403);
-    expect(booth.headers['set-cookie']).toBeUndefined();
+    // The Lucky Wheel takes no sign-on (SCRUM-694): nothing is minted for it,
+    // so nothing reaches the identity seam.
+    await expect(mint('booth')).rejects.toMatchObject({ statusCode: 410, code: 'HANDOFF_APP_RETIRED' });
     expect(seam.reconcile).not.toHaveBeenCalled();
   });
 

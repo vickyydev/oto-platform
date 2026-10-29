@@ -396,7 +396,7 @@
     },
     "/auth/handoff": {
       "post": {
-        "description": "Issue a short-lived signed hand-off token for one app origin",
+        "description": "Issue a short-lived signed hand-off token for one app origin. `booth` is refused 410 `HANDOFF_APP_RETIRED`: the Lucky Wheel takes no sign-on, and its launcher tile opens it directly.",
         "requestBody": {
           "required": true,
           "content": {
@@ -474,7 +474,7 @@
     },
     "/auth/handoff/exchange": {
       "post": {
-        "description": "Exchange a hand-off token for a session cookie on this origin. An app with no server of its own (booth) gets no cookie and no credential: the answer names who signed on (`identity`) and nothing more.",
+        "description": "Exchange a hand-off token for a session cookie on this origin. A booth token (minted before the Lucky Wheel stopped taking a sign-on) is spent and refused 401 with reason `audience`, and yields no cookie.",
         "requestBody": {
           "required": true,
           "content": {
@@ -503,120 +503,6 @@
               "application/json": {
                 "schema": {
                   "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "accountId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "mustChangePassword": {
-                          "type": "boolean"
-                        },
-                        "sessionLocked": {
-                          "type": "boolean"
-                        },
-                        "impersonation": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "actorAccountId": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "subjectAccountId": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "targetApp": {
-                              "type": "string",
-                              "enum": [
-                                "pos",
-                                "console",
-                                "oto_app",
-                                "radar",
-                                "booth",
-                                "inbox"
-                              ]
-                            },
-                            "mode": {
-                              "type": "string",
-                              "enum": [
-                                "read_only",
-                                "write_allowed"
-                              ]
-                            },
-                            "expiresAt": {
-                              "type": "string",
-                              "format": "date-time"
-                            },
-                            "actorName": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "subjectName": {
-                              "type": "string",
-                              "nullable": true
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "actorAccountId",
-                            "subjectAccountId",
-                            "targetApp",
-                            "mode",
-                            "expiresAt",
-                            "actorName",
-                            "subjectName"
-                          ],
-                          "additionalProperties": false
-                        },
-                        "audience": {
-                          "type": "string",
-                          "enum": [
-                            "booth"
-                          ]
-                        },
-                        "identity": {
-                          "type": "object",
-                          "properties": {
-                            "accountId": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "name": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "code": {
-                              "type": "string"
-                            },
-                            "expiresAt": {
-                              "type": "string",
-                              "format": "date-time"
-                            }
-                          },
-                          "required": [
-                            "accountId",
-                            "name",
-                            "code",
-                            "expiresAt"
-                          ],
-                          "additionalProperties": false
-                        }
-                      },
-                      "required": [
-                        "accountId",
-                        "mustChangePassword",
-                        "sessionLocked",
-                        "audience",
-                        "identity"
-                      ],
-                      "additionalProperties": false
-                    },
                     {
                       "type": "object",
                       "properties": {

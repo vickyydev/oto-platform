@@ -154,32 +154,46 @@ describe('Radar signs on like any other app (S2-18)', () => {
   });
 });
 
-describe('the Lucky Wheel signs on with an identity and no credential (SCRUM-528)', () => {
-  it('exchanges a booth token for who signed on — no cookie, no session token — once, at the booth only', async () => {
+describe('the Lucky Wheel takes no sign-on (SCRUM-694)', () => {
+  it('refuses to mint a booth token, even with the booth origin configured', async () => {
     const launcher = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const tokensBefore = (await ctx.db.select({ jti: handoffToken.jti }).from(handoffToken)).length;
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/auth/handoff',
+      headers: { cookie: launcher },
+      payload: { app: 'booth' },
+    });
+    expect(res.statusCode).toBe(410);
+    expect(res.json().error.code).toBe('HANDOFF_APP_RETIRED');
+    expect(res.json()).not.toHaveProperty('token');
+    // Nothing was minted: no row, so nothing to exchange.
+    expect((await ctx.db.select({ jti: handoffToken.jti }).from(handoffToken)).length).toBe(tokensBefore);
+  });
 
-    // Aimed at the booth, a token is refused anywhere else, and still spent.
-    const stray = await mint(launcher, 'booth');
-    const elsewhere = await exchange(stray.token, POS_ORIGIN);
-    expect(elsewhere.statusCode).toBe(401);
-    expect(rejectionReason(elsewhere)).toBe('origin');
-    expect(elsewhere.headers['set-cookie']).toBeUndefined();
+  it('spends a booth token minted before the release and refuses it: no cookie, no name', async () => {
+    const launcher = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    // A booth token as the release before SCRUM-694 minted one: its row aimed
+    // at the booth's origin, its claims at the booth.
+    const claims = claimsOf((await mint(launcher)).token);
+    await ctx.db
+      .update(handoffToken)
+      .set({ audience: 'booth', audienceOrigin: BOOTH_ORIGIN })
+      .where(eq(handoffToken.jti, claims.jti));
+    const booth = signHandoffToken({ kid: KID, secret: SECRET }, { ...claims, aud: 'booth' });
 
-    const issued = await mint(launcher, 'booth');
-    expect(issued.launchUrl).toBe(`${BOOTH_ORIGIN}/#handoff=${issued.token}`);
-    const res = await exchange(issued.token, BOOTH_ORIGIN);
-    expect(res.statusCode).toBe(200);
-    // The static page has no server to keep a cookie, and must not be handed
-    // the session's own token instead.
+    const res = await exchange(booth, BOOTH_ORIGIN);
+    expect(res.statusCode).toBe(401);
+    expect(rejectionReason(res)).toBe('audience');
     expect(res.headers['set-cookie']).toBeUndefined();
-    const body = res.json() as Record<string, unknown> & { identity: Record<string, unknown> };
-    expect(body.audience).toBe('booth');
-    expect(body.identity).toMatchObject({ code: expect.stringMatching(/^S-[A-Z0-9]{4}$/) });
-    expect(Object.keys(body.identity).sort()).toEqual(['accountId', 'code', 'expiresAt', 'name']);
-    expect(Object.keys(body).sort()).toEqual(['accountId', 'audience', 'identity', 'mustChangePassword', 'sessionLocked']);
+    expect(res.json()).not.toHaveProperty('identity');
+    expect((await lastRejection()).after).toMatchObject({ reason: 'audience', audience: 'booth' });
 
-    // One go only.
-    const again = await exchange(issued.token, BOOTH_ORIGIN);
+    // Spent all the same, with its sealed session gone: one go only.
+    const [row] = await ctx.db.select().from(handoffToken).where(eq(handoffToken.jti, claims.jti));
+    expect(row!.consumedAt).not.toBeNull();
+    expect(row!.sessionSecret).toBeNull();
+    const again = await exchange(booth, BOOTH_ORIGIN);
     expect(again.statusCode).toBe(401);
     expect(rejectionReason(again)).toBe('replayed');
   });

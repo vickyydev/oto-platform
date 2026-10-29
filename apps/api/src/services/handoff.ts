@@ -9,20 +9,17 @@ import {
 import { and, eq, gt, isNull, lte } from 'drizzle-orm';
 import {
   account,
-  employee,
   handoffToken,
   session as sessionTable,
   HANDOFF_AUDIENCES,
   type Db,
   type HandoffAudience,
 } from '@oto/db';
-import { boothStaffCode, newId, type Permission } from '@oto/shared';
+import { newId, type Permission } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { resolveSessionAuth, type AuthContext } from '../plugins/session';
 import { audit } from './audit';
 import { runWithAuditContext } from './audit-context';
-import { holdsAtOwnDepartment } from './access-control';
-import { hasPermission, resolveEffectivePermissions } from './permissions';
 import { reconcileOtoAppRole, type OtoAppRoleContext } from './oto-app-users';
 import { appSignOnRefusal } from './suite-flags';
 import { withTx, type Exec, type OpContext } from './tx';
@@ -64,6 +61,26 @@ export const HANDOFF_APPS = HANDOFF_AUDIENCES;
 export function appAccessPermission(app: HandoffApp): Permission {
   return `app:${app}:access`;
 }
+
+/**
+ * Audiences that take no sign-on any more, refused at the mint and at the
+ * exchange (SCRUM-694).
+ *
+ * The Lucky Wheel (`booth`) used to be signed into from the launcher
+ * (SCRUM-528): a static page posted the token and got back WHO had signed on,
+ * never a cookie. Nobody signs in at a booth since SCRUM-694, the booth page
+ * drops any `#handoff=` it is opened with, and the launcher's tile opens the
+ * wheel directly, so nothing reads that answer. A mint for it is refused with
+ * 410 `HANDOFF_APP_RETIRED`, and a booth token issued before that release
+ * (they live one TTL, a minute at the default) is spent and refused at the
+ * exchange, so it never yields a cookie or an identity.
+ *
+ * 'booth' stays in `HANDOFF_AUDIENCES` and its CHECK constraint, and in
+ * `HANDOFF_APP_ORIGINS` if a deployment still names it, because neither is
+ * worth a migration or a boot failure; `app:booth:access` still decides who
+ * sees the launcher's tile.
+ */
+export const RETIRED_HANDOFF_AUDIENCES: ReadonlySet<HandoffApp> = new Set<HandoffApp>(['booth']);
 
 // --- Configuration ----------------------------------------------------------
 
@@ -412,6 +429,15 @@ async function issueBoundHandoff(
   exec: Exec, config: HandoffConfig, opts: IssueOptions,
   expected?: { operatorId: string; branchId: string | null },
 ): Promise<IssuedHandoff> {
+  // Before the origin is looked up: the answer is the same whether or not
+  // this deployment still names an origin for the retired app.
+  if (RETIRED_HANDOFF_AUDIENCES.has(opts.audience)) {
+    throw new AppError(
+      410,
+      'HANDOFF_APP_RETIRED',
+      'The Lucky Wheel takes no sign-on: open it from its tile in the launcher',
+    );
+  }
   const origin = config.origins.get(opts.audience);
   if (!origin) {
     throw new AppError(
@@ -653,6 +679,12 @@ export async function exchangeHandoff(
     // them was written by something that is not this code.
     throw new HandoffRejected('audience', 'This hand-off is for a different app', seen);
   }
+  // A token for an app that takes no sign-on any more, minted before it was
+  // retired: spent above, and refused before anything about the session is
+  // read, so it yields neither a cookie nor a name (SCRUM-694).
+  if (RETIRED_HANDOFF_AUDIENCES.has(row.audience)) {
+    throw new HandoffRejected('audience', 'The Lucky Wheel takes no sign-on: open it from its tile in the launcher', seen);
+  }
   if (row.audienceOrigin !== normaliseOrigin(opts.origin)) {
     throw new HandoffRejected('origin', 'This hand-off was not issued for this app', seen);
   }
@@ -755,75 +787,6 @@ async function classifyLostClaim(
   // Either way the claim cannot be established, and refusing it as a replay is
   // the only answer that is never too generous.
   return new HandoffRejected('replayed', 'This hand-off has already been used', seen);
-}
-
-// --- Apps with no server of their own (SCRUM-528) ---------------------------
-
-/**
- * The audiences whose exchange sets NO cookie and hands back no credential.
- *
- * The Lucky Wheel is a static site: the page itself posts the token, and no
- * server on its origin could keep a cookie for it. Handing the page the
- * session's own token instead would put the one credential that opens every
- * app — for the session's whole life — into script on an origin that also
- * serves an unattended television in a shopping centre (D15). What the page
- * signed on through the launcher actually does is the demonstration wheel,
- * which runs in the page and calls nothing, so it needs to know WHO, not to
- * hold anything that acts. The exchange therefore returns an identity and
- * stops there: the token is spent, its origin and audience are checked, and
- * nothing leaves the api that a script on that origin could replay.
- *
- * **Nothing mints a booth token since SCRUM-694**: the Lucky Wheel takes no
- * sign-on, and the launcher's tile opens the demonstration wheel directly.
- * This branch stays all the same, as the fence that stops a booth-audience
- * token — from a launcher tab opened before that release — ever yielding a
- * cookie: removing it would make 'booth' a cookie app. 'booth' also stays in
- * `HANDOFF_AUDIENCES` and its CHECK constraint (no migration this round).
- */
-export const IDENTITY_ONLY_AUDIENCES: ReadonlySet<HandoffApp> = new Set<HandoffApp>(['booth']);
-
-export interface HandoffIdentity {
-  accountId: string;
-  /** Nickname, else name, of the linked employee — as the booth's badge shows it. */
-  name: string | null;
-  /** The staff code the booth shows beside the name. */
-  code: string;
-  /** The page forgets the identity no later than the session behind it ends. */
-  expiresAt: string;
-}
-
-/**
- * Who an identity-only exchange signed on, after re-checking the app
- * permission: unlike a cookie app, nothing on this audience comes back to the
- * api afterwards, so the exchange is the last place access can be checked.
- */
-export async function handoffIdentity(db: Db, exchanged: ExchangedHandoff): Promise<HandoffIdentity> {
-  const effective = await resolveEffectivePermissions(db, exchanged.accountId);
-  const permission = appAccessPermission(exchanged.audience);
-  if (
-    !hasPermission(effective, permission, {
-      operatorId: exchanged.operatorId,
-      branchId: exchanged.branchId ?? undefined,
-    }) &&
-    // SCRUM-592: the same department grant `POST /handoff` honours, so a token
-    // it mints is not refused here. Booth access is a counter role's, and any
-    // role may be assigned at a department.
-    !(await holdsAtOwnDepartment(db, effective, permission, exchanged.operatorId))
-  ) {
-    throw new AppError(403, 'FORBIDDEN', `Missing permission ${permission}`);
-  }
-  const [row] = await db
-    .select({ name: employee.name, nickname: employee.nickname })
-    .from(account)
-    .leftJoin(employee, eq(account.employeeId, employee.id))
-    .where(eq(account.id, exchanged.accountId))
-    .limit(1);
-  return {
-    accountId: exchanged.accountId,
-    name: row?.nickname ?? row?.name ?? null,
-    code: boothStaffCode(exchanged.accountId),
-    expiresAt: exchanged.sessionExpiresAt.toISOString(),
-  };
 }
 
 // --- Housekeeping -----------------------------------------------------------

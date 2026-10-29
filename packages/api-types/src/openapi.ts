@@ -308,7 +308,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Issue a short-lived signed hand-off token for one app origin */
+        /** @description Issue a short-lived signed hand-off token for one app origin. `booth` is refused 410 `HANDOFF_APP_RETIRED`: the Lucky Wheel takes no sign-on, and its launcher tile opens it directly. */
         post: {
             parameters: {
                 query?: never;
@@ -359,7 +359,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Exchange a hand-off token for a session cookie on this origin. An app with no server of its own (booth) gets no cookie and no credential: the answer names who signed on (`identity`) and nothing more. */
+        /** @description Exchange a hand-off token for a session cookie on this origin. A booth token (minted before the Lucky Wheel stopped taking a sign-on) is spent and refused 401 with reason `audience`, and yields no cookie. */
         post: {
             parameters: {
                 query?: never;
@@ -382,37 +382,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            /** Format: uuid */
-                            accountId: string;
-                            mustChangePassword: boolean;
-                            sessionLocked: boolean;
-                            impersonation?: {
-                                /** Format: uuid */
-                                id: string;
-                                /** Format: uuid */
-                                actorAccountId: string;
-                                /** Format: uuid */
-                                subjectAccountId: string;
-                                /** @enum {string} */
-                                targetApp: "pos" | "console" | "oto_app" | "radar" | "booth" | "inbox";
-                                /** @enum {string} */
-                                mode: "read_only" | "write_allowed";
-                                /** Format: date-time */
-                                expiresAt: string;
-                                actorName: string | null;
-                                subjectName: string | null;
-                            };
-                            /** @enum {string} */
-                            audience: "booth";
-                            identity: {
-                                /** Format: uuid */
-                                accountId: string;
-                                name: string | null;
-                                code: string;
-                                /** Format: date-time */
-                                expiresAt: string;
-                            };
-                        } | {
                             /** Format: uuid */
                             accountId: string;
                             mustChangePassword: boolean;

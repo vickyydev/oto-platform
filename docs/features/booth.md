@@ -124,7 +124,12 @@ Owner ruling of 29 October 2026: there is no staff sign-in at the booth.
   older box with somebody signed in keep their account.
 - **Removed**: the booth staff list and PINs, the staff session length, the
   `booth:staff:sign_in` permission, the box's staff verify route and the
-  launcher hand-off into the booth. The database keeps the retired column and
+  launcher hand-off into the booth: `POST /auth/handoff` refuses `booth` with
+  410 `HANDOFF_APP_RETIRED`, and a booth token minted before the release is
+  spent and refused at the exchange, with no cookie and no name (the
+  `identity` answer is gone). `booth` stays a hand-off audience in the
+  database's CHECK, and `app:booth:access` still shows the launcher's tile.
+  The database keeps the retired column and
   tables (`booth.booth_settings.staff_session_minutes`,
   `booth.booth_staff_assignment`, `edge.box_staff_session` and the box store's
   own copy) with comments; no migration. Published bundle hashes are

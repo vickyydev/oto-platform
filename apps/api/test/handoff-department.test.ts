@@ -159,21 +159,16 @@ describe('a department-only agent reaches the Inbox (SCRUM-592)', () => {
   });
 });
 
-describe('an identity-only app held at a department (SCRUM-592)', () => {
-  it('a booth token minted on a department grant is not refused at the exchange', async () => {
+describe('the retired booth hand-off, asked for on a department grant (SCRUM-592, SCRUM-694)', () => {
+  it('passes the permission check on the department grant, then is refused as retired', async () => {
     await person(oto, '+66810000594', [{ role: 'reception', scopeType: 'department', scopeId: centralDesk }]);
     const launcher = await signInAs(ctx.app, '+66810000594', PASSWORD);
     const minted = await handoff(launcher, 'booth');
-    expect(minted.statusCode, minted.body).toBe(200);
-    const exchanged = await ctx.app.inject({
-      method: 'POST',
-      url: '/auth/handoff/exchange',
-      headers: { origin: BOOTH_ORIGIN },
-      payload: { token: minted.json().token },
-    });
-    expect(exchanged.statusCode, exchanged.body).toBe(200);
-    expect(exchanged.headers['set-cookie']).toBeUndefined();
-    expect(exchanged.json().identity).toBeDefined();
+    // 410, not 403: the department grant still carries app:booth:access (the
+    // launcher's tile), and the Lucky Wheel takes no sign-on.
+    expect(minted.statusCode, minted.body).toBe(410);
+    expect(minted.json().error.code).toBe('HANDOFF_APP_RETIRED');
+    expect(minted.json()).not.toHaveProperty('token');
   });
 });
 
