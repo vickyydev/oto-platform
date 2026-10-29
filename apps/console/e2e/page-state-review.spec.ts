@@ -86,6 +86,8 @@ test('AUDIT: shrinking voucher data does not show an impossible current-page ran
 
 test('AUDIT: choosing another park hides the previous park fleet while its own read is pending', async ({ page }) => {
   let parks: { id: string; name: string }[] = [];
+  let parksLoaded!: () => void;
+  const parksReady = new Promise<void>(resolve => { parksLoaded = resolve; });
   let firstBoxName = '';
   let held = false;
   let release!: () => void;
@@ -96,9 +98,12 @@ test('AUDIT: choosing another park hides the previous park fleet while its own r
     const response = await route.fetch();
     const body = await response.json();
     parks = body.branches.filter((branch: { archived: boolean }) => !branch.archived);
+    parksLoaded();
     await route.fulfill({ response, json: body });
   });
   await page.route(/\/api\/branches\/[^/]+\/boxes(?:\?|$)/, async route => {
+    // Fleet can answer before directory metadata; name its fixture before the switch.
+    await parksReady;
     const id = new URL(route.request().url()).pathname.split('/').at(-2);
     if (id === parks[1]?.id) { held = true; await waiting; }
     const response = await route.fetch();
