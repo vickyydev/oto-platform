@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-679",
+  "kind": "source-extracted-preview-clone-offline-node-tests",
+  "startedAt": "2026-10-28T22:50:14.997Z",
+  "finishedAt": "2026-10-28T22:50:15.179Z",
+  "nativeExit": 0,
+  "passed": 7,
+  "failed": 0,
+  "complete": true,
+  "helper": "prove679-final-v5.mjs",
+  "helperSha256": "9c76fd9041f60412374d15ab08e5593b357fdae0f2999596627dd5b9908ba593",
+  "test": "preview-clone-v5.test.mjs",
+  "testSha256": "a5da82c69f2e1a6c6b6aa5666bc1868d65d732999d4d6c31e2aec5799769a3c5",
+  "logSha256": "dcf90d8030a444c7b6b727e7c2e8d42f2dd76bf5a0527da1d18db5214af7a526",
+  "helperImported": false,
+  "helperExecuted": false,
+  "browser": false,
+  "auth": false,
+  "network": false,
+  "productionSourceEdited": false,
+  "limitations": [
+    "Actual helper initScript and strict binding function evaluated with a fake fetch and synthetic Response in Node VM.",
+    "This proves pass-through/data identity/hash binding and retained strict source guards, not a native browser or staging result."
+  ]
+}
