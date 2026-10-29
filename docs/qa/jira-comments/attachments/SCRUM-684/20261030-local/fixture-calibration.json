@@ -1,0 +1,36 @@
+{
+  "ticket": "SCRUM-684",
+  "kind": "completed-pure-source-extracted-fixture-calibration",
+  "at": "2026-10-29T21:19:25.537Z",
+  "passed": true,
+  "sourceManifestSha256": "3d28bfad5c178a3b49159062d7b411bb5952f29ebcf7f3dac4e6a61431ed65aa",
+  "commonTestHarnessSha256": "ac1ce0947a98dfc6752069f90afe4285176c9a7924798611de2f9bebf727670b",
+  "runs": [
+    {
+      "mode": "old",
+      "exitCode": 1,
+      "tests": 3,
+      "passed": 2,
+      "failed": 1,
+      "logSha256": "b26911360b74f30d8b5d8b600bce8bea98fd9c6ba5d317a742f7301afd57e99b",
+      "logBytes": 1440
+    },
+    {
+      "mode": "fixed",
+      "exitCode": 0,
+      "tests": 3,
+      "passed": 3,
+      "failed": 0,
+      "logSha256": "0a786d2fa680a68eec2a3ad237f348f2c7f36f6e99fb119873d30b0d1b8fa992",
+      "logBytes": 701
+    }
+  ],
+  "oldSourcePreserved": true,
+  "fixedWorkingSourceChangedDuringCalibration": false,
+  "assertionsAndTimeoutsUnchanged": true,
+  "network": false,
+  "browser": false,
+  "database": false,
+  "repositoryMutation": false,
+  "limitation": "This proves the source fixture ordering fault under controlled fake routes; it does not recover the original CI request chronology or certify a browser/product release."
+}

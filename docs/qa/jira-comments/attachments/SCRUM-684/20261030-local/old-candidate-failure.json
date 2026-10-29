@@ -1,0 +1,24 @@
+{
+  "ticket": "SCRUM-684",
+  "sourceSha": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+  "runId": "40781396308",
+  "attempt": 1,
+  "browser": {
+    "passed": 358,
+    "failed": 1
+  },
+  "failure": {
+    "file": "apps/console/e2e/page-state-review.spec.ts",
+    "line": 119,
+    "condition": "The starting ZZ TEST Original park fleet label was not found before the park-switch action."
+  },
+  "rawLogSha256": "4a67f7acf60a97338b42fd5345a2f1a99c6fadefb2e6143003f37d6db5adf2b1",
+  "rawLogSaved": false,
+  "exactSourceLocalFile": {
+    "passed": 6,
+    "failed": 0,
+    "receipt": "../exact-candidate-browser-v1.json"
+  },
+  "retry": "old-candidate-retry.json",
+  "classification": "The controlled fixture ordering fault is reproduced separately; original CI request chronology is not recovered."
+}
