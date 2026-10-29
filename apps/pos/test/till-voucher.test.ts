@@ -668,6 +668,8 @@ describe('SCRUM-407 — an unpaid sale left at the counter till by a reload', ()
         stationName: 'Reception Till 1',
         occurredAt: apiSale().occurredAt,
         grossSatang: apiSale().totals.grossSatang,
+        // No account to compare against: offered the void, never the resume.
+        resumable: false,
       },
     ]);
 

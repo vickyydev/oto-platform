@@ -365,13 +365,69 @@ export function readDisplayAnswer(document: StationSessionDocument, requestId: s
 
 interface ConnectedDisplay { id: string; name: string; connected: boolean }
 const POLL_MS = 1_500;
-// The browser document keeps its publisher identity through a paused or
-// remounted till. A different tab cannot silently take a live display lease.
+/**
+ * THE PUBLISHER'S IDENTITY ON A STATION — the `holder` the lease is taken
+ * under. The browser document keeps it through a paused or remounted till, and
+ * since the reload fix it keeps it through a reload too: the id is written to
+ * `sessionStorage` (this tab) with a `localStorage` copy keyed by station, so
+ * a refreshed page comes back as the SAME holder and its lease and the display
+ * carry on, rather than as "another till" the display refuses until the old
+ * lease expires. Sign-out forgets it (`takeTicketDisplayLeaseForSignOut`): the
+ * next shift on this browser is a new holder. The manager's takeover path on
+ * the display is untouched — it is still the way to take a station from a
+ * holder that is genuinely somebody else.
+ */
+const HOLDER_KEY_PREFIX = 'oto.display.holder.';
+const holderKey = (stationId: string): string => `${HOLDER_KEY_PREFIX}${stationId}`;
+type WebStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'>;
+function holderStores(): WebStorage[] {
+  const found: WebStorage[] = [];
+  for (const name of ['sessionStorage', 'localStorage'] as const) {
+    try {
+      const store = (globalThis as unknown as Record<string, WebStorage | undefined>)[name];
+      if (store) found.push(store);
+    } catch {
+      // Blocked site data: the holder lives for this page only.
+    }
+  }
+  return found;
+}
 const holders = new Map<string,string>();
 function holderFor(stationId: string): string {
   let holder = holders.get(stationId);
-  if (!holder) { holder = crypto.randomUUID(); holders.set(stationId,holder); }
+  if (!holder) {
+    // The tab's own memory first, then the browser's, then a new identity.
+    for (const store of holderStores()) {
+      try {
+        const kept = store.getItem(holderKey(stationId));
+        if (typeof kept === 'string' && kept.length > 0) { holder = kept; break; }
+      } catch {
+        // Try the next store.
+      }
+    }
+    holder ??= crypto.randomUUID();
+    holders.set(stationId, holder);
+    for (const store of holderStores()) {
+      try { store.setItem(holderKey(stationId), holder); } catch { /* best effort */ }
+    }
+  }
   return holder;
+}
+/** Forget every station's holder, in memory and in both stores — the shift has ended. */
+export function forgetDisplayHolders(): void {
+  holders.clear();
+  for (const store of holderStores()) {
+    try {
+      const keys: string[] = [];
+      for (let i = 0; i < store.length; i += 1) {
+        const key = store.key(i);
+        if (key && key.startsWith(HOLDER_KEY_PREFIX)) keys.push(key);
+      }
+      for (const key of keys) store.removeItem(key);
+    } catch {
+      // Nothing to forget here.
+    }
+  }
 }
 
 interface DisplayPublisher {
@@ -394,6 +450,8 @@ let signOutPublisher: DisplayPublisher | null = null;
 export function takeTicketDisplayLeaseForSignOut(): Promise<string | undefined> {
   const channel = signOutPublisher;
   signOutPublisher = null;
+  // The shift ends: the next sign-in on this browser is a new holder.
+  forgetDisplayHolders();
   if (!channel) return Promise.resolve(undefined);
   channel.signingOut = true;
   if (!channel.claiming) return Promise.resolve(channel.leaseId ?? undefined);

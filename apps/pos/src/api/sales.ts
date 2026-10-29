@@ -554,11 +554,25 @@ export interface ApiSale {
   receiptSeries?: string | null;
   receiptSeq?: number | null;
   stationId: string;
+  branchId?: string;
   boxId?: string | null;
+  memberId?: string | null;
+  visitId?: string | null;
   pricingMode: RateMode;
+  pricingModeReason?: string;
   customerTier: string;
   totals: ApiSaleTotals;
   engineVersion: string;
+  /**
+   * WHO RANG IT UP, on a list row (`listSales`): the account the sale was
+   * written under, and its name. The till reads it to tell its own unpaid
+   * sale from a colleague's when it opens after a reload (`lib/leftBehindSale.ts`):
+   * only a sale this account rang up at this station is offered to resume.
+   * Absent on the detail and commit answers.
+   */
+  soldBy?: { accountId: string; name: string | null } | null;
+  /** The till's name, on a list row. */
+  stationName?: string | null;
 }
 
 export interface SaleCommitResult {

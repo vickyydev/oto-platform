@@ -101,6 +101,8 @@ export interface ApiSale {
   pricingMode: string;
   pricingModeReason: string;
   customerTier: string;
+  /** The pricing engine the sale was totalled by; read back when a rung-up sale is resumed. */
+  engineVersion?: string;
   /**
    * Optional because a deployment that has not taken SCRUM-333 yet answers
    * without it, and a drawer that read `undefined.documentKind` would take the
@@ -204,6 +206,21 @@ export interface ApiSaleDiscount {
   reason: string | null;
   note: string | null;
   appliedByName: string | null;
+  /**
+   * The rest of the row as the platform answers it, read by the ticket till
+   * when it rebuilds a rung-up sale's cart after a reload (`lib/resumeSale.ts`):
+   * a staff discount's scope and target, its value as entered (a percentage in
+   * basis points, or satang), who applied it and when. Optional on the wire
+   * so an older answer still opens in History.
+   */
+  sequence?: number;
+  valueSatang?: number | null;
+  scope?: 'order' | 'line' | string;
+  targetLineId?: string | null;
+  targetComponent?: unknown;
+  exhaustedReason?: string | null;
+  appliedByAccountId?: string | null;
+  appliedAt?: string | null;
 }
 
 /**

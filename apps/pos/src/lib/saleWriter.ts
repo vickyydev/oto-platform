@@ -289,6 +289,17 @@ export interface SaleWriter {
   declareUnwritten: (reason: string) => string;
   /** Finish with this sale: new ids next time, and any answer still in flight is ignored. */
   reset: () => void;
+  /**
+   * TAKE OVER A SALE THE PLATFORM ALREADY HOLDS, rung up by this account at
+   * this station before the page was reloaded (`lib/resumeSale.ts`). The
+   * writer then stands exactly where it stood after that sale's Pay: the sale
+   * is `committed`, `finalise` closes it under its own id, `cancel` voids it,
+   * and `ownsSale` answers true for it — so no voucher refusal offers to void
+   * it under the person paying for it. Nothing is written: the platform's row
+   * is the one in hand. False, and nothing changes, for a sale that is not
+   * open — a closed sale is its confirmation's, a voided one is nobody's.
+   */
+  adopt: (sale: ApiSale) => boolean;
   /** The sale id this attempt is writing under, for the screen and the audit trail. */
   saleId: string | null;
   /** The sale the platform holds for the cart on screen, when it holds one. */
@@ -763,6 +774,30 @@ export function useSaleWriter(): SaleWriter {
     [],
   );
 
+  const adopt = useCallback((sale: ApiSale): boolean => {
+    if (sale.status !== 'tendering' && sale.status !== 'paid') return false;
+    // A new sale on screen: whatever was in flight for the last one is dropped.
+    epochRef.current += 1;
+    attemptsRef.current = 0;
+    renewKeyRef.current = false;
+    inFlightRef.current = null;
+    supersededRef.current = new Map();
+    // The ids a retry of this sale's close goes under. The action id is this
+    // screen's own — the press that rang the sale up is not replayed — and the
+    // signature is one no cart on this screen can produce, so `commit` is never
+    // answered with this sale for a different order.
+    saleRef.current = {
+      saleId: sale.id,
+      actionId: newId(),
+      occurredAt: sale.occurredAt,
+      signature: `resumed:${sale.id}`,
+    };
+    sentRef.current = new Set([sale.id]);
+    committedRef.current = sale;
+    setState({ kind: 'committed', saleId: sale.id, sale });
+    return true;
+  }, []);
+
   const declareUnwritten = useCallback((reason: string): string => {
     const ids =
       saleRef.current ??
@@ -785,6 +820,7 @@ export function useSaleWriter(): SaleWriter {
     cancel,
     declareUnwritten,
     reset,
+    adopt,
     saleId: saleRef.current?.saleId ?? null,
     committed: committedRef.current,
     ownsSale,

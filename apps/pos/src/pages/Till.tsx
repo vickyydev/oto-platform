@@ -107,6 +107,11 @@ import {
 } from '@/components/till/RedeemVoucher';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { useLeftBehindSales } from '@/lib/leftBehindSale';
+import { rebuildResumedSale } from '@/lib/resumeSale';
+import { forgetSaleOnScreen, rememberSaleOnScreen } from '@/lib/saleOnScreen';
+import { getSale } from '@/api/history';
+import type { CartQuoteState } from '@/lib/cartQuote';
+import { formatVoucherStamp } from '@/lib/tillVoucher';
 import { apiChildToSavedChild, apiMemberToMember } from '@/api/mappers';
 import { VisitChildrenModal } from '@/components/till/VisitChildrenModal';
 import { OrderSummary } from '@/components/till/OrderSummary';
@@ -144,6 +149,9 @@ function lineDiscountComponents(line: CartLine): DiscountComponentOption[] {
     amount: item.subtotal,
   }));
 }
+
+/** One empty cart, so a resumed sale does not hand a new array to every render. */
+const NO_LINES: readonly CartLine[] = [];
 
 function reviewDate() {
   const now = new Date();
@@ -302,9 +310,31 @@ export default function Till() {
     branchId: apiBranchIdForSlug(branch.id),
     stationId: station?.stationId ?? null,
     stationName: station?.stationName ?? null,
+    accountId: operator?.id ?? null,
     enabled: !locked && can('pos:sale:read'),
     ownsSale: saleWriter.ownsSale,
   });
+
+  /**
+   * THE SALE THIS SCREEN RESUMED AFTER A RELOAD — the owner's rule: a sale rung
+   * up at this till comes back on its payment screen until it is paid, voided
+   * or thrown away. Set by `resumeSale` from the platform's read of the sale
+   * (`lib/resumeSale.ts`); its `cart` is the sale's own figures, which stand in
+   * for the live quote while it is on screen. Only a sale THIS account rang up
+   * at THIS station is resumed (`useLeftBehindSales.resumeId`, `resumable`);
+   * any other unpaid sale here is offered the void alone, as before. The
+   * order of a resumed sale cannot be changed: Pay it, or Cancel voids it.
+   */
+  const [resumed, setResumed] = useState<{ saleId: string; occurredAt: string; cart: CartQuoteState } | null>(null);
+  const resumingRef = useRef(false);
+  const RESUMED_ORDER_FROZEN =
+    'This sale was rung up before the page reloaded. Take the payment, or Cancel to void it and ring up a new order.';
+  /** Says why, and answers true, when the order on screen is a resumed sale's. */
+  const orderFrozen = (): boolean => {
+    if (!resumed) return false;
+    toast({ title: 'The order cannot be changed', description: RESUMED_ORDER_FROZEN });
+    return true;
+  };
 
   // Event-pass flow — selling a flat-priced camp/event entry is self-contained
   // (capture → pay → check-in choice) and never touches the tier cart, so it runs
@@ -705,8 +735,10 @@ export default function Till() {
    * figures stand, and re-quoting a finished sale could only disagree with the
    * receipt in the visitor's hand.
    */
-  const cart = useCartQuote({
-    lines,
+  const liveCart = useCartQuote({
+    // A resumed sale is never re-quoted: the platform's own figures stand
+    // (`resumed.cart`), so the quote is asked about nothing while it is on screen.
+    lines: resumed ? NO_LINES : lines,
     discounts,
     manualDiscounts,
     identity: cartIdentity,
@@ -714,6 +746,7 @@ export default function Till() {
     // S2-10b — the held voucher rides by its code; the platform prices it.
     promoCodes: voucherCodes,
   });
+  const cart: CartQuoteState = resumed?.cart ?? liveCart;
 
   /**
    * L38 — THIS SALE OWES NOTHING: a voucher took it to ฿0, a hand-over prize or
@@ -732,6 +765,8 @@ export default function Till() {
   const resetSale = () => {
     saleEpochRef.current += 1;
     saleWriter.reset();
+    setResumed(null);
+    if (station?.stationId) forgetSaleOnScreen(station.stationId);
     setCompletionRetry(null);
     voucher.reset();
     setVoucherUsed(null);
@@ -770,6 +805,130 @@ export default function Till() {
     setConsentCompletedScope(null);
     setSupervisionResolved(false);
   };
+
+  /**
+   * RESUME A SALE RUNG UP AT THIS TILL BEFORE THE PAGE RELOADED.
+   *
+   * The platform's read of the sale (`GET /sales/:id`) is the whole of it:
+   * the lines are rebuilt from the ledger rows, the figures are the sale's
+   * own, the money already taken on it is read by the payment stage
+   * (`resumeSaleId`), and the writer takes the sale over (`saleWriter.adopt`)
+   * so Confirm closes it and Cancel voids it exactly as before the reload.
+   * The till then goes straight to the payment screen. A sale no longer open
+   * — paid or voided since — is not resumed, and the card for it goes.
+   */
+  const resumeSale = async (saleId: string): Promise<void> => {
+    const stationId = station?.stationId;
+    if (!stationId || !operator || resumingRef.current || locked) return;
+    resumingRef.current = true;
+    const epoch = saleEpochRef.current;
+    try {
+      const detail = await getSale(saleId);
+      if (saleEpochRef.current !== epoch) return;
+      const sale = detail.sale;
+      if (sale.status !== 'tendering' || sale.stationId !== stationId) {
+        leftBehind.dismiss(saleId);
+        forgetSaleOnScreen(stationId);
+        toast({
+          title: 'That sale is no longer open here',
+          description:
+            sale.status === 'voided' ? 'It has been voided.'
+              : sale.status === 'finalised' || sale.status === 'refunded' ? 'It has been paid — find it in the sale list.'
+                : sale.status === 'paid' ? 'Its payment is being recorded on another screen.'
+                  : 'It was rung up at another till.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const rebuilt = rebuildResumedSale(detail, {
+        ticketTypes: getTicketTypes(),
+        addOns: getAddOns(),
+        discountByCode: getDiscountByCode,
+      });
+      if (!rebuilt) {
+        leftBehind.dismiss(saleId);
+        toast({
+          title: 'That sale is not a ticket sale',
+          description: 'It was taken at the restaurant or shop counter and is resumed there.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      // The family's record, when the sale names one; a lookup that fails
+      // leaves the sale a walk-in's on this screen — the platform still has it.
+      let found: Member | null = null;
+      if (sale.memberId) {
+        try {
+          found = apiMemberToMember((await membersApi.get(sale.memberId)).member);
+        } catch {
+          found = null;
+        }
+      }
+      if (saleEpochRef.current !== epoch) return;
+      const adopted: ApiSale = {
+        ...sale,
+        pricingMode: rebuilt.cart.quote.pricingMode,
+        engineVersion: sale.engineVersion ?? rebuilt.cart.quote.engineVersion,
+      };
+      if (!saleWriter.adopt(adopted)) return;
+      setResumed({ saleId, occurredAt: sale.occurredAt, cart: rebuilt.cart });
+      setTier(rebuilt.tier);
+      setLines(rebuilt.lines);
+      setDiscounts(rebuilt.discounts);
+      setManualDiscounts(rebuilt.manualDiscounts);
+      setActiveLineId(null);
+      setMember(found);
+      if (found) {
+        setCustomerPhone(found.phone);
+        setCustomerNickname(found.nickname);
+        if (found.preferredChannel) setCustomerContactChannel(found.preferredChannel);
+      }
+      setConfirmedVisitId(sale.visitId ?? null);
+      setSupervisionResolved(true);
+      setPendingPaymentMethod(null);
+      setCancelRefusal(null);
+      setStep(5);
+      leftBehind.dismiss(saleId);
+      rememberSaleOnScreen(stationId, saleId);
+      if (rebuilt.supervised) {
+        toast({
+          title: 'Resumed with a supervised child on it',
+          description: 'After payment, check the child in from the Drop-Off board.',
+        });
+      }
+    } catch (err) {
+      if (saleEpochRef.current !== epoch) return;
+      toast({
+        title: 'Could not resume the sale',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      resumingRef.current = false;
+    }
+  };
+
+  // The till opened on an unpaid sale this account rang up here: back to its
+  // payment screen, while nothing else has been started on this screen.
+  useEffect(() => {
+    const saleId = leftBehind.resumeId;
+    if (!saleId || locked || resumed || step !== 1 || lines.length > 0 || saleWriter.state.kind !== 'idle') return;
+    void resumeSale(saleId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per sale the platform names; resumeSale is redefined every render
+  }, [leftBehind.resumeId, locked]);
+
+  // Which sale is on this screen's payment step, for the reload that may come:
+  // remembered while it is rung up and unpaid, forgotten once it is closed
+  // (`resetSale` forgets it when the sale is voided or thrown away). An idle
+  // writer forgets nothing: the till opens idle, and what it remembered then
+  // is exactly what `useLeftBehindSales` is about to read.
+  const rungUpSaleId = saleWriter.state.kind === 'committed' ? saleWriter.state.saleId : null;
+  useEffect(() => {
+    const stationId = station?.stationId;
+    if (!stationId) return;
+    if (rungUpSaleId && step === 5) rememberSaleOnScreen(stationId, rungUpSaleId);
+    else if (saleWriter.state.kind === 'written') forgetSaleOnScreen(stationId);
+  }, [rungUpSaleId, saleWriter.state.kind, step, station?.stationId]);
 
   // Both the inline harness and a paired display use the same lookup. The
   // separate screen delivers its phone through the station document.
@@ -1190,6 +1349,7 @@ export default function Till() {
   }, [cart.quote.tierClaimRefusal, cart.quote.tierSource, tierClaimActionId, tier]);
 
   const handleRemoveLine = (id: string) => {
+    if (orderFrozen()) return;
     // Removing a line changes the cart composition — re-run supervision if needed.
     setSupervisionResolved(false);
     // Re-normalize after removal: if the removed line was a nanny group's fee
@@ -1208,10 +1368,12 @@ export default function Till() {
   };
 
   const handleApplyManualDiscount = (md: ManualDiscount) => {
+    if (orderFrozen()) return;
     setManualDiscounts(prev => [...prev, md]);
   };
 
   const handleRemoveManualDiscount = (id: string) => {
+    if (orderFrozen()) return;
     setManualDiscounts(prev => prev.filter(md => md.id !== id));
   };
 
@@ -1221,6 +1383,7 @@ export default function Till() {
    * inactive, or doesn't apply to anything in the current cart.
    */
   const handleApplyPromoCode = (code: string) => {
+    if (orderFrozen()) return;
     // S2-10b — no promo code beside a voucher: the platform's own rule, said
     // here before the code is taken rather than at Pay.
     if (voucher.held) {
@@ -1276,6 +1439,7 @@ export default function Till() {
 
   /** Remove one applied promo code (and its free-item line, if any). */
   const handleRemoveDiscount = (code: string) => {
+    if (orderFrozen()) return;
     setDiscounts(prev => prev.filter(d => d.code !== code));
     setLines(prev => prev.filter(l => l.id !== `promo-${code}`));
     setPromoError('');
@@ -1556,6 +1720,7 @@ export default function Till() {
   };
 
   const handleConfigureLine = (id: string) => {
+    if (orderFrozen()) return;
     setActiveLineId(id);
     setStep(3);
   };
@@ -1594,6 +1759,7 @@ export default function Till() {
     id: string,
     updates: Partial<Pick<CartLine, 'kids' | 'adults' | 'socks' | 'addOns'>>
   ) => {
+    if (orderFrozen()) return;
     // Editing participants changes the cart composition — re-run supervision.
     setSupervisionResolved(false);
     setLines(prev => {
@@ -2613,6 +2779,15 @@ export default function Till() {
       message,
       retryable: false,
     });
+    // A resumed sale is the platform's row already: nothing is written again,
+    // and the sale in hand is the one the tender closes.
+    if (resumed) {
+      const held = saleWriter.committed;
+      if (held && held.id === resumed.saleId) {
+        return { ok: true, written: true, sale: held, replay: true, saleId: held.id };
+      }
+      return refusal(RESUMED_ORDER_FROZEN);
+    }
     if (!preflightSale()) return refusal('Finish the order before taking payment.');
     const payload = commitPayload();
     if (!payload) return refusal(unwritableReason());
@@ -2636,7 +2811,8 @@ export default function Till() {
   // Entering the payment screen is the Pay press. Every route into it — a known
   // member, the customer-details handoff, the supervision gate — arrives here.
   useEffect(() => {
-    if (locked || step !== 5) return;
+    // A resumed sale was rung up before the reload: the platform holds it.
+    if (locked || step !== 5 || resumed) return;
     void recordSaleOnPlatform(saleEpochRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once on entering the payment screen: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
   }, [step, locked]);
@@ -2827,6 +3003,9 @@ export default function Till() {
     active: step === 5 && completionRetry === null,
     paused: locked,
     totalSatang: toSatang(cart.totals.total),
+    // A resumed sale: the money already taken on it is read from the platform
+    // before anything more is collected, as a lost-reply retry reads it.
+    ...(resumed ? { resumeSaleId: resumed.saleId } : {}),
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
     onComplete: completeSale,
@@ -2948,6 +3127,8 @@ export default function Till() {
     // at the method grid; the sale is still rung up for the next tender.
     if (paymentStage.canCancel) { void paymentStage.cancel(); return; }
     if (!paymentStage.canBack) return;
+    // A resumed sale has no order step behind it: it is paid, or Cancel voids it.
+    if (orderFrozen()) return;
     setPendingPaymentMethod(null);
     setStep(4);
   };
@@ -3275,7 +3456,12 @@ export default function Till() {
                   state={saleWriter.state}
                   onRetry={handleRetrySaleWrite}
                   onDismiss={handlePaymentBack}
-                /> : undefined
+                /> : resumed ? (
+                  <div className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm" data-testid="resumed-sale-notice">
+                    Resumed after a reload: this sale was rung up at this till
+                    {' '}{formatVoucherStamp(resumed.occurredAt, { time: true })}. Take the payment, or Cancel to void it.
+                  </div>
+                ) : undefined
               }
             />}
             {completionRetry && (
@@ -3364,7 +3550,7 @@ export default function Till() {
             onRemoveDiscount={handleRemoveDiscount}
             onApplyPromoCode={handleApplyPromoCode}
             promoError={promoError}
-            onAddManualDiscount={() => setShowManualDiscountModal(true)}
+            onAddManualDiscount={() => { if (!orderFrozen()) setShowManualDiscountModal(true); }}
             onRemoveManualDiscount={handleRemoveManualDiscount}
             onPay={handlePay}
             onCancel={() => void handleCancel()}
@@ -3443,7 +3629,8 @@ export default function Till() {
                     testId="cancel-refusal"
                   />
                 )}
-                {/* SCRUM-407 — an unpaid sale a reload or a tab left behind at this till. */}
+                {/* SCRUM-407 — an unpaid sale a reload or a tab left behind at this till;
+                    one this account rang up here can be resumed as well as voided. */}
                 {leftBehind.sales.map((left) => (
                   <LeftBehindSaleNotice
                     key={left.saleId}
@@ -3452,6 +3639,9 @@ export default function Till() {
                     onDismiss={() => leftBehind.dismiss(left.saleId)}
                     {...(can('pos:sale:void')
                       ? { onVoid: () => void leftBehind.voidSale(left.saleId) }
+                      : {})}
+                    {...(left.resumable && !resumed
+                      ? { onResume: () => void resumeSale(left.saleId) }
                       : {})}
                   />
                 ))}

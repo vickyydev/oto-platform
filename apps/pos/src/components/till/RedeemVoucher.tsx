@@ -288,11 +288,18 @@ function RungUpSaleOffer({
   sale,
   busy,
   onVoid,
+  onResume,
   voidLabel = 'Void that unpaid sale and use the voucher here',
 }: {
   sale: RungUpSale;
   busy?: boolean;
   onVoid?: () => void;
+  /**
+   * Continue the sale on this screen's payment step: offered only for a sale
+   * this account rang up at this station (`lib/leftBehindSale.ts`), the one
+   * a reload took from under the person paying for it.
+   */
+  onResume?: () => void;
   /** SCRUM-407 — the press's words where no voucher is waiting on the void. */
   voidLabel?: string;
 }) {
@@ -311,6 +318,17 @@ function RungUpSaleOffer({
           Rung up {minutesAgo(Math.max(0, age))} ago — if it is being paid for on another screen,
           finish it there instead.
         </div>
+      )}
+      {onResume && (
+        <Button
+          size="sm"
+          className="h-auto w-full whitespace-normal py-1.5"
+          disabled={busy}
+          onClick={onResume}
+          data-testid="resume-sale"
+        >
+          Resume this sale
+        </Button>
       )}
       {onVoid ? (
         <Button
@@ -341,17 +359,20 @@ export function LeftBehindSaleNotice({
   sale,
   busy,
   onVoid,
+  onResume,
   onDismiss,
 }: {
   sale: RungUpSale;
   busy?: boolean;
   /** Absent for an account without the void permission. */
   onVoid?: () => void;
+  /** Present only for a sale this account rang up at this station: continue it here. */
+  onResume?: () => void;
   onDismiss: () => void;
 }) {
   return (
     <TillRefusalNotice
-      message="A sale rung up at this till was left unpaid"
+      message={onResume ? 'Your sale rung up at this till was left unpaid' : 'A sale rung up at this till was left unpaid'}
       onDismiss={onDismiss}
       testId="left-behind-sale"
     >
@@ -360,6 +381,7 @@ export function LeftBehindSaleNotice({
         voidLabel="Void that unpaid sale"
         {...(busy !== undefined ? { busy } : {})}
         {...(onVoid ? { onVoid } : {})}
+        {...(onResume ? { onResume } : {})}
       />
     </TillRefusalNotice>
   );
