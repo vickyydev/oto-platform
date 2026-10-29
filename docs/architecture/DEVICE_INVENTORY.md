@@ -240,8 +240,9 @@ that speaks the HTTP contract above; the TTL-to-Ethernet module model. All are
 `ScanInput` (HID/CDC on the box → station channel), `PaymentTerminal` (GHL,
 Digio), `QrPayment` (SCB API, section 7 of the plan), `Gate` (reader HTTP
 server + GE-X2 serial client), `CashDrawer` (kick through the receipt printer),
-`Button` (booth), `Badge/PIN` (booth sign-in). Each ships with a simulator and
-a control panel in the Console.
+`Button` (booth). Each ships with a simulator and a control panel in the
+Console. (`Badge/PIN`, the booth sign-in, was removed by SCRUM-694: nobody
+signs in at a booth, and the slip names today's roster.)
 
 ## 9. Web research on the device models (recorded 2026-09-20)
 

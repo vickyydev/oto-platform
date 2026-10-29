@@ -1689,8 +1689,9 @@ for the next import. **The status table is the quickest honest answer to
   and wins over it: **random 10-character booth-prefixed codes** minted on the
   box (not 4-digit), no idle video, booths managed like stations, printed
   80 mm vouchers, server-side-only redemption with a hard single-use block,
-  staff PIN/badge sign-in that **must never take the booth down**, and
-  inventory-linked prizes (deferred to Sprint 3).
+  no staff sign-in at the booth (SCRUM-694 removed the PIN/badge sign-in: the
+  slip names today's roster, and nothing a member of staff does can take the
+  booth down), and inventory-linked prizes (deferred to Sprint 3).
 - **`console.md`** — the launcher and the Console as two products: the
   launcher is the front door with a tile per app; the Console is the control
   room (people and access, organisation, devices, activity, analytics, health,
