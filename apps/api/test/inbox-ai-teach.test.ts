@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeToolLoopClient } from '@oto/assistant';
 import { schema as s } from '@oto/db';
 import { newId } from '@oto/shared';
-import { TEACH_LINES } from '../src/services/inbox/ai-teach';
+import { TEACH_LINES, teachToolDefinitions } from '../src/services/inbox/ai-teach';
 import { final, tool, toolResultsSeen } from './assistant-support';
 import { teardownAll } from './helpers';
 import { aiWorld, decision, staff, teamOf, type AiWorld } from './inbox-ai-support';
@@ -216,5 +216,68 @@ describe('the teach chat', () => {
     ]);
     const [entry] = await w.ctx.db.select().from(s.kbEntry).where(eq(s.kbEntry.id, res.body.cards[0]!.id));
     expect(entry).toMatchObject({ status: 'draft', key: 'faq.lost-property', updatedByAccountId: editorId });
+  });
+});
+
+describe('the curator’s context and tools (hardening, F7)', () => {
+  it('the sentence typed is kept without its phone number', async () => {
+    const said = 'Call me on 081-234-5678 or +66 81 002 9001 if unsure. When someone lost something, ask what it looks like.';
+    w.ctx.app.inboxAi.teacher = new FakeToolLoopClient([
+      tool('create_rule', { intent: 'lost_item', instruction: 'When someone lost something, ask what it looks like.' }),
+      final('Saved a draft rule.'),
+    ]);
+    const res = await teachCall(editorCookie, [{ role: 'user', text: said }]);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    const [row] = await w.ctx.db.select().from(s.aiRule).where(eq(s.aiRule.id, res.body.cards[0]!.id));
+    expect(row!.taughtFrom).toBe('Call me on … or … if unsure. When someone lost something, ask what it looks like.');
+    expect(row!.taughtFrom).not.toMatch(/\d{3}/);
+  });
+
+  it('archive_draft retires the caller’s own draft so it can be saved again for one park, and nothing else', async () => {
+    const instruction = 'Mention the park name with the hours.';
+    w.ctx.app.inboxAi.teacher = new FakeToolLoopClient([tool('create_rule', { intent: 'hours', instruction }), final('Saved.')]);
+    const first = await teachCall(editorCookie, [{ role: 'user', text: 'Always say which park the hours are for.' }]);
+    expect(first.status, JSON.stringify(first.body)).toBe(200);
+    const oldId = first.body.cards[0]!.id;
+
+    // "Make that Chalong only": the draft archived, a Chalong draft saved, one card for the new one.
+    const fake = new FakeToolLoopClient([
+      tool('archive_draft', { id: oldId }),
+      tool('create_rule', { intent: 'hours', park: 'chalong', instruction }),
+      final('Done: that rule is for Chalong only now, waiting under Assistant → Rules.'),
+    ]);
+    w.ctx.app.inboxAi.teacher = fake;
+    const second = await teachCall(editorCookie, [{ role: 'user', text: 'Make that Chalong only.' }]);
+    expect(second.status, JSON.stringify(second.body)).toBe(200);
+    const system = fake.calls[0]!.system.map((b) => b.text).join('\n');
+    expect(system).toContain(`rule ${oldId} · hours`);
+    expect(system).toContain('→ today: silent hand-over');
+    const [archived, created] = toolResultsSeen(fake);
+    expect(archived).toMatchObject({ isError: false, data: { id: oldId, kind: 'rule', status: 'archived' } });
+    expect(created).toMatchObject({ isError: false, data: { status: 'draft' } });
+    expect(second.body.cards).toHaveLength(1);
+    expect(second.body.cards[0]!.id).not.toBe(oldId);
+    expect((await w.ctx.db.select().from(s.aiRule).where(eq(s.aiRule.id, oldId)))[0]!.status).toBe('archived');
+    expect((await w.ctx.db.select().from(s.aiRule).where(eq(s.aiRule.id, second.body.cards[0]!.id)))[0]).toMatchObject({
+      status: 'draft',
+      branchId: w.chalong,
+      intent: 'hours',
+    });
+
+    // Not one of the caller's drafts of the last day: an archived one, or an id nobody saved.
+    const refusedFake = new FakeToolLoopClient([tool('archive_draft', { id: oldId }), tool('archive_draft', { id: newId() }), final('I can’t archive those.')]);
+    w.ctx.app.inboxAi.teacher = refusedFake;
+    const third = await teachCall(editorCookie, [{ role: 'user', text: 'Archive those.' }]);
+    expect(third.status).toBe(200);
+    expect(toolResultsSeen(refusedFake).map((r) => (r.data as { error?: { code: string } }).error?.code)).toEqual(['NOT_YOUR_DRAFT', 'NOT_YOUR_DRAFT']);
+  });
+
+  it('create_fact says which kinds of message each topic answers; create_rule asks for the question in three languages', () => {
+    const tools = new Map(teachToolDefinitions().map((t) => [t.name, t.description]));
+    expect([...tools.keys()]).toEqual(['archive_draft', 'create_fact', 'create_rule', 'dry_run', 'search_knowledge']);
+    expect(tools.get('create_fact')).toContain('hours_note → hours;');
+    expect(tools.get('create_fact')).toContain('socks → socks;');
+    expect(tools.get('create_fact')).toMatch(/faq → [a-z_, ]*\bfaq\b/);
+    expect(tools.get('create_rule')).toContain('ALWAYS in English, Thai and Russian');
   });
 });

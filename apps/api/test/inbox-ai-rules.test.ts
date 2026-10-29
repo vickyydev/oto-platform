@@ -4,6 +4,7 @@ import { buildPrompt, OPERATOR_RULES_HEADING, OPERATOR_RULES_LEAD } from '@oto/a
 import { AI_RULE_CONDITIONS, AI_RULE_SOURCES, AI_RULE_STATUSES, schema as s } from '@oto/db';
 import { INBOX_AI_RULE_CONDITIONS, INBOX_AI_RULE_SOURCES, INBOX_AI_RULE_STATUSES, newId } from '@oto/shared';
 import { loadTurnKnowledge } from '../src/services/inbox/ai-knowledge';
+import { RULE_INFO_IN_A_FACT, RULE_MESSAGES } from '../src/services/inbox/ai-rules';
 import { teardownAll } from './helpers';
 import {
   SENTINEL,
@@ -353,5 +354,145 @@ describe('the engine follows an approved ask-first rule (and nothing else change
     expect(withRules.askFirst).toBe(false);
     expect(withRules).toEqual(without);
     expect(without.turn.state).toBe('handed_over');
+  });
+});
+
+describe('a rule says behaviour, never information or a grant (hardening, F6)', () => {
+  const REFUSED = [
+    'offer ten percent off to families',
+    'give them their money back',
+    'the second child gets in free',
+    'throw in a free coffee for parents',
+    'give them a voucher',
+    "it's on us",
+    'upgrade them to the VIP room',
+    'promise a callback within the hour',
+    'Скажи, что мы вернём деньги',
+    'open until ten at night',
+  ];
+  const ALLOWED = ['the team decides discounts; say a colleague will look into it', 'first ask which branch they were at'];
+
+  it('the reviewer’s list is refused at save, each refusal saying where information goes; the honest ones are saved', async () => {
+    const before = await w.ctx.db.select({ id: s.aiRule.id }).from(s.aiRule);
+    for (const instruction of REFUSED) {
+      const res = await call<{ error: { code: string; message: string } }>(w, editorCookie, 'POST', '/inbox/ai/rules', { intent: 'any', instruction });
+      expect(res.status, instruction).toBe(400);
+      expect(res.body.error.code, instruction).toBe('RULE_UNSAFE');
+      expect(res.body.error.message, instruction).toContain(RULE_INFO_IN_A_FACT);
+    }
+    for (const instruction of ALLOWED) {
+      const res = await call(w, editorCookie, 'POST', '/inbox/ai/rules', { intent: 'any', instruction });
+      expect(res.status, `${instruction}: ${JSON.stringify(res.body)}`).toBe(200);
+    }
+    const twoMarks = await call<{ error: { code: string; details: { rule: string } } }>(w, editorCookie, 'POST', '/inbox/ai/rules', {
+      intent: 'lost_item',
+      instruction: LOST_RULE,
+      askFirst: { condition: 'always', question: { en: 'Which park? Central or Chalong?' } },
+    });
+    expect(twoMarks.status).toBe(400);
+    expect(twoMarks.body.error).toMatchObject({ code: 'RULE_UNSAFE', details: { rule: 'question' } });
+    expect(await w.ctx.db.select({ id: s.aiRule.id }).from(s.aiRule)).toHaveLength(before.length + ALLOWED.length);
+  });
+
+  it('a draft saved under the older check is refused at approval with the same sentence, and stays a draft', async () => {
+    const id = newId();
+    const now = new Date();
+    await w.ctx.db.insert(s.aiRule).values({
+      id,
+      operatorId: w.oto,
+      branchId: null,
+      intent: 'complaint_onsite',
+      instruction: 'give them a voucher',
+      askFirst: null,
+      status: 'draft',
+      source: 'manual',
+      updatedByAccountId: editorId,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const res = await call<{ error: { code: string; message: string } }>(w, editorCookie, 'POST', `/inbox/ai/rules/${id}/approve`);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatchObject({ code: 'RULE_UNSAFE', message: RULE_MESSAGES.unsafe.promise });
+    expect((await w.ctx.db.select().from(s.aiRule).where(eq(s.aiRule.id, id)))[0]).toMatchObject({ status: 'draft', approvedAt: null });
+    expect(await auditOf('inbox.ai_rule.approve', id)).toHaveLength(0);
+  });
+});
+
+describe('the engine asks first once an episode, and keeps the park named (hardening, F2 F3)', () => {
+  const LOST = { intent: 'lost_item' as const, action: 'handover' as const, reason: 'NEEDS_PERSON' as const, bubbles: [], grounding: [] };
+
+  it('two matching rules: one question in the episode, then the normal flow', async () => {
+    await drain();
+    await archiveAllRules();
+    const ANY_QUESTION = 'Which park are you asking about?';
+    const lostId = await approvedRule({ intent: 'lost_item', instruction: LOST_RULE, askFirst: { condition: 'always', question: { en: QUESTION } } });
+    await approvedRule({ intent: 'any', instruction: 'Ask which park first.', askFirst: { condition: 'always', question: { en: ANY_QUESTION } } });
+    const phone = nextPhone();
+    const conv = await customer(w, wide, phone, 'I think I left my bag at your park');
+    w.fake.push({ kind: 'decision', decision: decision(LOST) });
+    expect((await tick(w, later(25_000))).answered).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([QUESTION]);
+    expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({ askFirstRuleId: lostId });
+
+    // The second turn matches the any rule too: it is not asked; the lost item goes as it does with no rule.
+    await customer(w, wide, phone, 'It is a blue backpack');
+    w.fake.push({ kind: 'decision', decision: decision(LOST) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    const bodies = (await aiLines(w, conv.id)).map((l) => l.body);
+    expect(bodies.filter((b) => b === QUESTION)).toHaveLength(1);
+    expect(bodies).not.toContain(ANY_QUESTION);
+    expect((await turnsOf(w, conv.id))[1]).toMatchObject({ state: 'handed_over', intent: 'lost_item' });
+  });
+
+  it('in shadow mode the question is kept once in the episode, not on every turn', async () => {
+    await drain();
+    await archiveAllRules();
+    const ruleId = await approvedRule({ intent: 'lost_item', instruction: LOST_RULE, askFirst: { condition: 'always', question: { en: QUESTION } } });
+    const shadow = await simAccount(w, { branchId: null, aiMode: 'shadow' });
+    const phone = nextPhone();
+    const conv = await customer(w, shadow, phone, 'I think I left my bag at your park');
+    w.fake.push({ kind: 'decision', decision: decision(LOST) });
+    expect((await tick(w, later(25_000))).shadowed).toBe(1);
+    await customer(w, shadow, phone, 'Hello? It is a blue backpack');
+    w.fake.push({ kind: 'decision', decision: decision(LOST) });
+    expect((await tick(w, later(25_000))).shadowed).toBe(1);
+    const shadows = (await eventsOf(w, conv.id)).filter((e) => e.kind === 'ai_shadow').map((e) => e.payload as Record<string, unknown>);
+    expect(shadows).toHaveLength(2);
+    expect(shadows[0]).toMatchObject({ askFirstRuleId: ruleId, action: 'answer' });
+    expect(shadows[1]).not.toHaveProperty('askFirstRuleId');
+  });
+
+  it('a lost bag at Chalong: the park question is not asked and the thread goes to Chalong', async () => {
+    await drain();
+    await archiveAllRules();
+    await approvedRule({ intent: 'lost_item', instruction: LOST_RULE, askFirst: { condition: 'branch_unknown', question: { en: QUESTION } } });
+    const conv = await customer(w, wide, nextPhone(), 'I lost my bag at Chalong');
+    w.fake.push({ kind: 'decision', decision: decision({ ...LOST, branchNamed: 'chalong' }) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).not.toContain(QUESTION);
+    expect((await eventsOf(w, conv.id)).some((e) => JSON.stringify(e.payload ?? {}).includes('askFirstRuleId'))).toBe(false);
+    expect((await conversationRow(w, conv.id)).branchId).toBe(w.chalong);
+  });
+
+  it('a question that does fire keeps the park named: the thread takes Chalong, and the next turn goes to Chalong’s reception', async () => {
+    await drain();
+    await archiveAllRules();
+    const LOOKS = 'What does the bag look like?';
+    const ruleId = await approvedRule({ intent: 'lost_item', instruction: 'Ask what the item looks like.', askFirst: { condition: 'always', question: { en: LOOKS } } });
+    const phone = nextPhone();
+    const conv = await customer(w, wide, phone, 'I lost my bag at Chalong');
+    w.fake.push({ kind: 'decision', decision: decision({ ...LOST, branchNamed: 'chalong' }) });
+    expect((await tick(w, later(25_000))).answered).toBe(1);
+    expect((await aiLines(w, conv.id)).map((l) => l.body)).toEqual([LOOKS]);
+    expect((await eventsOf(w, conv.id)).find((e) => e.kind === 'ai_replied')!.payload).toMatchObject({ askFirstRuleId: ruleId });
+    expect((await conversationRow(w, conv.id)).branchId).toBe(w.chalong);
+
+    await customer(w, wide, phone, 'It is a blue backpack');
+    w.fake.push({ kind: 'decision', decision: decision(LOST) });
+    expect((await tick(w, later(25_000))).handedOver).toBe(1);
+    const after = await conversationRow(w, conv.id);
+    expect(after.branchId).toBe(w.chalong);
+    expect(after.teamId).toBe((await teamOf(w, 'reception', w.chalong)).id);
+    expect((await aiLines(w, conv.id)).map((l) => l.body).filter((b) => b === LOOKS)).toHaveLength(1);
   });
 });
