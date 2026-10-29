@@ -35239,6 +35239,431 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inbox/ai/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The assistant’s behaviour rules for the Assistant page: every rule of the operator (draft and approved; archived only with `status=archived`), newest first, each saying whether the viewer may manage it (`canManage`: inbox:kb:manage at its park, or operator-wide for a both-parks rule). Only approved rules reach the assistant. Needs inbox:kb:manage somewhere in the operator. */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "draft" | "approved" | "archived";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            rules: {
+                                /** Format: uuid */
+                                id: string;
+                                intent: string;
+                                /** Format: uuid */
+                                branchId: string | null;
+                                instruction: string;
+                                askFirst: {
+                                    /** @enum {string} */
+                                    condition: "always" | "branch_unknown";
+                                    question: {
+                                        en: string;
+                                        th?: string;
+                                        ru?: string;
+                                    };
+                                } | null;
+                                /** @enum {string} */
+                                status: "draft" | "approved" | "archived";
+                                taughtFrom: string | null;
+                                /** @enum {string} */
+                                source: "teach" | "manual";
+                                /** Format: uuid */
+                                approvedByAccountId: string | null;
+                                approvedAt: string | null;
+                                /** Format: uuid */
+                                updatedByAccountId: string | null;
+                                canManage: boolean;
+                                createdAt: string;
+                                updatedAt: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Draft a behaviour rule: the intent it is about (one of the assistant’s, or `any`; else 409 INTENT_UNKNOWN), the instruction in plain words (1–600 characters), and optionally a question to ask first (`askFirst`: `branch_unknown` asks only while no park is known, `always` once per conversation), for one park or both (`branchId` null). A rule only adds a question or an instruction: one that carries numbers, a link, a date, or grants a price, a discount, free entry, a refund, compensation or a booking is refused 400 RULE_UNSAFE with a sentence. The question is never asked before a complaint, a refund, a request for a person, a greeting, a goodbye or an identity question. Always a draft until approved. The body id is caller-named. Needs inbox:kb:manage at the park, or operator-wide for a both-parks rule. Audited as inbox.ai_rule.create (ids, intent, lengths — never the words). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id?: string;
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        intent: string;
+                        instruction: string;
+                        askFirst?: {
+                            /** @enum {string} */
+                            condition: "always" | "branch_unknown";
+                            question: {
+                                en: string;
+                                th?: string;
+                                ru?: string;
+                            };
+                        } | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            intent: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            instruction: string;
+                            askFirst: {
+                                /** @enum {string} */
+                                condition: "always" | "branch_unknown";
+                                question: {
+                                    en: string;
+                                    th?: string;
+                                    ru?: string;
+                                };
+                            } | null;
+                            /** @enum {string} */
+                            status: "draft" | "approved" | "archived";
+                            taughtFrom: string | null;
+                            /** @enum {string} */
+                            source: "teach" | "manual";
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            canManage: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/ai/rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Edit a rule: its intent, park, instruction or ask-first question, under the same checks as a new one (400 RULE_UNSAFE, 409 INTENT_UNKNOWN). A draft is changed in place. An approved rule is revised at once: the row the assistant followed is archived with its words kept, and the answer is a new row, already approved by the editor, under a new id. An archived rule answers 409 RULE_ARCHIVED. Needs inbox:kb:manage over the rule as it stands and as it will be. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        branchId?: string | null;
+                        intent?: string;
+                        instruction?: string;
+                        askFirst?: {
+                            /** @enum {string} */
+                            condition: "always" | "branch_unknown";
+                            question: {
+                                en: string;
+                                th?: string;
+                                ru?: string;
+                            };
+                        } | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            intent: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            instruction: string;
+                            askFirst: {
+                                /** @enum {string} */
+                                condition: "always" | "branch_unknown";
+                                question: {
+                                    en: string;
+                                    th?: string;
+                                    ru?: string;
+                                };
+                            } | null;
+                            /** @enum {string} */
+                            status: "draft" | "approved" | "archived";
+                            taughtFrom: string | null;
+                            /** @enum {string} */
+                            source: "teach" | "manual";
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            canManage: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/inbox/ai/rules/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Approve a draft rule: the approver and the time are recorded and the assistant follows it from its next turn. An archived rule answers 409 RULE_ARCHIVED; an approved one is answered as it stands. Needs inbox:kb:manage at its park. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            intent: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            instruction: string;
+                            askFirst: {
+                                /** @enum {string} */
+                                condition: "always" | "branch_unknown";
+                                question: {
+                                    en: string;
+                                    th?: string;
+                                    ru?: string;
+                                };
+                            } | null;
+                            /** @enum {string} */
+                            status: "draft" | "approved" | "archived";
+                            taughtFrom: string | null;
+                            /** @enum {string} */
+                            source: "teach" | "manual";
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            canManage: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/ai/rules/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Archive a rule: the assistant stops following it. Never deleted. Archiving twice is the same act. Needs inbox:kb:manage at its park. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            intent: string;
+                            /** Format: uuid */
+                            branchId: string | null;
+                            instruction: string;
+                            askFirst: {
+                                /** @enum {string} */
+                                condition: "always" | "branch_unknown";
+                                question: {
+                                    en: string;
+                                    th?: string;
+                                    ru?: string;
+                                };
+                            } | null;
+                            /** @enum {string} */
+                            status: "draft" | "approved" | "archived";
+                            taughtFrom: string | null;
+                            /** @enum {string} */
+                            source: "teach" | "manual";
+                            /** Format: uuid */
+                            approvedByAccountId: string | null;
+                            approvedAt: string | null;
+                            /** Format: uuid */
+                            updatedByAccountId: string | null;
+                            canManage: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbox/ai/teach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The teach chat on the Assistant page: the conversation so far (at most the last 20 messages, the last one the staff member’s) goes to a curator that reads the same knowledge as the customer assistant. It answers “what do you say today when…”, saves what it is taught as DRAFT knowledge-base entries and rules (a card for each, to approve under Assistant → Knowledge or Rules), refuses anything that would loosen the assistant’s safety rules, and may show a dry run: what the assistant would do now with one customer message (the decision, the checks and any ask-first rule; no closing line, routing or silence policy). Nothing is sent to a customer and no conversation is read or written. 503 TEACH_UNAVAILABLE when the assistant is not switched on for this deployment. Needs inbox:kb:manage with operator reach. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        sessionId: string;
+                        messages: {
+                            /** @enum {string} */
+                            role: "user" | "assistant";
+                            text: string;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            reply: string;
+                            cards: {
+                                /** @enum {string} */
+                                kind: "fact" | "rule";
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                status: "draft";
+                            }[];
+                            dryRun: {
+                                message: string;
+                                intent: string | null;
+                                /** @enum {string} */
+                                outcome: "answer" | "handover" | "silent_handover" | "silent" | "ask_first";
+                                bubbles: string[];
+                                /** Format: uuid */
+                                ruleFired: string | null;
+                            } | null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inbox/ai/channel-accounts": {
         parameters: {
             query?: never;

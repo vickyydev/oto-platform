@@ -611,9 +611,7 @@ export function buildPrompt(input: PromptInput): PromptResult {
   // per-operator part, before the cache breakpoint), never in block 1. With
   // none, block 2 is the knowledge text itself and nothing else changes.
   const rulesText = renderOperatorRules(input.rules ?? []);
-  const withRules = rulesText === '' ? null : `${input.knowledge.text}
-
-${rulesText}`;
+  const withRules = rulesText === '' ? null : `${input.knowledge.text}\n\n${rulesText}`;
   const withTokens = withRules === null ? plain : estimateTokens(STATIC_SYSTEM_TEXT) + estimateTokens(withRules);
   // A rule never silences the assistant: past the limit the rules block is dropped, never the turn.
   const block2 = withRules !== null && withTokens <= SYSTEM_TOKEN_LIMIT ? withRules : input.knowledge.text;

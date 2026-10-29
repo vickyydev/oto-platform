@@ -88598,6 +88598,990 @@
         }
       }
     },
+    "/inbox/ai/rules": {
+      "get": {
+        "description": "The assistant’s behaviour rules for the Assistant page: every rule of the operator (draft and approved; archived only with `status=archived`), newest first, each saying whether the viewer may manage it (`canManage`: inbox:kb:manage at its park, or operator-wide for a both-parks rule). Only approved rules reach the assistant. Needs inbox:kb:manage somewhere in the operator.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "approved",
+                "archived"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "intent": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "instruction": {
+                            "type": "string"
+                          },
+                          "askFirst": {
+                            "type": "object",
+                            "properties": {
+                              "condition": {
+                                "type": "string",
+                                "enum": [
+                                  "always",
+                                  "branch_unknown"
+                                ]
+                              },
+                              "question": {
+                                "type": "object",
+                                "properties": {
+                                  "en": {
+                                    "type": "string"
+                                  },
+                                  "th": {
+                                    "type": "string"
+                                  },
+                                  "ru": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "en"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "condition",
+                              "question"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "approved",
+                              "archived"
+                            ]
+                          },
+                          "taughtFrom": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "teach",
+                              "manual"
+                            ]
+                          },
+                          "approvedByAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "approvedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "updatedByAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "canManage": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "intent",
+                          "branchId",
+                          "instruction",
+                          "askFirst",
+                          "status",
+                          "taughtFrom",
+                          "source",
+                          "approvedByAccountId",
+                          "approvedAt",
+                          "updatedByAccountId",
+                          "canManage",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "rules"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Draft a behaviour rule: the intent it is about (one of the assistant’s, or `any`; else 409 INTENT_UNKNOWN), the instruction in plain words (1–600 characters), and optionally a question to ask first (`askFirst`: `branch_unknown` asks only while no park is known, `always` once per conversation), for one park or both (`branchId` null). A rule only adds a question or an instruction: one that carries numbers, a link, a date, or grants a price, a discount, free entry, a refund, compensation or a booking is refused 400 RULE_UNSAFE with a sentence. The question is never asked before a complaint, a refund, a request for a person, a greeting, a goodbye or an identity question. Always a draft until approved. The body id is caller-named. Needs inbox:kb:manage at the park, or operator-wide for a both-parks rule. Audited as inbox.ai_rule.create (ids, intent, lengths — never the words).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "intent": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                  },
+                  "instruction": {
+                    "type": "string"
+                  },
+                  "askFirst": {
+                    "type": "object",
+                    "properties": {
+                      "condition": {
+                        "type": "string",
+                        "enum": [
+                          "always",
+                          "branch_unknown"
+                        ]
+                      },
+                      "question": {
+                        "type": "object",
+                        "properties": {
+                          "en": {
+                            "type": "string"
+                          },
+                          "th": {
+                            "type": "string"
+                          },
+                          "ru": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "en"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "condition",
+                      "question"
+                    ],
+                    "additionalProperties": false,
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "intent",
+                  "instruction"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "instruction": {
+                      "type": "string"
+                    },
+                    "askFirst": {
+                      "type": "object",
+                      "properties": {
+                        "condition": {
+                          "type": "string",
+                          "enum": [
+                            "always",
+                            "branch_unknown"
+                          ]
+                        },
+                        "question": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "th": {
+                              "type": "string"
+                            },
+                            "ru": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "condition",
+                        "question"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "approved",
+                        "archived"
+                      ]
+                    },
+                    "taughtFrom": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "teach",
+                        "manual"
+                      ]
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "intent",
+                    "branchId",
+                    "instruction",
+                    "askFirst",
+                    "status",
+                    "taughtFrom",
+                    "source",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "updatedByAccountId",
+                    "canManage",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/rules/{id}": {
+      "patch": {
+        "description": "Edit a rule: its intent, park, instruction or ask-first question, under the same checks as a new one (400 RULE_UNSAFE, 409 INTENT_UNKNOWN). A draft is changed in place. An approved rule is revised at once: the row the assistant followed is archived with its words kept, and the answer is a new row, already approved by the editor, under a new id. An archived rule answers 409 RULE_ARCHIVED. Needs inbox:kb:manage over the rule as it stands and as it will be.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "intent": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                  },
+                  "instruction": {
+                    "type": "string"
+                  },
+                  "askFirst": {
+                    "type": "object",
+                    "properties": {
+                      "condition": {
+                        "type": "string",
+                        "enum": [
+                          "always",
+                          "branch_unknown"
+                        ]
+                      },
+                      "question": {
+                        "type": "object",
+                        "properties": {
+                          "en": {
+                            "type": "string"
+                          },
+                          "th": {
+                            "type": "string"
+                          },
+                          "ru": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "en"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "condition",
+                      "question"
+                    ],
+                    "additionalProperties": false,
+                    "nullable": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "instruction": {
+                      "type": "string"
+                    },
+                    "askFirst": {
+                      "type": "object",
+                      "properties": {
+                        "condition": {
+                          "type": "string",
+                          "enum": [
+                            "always",
+                            "branch_unknown"
+                          ]
+                        },
+                        "question": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "th": {
+                              "type": "string"
+                            },
+                            "ru": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "condition",
+                        "question"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "approved",
+                        "archived"
+                      ]
+                    },
+                    "taughtFrom": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "teach",
+                        "manual"
+                      ]
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "intent",
+                    "branchId",
+                    "instruction",
+                    "askFirst",
+                    "status",
+                    "taughtFrom",
+                    "source",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "updatedByAccountId",
+                    "canManage",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/rules/{id}/approve": {
+      "post": {
+        "description": "Approve a draft rule: the approver and the time are recorded and the assistant follows it from its next turn. An archived rule answers 409 RULE_ARCHIVED; an approved one is answered as it stands. Needs inbox:kb:manage at its park.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "instruction": {
+                      "type": "string"
+                    },
+                    "askFirst": {
+                      "type": "object",
+                      "properties": {
+                        "condition": {
+                          "type": "string",
+                          "enum": [
+                            "always",
+                            "branch_unknown"
+                          ]
+                        },
+                        "question": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "th": {
+                              "type": "string"
+                            },
+                            "ru": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "condition",
+                        "question"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "approved",
+                        "archived"
+                      ]
+                    },
+                    "taughtFrom": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "teach",
+                        "manual"
+                      ]
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "intent",
+                    "branchId",
+                    "instruction",
+                    "askFirst",
+                    "status",
+                    "taughtFrom",
+                    "source",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "updatedByAccountId",
+                    "canManage",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/rules/{id}/archive": {
+      "post": {
+        "description": "Archive a rule: the assistant stops following it. Never deleted. Archiving twice is the same act. Needs inbox:kb:manage at its park.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "instruction": {
+                      "type": "string"
+                    },
+                    "askFirst": {
+                      "type": "object",
+                      "properties": {
+                        "condition": {
+                          "type": "string",
+                          "enum": [
+                            "always",
+                            "branch_unknown"
+                          ]
+                        },
+                        "question": {
+                          "type": "object",
+                          "properties": {
+                            "en": {
+                              "type": "string"
+                            },
+                            "th": {
+                              "type": "string"
+                            },
+                            "ru": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "en"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "condition",
+                        "question"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "approved",
+                        "archived"
+                      ]
+                    },
+                    "taughtFrom": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "teach",
+                        "manual"
+                      ]
+                    },
+                    "approvedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "updatedByAccountId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "canManage": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "intent",
+                    "branchId",
+                    "instruction",
+                    "askFirst",
+                    "status",
+                    "taughtFrom",
+                    "source",
+                    "approvedByAccountId",
+                    "approvedAt",
+                    "updatedByAccountId",
+                    "canManage",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/ai/teach": {
+      "post": {
+        "description": "The teach chat on the Assistant page: the conversation so far (at most the last 20 messages, the last one the staff member’s) goes to a curator that reads the same knowledge as the customer assistant. It answers “what do you say today when…”, saves what it is taught as DRAFT knowledge-base entries and rules (a card for each, to approve under Assistant → Knowledge or Rules), refuses anything that would loosen the assistant’s safety rules, and may show a dry run: what the assistant would do now with one customer message (the decision, the checks and any ask-first rule; no closing line, routing or silence policy). Nothing is sent to a customer and no conversation is read or written. 503 TEACH_UNAVAILABLE when the assistant is not switched on for this deployment. Needs inbox:kb:manage with operator reach.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant"
+                          ]
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "text"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  }
+                },
+                "required": [
+                  "sessionId",
+                  "messages"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reply": {
+                      "type": "string"
+                    },
+                    "cards": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "fact",
+                              "rule"
+                            ]
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "id",
+                          "title",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "dryRun": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "intent": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "outcome": {
+                          "type": "string",
+                          "enum": [
+                            "answer",
+                            "handover",
+                            "silent_handover",
+                            "silent",
+                            "ask_first"
+                          ]
+                        },
+                        "bubbles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "ruleFired": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "intent",
+                        "outcome",
+                        "bubbles",
+                        "ruleFired"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "reply",
+                    "cards",
+                    "dryRun"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/inbox/ai/channel-accounts": {
       "get": {
         "description": "The numbers whose assistant the caller may switch, with each one’s `aiMode`: live accounts that can reply (a check-in notice sender carries no assistant), at the branches the caller holds inbox:ai:manage at, and the operator-wide ones when they hold it operator-wide. Needs inbox:ai:manage somewhere in the operator.",

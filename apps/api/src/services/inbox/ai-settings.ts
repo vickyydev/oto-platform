@@ -100,11 +100,11 @@ export function reaches(reach: Reach, branchId: string | null): boolean {
   return reach.operatorWide || (branchId !== null && reach.branchIds.has(branchId));
 }
 
-function requireReach(reach: Reach, branchId: string | null, permission: Permission): void {
+export function requireReach(reach: Reach, branchId: string | null, permission: Permission): void {
   if (!reaches(reach, branchId)) throw new PermissionDeniedError(permission);
 }
 
-async function assertBranchInOperator(db: Exec, operatorId: string, branchId: string | null): Promise<void> {
+export async function assertBranchInOperator(db: Exec, operatorId: string, branchId: string | null): Promise<void> {
   if (!branchId) return;
   const [row] = await db
     .select({ id: branch.id })

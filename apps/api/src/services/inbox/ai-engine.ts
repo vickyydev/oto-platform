@@ -6,6 +6,7 @@ import {
   REVIEW_VERSION,
   applyGates,
   applyReview,
+  askFirstOf,
   intentPartsOf,
   isMixedOrigin,
   joinReviewed,
@@ -377,6 +378,8 @@ async function quietBeforeBurst(
 interface EpisodeFacts {
   state: EpisodeState;
   earlier: { answered: number; brochureSent: boolean; branchAsked: boolean; identityAnswered: boolean; languageOffered: boolean };
+  /** SCRUM-696: the operator rules whose ask-first question was already asked this episode. */
+  askedRuleIds: ReadonlySet<string>;
 }
 
 /**
@@ -418,7 +421,9 @@ async function episodeFacts(
     );
   const tenAgo = now.getTime() - 10 * 60_000;
   const identityAnswered = answered.some((t) => t.intent === 'identity_question');
-  const payloads = events.map((e) => (e.payload ?? {}) as { askBranch?: unknown; brochureFileIds?: unknown; languageOffer?: unknown });
+  const payloads = events.map(
+    (e) => (e.payload ?? {}) as { askBranch?: unknown; brochureFileIds?: unknown; languageOffer?: unknown; askFirstRuleId?: unknown },
+  );
   const languageOffered = payloads.some((p) => p.languageOffer === 'ru' || p.languageOffer === 'th');
   return {
     state: {
@@ -436,6 +441,7 @@ async function episodeFacts(
       identityAnswered,
       languageOffered,
     },
+    askedRuleIds: new Set(payloads.flatMap((p) => (typeof p.askFirstRuleId === 'string' ? [p.askFirstRuleId] : []))),
   };
 }
 
@@ -465,6 +471,8 @@ interface TurnResult {
   withheld?: boolean;
   /** The turn's reason word when the engine, not the gate, decided it (`WRONG_TOPIC`). */
   turnReason?: string;
+  /** SCRUM-696: an operator rule's ask-first question is the turn's reply. */
+  askFirst?: { ruleId: string };
 }
 
 async function recordModelRun(
@@ -572,6 +580,9 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     .limit(1);
   const contactCountryCode = callingCodeOf(person?.phone);
   const facts = await episodeFacts(db, conv, eligible.episodeStart, now, contactCountryCode);
+  // SCRUM-696: the approved operator rules for this thread (both parks', and
+  // its own park's). None: the prompt and the turn are exactly as before.
+  const applicable = (knowledge.rules ?? []).filter((r) => r.branchId === null || r.branchId === conv.branchId);
   const promptInput: PromptInput = {
     knowledge: knowledge.knowledge,
     episode,
@@ -582,6 +593,7 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
       contactCountryCode,
       earlier: facts.earlier,
     },
+    ...(applicable.length > 0 ? { rules: applicable } : {}),
   };
   const built = buildPrompt(promptInput);
   if (!built.ok) return { conv, silence: built.reason, kbVersion: knowledge.knowledge.version, knowledge };
@@ -600,12 +612,33 @@ async function decideTurn(db: Db, deps: AiEngineDeps, turn: TurnRow, now: Date):
     knowledge,
   };
   if (!outcome.ok) return { ...base, conv, silence: outcome.reason };
-  const verdict = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: facts.state });
+  const gated = applyGates({ decision: outcome.decision, grounding: built.prompt.grounding, episode: facts.state });
+  // SCRUM-696: an approved rule's ask-first question, enforced here and never
+  // trusted to the model. Only when a rule with a question applies; it
+  // replaces the gate's verdict only when it fires (`askFirstOf`).
+  const fired = applicable.some((r) => r.askFirst !== null)
+    ? askFirstOf({
+        rules: applicable,
+        verdict: gated,
+        decision: outcome.decision,
+        threadHasBranch: conv.branchId !== null,
+        branchAsked: facts.earlier.branchAsked,
+        askedRuleIds: facts.askedRuleIds,
+        silentIntents: silentIntentsOf(account.silencePolicy),
+      })
+    : null;
+  const verdict = fired?.verdict ?? gated;
   const quietBefore =
     verdict.action === 'silent' && verdict.reason === 'INTENT_SILENT'
       ? await quietBeforeBurst(db, conv, episode, turn.triggerMessageId, eligible.episodeStart, turn.id)
       : undefined;
-  const decided: TurnResult = { ...base, decision: outcome.decision, verdict, ...(quietBefore === undefined ? {} : { quietBefore }) };
+  const decided: TurnResult = {
+    ...base,
+    decision: outcome.decision,
+    verdict,
+    ...(quietBefore === undefined ? {} : { quietBefore }),
+    ...(fired ? { askFirst: { ruleId: fired.ruleId } } : {}),
+  };
   // SCRUM-677: the coherence review, before anything is scheduled.
   const reviewed = await reviewStage(db, deps, turn, conv, account, episode, decided);
   const first: TurnResult & { conv: ConversationRow } = { ...withReview(decided, reviewed), conv };
@@ -1727,6 +1760,7 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
               brochure: handover && !handover.silenced ? handover.plan.brochure : false,
               coherence: settled.record,
               rethink,
+              ...(r.askFirst ? { askFirstRuleId: r.askFirst.ruleId } : {}),
             }, at),
           );
         }
@@ -1802,6 +1836,8 @@ async function commitTurn(db: Db, deps: AiEngineDeps, claimed: TurnRow, r: TurnR
             // SCRUM-677: what the coherence review removed or joined, by place and origin.
             coherence: settled.record,
             rethink,
+            // SCRUM-696: the operator rule whose question this was, so it is asked once per episode.
+            ...(r.askFirst ? { askFirstRuleId: r.askFirst.ruleId } : {}),
           }, at),
         );
       }

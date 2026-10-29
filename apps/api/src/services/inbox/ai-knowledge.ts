@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import {
   AI_INTENTS,
   WEEKDAY_KEYS,
@@ -12,10 +12,12 @@ import {
   type KnowledgeBlock,
   type KnowledgeInput,
   type OpeningHours,
+  type OperatorRuleInput,
+  type RuleIntent,
   type TicketPackageFact,
   type TierPriceFact,
 } from '@oto/assistant';
-import { aiExample, branch, branchHoliday, kbEntry, ticketPackage } from '@oto/db';
+import { aiExample, aiRule, branch, branchHoliday, kbEntry, ticketPackage } from '@oto/db';
 import { formatTHB, parseDayStart, rateModeToday, type Satang } from '@oto/shared';
 import type { Exec } from '../tx';
 
@@ -301,6 +303,11 @@ function openingHoursOf(raw: unknown): OpeningHours | null {
   return out;
 }
 
+/** SCRUM-696: an operator rule as a turn reads it, with the park it is for (null = both parks). */
+export interface TurnRule extends OperatorRuleInput {
+  branchId: string | null;
+}
+
 export interface TurnKnowledge {
   knowledge: KnowledgeBlock;
   /** branch id → the key the model knows it by. */
@@ -308,9 +315,25 @@ export interface TurnKnowledge {
   /** the key → branch id. */
   branchOfKey: ReadonlyMap<AiBranchKey, string>;
   priceModeToday: Partial<Record<AiBranchKey, 'weekday' | 'weekend'>>;
+  /** SCRUM-696: approved operator rules (plus the caller's drafts for a dry run), oldest first. */
+  rules?: readonly TurnRule[];
 }
 
-export async function loadTurnKnowledge(db: Exec, operatorId: string, now: Date): Promise<TurnKnowledge> {
+export interface TurnKnowledgeOptions {
+  /**
+   * SCRUM-696, the teach chat's dry run only: also read this account's own
+   * DRAFT entries and rules created since `since`, so a draft shows its effect
+   * before approval. A customer turn never passes it.
+   */
+  draftsBy?: { accountId: string; since: Date };
+}
+
+export async function loadTurnKnowledge(
+  db: Exec,
+  operatorId: string,
+  now: Date,
+  opts?: TurnKnowledgeOptions,
+): Promise<TurnKnowledge> {
   const branches = await db
     .select()
     .from(branch)
@@ -375,10 +398,21 @@ export async function loadTurnKnowledge(db: Exec, operatorId: string, now: Date)
     ).mode;
   }
 
+  const drafts = opts?.draftsBy;
   const kbRows = await db
     .select()
     .from(kbEntry)
-    .where(and(eq(kbEntry.operatorId, operatorId), eq(kbEntry.status, 'approved')));
+    .where(
+      drafts
+        ? and(
+            eq(kbEntry.operatorId, operatorId),
+            or(
+              eq(kbEntry.status, 'approved'),
+              and(eq(kbEntry.status, 'draft'), eq(kbEntry.updatedByAccountId, drafts.accountId), gte(kbEntry.createdAt, drafts.since)),
+            ),
+          )
+        : and(eq(kbEntry.operatorId, operatorId), eq(kbEntry.status, 'approved')),
+    );
   const kb: KbEntryInput[] = [];
   for (const r of kbRows) {
     let key: AiBranchKey | null = null;
@@ -416,10 +450,36 @@ export async function loadTurnKnowledge(db: Exec, operatorId: string, now: Date)
       verdict: e.verdict,
     }));
 
+  // SCRUM-696: the operator rules. They never enter the knowledge block (its
+  // bytes and version are exactly as before); the prompt adds them after it
+  // only when one applies to the thread.
+  const ruleStatus: SQL | undefined = drafts
+    ? or(
+        eq(aiRule.status, 'approved'),
+        and(eq(aiRule.status, 'draft'), eq(aiRule.updatedByAccountId, drafts.accountId), gte(aiRule.createdAt, drafts.since)),
+      )
+    : eq(aiRule.status, 'approved');
+  const ruleRows = await db
+    .select()
+    .from(aiRule)
+    .where(and(eq(aiRule.operatorId, operatorId), ruleStatus))
+    .orderBy(sql`${aiRule.approvedAt} asc nulls last`, asc(aiRule.id));
+  const ruleIntents = new Set<string>([...AI_INTENTS, 'any']);
+  const rules: TurnRule[] = ruleRows
+    .filter((r) => ruleIntents.has(r.intent))
+    .map((r) => ({
+      id: r.id,
+      intent: r.intent as RuleIntent,
+      instruction: r.instruction,
+      askFirst: r.askFirst ?? null,
+      branchId: r.branchId,
+    }));
+
   return {
     knowledge: knowledgeWithTierPrices({ kb, branches: facts, examples }, parks),
     keyOfBranch,
     branchOfKey,
     priceModeToday,
+    rules,
   };
 }

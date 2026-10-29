@@ -1,12 +1,14 @@
 import {
   AnthropicAssistantClient,
   AnthropicCoherenceReviewer,
+  AnthropicToolLoopClient,
   REVIEW_TIMEOUT_MS,
   type AiEffort,
   type AssistantClient,
   type CoherenceReviewer,
   type PacingConfig,
   type RandomSource,
+  type ToolLoopClient,
 } from '@oto/assistant';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Env } from '../../env';
@@ -59,6 +61,12 @@ export interface InboxAiRuntime {
    * reply goes as composed.
    */
   reviewer: CoherenceReviewer | null;
+  /**
+   * SCRUM-696: the teach chat's tool-loop model, same key/model/effort/timeout
+   * as `client`; null when off and ALWAYS null under NODE_ENV=test (suites
+   * inject FakeToolLoopClient).
+   */
+  teacher?: ToolLoopClient | null;
   /** Pacing's jitter source (§B.6); tests pin it. */
   random: RandomSource;
 }
@@ -82,6 +90,7 @@ export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiR
   const config = inboxAiConfigOf(env);
   let client: AssistantClient | null = null;
   let reviewer: CoherenceReviewer | null = null;
+  let teacher: ToolLoopClient | null = null;
   if (config.enabled && env.NODE_ENV !== 'test' && env.ANTHROPIC_API_KEY.trim()) {
     client = new AnthropicAssistantClient({
       apiKey: env.ANTHROPIC_API_KEY,
@@ -97,6 +106,13 @@ export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiR
       effort: config.effort,
       timeoutMs: config.reviewTimeoutMs,
     });
+    teacher = new AnthropicToolLoopClient({
+      apiKey: env.ANTHROPIC_API_KEY,
+      baseURL: env.ANTHROPIC_BASE_URL.trim() || undefined,
+      model: config.model,
+      effort: config.effort,
+      timeoutMs: config.timeoutMs,
+    });
   }
   if (config.enabled) {
     // The boot line the staging proof reads (§F.5 item 1): the model, never the key.
@@ -105,7 +121,7 @@ export function buildInboxAiRuntime(env: Env, log?: FastifyBaseLogger): InboxAiR
       'inbox assistant enabled',
     );
   }
-  return { config, client, reviewer, random: Math.random };
+  return { config, client, reviewer, teacher, random: Math.random };
 }
 
 /** The ingest's view: the switch and the debounce only. */

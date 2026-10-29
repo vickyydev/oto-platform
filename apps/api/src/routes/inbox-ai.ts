@@ -14,6 +14,13 @@ import {
   InboxAiExampleSchema,
   InboxAiModeBodySchema,
   InboxAiPauseSchema,
+  InboxAiRuleCreateSchema,
+  InboxAiRuleListQuerySchema,
+  InboxAiRuleListSchema,
+  InboxAiRulePatchSchema,
+  InboxAiRuleSchema,
+  InboxAiTeachRequestSchema,
+  InboxAiTeachResponseSchema,
   InboxKbCreateSchema,
   InboxKbEntrySchema,
   InboxKbListQuerySchema,
@@ -22,11 +29,14 @@ import {
   type Permission,
 } from '@oto/shared';
 import type { App } from '../app';
+import { AppError } from '../lib/errors';
 import { PermissionDeniedError } from '../plugins/session';
 import { REPLAY_HEADER, wasReplay } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 import { holdsAnywhere, viewerScopeOf } from '../services/inbox/read-visibility';
 import { replyViewerOf } from '../services/inbox/reply';
+import { approveRule, archiveRule, createRule, listRules, updateRule } from '../services/inbox/ai-rules';
+import { teach, TEACH_LINES, toolOpCtx } from '../services/inbox/ai-teach';
 import {
   AI_MANAGE,
   KB_MANAGE,
@@ -67,6 +77,12 @@ import {
  *   POST  /inbox/ai/examples/{id}/approve         approve (de-identified)    "
  *   POST  /inbox/ai/examples/{id}/reject          reject                     "
  *   DELETE /inbox/ai/examples/{id}                delete a proposed one      "
+ *   GET   /inbox/ai/rules                         the behaviour rules        inbox:kb:manage
+ *   POST  /inbox/ai/rules                         draft a rule               inbox:kb:manage at its park
+ *   PATCH /inbox/ai/rules/{id}                    edit (revise if approved)  "
+ *   POST  /inbox/ai/rules/{id}/approve            approve                    "
+ *   POST  /inbox/ai/rules/{id}/archive            archive                    "
+ *   POST  /inbox/ai/teach                         the teach chat             inbox:kb:manage, operator reach
  *   GET   /inbox/ai/channel-accounts              the numbers' switches      inbox:ai:manage
  *   PATCH /inbox/channel-accounts/{id}/ai-mode    off / shadow / live        inbox:ai:manage at the number
  *   POST  /inbox/conversations/{id}/ai-pause      pause on a thread          reply there, or inbox:ai:manage at it
@@ -384,6 +400,145 @@ export async function inboxAiRoutes(app: App): Promise<void> {
     async (req) => {
       const { auth } = await queueCaller(req);
       return withTx(app.db, opCtx(req), 'inbox.ai_example.delete', (tx) => deleteExample(tx, ctxOf(req, auth), req.params.id));
+    },
+  );
+
+  // --- The behaviour rules (SCRUM-696) --------------------------------------------------------
+
+  app.get(
+    '/ai/rules',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The assistant’s behaviour rules for the Assistant page: every rule of the operator (draft and approved; ' +
+          'archived only with `status=archived`), newest first, each saying whether the viewer may manage it ' +
+          '(`canManage`: inbox:kb:manage at its park, or operator-wide for a both-parks rule). Only approved rules ' +
+          'reach the assistant. Needs inbox:kb:manage somewhere in the operator.',
+        querystring: InboxAiRuleListQuerySchema,
+        response: { 200: InboxAiRuleListSchema },
+      },
+    },
+    async (req) => {
+      const { auth, reach } = await kbCaller(req);
+      return listRules(app.db, auth.operatorId, reach, req.query);
+    },
+  );
+
+  app.post(
+    '/ai/rules',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Draft a behaviour rule: the intent it is about (one of the assistant’s, or `any`; else 409 INTENT_UNKNOWN), ' +
+          'the instruction in plain words (1–600 characters), and optionally a question to ask first (`askFirst`: ' +
+          '`branch_unknown` asks only while no park is known, `always` once per conversation), for one park or both ' +
+          '(`branchId` null). A rule only adds a question or an instruction: one that carries numbers, a link, a date, ' +
+          'or grants a price, a discount, free entry, a refund, compensation or a booking is refused 400 RULE_UNSAFE ' +
+          'with a sentence. The question is never asked before a complaint, a refund, a request for a person, a ' +
+          'greeting, a goodbye or an identity question. Always a draft until approved. The body id is caller-named. ' +
+          'Needs inbox:kb:manage at the park, or operator-wide for a both-parks rule. Audited as inbox.ai_rule.create ' +
+          '(ids, intent, lengths — never the words).',
+        body: InboxAiRuleCreateSchema,
+        response: { 200: InboxAiRuleSchema },
+      },
+    },
+    async (req, reply) => {
+      const { auth, reach } = await kbCaller(req);
+      const made = await withTx(app.db, opCtx(req), 'inbox.ai_rule.create', (tx) =>
+        createRule(tx, ctxOf(req, auth), reach, req.body),
+      );
+      if (wasReplay(made)) reply.header(REPLAY_HEADER, 'true');
+      return made;
+    },
+  );
+
+  app.patch(
+    '/ai/rules/:id',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Edit a rule: its intent, park, instruction or ask-first question, under the same checks as a new one ' +
+          '(400 RULE_UNSAFE, 409 INTENT_UNKNOWN). A draft is changed in place. An approved rule is revised at once: ' +
+          'the row the assistant followed is archived with its words kept, and the answer is a new row, already ' +
+          'approved by the editor, under a new id. An archived rule answers 409 RULE_ARCHIVED. Needs inbox:kb:manage ' +
+          'over the rule as it stands and as it will be.',
+        params: IdParams,
+        body: InboxAiRulePatchSchema,
+        response: { 200: InboxAiRuleSchema },
+      },
+    },
+    async (req) => {
+      const { auth, reach } = await kbCaller(req);
+      return withTx(app.db, opCtx(req), 'inbox.ai_rule.update', (tx) =>
+        updateRule(tx, ctxOf(req, auth), reach, req.params.id, req.body),
+      );
+    },
+  );
+
+  app.post(
+    '/ai/rules/:id/approve',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Approve a draft rule: the approver and the time are recorded and the assistant follows it from its next ' +
+          'turn. An archived rule answers 409 RULE_ARCHIVED; an approved one is answered as it stands. Needs ' +
+          'inbox:kb:manage at its park.',
+        params: IdParams,
+        response: { 200: InboxAiRuleSchema },
+      },
+    },
+    async (req) => {
+      const { auth, reach } = await kbCaller(req);
+      return withTx(app.db, opCtx(req), 'inbox.ai_rule.approve', (tx) => approveRule(tx, ctxOf(req, auth), reach, req.params.id));
+    },
+  );
+
+  app.post(
+    '/ai/rules/:id/archive',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Archive a rule: the assistant stops following it. Never deleted. Archiving twice is the same act. Needs ' +
+          'inbox:kb:manage at its park.',
+        params: IdParams,
+        response: { 200: InboxAiRuleSchema },
+      },
+    },
+    async (req) => {
+      const { auth, reach } = await kbCaller(req);
+      return withTx(app.db, opCtx(req), 'inbox.ai_rule.archive', (tx) => archiveRule(tx, ctxOf(req, auth), reach, req.params.id));
+    },
+  );
+
+  app.post(
+    '/ai/teach',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The teach chat on the Assistant page: the conversation so far (at most the last 20 messages, the last one ' +
+          'the staff member’s) goes to a curator that reads the same knowledge as the customer assistant. It answers ' +
+          '“what do you say today when…”, saves what it is taught as DRAFT knowledge-base entries and rules (a card ' +
+          'for each, to approve under Assistant → Knowledge or Rules), refuses anything that would loosen the ' +
+          'assistant’s safety rules, and may show a dry run: what the assistant would do now with one customer ' +
+          'message (the decision, the checks and any ask-first rule; no closing line, routing or silence policy). ' +
+          'Nothing is sent to a customer and no conversation is read or written. 503 TEACH_UNAVAILABLE when the ' +
+          'assistant is not switched on for this deployment. Needs inbox:kb:manage with operator reach.',
+        body: InboxAiTeachRequestSchema,
+        response: { 200: InboxAiTeachResponseSchema },
+      },
+    },
+    async (req) => {
+      const { auth, reach } = await kbCaller(req);
+      if (!reach.operatorWide) throw new PermissionDeniedError(KB_MANAGE);
+      const teacher = app.inboxAi.teacher ?? null;
+      if (teacher === null) throw new AppError(503, 'TEACH_UNAVAILABLE', TEACH_LINES.unavailable);
+      return teach({ db: app.db, runtime: app.inboxAi, op: toolOpCtx(opCtx(req)) }, ctxOf(req, auth), reach, req.body);
     },
   );
 
