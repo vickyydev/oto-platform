@@ -1,0 +1,15 @@
+{
+  "kind": "source-extracted-finalizer-offline",
+  "version": "v5",
+  "exitCode": 1,
+  "passed": 6,
+  "failed": 5,
+  "testSourceSha256": "b15735df559a9eb2cf551aa7a766c7074d53d0aa0eadcbe192c62400bad649b4",
+  "helperSourceSha256": "9c76fd9041f60412374d15ab08e5593b357fdae0f2999596627dd5b9908ba593",
+  "logSha256": "1124579a1503622cbbb5050ea7d3032a7f743a7bf5e8f80c5e9d61d805689cd1",
+  "browser": false,
+  "network": false,
+  "auth": false,
+  "git": false,
+  "repoWrites": false
+}

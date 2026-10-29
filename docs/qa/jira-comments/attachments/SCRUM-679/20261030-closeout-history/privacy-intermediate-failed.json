@@ -1,0 +1,29 @@
+{
+  "phase": "green",
+  "helper": "C:/oto-lanes/admin679-final-proof-tools/prove679-final-v4.mjs",
+  "helperSha256": "325afc36b705fd67f780bea3a94c5e17459be9a5297699dcf3dd5b531ddbf521",
+  "testSha256": "f34f24950781ac4fef0c2d399f84e1c3bfd995f66ba8e75bc23e67ccfa967153",
+  "adapterSha256": "277b09d003063142dab4b459c51807bb71ec2c10f66f6ad291ef5acb808807e6",
+  "startedAt": "2026-10-28T22:38:54.962Z",
+  "finishedAt": "2026-10-28T22:38:57.196Z",
+  "nativeExitCode": 1,
+  "total": 15,
+  "passed": 14,
+  "failed": 1,
+  "cleanup": {
+    "opened": 15,
+    "closed": 15,
+    "pendingContexts": 0,
+    "attemptedPageRequests": 1,
+    "blockedPageRequests": 1,
+    "pageResponses": 0,
+    "browserDisconnected": true
+  },
+  "logSha256": "55440e15648fb4b624fc41daf4b67601dea8bcf3a2202ffe1621a0f0327463d4",
+  "sourceUnchanged": true,
+  "originalInputsUnchanged": true,
+  "scope": "Actual extracted privacy collector/call sites/snapshot/capture; release gates and PNG file writer stubbed only for synthetic calibration.",
+  "liveAuth": false,
+  "database": false,
+  "liveApplicationNetwork": false
+}

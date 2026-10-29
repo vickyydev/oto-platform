@@ -1,0 +1,29 @@
+{
+  "browserLaunches": 1,
+  "browserClosed": true,
+  "browserProcessExitCode": 0,
+  "originalInputs": {
+    "C:/oto-lanes/admin679-final-proof-tools/prove679-final-v3.mjs": "f5ea2d887a51b738493251f01e5d333010c3b7f84371cc91ff4e7cdc3b10bbcb",
+    "C:/oto-lanes/admin679-final-proof-tools/local-proof.json": "4afe28d02c02509f6652c892305d21c107f69ee4b647082d77715e793b4704b7"
+  },
+  "originalInputsUnchanged": true,
+  "phases": [
+    {
+      "phase": "red",
+      "nativeExitCode": 1,
+      "total": 15,
+      "passed": 10,
+      "failed": 5
+    },
+    {
+      "phase": "green",
+      "nativeExitCode": 1,
+      "total": 15,
+      "passed": 14,
+      "failed": 1
+    }
+  ],
+  "completed": false,
+  "staging": false,
+  "database": false
+}

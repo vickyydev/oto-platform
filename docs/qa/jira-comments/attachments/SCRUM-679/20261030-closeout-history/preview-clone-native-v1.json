@@ -1,0 +1,1302 @@
+{
+  "ticket": "SCRUM-679",
+  "kind": "native-page-preview-byte-diagnostic",
+  "fullAuditComplete": false,
+  "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+  "ciRunId": "40772012368",
+  "helperSha256": "d71e9614ba5e66d919202a53fff07ea6eb73ed63f4a2c4dd50a654d5936cef96",
+  "baseReviewedHelperSha256": "f5ea2d887a51b738493251f01e5d333010c3b7f84371cc91ff4e7cdc3b10bbcb",
+  "startedAt": "2026-10-28T22:39:57.252Z",
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-28T22:40:01.693Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "ahead",
+      "documentOnlyDescendant": true,
+      "comparedFiles": [
+        "docs/handover/CLOUD_HANDOVER.md",
+        "docs/handover/CODEX_HANDOVER.md",
+        "docs/progress/OPEN_ITEMS.md",
+        "docs/progress/STATUS.md",
+        "docs/progress/plans/super-admin-console/PLAN.md",
+        "docs/qa/admin-console-repairs-2026-10-29.md",
+        "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/README.md",
+        "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/followup-ticket.json",
+        "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/nullable-enum-native-diagnosis.json",
+        "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/receipt.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/README.md",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-01-catalogue.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-02-tenders.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-03-devices.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-04-config.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-05-money-cash-attention.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-06-money-settlement-attention.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/image-review.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/jira-deployed.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/main-ci.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/main-native-ci.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/main-push.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/read-policy-correction.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/staging-proof-failed-v1.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/staging-proof.json"
+      ],
+      "testedBrowserSourceFiles": 453,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    },
+    {
+      "stage": "after-proof",
+      "at": "2026-10-28T22:40:24.287Z",
+      "ciGreenJobs": 6,
+      "sourceReachableFromMain": true,
+      "mainRelation": "ahead",
+      "documentOnlyDescendant": true,
+      "comparedFiles": [
+        "docs/handover/CLOUD_HANDOVER.md",
+        "docs/handover/CODEX_HANDOVER.md",
+        "docs/progress/OPEN_ITEMS.md",
+        "docs/progress/STATUS.md",
+        "docs/progress/plans/super-admin-console/PLAN.md",
+        "docs/qa/admin-console-repairs-2026-10-29.md",
+        "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/README.md",
+        "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/followup-ticket.json",
+        "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/nullable-enum-native-diagnosis.json",
+        "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/receipt.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/README.md",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-01-catalogue.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-02-tenders.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-03-devices.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-04-config.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-05-money-cash-attention.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/SCRUM-683-06-money-settlement-attention.png",
+        "docs/qa/jira-comments/attachments/SCRUM-683/image-review.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/jira-deployed.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/main-ci.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/main-native-ci.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/main-push.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/read-policy-correction.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/staging-proof-failed-v1.json",
+        "docs/qa/jira-comments/attachments/SCRUM-683/staging-proof.json"
+      ],
+      "testedBrowserSourceFiles": 453,
+      "testedBrowserSourceMatchesDeployedCommit": true,
+      "checkoutDifferencesOutsideTestedManifest": [],
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "deployId": "dep-dbh6rh29lscs73fstb6g",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:52:30.715673Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "serviceId": "srv-danng2p42hec73f38e3g",
+          "deployId": "dep-dbh6rh29lscs73fstcb0",
+          "sourceSha": "915d8f4e17c189503bc7440273c988ee928a38f8",
+          "finishedAt": "2026-10-28T21:49:37.925372Z"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "print-templates",
+      "path": "/catalogue/print-templates",
+      "expectedTitle": "Print templates",
+      "reads": [
+        {
+          "label": "GET /api/me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:09.947Z",
+          "pathTemplate": "/api/me",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "acaf923a69d0d9741c48a8b2bc57cf3fb57dc71506ad4e4ec0b0966a3810a7c4",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/me/permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:10.415Z",
+          "pathTemplate": "/api/me/permissions",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "6f945caadc10d2536e2ee07c1a83e3a61535794e8782405a31e239376b79605b",
+          "contract": {
+            "state": "not-declared"
+          }
+        },
+        {
+          "label": "GET /api/me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:10.951Z",
+          "pathTemplate": "/api/me",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "acaf923a69d0d9741c48a8b2bc57cf3fb57dc71506ad4e4ec0b0966a3810a7c4",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:11.456Z",
+          "pathTemplate": "/api/branches",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73",
+          "contract": {
+            "state": "unsupported",
+            "reason": "SCHEMA_COMPILATION_UNSUPPORTED"
+          }
+        },
+        {
+          "label": "GET /api/operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:11.473Z",
+          "pathTemplate": "/api/operators",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:11.498Z",
+          "pathTemplate": "/api/ready",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "e7c185fd7b955d80d4b9c548504efc8febd29da5b54e80d9eadfe8fc6c6cae8a",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/ops/failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:11.513Z",
+          "pathTemplate": "/api/ops/failures",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "885f003188c8d1507078c56694744b3a72cac278b062b2d354225a6a6993e1c5",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/branches/:id/print-templates",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:11.943Z",
+          "pathTemplate": "/api/branches/:id/print-templates",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "5f611712bdc0bb9ca7e7108a6eb21cddf542b21dc96b73542fd3b84f4e6a4f57",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/branches/:id/stations",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:11.960Z",
+          "pathTemplate": "/api/branches/:id/stations",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "035a8a2f7ec749540da915d0c2b5c9744b644902b7f411daa827a93d4882d043",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:11.990Z",
+          "pathTemplate": "/api/branches",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73",
+          "contract": {
+            "state": "unsupported",
+            "reason": "SCHEMA_COMPILATION_UNSUPPORTED"
+          }
+        },
+        {
+          "label": "GET /api/ops/health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:12.168Z",
+          "pathTemplate": "/api/ops/health",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "5cb9e6aad16dbfe43bb6a1503b9317ba7e4c422317187a758d0364ed06dd6c21",
+          "contract": {
+            "state": "unsupported",
+            "reason": "SCHEMA_COMPILATION_UNSUPPORTED"
+          }
+        },
+        {
+          "label": "POST /api/print-templates/:id/preview.png",
+          "method": "POST",
+          "status": 200,
+          "at": "2026-10-28T22:40:12.534Z",
+          "pathTemplate": "/api/print-templates/:id/preview.png",
+          "requestIdPresent": true,
+          "json": false,
+          "requestPayloadSha256": "8b0a302fc1631b5f55a9625d48a2289a92b48da8c468a814a78cef3e2e73ee51",
+          "targetPathSha256": "4f6788b9da1905f98ce1300c8df2ac7d1d0690c2f5a6015cc2ac9582b02b7991",
+          "contentType": "image/png",
+          "contentLength": 2249,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "bodySha256": "81b6df96bee5a055114b1d589d10e513a263276af87b298477d6cf25266bfe11",
+          "byteLength": 2249,
+          "pngMagic": true,
+          "responseFinishedHadError": false,
+          "responseFinishedErrorName": null,
+          "responseFinishedErrorSha256": null,
+          "fixturePng": true
+        },
+        {
+          "label": "POST /api/print-templates/:id/preview.png",
+          "method": "POST",
+          "status": 200,
+          "at": "2026-10-28T22:40:12.814Z",
+          "pathTemplate": "/api/print-templates/:id/preview.png",
+          "requestIdPresent": true,
+          "json": false,
+          "requestPayloadSha256": "1fd943588000758d82d8edae92692db36f9e79b16bfc397a572e81763a2415d6",
+          "targetPathSha256": "f3846b97d83b99e40e1aa578ce9f0cc5883acc55524be2720f38fa3a3943f71e",
+          "contentType": "image/png",
+          "contentLength": 7355,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "bodySha256": "6e16c3091b53d76c2017a64ff8abff4863389ab0680d77792b5f8a943a8f0a52",
+          "byteLength": 7355,
+          "pngMagic": true,
+          "responseFinishedHadError": false,
+          "responseFinishedErrorName": null,
+          "responseFinishedErrorSha256": null,
+          "fixturePng": true
+        },
+        {
+          "label": "POST /api/print-templates/:id/preview.png",
+          "method": "POST",
+          "status": 200,
+          "at": "2026-10-28T22:40:12.843Z",
+          "pathTemplate": "/api/print-templates/:id/preview.png",
+          "requestIdPresent": true,
+          "json": false,
+          "requestPayloadSha256": "a52a929b3868fbf7f60c84a90c4256fe191c6bb56986dfb4f50bb363a1e39dc6",
+          "targetPathSha256": "5d4443b76b850cbccd602ba839df127cea35215ff5625c9f7b013f62558dd59f",
+          "contentType": "image/png",
+          "contentLength": 1324,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "bodySha256": "df8926826a9acb6de4e6abe24b2930e35729121045ec4776c55a5ffe2548028b",
+          "byteLength": 1324,
+          "pngMagic": true,
+          "responseFinishedHadError": false,
+          "responseFinishedErrorName": null,
+          "responseFinishedErrorSha256": null,
+          "fixturePng": true
+        },
+        {
+          "label": "POST /api/print-templates/:id/preview.png",
+          "method": "POST",
+          "status": 200,
+          "at": "2026-10-28T22:40:13.168Z",
+          "pathTemplate": "/api/print-templates/:id/preview.png",
+          "requestIdPresent": true,
+          "json": false,
+          "requestPayloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+          "targetPathSha256": "e2900ea665b8d2bd9b0a671867da39d207a00766bb8692be7e81699af4e80de6",
+          "contentType": "image/png",
+          "contentLength": 3009,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "bodySha256": "ce517c0018eb8291f5f5c1af4953db6b66c7fdf8fbcac883dc5094aaed6b2148",
+          "byteLength": 3009,
+          "pngMagic": true,
+          "responseFinishedHadError": false,
+          "responseFinishedErrorName": null,
+          "responseFinishedErrorSha256": null,
+          "fixturePng": true
+        },
+        {
+          "label": "POST /api/print-templates/:id/preview.png",
+          "method": "POST",
+          "status": 200,
+          "at": "2026-10-28T22:40:13.259Z",
+          "pathTemplate": "/api/print-templates/:id/preview.png",
+          "requestIdPresent": true,
+          "json": false,
+          "requestPayloadSha256": "3836638052e58bfa1aa55b4260fd8272bcbe27412d5c75d362a8d1114233aa46",
+          "targetPathSha256": "26239a00e6ee7dff82824f5bd26a11946141c03b1d70b6e5baae83e17dca684d",
+          "contentType": "image/png",
+          "contentLength": 3202,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "bodySha256": "6c04a5a592d969663a705ba25be46d2a29f0cbdae276ac4c37663484632e3fb6",
+          "byteLength": 3202,
+          "pngMagic": true,
+          "responseFinishedHadError": false,
+          "responseFinishedErrorName": null,
+          "responseFinishedErrorSha256": null,
+          "fixturePng": true
+        },
+        {
+          "label": "POST /api/print-templates/:id/preview.png",
+          "method": "POST",
+          "status": 200,
+          "at": "2026-10-28T22:40:13.359Z",
+          "pathTemplate": "/api/print-templates/:id/preview.png",
+          "requestIdPresent": true,
+          "json": false,
+          "requestPayloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+          "targetPathSha256": "8ea6655f731d627a1039d291610b76a890045849da917ba627240074819b0e9a",
+          "contentType": "image/png",
+          "contentLength": 2551,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "bodySha256": "3b1b791051626182696be3e66d8b779bc2e415d9bc7171566c313e20c26006be",
+          "byteLength": 2551,
+          "pngMagic": true,
+          "responseFinishedHadError": false,
+          "responseFinishedErrorName": null,
+          "responseFinishedErrorSha256": null,
+          "fixturePng": true
+        }
+      ],
+      "cdpPreviews": [
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "4f6788b9da1905f98ce1300c8df2ac7d1d0690c2f5a6015cc2ac9582b02b7991",
+          "requestPayloadSha256": "8b0a302fc1631b5f55a9625d48a2289a92b48da8c468a814a78cef3e2e73ee51",
+          "status": 200,
+          "contentType": "image/png",
+          "contentLength": 2249,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "requestReferencePresent": true,
+          "encodedDataLength": 2533,
+          "byteLength": 2249,
+          "bodySha256": "81b6df96bee5a055114b1d589d10e513a263276af87b298477d6cf25266bfe11",
+          "pngMagic": true,
+          "base64Encoded": true
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "f3846b97d83b99e40e1aa578ce9f0cc5883acc55524be2720f38fa3a3943f71e",
+          "requestPayloadSha256": "1fd943588000758d82d8edae92692db36f9e79b16bfc397a572e81763a2415d6",
+          "status": 200,
+          "contentType": "image/png",
+          "contentLength": 7355,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "requestReferencePresent": true,
+          "encodedDataLength": 7640,
+          "byteLength": 7355,
+          "bodySha256": "6e16c3091b53d76c2017a64ff8abff4863389ab0680d77792b5f8a943a8f0a52",
+          "pngMagic": true,
+          "base64Encoded": true
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "5d4443b76b850cbccd602ba839df127cea35215ff5625c9f7b013f62558dd59f",
+          "requestPayloadSha256": "a52a929b3868fbf7f60c84a90c4256fe191c6bb56986dfb4f50bb363a1e39dc6",
+          "status": 200,
+          "contentType": "image/png",
+          "contentLength": 1324,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "requestReferencePresent": true,
+          "encodedDataLength": 1608,
+          "byteLength": 1324,
+          "bodySha256": "df8926826a9acb6de4e6abe24b2930e35729121045ec4776c55a5ffe2548028b",
+          "pngMagic": true,
+          "base64Encoded": true
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "e2900ea665b8d2bd9b0a671867da39d207a00766bb8692be7e81699af4e80de6",
+          "requestPayloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+          "status": 200,
+          "contentType": "image/png",
+          "contentLength": 3009,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "requestReferencePresent": true,
+          "encodedDataLength": 3295,
+          "byteLength": 3009,
+          "bodySha256": "ce517c0018eb8291f5f5c1af4953db6b66c7fdf8fbcac883dc5094aaed6b2148",
+          "pngMagic": true,
+          "base64Encoded": true
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "26239a00e6ee7dff82824f5bd26a11946141c03b1d70b6e5baae83e17dca684d",
+          "requestPayloadSha256": "3836638052e58bfa1aa55b4260fd8272bcbe27412d5c75d362a8d1114233aa46",
+          "status": 200,
+          "contentType": "image/png",
+          "contentLength": 3202,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "requestReferencePresent": true,
+          "encodedDataLength": 3487,
+          "byteLength": 3202,
+          "bodySha256": "6c04a5a592d969663a705ba25be46d2a29f0cbdae276ac4c37663484632e3fb6",
+          "pngMagic": true,
+          "base64Encoded": true
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "8ea6655f731d627a1039d291610b76a890045849da917ba627240074819b0e9a",
+          "requestPayloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+          "status": 200,
+          "contentType": "image/png",
+          "contentLength": 2551,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "requestReferencePresent": true,
+          "encodedDataLength": 2837,
+          "byteLength": 2551,
+          "bodySha256": "3b1b791051626182696be3e66d8b779bc2e415d9bc7171566c313e20c26006be",
+          "pngMagic": true,
+          "base64Encoded": true
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "privacySuppressedTypes": {
+        "font-stylesheet": 1,
+        "image": 1
+      },
+      "documentStatus": 200,
+      "expectedHeadingVisible": true,
+      "previewRequestContracts": [
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "validation": {
+            "state": "matched",
+            "keywords": []
+          },
+          "payloadSha256": "1fd943588000758d82d8edae92692db36f9e79b16bfc397a572e81763a2415d6",
+          "targetPathSha256": "f3846b97d83b99e40e1aa578ce9f0cc5883acc55524be2720f38fa3a3943f71e"
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "validation": {
+            "state": "matched",
+            "keywords": []
+          },
+          "payloadSha256": "8b0a302fc1631b5f55a9625d48a2289a92b48da8c468a814a78cef3e2e73ee51",
+          "targetPathSha256": "4f6788b9da1905f98ce1300c8df2ac7d1d0690c2f5a6015cc2ac9582b02b7991"
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "validation": {
+            "state": "matched",
+            "keywords": []
+          },
+          "payloadSha256": "a52a929b3868fbf7f60c84a90c4256fe191c6bb56986dfb4f50bb363a1e39dc6",
+          "targetPathSha256": "5d4443b76b850cbccd602ba839df127cea35215ff5625c9f7b013f62558dd59f"
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "validation": {
+            "state": "matched",
+            "keywords": []
+          },
+          "payloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+          "targetPathSha256": "e2900ea665b8d2bd9b0a671867da39d207a00766bb8692be7e81699af4e80de6"
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "validation": {
+            "state": "matched",
+            "keywords": []
+          },
+          "payloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+          "targetPathSha256": "8ea6655f731d627a1039d291610b76a890045849da917ba627240074819b0e9a"
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "validation": {
+            "state": "matched",
+            "keywords": []
+          },
+          "payloadSha256": "3836638052e58bfa1aa55b4260fd8272bcbe27412d5c75d362a8d1114233aa46",
+          "targetPathSha256": "26239a00e6ee7dff82824f5bd26a11946141c03b1d70b6e5baae83e17dca684d"
+        }
+      ],
+      "finalPath": "/catalogue/print-templates",
+      "visibleStateTags": [],
+      "headingsSha256": "e11a2d99ef50e6339968082e98adadce7016ec3d1a281a646093f5eedd54b4b1",
+      "observed": true,
+      "defaultViewClean": true,
+      "contractCoverage": {
+        "matched": 7,
+        "mismatch": 0,
+        "notDeclared": 1,
+        "unsupported": 3
+      },
+      "appFetch": {
+        "records": [
+          {
+            "at": "2026-10-28T22:40:11.964Z",
+            "operation": "POST /api/print-templates/:id/preview.png",
+            "requestPayloadSha256": "8b0a302fc1631b5f55a9625d48a2289a92b48da8c468a814a78cef3e2e73ee51",
+            "targetPathSha256": "4f6788b9da1905f98ce1300c8df2ac7d1d0690c2f5a6015cc2ac9582b02b7991",
+            "status": 200,
+            "contentType": "image/png",
+            "requestReferencePresent": true,
+            "byteLength": 2249,
+            "bodySha256": "81b6df96bee5a055114b1d589d10e513a263276af87b298477d6cf25266bfe11",
+            "pngMagic": true,
+            "originalBodyUsedAtReturn": false,
+            "returnedOriginalResponse": true
+          },
+          {
+            "at": "2026-10-28T22:40:11.961Z",
+            "operation": "POST /api/print-templates/:id/preview.png",
+            "requestPayloadSha256": "1fd943588000758d82d8edae92692db36f9e79b16bfc397a572e81763a2415d6",
+            "targetPathSha256": "f3846b97d83b99e40e1aa578ce9f0cc5883acc55524be2720f38fa3a3943f71e",
+            "status": 200,
+            "contentType": "image/png",
+            "requestReferencePresent": true,
+            "byteLength": 7355,
+            "bodySha256": "6e16c3091b53d76c2017a64ff8abff4863389ab0680d77792b5f8a943a8f0a52",
+            "pngMagic": true,
+            "originalBodyUsedAtReturn": false,
+            "returnedOriginalResponse": true
+          },
+          {
+            "at": "2026-10-28T22:40:11.964Z",
+            "operation": "POST /api/print-templates/:id/preview.png",
+            "requestPayloadSha256": "a52a929b3868fbf7f60c84a90c4256fe191c6bb56986dfb4f50bb363a1e39dc6",
+            "targetPathSha256": "5d4443b76b850cbccd602ba839df127cea35215ff5625c9f7b013f62558dd59f",
+            "status": 200,
+            "contentType": "image/png",
+            "requestReferencePresent": true,
+            "byteLength": 1324,
+            "bodySha256": "df8926826a9acb6de4e6abe24b2930e35729121045ec4776c55a5ffe2548028b",
+            "pngMagic": true,
+            "originalBodyUsedAtReturn": false,
+            "returnedOriginalResponse": true
+          },
+          {
+            "at": "2026-10-28T22:40:11.964Z",
+            "operation": "POST /api/print-templates/:id/preview.png",
+            "requestPayloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+            "targetPathSha256": "e2900ea665b8d2bd9b0a671867da39d207a00766bb8692be7e81699af4e80de6",
+            "status": 200,
+            "contentType": "image/png",
+            "requestReferencePresent": true,
+            "byteLength": 3009,
+            "bodySha256": "ce517c0018eb8291f5f5c1af4953db6b66c7fdf8fbcac883dc5094aaed6b2148",
+            "pngMagic": true,
+            "originalBodyUsedAtReturn": false,
+            "returnedOriginalResponse": true
+          },
+          {
+            "at": "2026-10-28T22:40:11.965Z",
+            "operation": "POST /api/print-templates/:id/preview.png",
+            "requestPayloadSha256": "3836638052e58bfa1aa55b4260fd8272bcbe27412d5c75d362a8d1114233aa46",
+            "targetPathSha256": "26239a00e6ee7dff82824f5bd26a11946141c03b1d70b6e5baae83e17dca684d",
+            "status": 200,
+            "contentType": "image/png",
+            "requestReferencePresent": true,
+            "byteLength": 3202,
+            "bodySha256": "6c04a5a592d969663a705ba25be46d2a29f0cbdae276ac4c37663484632e3fb6",
+            "pngMagic": true,
+            "originalBodyUsedAtReturn": false,
+            "returnedOriginalResponse": true
+          },
+          {
+            "at": "2026-10-28T22:40:11.965Z",
+            "operation": "POST /api/print-templates/:id/preview.png",
+            "requestPayloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+            "targetPathSha256": "8ea6655f731d627a1039d291610b76a890045849da917ba627240074819b0e9a",
+            "status": 200,
+            "contentType": "image/png",
+            "requestReferencePresent": true,
+            "byteLength": 2551,
+            "bodySha256": "3b1b791051626182696be3e66d8b779bc2e415d9bc7171566c313e20c26006be",
+            "pngMagic": true,
+            "originalBodyUsedAtReturn": false,
+            "returnedOriginalResponse": true
+          }
+        ],
+        "pending": 0,
+        "overflow": false
+      },
+      "nativeBlobImages": [
+        {
+          "complete": true,
+          "naturalWidth": 576,
+          "naturalHeight": 715,
+          "rendered": true
+        },
+        {
+          "complete": true,
+          "naturalWidth": 400,
+          "naturalHeight": 390,
+          "rendered": true
+        },
+        {
+          "complete": true,
+          "naturalWidth": 400,
+          "naturalHeight": 276,
+          "rendered": true
+        },
+        {
+          "complete": true,
+          "naturalWidth": 576,
+          "naturalHeight": 255,
+          "rendered": true
+        },
+        {
+          "complete": true,
+          "naturalWidth": 576,
+          "naturalHeight": 238,
+          "rendered": true
+        },
+        {
+          "complete": true,
+          "naturalWidth": 576,
+          "naturalHeight": 388,
+          "rendered": true
+        }
+      ],
+      "nativeBlobImageCount": 6,
+      "nativeBlobImageListTruncated": false,
+      "previewComparisons": [
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "4f6788b9da1905f98ce1300c8df2ac7d1d0690c2f5a6015cc2ac9582b02b7991",
+          "requestPayloadSha256": "8b0a302fc1631b5f55a9625d48a2289a92b48da8c468a814a78cef3e2e73ee51",
+          "appCloneByteLength": 2249,
+          "appClonePngMagic": true,
+          "observerCaptureCount": 1,
+          "observerEmptyCount": 0,
+          "observerMatchesClone": [
+            true
+          ],
+          "cdpCaptureCount": 1,
+          "cdpEmptyCount": 0,
+          "cdpMatchesClone": [
+            true
+          ]
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "f3846b97d83b99e40e1aa578ce9f0cc5883acc55524be2720f38fa3a3943f71e",
+          "requestPayloadSha256": "1fd943588000758d82d8edae92692db36f9e79b16bfc397a572e81763a2415d6",
+          "appCloneByteLength": 7355,
+          "appClonePngMagic": true,
+          "observerCaptureCount": 1,
+          "observerEmptyCount": 0,
+          "observerMatchesClone": [
+            true
+          ],
+          "cdpCaptureCount": 1,
+          "cdpEmptyCount": 0,
+          "cdpMatchesClone": [
+            true
+          ]
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "5d4443b76b850cbccd602ba839df127cea35215ff5625c9f7b013f62558dd59f",
+          "requestPayloadSha256": "a52a929b3868fbf7f60c84a90c4256fe191c6bb56986dfb4f50bb363a1e39dc6",
+          "appCloneByteLength": 1324,
+          "appClonePngMagic": true,
+          "observerCaptureCount": 1,
+          "observerEmptyCount": 0,
+          "observerMatchesClone": [
+            true
+          ],
+          "cdpCaptureCount": 1,
+          "cdpEmptyCount": 0,
+          "cdpMatchesClone": [
+            true
+          ]
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "e2900ea665b8d2bd9b0a671867da39d207a00766bb8692be7e81699af4e80de6",
+          "requestPayloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+          "appCloneByteLength": 3009,
+          "appClonePngMagic": true,
+          "observerCaptureCount": 1,
+          "observerEmptyCount": 0,
+          "observerMatchesClone": [
+            true
+          ],
+          "cdpCaptureCount": 1,
+          "cdpEmptyCount": 0,
+          "cdpMatchesClone": [
+            true
+          ]
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "26239a00e6ee7dff82824f5bd26a11946141c03b1d70b6e5baae83e17dca684d",
+          "requestPayloadSha256": "3836638052e58bfa1aa55b4260fd8272bcbe27412d5c75d362a8d1114233aa46",
+          "appCloneByteLength": 3202,
+          "appClonePngMagic": true,
+          "observerCaptureCount": 1,
+          "observerEmptyCount": 0,
+          "observerMatchesClone": [
+            true
+          ],
+          "cdpCaptureCount": 1,
+          "cdpEmptyCount": 0,
+          "cdpMatchesClone": [
+            true
+          ]
+        },
+        {
+          "operation": "POST /api/print-templates/:id/preview.png",
+          "targetPathSha256": "8ea6655f731d627a1039d291610b76a890045849da917ba627240074819b0e9a",
+          "requestPayloadSha256": "8f5b659fee70948e87f60484311f7d02ee4eeb82842c75680fb5ce3895a69a81",
+          "appCloneByteLength": 2551,
+          "appClonePngMagic": true,
+          "observerCaptureCount": 1,
+          "observerEmptyCount": 0,
+          "observerMatchesClone": [
+            true
+          ],
+          "cdpCaptureCount": 1,
+          "cdpEmptyCount": 0,
+          "cdpMatchesClone": [
+            true
+          ]
+        }
+      ],
+      "byteCaptureComplete": true,
+      "pendingBeforeClose": {
+        "observer": 0,
+        "cdp": 0,
+        "fetch": 0
+      },
+      "pendingAtClose": 0
+    },
+    {
+      "id": "booths",
+      "path": "/devices/booths",
+      "expectedTitle": "Booths",
+      "reads": [
+        {
+          "label": "GET /api/me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:15.539Z",
+          "pathTemplate": "/api/me",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "acaf923a69d0d9741c48a8b2bc57cf3fb57dc71506ad4e4ec0b0966a3810a7c4",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/me/permissions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:16.011Z",
+          "pathTemplate": "/api/me/permissions",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "6f945caadc10d2536e2ee07c1a83e3a61535794e8782405a31e239376b79605b",
+          "contract": {
+            "state": "not-declared"
+          }
+        },
+        {
+          "label": "GET /api/me",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:16.490Z",
+          "pathTemplate": "/api/me",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "acaf923a69d0d9741c48a8b2bc57cf3fb57dc71506ad4e4ec0b0966a3810a7c4",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/operators",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:16.950Z",
+          "pathTemplate": "/api/operators",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "d78984729c3c39c1b27ff9be0b6d9268885ddf42da72949ac8672c065da45d9b",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/branches",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:16.972Z",
+          "pathTemplate": "/api/branches",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "23edfdbcd368431412776937fb50ec8bfbcc3ba1e9c827dd51059b6815f61b73",
+          "contract": {
+            "state": "unsupported",
+            "reason": "SCHEMA_COMPILATION_UNSUPPORTED"
+          }
+        },
+        {
+          "label": "GET /api/branches/:id/booths",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:16.987Z",
+          "pathTemplate": "/api/branches/:id/booths",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "eb7ce265ce1b0af681fb450755fd4ab14a61005a46395f26bc68b2baafac6785",
+          "contract": {
+            "state": "not-declared"
+          }
+        },
+        {
+          "label": "GET /api/ready",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:16.988Z",
+          "pathTemplate": "/api/ready",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "2acc15c6296859f51648eb9d3c798546c09611df037c19ccb50f84011569d2a4",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/booth-layouts",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:16.997Z",
+          "pathTemplate": "/api/booth-layouts",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "0d1642c1f23cc4b06f5355067d59441bf08332198606fc01eb576ce9dc1b2311",
+          "contract": {
+            "state": "not-declared"
+          }
+        },
+        {
+          "label": "GET /api/ops/failures",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:16.999Z",
+          "pathTemplate": "/api/ops/failures",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "885f003188c8d1507078c56694744b3a72cac278b062b2d354225a6a6993e1c5",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/voucher-definitions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:17.364Z",
+          "pathTemplate": "/api/voucher-definitions",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "dda28a887503e3070149859cafc02ebd036ba85633c6aaa1dfd4f846981931d2",
+          "contract": {
+            "state": "unsupported",
+            "reason": "SCHEMA_COMPILATION_UNSUPPORTED"
+          }
+        },
+        {
+          "label": "GET /api/booths/:id/screens",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:17.477Z",
+          "pathTemplate": "/api/booths/:id/screens",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "aa7023a8c0a186f11e72a9b2f0accc50a836eb959ec7742ba8e5cefdaa1e559d",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/ops/health",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:17.493Z",
+          "pathTemplate": "/api/ops/health",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "6d5878ee89d85703321ac52deae18e1d0a941a5f0ca39231fd5011f5b8dd9c9d",
+          "contract": {
+            "state": "unsupported",
+            "reason": "SCHEMA_COMPILATION_UNSUPPORTED"
+          }
+        },
+        {
+          "label": "GET /api/booths/:id/status",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:17.494Z",
+          "pathTemplate": "/api/booths/:id/status",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "e25f645ff74675f80ca395ac7e4044040d3b100d35d38be9b22ae31a20dacbbf",
+          "contract": {
+            "state": "not-declared"
+          }
+        },
+        {
+          "label": "GET /api/booths/:id/versions",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:17.527Z",
+          "pathTemplate": "/api/booths/:id/versions",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "9c26f65a0dfb280d177d66de9af259442dda69df97292979b58dfed6881f02e7",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/booths/:id/draft",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:17.527Z",
+          "pathTemplate": "/api/booths/:id/draft",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "e0e652515ac82c1f89e86f442081ccd7e06b95c731a90a87692ecfb503002998",
+          "contract": {
+            "state": "not-declared"
+          }
+        },
+        {
+          "label": "GET /api/booths/:id/staff",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:17.884Z",
+          "pathTemplate": "/api/booths/:id/staff",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "613d22c15e208e84877069ccf004d29f7c2074a3b0f541a83879114249e54bb7",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/booths/:id/duty",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:18.113Z",
+          "pathTemplate": "/api/booths/:id/duty",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "d102ef9bdcbc1f46dba31f5e50a96f384a0e0f0b647adb4a4a3c37da6d2aca0d",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/booths/:id/spins",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:18.115Z",
+          "pathTemplate": "/api/booths/:id/spins",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "360a0eaab0d1ec741a21086ce7108f884d55d78b9942896acc246fba9ace7947",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/branches/:id/staff",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:18.136Z",
+          "pathTemplate": "/api/branches/:id/staff",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "4647e550fb8121cf6a34ee76aebe2461613a4ad1e25951e2845cf28178e2a68d",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "GET /api/branches/:id/staff",
+          "method": "GET",
+          "status": 200,
+          "at": "2026-10-28T22:40:18.143Z",
+          "pathTemplate": "/api/branches/:id/staff",
+          "requestIdPresent": true,
+          "json": true,
+          "bodySha256": "4647e550fb8121cf6a34ee76aebe2461613a4ad1e25951e2845cf28178e2a68d",
+          "contract": {
+            "state": "matched",
+            "keywords": []
+          }
+        },
+        {
+          "label": "POST /api/booths/:id/voucher-preview.png",
+          "method": "POST",
+          "status": 200,
+          "at": "2026-10-28T22:40:18.536Z",
+          "pathTemplate": "/api/booths/:id/voucher-preview.png",
+          "requestIdPresent": true,
+          "json": false,
+          "requestPayloadSha256": "fdf967eeac32d29ef6a86c35e65f2d3b968aa3daa64d79f0f8aa4f5c5940e1d3",
+          "targetPathSha256": "78d1b9c6283c0c7caeaf325e9f8159b17aaa278601ee9b7e544c5e6bf460b7d5",
+          "contentType": "image/png",
+          "contentLength": 4526,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "bodySha256": "066aca6b6f9b3f481920c6ead1124e08fb5a80f2d731427886fc859b9631e72e",
+          "byteLength": 4526,
+          "pngMagic": true,
+          "responseFinishedHadError": false,
+          "responseFinishedErrorName": null,
+          "responseFinishedErrorSha256": null,
+          "fixturePng": true
+        }
+      ],
+      "cdpPreviews": [
+        {
+          "operation": "POST /api/booths/:id/voucher-preview.png",
+          "targetPathSha256": "78d1b9c6283c0c7caeaf325e9f8159b17aaa278601ee9b7e544c5e6bf460b7d5",
+          "requestPayloadSha256": "fdf967eeac32d29ef6a86c35e65f2d3b968aa3daa64d79f0f8aa4f5c5940e1d3",
+          "status": 200,
+          "contentType": "image/png",
+          "contentLength": 4526,
+          "contentLengthPresent": true,
+          "contentEncoding": "not-provided",
+          "requestReferencePresent": true,
+          "encodedDataLength": 4814,
+          "byteLength": 4526,
+          "bodySha256": "066aca6b6f9b3f481920c6ead1124e08fb5a80f2d731427886fc859b9631e72e",
+          "pngMagic": true,
+          "base64Encoded": true
+        }
+      ],
+      "blocked": [],
+      "failures": [],
+      "scriptErrors": 0,
+      "consoleErrors": 0,
+      "privacySuppressed": 2,
+      "privacySuppressedTypes": {
+        "font-stylesheet": 1,
+        "image": 1
+      },
+      "documentStatus": 200,
+      "expectedHeadingVisible": true,
+      "previewRequestContracts": [
+        {
+          "operation": "POST /api/booths/:id/voucher-preview.png",
+          "validation": {
+            "state": "matched",
+            "keywords": []
+          },
+          "payloadSha256": "fdf967eeac32d29ef6a86c35e65f2d3b968aa3daa64d79f0f8aa4f5c5940e1d3",
+          "targetPathSha256": "78d1b9c6283c0c7caeaf325e9f8159b17aaa278601ee9b7e544c5e6bf460b7d5"
+        }
+      ],
+      "finalPath": "/devices/booths",
+      "visibleStateTags": [
+        "access-refusal",
+        "empty-reading"
+      ],
+      "headingsSha256": "545dd1fda291b180e7c877a8f616fdff3590e3a9710d8fa0cacd9dec04170d92",
+      "observed": true,
+      "defaultViewClean": true,
+      "contractCoverage": {
+        "matched": 12,
+        "mismatch": 0,
+        "notDeclared": 5,
+        "unsupported": 3
+      },
+      "appFetch": {
+        "records": [
+          {
+            "at": "2026-10-28T22:40:17.982Z",
+            "operation": "POST /api/booths/:id/voucher-preview.png",
+            "requestPayloadSha256": "fdf967eeac32d29ef6a86c35e65f2d3b968aa3daa64d79f0f8aa4f5c5940e1d3",
+            "targetPathSha256": "78d1b9c6283c0c7caeaf325e9f8159b17aaa278601ee9b7e544c5e6bf460b7d5",
+            "status": 200,
+            "contentType": "image/png",
+            "requestReferencePresent": true,
+            "byteLength": 4526,
+            "bodySha256": "066aca6b6f9b3f481920c6ead1124e08fb5a80f2d731427886fc859b9631e72e",
+            "pngMagic": true,
+            "originalBodyUsedAtReturn": false,
+            "returnedOriginalResponse": true
+          }
+        ],
+        "pending": 0,
+        "overflow": false
+      },
+      "nativeBlobImages": [
+        {
+          "complete": true,
+          "naturalWidth": 576,
+          "naturalHeight": 533,
+          "rendered": true
+        }
+      ],
+      "nativeBlobImageCount": 1,
+      "nativeBlobImageListTruncated": false,
+      "previewComparisons": [
+        {
+          "operation": "POST /api/booths/:id/voucher-preview.png",
+          "targetPathSha256": "78d1b9c6283c0c7caeaf325e9f8159b17aaa278601ee9b7e544c5e6bf460b7d5",
+          "requestPayloadSha256": "fdf967eeac32d29ef6a86c35e65f2d3b968aa3daa64d79f0f8aa4f5c5940e1d3",
+          "appCloneByteLength": 4526,
+          "appClonePngMagic": true,
+          "observerCaptureCount": 1,
+          "observerEmptyCount": 0,
+          "observerMatchesClone": [
+            true
+          ],
+          "cdpCaptureCount": 1,
+          "cdpEmptyCount": 0,
+          "cdpMatchesClone": [
+            true
+          ]
+        }
+      ],
+      "byteCaptureComplete": true,
+      "pendingBeforeClose": {
+        "observer": 0,
+        "cdp": 0,
+        "fetch": 0
+      },
+      "pendingAtClose": 0
+    }
+  ],
+  "screenshots": [],
+  "local": {
+    "inputSha256": "4afe28d02c02509f6652c892305d21c107f69ee4b647082d77715e793b4704b7",
+    "moduleHashes": {
+      "inventory.mjs": "b07f38b04e65085ce9a36e19205669c2796b5aac8101c54392320c98ee2c027e",
+      "contracts.mjs": "ca264ace4d2e716fa02e048fb52818e2e394135ce5d2937ae2138ad6079547e0"
+    },
+    "readPolicySha256": "c4ce8ef128f23894ef53830e6b7ed013eb8a615091bbab5275f8392d0e0533bc",
+    "canonicalCount": 66,
+    "canonicalSha256": "52cbffec3f700eb379695906a65877d0b112c499be803a19de168dfa84ab2803",
+    "openapiSha256": "810343a53c08c9ad3c5576b3a1a3858ba0455e8826a2bf365f22e075024850e3",
+    "nativeBrowserPassed": 359,
+    "nativeBrowserReceiptSha256": "1556fcfa5f58fe139c18c45ade8deee253bd0f025a6d37e94b85bd6bc2676da1",
+    "nativeBrowserLogSha256": "53caf2a068323bb33fd3bd1abc224cefe362fc2edd81c9d686c952afa923f88f"
+  },
+  "auth": {
+    "attempted": true,
+    "signInStatus": 200,
+    "ambiguous": false
+  },
+  "cleanup": {
+    "originalCookieObserved": true,
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "businessWrites": 0,
+  "fixtureRecordsCreated": 0,
+  "expectedScreenshotCount": 0,
+  "limitations": [
+    "Requests are native GET reads, two reviewed fixture-preview POST operations, and private sign-in/exact-session sign-out POSTs.",
+    "Only native default views are visited. The two reviewed fixture-preview POSTs render samples only; no filter, fault, payment, provider, hardware or business mutation is dispatched.",
+    "This checks two default-view responses, not every filter, total, workflow or possible data state. No screenshots or raw DOM text are saved.",
+    "Native read endpoints may create their ordinary read-audit entries. No business mutation request is dispatched.",
+    "Only two native default pages are visited. Exact preview fetch responses are cloned and measured before the unchanged original Response is returned; no mocked/replaced data or new business action is used.",
+    "Image/font/media display stays suppressed by the reviewed policy. Passive native blob-image dimensions are recorded, but an image blocked by privacy is not evidence that the API PNG was empty. No screenshots or raw payloads/PNG bytes are saved.",
+    "The clone measurement adds a bounded wait before returning the original Response. Application response.blob() size is not patched or measured directly; only the clone bytes and passive native image dimensions are observed.",
+    "Diagnostic completion is separate from defaultViewClean/fullAuditComplete. Original seven empty observer reads and response validation are not waived.",
+    "Declared supported JSON schemas are checked using existing Fastify Ajv dependencies. Unsupported or missing schemas are explicit limitations, never reported as matches. This helper does not certify every workflow or asset-byte closure."
+  ],
+  "authorityBeforeSha256": "26285e2046c02992d082251e14aeb94ed794fb3f5224c4b67858ab7cf532448a",
+  "permissionsBeforeSha256": "629511ea66449436e642228665bf103cbd220a03500a7235b4fea876f1c1f03a",
+  "authorityAfterSha256": "26285e2046c02992d082251e14aeb94ed794fb3f5224c4b67858ab7cf532448a",
+  "permissionsAfterSha256": "629511ea66449436e642228665bf103cbd220a03500a7235b4fea876f1c1f03a",
+  "finishedAt": "2026-10-28T22:40:25.327Z",
+  "walkComplete": true,
+  "derivedViewCount": 2,
+  "inventoryCanonicalViewCount": 66,
+  "cleanDefaultViews": 2,
+  "contractCoverage": {
+    "matched": 19,
+    "mismatch": 0,
+    "notDeclared": 6,
+    "unsupported": 6
+  },
+  "complete": true,
+  "completeMeaning": "Two-page diagnostic observations settled and authority/deployment/cleanup guards passed; this is not the full audit or a waiver of any failed PNG/schema observation."
+}
