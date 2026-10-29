@@ -352,9 +352,9 @@ services:
         #   https://oto-app-staging.onrender.com,
         #   https://oto-booth-staging.onrender.com
         #
-        # The booth is here for its launcher sign-on (SCRUM-528): its page
-        # posts the hand-off to /api/auth/handoff/exchange through its own
-        # rewrite. Its /booth/* calls carry no Origin-checked session.
+        # The booth is here from its launcher sign-on (SCRUM-528), which
+        # SCRUM-694 removed: nothing on its page posts a hand-off any more.
+        # Its /booth/* calls carry no Origin-checked session.
         #
         # (one line, no spaces). Leaving one out does not fail a deploy — it
         # fails that app's writes at runtime with ORIGIN_NOT_ALLOWED, which is
@@ -833,9 +833,9 @@ services:
       - type: rewrite
         source: /booth/*
         destination: https://oto-api-staging.onrender.com/booth/*
-      # The launcher sign-on (SCRUM-528): the page posts its hand-off to
-      # /api/auth/handoff/exchange. The api answers the booth with an identity
-      # and no cookie, so nothing of the platform session lands on this origin.
+      # Kept because the Render dashboard, not this file, is what runs: nothing
+      # on the booth page calls /api/* since SCRUM-694 (no launcher sign-on; the
+      # Lucky Wheel tile opens the demonstration wheel with no hand-off).
       - type: rewrite
         source: /api/*
         destination: https://oto-api-staging.onrender.com/*

@@ -16,7 +16,7 @@
  */
 
 import { BOOTH_DEVICE_HEADER, type BoothReprintRequest } from '@oto/shared';
-import { flags } from '../flags';
+import { flags, withoutHandoff } from '../flags';
 import {
   BOOTH_ERROR_CODES,
   BoothCallError,
@@ -24,16 +24,12 @@ import {
   type BoothErrorCode,
   type BoothReprintResponse,
   type BoothStatus,
-  type BoothStaffChoice,
   type BoothTransport,
   type SpinRequest,
   type SpinResponse,
-  type StaffSignInRequest,
-  type StaffSignInResponse,
 } from './contract';
 import { FakeBooth } from './fake';
 import { boothHost } from './host';
-import { launcherSignOn } from './signon';
 
 /**
  * The paired screen's credential (SCRUM-244).
@@ -213,10 +209,6 @@ async function call<T>(
 class HttpBooth implements BoothTransport {
   readonly kind = 'http' as const;
 
-  getStaff(): Promise<{ staff: BoothStaffChoice[] }> {
-    return call('/staff');
-  }
-
   getConfig(): Promise<BoothConfigResponse> {
     return call<BoothConfigResponse>('/config');
   }
@@ -233,17 +225,6 @@ class HttpBooth implements BoothTransport {
     return call<SpinResponse>('/print', { method: 'POST', body: JSON.stringify(request) });
   }
 
-  signIn(request: StaffSignInRequest): Promise<StaffSignInResponse> {
-    return call<StaffSignInResponse>('/staff/sign-in', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  async signOut(): Promise<void> {
-    await call<void>('/staff/sign-out', { method: 'POST', body: '{}' });
-  }
-
   reprint(request: BoothReprintRequest): Promise<BoothReprintResponse> {
     return call<BoothReprintResponse>('/reprint', {
       method: 'POST',
@@ -255,10 +236,10 @@ class HttpBooth implements BoothTransport {
 function chooseTransport(): BoothTransport {
   // A booth box is always the real thing: there is no demo mode on a Pi.
   if (boothHost === 'box') return new HttpBooth();
-  // Opened from the launcher (SCRUM-528): the demonstration wheel, with the
-  // person on duty. A paired screen never arrives with a hand-off, so the
-  // pairing path below is the same as it was.
-  if (launcherSignOn.active) return new FakeBooth();
+  // A launcher tab opened before SCRUM-694 still sends a hand-off: it is
+  // never exchanged (see `scrubStaleHandoff`), and the tab gets the
+  // demonstration wheel it expected. A paired screen never arrives with one.
+  if (flags.staleHandoff) return new FakeBooth();
   if (flags.live) return new HttpBooth();
   if (flags.fake) return new FakeBooth();
   const configured = import.meta.env.VITE_BOOTH_FAKE;
@@ -266,6 +247,22 @@ function chooseTransport(): BoothTransport {
   if (configured === '0') return new HttpBooth();
   return import.meta.env.DEV ? new FakeBooth() : new HttpBooth();
 }
+
+/**
+ * One release only (SCRUM-694): a `#handoff=` fragment from a launcher tab
+ * opened before this release is taken out of the address and never exchanged.
+ * The booth no longer signs anybody on, and the launcher no longer mints one.
+ */
+function scrubStaleHandoff(): void {
+  if (typeof window === 'undefined' || !flags.staleHandoff) return;
+  try {
+    const rest = withoutHandoff(window.location.hash);
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${rest}`);
+  } catch {
+    // A browser that refuses still never exchanges the token.
+  }
+}
+scrubStaleHandoff();
 
 /** One transport for the life of the page. */
 export const booth: BoothTransport = chooseTransport();

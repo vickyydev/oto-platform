@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 /**
- * SCRUM-223 — the red button while the staff sign-in form has the keyboard.
+ * SCRUM-223, SCRUM-694 — the red button, and the key in a field.
  *
- * The button and the keyboard's space bar send the same key, so a press there
- * cannot be told from a space typed into a password: the page lets the field
- * have the key, draws nothing, and says so on screen (`onPressWhileTyping`).
- * Everywhere else the key is a press, as before.
+ * Nobody signs in at a booth any more; the one field on the booth's screens
+ * is the claim code a box is set up with. The button and the keyboard send
+ * the same key, so a press while a field has the keyboard is the field's
+ * character: nothing is drawn and the field keeps it. Everywhere else the key
+ * is a press, as before, and holding it three seconds on a ready wheel opens
+ * the staff panel.
  *
  * There is no DOM under Node's test runner, so the listener is driven the way
  * a browser would drive it: `window` and `HTMLElement` are stood in before the
@@ -62,18 +64,17 @@ function key(type: 'keydown' | 'keyup', target: FakeElement, repeat = false): Fa
 }
 
 function listen() {
-  const seen = { presses: 0, held: 0 };
+  const seen = { presses: 0 };
   const remove = installPressListener({
     buttonKey: 'Space',
     lockoutMs: () => 0,
     onPress: () => (seen.presses += 1),
-    onPressWhileTyping: () => (seen.held += 1),
   });
   return { seen, remove };
 }
 
 const body = new FakeElement('BODY');
-const password = new FakeElement('INPUT');
+const field = new FakeElement('INPUT');
 
 test('on the game the button key spins immediately; overlays move, select and repeat', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 10_000 });
@@ -81,7 +82,6 @@ test('on the game the button key spins immediately; overlays move, select and re
   const down = key('keydown', body);
   const up = key('keyup', body);
   assert.equal(seen.presses, 1);
-  assert.equal(seen.held, 0);
   assert.equal(down.defaultPrevented, true);
   assert.equal(up.defaultPrevented, true);
   let moves = 0;
@@ -132,16 +132,14 @@ test('on the game the button key spins immediately; overlays move, select and re
   stop();
 });
 
-test('in a staff field the key is the field’s: nothing is drawn, and the page is told', () => {
+test('a key typed into a field (the claim code) is the field’s, is not prevented and is not a press', () => {
   const { seen, remove } = listen();
-  const down = key('keydown', password);
-  assert.equal(seen.presses, 0, 'no spin — a space in a password would give a prize away');
-  assert.equal(seen.held, 1, 'the screen says staff are signing in');
+  const down = key('keydown', field);
+  assert.equal(seen.presses, 0, 'no spin — a letter in a code would give a prize away');
   assert.equal(down.defaultPrevented, false, 'the field keeps the character');
-  // Held down, the key repeats: one notice, still no press.
-  key('keydown', password, true);
-  assert.equal(seen.held, 1);
-  // And its release is not a press either, even if the form has gone by then.
+  // Held down, the key repeats: still no press.
+  key('keydown', field, true);
+  // And its release is not a press either, even if the field has gone by then.
   key('keyup', body);
   assert.equal(seen.presses, 0);
   remove();
@@ -151,7 +149,7 @@ test('a release whose press was swallowed elsewhere is still a press — but not
   const { seen, remove } = listen();
   key('keyup', body);
   assert.equal(seen.presses, 1, 'a keydown something ate: the release is the press');
-  key('keyup', password);
+  key('keyup', field);
   assert.equal(seen.presses, 1, 'a release in a field is the field’s');
   remove();
 });

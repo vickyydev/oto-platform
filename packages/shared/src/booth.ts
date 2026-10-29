@@ -12,8 +12,9 @@
  *   - **Nothing personal reaches the television (D15).** No phone number, no
  *     name, no child record, no token, no origin, no key, no stack trace. The
  *     outgoing game shipped a staff PIN literal in a public bundle; the shapes
- *     below are drawn so that mistake has nowhere to live. The PIN is verified
- *     on the box; the page sends it and is told yes or no.
+ *     below are drawn so that mistake has nowhere to live. Nobody signs in at
+ *     a booth (SCRUM-694): the one name the television carries is today's
+ *     roster label, the Staff row the slip prints, which the Console set.
  *   - **A box only ever speaks about itself.** The heartbeat block below is
  *     counts and states for THIS booth.
  *   - **Weights are integers.** `weightBp` is basis points and the active
@@ -482,12 +483,6 @@ export interface SpinResponse {
    */
   staffLabel?: string | null;
   /**
-   * @deprecated Since SCRUM-694 nobody signs in at the booth and a new box
-   * never sends this. An older box sends the account that was signed in. The
-   * field goes with its last reader.
-   */
-  staffAccountId?: string | null;
-  /**
    * The box could not vouch for its own clock when it stamped the spin — a Pi
    * has no clock battery and a booth that came up after a mall power cut with
    * no NTP will happily stamp 1970 on a morning's spins. It travels to the page
@@ -628,125 +623,15 @@ export function boothDutyLabel(input: {
   return joinBoothStaffNames(people.map((p) => p.displayName));
 }
 
-// --- Signing in at the booth (SCRUM-223) ------------------------------------
+// --- Reprinting at the booth -----------------------------------------------
 
 /**
- * How the person at the booth proved who they are.
+ * `POST /booth/reprint` — the last voucher of this booth, or one spin's.
  *
- * `pin` is checked on the box against the argon2id hashes on its staff scope,
- * with or without internet. `account` is a phone and password checked by the
- * CLOUD — the box forwards them to `BOOTH_STAFF_VERIFY_PATH` under its own
- * credential — so it needs the internet and is refused without it. `badge` is
- * declared and still finds nobody (no badge hash is sent to a box yet).
+ * Nobody signs in first (SCRUM-694): the staff panel has no credential behind
+ * it, and a reprint is the code already issued, marked "Reprint", never a new
+ * draw.
  */
-export const BOOTH_SIGN_IN_METHODS = ['pin', 'account', 'badge'] as const;
-export type BoothSignInMethod = (typeof BOOTH_SIGN_IN_METHODS)[number];
-
-/**
- * Why a sign-in at the booth was refused, as a CODE the television turns into
- * its own words (D15). None of these is an error: a refused sign-in is a 200
- * with `ok: false`, and the wheel goes on playing unattributed.
- *
- *  - `wrong` — the PIN, or the phone and password, did not match.
- *  - `locked` — too many wrong attempts; `retryAfterMs` says how long.
- *  - `offline` — an account sign-in needs the internet and the box has none.
- *    The television says "No internet — sign in with your PIN".
- *  - `not_allowed` — the password was right, and this person's role does not
- *    carry `booth:staff:sign_in`.
- *  - `not_assigned` — the password was right, and an administrator has not
- *    put this person on this booth.
- *  - `must_change_password` — a temporary password: change it on the POS
- *    first. A booth has no screen for choosing a new one.
- *  - `unavailable` — the box could not check at all (no station, no store).
- *  - `box_refused` — the cloud answered, and refused the BOX rather than the
- *    person: its credential was revoked or replaced in the Console, or the box
- *    was taken out of service. The internet is fine, so "No internet" would
- *    be untrue; the television says the box is no longer allowed here.
- *  - `booth_not_on_box` — the cloud answered that this booth station is not
- *    on this box any more: moved to another box, archived, or no longer a
- *    booth. This box's copy is out of date until its next pull.
- *  - `not_a_badge` — what was scanned at the badge path is a staff benefit QR
- *    (S2-21 round 2, plan H8): it applies a benefit at the F&B order station
- *    and signs nobody in. Not counted as a wrong guess — it can never sign
- *    anybody in, so there is nothing to slow down.
- */
-export const BOOTH_SIGN_IN_REFUSALS = [
-  'pin_expired',
-  'wrong',
-  'locked',
-  'offline',
-  'not_allowed',
-  'not_assigned',
-  'must_change_password',
-  'unavailable',
-  'box_refused',
-  'booth_not_on_box',
-  'not_a_badge',
-] as const;
-export type BoothSignInRefusal = (typeof BOOTH_SIGN_IN_REFUSALS)[number];
-
-/**
- * Who is signed in at the booth, as the television shows it.
- *
- * **A deliberate change to D15, on the owner's instruction of 24 September**:
- * the corner of the screen names the person attending, the way a name badge
- * would. It carries the display name and the staff code and nothing else — no
- * account id, no phone, nothing that is a credential.
- */
-export interface BoothStaffOnDuty {
-  name: string | null;
-  code: string | null;
-  method: BoothSignInMethod;
-  signedInAt: string;
-  /** When the session ends by itself: sign-in plus the booth's session length. */
-  expiresAt: string | null;
-}
-
-/**
- * The box asks the cloud to check a phone and password for its booth.
- *
- * Under the BOX's credential, never a person's session: the box is the only
- * caller, and it can only ask about a booth station that is its own.
- */
-export const BOOTH_STAFF_VERIFY_PATH = '/box/v1/booth/staff/verify';
-
-export const BoothStaffVerifyRequestSchema = z.object({
-  stationId: z.string().uuid(),
-  /** As typed; the cloud normalises it the way sign-in does. */
-  phone: z.string().min(3).max(32),
-  password: z.string().min(1).max(256),
-});
-export type BoothStaffVerifyRequest = z.infer<typeof BoothStaffVerifyRequestSchema>;
-
-/** Who the cloud found, when it found somebody who may sign in here. */
-export interface BoothStaffVerifyResponse {
-  accountId: string;
-  displayName: string | null;
-  staffCode: string;
-}
-
-/**
- * The error codes the verify route answers with, so the box can tell a wrong
- * password from its own credential being refused — both are a 401.
- */
-export const BOOTH_STAFF_VERIFY_ERRORS = {
-  invalid: 'INVALID_CREDENTIALS',
-  notAllowed: 'BOOTH_SIGN_IN_NOT_ALLOWED',
-  notAssigned: 'BOOTH_STAFF_NOT_ASSIGNED',
-  mustChangePassword: 'MUST_CHANGE_PASSWORD',
-  locked: 'BOOTH_STAFF_LOCKED',
-  /** 404: the station asked about is not a live booth on the asking box. */
-  boothNotOnBox: 'BOOTH_NOT_ON_THIS_BOX',
-  /**
-   * 403: the box has been taken out of service. Answered by the box
-   * credential check in front of every `/box/v1/*` route (`authenticateBox`),
-   * like the plain 401 for a credential that is no longer this box's; named
-   * here because the box has to tell both apart from a wrong password.
-   */
-  boxDisabled: 'BOX_DISABLED',
-} as const;
-
-/** `POST /booth/reprint` — the last voucher of this booth, or one spin's. */
 export interface BoothReprintRequest {
   spinId?: string;
 }

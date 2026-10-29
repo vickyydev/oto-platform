@@ -4,7 +4,8 @@
  *
  * The recommended kit is a keyboard and touchpad, and the pointer used to sit
  * on the wheel for the whole day. Hiding it outright would leave staff unable
- * to aim at the sign-in panel with the touchpad, so it is hidden after
+ * to aim at the corner chip and the staff panel with the touchpad, so it is
+ * hidden after
  * `POINTER_IDLE_MS` without movement and shown again the moment it moves. The
  * box separately reports whether a pointing device is plugged in at all.
  *

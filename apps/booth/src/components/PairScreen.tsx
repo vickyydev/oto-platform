@@ -14,23 +14,23 @@ import OtoWordmark from './OtoWordmark';
  * src/copy.ts); this is that screen, with a line of its own
  * (`PAIR_COPY.guest`), plus the six digits a member of staff reads off the
  * Console. Nothing is restyled: the panel, the entry field, the number pad
- * and the button are the classes the staff sign-in panel already uses
- * (`k-panel`, `k-pin`, `k-keypad`, `k-key`, `k-panel-btn`), because a booth
+ * and the button are the booth's panel classes (`k-panel`, `k-pin`,
+ * `k-keypad`, `k-key`, `k-panel-btn`), because a booth
  * with two visual languages is a booth somebody has to be taught twice.
  *
  * **What a guest can see, and what they can do with it** (D15). The line is
  * bilingual and says a member of staff is needed — the same shape as every
  * other guest-facing line on this television. The digits are shown as dots
- * rather than characters, exactly as the PIN is, because a code in large type
+ * rather than characters, because a code in large type
  * on a screen facing a shopping centre is a code anybody can read from the far
  * side of it. Nothing on this panel names the booth, the branch or the
  * service.
  *
- * **It takes the keyboard in the capture phase**, like the sign-in panel, so a
+ * **It takes the keyboard in the capture phase**, like the staff panel, so a
  * member of staff typing a code cannot spin the wheel by reaching the digit
  * that happens to be the booth's button. The game is unreachable anyway in
- * this state, and the habit is the point: this panel and that one must not
- * disagree about who owns a keystroke.
+ * this state, and the habit is the point: the panels must not disagree about
+ * who owns a keystroke.
  */
 
 /** Six digits, and the pad is digits, so nothing longer can be typed. */

@@ -1,22 +1,18 @@
 /**
- * When the staff panel closes itself (SCRUM-223).
+ * When the staff panel closes itself (SCRUM-223, SCRUM-694).
  *
  * A panel left open on a booth television is staff furniture on a guest's
- * screen, and the sign-in form is worse than furniture: while its phone or
- * password box has the keyboard, the red button does not spin (`press.ts`,
- * `isTypingTarget`). So the panel runs two countdowns from the moment it opens:
+ * screen, and a guest can reach this one: a touch on the corner chip opens it,
+ * and it offers Reprint, Change booth and the diagnostics with no credential
+ * behind them (nobody signs in at a booth). So the panel runs two countdowns
+ * from the moment it opens:
  *
  *  - **Idle, `PANEL_IDLE_MS`.** Started again by anything staff do in it — a
- *    key, a click or tap, a sign-in coming back — EXCEPT the booth's button
- *    key. That key is what a guest presses, and the red button and the space
- *    bar send the same one: pressed while the password box has the keyboard it
- *    types a space into the password. The countdown used to restart on every
- *    change to what was typed, so guests pressing every few seconds kept the
- *    form up, and the wheel held, for as long as they kept pressing.
- *  - **A cap, `PANEL_OPEN_CAP_MS`,** that nothing moves. Whatever is typed, the
- *    panel is off the guest's screen two minutes after it opened. A sign-in,
- *    which changes the panel into staff's buttons, starts both countdowns
- *    again for that view.
+ *    key, a click or tap, a reprint coming back — EXCEPT the booth's button
+ *    key. That key is what a guest presses, and a guest pressing every few
+ *    seconds must not keep the panel up for as long as they keep pressing.
+ *  - **A cap, `PANEL_OPEN_CAP_MS`,** that nothing moves. Whatever is pressed,
+ *    the panel is off the guest's screen two minutes after it opened.
  *
  * No React and no DOM, so a test can run the clock by hand.
  */

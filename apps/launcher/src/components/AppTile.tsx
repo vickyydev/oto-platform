@@ -110,7 +110,13 @@ export function AppTile({ tile, onStale }: { tile: LauncherTile; onStale?: () =>
             )}
           >
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            {busy ? 'Signing you in…' : live ? `Open ${app.name}` : 'What it will do'}
+            {busy
+              ? app.signOn === false
+                ? 'Opening…'
+                : 'Signing you in…'
+              : live
+                ? `Open ${app.name}`
+                : 'What it will do'}
             {!busy && (
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             )}

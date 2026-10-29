@@ -173,7 +173,10 @@ export function DebugOverlay(props: Props) {
           label="Caps reached"
           value={status === null ? '—' : String(status.dailyCapsReached.length)}
         />
-        <Fact label="Staff signed in" value={status?.staffSignedIn ? 'yes' : 'no'} />
+        <Fact
+          label="On today's roster"
+          value={status === null ? '—' : status.dutyLabel?.trim() ? 'yes' : 'no'}
+        />
         <Fact label="Last spin" value={formatTime(status?.lastSpinAt ?? null)} />
         <Fact
           label="Last spin print"
@@ -183,12 +186,12 @@ export function DebugOverlay(props: Props) {
               : lastSpin.printState + (lastSpin.clockSuspect ? ' · clock suspect' : '')
           }
         />
-        {/* Whether the spin was attributed, never to whom: the account id is
-            opaque, but a booth television is read by the public and an
-            identifier is still an identifier (D15). */}
+        {/* The names the last slip printed (SCRUM-694) — what the corner
+            already shows. Never an account id: the rostered accounts travel
+            box to cloud only, and never reach this page (D15). */}
         <Fact
-          label="Last spin attributed"
-          value={lastSpin === null ? '—' : lastSpin.staffAccountId === null ? 'no' : 'yes'}
+          label="Last spin's Staff row"
+          value={lastSpin === null ? '—' : (lastSpin.staffLabel ?? 'unattributed')}
         />
         <Fact label="Config mismatches" value={String(mismatches)} />
         <Fact label="Last error" value={lastErrorCode ?? 'none'} />

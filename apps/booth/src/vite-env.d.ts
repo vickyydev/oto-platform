@@ -10,12 +10,6 @@ interface ImportMetaEnv {
   readonly VITE_BOOTH_FAKE?: string;
   /** Where the booth service answers. Default `/booth`. */
   readonly VITE_BOOTH_API?: string;
-  /**
-   * The single PIN the FAKE accepts. Unset, the fake takes any four digits or
-   * more. It is not a credential and never reaches a real booth — see the note
-   * on `FakeBooth.signIn`.
-   */
-  readonly VITE_BOOTH_FAKE_PIN?: string;
 }
 
 interface ImportMeta {

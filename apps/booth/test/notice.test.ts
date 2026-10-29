@@ -6,7 +6,6 @@ import {
   COPY,
   KIOSK_COPY,
   NO_WHEEL_COPY,
-  STAFF_COPY,
   noWheelScreen,
   refusalLine,
 } from '../src/copy.ts';
@@ -90,7 +89,3 @@ test('the new box’s hint names the two-character code prefix a booth needs', (
   assert.match(KIOSK_COPY.noBoothHint, /kind Booth/);
 });
 
-test('the PIN pad asks for a PIN, not a badge nothing can check yet', () => {
-  assert.equal(STAFF_COPY.signInHint, 'Enter your PIN');
-  assert.doesNotMatch(STAFF_COPY.signInHint, /badge/i);
-});

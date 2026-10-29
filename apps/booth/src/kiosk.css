@@ -1344,8 +1344,8 @@ body {
 /*
  * The one addition the pairing prompt needs.
  *
- * `.k-panel` is pinned to the bottom-right corner because the staff sign-in
- * panel is furniture beside a running game. The pairing panel is not beside
+ * `.k-panel` is pinned to the bottom-right corner because the staff panel is
+ * furniture beside a running game. The pairing panel is not beside
  * anything — there is no wheel yet — so it sits in the flow of the centred
  * body under the wordmark, which is where the eye already is on the "not set
  * up" screen it replaces. Everything else about it (the border, the shadow,
@@ -1356,33 +1356,12 @@ body {
   margin: 18px auto 0;
 }
 
-/* ---------------- staff panel, SCRUM-223 ----------------
-   A phone-and-password form beside the PIN pad, the signed-in panel's
-   actions, and the booth box's own set-up screens. Same border, same shadow,
-   same yellow button as every other panel: working surfaces, nothing a guest
-   is invited to touch. */
+/* ---------------- staff panel, SCRUM-223 / SCRUM-694 ----------------
+   The staff panel's actions (Reprint, Change booth, diagnostics, Close) and
+   the booth box's own set-up screens. Same border, same shadow, same yellow
+   button as every other panel: working surfaces, nothing a guest is invited
+   to touch. Nobody signs in at a booth. */
 
-.k-tabs {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-}
-.k-tab {
-  flex: 1;
-  border: 2px solid #111111;
-  border-radius: 9999px;
-  background: #ffffff;
-  padding: 4px 8px;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  color: #111111;
-  cursor: pointer;
-}
-.k-tab--on {
-  background: #111111;
-  color: #ffffff;
-}
 .k-field {
   display: block;
   margin-top: 8px;
@@ -1437,7 +1416,7 @@ body {
   font-weight: 600;
   color: #111111;
 }
-/* Who is on duty (SCRUM-223), in the top corner: the bottom one belongs to
+/* Who is on duty today (SCRUM-694: today's roster), in the top corner: the bottom one belongs to
    the terms line and the offline dot, and a name there ran over the terms.
    At most 196 wide from 10, so it ends before the logo starts at 217. */
 .k-onduty {
@@ -1469,47 +1448,11 @@ body {
   font-weight: 700;
   color: rgba(0, 0, 0, 0.75);
 }
-/* "Staff are signing in" (SCRUM-223): the red button was pressed while the
-   staff form had the keyboard, so nothing spun. Over the top of the wheel,
-   because the staff panel covers the pill at the bottom. */
-.k-hold {
-  position: absolute;
-  /* Centred by its margins, not a transform: `k-rise` animates the transform
-     and would put it back where it started. */
-  left: 0;
-  right: 0;
-  top: 30%;
-  z-index: 65;
-  width: 420px;
-  max-width: calc(100% - 40px);
-  margin: 0 auto;
-  border: 2px solid #111111;
-  border-radius: 18px;
-  background: #ffe72e;
-  padding: 12px 18px;
-  text-align: center;
-  box-shadow: 4px 4px 0 rgba(17, 17, 17, 0.85);
-  animation: k-rise 0.25s ease-out both;
-}
-.k-hold-line {
-  font-family: 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: #111111;
-}
-.k-hold-line.k-th {
-  margin-top: 4px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
 .k-panel [data-button-choice]:focus { outline: 4px solid #ff3030; outline-offset: 3px; }
-.k-staff-list { max-height: 380px; overflow-y: auto; }
 
 /* SCRUM-419 (closing audit L34): the pointer is hidden while nobody moves it,
    so it does not sit on the wheel all day; any movement brings it back for
-   staff aiming at the sign-in panel (src/pointer-idle.ts). */
+   staff aiming at the staff panel (src/pointer-idle.ts). */
 html.pointer-idle,
 html.pointer-idle * {
   cursor: none !important;

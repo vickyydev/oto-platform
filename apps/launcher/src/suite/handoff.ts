@@ -1,6 +1,6 @@
 import { withHandoffTarget } from '@oto/shared/handoff-target';
 import { handoffApi } from '@/api/platform';
-import type { SuiteApp, SuiteAppKey } from './apps';
+import { directEntryUrl, type SuiteApp, type SuiteAppKey } from './apps';
 
 export interface OpenedApp {
   key: SuiteAppKey;
@@ -76,6 +76,14 @@ export function clearOpened(): void {
  */
 export async function openApp(app: SuiteApp, target?: string | null): Promise<void> {
   if (!app.origin) throw new Error(`${app.name} has no address on this deployment`);
+  // An app that takes no hand-off (SCRUM-694, the Lucky Wheel) is opened
+  // directly, and nothing is minted for it.
+  const direct = directEntryUrl(app);
+  if (direct) {
+    recordOpen(app.key);
+    window.location.assign(direct);
+    return;
+  }
   const issued = await handoffApi.issue(app.key);
   recordOpen(app.key);
   window.location.assign(withHandoffTarget(issued.launchUrl || `${app.origin}/#handoff=${issued.token}`, target));

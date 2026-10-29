@@ -12,7 +12,6 @@ import path from 'path';
 // no build-time class generation. See the note at the top of that file.
 const port = Number(process.env.BOOTH_PORT ?? 25744);
 const boothApiPort = Number(process.env.BOOTH_API_PORT ?? 25745);
-const apiPort = Number(process.env.API_PORT ?? 3001);
 const basePath = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
@@ -42,13 +41,6 @@ export default defineConfig({
       '/booth': {
         target: `http://localhost:${boothApiPort}`,
         changeOrigin: false,
-      },
-      // The launcher sign-on's exchange (SCRUM-528), as the staging site's
-      // /api/* rewrite does it: the platform api, prefix stripped.
-      '/api': {
-        target: `http://localhost:${apiPort}`,
-        changeOrigin: false,
-        rewrite: (p) => p.replace(/^\/api/, ''),
       },
     },
     fs: { strict: true },

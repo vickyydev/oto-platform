@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { boothSpinDurationSeconds, type BoothConfigBundle, type SpinResponse } from '@oto/shared';
 import { booth, boothCredential } from './booth/client';
-import { FakeBooth } from './booth/fake';
-import { launcherSignOn } from './booth/signon';
 import { BoothCallError, type BoothStatus } from './booth/contract';
 import { readAssetManifest, readColor, readDesign, type WheelDesign } from './booth/design';
 import { boothHost } from './booth/host';
 import { kiosk, kioskServiceNeed, type KioskState } from './booth/kiosk';
 import { sliceIndexFor, visiblePrizes } from './booth/wheel-view';
-import { COPY, noWheelScreen, refusalLine, type BilingualLine } from './copy';
+import { COPY, noWheelScreen, promptFor, refusalLine, type BilingualLine } from './copy';
 import { flags, parseHash } from './flags';
 import {
   installKeyboardKeeper,
@@ -30,7 +28,7 @@ import {
 import OtoWordmark from './components/OtoWordmark';
 import { PairScreen } from './components/PairScreen';
 import { ResultModal } from './components/ResultModal';
-import { StaffSignIn } from './components/StaffSignIn';
+import { StaffPanel } from './components/StaffPanel';
 import { Wheel, type WheelSlice } from './components/Wheel';
 
 /**
@@ -77,8 +75,6 @@ const NOTICE_MS = 6000;
 const INPUT_LOG_MAX = 8;
 /** How often a booth box is asked whether it is claimed and which booth it runs. */
 const KIOSK_POLL_MS = 5000;
-/** How long "staff are signing in" stays over the wheel after a press the form took. */
-const HOLD_NOTICE_MS = 4000;
 
 /**
  * Noto Sans Thai from Google Fonts: the face most text styles on this page
@@ -154,8 +150,6 @@ export default function App() {
   /** Which booth the wheel below belongs to; a change starts the wheel again. */
   const boothKey = IN_BOX ? (kioskState?.selectedStationId ?? 'none') : 'paired';
   const wheelLive = gate === null;
-  /** A digit typed with the panel shut opens it, and is the PIN's first digit. */
-  const [signInSeed, setSignInSeed] = useState<string | null>(null);
   const [config, setConfig] = useState<AppliedConfig | null>(null);
   const [status, setStatus] = useState<BoothStatus | null>(null);
   const [spin, setSpin] = useState<SpinResponse | null>(null);
@@ -163,17 +157,16 @@ export default function App() {
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
   const [notice, setNotice] = useState<BilingualLine | null>(null);
   const [replayArmed, setReplayArmed] = useState(false);
-  const [signInOpen, setSignInOpen] = useState(false);
-  const signInOpenRef = useRef(signInOpen);
-  signInOpenRef.current = signInOpen;
+  /** The staff panel (SCRUM-694): Reprint, Change booth, diagnostics, Close. */
+  const [staffOpen, setStaffOpen] = useState(false);
+  const staffOpenRef = useRef(staffOpen);
+  staffOpenRef.current = staffOpen;
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugRequested, setDebugRequested] = useState(flags.debug);
   const [mismatches, setMismatches] = useState(0);
   const [lastErrorCode, setLastErrorCode] = useState<string | null>(null);
   const [inputLog, setInputLog] = useState<string[]>([]);
   const [idleKick, setIdleKick] = useState(0);
-  /** A press arrived while the staff form had the keyboard (see `onPressWhileTyping`). */
-  const [holdNotice, setHoldNotice] = useState(0);
 
   /**
    * A newer wheel, fetched but not yet shown.
@@ -223,8 +216,6 @@ export default function App() {
     window.addEventListener('load', requestGoogleFont, { once: true });
     return () => window.removeEventListener('load', requestGoogleFont);
   }, []);
-
-  const signedIn = status?.staffSignedIn ?? false;
 
   // ---- The booth box's own questions (SCRUM-223) -------------------------
 
@@ -392,26 +383,6 @@ export default function App() {
     };
   }, [refreshStatus, wheelLive, boothKey]);
 
-  /**
-   * Opened from the launcher (SCRUM-528): spend the hand-off once and put the
-   * person on duty on the demonstration wheel. A refused or missing hand-off
-   * leaves the demo running with nobody signed in, which is what `#fake`
-   * shows anyone; it never falls through to a paired booth.
-   */
-  useEffect(() => {
-    if (!launcherSignOn.active || !(booth instanceof FakeBooth)) return;
-    const fake = booth;
-    let cancelled = false;
-    void launcherSignOn.exchange().then((identity) => {
-      if (cancelled || identity === null) return;
-      fake.signOnAs(identity);
-      void refreshStatus();
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshStatus]);
-
   // ---- The press -------------------------------------------------------
 
   const design = useMemo<WheelDesign>(() => readDesign(config?.bundle.layout.design), [config]);
@@ -556,7 +527,7 @@ export default function App() {
      * a booth then reset the page, so the guest never saw a card for it.
      * Whichever booth is chosen, the next press is that booth's.
      */
-    if (gateRef.current !== null || signInOpenRef.current) return;
+    if (gateRef.current !== null || staffOpenRef.current) return;
     switch (phaseRef.current) {
       case 'ready':
         void startSpin();
@@ -590,30 +561,20 @@ export default function App() {
     return configured;
   }, [config]);
 
-  /**
-   * The red button while the staff form has the keyboard: the key is the
-   * form's, nothing is drawn, and the wheel says why for a few seconds
-   * (`isTypingTarget` in src/press.ts gives the reason it waits rather than
-   * spins). Only where a press would otherwise have started a spin.
-   */
-  const onPressWhileTyping = useCallback(() => {
-    if (gateRef.current !== null || phaseRef.current !== 'ready') return;
-    setHoldNotice((n) => n + 1);
-  }, []);
-
   useEffect(
     () =>
       installPressListener({
         buttonKey,
-        canOpenStaff: () => gateRef.current === null && !signInOpenRef.current && phaseRef.current === 'ready',
-        onOpenStaff: () => setSignInOpen(true),
+        // Holding the button three seconds on a ready wheel opens the staff
+        // panel: the only way to Reprint on a booth with no pointer.
+        canOpenStaff: () => gateRef.current === null && !staffOpenRef.current && phaseRef.current === 'ready',
+        onOpenStaff: () => setStaffOpen(true),
         lockoutMs: () =>
           phaseRef.current === 'result' ? RESULT_PRESS_LOCKOUT_MS : PRESS_LOCKOUT_MS,
         onPress,
-        onPressWhileTyping,
         onKeyRecorded: recordKey,
       }),
-    [buttonKey, onPress, onPressWhileTyping, recordKey],
+    [buttonKey, onPress, recordKey],
   );
 
   // The kiosk television only: a desktop browser tab is the tester's, not ours
@@ -686,17 +647,6 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  // Each press the form took restarts the notice's few seconds; the panel
-  // closing ends it at once, since the next press will spin.
-  useEffect(() => {
-    if (holdNotice === 0) return;
-    const timer = window.setTimeout(() => setHoldNotice(0), HOLD_NOTICE_MS);
-    return () => window.clearTimeout(timer);
-  }, [holdNotice]);
-  useEffect(() => {
-    if (!signInOpen) setHoldNotice(0);
-  }, [signInOpen]);
-
   // ---- Staff panels ----------------------------------------------------
 
   /**
@@ -715,13 +665,12 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // Staff-only (D16). Asking for it without a session opens the sign-in panel
-  // instead, and the overlay follows as soon as somebody is in.
+  // `#debug` opens the diagnostics straight away (D16): nobody signs in at a
+  // booth (SCRUM-694), and the overlay shows states and counts, never an
+  // account id.
   useEffect(() => {
-    if (!debugRequested) return;
-    if (signedIn) setDebugOpen(true);
-    else setSignInOpen(true);
-  }, [debugRequested, signedIn]);
+    if (debugRequested) setDebugOpen(true);
+  }, [debugRequested]);
 
   /**
    * Closing takes the token out of the URL as well, so the overlay does not
@@ -742,50 +691,7 @@ export default function App() {
     }
   }, []);
 
-  // Signing out closes the diagnostics with the session that opened them.
-  useEffect(() => {
-    if (!signedIn) setDebugOpen(false);
-  }, [signedIn]);
-
-  /**
-   * On a booth box, the sign-in panel is the first thing staff see once the
-   * wheel is up and nobody is signed in (SCRUM-223) — the Pi booted, the box
-   * started, and the person setting it up signs in. Once per wheel: closing
-   * it leaves the prompt under the wheel, and the wheel plays unattributed.
-   */
-  const offeredSignIn = useRef<string | null>(null);
-  useEffect(() => {
-    if (phase !== 'ready' || status === null) return;
-    if (offeredSignIn.current === boothKey) return;
-    offeredSignIn.current = boothKey;
-    if (!status.staffSignedIn) setSignInOpen(true);
-  }, [phase, status, boothKey]);
-
-  /**
-   * A digit typed with the panel shut opens it — a booth with a small number
-   * pad has no pointer to touch the corner with. Signed out, the digit is the
-   * first of the PIN; signed in, it only opens the panel, where Tab and Enter
-   * reach Reprint, Change booth and Sign out. Never the button's own key, and
-   * never while a card or a spin is on.
-   */
-  useEffect(() => {
-    if (signInOpen || gate !== null) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!/^[0-9]$/.test(event.key) || event.repeat) return;
-      if (event.key === buttonKey || event.code === buttonKey) return;
-      if (phaseRef.current !== 'ready' && phaseRef.current !== 'unsynced') return;
-      event.preventDefault();
-      setSignInSeed(signedIn ? null : event.key);
-      setSignInOpen(true);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [signInOpen, signedIn, gate, buttonKey]);
-
-  const closeSignIn = useCallback(() => {
-    setSignInOpen(false);
-    setSignInSeed(null);
-  }, []);
+  const closeStaff = useCallback(() => setStaffOpen(false), []);
 
   const changeBooth =
     IN_BOX && (kioskState?.booths.length ?? 0) > 1 ? () => setChoosingBooth(true) : undefined;
@@ -840,13 +746,13 @@ export default function App() {
 
   if (phase === 'unpaired') {
     /**
-     * No staff sign-in panel and no status chip here, deliberately.
+     * No staff panel and no status chip here, deliberately.
      *
      * Both are calls to `/booth/*`, and every one of them is refused until
      * this screen is paired — a chip that could only ever show the offline
-     * dot, and a PIN pad that could only ever say "that was not right", are
-     * two controls that make a booth look broken in the one state where it is
-     * merely new. The pairing panel is the only thing there is to do here.
+     * dot, and a Reprint that could only ever fail, are two controls that make
+     * a booth look broken in the one state where it is merely new. The
+     * pairing panel is the only thing there is to do here.
      */
     return (
       <div className={'k-screen' + liteClass} data-kiosk-surface="1">
@@ -897,18 +803,11 @@ export default function App() {
             </div>
           )}
         </div>
-        <StatusChip status={status} transport={booth.kind} onOpen={() => setSignInOpen(true)} />
-        <OnDutyBadge status={status} onOpen={() => setSignInOpen(true)} />
-        <StaffSignIn
-          open={signInOpen}
-          signedIn={signedIn}
-          staff={status?.staff ?? null}
-          seed={signInSeed}
-          onClose={closeSignIn}
-          onChanged={() => void refreshStatus()}
-          onChangeBooth={changeBooth}
-          buttonKey={buttonKey}
-        />
+        <StatusChip status={status} transport={booth.kind} onOpen={() => setStaffOpen(true)} />
+        <OnDutyBadge status={status} onOpen={() => setStaffOpen(true)} />
+        {staffOpen && (
+          <StaffPanel onClose={closeStaff} onChangeBooth={changeBooth} buttonKey={buttonKey} />
+        )}
       </div>
     );
   }
@@ -948,20 +847,13 @@ export default function App() {
 
         <div>
           <ButtonPrompt
-            line={promptFor(phase, notice, signedIn)}
+            line={promptFor(phase, notice)}
             // The pill only invites a press when a press would do something.
             active={phase === 'ready' && notice === null}
           />
           <p className="k-terms">{COPY.terms.en}</p>
         </div>
       </div>
-
-      {holdNotice > 0 && phase === 'ready' && (
-        <div className="k-hold" role="status" aria-live="polite" data-booth-hold="1">
-          <p className="k-hold-line">{COPY.staffSigningIn.en}</p>
-          <p className="k-hold-line k-th">{COPY.staffSigningIn.th}</p>
-        </div>
-      )}
 
       <ResultModal
         spin={spin}
@@ -972,23 +864,21 @@ export default function App() {
         onClose={requestPlayAgain}
       />
 
-      <StatusChip status={status} transport={booth.kind} onOpen={() => setSignInOpen(true)} />
+      <StatusChip status={status} transport={booth.kind} onOpen={() => setStaffOpen(true)} />
       {/* Not over a prize card: that moment is the guest's. */}
-      {phase !== 'result' && <OnDutyBadge status={status} onOpen={() => setSignInOpen(true)} />}
+      {phase !== 'result' && <OnDutyBadge status={status} onOpen={() => setStaffOpen(true)} />}
 
-      <StaffSignIn
-        open={signInOpen}
-        signedIn={signedIn}
-        staff={status?.staff ?? null}
-        seed={signInSeed}
-        onClose={closeSignIn}
-        onChanged={() => void refreshStatus()}
-        onChangeBooth={changeBooth}
-        buttonKey={buttonKey}
-      />
+      {staffOpen && (
+        <StaffPanel
+          onClose={closeStaff}
+          onChangeBooth={changeBooth}
+          onOpenDiagnostics={() => setDebugOpen(true)}
+          buttonKey={buttonKey}
+        />
+      )}
 
       <DebugOverlay
-        open={debugOpen && signedIn}
+        open={debugOpen}
         onClose={closeDebug}
         transport={booth.kind}
         configVersion={config?.version ?? null}
@@ -1015,22 +905,6 @@ export default function App() {
  */
 function noticeFor(error: unknown, online: boolean | null): BilingualLine {
   return refusalLine(error instanceof BoothCallError ? error.code : null, online);
-}
-
-/**
- * What the pill under the wheel says.
- *
- * With nobody signed in it prompts whoever is looking after the booth to sign
- * in — for their name on the slip — and is not a lock on the game: the wheel
- * still spins and the spin is recorded unattributed. A booth that stopped
- * playing whenever reception got busy is a booth nobody plays.
- */
-function promptFor(phase: Phase, notice: BilingualLine | null, signedIn: boolean): BilingualLine {
-  if (notice !== null) return notice;
-  if (phase === 'boot' || phase === 'starting') return COPY.starting;
-  if (phase === 'spinning') return COPY.spinning;
-  if (!signedIn) return COPY.staffSignInPrompt;
-  return COPY.pressToSpin;
 }
 
 /**
@@ -1079,7 +953,7 @@ function errorCode(error: unknown): string {
  * There is no attract video and no separate idle screen: the wheel, its
  * breathing glow, the blinking rim lights and these drifting shapes are the
  * idle state, exactly as in the game this replaces. It runs whether or not
- * anybody is signed in, which is the point — a still screen in a shopping
+ * anybody is on today's roster, which is the point — a still screen in a shopping
  * mall reads as broken, and the booth is judged from ten metres away.
  *
  * Every piece is CSS: the outgoing game's decorative blobs were PNGs, and no
@@ -1124,7 +998,8 @@ function ButtonPrompt({ line, active }: { line: BilingualLine; active: boolean }
  *
  * It is the only control a passer-by can see, and it carries nothing but
  * states — no booth name, no version, no address (D15). Touching it opens the
- * sign-in panel, which is how a booth with no keyboard is attended to.
+ * staff panel (Reprint, Change booth, diagnostics), which is how a booth with
+ * no keyboard is attended to; nobody signs in at a booth (SCRUM-694).
  */
 function StatusChip({
   status,
@@ -1151,16 +1026,17 @@ function StatusChip({
 }
 
 /**
- * Who is on duty, when somebody is (SCRUM-223): the name and staff code, as
- * a name badge would say. The owner asked for the television to show who is
- * signed in; nothing that signs anybody in is shown. The top corner, because
- * the bottom one is the terms line's and the offline dot's, and a name there
- * ran over the terms; narrow enough to stop short of the logo, with a long
- * name cut rather than run into it. A touch opens the staff panel, like the dot.
+ * Who is on duty today (SCRUM-694): today's roster, the names merged as the
+ * voucher's Staff row prints them ("Tom and Jerry"), shown as a name badge
+ * would. The owner asked for the television to show who is attending; nobody
+ * signs in, and with nobody on today's roster nothing is shown. The top
+ * corner, because the bottom one is the terms line's and the offline dot's,
+ * and a name there ran over the terms; narrow enough to stop short of the
+ * logo, with a long name cut rather than run into it. A touch opens the staff
+ * panel, like the dot.
  */
 function OnDutyBadge({ status, onOpen }: { status: BoothStatus | null; onOpen: () => void }) {
-  const staff = status?.staffSignedIn ? status.staff : null;
-  const onDuty = staff ? [staff.name, staff.code].filter(Boolean).join(' · ') : '';
+  const onDuty = status?.dutyLabel?.trim() ?? '';
   if (onDuty === '') return null;
   return (
     <div className="k-onduty" role="presentation" onClick={onOpen} data-booth-on-duty="1">

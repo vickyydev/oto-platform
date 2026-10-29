@@ -11,7 +11,8 @@ import type { Permission } from '@oto/shared/permissions';
 
 /**
  * The suite, as one list. The key is also the slug in `app:<key>:access` and
- * the name the hand-off endpoint is asked for, so a new app is one entry here
+ * the name the hand-off endpoint is asked for — except for an app with
+ * `signOn: false`, which takes no hand-off — so a new app is one entry here
  * plus its permission in packages/shared.
  */
 export type SuiteAppKey = 'pos' | 'console' | 'oto_app' | 'radar' | 'booth' | 'inbox';
@@ -33,6 +34,13 @@ export interface SuiteApp {
   alsoRequires?: Permission;
   /** Deployed origin, from the build environment. Absent = not deployed yet. */
   origin?: string;
+  /**
+   * `false` for an app that takes no hand-off (SCRUM-694): the launcher opens
+   * `${origin}${entryPath}` and mints nothing. Absent is an app that signs on.
+   */
+  signOn?: false;
+  /** Where an app with `signOn: false` opens, under its origin: `/#fake`. */
+  entryPath?: string;
   /** The system doing this job today, where one exists and is not ours. */
   legacyUrl?: string;
   legacyLabel?: string;
@@ -121,6 +129,13 @@ export const SUITE_APPS: SuiteApp[] = [
     permission: 'app:booth:access',
     alsoRequires: 'admin:booth:read',
     origin: readOrigin(env.VITE_BOOTH_URL),
+    /**
+     * The demonstration wheel, with no hand-off (SCRUM-694): nobody signs in
+     * at a booth any more, and `#fake` is honoured before the booth site's
+     * own build switch, so the staging site still opens the demo.
+     */
+    signOn: false,
+    entryPath: '/#fake',
     legacyUrl: readOrigin(env.VITE_BOOTH_LEGACY_URL),
     legacyLabel: 'Open the wheel that is running today',
     milestone: 'M2 — Lucky Wheel',
@@ -139,6 +154,15 @@ export const SUITE_APPS: SuiteApp[] = [
       'WhatsApp, Instagram and Facebook in one queue with a named owner per conversation. The data it stands on is being laid now; the screens follow.',
   },
 ];
+
+/**
+ * Where an app that takes no hand-off opens: its origin plus its entry path,
+ * or null for an app that signs on (or has no address on this build).
+ */
+export function directEntryUrl(app: SuiteApp): string | null {
+  if (app.signOn !== false || !app.origin) return null;
+  return `${app.origin}${app.entryPath ?? '/'}`;
+}
 
 export function findApp(key: string): SuiteApp | undefined {
   return SUITE_APPS.find((a) => a.key === key);
