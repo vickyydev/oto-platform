@@ -229,6 +229,133 @@ export const InboxAiExampleImportResultSchema = z.object({
 });
 export type InboxAiExampleImportResult = z.infer<typeof InboxAiExampleImportResultSchema>;
 
+// --- The behaviour rules (SCRUM-696, inbox:kb:manage) ----------------------------------------
+
+/**
+ * An operator rule: a plain instruction for one of the assistant's intents
+ * (or `any`), and optionally a question it asks first. A rule only ADDS a
+ * question or an instruction; the server refuses one that grants a price, a
+ * discount, a refund, a date or a booking (400 RULE_UNSAFE). Only approved
+ * rules reach the assistant.
+ */
+export const INBOX_AI_RULE_STATUSES = ['draft', 'approved', 'archived'] as const;
+export const INBOX_AI_RULE_SOURCES = ['teach', 'manual'] as const;
+export const INBOX_AI_RULE_CONDITIONS = ['always', 'branch_unknown'] as const;
+export const INBOX_AI_RULE_ANY = 'any';
+export const INBOX_AI_RULE_INSTRUCTION_MAX = 600;
+export const INBOX_AI_RULE_QUESTION_MAX = 200;
+export const INBOX_AI_RULE_TAUGHT_FROM_MAX = 2000;
+
+export const InboxAiRuleAskFirstSchema = z.object({
+  /** `branch_unknown`: only while the customer has not named a park; `always`: once per episode. */
+  condition: z.enum(INBOX_AI_RULE_CONDITIONS),
+  question: z.object({
+    en: chars(1, INBOX_AI_RULE_QUESTION_MAX, 'the question'),
+    th: chars(1, INBOX_AI_RULE_QUESTION_MAX, 'the Thai question').optional(),
+    ru: chars(1, INBOX_AI_RULE_QUESTION_MAX, 'the Russian question').optional(),
+  }),
+});
+export type InboxAiRuleAskFirst = z.infer<typeof InboxAiRuleAskFirstSchema>;
+
+export const InboxAiRuleSchema = z.object({
+  id: Uuid,
+  /** One of the assistant's intents, or `any`. */
+  intent: z.string(),
+  /** Null: both parks. */
+  branchId: Uuid.nullable(),
+  instruction: z.string(),
+  askFirst: z
+    .object({
+      condition: z.enum(INBOX_AI_RULE_CONDITIONS),
+      question: z.object({ en: z.string(), th: z.string().optional(), ru: z.string().optional() }),
+    })
+    .nullable(),
+  /** Only `approved` rules reach the assistant. */
+  status: z.enum(INBOX_AI_RULE_STATUSES),
+  /** The sentence the person typed in the teach chat, if it came from there. */
+  taughtFrom: z.string().nullable(),
+  source: z.enum(INBOX_AI_RULE_SOURCES),
+  approvedByAccountId: Uuid.nullable(),
+  approvedAt: Iso.nullable(),
+  updatedByAccountId: Uuid.nullable(),
+  /** inbox:kb:manage at its park, or operator-wide for a both-parks rule. */
+  canManage: z.boolean(),
+  createdAt: Iso,
+  updatedAt: Iso,
+});
+export type InboxAiRule = z.infer<typeof InboxAiRuleSchema>;
+
+export const InboxAiRuleListQuerySchema = z.object({
+  /** Omitted: draft and approved. */
+  status: z.enum(INBOX_AI_RULE_STATUSES).optional(),
+});
+
+export const InboxAiRuleListSchema = z.object({ rules: z.array(InboxAiRuleSchema) });
+
+export const InboxAiRuleCreateSchema = z.object({
+  /** Caller-named; absent, the platform names it. */
+  id: Uuid.optional(),
+  /** Null or absent: both parks. */
+  branchId: Uuid.nullable().optional(),
+  /** One of the assistant's intents or `any` (409 INTENT_UNKNOWN otherwise). */
+  intent: Intent,
+  instruction: chars(1, INBOX_AI_RULE_INSTRUCTION_MAX, 'the instruction'),
+  askFirst: InboxAiRuleAskFirstSchema.nullable().optional(),
+});
+export type InboxAiRuleCreate = z.infer<typeof InboxAiRuleCreateSchema>;
+
+export const InboxAiRulePatchSchema = InboxAiRuleCreateSchema.omit({ id: true })
+  .partial()
+  .refine((p) => Object.keys(p).length > 0, { message: 'name at least one field to change' });
+export type InboxAiRulePatch = z.infer<typeof InboxAiRulePatchSchema>;
+
+// --- The teach chat (SCRUM-696, inbox:kb:manage operator-wide) -------------------------------
+
+export const INBOX_AI_TEACH_MAX_MESSAGES = 20;
+export const INBOX_AI_TEACH_OUTCOMES = ['answer', 'handover', 'silent_handover', 'silent', 'ask_first'] as const;
+
+export const InboxAiTeachMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  text: chars(1, 2000, 'a message'),
+});
+
+export const InboxAiTeachRequestSchema = z.object({
+  /** One per open teach chat (the page names it). */
+  sessionId: Uuid,
+  /** The chat so far, oldest first; the last one is the staff member's. */
+  messages: z
+    .array(InboxAiTeachMessageSchema)
+    .min(1, 'send at least one message')
+    .max(INBOX_AI_TEACH_MAX_MESSAGES, `send at most the last ${INBOX_AI_TEACH_MAX_MESSAGES} messages`)
+    .refine((m) => m[m.length - 1]?.role === 'user', { message: 'the last message must be yours' }),
+});
+export type InboxAiTeachRequest = z.infer<typeof InboxAiTeachRequestSchema>;
+
+/** A draft the teach chat saved this turn: approve it under Assistant → Knowledge or Rules. */
+export const InboxAiTeachCardSchema = z.object({
+  kind: z.enum(['fact', 'rule']),
+  id: Uuid,
+  title: z.string(),
+  status: z.literal('draft'),
+});
+
+/** What the assistant would do now with one customer message (decision, gate and ask-first only). */
+export const InboxAiTeachDryRunSchema = z.object({
+  message: z.string(),
+  intent: z.string().nullable(),
+  outcome: z.enum(INBOX_AI_TEACH_OUTCOMES),
+  bubbles: z.array(z.string()),
+  ruleFired: Uuid.nullable(),
+});
+export type InboxAiTeachDryRun = z.infer<typeof InboxAiTeachDryRunSchema>;
+
+export const InboxAiTeachResponseSchema = z.object({
+  reply: z.string(),
+  cards: z.array(InboxAiTeachCardSchema),
+  dryRun: InboxAiTeachDryRunSchema.nullable(),
+});
+export type InboxAiTeachResponse = z.infer<typeof InboxAiTeachResponseSchema>;
+
 // --- The controls (§D.4) ---------------------------------------------------------------------
 
 export const InboxAiChannelAccountSchema = z.object({

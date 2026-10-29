@@ -19,6 +19,7 @@ import { formatTHB, isoDateInTz, type Satang } from '@oto/shared';
 import { AI_REASON_CODES, type AiBranchKey, type AiReplyLanguage } from './decision';
 import type { GroundingSource } from './gate';
 import { AI_INTENTS, AI_KB_TOPICS, INTENT_TABLE, type AiIntent, type AiKbTopic } from './intents';
+import { renderOperatorRules, type OperatorRuleInput } from './operator-rules';
 import {
   CERTAINTY_RULE,
   DATA_RULE,
@@ -181,7 +182,7 @@ export function estimateTokens(text: string): number {
 // ---------------------------------------------------------------------------
 
 /** One line per intent for the model; the action column is read from INTENT_TABLE. */
-const INTENT_MEANING: Readonly<Record<AiIntent, string>> = {
+export const INTENT_MEANING: Readonly<Record<AiIntent, string>> = {
   greeting: 'a bare greeting with no question: one friendly line, then wait',
   hours: 'opening hours',
   address: 'where a park is',
@@ -600,11 +601,26 @@ export interface PromptInput {
   context: TurnContext;
   /** SCRUM-678: the second pass of a turn whose first reply answered something else. */
   rethink?: RethinkHint;
+  /** SCRUM-696: approved operator rules that apply to this thread. Empty or absent: the prompt is byte-identical to before. */
+  rules?: readonly OperatorRuleInput[];
 }
 
 export function buildPrompt(input: PromptInput): PromptResult {
-  const systemTokens = estimateTokens(STATIC_SYSTEM_TEXT) + estimateTokens(input.knowledge.text);
+  const plain = estimateTokens(STATIC_SYSTEM_TEXT) + estimateTokens(input.knowledge.text);
+  // SCRUM-696: the operator rules ride AFTER the knowledge in block 2 (the
+  // per-operator part, before the cache breakpoint), never in block 1. With
+  // none, block 2 is the knowledge text itself and nothing else changes.
+  const rulesText = renderOperatorRules(input.rules ?? []);
+  const withRules = rulesText === '' ? null : `${input.knowledge.text}
+
+${rulesText}`;
+  const withTokens = withRules === null ? plain : estimateTokens(STATIC_SYSTEM_TEXT) + estimateTokens(withRules);
+  // A rule never silences the assistant: past the limit the rules block is dropped, never the turn.
+  const block2 = withRules !== null && withTokens <= SYSTEM_TOKEN_LIMIT ? withRules : input.knowledge.text;
+  const systemTokens = block2 === input.knowledge.text ? plain : withTokens;
   if (systemTokens > SYSTEM_TOKEN_LIMIT) return { ok: false, reason: 'KB_TOO_LARGE', systemTokens };
+  const kbVersion =
+    block2 === input.knowledge.text ? input.knowledge.version : createHash('sha256').update(block2).digest('hex').slice(0, 16);
   return {
     ok: true,
     prompt: {
@@ -612,13 +628,13 @@ export function buildPrompt(input: PromptInput): PromptResult {
         { type: 'text', text: STATIC_SYSTEM_TEXT },
         {
           type: 'text',
-          text: input.knowledge.text,
+          text: block2,
           cache_control: { type: 'ephemeral', ttl: '1h' },
         },
       ],
       messages: [{ role: 'user', content: buildUserTurn(input.episode, input.context, input.rethink) }],
       personaVersion: PERSONA_VERSION,
-      kbVersion: input.knowledge.version,
+      kbVersion,
       grounding: input.knowledge.grounding,
       systemTokens,
     },

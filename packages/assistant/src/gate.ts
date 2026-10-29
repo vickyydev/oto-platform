@@ -198,7 +198,7 @@ function isReplyLanguage(lang: string): lang is AiReplyLanguage {
   return (AI_REPLY_LANGUAGES as readonly string[]).includes(lang);
 }
 
-type Failed = { reason: AiOutcomeReason; rule: string };
+export type Failed = { reason: AiOutcomeReason; rule: string };
 
 const fail = (r: GuardResult<AiOutcomeReason>): Failed | null => (r.ok ? null : { reason: r.reason, rule: r.rule });
 
@@ -209,7 +209,7 @@ const fail = (r: GuardResult<AiOutcomeReason>): Failed | null => (r.ok ? null : 
  * refund you" can never ride a hand-over. Under language `other` they must be
  * English. Gates 3, 5, 6 and 7 for words with no grounding.
  */
-function holdingFailure(bubbles: readonly string[], min: number, english: boolean): Failed | null {
+export function holdingFailure(bubbles: readonly string[], min: number, english: boolean): Failed | null {
   return (
     fail(bubbleGuard(bubbles, min)) ??
     fail(personaGuard(bubbles)) ??

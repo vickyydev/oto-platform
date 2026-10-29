@@ -65,3 +65,5 @@ export * from './internal-guards';
 export * from './refusal-words';
 export * from './tool-loop';
 export * from './tool-loop-fake';
+export * from './operator-rules';
+export * from './persona/teach';

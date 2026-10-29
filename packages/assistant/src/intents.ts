@@ -382,3 +382,15 @@ export const BIRTHDAY_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>([
 
 /** Parts whose answer is checked for the "safer" framing (the playbook: the whole park is safe). */
 export const CARE_SERVICE_INTENTS: ReadonlySet<AiIntent> = new Set<AiIntent>(['nanny_booking', 'drop_off_service']);
+
+/** SCRUM-696: the intents an operator rule's ask-first question never interrupts; the engine ignores the question for them (the instruction still reaches the prompt). */
+export const ASK_FIRST_IGNORED_INTENTS: readonly AiIntent[] = [
+  'complaint_onsite',
+  'complaint_online',
+  'refund_request',
+  'human_requested',
+  'greeting',
+  'thanks_closing',
+  'identity_question',
+  'other',
+];

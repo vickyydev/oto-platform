@@ -1387,3 +1387,80 @@ export const aiExample = inbox.table(
     ),
   ],
 );
+
+// --- ai_rule -----------------------------------------------------------------
+
+export const AI_RULE_STATUSES = ['draft', 'approved', 'archived'] as const;
+export type AiRuleStatus = (typeof AI_RULE_STATUSES)[number];
+export const AI_RULE_SOURCES = ['teach', 'manual'] as const;
+export type AiRuleSource = (typeof AI_RULE_SOURCES)[number];
+export const AI_RULE_CONDITIONS = ['always', 'branch_unknown'] as const;
+export type AiRuleCondition = (typeof AI_RULE_CONDITIONS)[number];
+export interface AiRuleAskFirst {
+  condition: AiRuleCondition;
+  question: { en: string; th?: string; ru?: string };
+}
+
+/**
+ * An operator's behaviour rule for the customer assistant (SCRUM-696,
+ * `0096_inbox_ai_rule`): a plain instruction for one intent (or `any`), and
+ * optionally a question the assistant asks first. Only `approved` rows reach
+ * the prompt; a rule only ADDS a question or an instruction, never a price, a
+ * promise or a date (the service refuses those before it writes).
+ *
+ * `taught_from` keeps the sentence a person typed in the teach chat; `source`
+ * says whether the rule came from that chat or the Rules editor. An approved
+ * rule edited later is archived with its words kept and replaced by a new row.
+ */
+export const aiRule = inbox.table(
+  'ai_rule',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, tenantFk()),
+    /** Null = both parks. */
+    branchId: uuid('branch_id').references(() => branch.id, { onDelete: 'restrict' }),
+    /** One of the assistant's intents, or 'any'. */
+    intent: text('intent').notNull(),
+    instruction: text('instruction').notNull(),
+    askFirst: jsonb('ask_first').$type<AiRuleAskFirst>(),
+    status: text('status').$type<AiRuleStatus>().notNull().default('draft'),
+    /** The sentence the person typed in the teach chat. */
+    taughtFrom: text('taught_from'),
+    source: text('source').$type<AiRuleSource>().notNull().default('manual'),
+    updatedByAccountId: uuid('updated_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    approvedByAccountId: uuid('approved_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    approvedAt: timestamp('approved_at', { withTimezone: true, mode: 'date' }),
+    ...timestamps,
+  },
+  (t) => [
+    unique('ai_rule_tenant_key').on(t.operatorId, t.id),
+    /** The prompt build: an operator's approved rules. */
+    index('ai_rule_lookup_idx').on(t.operatorId, t.status),
+    index('ai_rule_branch_idx').on(t.branchId),
+    index('ai_rule_updated_by_idx').on(t.updatedByAccountId),
+    index('ai_rule_approved_by_idx').on(t.approvedByAccountId),
+    check('ai_rule_intent_check', sql`${t.intent} ~ ${INTENT_WORD}`),
+    check('ai_rule_status_check', sql`${t.status} in (${inList(AI_RULE_STATUSES)})`),
+    check('ai_rule_source_check', sql`${t.source} in (${inList(AI_RULE_SOURCES)})`),
+    check(
+      'ai_rule_length_check',
+      sql`char_length(${t.instruction}) between 1 and 600
+          and (${t.taughtFrom} is null or char_length(${t.taughtFrom}) between 1 and 2000)`,
+    ),
+    check(
+      'ai_rule_ask_first_check',
+      sql`${t.askFirst} is null or (
+            jsonb_typeof(${t.askFirst}) = 'object'
+            and ${t.askFirst}->>'condition' in (${inList(AI_RULE_CONDITIONS)})
+            and jsonb_typeof(${t.askFirst}->'question') = 'object'
+            and char_length(coalesce(${t.askFirst}->'question'->>'en', '')) between 1 and 200)`,
+    ),
+    /** Approved always says by whom and when (as kb_entry_approved_check). */
+    check(
+      'ai_rule_approved_check',
+      sql`${t.status} <> 'approved' or (${t.approvedByAccountId} is not null and ${t.approvedAt} is not null)`,
+    ),
+  ],
+);

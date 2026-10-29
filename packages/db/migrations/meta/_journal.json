@@ -673,6 +673,13 @@
       "when": 1793202677105,
       "tag": "0095_inbox_booking_closing",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1793292797424,
+      "tag": "0096_inbox_ai_rule",
+      "breakpoints": true
     }
   ]
 }
