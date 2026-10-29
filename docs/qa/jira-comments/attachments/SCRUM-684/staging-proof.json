@@ -1,0 +1,194 @@
+{
+  "ticket": "SCRUM-684",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "ciRunId": "40972211455",
+  "planSha256": "253a33cf7098ff55b2ea89c60ef01e61f8d10756caf87ae961547f0d0f22534f",
+  "helperSha256": "5ec17bcc9b42c55fd4db3ce0fd8366f999ef289fb532ef1ae40a5c74b28745ac",
+  "validatorSha256": "ca264ace4d2e716fa02e048fb52818e2e394135ce5d2937ae2138ad6079547e0",
+  "startedAt": "2026-10-29T23:45:29.908Z",
+  "openapiSha256": "a4cd49b815e6183926eb7d841558aed7140479e4193a6563d826bb298d20529f",
+  "local": {
+    "receiptSha256": "0c9e7791f3c96876c1aaf08c374ad7ba951ef41adb5fb4d81f29d3efe01c41ae",
+    "logSha256": "858fc78116224a9e8454e8ba004cee9c4cc5ce1dfb7fb4adfca5911f06fe1230",
+    "controls": 14,
+    "sourceFiles": 4025,
+    "actualCommand": {
+      "executable": "C:/Program Files/Git/bin/bash.exe",
+      "args": [
+        "-c",
+        "set -eo pipefail; pnpm --filter @oto/api test test/s684-nullable-response-contract-review.test.ts test/console-drift-review.test.ts test/menu-api.test.ts test/fleet-api.test.ts test/s622-menu-contracts.test.ts test/menu-tax-seam.test.ts test/routes-guarded.test.ts test/route-write-conformance.test.ts test/id-conformance.test.ts test/route-scope-target.test.ts --maxWorkers=1 --no-file-parallelism"
+      ],
+      "cwd": "C:/oto-lanes/admin684-release-20261030"
+    },
+    "runnerSha256": "53f21b7a7fa37b44793d57c26a2b48081618152181d07d34812083cf3664c5df"
+  },
+  "gates": [
+    {
+      "stage": "before-auth",
+      "at": "2026-10-29T23:45:33.851Z",
+      "ciGreenJobs": 6,
+      "sourceFiles": 4025,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "deployId": "dep-dbhtinjm8hqs73cnvfeg",
+          "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+          "finishedAt": "2026-10-29T23:43:43.880576Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "deployId": "dep-dbhtinjm8hqs73cnvgg0",
+          "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+          "finishedAt": "2026-10-29T23:41:11.923235Z"
+        }
+      ]
+    },
+    {
+      "stage": "after-three-native-reads",
+      "at": "2026-10-29T23:45:49.897Z",
+      "ciGreenJobs": 6,
+      "sourceFiles": 4025,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "deployId": "dep-dbhtinjm8hqs73cnvfeg",
+          "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+          "finishedAt": "2026-10-29T23:43:43.880576Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "deployId": "dep-dbhtinjm8hqs73cnvgg0",
+          "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+          "finishedAt": "2026-10-29T23:41:11.923235Z"
+        }
+      ]
+    },
+    {
+      "stage": "before-card",
+      "at": "2026-10-29T23:45:54.960Z",
+      "ciGreenJobs": 6,
+      "sourceFiles": 4025,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "deployId": "dep-dbhtinjm8hqs73cnvfeg",
+          "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+          "finishedAt": "2026-10-29T23:43:43.880576Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "deployId": "dep-dbhtinjm8hqs73cnvgg0",
+          "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+          "finishedAt": "2026-10-29T23:41:11.923235Z"
+        }
+      ]
+    },
+    {
+      "stage": "after-card",
+      "at": "2026-10-29T23:45:59.251Z",
+      "ciGreenJobs": 6,
+      "sourceFiles": 4025,
+      "deployments": [
+        {
+          "name": "oto-api-staging",
+          "deployId": "dep-dbhtinjm8hqs73cnvfeg",
+          "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+          "finishedAt": "2026-10-29T23:43:43.880576Z"
+        },
+        {
+          "name": "oto-console-staging",
+          "deployId": "dep-dbhtinjm8hqs73cnvgg0",
+          "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+          "finishedAt": "2026-10-29T23:41:11.923235Z"
+        }
+      ]
+    }
+  ],
+  "reads": [
+    {
+      "operation": "GET /api/console/analytics/drift",
+      "status": 200,
+      "at": "2026-10-29T23:45:43.278Z",
+      "bodySha256": "d957182a9350b04454288f71ba57dbe06299434cb0bed45c8370b7449333a6e2",
+      "validation": {
+        "state": "matched",
+        "keywords": []
+      },
+      "counts": {
+        "rows": 3,
+        "nulls": {
+          "reason": 3
+        }
+      }
+    },
+    {
+      "operation": "GET /api/branches/:id/menu",
+      "status": 200,
+      "at": "2026-10-29T23:45:43.832Z",
+      "bodySha256": "7e2de1a333392b8cab65bbbe2a7a6cb59d7a9fb1244d9eb11a17b53a3c15ccce",
+      "validation": {
+        "state": "matched",
+        "keywords": []
+      },
+      "counts": {
+        "rows": 50,
+        "categoryRows": 12,
+        "productRows": 38,
+        "nulls": {
+          "categories.taxableCategory": 3,
+          "categories.defaultPrepStation": 4,
+          "categories.effectiveTaxCategory": 0,
+          "categories.effectivePrepStation": 1,
+          "products.prepStationOverride": 38,
+          "products.taxCategoryOverride": 38
+        }
+      }
+    },
+    {
+      "operation": "GET /api/branches/:id/credentials",
+      "status": 200,
+      "at": "2026-10-29T23:45:44.666Z",
+      "bodySha256": "db20409fab97687f40792cdeba2f24f09403405bba19afc47f16fddeb12306b8",
+      "validation": {
+        "state": "matched",
+        "keywords": []
+      },
+      "counts": {
+        "rows": 2,
+        "nulls": {
+          "lastRejectedCode": 2
+        }
+      }
+    }
+  ],
+  "auth": {
+    "attempted": true,
+    "attemptedAt": "2026-10-29T23:45:36.368Z",
+    "status": 200
+  },
+  "businessWrites": 0,
+  "fixtureRecordsCreated": 0,
+  "rawBodiesSaved": false,
+  "complete": true,
+  "authorityBeforeSha256": "730510ee712de73803fb91ce6f81f2b68a343caed9623331205e47da4b66cc82",
+  "permissionsBeforeSha256": "8b233f200b8c0db83d4875228a24ca6e1198a415643ba2211e8a3bd509b1eafa",
+  "branchIdSha256": "5c78dc24462952b8636c5ed6592876f7f113b4caf1f2a40232db899cc83eb156",
+  "shippedDocumentSha256": "b6f188b839ad0dd5b1c47edf5839cef56b0d3b4fbbde2e29f465920c09fbb03e",
+  "threeShippedSchemasMatchReleasedSource": true,
+  "authorityUnchanged": true,
+  "permissionsUnchanged": true,
+  "cleanup": {
+    "originalCookieObserved": true,
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "image": {
+    "filename": "SCRUM-684-01-nullable-response-contracts.png",
+    "sha256": "d0ca127c8e4bf30164b75495c2b3b7133525b0506227620eb1c189e767598c88",
+    "capturedAt": "2026-10-29T23:45:54.961Z",
+    "labelledApiTestCard": true,
+    "privateValuesIncluded": false
+  },
+  "finishedAt": "2026-10-29T23:45:59.337Z"
+}

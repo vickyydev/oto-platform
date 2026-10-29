@@ -1,0 +1,16 @@
+{
+  "ticket": "SCRUM-684",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "inspected": true,
+  "reviewedAt": "2026-10-29T23:47:08.410Z",
+  "images": [
+    {
+      "file": "SCRUM-684-01-nullable-response-contracts.png",
+      "sha256": "d0ca127c8e4bf30164b75495c2b3b7133525b0506227620eb1c189e767598c88",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Viewed at original resolution. Labelled API card; source/timestamps and all three native-null results are legible. Local controls are separate. Private values and codes omitted; no QR visible."
+    }
+  ]
+}

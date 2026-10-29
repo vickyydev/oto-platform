@@ -1,0 +1,63 @@
+{
+  "ticket": "SCRUM-684",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "runId": "40972211455",
+  "branch": "main",
+  "event": "push",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/40972211455",
+  "verifiedAt": "2026-10-29T23:40:50.335Z",
+  "green": true,
+  "jobs": [
+    {
+      "name": "oto-app",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T23:18:20Z",
+      "completedAt": "2026-10-29T23:19:00Z"
+    },
+    {
+      "name": "api-tests (3)",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T23:18:21Z",
+      "completedAt": "2026-10-29T23:38:33Z",
+      "summaries": [
+        "Test Files  136 passed | 2 skipped (138)",
+        "Tests  1895 passed | 121 skipped | 1 todo (2017)",
+        "Duration  1162.88s (transform 8.90s, setup 0ms, collect 222.93s, tests 909.66s, environment 31ms, prepare 10.26s)"
+      ]
+    },
+    {
+      "name": "api-tests (1)",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T23:18:20Z",
+      "completedAt": "2026-10-29T23:40:07Z",
+      "summaries": [
+        "Test Files  137 passed | 2 skipped (139)",
+        "Tests  2020 passed | 106 skipped (2126)",
+        "Duration  1257.16s (transform 8.74s, setup 0ms, collect 238.21s, tests 985.19s, environment 33ms, prepare 11.08s)"
+      ]
+    },
+    {
+      "name": "ci",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T23:18:20Z",
+      "completedAt": "2026-10-29T23:37:27Z"
+    },
+    {
+      "name": "api-tests (2)",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T23:18:20Z",
+      "completedAt": "2026-10-29T23:35:06Z",
+      "summaries": [
+        "Test Files  135 passed | 4 skipped (139)",
+        "Tests  1979 passed | 174 skipped | 4 todo (2157)",
+        "Duration  957.20s (transform 6.74s, setup 0ms, collect 178.47s, tests 754.39s, environment 23ms, prepare 7.69s)"
+      ]
+    },
+    {
+      "name": "pos-tests",
+      "conclusion": "success",
+      "startedAt": "2026-10-29T23:18:20Z",
+      "completedAt": "2026-10-29T23:20:00Z"
+    }
+  ]
+}
