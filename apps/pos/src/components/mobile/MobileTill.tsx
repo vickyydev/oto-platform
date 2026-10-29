@@ -58,6 +58,13 @@ import {
 import { useCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
+import { useTicketDisplay } from '@/lib/displaySession';
+import {
+  phoneTillDisplayStage,
+  phoneTillInlineDisplay,
+  type PhoneHandoffMode,
+  type PhoneTillStep,
+} from '@/lib/phoneTillDisplay';
 import { setPaymentContextLocked, setSaleOpen } from '@/pwa/openSale';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
@@ -71,6 +78,7 @@ import { StepAddTicket } from '@/components/till/StepAddTicket';
 import { DropOffLineConfig, type DropOffLineUpdate } from '@/components/till/DropOffLineConfig';
 import { AddDropOffModal } from '@/components/till/AddDropOffModal';
 import { StepPayment } from '@/components/till/StepPayment';
+import { StepAwaitCustomer } from '@/components/till/StepAwaitCustomer';
 import { SupervisionGate, slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
 import { ConsentCapture } from '@/components/till/ConsentCapture';
 import { CustomerDisplay } from '@/components/till/CustomerDisplay';
@@ -88,24 +96,18 @@ import { MobileCartSheet } from './MobileCartSheet';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, CheckCircle2, Baby, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Baby, Monitor, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { currentLane } from '@/lib/lane';
 
 // ─── Mobile step types ────────────────────────────────────────────────────────
 
-type MobileStep =
-  | 'tier'
-  | 'tickets'
-  | 'configure'
-  | 'dropoff-config'
-  | 'supervision'
-  | 'review'
-  | 'payment'
-  | 'done';
+// The step names are shared with `lib/phoneTillDisplay.ts`, which says each
+// one in the counter's numbering for a paired customer display (SCRUM-686).
+type MobileStep = PhoneTillStep;
 
 /** Which customer-facing content to show in the hand-to-customer overlay. */
-type HandoffMode = 'input' | 'consent' | 'qr' | null;
+type HandoffMode = PhoneHandoffMode;
 
 // ─── Mobile confirmation screen ───────────────────────────────────────────────
 
@@ -336,6 +338,13 @@ export default function MobileTill() {
   };
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const [member, setMember] = useState<Member | null>(null);
+  /**
+   * SCRUM-686 — the visitor answered the paired display's identify prompt
+   * this sale (found, not found or skipped), so the display moves on to the
+   * welcome screen while staff choose the tier. The phone itself has no
+   * identify step; the prompt exists only on a separate display.
+   */
+  const [identifyAnswered, setIdentifyAnswered] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyTier, setVerifyTier] = useState<CustomerTier | null>(null);
   const [pendingVerification, setPendingVerification] = useState<TierVerification | null>(null);
@@ -634,6 +643,7 @@ export default function MobileTill() {
     setSaleNumber({ kind: 'unknown' });
     setPendingPaymentMethod(null);
     setMember(null);
+    setIdentifyAnswered(false);
     setShowVerifyModal(false);
     setVerifyTier(null);
     setPendingVerification(null);
@@ -1414,16 +1424,53 @@ export default function MobileTill() {
     }
   };
 
+  /**
+   * SCRUM-686 — the number a paired display's identify prompt delivered: the
+   * counter's `identifyPhone` (`pages/Till.tsx`) on the phone's own state.
+   * A member found takes the sale and resolves the tier for staff to confirm
+   * on the tier step; nobody found leaves the number on the sale for the
+   * contact point. The phone has no children re-confirm or create-member
+   * screens, so neither is offered here. A Cancel pressed while the lookup
+   * is out wins (`saleEpochRef`).
+   */
+  const identifyPhone = (value: string) => {
+    const epoch = saleEpochRef.current;
+    void (async () => {
+      const phone = value.trim();
+      try {
+        const found = phone ? await lookupMember(phone) : null;
+        if (saleEpochRef.current !== epoch) return;
+        setMember(found);
+        if (found) {
+          setTier(resolveAutoTier(found));
+          if (found.preferredChannel) setCustomerContactChannel(found.preferredChannel);
+        }
+      } catch (err) {
+        if (saleEpochRef.current !== epoch) return;
+        toast({
+          title: 'Membership lookup failed',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+        setMember(null);
+      }
+      setIdentifyAnswered(true);
+    })();
+  };
+
   // A tier verified before the visitor gave their details is saved to their
-  // profile here (SCRUM-227) — same path as the counter till.
-  const handleCustomerDone = () => {
-    if (pendingVerification && !member && customerPhone.trim()) {
+  // profile here (SCRUM-227) — same path as the counter till. The details
+  // come as arguments, as the counter's `finishCustomerContact` takes them,
+  // because a paired display delivers them with its answer before this
+  // screen's state has caught up (SCRUM-686).
+  const finishCustomerContact = (phone: string, nickname: string, channel: ContactChannel) => {
+    if (pendingVerification && !member && phone.trim()) {
       const verification = pendingVerification;
       const epoch = saleEpochRef.current;
       void saveDeferredVerification({
-        phone: customerPhone,
-        nickname: customerNickname,
-        channel: customerContactChannel,
+        phone,
+        nickname,
+        channel,
         verification,
       })
         .then((saved) => {
@@ -1447,6 +1494,7 @@ export default function MobileTill() {
     setHandoffMode(null);
     setMStep('review');
   };
+  const handleCustomerDone = () => finishCustomerContact(customerPhone, customerNickname, customerContactChannel);
 
   /** Keep the configured method token on the local sale and shared payment flow. */
   const handleMobileSelectMethod = (method: string) => {
@@ -1770,16 +1818,116 @@ export default function MobileTill() {
       completionRetry.scope !== paymentScopeRef.current.scope) return;
     completeSale(completionRetry.sale, completionRetry.settlements);
   };
+
+  // Build a live, Sale-shaped view model for the customer's screen — the
+  // phone's own overlay and a paired display alike. Once the sale is finalized
+  // the locked-in result is used so credit grants and ids stay stable.
+  const liveSale: Sale =
+    saleResult ?? {
+      ...buildSale({
+        id: 'PREVIEW',
+        operatorId: operator?.id ?? '',
+        operatorName: operator?.name ?? '',
+        tier: tier ?? getDefaultTier().id,
+        lines,
+        discounts,
+        manualDiscounts,
+        memberId: member?.id,
+        customerPhone,
+        customerNickname,
+        paymentMethod: pendingPaymentMethod ?? undefined,
+      }),
+      // What the visitor's screen shows while paying is the quoted figure
+      // (S2-09a), not a second computation of it.
+      total: cart.totals.total,
+    };
+
+  // ── Paired customer display (SCRUM-686) ───────────────────────────────────
+
+  /**
+   * THE PHONE TILL DRIVES A PAIRED CUSTOMER DISPLAY as the counter till does
+   * (`pages/Till.tsx`): the same lease, the same publisher, the same
+   * presentation (`useTicketDisplay`), with the phone's steps said in the
+   * counter's numbering (`lib/phoneTillDisplay.ts`). Without this a display
+   * paired to the station sat on its idle screen while a phone ran the sale.
+   *
+   * What the display gets: the identify prompt while staff are on the tier
+   * step with nobody on the sale; welcome and the live order with the
+   * platform's totals; the contact prompt at the contact point; the payment
+   * stage with the QR; the thank-you with the sale's grants. The supervision
+   * gate and the consent capture stay on the phone, so their step is
+   * published with no prompt and the display shows "follow the staff screen"
+   * for it. There is no child-review step on the phone.
+   *
+   * Paused while locked (`!locked`), like the counter; released on unmount
+   * by the hook, and handed to sign-out by `takeTicketDisplayLeaseForSignOut`.
+   */
+  const displayStage = phoneTillDisplayStage({
+    step: mStep,
+    handoffMode,
+    hasLines: lines.length > 0,
+    hasMember: member !== null,
+    identifyAnswered,
+  });
+  // The counter's `displayOnline`, less its offline-unlock flag, which the
+  // phone has no equivalent of.
+  const displayOnline = (typeof navigator === 'undefined' || navigator.onLine !== false)
+    && cart.quote.source === 'platform' && !cart.pending && !cart.error;
+  const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
+    stage: displayStage.stage, step: displayStage.step, sessionKey: `${saleEpochRef.current}`,
+    tier: tier ?? getDefaultTier().id,
+    phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member,
+    sale: { ...liveSale, id: saleWriter.committed?.id ?? liveSale.id }, totals: cart.totals,
+    rateMode: cart.quote.pricingMode,
+    online: displayOnline,
+    quoteRefreshing: cart.pending,
+    payment: paymentDisplay, voucherPrize: null, nothingToPay: saleOwesNothing,
+  }, answer => {
+    if (answer.type === 'identify' && displayStage.step === 1 && answer.phone !== undefined) {
+      setCustomerPhone(answer.phone);
+      if (answer.nickname !== undefined) setCustomerNickname(answer.nickname);
+      if (answer.contactChannel !== undefined) handleCustomerContactChannelChange(answer.contactChannel);
+      identifyPhone(answer.phone);
+    } else if (answer.type === 'skip_identify' && displayStage.step === 1) {
+      // Walk-in: no membership, the tier stays with staff.
+      setMember(null);
+      setIdentifyAnswered(true);
+    } else if (answer.type === 'contact_done' && displayStage.step === 4 && answer.phone !== undefined
+      && answer.nickname !== undefined && answer.contactChannel !== undefined) {
+      setCustomerPhone(answer.phone);
+      setCustomerNickname(answer.nickname);
+      handleCustomerContactChannelChange(answer.contactChannel);
+      finishCustomerContact(answer.phone, answer.nickname, answer.contactChannel);
+    }
+  }, !locked);
+  /**
+   * The phone's own customer screens (the hand-to-customer overlay) step
+   * aside while a separate display is connected and can show the stage — the
+   * counter's `inlineDisplay` rule. A display that drops, or cannot show a
+   * stage (an offline cart, a till-priced payment), hands the part back.
+   */
+  const inlineDisplay = phoneTillInlineDisplay(linkedDisplay);
+  const displayInUse = linkedDisplay.connected.length > 0;
+  useEffect(() => {
+    // A visitor may be typing on the separate display while staff are locked.
+    // A shell reload would discard the retained prompt before its answer arrives.
+    setSaleOpen('mobile-till-display', displayInUse);
+    return () => setSaleOpen('mobile-till-display', false);
+  }, [displayInUse]);
+
   useEffect(() => {
     const attemptId = paymentStage.state.attempt?.id;
     const hasQr = paymentStage.display.qrPayload || paymentStage.display.qrImageUrl;
     if (mStep === 'payment' && hasQr && attemptId && shownQrAttemptRef.current !== attemptId) {
+      // The QR is on the paired display when one has the payment stage; the
+      // attempt is not marked shown, so a display that drops hands it back here.
+      if (!inlineDisplay) return;
       shownQrAttemptRef.current = attemptId;
       setHandoffMode('qr');
     } else if (paymentStage.state.phase === 'ready' && handoffMode === 'qr' && !hasQr) {
       setHandoffMode(null);
     }
-  }, [mStep, handoffMode, paymentStage.state.attempt?.id, paymentStage.state.phase,
+  }, [mStep, handoffMode, inlineDisplay, paymentStage.state.attempt?.id, paymentStage.state.phase,
     paymentStage.display.qrPayload, paymentStage.display.qrImageUrl]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -1863,26 +2011,6 @@ export default function MobileTill() {
         <PriceSourceNote quote={cart.quote} pending={cart.pending} />
       </div>
     ) : undefined;
-
-  const liveSale: Sale =
-    saleResult ?? {
-      ...buildSale({
-        id: 'PREVIEW',
-        operatorId: operator?.id ?? '',
-        operatorName: operator?.name ?? '',
-        tier: tier ?? getDefaultTier().id,
-        lines,
-        discounts,
-        manualDiscounts,
-        memberId: member?.id,
-        customerPhone,
-        customerNickname,
-        paymentMethod: pendingPaymentMethod ?? undefined,
-      }),
-      // What the visitor's screen shows while paying is the quoted figure
-      // (S2-09a), not a second computation of it.
-      total: cart.totals.total,
-    };
 
   const displayName = customerNickname.trim() || member?.nickname || '';
 
@@ -2077,7 +2205,7 @@ export default function MobileTill() {
                 </Button>
               </div>
             )}
-            {(paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) && (
+            {inlineDisplay && (paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) && (
               <Button variant="outline" className="mt-4 w-full" onClick={() => setHandoffMode('qr')}>
                 <QrCodeIcon className="mr-2 h-4 w-4" /> Show payment QR
               </Button>
@@ -2167,6 +2295,21 @@ export default function MobileTill() {
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden">
 
+      {/* A paired customer display, named as the counter till names it (SCRUM-686) */}
+      {linkedDisplay.connected.length > 0 && (
+        <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs">
+          <Monitor className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">
+            {`Display connected: ${linkedDisplay.connected.map((display) => display.name).join(', ')}`}
+          </span>
+        </div>
+      )}
+      {linkedDisplay.error && (
+        <p role="status" className="shrink-0 bg-amber-100 px-3 py-1.5 text-xs text-amber-950">
+          Display connection: {linkedDisplay.error} The team can continue using this screen.
+        </p>
+      )}
+
       {/* Step nav bar (hidden on 'done' — the confirmation is full-page) */}
       {mStep !== 'done' && (
         <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b bg-card/20">
@@ -2246,8 +2389,10 @@ export default function MobileTill() {
         />
       )}
 
-      {/* Hand-to-customer overlay */}
-      {handoffMode !== null && (() => {
+      {/* Hand-to-customer overlay — the phone's own customer screen. With a
+          separate display showing the stage it steps aside (`inlineDisplay`),
+          except for consent, which stays on the phone (SCRUM-686). */}
+      {handoffMode !== null && (inlineDisplay || handoffMode === 'consent') && (() => {
         const cfg = getHandoffCfg(t)[handoffMode];
         return (
           <HandToCustomer
@@ -2271,6 +2416,18 @@ export default function MobileTill() {
           </HandToCustomer>
         );
       })()}
+
+      {/* The contact point with the visitor typing on the paired display: the
+          counter's step-4 panel, in the overlay's place (SCRUM-686). */}
+      {handoffMode === 'input' && !inlineDisplay && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background text-foreground p-4 overflow-y-auto">
+          <StepAwaitCustomer
+            phone={customerPhone}
+            nickname={customerNickname}
+            onBack={() => setHandoffMode(null)}
+          />
+        </div>
+      )}
 
       {/* ── Shared modals (dialogs rendered in portal, work on mobile) ── */}
 
