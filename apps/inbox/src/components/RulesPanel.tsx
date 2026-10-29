@@ -45,7 +45,7 @@ const RULE_TABS: [RuleStatus, string][] = [
 
 /** What the editor says under the intent picker for a kind of message the assistant never asks first on. */
 export const ASK_FIRST_IGNORED_LINE =
-  'The assistant never asks first on this kind of message (a complaint, a refund, a request for a person, a greeting, a thank-you, a bot question or spam). The instruction is still followed; the question is not asked.';
+  'The assistant never asks first on this kind of message (a complaint, a refund, a request for a person, an upset or unclear message, a child in our care, the birthday flow, a greeting, a thank-you, a bot question or spam). The instruction is still followed; the question is not asked.';
 
 /**
  * The behaviour rules (SCRUM-696): how the assistant handles a kind of
