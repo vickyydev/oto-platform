@@ -13,6 +13,7 @@
  * SQLite file. A Pi imports `@oto/box-agent/sqlite` directly.
  */
 export * from './protocol';
+export * from './build';
 export * from './contract';
 export * from './credentials';
 export * from './transport';

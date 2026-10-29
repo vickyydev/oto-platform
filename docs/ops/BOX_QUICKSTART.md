@@ -4,8 +4,9 @@ The short card for setting a booth box up away from home. Every step is a comman
 click; the long explanations live in [PI_BOOTH.md](PI_BOOTH.md) and
 [BOOTH_SETUP.md](BOOTH_SETUP.md). Bring: the Pi with its 27 W supply, the imaged card or
 stick, micro-HDMI cable, the wireless keyboard, the printer with one network cable, the
-red button, the MacBook, and the release file `oto-box-0.1.0-08ffe66.tgz` (or the newest
-one handed to you) already saved on the Mac.
+red button, the MacBook, and the newest release file handed to you, already saved on the
+Mac. Its name says which build it is — version, build date, commit:
+`oto-box-0.1.0-20261029-b25b644.tgz` stands for it below; type the name of your file.
 
 ## A. New Wi-Fi, same Pi — no re-imaging, two minutes
 
@@ -120,8 +121,8 @@ already claimed — then only part A applies.
 
    ```
    cd ~/Downloads
-   shasum -a 256 oto-box-0.1.0-08ffe66.tgz     # starts de9c, ends 6fd3
-   scp oto-box-0.1.0-08ffe66.tgz oto@<ip>:~/
+   shasum -a 256 oto-box-0.1.0-20261029-b25b644.tgz     # must match the checksum sent with it
+   scp oto-box-0.1.0-20261029-b25b644.tgz oto@<ip>:~/
    ```
 
 5. **Install** (in the SSH window; ~5 min):
@@ -129,11 +130,14 @@ already claimed — then only part A applies.
    ```
    ssh oto@<ip>
    cd ~
-   sha256sum oto-box-0.1.0-08ffe66.tgz
+   sha256sum oto-box-0.1.0-20261029-b25b644.tgz
    rm -rf oto-box
-   tar -xzf oto-box-0.1.0-08ffe66.tgz
+   tar -xzf oto-box-0.1.0-20261029-b25b644.tgz
    sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct
    ```
+
+   Afterwards `oto-box status` names the build installed (`oto-box 0.1.0 build 2026-10-29
+   b25b644 (…)`), and Console → Devices shows the same id as the box's agent version.
 
 6. **Claim**: Mac browser → `https://oto-console-staging.onrender.com` → Devices →
    **Add a box** (name, slot e.g. `booth-1`, role **Booth**) → copy the code (one-time,

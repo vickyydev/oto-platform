@@ -35,8 +35,9 @@ import { basename, join } from 'node:path';
 import { createBoxAgent, type BoxAgent, type BoxConfigCache } from '../agent';
 import type { Booth } from '../booth';
 import { createBoothHttp } from '../booth-http';
+import { BOX_AGENT_BUILD } from '../build';
 import { fileCredentialStore, type BoxCredential, type CredentialStore } from '../credentials';
-import { BOX_AGENT_VERSION, type BoxConfigBundle } from '../protocol';
+import type { BoxConfigBundle } from '../protocol';
 import { SqlBoxStore } from '../store-sql';
 import {
   checkSqliteStore,
@@ -737,7 +738,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
       online: online(),
       booths,
       selectedStationId: booths.length === 1 ? booths[0]!.stationId : chosen,
-      agentVersion: agent?.version ?? BOX_AGENT_VERSION,
+      agentVersion: agent?.version ?? BOX_AGENT_BUILD.id,
       service: fault ? { store: fault.store } : null,
     };
   }

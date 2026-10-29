@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 # Install (or update) the OTO booth box on a Raspberry Pi 5 (SCRUM-223).
 #
-#   sudo bash install.sh oto-box-0.1.0-<commit>.tgz [options]
+#   sudo bash install.sh oto-box-0.1.0-<date>-<commit>.tgz [options]
 #   sudo bash oto-box/pi/install.sh [options]        (from an unpacked release)
+#
+# The release's name — its BUILD ID, e.g. 0.1.0-20261029-b25b644: the agent
+# version, the build's date and the commit — is read from the release's VERSION
+# file and becomes its folder, /opt/oto-box/releases/<build id>; `oto-box
+# status` prints the same id, and the Console shows it as the box's agent
+# version. A tarball from before the date was in the name
+# (oto-box-0.1.0-<commit>.tgz) still installs, under <version>-<commit>.
 #
 # Options:
 #   --api URL             the api the box talks to (default: staging)
@@ -117,11 +124,14 @@ if [ -n "$TARBALL" ]; then
 elif [ -f "$HERE/../oto-box.mjs" ]; then
   SOURCE="$(cd "$HERE/.." && pwd)"
 else
-  die "give the release tarball: sudo bash install.sh oto-box-<version>.tgz"
+  die "give the release tarball: sudo bash install.sh oto-box-<version>-<date>-<commit>.tgz"
 fi
 [ -f "$SOURCE/oto-box.mjs" ] || die "$SOURCE is not an oto-box release (no oto-box.mjs)"
 [ -f "$SOURCE/booth/index.html" ] || warn "this release has no booth page; the television will say so"
-RELEASE="$(awk '{print $2"-"$3}' "$SOURCE/VERSION" 2>/dev/null | tr -c 'A-Za-z0-9.+-' '_' | sed 's/_*$//')"
+# The release's name, from the first line of VERSION. Two shapes are read:
+#   oto-box 0.1.0-20261029-b25b644 built 2026-10-29T05:38:23Z   → 0.1.0-20261029-b25b644
+#   oto-box 0.1.0 b25b644 built 2026-10-29T05:38:23Z            → 0.1.0-b25b644  (older tarballs)
+RELEASE="$(awk 'NR == 1 { if ($3 == "built") print $2; else print $2"-"$3 }' "$SOURCE/VERSION" 2>/dev/null | tr -c 'A-Za-z0-9.+-' '_' | sed 's/_*$//')"
 [ -n "$RELEASE" ] || RELEASE="release-$(date +%Y%m%d%H%M%S)"
 
 # --- Packages, time and the screen ------------------------------------------

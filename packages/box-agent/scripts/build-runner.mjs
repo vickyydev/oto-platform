@@ -4,8 +4,16 @@
  * page, and the Raspberry Pi install kit, packed as one tarball (SCRUM-223).
  *
  *   node scripts/build-runner.mjs            → dist/oto-box/ (runnable here)
- *   node scripts/build-runner.mjs --pack     → also dist/oto-box-<version>-<commit>.tgz
+ *   node scripts/build-runner.mjs --pack     → also dist/oto-box-<build id>.tgz + .sha256
  *   node scripts/build-runner.mjs --no-page  → skip building apps/booth
+ *
+ * The BUILD ID is `<version>-<YYYYMMDD>-<commit>`, e.g. `0.1.0-20261029-b25b644`:
+ * the agent's version (src/protocol.ts), the build's UTC day and the short
+ * commit (`+local` when the tree was dirty). It names the tarball, the first
+ * line of VERSION, the release folder a Pi installs into
+ * (/opt/oto-box/releases/<build id>), what `oto-box status` prints and the
+ * `agentVersion` the box reports — see src/build.ts. It is baked into the
+ * bundle here with esbuild's `define`, so the file knows its own build.
  *
  * What ends up in dist/oto-box/:
  *
@@ -20,7 +28,7 @@
  *                   machine it runs on (linux-arm64-gnu on a Pi 5).
  *   pi/             install.sh and the systemd units.
  *   PI_BOOTH.md     the set-up guide.
- *   VERSION         the commit this was built from.
+ *   VERSION         one line: `oto-box <build id> built <ISO time>`.
  *
  * SQLite needs no module at all: the store uses `node:sqlite`, which is part
  * of Node 22 itself.
@@ -28,6 +36,7 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import console from 'node:console';
+import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -45,6 +54,44 @@ const version = /BOX_AGENT_VERSION = '([^']+)'/.exec(
   readFileSync(join(PKG, 'src', 'protocol.ts'), 'utf8'),
 )?.[1];
 if (!version) throw new Error('BOX_AGENT_VERSION not found in src/protocol.ts');
+
+let commit = 'unknown';
+try {
+  commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT }).toString().trim();
+  /**
+   * `+local` means the sources this was built from are not the commit's: an
+   * edited file, or one git does not know. Mode bits are set aside on purpose
+   * (`core.fileMode=false`): pnpm marks `bin/oto-box.mjs` executable when it
+   * links the bin, on every OS but Windows, and a checkout holding the file as
+   * 100644 then reports it modified with not a byte of it changed — which is
+   * how the first release CI packed was named `+local` (SCRUM-422). Nothing
+   * packed here depends on a mode: esbuild reads the sources, and `bin/` is
+   * not in the tarball.
+   */
+  const dirty = execFileSync(
+    'git',
+    [
+      '-c',
+      'core.fileMode=false',
+      'status',
+      '--porcelain',
+      '--',
+      'packages',
+      'apps/booth',
+      'scripts/pi',
+    ],
+    { cwd: ROOT },
+  )
+    .toString()
+    .trim();
+  if (dirty) commit += '+local';
+} catch {
+  /* not a checkout: the version alone will do */
+}
+const builtAt = new Date();
+const buildDay = builtAt.toISOString().slice(0, 10).replace(/-/g, '');
+/** `0.1.0-20261029-b25b644` — see the header. Characters a file name and a folder name take. */
+const buildId = `${version}-${buildDay}-${commit.replace(/[^A-Za-z0-9.+-]/g, '')}`;
 
 /** The argon2 version the platform already locks, so the box verifies PINs with what the api hashes them with. */
 const argon2Version = JSON.parse(
@@ -84,6 +131,12 @@ await build({
   target: 'node22',
   external: ['@node-rs/argon2'],
   plugins: [fontDirPlugin],
+  // What `src/build.ts` reads: from source both are unset and the agent is
+  // the bare version; in this bundle they are these literals.
+  define: {
+    'process.env.OTO_BOX_BUILD_ID': JSON.stringify(buildId),
+    'process.env.OTO_BOX_BUILT_AT': JSON.stringify(builtAt.toISOString()),
+  },
   // A CommonJS dependency calling `require` inside an ES module needs one.
   banner: {
     js: "#!/usr/bin/env node\nimport { createRequire as __otoRequire } from 'node:module';\nconst require = __otoRequire(import.meta.url);",
@@ -145,40 +198,13 @@ writeFileSync(
   )}\n`,
 );
 
-let commit = 'unknown';
-try {
-  commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT }).toString().trim();
-  /**
-   * `+local` means the sources this was built from are not the commit's: an
-   * edited file, or one git does not know. Mode bits are set aside on purpose
-   * (`core.fileMode=false`): pnpm marks `bin/oto-box.mjs` executable when it
-   * links the bin, on every OS but Windows, and a checkout holding the file as
-   * 100644 then reports it modified with not a byte of it changed — which is
-   * how the first release CI packed was named `+local` (SCRUM-422). Nothing
-   * packed here depends on a mode: esbuild reads the sources, and `bin/` is
-   * not in the tarball.
-   */
-  const dirty = execFileSync(
-    'git',
-    [
-      '-c',
-      'core.fileMode=false',
-      'status',
-      '--porcelain',
-      '--',
-      'packages',
-      'apps/booth',
-      'scripts/pi',
-    ],
-    { cwd: ROOT },
-  )
-    .toString()
-    .trim();
-  if (dirty) commit += '+local';
-} catch {
-  /* not a checkout: the version alone will do */
-}
-writeFileSync(join(OUT, 'VERSION'), `oto-box ${version} ${commit} built ${new Date().toISOString()}\n`);
+/**
+ * One line, `oto-box <build id> built <ISO time>`. The installer reads the
+ * build id out of the second field for the release folder's name; it also
+ * still reads the earlier `oto-box <version> <commit> built <time>` line, so
+ * a tarball packed before the build id was introduced installs as before.
+ */
+writeFileSync(join(OUT, 'VERSION'), `oto-box ${buildId} built ${builtAt.toISOString()}\n`);
 
 if (args.has('--pack')) {
   /**
@@ -194,11 +220,15 @@ if (args.has('--pack')) {
     shell: process.platform === 'win32',
   });
   if (lock.status !== 0) console.warn('no package-lock.json: npm could not reach the registry');
-  const tarball = join(PKG, 'dist', `oto-box-${version}-${commit.replace(/[^A-Za-z0-9.+-]/g, '')}.tgz`);
+  const tarball = join(PKG, 'dist', `oto-box-${buildId}.tgz`);
   rmSync(tarball, { force: true });
   // Relative names from inside dist/: GNU tar (Git Bash on Windows) reads the
   // drive letter in an absolute C:… path as a remote host, bsdtar does not.
   execFileSync('tar', ['-czf', basename(tarball), 'oto-box'], { cwd: join(PKG, 'dist'), stdio: 'inherit' });
-  console.log(`packed ${tarball}`);
+  // The checksum beside it, in `sha256sum -c` form: the guide says the file
+  // comes with its SHA-256, and the Pi checks it with that command.
+  const sha256 = createHash('sha256').update(readFileSync(tarball)).digest('hex');
+  writeFileSync(`${tarball}.sha256`, `${sha256}  ${basename(tarball)}\n`);
+  console.log(`packed ${tarball}\n  sha256 ${sha256}`);
 }
 console.log(`built ${OUT}`);

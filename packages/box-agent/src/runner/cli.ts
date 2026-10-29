@@ -26,8 +26,8 @@ import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
+import { BOX_AGENT_BUILD, describeBuild } from '../build';
 import { fileCredentialStore } from '../credentials';
-import { BOX_AGENT_VERSION } from '../protocol';
 import type { AgentLog } from '../transport';
 import { readJsonFile, readOverrides, readRunnerState, runnerPaths } from './home';
 import { KIOSK_DEFAULT_PORT } from './kiosk-server';
@@ -131,15 +131,17 @@ export function readClaimCode(
   });
 }
 
-const USAGE = `oto-box ${BOX_AGENT_VERSION} — the OTO booth box
+const USAGE = `oto-box ${BOX_AGENT_BUILD.id} — the OTO booth box
 
   oto-box claim --api <url> [--home <dir>] [--hostname <name>] [--force]
       Register this box: asks for the claim code from Console → Devices → Add a box.
   oto-box run [--api <url>] [--home <dir>] [--port <n>] [--page <dir>]
       Run the box and serve the booth page at http://127.0.0.1:${KIOSK_DEFAULT_PORT}/.
   oto-box status [--home <dir>]
-      Say whether this box is registered, which booth it runs and what it holds.
+      Say which build this is, whether this box is registered, which booth it
+      runs and what it holds.
   oto-box version
+      The build: version, build date, commit and build time.
 
 Environment: OTO_BOX_API, OTO_BOX_HOME, OTO_BOX_PORT, OTO_BOX_PAGE, OTO_BOX_HOSTNAME,
 OTO_BOX_BRIDGE_ORIGINS and OTO_BOX_BRIDGE_PORT (the station bridge, on a counter box).
@@ -157,7 +159,9 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
   switch (parsed.command) {
     case 'version':
     case '--version':
-      out(BOX_AGENT_VERSION);
+      // `oto-box 0.1.0 build 2026-10-29 b25b644 (2026-10-29T05:38:23Z)`: the
+      // same build id as the tarball, the release folder and the Console.
+      out(describeBuild());
       return 0;
 
     case 'claim': {
@@ -253,6 +257,7 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
         stations?: Array<{ id: string; name: string; kind: string; codePrefix: string | null }>;
       } | null;
       const { overrides, problem } = await readOverrides(paths);
+      out(`build       ${describeBuild()}`);
       out(`home        ${home}`);
       out(`registered  ${credential ? `yes — box ${credential.boxId}` : 'no (enter the claim code on the television, or run "oto-box claim")'}`);
       // Before a claim, runner.json names no api; the configuration does, and

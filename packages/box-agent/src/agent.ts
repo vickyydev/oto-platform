@@ -55,6 +55,7 @@ import {
   type EnvelopeSealer,
   type StationIdentity,
 } from './store';
+import { BOX_AGENT_BUILD } from './build';
 import {
   BOX_AGENT_VERSION,
   BOX_REGISTER_JOURNALS_MAX,
@@ -485,6 +486,7 @@ export interface BoxAgentState {
 }
 
 export interface BoxAgent {
+  /** The build id this agent reports as `agentVersion` (`src/build.ts`). */
   readonly version: string;
   readonly state: BoxAgentState;
   /** Register if the store has no credential; a no-op afterwards. */
@@ -1962,7 +1964,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       auth: false,
       body: {
         claimCode,
-        agentVersion: BOX_AGENT_VERSION,
+        // The build id, not the bare version: the Console then names the
+        // exact build on each box (`src/build.ts`). The cloud's minimum-version
+        // comparison reads the leading `major.minor.patch` of it.
+        agentVersion: BOX_AGENT_BUILD.id,
         hostname: options.hostname,
         syncPublicKey: pair.publicKeyPem,
         syncKeyAlgorithm: 'ed25519',
@@ -3398,7 +3403,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
             measuredAt: declared.measuredAt,
           }
         : { offsetMs: null, measuredAt: null },
-      agentVersion: BOX_AGENT_VERSION,
+      agentVersion: BOX_AGENT_BUILD.id,
       syncPublicKey: syncPrivateKeyPem ? publicKeyFor(syncPrivateKeyPem) : undefined,
       uptimeS: Math.floor((Date.now() - startedAt) / 1000),
       // Null, not zero: a virtual box has no thermometer, and zero reads as cold.
@@ -4326,7 +4331,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         return {
           state: 'failed',
           errorCode: 'SIMULATOR_NOT_BUILT',
-          errorMessage: `This agent (${BOX_AGENT_VERSION}) has no simulator for ${action.action}`,
+          errorMessage: `This agent (${BOX_AGENT_BUILD.id}) has no simulator for ${action.action}`,
         };
       }
       case 'config_apply': {
@@ -4408,7 +4413,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         return {
           state: 'failed',
           errorCode: 'UNKNOWN_COMMAND',
-          errorMessage: `This agent (${BOX_AGENT_VERSION}) does not understand ${kind}`,
+          errorMessage: `This agent (${BOX_AGENT_BUILD.id}) does not understand ${kind}`,
         };
       }
     }
@@ -4607,7 +4612,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   }
 
   return {
-    version: BOX_AGENT_VERSION,
+    version: BOX_AGENT_BUILD.id,
     state,
     ensureRegistered,
     syncConfig,

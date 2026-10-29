@@ -27,18 +27,18 @@ In Imager's settings: a username and password, Wi-Fi if not cabled, **SSH with a
 
 ## 3. Install the box
 
-The release is one file, `oto-box-0.1.0-<commit>.tgz`, which **we send you together with its SHA-256 checksum** (64 letters and digits); you do not build it yourself. Copy the file to the Pi's home folder (USB stick or `scp`). Below, `oto-box-0.1.0-abc1234.tgz` stands for it: type **the name of the file you received** instead. First check it:
+The release is one file, `oto-box-<version>-<date>-<commit>.tgz` — for example `oto-box-0.1.0-20261029-abc1234.tgz`: version 0.1.0, built on 29 October 2026 from commit abc1234 — which **we send you together with its SHA-256 checksum** (64 letters and digits); you do not build it yourself. The part after `oto-box-` is the release's name, and the same name is what `oto-box status` prints on the Pi and what the Console shows as the box's agent version, so a box and a file can always be matched. Copy the file to the Pi's home folder (USB stick or `scp`). Below, `oto-box-0.1.0-20261029-abc1234.tgz` stands for it: type **the name of the file you received** instead. First check it:
 
 ```
 cd ~
-sha256sum oto-box-0.1.0-abc1234.tgz
+sha256sum oto-box-0.1.0-20261029-abc1234.tgz
 ```
 
 The checksum it prints must be exactly the one we sent. If it is not, the file was damaged on the way or is not the one we sent: do not install it, and ask us for it again. If it is:
 
 ```
 rm -rf oto-box
-tar -xzf oto-box-0.1.0-abc1234.tgz
+tar -xzf oto-box-0.1.0-20261029-abc1234.tgz
 sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct
 ```
 
@@ -148,7 +148,7 @@ voucher ledger. The standard single-use promise is omitted in this mode.
   saved profiles with `connection.autoconnect yes` and a priority decide themselves
   who wins between the park's router and any other saved network.
 - **Picture upside down** (a television hung the other way round): `sudo nano /etc/oto-box/config`, set `OTO_KIOSK_ROTATE=ccw` (add the line if it is not there; `cw` is the default), save, then `sudo systemctl restart oto-kiosk`. The setting lives in `/etc/oto-box/config` rather than the box's folder because the television runs as the desktop user, which cannot read that folder.
-- **Update**: we send you the new release with its checksum. Check it as in section 3, then run the section 3 commands again with the **new file's name**, without `--api` (the configured api is kept). The credential, the store and `/etc/oto-box/config` are kept; the previous release stays in `/opt/oto-box/releases/` (to roll back: `sudo ln -sfn <previous> /opt/oto-box/current && sudo systemctl restart oto-box`).
+- **Update**: we send you the new release with its checksum. Check it as in section 3, then run the section 3 commands again with the **new file's name**, without `--api` (the configured api is kept). The credential, the store and `/etc/oto-box/config` are kept; each release lives in `/opt/oto-box/releases/` under its own name — `0.1.0-20261029-abc1234`, the same as in the file name — and the previous one stays there (to roll back: `sudo ln -sfn /opt/oto-box/releases/<previous> /opt/oto-box/current && sudo systemctl restart oto-box`). `oto-box status` and `oto-box version` say which build is running (`oto-box 0.1.0 build 2026-10-29 abc1234 (…)`), and Console → Devices → the box shows the same name as its agent version.
 - **A damaged store.** Rare — a card that lost data it had reported saved, after a power cut or because the card is failing — and restarting does not cure it. The box stays up and says so; it records nothing, and it moves or deletes nothing:
   - The television shows **"This booth needs service — please ask our staff"**, with the Thai line under it, and a staff panel, **"This box needs service"**: the store on its memory card could not be read (or is damaged), and the steps below.
   - `oto-box status` says `store       could not be read — the booth needs service` (or `damaged — …`). When the box could read its unsent records out of the damaged file it also says `salvage     3 unsent record(s) copied out of the store to /var/lib/oto-box/box.sqlite.salvage-…json`, and adds `(the read stopped at damage; the store may hold more)` when it could read only some of them.

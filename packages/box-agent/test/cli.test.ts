@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
 
-import { BOX_AGENT_VERSION } from '../src/protocol';
+import { describeBuild } from '../src/build';
 import { main, parseArgs, readClaimCode, type CliStreams } from '../src/runner/cli';
 import { runnerPaths } from '../src/runner/home';
 
@@ -92,6 +92,7 @@ test('status names the configured api before a claim, and the claimed one after'
   try {
     const unset = streams(null);
     assert.equal(await main(['status', '--home', home], unset), 0);
+    assert.match(unset.out(), /^build {7}oto-box \d+\.\d+\.\d+ /m, 'the build is the first line');
     assert.match(unset.out(), /^registered {2}no/m);
     assert.match(unset.out(), /^api {9}\(not set\)/m);
 
@@ -125,7 +126,8 @@ test('status names the configured api before a claim, and the claimed one after'
 test('version, help and an unknown command', async () => {
   const version = streams(null);
   assert.equal(await main(['version'], version), 0);
-  assert.equal(version.out(), `${BOX_AGENT_VERSION}\n`);
+  assert.equal(version.out(), `${describeBuild()}\n`);
+  assert.match(version.out(), /^oto-box \d+\.\d+\.\d+ /);
 
   const help = streams(null);
   assert.equal(await main(['help'], help), 0);

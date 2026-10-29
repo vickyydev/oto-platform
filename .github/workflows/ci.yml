@@ -162,7 +162,8 @@ jobs:
         if: steps.changes.outputs.workspace == 'true'
         run: pnpm build
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
-      # installs `oto-box-<version>-<commit>.tgz`, and the guide says the file
+      # installs `oto-box-<version>-<YYYYMMDD>-<commit>.tgz` (the build id:
+      # `packages/box-agent/src/build.ts`), and the guide says the file
       # comes from us with its SHA-256 — but nothing packed it except a
       # developer's machine, where the only packed file was stale. Every run of
       # this job now packs it at the commit it just tested and keeps it three
@@ -204,6 +205,8 @@ jobs:
         run: |
           pnpm --filter @oto/box-agent pack:pi
           cd packages/box-agent/dist
+          # `oto-box-<version>-<date>-<sha>.tgz`: the first `*` takes the
+          # version and the date, the last the `+local` mark if there is one.
           set -- oto-box-*-"$(git rev-parse --short HEAD)"*.tgz
           [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "expected one tarball for HEAD in dist/, found: $*"; exit 1; }
           # A release packed here is the commit's, and its name says so. A

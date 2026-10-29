@@ -29,6 +29,11 @@ import { z } from 'zod';
  *
  * Bumped when the agent changes in a way the cloud can see — a new command
  * kind understood, a field added to the heartbeat — not on every edit.
+ *
+ * What a packed release reports as `agentVersion` is its BUILD ID,
+ * `<version>-<YYYYMMDD>-<commit>` (`src/build.ts`), so the Console can tell
+ * two builds of the same version apart; the cloud's comparison against
+ * `minSupportedAgentVersion` reads the leading `major.minor.patch`.
  */
 export const BOX_AGENT_VERSION = '0.1.0';
 
