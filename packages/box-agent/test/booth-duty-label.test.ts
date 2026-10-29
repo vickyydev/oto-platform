@@ -144,7 +144,7 @@ async function press(h: Harness, key: string): Promise<{ staff: string | null; s
   const spin = await h.booth.spin({ idempotencyKey: key });
   await h.booth.print({ spinId: spin.spinId });
   const data = voucherData(h.submitted[h.submitted.length - 1]);
-  return { staff: data.staff ?? null, staffAccountId: spin.staffAccountId, data };
+  return { staff: data.staff ?? null, staffAccountId: spin.staffAccountId ?? null, data };
 }
 
 const rosterToday = (people: Roster['people'], date = TODAY): Roster => ({ date, people });

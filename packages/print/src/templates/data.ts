@@ -141,8 +141,8 @@ export interface ItemVoucherData {
  *
  * **Nullable rather than optional, almost everywhere.** `staff`, `expiresAt`
  * and `prizeLineThai` are each a fact the booth genuinely may not have — nobody
- * was signed in, the prize never expires, the Thai name was never filled in —
- * and each is nullable in the shape it comes from: `SpinResponse.staffAccountId`
+ * is on today's roster, the prize never expires, the Thai name was never filled
+ * in — and each is nullable in the shape it comes from: `SpinResponse.staffLabel`
  * and `.expiresAt` in `@oto/shared`, `booth_prize.name_th` in the config
  * bundle. Optional (`?`) would let a caller reach the printer having simply
  * forgotten one, and the slip would come out silently short a row. Required and
@@ -208,15 +208,15 @@ export interface BoothVoucherData {
   /** Which booth printed it, e.g. "Central Phuket · G floor". */
   booth: string;
   /**
-   * Name and staff code, e.g. "Nok (S-7KMQ)".
+   * Today's roster label from Console → Booths → Today's staff, e.g.
+   * "Tom and Jerry" (SCRUM-694: nobody signs in at the booth).
    *
-   * **Null is expected, not exceptional.** A sign-in problem must never take
-   * the booth down (`docs/features/booth.md`), so the wheel spins with nobody
-   * signed in and the spin is flagged unattributed. The template prints
-   * "unattributed" on the slip rather than leaving the row off, because the
-   * row going missing and the row saying "nobody" look identical to reception
-   * otherwise — and "unattributed" is the word the Console's alert uses for
-   * the same spins.
+   * **Null is expected, not exceptional.** It means nobody is on today's
+   * roster: the wheel still spins, issuing never waits on it, and the spin is
+   * flagged unattributed. The template prints "unattributed" on the slip
+   * rather than leaving the row off, because the row going missing and the row
+   * saying "nobody" look identical to reception otherwise — and "unattributed"
+   * is the word the Console's alert uses for the same spins.
    */
   staff: string | null;
   /**

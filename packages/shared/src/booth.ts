@@ -506,14 +506,25 @@ export interface SpinResponse {
   expiresAt: string | null;
   printState: BoothPrintState;
   /**
-   * Who was signed in at the booth. **Null is a real and expected value** — a
-   * sign-in problem must never take the booth down, so the wheel still spins
-   * and the spin is flagged unattributed for the `booth.unattributed` alert.
+   * The Staff-row text this spin's slip printed (SCRUM-694): today's roster
+   * names, merged by `boothDutyLabel` — e.g. "Tom and Jerry" — from Console →
+   * Booths → Today's staff. Nobody signs in at the booth.
    *
-   * It is an opaque id and nothing else: no name, no phone, no photo. The
-   * television is in a shopping centre and anybody can read it.
+   * **Null when nobody was on today's roster**, and the slip then prints
+   * "unattributed"; the wheel still spins and issuing never waits on it. It is
+   * sent even when the slip hides the Staff row, because the attribution does
+   * not depend on paper.
+   *
+   * Optional because a box older than SCRUM-694 does not send it; a missing
+   * value is read as null.
    */
-  staffAccountId: string | null;
+  staffLabel?: string | null;
+  /**
+   * @deprecated Since SCRUM-694 nobody signs in at the booth and a new box
+   * never sends this. An older box sends the account that was signed in. The
+   * field goes with its last reader.
+   */
+  staffAccountId?: string | null;
   /**
    * The box could not vouch for its own clock when it stamped the spin — a Pi
    * has no clock battery and a booth that came up after a mall power cut with
@@ -734,11 +745,14 @@ export function joinBoothStaffNames(names: readonly (string | null | undefined)[
  *
  * `roster` is taken only when its `date` is `today`; any other day's roster is
  * treated as absent.
+ *
+ * From SCRUM-694 nobody signs in at the booth, and the label is called with
+ * the roster alone (`signedIn` absent, read as null).
  */
 export function boothDutyLabel(input: {
   roster: BoothDutyRoster | null | undefined;
   today: string;
-  signedIn: {
+  signedIn?: {
     accountId: string;
     name: string | null;
     /** `boothStaffLabel(name, code)` — what the slip prints today. */

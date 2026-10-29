@@ -309,10 +309,10 @@ describe('the booth voucher', () => {
   });
 
   it('prints "unattributed" rather than dropping the row', () => {
-    // A sign-in problem never takes the booth down, so an unattributed voucher
-    // is expected paper. A missing row and a row saying nobody look identical
-    // to reception, so the slip says which — in the word the Console's alert
-    // uses for the same spins (SCRUM-223).
+    // Nobody on today's roster never takes the booth down (SCRUM-694), so an
+    // unattributed voucher is expected paper. A missing row and a row saying
+    // nobody look identical to reception, so the slip says which — in the word
+    // the Console's alert uses for the same spins (SCRUM-223).
     const lines = textOf(build({ staff: null })).join('\n');
     expect(lines).toContain('Staff');
     expect(lines).toContain('unattributed');

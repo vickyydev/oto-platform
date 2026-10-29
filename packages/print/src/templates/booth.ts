@@ -150,10 +150,11 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
   blocks.push(divider());
   blocks.push(fact('Issued', data.issuedAt));
   blocks.push(fact('Booth', data.booth));
-  // An absent row and a row reading "nobody" are the same slip to whoever is
-  // holding it, so the Staff row prints "unattributed" rather than going
-  // missing — unless the booth has chosen to leave the row off altogether
-  // (SCRUM-471), which is then the same on every slip it prints.
+  // The Staff row is today's roster (SCRUM-694); "unattributed" means no name
+  // was on today's roster. An absent row and a row reading "nobody" are the
+  // same slip to whoever is holding it, so the row prints "unattributed"
+  // rather than going missing — unless the booth has chosen to leave the row
+  // off altogether (SCRUM-471), which is then the same on every slip it prints.
   if (showStaff) blocks.push(fact('Staff', data.staff ?? 'unattributed'));
   blocks.push(fact('Expires', data.expiresAt ?? 'No expiry'));
 
