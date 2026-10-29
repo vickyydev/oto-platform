@@ -74,6 +74,8 @@ export const assistantApi = {
   /** Drafts and approved entries; with `archived`, the archived ones instead. */
   kb: (archived: boolean) =>
     api.get<ApiResponse<'/inbox/kb', 'get'>>(`/inbox/kb${qs({ status: archived ? 'archived' : undefined })}`),
+  /** The drafts only: what a Teach card shows before it is approved. */
+  kbDrafts: () => api.get<ApiResponse<'/inbox/kb', 'get'>>(`/inbox/kb${qs({ status: 'draft' })}`),
   createKb: (body: KbEntryCreate) =>
     api.post<ApiResponse<'/inbox/kb', 'post'>>(
       '/inbox/kb',

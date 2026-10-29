@@ -18,6 +18,7 @@ import {
 } from '@/api/assistant';
 import type { InboxMe } from '@/api/inbox';
 import type { AssistantTab } from '@/lib/url';
+import { KbConfirm } from '@/components/AssistantConfirms';
 import { Eyebrow } from '@/components/atoms';
 import { Refusal } from '@/components/confirms';
 import { FIELD, Field } from '@/components/CorrectAssistant';
@@ -159,7 +160,13 @@ export function AssistantSettings({
       {section === 'knowledge' && caps.kb && <KnowledgeBase me={me} />}
       {section === 'examples' && caps.kb && <ExamplesQueue me={me} />}
       {section === 'rules' && caps.kb && <RulesPanel me={me} />}
-      {section === 'teach' && caps.kb && <TeachPanel me={me} onTab={onTab} />}
+      {/* The teach chat stays mounted, hidden, while another tab shows, so a
+          card's "Open in Rules" and the way back keep the conversation. */}
+      {caps.kb && (
+        <div className={section === 'teach' ? undefined : 'hidden'} data-teach-chat>
+          <TeachPanel me={me} active={section === 'teach'} onTab={onTab} />
+        </div>
+      )}
     </div>
   );
 }
@@ -434,37 +441,7 @@ function KnowledgeBase({ me }: { me: InboxMe }) {
         />
       )}
 
-      <Dialog
-        open={acting !== null}
-        onClose={() => setActing(null)}
-        icon={acting?.what === 'approve' ? CheckCircle2 : Archive}
-        iconTint={acting?.what === 'approve' ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : undefined}
-        title={acting?.what === 'approve' ? 'Approve this entry?' : 'Archive this entry?'}
-        subtitle={acting ? `${acting.entry.key} · ${langLabel(acting.entry.language)}` : undefined}
-        footer={
-          <>
-            <button type="button" onClick={() => setActing(null)} disabled={busy} className={CANCEL}>
-              Cancel
-            </button>
-            <button type="button" onClick={() => void act()} disabled={busy} className={PRIMARY}>
-              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {acting?.what === 'approve' ? 'Yes, approve' : 'Yes, archive'}
-            </button>
-          </>
-        }
-      >
-        <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
-          {acting?.what === 'approve'
-            ? 'The assistant may answer customers from these words from now on, on every number that is live. You are recorded as the approver.'
-            : 'The assistant stops using it, and its key is free for a new entry.'}
-        </p>
-        {acting?.what === 'approve' && (
-          <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-slate-50 dark:bg-slate-950/60 px-3 py-2 text-[12.5px] text-slate-700 dark:text-slate-200">
-            {acting.entry.body}
-          </p>
-        )}
-        {actError && <Refusal text={actError} />}
-      </Dialog>
+      <KbConfirm acting={acting} busy={busy} error={actError} onCancel={() => setActing(null)} onConfirm={() => void act()} />
     </div>
   );
 }

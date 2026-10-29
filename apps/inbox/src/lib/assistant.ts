@@ -12,12 +12,14 @@ import { AI_INTENTS, AI_KB_TOPICS, ASK_FIRST_IGNORED_INTENTS, type AiIntent } fr
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import type {
   AiMode,
+  AiRule,
   ExampleVerdict,
   KbEntry,
   KbLanguage,
   KbStatus,
   RuleAskFirst,
   RuleCondition,
+  TeachCard,
   TeachMessage,
   TeachOutcome,
 } from '@/api/assistant';
@@ -397,4 +399,43 @@ export function teachPayload(lines: readonly TeachMessage[]): TeachMessage[] {
     role: l.role,
     text: [...l.text].slice(0, TEACH_MESSAGE_MAX).join(''),
   }));
+}
+
+/**
+ * What a Teach card shows before Approve: the whole draft, read by id from
+ * the drafts lists (the reply names only its id and a title). `gone` once it
+ * is no longer a draft: approved, archived or replaced since.
+ */
+export type TeachDraftContent = { kind: 'fact'; entry: KbEntry } | { kind: 'rule'; rule: AiRule } | { kind: 'gone' };
+
+/** Each card once, first sighting first: a repeat in the chat answers with the draft already saved. */
+export function uniqueTeachCards(cards: readonly TeachCard[]): TeachCard[] {
+  const seen = new Set<string>();
+  return cards.filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
+}
+
+/**
+ * Each card's draft, by id. A list that was not read (null) leaves its cards
+ * out; a card whose draft is not in a list that was read is `gone`.
+ */
+export function teachDraftContents(
+  cards: readonly TeachCard[],
+  lists: { rules: readonly AiRule[] | null; entries: readonly KbEntry[] | null },
+): Record<string, TeachDraftContent> {
+  const out: Record<string, TeachDraftContent> = {};
+  for (const c of cards) {
+    if (c.kind === 'rule' && lists.rules) {
+      const rule = lists.rules.find((r) => r.id === c.id && r.status === 'draft');
+      out[c.id] = rule ? { kind: 'rule', rule } : { kind: 'gone' };
+    } else if (c.kind === 'fact' && lists.entries) {
+      const entry = lists.entries.find((e) => e.id === c.id && e.status === 'draft');
+      out[c.id] = entry ? { kind: 'fact', entry } : { kind: 'gone' };
+    }
+  }
+  return out;
+}
+
+/** A rule's ask-first question in each language, English first; null where it is not written. */
+export function ruleQuestions(askFirst: RuleAskFirst): [string, string | null][] {
+  return KB_LANGUAGES.map(([code, label]) => [label, askFirst.question[code]?.trim() || null]);
 }
