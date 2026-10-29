@@ -1,0 +1,186 @@
+{
+  "ticket": "SCRUM-684",
+  "phase": "all",
+  "headSha": "4cc504d809526ae4631ce97014d0380a5d39830b",
+  "startedAt": "2026-10-29T21:32:26.537Z",
+  "finishedAt": "2026-10-29T21:37:56.021Z",
+  "nativeExitCode": 0,
+  "workerExitCode": 0,
+  "workerResult": {
+    "nativeChildExitCode": 0,
+    "databaseDropped": true,
+    "embeddedStopped": true,
+    "cleanupFailure": false,
+    "setupFailureName": null,
+    "exitCode": 0
+  },
+  "discovered": 357,
+  "passed": 357,
+  "failed": 0,
+  "skipped": 0,
+  "countsReconciled": true,
+  "sourceFiles": 4023,
+  "sourceBeforeSha256": "6c989ad82a146aab6b2ddcaedbdb0515134bb21cbe5db50a515779d960d52a35",
+  "sourceAfterSha256": "6c989ad82a146aab6b2ddcaedbdb0515134bb21cbe5db50a515779d960d52a35",
+  "sourceBytesUnchanged": true,
+  "gitStillClean": true,
+  "headUnchanged": true,
+  "logSha256": "8e53c446366db1e05b9f13b8bfcbf9c523c673f02c9c05a383247b2f1b00769e",
+  "embeddedStopped": true,
+  "tests": [
+    {
+      "file": "apps/console/e2e/access-review.spec.ts",
+      "sha256": "72ebcde6a73f6c2e17e5bf046b2642b0e6bfffb92e5e82c36f54053f30eb2e2c"
+    },
+    {
+      "file": "apps/console/e2e/account-theme.spec.ts",
+      "sha256": "115026d6f1a70f725966a73713521134857932415fdf42adc5834aac590141b3"
+    },
+    {
+      "file": "apps/console/e2e/accounts.spec.ts",
+      "sha256": "f4ef16cded5bd6a8cc17a07c8d61d0a8948fc79d6d88a6411267037d4fe12030"
+    },
+    {
+      "file": "apps/console/e2e/activity-failures-q25.spec.ts",
+      "sha256": "28c7fd5f4678c2e49221e48ba05ed73995f6a71fbce6590f753cc59db21e9d03"
+    },
+    {
+      "file": "apps/console/e2e/admin-navigation.spec.ts",
+      "sha256": "ac6c2b7e6395e1509ea31db115322e59ef7faa6c4bffee243290ec178ed62988"
+    },
+    {
+      "file": "apps/console/e2e/analytics-configuration-review.spec.ts",
+      "sha256": "1ea5578776cd503d1aa0cc7796eb7fcf4ee40fa3ede561341c314fcf9c9ff7ba"
+    },
+    {
+      "file": "apps/console/e2e/app-access.spec.ts",
+      "sha256": "19418f7e2f120e57c6aca7d6b1efb4e889f76ed4307567e3e893d33b2d558415"
+    },
+    {
+      "file": "apps/console/e2e/assistant-settings.spec.ts",
+      "sha256": "d9a2cf06948258945b51d41da69d356d877c6c0c80f9e9c9fe8afda735bee475"
+    },
+    {
+      "file": "apps/console/e2e/booth-setup.spec.ts",
+      "sha256": "447fc07ee0778cbc667b425f0348fb1682e24acdecd33cbb41223643c6a702f6"
+    },
+    {
+      "file": "apps/console/e2e/care-print.spec.ts",
+      "sha256": "543b5d4b9d17efc6d8ff51206b855b248d4673362979fed772fd637bcf176d8a"
+    },
+    {
+      "file": "apps/console/e2e/catalogue.spec.ts",
+      "sha256": "7eceba44a7c588163e7739dd015aa360efd0cb9a7d71ba5ac38ca02a599fbfad"
+    },
+    {
+      "file": "apps/console/e2e/console-smoke.spec.ts",
+      "sha256": "26dcebef54ae032b3e4e7d695eb647758d86e5876e3ad602bccd635e9a3faae7"
+    },
+    {
+      "file": "apps/console/e2e/departments.spec.ts",
+      "sha256": "e59448b6d2e156f4811d3beee1d12d1996cb50ea074117f41018913d7983ef2e"
+    },
+    {
+      "file": "apps/console/e2e/employees.spec.ts",
+      "sha256": "4d0258161041af6092e291a097747a1ac0f29ccbbe030415b0022e9e2dc1fb32"
+    },
+    {
+      "file": "apps/console/e2e/error-recovery-review.spec.ts",
+      "sha256": "7074c65760d591dd4ceccd6b0c7f12bc81a9c662654cc1f13bf7640682d8908d"
+    },
+    {
+      "file": "apps/console/e2e/fleet-test-print.spec.ts",
+      "sha256": "a4c3193d8d26e6efb838213c71bf1ffa8215916a2dbd6a51fcc3b2de37fbdc38"
+    },
+    {
+      "file": "apps/console/e2e/health-integrations-review.spec.ts",
+      "sha256": "f34057926429246f1d7bf479f42377d8098da9378382b92771e038a17013211e"
+    },
+    {
+      "file": "apps/console/e2e/menu.spec.ts",
+      "sha256": "9a7030740a428a00619ccc2975d709615eede95974dd396621c666faf301940c"
+    },
+    {
+      "file": "apps/console/e2e/money-oversight.spec.ts",
+      "sha256": "ccc05d1b38ffc5b4aa044898cb547b477843d1c6c19eb9df70dbf35fadb34707"
+    },
+    {
+      "file": "apps/console/e2e/money.spec.ts",
+      "sha256": "4549eb56854bf4d721c79df11fd537d687bef554528d3ed514d56e2990d6abc1"
+    },
+    {
+      "file": "apps/console/e2e/observability-lifetime.spec.ts",
+      "sha256": "f13ca740e0370ca69b50f80acb096490e78044d91eeb95ac04c1a8b714cffb3b"
+    },
+    {
+      "file": "apps/console/e2e/operations.spec.ts",
+      "sha256": "954dcf05a2b076af1587d88094fdd6a05918bade26a6e96c59c171d415a5c394"
+    },
+    {
+      "file": "apps/console/e2e/operator-switch.spec.ts",
+      "sha256": "bc603eded4d799fd5c3eabd42e29932709161cf8641fac7025027445ad3eeef7"
+    },
+    {
+      "file": "apps/console/e2e/organisation.spec.ts",
+      "sha256": "758b86add2791485feb8ec32e9d2afa003424d4f141b844e7f4aa7d9195b16d1"
+    },
+    {
+      "file": "apps/console/e2e/overview.spec.ts",
+      "sha256": "d541f0954788e3ebbfc548fed39c18c9db3f0a1a20d7a52cdbaed21b4eee45e0"
+    },
+    {
+      "file": "apps/console/e2e/page-state-candidates.spec.ts",
+      "sha256": "e39d88db956dbd21e75f31b1b7b303cc2d3d52ccb3c199c0088dc51623b65b07"
+    },
+    {
+      "file": "apps/console/e2e/page-state-review.spec.ts",
+      "sha256": "15c2b068017d1fa7f334b0008b432fa3188bd7e423f5c43694274099036bc7ef"
+    },
+    {
+      "file": "apps/console/e2e/payment-discovery-filters.spec.ts",
+      "sha256": "9dba95858798103b176094e81d0060f8bd6d6854a7112e826094c996bbdb1859"
+    },
+    {
+      "file": "apps/console/e2e/platform.spec.ts",
+      "sha256": "37e412b33a462a5bb45ba5f9a7712c7ee576bce46099917cf3b10ffec7e94d60"
+    },
+    {
+      "file": "apps/console/e2e/pos-admin-redirect.spec.ts",
+      "sha256": "a09ae325e92fd7f18d5de0e3f4da22aa2e313c9505e0b8c30f0b948538abab2a"
+    },
+    {
+      "file": "apps/console/e2e/read-failures.spec.ts",
+      "sha256": "b79566ec3a410be9367ac89b97324bddde2e88278f8797d5c1efd7f935ed785a"
+    },
+    {
+      "file": "apps/console/e2e/reports.spec.ts",
+      "sha256": "74e4d4abde29be236c0e6d40143f8fe141706a6f810cdc08f730dfc184d35435"
+    },
+    {
+      "file": "apps/console/e2e/roles.spec.ts",
+      "sha256": "abfbc4a96485fef38f91185c586a2d389f74a4f298c0b0a19110c7269e3c39b3"
+    },
+    {
+      "file": "apps/console/e2e/staff.spec.ts",
+      "sha256": "51d6835b807e9a10d9d128ed5beca402545d9d1bf4ce2bfbc2be20c91c8f599a"
+    },
+    {
+      "file": "apps/console/e2e/suite-controls.spec.ts",
+      "sha256": "554e02d54e2f28d3db44b38a9314bc31d087cd79b8998d64064e9814cc64c05a"
+    },
+    {
+      "file": "apps/console/e2e/support-error-review.spec.ts",
+      "sha256": "07d88249d3bd87d22367b66e25c306708a9bfedd6c257f2c15d16a2fac1ac27c"
+    },
+    {
+      "file": "apps/console/e2e/support-refusal.spec.ts",
+      "sha256": "4040b313cc94ec16d5797d173ae3c6dc4132b7fc906251273ecdc4e14b40665a"
+    },
+    {
+      "file": "apps/console/e2e/teams-routing.spec.ts",
+      "sha256": "4ec8ff55f9786035711e4a036985b29eaf9498fac3f4e64a625b4e81cd90f24e"
+    }
+  ],
+  "staging": false,
+  "docker": false
+}

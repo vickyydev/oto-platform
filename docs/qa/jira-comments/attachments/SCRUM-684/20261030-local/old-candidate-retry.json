@@ -1,0 +1,450 @@
+{
+  "ticket": "SCRUM-684",
+  "kind": "exact-old-candidate-retry-verification",
+  "at": "2026-10-29T21:29:17.249Z",
+  "sourceSha": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+  "runId": "40781396308",
+  "attempt": 2,
+  "allSixSuccessful": true,
+  "api": [
+    {
+      "name": "api-tests (1)",
+      "jobId": 123143690140,
+      "sourceSha": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+      "executedInAttempt": 1,
+      "inheritedByAttempt2": true,
+      "startedAt": "2026-10-28T22:37:33Z",
+      "completedAt": "2026-10-28T22:58:24Z",
+      "summary": "Tests  2019 passed | 106 skipped (2125)",
+      "passed": 2019,
+      "failed": 0,
+      "skipped": 106,
+      "todo": 0,
+      "pins": [
+        {
+          "file": "test/routes-guarded.test.ts",
+          "tests": 26,
+          "passed": true
+        }
+      ],
+      "rawLogSha256": "3999e3fe0c5d00edd75ded4c2e99563647b31f10ebcca4b1f9507890dbc8bc7d",
+      "rawLogSaved": false
+    },
+    {
+      "name": "api-tests (3)",
+      "jobId": 123143690237,
+      "sourceSha": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+      "executedInAttempt": 1,
+      "inheritedByAttempt2": true,
+      "startedAt": "2026-10-28T22:37:33Z",
+      "completedAt": "2026-10-28T23:02:19Z",
+      "summary": "Tests  1854 passed | 121 skipped | 1 todo (1976)",
+      "passed": 1854,
+      "failed": 0,
+      "skipped": 121,
+      "todo": 1,
+      "pins": [
+        {
+          "file": "test/s684-nullable-response-contract-review.test.ts",
+          "tests": 14,
+          "passed": true
+        },
+        {
+          "file": "test/id-conformance.test.ts",
+          "tests": 26,
+          "passed": true
+        }
+      ],
+      "rawLogSha256": "3d211b5acebeb253fc539e3e68d76eb0e0cd6b3e404334619acd91f7c776855e",
+      "rawLogSaved": false
+    },
+    {
+      "name": "api-tests (2)",
+      "jobId": 123143690934,
+      "sourceSha": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+      "executedInAttempt": 1,
+      "inheritedByAttempt2": true,
+      "startedAt": "2026-10-28T22:37:33Z",
+      "completedAt": "2026-10-28T22:58:23Z",
+      "summary": "Tests  2000 passed | 174 skipped | 4 todo (2178)",
+      "passed": 2000,
+      "failed": 0,
+      "skipped": 174,
+      "todo": 4,
+      "pins": [
+        {
+          "file": "test/route-write-conformance.test.ts",
+          "tests": 26,
+          "passed": true
+        },
+        {
+          "file": "test/route-scope-target.test.ts",
+          "tests": 24,
+          "passed": true
+        }
+      ],
+      "rawLogSha256": "4bb6c20a1e290259cc127b7b8a41f521422a48b4f98063effe7d693fc65a0777",
+      "rawLogSaved": false
+    }
+  ],
+  "browser": {
+    "jobId": 123734023733,
+    "executedInAttempt": 2,
+    "inherited": false,
+    "summaryLines": [
+      "359 passed (6.4m)"
+    ],
+    "passed": 359,
+    "rawLogSha256": "903e669a381f569425549807d26890db499f117419cf37b690b42c2626b17bd2",
+    "rawLogSaved": false,
+    "steps": [
+      {
+        "name": "Set up job",
+        "number": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Initialize containers",
+        "number": 2,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Run actions/checkout@v4",
+        "number": 3,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "What changed",
+        "number": 4,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Run pnpm/action-setup@v4",
+        "number": 5,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Run actions/setup-node@v4",
+        "number": 6,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Install",
+        "number": 7,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Typecheck",
+        "number": 8,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Lint",
+        "number": 9,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "No screen reads mock members",
+        "number": 10,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Chat-history tool tests",
+        "number": 11,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Generated api types match the api",
+        "number": 12,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Vendored redaction has not drifted",
+        "number": 13,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Migrations apply cleanly from empty (twice)",
+        "number": 14,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Seed",
+        "number": 15,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Console tests",
+        "number": 16,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Print tests",
+        "number": 17,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Test",
+        "number": 18,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Build",
+        "number": 19,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Pi scripts parse",
+        "number": 20,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Working tree before the pack",
+        "number": 21,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Pack the Pi release",
+        "number": 22,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Upload the Pi release",
+        "number": 23,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Install Chromium for the Console end-to-end set",
+        "number": 24,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Console end-to-end",
+        "number": 25,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Console end-to-end report",
+        "number": 26,
+        "status": "completed",
+        "conclusion": "skipped"
+      },
+      {
+        "name": "Post Run actions/setup-node@v4",
+        "number": 49,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Run pnpm/action-setup@v4",
+        "number": 50,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Post Run actions/checkout@v4",
+        "number": 51,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Stop containers",
+        "number": 52,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "Complete job",
+        "number": 53,
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "totals": {
+    "passed": 5873,
+    "failed": 0,
+    "skipped": 401,
+    "todo": 5
+  },
+  "reviewFileObservedOnce": true,
+  "reviewCases": 14,
+  "routeGuards": [
+    {
+      "file": "test/routes-guarded.test.ts",
+      "observedPasses": 1,
+      "tests": 26
+    },
+    {
+      "file": "test/route-write-conformance.test.ts",
+      "observedPasses": 1,
+      "tests": 26
+    },
+    {
+      "file": "test/id-conformance.test.ts",
+      "observedPasses": 1,
+      "tests": 26
+    },
+    {
+      "file": "test/route-scope-target.test.ts",
+      "observedPasses": 1,
+      "tests": 24
+    }
+  ],
+  "executionNote": "Only the ci job was rerun in attempt2. API/POS/OTO App successes retain attempt1 execution; none is claimed rerun.",
+  "rawLogsSaved": false,
+  "metadata": {
+    "sourceSha": "c08075ac2e2311b1960f8ff2fb94ae03c6971af9",
+    "branch": "lane/admin684-contract-nulls-20261029",
+    "status": "completed",
+    "conclusion": "success",
+    "attempt": 2,
+    "jobs": [
+      {
+        "id": 123734023733,
+        "name": "ci",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-29T21:09:49Z",
+        "completedAt": "2026-10-29T21:28:51Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123734026859,
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-28T22:37:33Z",
+        "completedAt": "2026-10-28T22:44:41Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123734027080,
+        "name": "api-tests (3)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-28T22:37:33Z",
+        "completedAt": "2026-10-28T23:02:19Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123734084894,
+        "name": "api-tests (1)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-28T22:37:33Z",
+        "completedAt": "2026-10-28T22:58:24Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123734095179,
+        "name": "api-tests (2)",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-28T22:37:33Z",
+        "completedAt": "2026-10-28T22:58:23Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123734108371,
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-28T22:37:33Z",
+        "completedAt": "2026-10-28T22:39:05Z",
+        "failedSteps": []
+      }
+    ]
+  },
+  "verified": true,
+  "mainAtVerification": {
+    "runId": "40956661273",
+    "found": true,
+    "sourceSha": "7c00da64534c1c2752b6383d5b860d76d65aa450",
+    "branch": "main",
+    "status": "in_progress",
+    "conclusion": "",
+    "attempt": 1,
+    "jobs": [
+      {
+        "id": 123738394634,
+        "name": "pos-tests",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-29T21:18:31Z",
+        "completedAt": "2026-10-29T21:20:52Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123738394933,
+        "name": "ci",
+        "status": "in_progress",
+        "conclusion": "",
+        "startedAt": "2026-10-29T21:18:30Z",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123738394958,
+        "name": "api-tests (3)",
+        "status": "in_progress",
+        "conclusion": "",
+        "startedAt": "2026-10-29T21:18:30Z",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123738394984,
+        "name": "api-tests (2)",
+        "status": "in_progress",
+        "conclusion": "",
+        "startedAt": "2026-10-29T21:18:30Z",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123738395032,
+        "name": "oto-app",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-29T21:18:30Z",
+        "completedAt": "2026-10-29T21:19:18Z",
+        "failedSteps": []
+      },
+      {
+        "id": 123738395192,
+        "name": "api-tests (1)",
+        "status": "in_progress",
+        "conclusion": "",
+        "startedAt": "2026-10-29T21:18:30Z",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "failedSteps": []
+      }
+    ]
+  }
+}
