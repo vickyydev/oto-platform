@@ -159,10 +159,10 @@ A promotional spin-the-wheel game at mall booths, originally a closed vendor web
 
 **Software**
 - Booth is a station type managed from the POS admin like any other: create the booth, pick a game layout from a set of ready designs, configure prizes and probabilities, optionally choose an idle screensaver video, assign staff, activate.
-- At the booth the box loads the booth's config bundle from the cloud and caches it. Staff sign in by QR badge or PIN. The game runs; every spin and every voucher carries the booth ID and the staff ID.
+- At the booth the box loads the booth's config bundle from the cloud and caches it. Nobody signs in at the booth (owner ruling 2026-10-29, SCRUM-694): the slip names today's roster for that booth from the Console. The game runs; every spin and every voucher carries the booth ID and the roster names it printed.
 - Vouchers are printed with a signed code and queued locally when offline, synced later. Redemption at a counter scans the code, verifies the signature, checks single use.
 - One spin per wristband or per member phone number, checked against the box's local log and the cloud when online. Which unit of limitation applies is per-booth config.
-- Heartbeat every 60 s: online, printer reachable, paper, last spin, staff signed in. Alerts on offline, printer fault, paper out, and "vouchers printing with nobody signed in", delivered to a channel the client chooses (LINE OA, Telegram or email are cheap; WhatsApp needs the Business API).
+- Heartbeat every 60 s: online, printer reachable, paper, last spin, whether today's roster names anybody. Alerts on offline, printer fault, paper out, and "vouchers printing with nobody on today's roster", delivered to a channel the client chooses (LINE OA, Telegram or email are cheap; WhatsApp needs the Business API).
 - Per-booth reporting: spins, prize distribution, vouchers issued and redeemed, uptime.
 - **Open:** whether the idle video is wanted; alert channel; prize list and probabilities for launch.
 

@@ -231,3 +231,28 @@ the platform's analytics tables, where the same summary endpoint serves
 them to Radar with no pipeline code. The standing asks above (the Radar
 dump; no cancellation of Pisell or Papaya until the history export is done)
 therefore remain open.
+
+
+## 2026-10-29 - no staff sign-in on the Lucky Wheel booth (SCRUM-694)
+
+The owner ruled that nobody signs in at a booth. The booth shows the wheel
+straight away: no account picker, no PIN, no session timer. The slip's
+Staff row names today's roster for that booth, from Console > Booths >
+Today's staff (the OTO App duty roster, SCRUM-473, plus anybody added by
+hand). The admin-set staff session length goes too.
+
+What follows from it:
+
+- "Unattributed" now means nobody was on today's roster. Issuing never
+  waits on it: the wheel spins, the slip prints "unattributed", and Health
+  counts those vouchers.
+- The roster is per trading day. A box offline keeps the roster it last
+  pulled for that day.
+- The booth's staff panel offers Reprint, Change booth and the diagnostics,
+  with no credential; `#debug` opens the diagnostics directly.
+- Attribution is the label the slip printed, kept on each spin's synced
+  fact and audit row; a new spin carries no staff account.
+- The booth staff list, booth PINs, the `booth:staff:sign_in` permission
+  and the launcher hand-off into the booth are removed. The database keeps
+  the retired column and tables with comments, so no migration runs and the
+  published wheels keep their bundle hashes.

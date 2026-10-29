@@ -51,6 +51,8 @@ wants it measurable: which booth, which staff member, which prizes convert.
 - **Staff attribution**: booth staff sign in by PIN or QR badge; every voucher
   carries their id; nobody signed in → still works, voucher flagged
   "unattributed". A login problem must never take the booth down.
+  *(Superseded on 29 October 2026, SCRUM-694: nobody signs in at the booth, and
+  the slip names today's roster — see "Staff attribution" below.)*
 - **Admin-controlled prizes**: name TH / EN, weight, expiry, active, daily cap.
   Outcomes driven by config, not code.
 - **Addendum:** Raspberry Pi 5 booth box; printer over Ethernet (port 9100);
@@ -69,7 +71,7 @@ video, signed vs random codes — the specification's addendum is newer and wins
 ## Integration plan
 - **Deployables:** `apps/booth` (the game, served by the booth box to its own
   Chromium kiosk); a booth role in the box agent (config cache, outcome, code
-  generation, print queue, staff sign-in, spin log, heartbeat); booth management
+  generation, print queue, spin log, heartbeat); booth management
   in the Console; redemption in the POS.
 - **Outcome on the box.** The agent draws the prize from the cached config,
   honouring daily caps and stock, and records the spin before the wheel
@@ -94,7 +96,39 @@ video, signed vs random codes — the specification's addendum is newer and wins
   booth, staff and prize; prize cost; redemption lag. Feeds `analytics` like
   every other source.
 - **Launcher tile:** none for staff at the booth (the box boots into the game).
-  Management reaches booth settings and reports through the Console.
+  The launcher's Lucky Wheel tile opens the demonstration wheel (`/#fake`) with
+  no hand-off. Management reaches booth settings and reports through the Console.
+
+## Staff attribution - SCRUM-694
+
+Owner ruling of 29 October 2026: there is no staff sign-in at the booth.
+
+- **The booth shows the wheel straight away**: no account picker, no PIN pad,
+  no phone and password, no session timer. A staff panel (Reprint, Change
+  booth, Booth diagnostics, Close) opens from a 3-second hold of the button or
+  a touch on the corner dot or names; it has no credential behind it and
+  closes itself. `#debug` opens the diagnostics directly.
+- **The slip's Staff row is today's roster** from Console → Booths → Today's
+  staff (SCRUM-473): the OTO App's shift schedule for the booth, plus anybody
+  added by hand, joined as one line ("Tom and Jerry"). The roster is per
+  trading day and reaches the box at its next pull; offline, the box keeps the
+  roster it last pulled for that day.
+- **"Unattributed" means nobody was on today's roster.** The wheel still spins
+  and issues; the slip prints "unattributed"; Health counts those vouchers and
+  raises `booth.unattributed` from the spin itself.
+- **Attribution is the label.** Each spin carries the Staff row it printed
+  (`staffLabel`) and the account ids on the roster (`dutyAccountIds`) on its
+  synced fact and its audit row; `booth.spin.staff_account_id` stays null for
+  new spins. Reports, the voucher ledger and the till's "Printed by" read the
+  label (`apps/api/src/services/booth-attribution.ts`). Spins recorded by an
+  older box with somebody signed in keep their account.
+- **Removed**: the booth staff list and PINs, the staff session length, the
+  `booth:staff:sign_in` permission, the box's staff verify route and the
+  launcher hand-off into the booth. The database keeps the retired column and
+  tables (`booth.booth_settings.staff_session_minutes`,
+  `booth.booth_staff_assignment`, `edge.box_staff_session` and the box store's
+  own copy) with comments; no migration. Published bundle hashes are
+  unchanged.
 
 ## Spin duration - SCRUM-452
 

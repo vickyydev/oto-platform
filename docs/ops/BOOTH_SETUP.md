@@ -1,10 +1,10 @@
-# Setting up the Lucky Wheel in the Console — voucher types, booth staff, PINs, session length
+# Setting up the Lucky Wheel in the Console — voucher types, today’s staff, publish
 
-One page for the set-up you do yourself on staging before the bench test: what each prize is worth and what its slip says, who may sign in at the booth and with which PIN, how long a sign-in lasts, and the publish that sends it to the booth. Everything is done in the Console, apart from step 1, in the POS admin; nothing here needs an engineer.
+One page for the set-up you do yourself on staging before the bench test: what each prize is worth and what its slip says, whose name the slip prints, and the publish that sends it to the booth. Nobody signs in at the booth: it shows the wheel as soon as it starts, and the Staff row on each slip names the people on that booth’s staff for the day. Everything is done in the Console, apart from step 1, in the POS admin; nothing here needs an engineer.
 
 It is safe to repeat. Going through the steps again with the same values changes nothing: the list shows what is already set, **Save settings** stays greyed out when nothing changed, and a publish with nothing new says "Nothing differs from the published version".
 
-Sign in to the staging Console with your own administrator account. The steps are in this order because each one uses the one before: a prize points at a voucher type, and a publish sends the prizes, the words and the session length together.
+Sign in to the staging Console with your own administrator account. The steps are in this order because each one uses the one before: a prize points at a voucher type, and a publish sends the prizes and the words together.
 
 ## 1. Before you start: the products the free prizes hand over
 
@@ -55,25 +55,25 @@ A free product or a 1+1 cannot be saved without its product or package — the S
 
 What is the same for every booth voucher, and is therefore not a setting: it is redeemed **online only** (a till working offline refuses it), **once**, **one per sale and never with a promo code**, at the till section 1 names, and at **any park**, except a free product, honoured only where its product is on sale or a product is chosen for that park, and a 1+1, honoured only at a park with a ticket package of the same name (section 1).
 
-## 3. Booth staff and PINs — Console → Booths → the booth → Booth staff
+## 3. Today’s staff — Console → Booths → the booth → Today’s staff
 
-- **Add somebody**: choose them under **Person** (search by name or phone) → **Add to booth**. The list offers the people of the booth's branch and the park's administrators — add yourself too.
-- **Issue PIN**: the platform draws five random digits that nobody else on that person's booths holds and shows them once with **Copy PIN**; write them down before pressing **Done**. Nobody types a PIN. **Issue new PIN** replaces it in one press; **With an end date…** issues one that stops working at a set time. A PIN belongs to the person and replaces their previous PIN at every booth they work.
-- **Expires** is optional. Once that time passes, the box refuses the PIN even offline and asks the person to get a new one from a manager. Leave it empty for no expiry.
-- **Remove PIN** stops the PIN working; **Remove** takes the person off this booth (their PIN stays theirs for other booths). Existing four-digit PINs must be replaced with five-digit PINs before using this release.
-- People on the list can also sign in at the booth with **their own phone and password** when their role allows it — the panel names those roles. Somebody not on the list cannot sign in at this booth either way.
+The card lists who works this booth today and shows the line every voucher prints today: **On every voucher today: Tom and Jerry**. Nobody signs in at the booth, so this list is the whole of the attribution.
 
-Changes here reach the booth at the box's next pull — within about a minute when it is online. No publish is needed. From that pull a new PIN works and a withdrawn one no longer does; somebody taken off the list can no longer sign in with their PIN, and a sign-in they already have at the booth ends at that pull too. A phone-and-password sign-in is checked by the platform itself, so somebody taken off the list is refused that way at once. Do not send PINs in chat or email; tell each person their own.
+- **From the OTO App’s rota**: the park’s shift schedule is read when the park opens, and again with **Sync now**. **How staff are found** says which shift group, department, role or duty block counts as this booth (the park schedules it under “Sale Booth”); **Save rule** applies at the next sync.
+- **Add somebody for today**: choose a member of staff of the booth’s branch → **Add**, or type **a name alone** for somebody with no account → **Add name**. The **×** beside a name takes them off today’s roster.
+- **On the rota, but not matched to an account** lists names the rota gave that the platform could not link; they are not on the voucher until linked or added by hand.
+- **Nobody on today’s roster** is allowed: the wheel still spins and issues vouchers, and the slip prints “unattributed”. Health → Booths counts those vouchers.
 
-## 4. How long a sign-in lasts — Console → Booths → the booth → Booth settings
+The roster is per trading day and reaches the booth at the box’s next pull — within about a minute when it is online. No publish is needed. A box that is offline keeps the roster it last pulled for that day.
 
-**Staff session length**, in hours: left empty it is 12, at most 24. A sign-in ends when this time is up or when somebody signs out — never because nobody pressed anything. Press **Save settings**; it reaches the booth with the next publish, and a sign-in already running keeps the length it started with.
+## 4. The staff panel at the booth
+
+There is nothing to set up for it. A touch on the dot in the bottom corner of the booth screen (or on the names in the top corner), or holding the booth’s button for three seconds while the wheel is ready, opens a small panel: **Reprint last voucher** (the last slip again, marked “Reprint”, never a new prize), **Change booth** (on a box that runs more than one booth), **Booth diagnostics** and **Close**. It asks for no PIN or password, and it closes itself after a short while.
 
 ## 5. Publish — Console → Booths → the booth → Publish
 
-**Review and publish** shows what the booth will run. Check two lines before you press:
+**Review and publish** shows what the booth will run. Check this line before you press:
 
-- **Staff sign-in** — "lasts 10 hours" (or whatever you set).
 - **Slip wording** — "the park's own words for 6 of the 6 voucher types this booth's prizes use" once all six are worded.
 
 Then **Publish version N**. The box picks it up at its next pull and reports it with its next heartbeat — about two minutes: a pull of up to a minute, then a heartbeat. **What this booth is running → Wheel version** shows the new number once it has.
@@ -93,8 +93,7 @@ A booth with no layout — a new one — is refused ("This booth has no wheel de
 | What a type's slip says — title, instruction and terms | It depends on the wheel version the booth is running — see below the table |
 | A type's expiry | Read from the type when a voucher is won, so it applies to vouchers won after the box's next pull (about a minute): the days count from the day of the win, to the end of the last one. A slip already printed keeps its date. A prize with its own number of days uses those instead |
 | A prize's own number of days (Booths page) | At the booth's next publish |
-| Booth staff and PINs | At the box's next pull, without a publish (a phone-and-password sign-in by somebody taken off is refused at once) |
-| The session length | At the booth's next publish, for sign-ins after it |
+| Today’s staff | At the box's next pull, without a publish, for spins after it |
 
 **What decides a slip's words is the wheel version the booth is running**, not what the type says now:
 
