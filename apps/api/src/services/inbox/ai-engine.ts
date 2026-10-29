@@ -415,15 +415,19 @@ async function episodeFacts(
         eq(inboxEvent.operatorId, conv.operatorId),
         eq(inboxEvent.conversationId, conv.id),
         eq(inboxEvent.actorKind, 'ai'),
-        inArray(inboxEvent.kind, ['ai_replied', 'ai_handover']),
+        inArray(inboxEvent.kind, ['ai_replied', 'ai_handover', 'ai_shadow']),
         gte(inboxEvent.createdAt, episodeStart),
       ),
     );
   const tenAgo = now.getTime() - 10 * 60_000;
   const identityAnswered = answered.some((t) => t.intent === 'identity_question');
-  const payloads = events.map(
-    (e) => (e.payload ?? {}) as { askBranch?: unknown; brochureFileIds?: unknown; languageOffer?: unknown; askFirstRuleId?: unknown },
-  );
+  type Payload = { askBranch?: unknown; brochureFileIds?: unknown; languageOffer?: unknown; askFirstRuleId?: unknown };
+  const payloadOf = (e: (typeof events)[number]) => (e.payload ?? {}) as Payload;
+  // What reached the customer: the live replies and hand-overs only.
+  const payloads = events.filter((e) => e.kind !== 'ai_shadow').map(payloadOf);
+  // SCRUM-696: a question a shadow turn would have asked counts too, so
+  // shadow mode does not put the same question to every turn of an episode.
+  const askedFirst = events.some((e) => typeof payloadOf(e).askFirstRuleId === 'string');
   const languageOffered = payloads.some((p) => p.languageOffer === 'ru' || p.languageOffer === 'th');
   return {
     state: {
@@ -441,7 +445,7 @@ async function episodeFacts(
       identityAnswered,
       languageOffered,
     },
-    askedFirst: payloads.some((p) => typeof p.askFirstRuleId === 'string'),
+    askedFirst,
   };
 }
 

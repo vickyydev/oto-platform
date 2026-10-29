@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
   AI_BRANCH_KEYS,
   AI_INTENTS,
+  AI_KB_TOPICS,
+  INTENT_TABLE,
   applyGates,
   askFirstOf,
   buildPrompt,
@@ -31,22 +33,24 @@ import { AppError } from '../../lib/errors';
 import { toJsonSchema } from '../assistant/json-schema';
 import { withTx, type OpContext } from '../tx';
 import { loadTurnKnowledge, type TurnKnowledge } from './ai-knowledge';
-import { createRule } from './ai-rules';
+import { archiveRule, createRule, loadRule } from './ai-rules';
 import type { InboxAiRuntime } from './ai-runtime';
-import { createKb, type Reach, type SettingsCtx } from './ai-settings';
+import { archiveKb, createKb, loadKb, type Reach, type SettingsCtx } from './ai-settings';
 
 /**
  * THE TEACH CHAT (SCRUM-696): a park colleague briefs the customer assistant
  * in plain words on the Assistant page, with a curator that reads the same
  * knowledge the customer assistant reads (`buildTeachSystem`).
  *
- * WHAT IT CAN DO. Four tools, and only these: `search_knowledge` (read the
+ * WHAT IT CAN DO. Five tools, and only these: `search_knowledge` (read the
  * operator's entries and rules), `create_fact` (a DRAFT knowledge-base entry,
  * through `createKb`), `create_rule` (a DRAFT operator rule, through
- * `createRule`, which refuses an unsafe one) and `dry_run` (what the assistant
- * would do now with one customer message). None reads or writes a
- * conversation, a message, a turn or an event, and nothing is sent: a draft
- * reaches customers only once a person approves it.
+ * `createRule`, which refuses an unsafe one), `archive_draft` (retire one of
+ * the caller's own drafts of the last day, so "make that Chalong only" is an
+ * archive and a new draft) and `dry_run` (what the assistant would do now
+ * with one customer message). None reads or writes a conversation, a
+ * message, a turn or an event, and nothing is sent: a draft reaches
+ * customers only once a person approves it.
  *
  * THE DRY RUN is the real decision model, the real gate and the real
  * ask-first check on a synthetic one-message episode, in memory. It does not
@@ -71,6 +75,10 @@ export const TEACH_LINES = {
   unavailable: 'The assistant is not switched on for this deployment, so it cannot be taught here yet.',
   failed:
     'I could not finish that just now. Anything listed below was saved as a draft; nothing else changed. Try again in a moment.',
+  notYourDraft:
+    'That is not one of your drafts of the last day. An approved rule or fact is changed under Assistant → Rules or Assistant → Knowledge.',
+  notADraft:
+    'That is no longer a draft: someone approved or archived it. Change it under Assistant → Rules or Assistant → Knowledge.',
 } as const;
 
 /** The request's context without its idempotency claim: a tool's withTx must never store its row as the teach answer. */
@@ -153,18 +161,38 @@ const RuleInput = z
   })
   .strict();
 const DryRunInput = z.object({ customerMessage: z.string().trim().min(1).max(500) }).strict();
+const ArchiveInput = z.object({ id: z.string().uuid() }).strict();
+
+/**
+ * Which kinds of message a fact of each topic can answer, read from the
+ * intent table (an answer cites a source of one of its own topics).
+ */
+function topicGuide(): string {
+  return AI_KB_TOPICS.map((topic) => {
+    const answers = AI_INTENTS.filter((i) => {
+      const rule = INTENT_TABLE[i];
+      return rule.action === 'answer' && rule.groundingTopics !== null && rule.groundingTopics.includes(topic);
+    });
+    return `${topic} → ${answers.join(', ')}`;
+  }).join('; ');
+}
 
 const TOOLS: ReadonlyArray<{ name: string; description: string; input: z.ZodTypeAny }> = [
   {
-    name: 'create_fact',
+    name: 'archive_draft',
     description:
-      'Save a DRAFT knowledge-base entry (a fact about the park) for approval under Assistant → Knowledge. Search first so you do not duplicate an entry. key: a lower-case slug such as faq.lost-property; language: the language the fact is written in; park: central or chalong, or leave it out for both parks; question: as a customer would ask it; body: the fact. Nothing reaches customers until a person approves it.',
+      'Archive one of YOUR drafts of the last day (a rule or a fact), by its id from "Drafts you already saved". To change a draft (another park, other words), archive it, then save the new one. It never touches an approved rule or fact, nor anyone else\'s draft.',
+    input: ArchiveInput,
+  },
+  {
+    name: 'create_fact',
+    description: `Save a DRAFT knowledge-base entry (a fact about the park) for approval under Assistant → Knowledge. Search first so you do not duplicate an entry. topic decides which customer questions the fact can answer (topic → the kinds of message it grounds): ${topicGuide()}. A kind of message the assistant hands over (a lost item, a complaint, a refund…) is not answered from a fact, whatever its topic. key: a lower-case slug such as faq.lost-property; language: the language the fact is written in; park: central or chalong, or leave it out for both parks; question: as a customer would ask it; body: the fact. Nothing reaches customers until a person approves it.`,
     input: FactInput,
   },
   {
     name: 'create_rule',
     description:
-      'Save a DRAFT behaviour rule for approval under Assistant → Rules. intent: the kind of message it is about, or any. instruction: what to do, in plain English, with no numbers, links, dates, prices or promises. askFirst: when the rule says to ask something first, the question (en, and th / ru when known), with condition branch_unknown when the question is which park, else always. park: central or chalong, or leave it out for both parks. The server refuses an unsafe rule and says why.',
+      'Save a DRAFT behaviour rule for approval under Assistant → Rules. intent: the kind of message it is about, or any. instruction: what to do, in plain English, with no numbers (digits or words), links, dates, prices, hours or promises: information belongs in a fact. askFirst: when the rule says to ask something first, the question ALWAYS in English, Thai and Russian (en, th and ru): it is asked only in the customer\'s own language, never in one it lacks. condition branch_unknown when the question is which park, else always. park: central or chalong, or leave it out for both parks. The server refuses an unsafe rule and says why.',
     input: RuleInput,
   },
   {
@@ -462,6 +490,37 @@ export async function teach(
           drafts.rules.push({ id: made.id, intent: made.intent, branchId: made.branchId, instruction: made.instruction });
           cards.push({ kind: 'rule', id: made.id, title: clip(`${labelOf(made.intent)}: ${made.instruction}`, 120), status: 'draft' });
           return { ok: true, data: { id: made.id, intent: made.intent, status: 'draft', approveAt: 'Assistant → Rules' } };
+        }
+        case 'archive_draft': {
+          const parsed = ArchiveInput.safeParse(call.input);
+          if (!parsed.success) return badInput(firstIssue(parsed.error));
+          const id = parsed.data.id;
+          // Only the caller's own drafts of the last day: the list the curator is shown.
+          const ruleAt = drafts.rules.findIndex((r) => r.id === id);
+          const factAt = drafts.facts.findIndex((f) => f.id === id);
+          if (ruleAt === -1 && factAt === -1) return refused('NOT_YOUR_DRAFT', TEACH_LINES.notYourDraft);
+          const kind = ruleAt !== -1 ? ('rule' as const) : ('fact' as const);
+          if (kind === 'rule') {
+            await withTx(deps.db, deps.op, 'inbox.ai_rule.archive', async (tx) => {
+              // Still a draft under the lock: one approved meanwhile is the Rules tab's to change.
+              if ((await loadRule(tx, ctx.operatorId, id, true)).status !== 'draft') {
+                throw new AppError(409, 'NOT_A_DRAFT', TEACH_LINES.notADraft);
+              }
+              return archiveRule(tx, ctx, reach, id);
+            });
+            drafts.rules.splice(ruleAt, 1);
+          } else {
+            await withTx(deps.db, deps.op, 'inbox.kb.archive', async (tx) => {
+              if ((await loadKb(tx, ctx.operatorId, id, true)).status !== 'draft') {
+                throw new AppError(409, 'NOT_A_DRAFT', TEACH_LINES.notADraft);
+              }
+              return archiveKb(tx, ctx, reach, id);
+            });
+            drafts.facts.splice(factAt, 1);
+          }
+          // A card offered this turn for it would approve an archived row.
+          for (let i = cards.length - 1; i >= 0; i -= 1) if (cards[i]!.id === id) cards.splice(i, 1);
+          return { ok: true, data: { id, kind, status: 'archived' } };
         }
         case 'dry_run': {
           const parsed = DryRunInput.safeParse(call.input);

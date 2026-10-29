@@ -19,8 +19,11 @@ import { assertBranchInOperator, KB_MANAGE, reaches, requireReach, type Reach, t
  *
  * WHAT A RULE MAY SAY. Only a question or an instruction that ADDS to the
  * playbook: `ruleSafetyFailure` refuses one carrying a number, a link, a date
- * or a grant (a price, a discount, free entry, a refund, compensation, a
- * booking) before anything is written — 400 RULE_UNSAFE with a sentence.
+ * or a grant (a price, a discount, free entry, a refund, a voucher, an
+ * upgrade, compensation, a booking, a callback time, opening hours) before
+ * anything is written, and again when a draft is approved — 400 RULE_UNSAFE
+ * with a sentence. The sentence the person typed (`taughtFrom`) is kept with
+ * its long digit runs blanked, so no phone number is stored with it.
  *
  * WHAT IS RECORDED. Every write is one transaction with its audit row
  * (`inbox.ai_rule.*`), holding ids, the intent, statuses and LENGTHS — never
@@ -31,20 +34,20 @@ type RuleRow = typeof aiRule.$inferSelect;
 
 const len = (v: string | null | undefined): number | null => (v == null ? null : [...v].length);
 
+/** What every refusal of a stated fact or a grant ends with: where the information belongs instead. */
+export const RULE_INFO_IN_A_FACT = 'Put information (hours, prices, what is free) in a fact under Knowledge; a rule is for behaviour.';
+
 export const RULE_MESSAGES = {
   archived: 'This rule is archived. Write a new one instead.',
   intentNotKnown: 'That is not one of the assistant’s intents (or "any").',
   unsafe: {
-    digits:
-      'A rule cannot carry numbers: prices, times and dates come from the knowledge base and the live facts. Write it without digits.',
+    digits: `A rule cannot carry numbers: prices, times and dates come from the knowledge base and the live facts. Write it without numbers. ${RULE_INFO_IN_A_FACT}`,
     link: 'A rule cannot carry a link. Put the link in a knowledge-base entry instead.',
-    date: 'A rule cannot name a date. The team confirms dates.',
-    promise:
-      'A rule can only add a question or an instruction. It cannot grant or confirm a discount, free entry, a refund or compensation: the team decides those.',
-    commitment:
-      'A rule can only add a question or an instruction. It cannot grant or confirm a price, a discount, free entry, a refund, compensation, a date or a booking: the team decides those.',
+    date: `A rule cannot name a date. The team confirms dates. ${RULE_INFO_IN_A_FACT}`,
+    promise: `A rule can only add a question or an instruction. It cannot grant or confirm a discount, free entry, a refund or compensation: the team decides those. ${RULE_INFO_IN_A_FACT}`,
+    commitment: `A rule can only add a question or an instruction. It cannot grant or confirm a price, a discount, free entry, a refund, compensation, a date or a booking: the team decides those. ${RULE_INFO_IN_A_FACT}`,
     question:
-      'The ask-first question would not pass the assistant’s own checks: one short question, no list, no numbers, links, promises or automation words. Rewrite it.',
+      'The ask-first question would not pass the assistant’s own checks: one short question with one question mark, no list, no numbers, links, promises or automation words. Rewrite it.',
   },
 } as const;
 
@@ -108,10 +111,20 @@ function storedAskFirst(a: InboxAiRuleCreate['askFirst']): AiRuleAskFirst | null
   };
 }
 
-/** The sentence the person typed, as the CHECK holds it: trimmed, at most 2000 characters, never empty. */
-function taughtFromOf(text: string | null): string | null {
+/**
+ * A run of six or more digits (ASCII or Thai), spaces, dashes, dots, slashes
+ * and brackets between them allowed: a phone number however it is written.
+ */
+const LONG_DIGIT_RUN = /\+?[\d๐-๙](?:[\s\-./()]*[\d๐-๙]){5,}/g;
+
+/**
+ * The sentence the person typed, as the CHECK holds it: every long digit
+ * run replaced by "…" (no phone number is kept at rest), trimmed, at most
+ * 2000 characters, never empty.
+ */
+export function taughtFromOf(text: string | null): string | null {
   if (text === null) return null;
-  const cut = [...text.trim()].slice(0, 2000).join('');
+  const cut = [...text.replace(LONG_DIGIT_RUN, '…').trim()].slice(0, 2000).join('');
   return cut === '' ? null : cut;
 }
 
@@ -311,12 +324,16 @@ async function reviseApprovedRule(
   return ruleView(made!, reach);
 }
 
-/** Draft → approved: the approver and the time recorded (`ai_rule_approved_check`). Approving twice is the same act. */
+/**
+ * Draft → approved: the approver and the time recorded (`ai_rule_approved_check`). Approving twice is the same act.
+ * The draft passes today's save check again first: one saved under an older, looser check is refused here with the same sentence.
+ */
 export async function approveRule(tx: Tx, ctx: SettingsCtx, reach: Reach, id: string): Promise<InboxAiRule> {
   const before = await loadRule(tx, ctx.operatorId, id, true);
   requireReach(reach, before.branchId, KB_MANAGE);
   if (before.status === 'archived') throw errors.conflict('RULE_ARCHIVED', RULE_MESSAGES.archived);
   if (before.status === 'approved') return ruleView(before, reach);
+  checkRuleSafe(before.instruction, before.askFirst ?? null);
   const [after] = await tx
     .update(aiRule)
     .set({ status: 'approved', approvedByAccountId: ctx.accountId, approvedAt: ctx.now, updatedAt: ctx.now })
