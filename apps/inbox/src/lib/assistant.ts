@@ -8,7 +8,7 @@
  * `ai_example_approved_check`, §D.5). The server enforces every one of them;
  * the shell says them first so nobody types into a refusal.
  */
-import { AI_INTENTS, AI_KB_TOPICS, type AiIntent } from '@oto/assistant/intents';
+import { AI_INTENTS, AI_KB_TOPICS, ASK_FIRST_IGNORED_INTENTS, type AiIntent } from '@oto/assistant/intents';
 import type { InboxCategoryKey } from '@oto/shared/inbox';
 import type {
   AiMode,
@@ -328,20 +328,9 @@ export function ruleIntentLabel(intent: string): string {
 
 /**
  * The intents an ask-first question never interrupts: the engine ignores the
- * question there, and the instruction still reaches the prompt. A copy of
- * `ASK_FIRST_IGNORED_INTENTS` (packages/assistant/src/intents.ts, SCRUM-696);
- * once that lands this line becomes a re-export of it.
+ * question there, and the instruction still reaches the prompt.
  */
-export const ASK_FIRST_IGNORED_INTENTS: readonly AiIntent[] = [
-  'complaint_onsite',
-  'complaint_online',
-  'refund_request',
-  'human_requested',
-  'greeting',
-  'thanks_closing',
-  'identity_question',
-  'other',
-];
+export { ASK_FIRST_IGNORED_INTENTS };
 export function askFirstIgnored(intent: string): boolean {
   return (ASK_FIRST_IGNORED_INTENTS as readonly string[]).includes(intent);
 }
