@@ -821,3 +821,53 @@ test('OD-11: a document with no expiry date verifies a tier offline; an expired 
   assert.equal(factTier!.payload.evidenceExpiresAt, undefined);
   r.t.close();
 });
+
+test('SCRUM-697: an Other document verifies a tier offline only with what staff checked, and the note syncs', async () => {
+  const r = await rig();
+  const { caller } = await r.bridge.unlock(STATION_ID, {
+    token: token(r.now.at),
+    password: 'open-sesame',
+  });
+  const memberId = '018f0000-0000-7000-8000-00000000d697';
+  await r.bridge.intent(
+    STATION_ID,
+    caller,
+    intent('member.create', { memberId, phone: '+66816970697', nickname: 'Other proof' }),
+  );
+  const other = (verificationId: string, note?: string) =>
+    r.bridge.intent(
+      STATION_ID,
+      caller,
+      intent('member.tier_change', {
+        direction: 'upgrade',
+        memberId,
+        verificationId,
+        toTier: 'thai',
+        evidenceType: 'Other',
+        ...(note === undefined ? {} : { note }),
+      }),
+    );
+  await assert.rejects(
+    other('018f0000-0000-7000-8000-0000000006a1', 'Licence'),
+    (err: unknown) =>
+      err instanceof BridgeError &&
+      err.status === 400 &&
+      err.message === 'Say what you checked in at least two words, e.g. Thai driving licence.',
+    'a one-word description is refused',
+  );
+  await assert.rejects(
+    other('018f0000-0000-7000-8000-0000000006a2', 'licence 1234567890123'),
+    (err: unknown) =>
+      err instanceof BridgeError && err.status === 400 && err.message === 'Describe the document, never its number.',
+    'a document number is refused',
+  );
+  const upgraded = await other('018f0000-0000-7000-8000-0000000006a3', 'Thai driving licence');
+  assert.equal((upgraded.result?.member as { tierCode: string }).tierCode, 'thai');
+  const [, factTier] = (await r.t.store.takeBatch(BOX_ID)).events;
+  assert.equal(factTier!.type, 'member.tier_changed');
+  assert.equal(factTier!.payload.evidenceType, 'Other');
+  assert.equal(factTier!.payload.note, 'Thai driving licence');
+  assert.equal(factTier!.payload.evidenceExpiresAt, undefined, 'no expiry is asked for');
+  assert.equal(OfflineMemberTierChangedSchema.safeParse(factTier!.payload).success, true);
+  r.t.close();
+});

@@ -60,7 +60,8 @@ import {
   OfflineChildUpdatedSchema,
   OfflineMemberCreatedSchema,
   OfflineMemberTierChangedSchema,
-  TIER_PROOF_TYPES,
+  TIER_PROOF_CHOICES,
+  tierProofNoteProblem,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
   bandShortCode,
@@ -2027,9 +2028,17 @@ export class StationBridge {
         : memberRecord(found.member);
       let toTier: string;
       if (body.direction === 'upgrade') {
-        if (!TIER_PROOF_TYPES.some((type) => type === body.evidenceType)) {
-          throw new BridgeError(400, 'VALIDATION', 'Select Passport, Residence certificate or School card.');
+        if (!TIER_PROOF_CHOICES.some((type) => type === body.evidenceType)) {
+          throw new BridgeError(
+            400,
+            'VALIDATION',
+            'Select Passport, Residence certificate, School card or Other.',
+          );
         }
+        // SCRUM-697: Other is recorded only with what staff checked, and no
+        // kind carries a document number — the platform's own rule.
+        const noteProblem = tierProofNoteProblem(body.note, body.evidenceType);
+        if (noteProblem) throw new BridgeError(400, 'VALIDATION', noteProblem);
         if (!(await this.tierCodes()).includes(body.toTier)) {
           throw new BridgeError(400, 'VALIDATION', `Unknown tier "${body.toTier}"`);
         }
