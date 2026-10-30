@@ -304,7 +304,7 @@ export function BookTickets({
 
         <div className="grid grid-cols-1 gap-3 mt-5">
           {tickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} tier={tier} onClick={() => setDraft(makeDraft(ticket))} />
+            <TicketCard key={ticket.id} ticket={ticket} tier={tier} lang={lang} onClick={() => setDraft(makeDraft(ticket))} />
           ))}
         </div>
 

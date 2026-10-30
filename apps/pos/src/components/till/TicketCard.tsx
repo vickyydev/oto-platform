@@ -2,21 +2,28 @@ import { TicketType, CustomerTier } from '@/types';
 import { tierPriceTHB, unpricedReason } from '@/lib/pricing';
 import { Card } from '@/components/ui/card';
 import { Clock, AlertTriangle } from 'lucide-react';
-import { useLanguage } from '@/i18n/LanguageContext';
-import { resolveName } from '@/i18n/resolveTranslation';
+import type { SupportedLang } from '@/i18n/types';
+import { ticketCardCopy } from '@/lib/ticketCardCopy';
 
 interface TicketCardProps {
   ticket: TicketType;
   tier: CustomerTier;
   onClick: () => void;
   selected?: boolean;
+  /**
+   * The customer's language, on a customer-facing surface only (the /book
+   * picker). Left out on the staff till, which shows the original name and
+   * English captions whatever the customer display panel beside it is set to:
+   * the till and that panel share one LanguageProvider, so reading the context
+   * here turned the staff cards Russian with the display (SCRUM-698).
+   */
+  lang?: SupportedLang;
 }
 
 /**
- * Shared ticket card (staff till + customer /book picker). Customer-facing
- * surfaces select a language, so the name resolves through the catalog's
- * translations and the caption through the dictionary; staff surfaces never
- * change language (LanguageContext stays 'en'), so the till is unaffected.
+ * Shared ticket card (staff till + customer /book picker). The words come
+ * from `ticketCardCopy`: translated for a customer surface that names its
+ * language, the original name and English for staff.
  *
  * THE REFUSAL IS HERE — SCRUM-228. A tier nobody has priced on this ticket used
  * to draw ฿0 on a card that added itself to the cart like any other, and the
@@ -26,8 +33,8 @@ interface TicketCardProps {
  * the moment it is made instead: the card carries no figure, says which price is
  * missing and where it is set, and does not answer a press.
  */
-export function TicketCard({ ticket, tier, onClick, selected }: TicketCardProps) {
-  const { t, lang } = useLanguage();
+export function TicketCard({ ticket, tier, onClick, selected, lang }: TicketCardProps) {
+  const copy = ticketCardCopy(ticket, lang);
   const price = tierPriceTHB(ticket, tier);
 
   if (price === null) {
@@ -35,7 +42,7 @@ export function TicketCard({ ticket, tier, onClick, selected }: TicketCardProps)
       <Card aria-disabled="true" className="p-6 border-dashed cursor-not-allowed opacity-70">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="font-bold text-xl">{resolveName(ticket, lang)}</h3>
+            <h3 className="font-bold text-xl">{copy.name}</h3>
             <div className="flex items-center text-muted-foreground text-sm mt-1 gap-1">
               <Clock className="h-4 w-4" />
               <span>{ticket.durationLabel}</span>
@@ -61,7 +68,7 @@ export function TicketCard({ ticket, tier, onClick, selected }: TicketCardProps)
     >
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-bold text-xl">{resolveName(ticket, lang)}</h3>
+          <h3 className="font-bold text-xl">{copy.name}</h3>
           <div className="flex items-center text-muted-foreground text-sm mt-1 gap-1">
             <Clock className="h-4 w-4" />
             <span>{ticket.durationLabel}</span>
@@ -69,7 +76,7 @@ export function TicketCard({ ticket, tier, onClick, selected }: TicketCardProps)
         </div>
         <div className="text-right">
           <div className="font-bold text-xl text-primary">฿{price}</div>
-          <div className="text-xs text-muted-foreground">{t('book.tickets.perPerson')}</div>
+          <div className="text-xs text-muted-foreground">{copy.perPerson}</div>
         </div>
       </div>
     </Card>

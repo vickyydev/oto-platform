@@ -23,6 +23,20 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
   );
 }
 
+/**
+ * The translator for one language, outside any provider. A staff screen that
+ * must stay in English whatever the customer display beside it is set to
+ * (the till and its built-in display panel share one provider) reads
+ * `tFor('en')` rather than the context (SCRUM-698).
+ */
+export function tFor(lang: SupportedLang): TFunction {
+  return (key, vars) => {
+    const raw = lookupMessage(lang, key) ?? lookup(key, lang);
+    if (raw === undefined) return key; // missing key -> surface the key, never crash
+    return interpolate(raw, vars);
+  };
+}
+
 // Customer-facing language stays in memory by default. The independently
 // paired display supplies its own storage key so its choice survives reload.
 // Staff/admin screens remain in English.
@@ -40,14 +54,7 @@ export function LanguageProvider({ children, storageKey }: { children: ReactNode
     }
   }, [lang, storageKey]);
 
-  const t = useMemo<TFunction>(
-    () => (key, vars) => {
-      const raw = lookupMessage(lang, key) ?? lookup(key, lang);
-      if (raw === undefined) return key; // missing key -> surface the key, never crash
-      return interpolate(raw, vars);
-    },
-    [lang]
-  );
+  const t = useMemo<TFunction>(() => tFor(lang), [lang]);
 
   const value = useMemo(() => ({ lang, setLang, t }), [lang, t]);
 

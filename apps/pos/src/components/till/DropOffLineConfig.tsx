@@ -7,7 +7,7 @@ import { getInventoryItem } from '@/store/catalogStore';
 import { priceForTier, setAddOnQty, setAddOnVariants } from '@/lib/pricing';
 import { resolveDropOffPricing } from '@/lib/dropoff';
 import { useNannyRoster } from '@/lib/nannyRoster';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { tFor } from '@/i18n/LanguageContext';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -80,7 +80,8 @@ export function DropOffLineConfig({
   onDone,
 }: DropOffLineConfigProps) {
   const { branch } = useBranch();
-  const { t } = useLanguage();
+  // Staff screen: English whatever the customer display beside it is set to (SCRUM-698).
+  const t = tFor('en');
   const roster = useNannyRoster(branch.id, providedRoster);
   const tickets = useMemo(() => getTicketTypes(), []);
   const pricing = useMemo(() => resolveDropOffPricing(getDropOffPricing()), []);
