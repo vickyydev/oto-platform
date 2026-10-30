@@ -2562,8 +2562,10 @@ function viewOf(row: typeof sale.$inferSelect, voidedByName: string | null): Sal
  * WHAT IS NOT HERE, AND CANNOT BE: any part of a document number, last digits
  * included. `pos.sale_tier_claim` records the KIND of document and its expiry
  * and deliberately nothing that identifies it — see that table's comment — so
- * there are no digits on the row to carry up. What the counter gets is what
- * was checked and when it was checked, which is what makes the rate defensible
+ * there are no digits on the row to carry up. Its one free-text field, the
+ * description of an Other document (SCRUM-697), is refused at the route when
+ * it holds a run of five or more digits. What the counter gets is what was
+ * checked and when it was checked, which is what makes the rate defensible
  * without putting a passport number in a table nothing sweeps.
  *
  * It is narrower than `TierClaimView` in `services/sale-tier.ts` on purpose:
@@ -2573,8 +2575,10 @@ function viewOf(row: typeof sale.$inferSelect, voidedByName: string | null): Sal
  */
 export interface SaleTierClaimView {
   id: string;
-  /** `evidence_type`: "Passport", "Residence certificate". A kind, never a number. */
+  /** `evidence_type`: "Passport", "Residence certificate", "Other". A kind, never a number. */
   documentKind: string;
+  /** What staff typed for an Other document ("Thai driving licence"); null otherwise. */
+  documentNote: string | null;
   /** The tier the document supported — the one that priced this sale. */
   toTier: string;
   /** The document's own expiry, as the check recorded it (`YYYY-MM-DD`); null when none was recorded. */
@@ -2610,6 +2614,7 @@ async function tierClaimsOf(
       id: saleTierClaim.id,
       toTier: saleTierClaim.toTier,
       evidenceType: saleTierClaim.evidenceType,
+      note: saleTierClaim.note,
       evidenceExpiresAt: saleTierClaim.evidenceExpiresAt,
       createdAt: saleTierClaim.createdAt,
     })
@@ -2621,6 +2626,7 @@ async function tierClaimsOf(
       {
         id: claim.id,
         documentKind: claim.evidenceType,
+        documentNote: claim.note,
         toTier: claim.toTier,
         evidenceExpiresOn: claim.evidenceExpiresAt,
         verifiedAt: claim.createdAt.toISOString(),

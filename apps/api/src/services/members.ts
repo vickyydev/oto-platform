@@ -141,6 +141,8 @@ export interface RegisterRow {
   tierVerification: {
     tier: string;
     proofType: string;
+    /** What staff typed for an Other document (SCRUM-697); null otherwise. */
+    note: string | null;
     verifiedAt: string;
     verifiedBy: string | null;
     expiresAt: string | null;
@@ -235,6 +237,7 @@ export async function listRegister(
       toTier: memberTierVerification.toTier,
       evidenceType: memberTierVerification.evidenceType,
       evidenceExpiresAt: memberTierVerification.evidenceExpiresAt,
+      note: memberTierVerification.note,
       createdAt: memberTierVerification.createdAt,
       staffPhone: account.phone,
       staffName: employee.name,
@@ -279,6 +282,7 @@ export async function listRegister(
           ? {
               tier: active.toTier,
               proofType: active.evidenceType,
+              note: active.note ?? null,
               verifiedAt: active.createdAt.toISOString(),
               verifiedBy: active.staffName ?? active.staffPhone ?? null,
               expiresAt: active.evidenceExpiresAt?.toISOString().slice(0, 10) ?? null,

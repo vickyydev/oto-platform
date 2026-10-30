@@ -96,13 +96,19 @@ export interface TierClaimInput {
    */
   actionId: string;
   toTier: string;
-  /** `Passport`, `Residence certificate`, `School card` — a kind, never a number. */
+  /** `Passport`, `Residence certificate`, `School card`, `Other` — a kind, never a number. */
   evidenceType: string;
   /**
    * The document's expiry, `YYYY-MM-DD`, when it carries one. Optional, as at
    * the design's verify step: a document with no expiry date never expires.
    */
   evidenceExpiresAt?: string | null;
+  /**
+   * What staff checked when the kind is Other ("Thai driving licence"),
+   * trimmed; the route has refused anything holding a document number
+   * (SCRUM-697). Never written to the audit row.
+   */
+  note?: string | null;
 }
 
 /** A claim as the till and the tests read it back. */
@@ -114,6 +120,8 @@ export interface TierClaimView {
   evidenceType: string;
   /** `YYYY-MM-DD`, or null when the document carries no expiry. */
   evidenceExpiresAt: string | null;
+  /** What staff typed for an Other document (SCRUM-697); null otherwise. */
+  note: string | null;
   /** The account the session authenticated — never a name the caller sent. */
   verifiedByAccountId: string;
   createdAt: string;
@@ -123,7 +131,11 @@ export interface TierClaimView {
   spentBySaleId: string | null;
 }
 
-/** What the audit row's `after` holds. Nothing here identifies the document. */
+/**
+ * What the audit row's `after` holds. Nothing here identifies the document,
+ * and the free-text note is left out on purpose (SCRUM-697): the log keeps
+ * the kind, the claim row keeps the description.
+ */
 interface ClaimPayload {
   toTier: string;
   evidenceType: string;
@@ -188,6 +200,7 @@ function viewOf(row: typeof saleTierClaim.$inferSelect): TierClaimView {
     toTier: row.toTier,
     evidenceType: row.evidenceType,
     evidenceExpiresAt: row.evidenceExpiresAt,
+    note: row.note,
     verifiedByAccountId: row.accountId,
     createdAt: row.createdAt.toISOString(),
     expiresAt: new Date(row.createdAt.getTime() + TIER_CLAIM_WINDOW_MS).toISOString(),
@@ -235,7 +248,8 @@ export async function recordTierClaim(
       );
     }
   }
-  const claimInput = { ...input, evidenceExpiresAt: expiresOn };
+  const note = input.note ?? null;
+  const claimInput = { ...input, evidenceExpiresAt: expiresOn, note };
 
   /**
    * The same tap arriving twice is the same claim. A DIFFERENT claim under the
@@ -264,6 +278,7 @@ export async function recordTierClaim(
       toTier: input.toTier,
       evidenceType: input.evidenceType,
       evidenceExpiresAt: expiresOn,
+      note,
       createdAt: now,
     })
     // Two requests for one tap, arriving together: the loser of the unique
@@ -316,14 +331,15 @@ export async function recordTierClaim(
 function sameTapOrRefuse(
   existing: TierClaimView,
   actor: TierClaimActor,
-  input: TierClaimInput & { evidenceExpiresAt: string | null },
+  input: TierClaimInput & { evidenceExpiresAt: string | null; note: string | null },
 ): TierClaimView {
   if (
     existing.verifiedByAccountId !== actor.accountId ||
     existing.branchId !== actor.branchId ||
     existing.toTier !== input.toTier ||
     existing.evidenceType !== input.evidenceType ||
-    existing.evidenceExpiresAt !== input.evidenceExpiresAt
+    existing.evidenceExpiresAt !== input.evidenceExpiresAt ||
+    existing.note !== input.note
   ) {
     throw errors.conflict(
       'TIER_CLAIM_ACTION_REUSED',

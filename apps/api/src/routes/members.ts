@@ -1,9 +1,15 @@
 import { z } from 'zod';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { account, branch, child, employee, member, memberTierVerification, tier } from '@oto/db';
-import { TIER_PROOF_TYPES, newId, normalizePhone } from '@oto/shared';
+import {
+  TIER_PROOF_CHOICES,
+  TIER_PROOF_NOTE_MAX,
+  newId,
+  normalizePhone,
+  tierProofNoteProblem,
+} from '@oto/shared';
 import type { App } from '../app';
-import { errors } from '../lib/errors';
+import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import {
@@ -157,6 +163,8 @@ async function memberWithChildren(app: App, memberId: string, operatorId: string
       ? {
           tier: active.toTier,
           proofType: active.evidenceType,
+          /** What staff typed for an Other document (SCRUM-697); null otherwise. */
+          note: active.note ?? null,
           verifiedAt: active.createdAt.toISOString(),
           verifiedBy: await staffName(app, active.verifiedByAccountId),
           expiresAt: active.evidenceExpiresAt?.toISOString().slice(0, 10) ?? null,
@@ -499,9 +507,9 @@ export async function memberRoutes(app: App): Promise<void> {
           .object({
             toTier: z.string().min(1),
             /**
-             * One of the four document kinds, not free text (SCRUM-315).
+             * One of the four choices, not free text (SCRUM-315, SCRUM-697).
              *
-             * The same `TIER_PROOF_TYPES` the platform's tier-claim route
+             * The same `TIER_PROOF_CHOICES` the platform's tier-claim route
              * accepts (SCRUM-307), and for the same reason: `evidence_type`
              * is what a record check reads as "what was checked", and a
              * passport NUMBER typed into it — "Passport AA1234567" — puts a
@@ -510,10 +518,10 @@ export async function memberRoutes(app: App): Promise<void> {
              * only ever sends one of the four names; this closes the contract
              * so anything else is refused rather than stored.
              *
-             * `note` below stays free text on purpose: it is where the
-             * "Other" document gets described.
+             * `note` below is where an "Other" document gets described, and
+             * for Other it is required (`tierProofNoteProblem`).
              */
-            evidenceType: z.enum(TIER_PROOF_TYPES),
+            evidenceType: z.enum(TIER_PROOF_CHOICES),
             /**
              * Optional, as the approved design's verification step asks for
              * the proof type only. When recorded, its passing flags the member
@@ -523,13 +531,22 @@ export async function memberRoutes(app: App): Promise<void> {
               .string()
               .regex(/^\d{4}-\d{2}-\d{2}$/)
               .nullish(),
-            note: z.string().optional(),
+            /**
+             * What staff checked, in their words (SCRUM-697): required for
+             * Other — at least two words — optional for the three kinds, and
+             * never a document number. Stored trimmed on the verification;
+             * the audit row does not carry it.
+             */
+            note: z.string().max(TIER_PROOF_NOTE_MAX).optional(),
           })
           .strict(),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
+      const noteProblem = tierProofNoteProblem(req.body.note, req.body.evidenceType);
+      if (noteProblem) throw new AppError(400, 'TIER_PROOF_NOTE', noteProblem);
+      const note = req.body.note?.trim() || null;
       const [m] = await app.db
         .select()
         .from(member)
@@ -572,7 +589,7 @@ export async function memberRoutes(app: App): Promise<void> {
           evidenceExpiresAt: expires,
           verifiedByAccountId: auth.accountId,
           branchId: auth.branchId,
-          note: req.body.note ?? null,
+          note,
         });
         await tx.update(member).set({ tierCode: req.body.toTier }).where(eq(member.id, m.id));
         await audit.record(tx, {

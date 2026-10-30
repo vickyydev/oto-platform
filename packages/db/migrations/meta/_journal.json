@@ -680,6 +680,13 @@
       "when": 1793292797424,
       "tag": "0096_inbox_ai_rule",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1793349860711,
+      "tag": "0097_sale_tier_claim_note",
+      "breakpoints": true
     }
   ]
 }

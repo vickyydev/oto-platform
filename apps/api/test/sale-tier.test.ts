@@ -623,9 +623,10 @@ describe('the record the claim leaves', () => {
     expect(res.statusCode).toBe(400);
 
     // Nor through the one free-looking field: the kind of document is one of
-    // the three names the till offers, so "Passport AA1234567" is refused and
+    // the four names the till offers, so "Passport AA1234567" is refused and
     // nothing of it is written. Found by the gate — the comment above claimed
-    // this while `evidenceType` was still free text.
+    // this while `evidenceType` was still free text. Other without the
+    // description that makes it mean anything is refused too (SCRUM-697).
     const smuggled = await claim({
       actionId: newId(),
       toTier: 'expat',
@@ -777,13 +778,16 @@ describe('a read of the sale names the document check it was priced on', () => {
     expect(claimed.tierClaim.toTier).toBe('expat');
     expect(claimed.tierClaim.evidenceExpiresOn).toBe(VALID_UNTIL);
     expect(new Date(claimed.tierClaim.verifiedAt).getTime()).toBe(claimRow!.createdAt.getTime());
+    expect(claimed.tierClaim.documentNote).toBeNull();
     /**
-     * EXACTLY THESE FIVE, which is the assertion that keeps a document number
-     * out of a read. The claim row holds no number to leak today; this fails
-     * the day somebody widens the mapper to the whole row.
+     * EXACTLY THESE SIX, which is the assertion that keeps a document number
+     * out of a read. The claim row holds no number to leak today — its one
+     * free-text field, `documentNote` (SCRUM-697), refuses digit runs at the
+     * route; this fails the day somebody widens the mapper to the whole row.
      */
     expect(Object.keys(claimed.tierClaim).sort()).toEqual([
       'documentKind',
+      'documentNote',
       'evidenceExpiresOn',
       'id',
       'toTier',

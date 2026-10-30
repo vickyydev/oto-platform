@@ -1,0 +1,14 @@
+-- SCRUM-697 (Other on the till's verify-tier step) - expand-only: one new
+-- NULLABLE column with no default, so no row is rewritten and a release that
+-- does not know the column never reads it.
+--
+--   pos.sale_tier_claim.note   text, null
+--       what staff checked when the document kind is 'Other' ("Thai driving
+--       licence"); null for the three named kinds and on every existing row.
+--       A description, never a number: the route refuses a run of five or
+--       more digits before anything is written.
+--
+-- TO REVERSE: ALTER TABLE "pos"."sale_tier_claim" DROP COLUMN "note". The
+-- descriptions recorded on walk-in claims are lost with it; the member's
+-- verification keeps its own note.
+ALTER TABLE "pos"."sale_tier_claim" ADD COLUMN "note" text;

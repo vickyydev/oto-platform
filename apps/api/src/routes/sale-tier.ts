@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { TIER_PROOF_TYPES } from '@oto/shared';
+import { TIER_PROOF_CHOICES, TIER_PROOF_NOTE_MAX, tierProofNoteProblem } from '@oto/shared';
 import type { App } from '../app';
-import { errors } from '../lib/errors';
+import { AppError, errors } from '../lib/errors';
 import { recordTierClaim } from '../services/sale-tier';
 import { opCtx, withTx } from '../services/tx';
 
@@ -19,12 +19,13 @@ import { opCtx, withTx } from '../services/tx';
  * third does not exist on this route — the tier names a rate in the
  * catalogue, and the catalogue is the platform's.
  *
- * WHAT IT DELIBERATELY DOES NOT TAKE is a free-text note or a document
- * number. The body is `.strict()`, so there is nowhere to put one, and the
- * claim row therefore cannot carry an identity document's number into a table
- * that is never swept. The durable evidence record — with its note — is
- * written against the MEMBER by `POST /members/:id/tier-verification` once the
- * visitor gives their details.
+ * WHAT IT DELIBERATELY DOES NOT TAKE is a document number. The body is
+ * `.strict()`, so there is no field for one, and the one free-text field,
+ * `note` (SCRUM-697), describes an Other document and is refused when it holds
+ * a run of five or more digits — so the claim row cannot carry an identity
+ * document's number into a table that is never swept. The durable evidence
+ * record — with its note — is written against the MEMBER by
+ * `POST /members/:id/tier-verification` once the visitor gives their details.
  */
 
 const ClaimBody = z
@@ -42,11 +43,11 @@ const ClaimBody = z
     branchId: z.string().uuid().optional(),
     toTier: z.string().min(1).max(40),
     /**
-     * The KIND of document, never its number — and only the four kinds the
+     * The KIND of document, never its number — and only the four choices the
      * till offers, so a free-text field cannot become the place a passport
      * number lands in a table that is never swept.
      */
-    evidenceType: z.enum(TIER_PROOF_TYPES),
+    evidenceType: z.enum(TIER_PROOF_CHOICES),
     /**
      * The document's expiry, when it carries one. Optional, as at the design's
      * verify step: a claim with no expiry date never expires.
@@ -55,6 +56,13 @@ const ClaimBody = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .nullish(),
+    /**
+     * What staff checked, in their words (SCRUM-697): required for Other — at
+     * least two words — optional for the three kinds, and never a document
+     * number (`tierProofNoteProblem`). Stored trimmed on the claim; the audit
+     * row does not carry it.
+     */
+    note: z.string().max(TIER_PROOF_NOTE_MAX).optional(),
   })
   .strict();
 
@@ -84,6 +92,8 @@ export async function saleTierRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      const noteProblem = tierProofNoteProblem(req.body.note, req.body.evidenceType);
+      if (noteProblem) throw new AppError(400, 'TIER_PROOF_NOTE', noteProblem);
       const branchId = req.body.branchId ?? auth.branchId;
       if (!branchId) {
         throw errors.badRequest(
@@ -106,6 +116,7 @@ export async function saleTierRoutes(app: App): Promise<void> {
             toTier: req.body.toTier,
             evidenceType: req.body.evidenceType,
             evidenceExpiresAt: req.body.evidenceExpiresAt ?? null,
+            note: req.body.note?.trim() || null,
           },
         ),
       );

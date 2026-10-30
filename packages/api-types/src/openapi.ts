@@ -3152,7 +3152,7 @@ export interface paths {
                     "application/json": {
                         toTier: string;
                         /** @enum {string} */
-                        evidenceType: "Passport" | "Residence certificate" | "School card";
+                        evidenceType: "Passport" | "Residence certificate" | "School card" | "Other";
                         evidenceExpiresAt?: string | null;
                         note?: string;
                     };
@@ -4994,8 +4994,9 @@ export interface paths {
                         branchId?: string;
                         toTier: string;
                         /** @enum {string} */
-                        evidenceType: "Passport" | "Residence certificate" | "School card";
+                        evidenceType: "Passport" | "Residence certificate" | "School card" | "Other";
                         evidenceExpiresAt?: string | null;
+                        note?: string;
                     };
                 };
             };

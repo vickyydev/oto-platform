@@ -5796,7 +5796,8 @@
                     "enum": [
                       "Passport",
                       "Residence certificate",
-                      "School card"
+                      "School card",
+                      "Other"
                     ]
                   },
                   "evidenceExpiresAt": {
@@ -5805,7 +5806,8 @@
                     "nullable": true
                   },
                   "note": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 200
                   }
                 },
                 "required": [
@@ -10044,13 +10046,18 @@
                     "enum": [
                       "Passport",
                       "Residence certificate",
-                      "School card"
+                      "School card",
+                      "Other"
                     ]
                   },
                   "evidenceExpiresAt": {
                     "type": "string",
                     "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
                     "nullable": true
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 200
                   }
                 },
                 "required": [

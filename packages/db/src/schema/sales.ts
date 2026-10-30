@@ -550,10 +550,12 @@ export const sale = pos.table(
  * conditional update, in the transaction that writes the sale. The audit row is
  * still written beside it — the log is the trail, this is the record.
  *
- * WHAT IS NOT HERE, and the omission is the point: no document number, no name,
- * no free-text note. The kind of document and its expiry are what price a cart;
- * anything that identifies the document would be an identity number sitting in
- * a table nothing ever sweeps. The durable evidence record — with its note — is
+ * WHAT IS NOT HERE, and the omission is the point: no document number and no
+ * name. The kind of document and its expiry are what price a cart; anything
+ * that identifies the document would be an identity number sitting in a table
+ * nothing ever sweeps. The one free-text field, `note` (SCRUM-697), describes
+ * an `Other` document and is refused when it holds a run of five or more
+ * digits. The durable evidence record — with its note — is
  * written against the MEMBER by `POST /members/:id/tier-verification` once the
  * visitor gives their details.
  *
@@ -600,6 +602,13 @@ export const saleTierClaim = pos.table(
      * member verification step.
      */
     evidenceExpiresAt: date('evidence_expires_at'),
+    /**
+     * SCRUM-697 — what staff checked when the kind is `Other` ("Thai driving
+     * licence"), and null for the three named kinds. A description, never a
+     * number: the route refuses a run of five or more digits before anything
+     * is written (`tierProofNoteProblem` in `@oto/shared`).
+     */
+    note: text('note'),
     /**
      * The sale this claim priced, once one did. Set by a conditional update
      * inside the sale's transaction — `where spent_by_sale_id is null` — so two
