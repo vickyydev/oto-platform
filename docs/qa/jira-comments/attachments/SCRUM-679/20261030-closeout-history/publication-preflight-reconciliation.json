@@ -1,0 +1,15 @@
+{
+  "ticket": "SCRUM-679",
+  "at": "2026-10-29T23:59:45.276Z",
+  "phase": "recording-pure-preflight-before-output",
+  "code": "HISTORY_ARCHIVE_REQUIRED",
+  "oldPlanSha256": "7d3e2c592c70821b133823fb31602043a3bedb967bbc93d1b1f15555a0aafc24",
+  "existingArchive": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-adapter-node.json",
+  "existingArchiveSha256": "dc91c05ae8e72389e92c3d784a318416e75f73fa31e51e23c335f2c8d77d3cc6",
+  "requestedSourceSha256": "e0c4a710fe72ac065b570444addd78c78044f9db74ef43add4ea032991fb0d17",
+  "newArchive": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-adapter-escaping-node.json",
+  "preservedExisting": true,
+  "sourceChanges": 0,
+  "stagingChanges": 0,
+  "screenshotChanges": 0
+}

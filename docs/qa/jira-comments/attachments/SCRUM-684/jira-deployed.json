@@ -1,0 +1,31 @@
+{
+  "ticket": "SCRUM-684",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "ciRunId": "40972211455",
+  "evidenceCommit": "4926f69f9db0e6cc78c4f1a728afdf6063809700",
+  "startedAt": "2026-10-29T23:57:44.354Z",
+  "before": {
+    "status": "Testing",
+    "summary": "Keep published Console response enums faithful to unset values"
+  },
+  "previous": {
+    "status": "Deployed",
+    "summary": "Make existing payment settings and long Console lists easier to find"
+  },
+  "screenshots": [
+    "SCRUM-684-01-nullable-response-contracts.png"
+  ],
+  "attachments": [
+    {
+      "id": "12147",
+      "name": "SCRUM-684-01-nullable-response-contracts.png"
+    }
+  ],
+  "commentId": "12715",
+  "after": {
+    "status": "Deployed",
+    "summary": "Keep published Console response enums faithful to unset values"
+  },
+  "complete": true,
+  "finishedAt": "2026-10-29T23:57:48.940Z"
+}

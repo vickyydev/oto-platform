@@ -1,0 +1,109 @@
+{
+  "ticket": "SCRUM-679",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "inspected": true,
+  "reviewedAt": "2026-10-29T23:55:01.049Z",
+  "images": [
+    {
+      "file": "SCRUM-679-21-recheck-organisation-configuration.png",
+      "sha256": "9c1ec639ebfff2641d1a6806d49240c9f0c60e45edfe14fdb6f833915a5d916b",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Configuration payment doors and deployment/integration limits are readable; lower settings/search content is outside this partial viewport."
+    },
+    {
+      "file": "SCRUM-679-22-recheck-watch-releases.png",
+      "sha256": "45f96f3ccddf5bce4150af4ede6e7f56461f4a05edd3c28c3cd247ff381b5ac4",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Releases default status/cards are readable; lower cards are clipped and no switch operation is demonstrated."
+    },
+    {
+      "file": "SCRUM-679-23-recheck-watch-support.png",
+      "sha256": "25677494e1a18f5ec8107dc63a4b1043274076b16e830f3dddb3bed09825403f",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Support initial controls are readable; empty fields and disabled actions do not demonstrate lookup, trace or view-as execution."
+    },
+    {
+      "file": "SCRUM-679-24-recheck-reports-money.png",
+      "sha256": "1c6bf40451a1964c45486a0fcb1502d6768848cad53f6c44bf175ad48ec0761f",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Money shows existing read-only totals and rows; lower sections are clipped, date inputs are masked, and no payment/reconciliation write is demonstrated."
+    },
+    {
+      "file": "SCRUM-679-25-recheck-catalogue-tenders.png",
+      "sha256": "cd0854dbbb906f960244252558f71cf701a277c5a153633b91dd70cd3e8bd279",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Tenders shows default loaded-list filters and availability; names/inputs are masked and no add, toggle, reordering or save action is demonstrated."
+    },
+    {
+      "file": "SCRUM-679-26-recheck-catalogue-tax.png",
+      "sha256": "3d80fcb9539f82b870a21f0564435bca2dc48498e226695f717a061d877adb27",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Tax default controls are readable with values/inputs masked; no tax rule or save action was performed."
+    },
+    {
+      "file": "SCRUM-679-27-recheck-watch-health.png",
+      "sha256": "e086708e8e137449a40a33ad425ef94b67a8999415dc9972ef4f696e6f839281",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Health shows readiness and existing operational alerts/unknown occupancy. No alert was acknowledged or resolved."
+    },
+    {
+      "file": "SCRUM-679-28-recheck-watch-activity.png",
+      "sha256": "44e3408d03b396f626232927b6a300e62f177d61cf384a2a9492cbdf81df24e8",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Activity default records and controls are readable with identity fields and some matching substrings masked; no export/filter workflow is demonstrated."
+    },
+    {
+      "file": "SCRUM-679-29-recheck-devices.png",
+      "sha256": "ea054ad6c56d3be02ed6dd53376880adc448bf59e704567cbc83ec1dcfbed423",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Devices lists loaded fleet status with identifying values masked; offline/waiting states are existing records and no hardware/setup action was performed."
+    },
+    {
+      "file": "SCRUM-679-30-recheck-catalogue-vouchers.png",
+      "sha256": "ad973815277573bde793d5602d82c61f132a810c25aaa2b1d64a0dd5ce85461d",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Vouchers shows a valid empty state and guidance for the current filters; no voucher/code/QR was created or redeemed."
+    },
+    {
+      "file": "SCRUM-679-31-recheck-watch-integrations.png",
+      "sha256": "2fe63e2408718e05a6ccbae68ce93cb105178b67af5628c90b28c354659ee230",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Integrations shows configuration status and public endpoint metadata, without credential values; no provider test or expiry edit was performed."
+    },
+    {
+      "file": "SCRUM-679-32-recheck-overview.png",
+      "sha256": "b0469441a181ba87af10dc9d573008311bcdc58962feecd8cfbe8453080098b0",
+      "inspected": true,
+      "legible": true,
+      "noVisibleSecretsOrBenefitQr": true,
+      "notes": "Overview shows default read-only aggregate cards, timestamps and links; clipped lower widgets and linked workflows are outside the screenshot."
+    }
+  ],
+  "independentReview": {
+    "path": "C:/oto-lanes/admin684-resume-20261030/parent-pixel-review-21-26.json",
+    "sha256": "b5a356e6c6cc8ec0ed4e87cd684b149cfb001f44cc0f22b15435cf4b01245bb5"
+  },
+  "scope": "All twelve actual PNGs viewed at original resolution by root. Masked partial default viewports; captions can cover content and masked fields cannot be visually certified. No completed mutation/provider/hardware workflow is inferred."
+}

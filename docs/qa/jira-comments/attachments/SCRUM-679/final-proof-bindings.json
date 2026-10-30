@@ -1,0 +1,201 @@
+{
+  "ticket": "SCRUM-679",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "ciRunId": "40972211455",
+  "receiptSha256": "28a88e62c81c5c8943b1bd05eaa66e47c91b69b97ef91b1c2b547a2be0ffa719",
+  "imageReviewSha256": "cef7a088e387fda9a4d86c25a12d841a4bb8f959deab45ef910921275f4ed925",
+  "helperSha256": "d2a627e279de82488adb7d68dc8bf24c9bf70317b068d53d82ecce94f05e0f03",
+  "mainCiSha256": "58a8b34429df51fbe1b6dac4758a29d235557cf2115c06221e483dedbf72b247",
+  "images": [
+    {
+      "file": "SCRUM-679-21-recheck-organisation-configuration.png",
+      "sha256": "9c1ec639ebfff2641d1a6806d49240c9f0c60e45edfe14fdb6f833915a5d916b"
+    },
+    {
+      "file": "SCRUM-679-22-recheck-watch-releases.png",
+      "sha256": "45f96f3ccddf5bce4150af4ede6e7f56461f4a05edd3c28c3cd247ff381b5ac4"
+    },
+    {
+      "file": "SCRUM-679-23-recheck-watch-support.png",
+      "sha256": "25677494e1a18f5ec8107dc63a4b1043274076b16e830f3dddb3bed09825403f"
+    },
+    {
+      "file": "SCRUM-679-24-recheck-reports-money.png",
+      "sha256": "1c6bf40451a1964c45486a0fcb1502d6768848cad53f6c44bf175ad48ec0761f"
+    },
+    {
+      "file": "SCRUM-679-25-recheck-catalogue-tenders.png",
+      "sha256": "cd0854dbbb906f960244252558f71cf701a277c5a153633b91dd70cd3e8bd279"
+    },
+    {
+      "file": "SCRUM-679-26-recheck-catalogue-tax.png",
+      "sha256": "3d80fcb9539f82b870a21f0564435bca2dc48498e226695f717a061d877adb27"
+    },
+    {
+      "file": "SCRUM-679-27-recheck-watch-health.png",
+      "sha256": "e086708e8e137449a40a33ad425ef94b67a8999415dc9972ef4f696e6f839281"
+    },
+    {
+      "file": "SCRUM-679-28-recheck-watch-activity.png",
+      "sha256": "44e3408d03b396f626232927b6a300e62f177d61cf384a2a9492cbdf81df24e8"
+    },
+    {
+      "file": "SCRUM-679-29-recheck-devices.png",
+      "sha256": "ea054ad6c56d3be02ed6dd53376880adc448bf59e704567cbc83ec1dcfbed423"
+    },
+    {
+      "file": "SCRUM-679-30-recheck-catalogue-vouchers.png",
+      "sha256": "ad973815277573bde793d5602d82c61f132a810c25aaa2b1d64a0dd5ce85461d"
+    },
+    {
+      "file": "SCRUM-679-31-recheck-watch-integrations.png",
+      "sha256": "2fe63e2408718e05a6ccbae68ce93cb105178b67af5628c90b28c354659ee230"
+    },
+    {
+      "file": "SCRUM-679-32-recheck-overview.png",
+      "sha256": "b0469441a181ba87af10dc9d573008311bcdc58962feecd8cfbe8453080098b0"
+    }
+  ],
+  "children": [
+    {
+      "key": "SCRUM-680",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-680/jira-deployed.json",
+      "sha256": "72fd1d9b9c86902d33160016ca4320406e8df684d654074e5520e7239e039451",
+      "bytes": 658
+    },
+    {
+      "key": "SCRUM-681",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-681/jira-deployed.json",
+      "sha256": "38e5503a0832070b4c839b5960fdd12525c6b8a04b330777e77a5cb8230334cb",
+      "bytes": 716
+    },
+    {
+      "key": "SCRUM-682",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-682/jira-deployed.json",
+      "sha256": "787c0e069c33653f06fa0e6a942a5bf95c3430ea84456ee3ba1f8b9bac3cd995",
+      "bytes": 696
+    },
+    {
+      "key": "SCRUM-683",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-683/jira-deployed.json",
+      "sha256": "c6ff8112e02e6e3add7fbe2307a0e657871463a53f2b28f3ee322729d8203d6f",
+      "bytes": 719
+    },
+    {
+      "key": "SCRUM-684",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-684/jira-deployed.json",
+      "sha256": "a04fb60b6436e6a3a9fbd15ccecb2e6563202fe7fbbb26a1e9b0b34d6f43ee3a",
+      "bytes": 884
+    }
+  ],
+  "history": [
+    {
+      "role": "original-audit",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261029-audit/staging-v1/receipt.json",
+      "sha256": "d1d4c553f07c61cfc7dfcad255efb0634d641aa9993812dcae4f16b8c6410f10",
+      "bytes": 235697
+    },
+    {
+      "role": "original-preview-audit",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261029-audit/staging-preview-v2/receipt.json",
+      "sha256": "23d17df9e32791ecfbd5b75a2b09c4fb35a0facae51f5ec64c288679ea6ae4ad",
+      "bytes": 15315
+    },
+    {
+      "role": "failed-final-v1",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/receipt.json",
+      "sha256": "f2dd01ae1d80290882604815fde547f6e6ae4b5e50ffae9a1df3281a43f2e56b",
+      "bytes": 379404
+    },
+    {
+      "role": "empty-protocol-preview",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/preview-passive-v2.json",
+      "sha256": "22a6afd331af80f43e385105c7ba1e8310bae6b03c433c040d3ea3fdb095bad3",
+      "bytes": 45501
+    },
+    {
+      "role": "valid-native-preview",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/preview-clone-native-v1.json",
+      "sha256": "e47b8ffaaef97101d8e69f770f3f34a595ae615cf835156699d2e5531d7bd526",
+      "bytes": 51581
+    },
+    {
+      "role": "valid-direct-preview",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/preview-direct-native-v1.json",
+      "sha256": "c50cd0dd9808d08d81f5cc5933f440920f627a8adfdd32dcbdde3e2f7ee49920",
+      "bytes": 5868
+    },
+    {
+      "role": "privacy-red",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-initial-red.json",
+      "sha256": "ae2023c9f551519817a766fe0a65b2d26eeeb0a210511c8297f9fb65f008db7f",
+      "bytes": 1085
+    },
+    {
+      "role": "privacy-intermediate-failed",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-intermediate-failed.json",
+      "sha256": "dd826d87a2c48e22c1b14ea1fb741c7009a0f13b1494f056a647e6aeafa908f0",
+      "bytes": 1087
+    },
+    {
+      "role": "privacy-node-calibration",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-adapter-escaping-node.json",
+      "sha256": "e0c4a710fe72ac065b570444addd78c78044f9db74ef43add4ea032991fb0d17",
+      "bytes": 397
+    },
+    {
+      "role": "privacy-green",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-final-green.json",
+      "sha256": "0cd7fad23ea2a5d5e895bd3e113e8dbeaefb62c26ef083dc6c9fefd708afc59d",
+      "bytes": 1087
+    },
+    {
+      "role": "privacy-cleanup",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-first-browser-cleanup.json",
+      "sha256": "18024adebc0b9f3897084bda3324d0f336f5cf28a618bc62134a6e63b494e9d0",
+      "bytes": 734
+    },
+    {
+      "role": "privacy-cleanup",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-repeat-browser-cleanup.json",
+      "sha256": "db63c483fe292afa2e58c230144ad8246bfedf82159c1d0e8064ca3200928e99",
+      "bytes": 614
+    },
+    {
+      "role": "privacy-change-review",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-change-review.json",
+      "sha256": "3dcfed0b54165ae2713b84340e9c280eaa09ec1af08f737f47d14a12025629fe",
+      "bytes": 9432
+    },
+    {
+      "role": "finalizer-red",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/finalizer-v5-red.json",
+      "sha256": "09ebcad0213a873f2242fbfade5d52543f8802a3d72487405c7f6adf4dce6af7",
+      "bytes": 478
+    },
+    {
+      "role": "finalizer-green",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/finalizer-v6-green.json",
+      "sha256": "5d7192bcb486b2ec83edee7d46702a377f3dc5a5bde1d13aa17f9959350517a9",
+      "bytes": 479
+    },
+    {
+      "role": "preview-clone-offline",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/preview-clone-offline.json",
+      "sha256": "442360fb2fdaf79640e23932735030d023f1a0afa77e53e19aeaad5717e038c2",
+      "bytes": 1002
+    },
+    {
+      "role": "privacy-node-calibration-prior-record",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-adapter-node.json",
+      "sha256": "dc91c05ae8e72389e92c3d784a318416e75f73fa31e51e23c335f2c8d77d3cc6",
+      "bytes": 388
+    },
+    {
+      "role": "publication-preflight-path-reconciliation",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/publication-preflight-reconciliation.json",
+      "sha256": "99daac2f968d1f2180b2309099fc4a7e56cc392a1b6bdee0c461b8ca6d68feb7",
+      "bytes": 776
+    }
+  ]
+}

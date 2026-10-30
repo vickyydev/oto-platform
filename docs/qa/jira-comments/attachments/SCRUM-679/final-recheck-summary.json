@@ -1,0 +1,1178 @@
+{
+  "ticket": "SCRUM-679",
+  "clientDate": "2026-10-30",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "ciRunId": "40972211455",
+  "startedAt": "2026-10-29T23:46:26.786Z",
+  "finishedAt": "2026-10-29T23:53:23.612Z",
+  "complete": true,
+  "canonicalViews": 66,
+  "cleanDefaultViews": 66,
+  "nativePageResponses": 653,
+  "uniqueOperations": 100,
+  "getResponses": 646,
+  "samplePreviewResponses": 7,
+  "contractCoverage": {
+    "matched": 436,
+    "mismatch": 0,
+    "notDeclared": 77,
+    "unsupported": 133
+  },
+  "operations": [
+    {
+      "operation": "GET /api/me",
+      "responses": 132,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/me/permissions",
+      "responses": 66,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/console/analytics/sources",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/analytics",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/failures",
+      "responses": 67,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/analytics/drift",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/ready",
+      "responses": 66,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/operators",
+      "responses": 68,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/analytics/summary",
+      "responses": 6,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/health",
+      "responses": 66,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/console/configuration",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/flags",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/console/apps",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/console/releases/agents",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/console/releases",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/console/support/impersonations",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/stock/locations",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/menu",
+      "responses": 10,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/stock/levels",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/stock/sellable",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches",
+      "responses": 39,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/tiers",
+      "responses": 4,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/members",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/members/tier-verifications",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/inbox/routing-rules",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/inbox/teams",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/assistant-settings",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/analytics/reports/sales",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/analytics/reports/profitability",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/analytics/reports/discounts/transactions",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/analytics/reports/discounts",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/analytics/reports/tax/receipts",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/analytics/reports/tax/vat",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/menu/discounts",
+      "responses": 4,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/wallets/report",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/vouchers/promotions/report",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/money/integrity",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/console/money/wallets",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/money/discounts",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/money/sales",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/money/refunds",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/money/costs",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/money/settlement",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/console/money/cash",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/checkin/config",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/stations",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/print-templates",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "POST /api/print-templates/:id/preview.png",
+      "responses": 6,
+      "statuses": [
+        200
+      ],
+      "contractStates": []
+    },
+    {
+      "operation": "GET /api/benefits/templates",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/benefits/profiles",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/benefits/applications",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/ticket-packages",
+      "responses": 3,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/payment-methods",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/tax-config",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/voucher-definitions",
+      "responses": 5,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/voucher-campaigns",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/voucher-definitions/link-options",
+      "responses": 3,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/event-drop-in-pricing",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/demo-reset",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/roles",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/platform/alerts",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/platform/jobs",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/platform/environment",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/test-controls",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/holidays",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/access-review",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/departments",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/employees",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/admin/apps/oto_app/unlinked-users",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/accounts",
+      "responses": 3,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/roles/holders",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/audit",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/kiosks",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/alert-recipients",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/quarantine",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/alert-mutes",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/booth-layouts",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/booths",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/booths/:id/status",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/booths/:id/screens",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/booths/:id/draft",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/booths/:id/versions",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/staff",
+      "responses": 2,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/booths/:id/duty",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "POST /api/booths/:id/voucher-preview.png",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": []
+    },
+    {
+      "operation": "GET /api/booths/:id/spins",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/analytics/booths",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/boxes",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/credentials",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/boxes/:id/devices",
+      "responses": 8,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/oto-app",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/bookings/ledger",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/vouchers",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/webhooks/2c2p/simulator",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "not-declared"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/integrations/credentials",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/integrations/tests",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/ops/integrations",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "matched"
+      ]
+    },
+    {
+      "operation": "GET /api/branches/:id/settlements",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/overview",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    },
+    {
+      "operation": "GET /api/staff/summary",
+      "responses": 1,
+      "statuses": [
+        200
+      ],
+      "contractStates": [
+        "unsupported"
+      ]
+    }
+  ],
+  "businessWrites": 0,
+  "fixtureRecordsCreated": 0,
+  "cleanup": {
+    "originalCookieObserved": true,
+    "signOutStatus": 200,
+    "oldCookieMeStatus": 401,
+    "confirmed": true
+  },
+  "limitations": [
+    "Requests are native GET reads, two reviewed fixture-preview POST operations, and private sign-in/exact-session sign-out POSTs.",
+    "Only native default views are visited. The two reviewed fixture-preview POSTs render samples only; no filter, fault, payment, provider, hardware or business mutation is dispatched.",
+    "This checks default-view responses and rendering, not every filter, total, workflow or possible data state. Identities, identifiers, contacts, codes and private media are masked in partial-viewport screenshots.",
+    "Native read endpoints may create their ordinary read-audit entries. No business mutation request is dispatched.",
+    "Preview-only instrumentation clones each original fetch Response before returning that same unconsumed Response. It records bounded PNG bytes as hashes/lengths only, and adds a bounded clone-read wait. Native responses and application data are not replaced.",
+    "Every preview must still satisfy the original strict observer PNG guard and match its bound successful clone by request-body hash, target-path hash, byte length and PNG hash. This is audit instrumentation, not a product fix or a root-cause finding.",
+    "Declared supported JSON schemas are checked using existing Fastify Ajv dependencies. Unsupported or missing schemas are explicit limitations, never reported as matches. This helper does not certify every workflow or asset-byte closure."
+  ],
+  "children": [
+    {
+      "key": "SCRUM-680",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-680/jira-deployed.json",
+      "sha256": "72fd1d9b9c86902d33160016ca4320406e8df684d654074e5520e7239e039451",
+      "bytes": 658
+    },
+    {
+      "key": "SCRUM-681",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-681/jira-deployed.json",
+      "sha256": "38e5503a0832070b4c839b5960fdd12525c6b8a04b330777e77a5cb8230334cb",
+      "bytes": 716
+    },
+    {
+      "key": "SCRUM-682",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-682/jira-deployed.json",
+      "sha256": "787c0e069c33653f06fa0e6a942a5bf95c3430ea84456ee3ba1f8b9bac3cd995",
+      "bytes": 696
+    },
+    {
+      "key": "SCRUM-683",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-683/jira-deployed.json",
+      "sha256": "c6ff8112e02e6e3add7fbe2307a0e657871463a53f2b28f3ee322729d8203d6f",
+      "bytes": 719
+    },
+    {
+      "key": "SCRUM-684",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-684/jira-deployed.json",
+      "sha256": "a04fb60b6436e6a3a9fbd15ccecb2e6563202fe7fbbb26a1e9b0b34d6f43ee3a",
+      "bytes": 884
+    }
+  ],
+  "history": [
+    {
+      "role": "original-audit",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261029-audit/staging-v1/receipt.json",
+      "sha256": "d1d4c553f07c61cfc7dfcad255efb0634d641aa9993812dcae4f16b8c6410f10",
+      "bytes": 235697
+    },
+    {
+      "role": "original-preview-audit",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261029-audit/staging-preview-v2/receipt.json",
+      "sha256": "23d17df9e32791ecfbd5b75a2b09c4fb35a0facae51f5ec64c288679ea6ae4ad",
+      "bytes": 15315
+    },
+    {
+      "role": "failed-final-v1",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261029-final-recheck-v1/receipt.json",
+      "sha256": "f2dd01ae1d80290882604815fde547f6e6ae4b5e50ffae9a1df3281a43f2e56b",
+      "bytes": 379404
+    },
+    {
+      "role": "empty-protocol-preview",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/preview-passive-v2.json",
+      "sha256": "22a6afd331af80f43e385105c7ba1e8310bae6b03c433c040d3ea3fdb095bad3",
+      "bytes": 45501
+    },
+    {
+      "role": "valid-native-preview",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/preview-clone-native-v1.json",
+      "sha256": "e47b8ffaaef97101d8e69f770f3f34a595ae615cf835156699d2e5531d7bd526",
+      "bytes": 51581
+    },
+    {
+      "role": "valid-direct-preview",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/preview-direct-native-v1.json",
+      "sha256": "c50cd0dd9808d08d81f5cc5933f440920f627a8adfdd32dcbdde3e2f7ee49920",
+      "bytes": 5868
+    },
+    {
+      "role": "privacy-red",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-initial-red.json",
+      "sha256": "ae2023c9f551519817a766fe0a65b2d26eeeb0a210511c8297f9fb65f008db7f",
+      "bytes": 1085
+    },
+    {
+      "role": "privacy-intermediate-failed",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-intermediate-failed.json",
+      "sha256": "dd826d87a2c48e22c1b14ea1fb741c7009a0f13b1494f056a647e6aeafa908f0",
+      "bytes": 1087
+    },
+    {
+      "role": "privacy-node-calibration",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-adapter-escaping-node.json",
+      "sha256": "e0c4a710fe72ac065b570444addd78c78044f9db74ef43add4ea032991fb0d17",
+      "bytes": 397
+    },
+    {
+      "role": "privacy-green",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-final-green.json",
+      "sha256": "0cd7fad23ea2a5d5e895bd3e113e8dbeaefb62c26ef083dc6c9fefd708afc59d",
+      "bytes": 1087
+    },
+    {
+      "role": "privacy-cleanup",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-first-browser-cleanup.json",
+      "sha256": "18024adebc0b9f3897084bda3324d0f336f5cf28a618bc62134a6e63b494e9d0",
+      "bytes": 734
+    },
+    {
+      "role": "privacy-cleanup",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-repeat-browser-cleanup.json",
+      "sha256": "db63c483fe292afa2e58c230144ad8246bfedf82159c1d0e8064ca3200928e99",
+      "bytes": 614
+    },
+    {
+      "role": "privacy-change-review",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-change-review.json",
+      "sha256": "3dcfed0b54165ae2713b84340e9c280eaa09ec1af08f737f47d14a12025629fe",
+      "bytes": 9432
+    },
+    {
+      "role": "finalizer-red",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/finalizer-v5-red.json",
+      "sha256": "09ebcad0213a873f2242fbfade5d52543f8802a3d72487405c7f6adf4dce6af7",
+      "bytes": 478
+    },
+    {
+      "role": "finalizer-green",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/finalizer-v6-green.json",
+      "sha256": "5d7192bcb486b2ec83edee7d46702a377f3dc5a5bde1d13aa17f9959350517a9",
+      "bytes": 479
+    },
+    {
+      "role": "preview-clone-offline",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/preview-clone-offline.json",
+      "sha256": "442360fb2fdaf79640e23932735030d023f1a0afa77e53e19aeaad5717e038c2",
+      "bytes": 1002
+    },
+    {
+      "role": "privacy-node-calibration-prior-record",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/privacy-adapter-node.json",
+      "sha256": "dc91c05ae8e72389e92c3d784a318416e75f73fa31e51e23c335f2c8d77d3cc6",
+      "bytes": 388
+    },
+    {
+      "role": "publication-preflight-path-reconciliation",
+      "path": "docs/qa/jira-comments/attachments/SCRUM-679/20261030-closeout-history/publication-preflight-reconciliation.json",
+      "sha256": "99daac2f968d1f2180b2309099fc4a7e56cc392a1b6bdee0c461b8ca6d68feb7",
+      "bytes": 776
+    }
+  ]
+}
