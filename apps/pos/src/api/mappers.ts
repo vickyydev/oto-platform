@@ -75,6 +75,7 @@ export function apiMemberToMember(m: ApiMember): Member {
     ? {
         tier: m.tierVerification.tier,
         proofType: m.tierVerification.proofType,
+        ...(m.tierVerification.note ? { note: m.tierVerification.note } : {}),
         verifiedBy: m.tierVerification.verifiedBy ?? 'Verified',
         verifiedById: 'api',
         verifiedAt: m.tierVerification.verifiedAt,

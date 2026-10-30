@@ -13,9 +13,32 @@
  * because the platform's tier-claim route accepts exactly these names and
  * nothing else (SCRUM-307); making it configurable per operator is SCRUM-238's
  * remaining half.
+ *
+ * SCRUM-697 adds Other after the three kinds (`TIER_PROOF_CHOICES`, what the
+ * verify step offers): staff describe what they checked, and the description
+ * follows the same rule on the till, the box and the platform
+ * (`tierProofNoteProblem`).
  */
-export { TIER_PROOF_TYPES } from '@oto/shared';
+import { TIER_PROOF_OTHER } from '@oto/shared';
+
+export {
+  TIER_PROOF_CHOICES,
+  TIER_PROOF_NOTE_MAX,
+  TIER_PROOF_OTHER,
+  TIER_PROOF_TYPES,
+  tierProofLabel,
+  tierProofNoteProblem,
+} from '@oto/shared';
 
 /** What the admin screen says under the picker, so nobody looks for a setting that is not there. */
 export const TIER_PROOF_NOTE =
   'Select the document you checked.';
+
+/**
+ * The document a sale was priced on, as History's sentence reads it —
+ * "Priced on passport", "Priced on other (Thai driving licence)".
+ */
+export function pricedOnDocument(kind: string, note?: string | null): string {
+  const text = note?.trim();
+  return kind === TIER_PROOF_OTHER && text ? `other (${text})` : kind.toLowerCase();
+}

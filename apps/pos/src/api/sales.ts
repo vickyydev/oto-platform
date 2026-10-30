@@ -692,10 +692,12 @@ export interface SaleTierClaimBody {
   actionId: string;
   branchId: string;
   toTier: string;
-  /** The KIND of document — `Passport`, `School card`. Never its number. */
+  /** The KIND of document — `Passport`, `School card`, `Other`. Never its number. */
   evidenceType: string;
   /** The document's expiry, `YYYY-MM-DD`; absent when it carries none. */
   evidenceExpiresAt?: string;
+  /** What staff checked for an Other document — a description, never a number (SCRUM-697). */
+  note?: string;
 }
 
 /** The claim as the platform answers it. The tier on it is the platform's. */
@@ -1502,6 +1504,8 @@ export async function claimVerifiedTier(input: {
   proofType: string;
   /** `YYYY-MM-DD`, when the document carries an expiry. */
   expiresAt?: string;
+  /** What staff checked, when the document type is Other (SCRUM-697). */
+  note?: string;
 }): Promise<string> {
   const actionId = newId();
   await salesApi.tierClaim({
@@ -1510,6 +1514,7 @@ export async function claimVerifiedTier(input: {
     toTier: input.tier,
     evidenceType: input.proofType,
     ...(input.expiresAt ? { evidenceExpiresAt: input.expiresAt } : {}),
+    ...(input.note ? { note: input.note } : {}),
   });
   return actionId;
 }

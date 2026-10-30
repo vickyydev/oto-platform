@@ -142,6 +142,11 @@ export interface ApiMember {
   tierVerification: {
     tier: string;
     proofType: string;
+    /**
+     * What staff typed for an Other document (SCRUM-697); null otherwise.
+     * Optional because a platform that predates it answers without it.
+     */
+    note?: string | null;
     verifiedAt: string;
     /** Staff who checked the document — stamped server-side from the session. */
     verifiedBy: string | null;

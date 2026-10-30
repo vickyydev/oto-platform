@@ -79,8 +79,13 @@ export interface ApiSaleTotals {
  */
 export interface ApiSaleTierClaim {
   id: string;
-  /** "Passport", "Residence certificate". A kind, never a number. */
+  /** "Passport", "Residence certificate", "Other". A kind, never a number. */
   documentKind: string;
+  /**
+   * What staff typed for an Other document ("Thai driving licence"), null
+   * otherwise (SCRUM-697). Optional: a platform that predates it omits it.
+   */
+  documentNote?: string | null;
   /** The tier the document supported — the one this sale was charged at. */
   toTier: string;
   /** The document's own expiry as the check recorded it (`YYYY-MM-DD`), or null when it carries none. */

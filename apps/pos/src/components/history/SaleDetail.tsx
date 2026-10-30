@@ -33,6 +33,7 @@ import {
   type PaymentAttemptView,
 } from '@/api/history';
 import { correctionFromSale, setCorrectedOrder } from '@/lib/correctedOrder';
+import { pricedOnDocument } from '@/lib/tierProof';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { scanBand } from '@/api/wallet';
@@ -1377,7 +1378,7 @@ export function SaleDetail(props: SaleDetailProps) {
                     row into two columns. Text stays in the run beside the tier
                     it is explaining. */}
                 {tierClaim
-                  ? ` · Priced on ${tierClaim.documentKind.toLowerCase()}, checked ${fmt(tierClaim.verifiedAt)}`
+                  ? ` · Priced on ${pricedOnDocument(tierClaim.documentKind, tierClaim.documentNote)}, checked ${fmt(tierClaim.verifiedAt)}`
                   : ''}
               </div>
             </div>

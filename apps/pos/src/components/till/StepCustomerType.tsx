@@ -8,6 +8,7 @@ import {
   isTierVerified,
 } from '@/lib/membership';
 import { getTiers } from '@/mockApi';
+import { tierProofLabel } from '@/lib/tierProof';
 import { EventPassCard } from '@/components/till/EventPassCard';
 import { Users, Globe, MapPin, BadgeCheck, ShieldQuestion, UserCircle, Ticket, type LucideIcon } from 'lucide-react';
 
@@ -157,7 +158,7 @@ export function StepCustomerType({
                 </p>
               ) : !isDefault && verified ? (
                 <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400 text-center">
-                  {verification?.proofType} — no proof needed
+                  {verification && tierProofLabel(verification.proofType, verification.note)} — no proof needed
                 </p>
               ) : null}
             </Card>

@@ -15,6 +15,7 @@ import {
 import { baht } from '@/api/history';
 import { getDiscountReasons } from '@/store/catalogStore';
 import { tierLabel } from '@/lib/membership';
+import { pricedOnDocument } from '@/lib/tierProof';
 import { clearRefundRequests } from '@/lib/refundRequests';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -133,7 +134,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
             </div>
             {state.tierClaim && (
               <div className="text-xs text-muted-foreground">
-                Priced on {state.tierClaim.documentKind.toLowerCase()}, checked{' '}
+                Priced on {pricedOnDocument(state.tierClaim.documentKind, state.tierClaim.documentNote)}, checked{' '}
                 {fmt(state.tierClaim.verifiedAt)}
               </div>
             )}

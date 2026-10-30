@@ -64,6 +64,8 @@ export async function saveDeferredVerification(input: {
     evidenceType: verification.proofType,
     // Optional, as in the approved design's verification step.
     ...(verification.expiresAt ? { evidenceExpiresAt: verification.expiresAt } : {}),
+    // What staff checked for an Other document (SCRUM-697).
+    ...(verification.note ? { note: verification.note } : {}),
   });
   return apiMemberToMember(member);
 }

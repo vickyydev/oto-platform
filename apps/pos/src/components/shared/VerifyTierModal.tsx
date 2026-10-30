@@ -9,7 +9,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { CustomerTier, Member, TierVerification } from '@/types';
 import { getDefaultTier } from '@/mockApi';
-import { TIER_PROOF_TYPES } from '@/lib/tierProof';
+import {
+  TIER_PROOF_CHOICES,
+  TIER_PROOF_NOTE_MAX,
+  TIER_PROOF_OTHER,
+  tierProofLabel,
+  tierProofNoteProblem,
+} from '@/lib/tierProof';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { isDefaultTier, tierLabel } from '@/lib/membership';
@@ -53,6 +59,8 @@ export function VerifyTierModal({
 }: VerifyTierModalProps) {
   const [proofType, setProofType] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState('');
+  /** What staff checked, when the proof is Other (SCRUM-697). */
+  const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
@@ -60,12 +68,14 @@ export function VerifyTierModal({
   const { can } = useOperator();
   // A fixed built-in list — no route serves it (see `lib/tierProof.ts`). The
   // verification it produces is written to the platform, not to the fixtures.
-  const proofTypes = TIER_PROOF_TYPES;
+  // Other comes last and asks what was checked (SCRUM-697).
+  const proofTypes = TIER_PROOF_CHOICES;
 
   useEffect(() => {
     if (open) {
       setProofType(null);
       setExpiresAt('');
+      setNote('');
       setBusy(false);
       setRevoking(false);
       setRevokeReason('');
@@ -93,6 +103,8 @@ export function VerifyTierModal({
     !isDefaultTier(member.tierVerification.tier)
       ? member.tierVerification
       : undefined;
+  /** "Passport", or for Other what was checked: "Other (Thai driving licence)". */
+  const heldProof = held ? tierProofLabel(held.proofType, held.note) : '';
   const mayRevoke = can('pos:member:tier_downgrade');
   const baselineLabel = tierLabel(getDefaultTier().id);
 
@@ -150,13 +162,25 @@ export function VerifyTierModal({
    */
   const expiryValid =
     expiresAt === '' || (/^\d{4}-\d{2}-\d{2}$/.test(expiresAt) && expiresAt >= todayIso());
-  const canConfirm = !!proofType && expiryValid && !busy;
+  /**
+   * SCRUM-697 — Other carries what staff checked instead of a kind, and asks
+   * for no expiry. The description follows the platform's rule word for word
+   * (`tierProofNoteProblem`): two words at least, never a document number.
+   * Only Other sends one; a description typed before switching to a named
+   * kind is left behind.
+   */
+  const isOther = proofType === TIER_PROOF_OTHER;
+  const noteText = isOther ? note.trim() : '';
+  const noteProblem = proofType ? tierProofNoteProblem(noteText, proofType) : null;
+  const choiceLabel = isOther && noteText ? `${TIER_PROOF_OTHER} — ${noteText}` : proofType;
+  const canConfirm = !!proofType && expiryValid && noteProblem === null && !busy;
 
   const handleConfirm = async () => {
-    if (!proofType || !expiryValid) return;
+    if (!proofType || !expiryValid || noteProblem !== null) return;
     const verification: TierVerification = {
       tier,
       proofType,
+      ...(noteText ? { note: noteText } : {}),
       verifiedBy: operatorName,
       verifiedById: operatorId,
       verifiedAt: new Date().toISOString(),
@@ -174,11 +198,12 @@ export function VerifyTierModal({
           toTier: tier,
           evidenceType: proofType,
           ...(expiresAt ? { evidenceExpiresAt: expiresAt } : {}),
+          ...(noteText ? { note: noteText } : {}),
         });
         const updated = apiMemberToMember(res.member);
         toast({
           title: `${tierLabel(tier)} rate verified`,
-          description: `${proofType}${expiresAt ? ` · valid until ${expiresAt}` : ''} · recorded by ${operatorName}`,
+          description: `${choiceLabel}${expiresAt ? ` · valid until ${expiresAt}` : ''} · recorded by ${operatorName}`,
         });
         onConfirm({ member: { ...member, ...updated }, verification: updated.tierVerification ?? verification });
         onOpenChange(false);
@@ -234,8 +259,8 @@ export function VerifyTierModal({
               <div className="flex items-start gap-2 text-sm">
                 <ShieldOff className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
                 <span>
-                  Already holds <span className="font-semibold">{tierLabel(held.tier)}</span> on a{' '}
-                  {held.proofType}
+                  Already holds <span className="font-semibold">{tierLabel(held.tier)}</span> on{' '}
+                  {/^[aeiou]/i.test(heldProof) ? 'an' : 'a'} {heldProof}
                   {held.expiresAt
                     ? held.reverifyDue
                       ? `, expired ${held.expiresAt} — re-verify`
@@ -315,7 +340,11 @@ export function VerifyTierModal({
                   type="button"
                   variant={proofType === p ? 'default' : 'outline'}
                   className="h-14 justify-start text-base"
-                  onClick={() => setProofType(p)}
+                  onClick={() => {
+                    setProofType(p);
+                    // Other asks for no expiry, so none is carried over to it.
+                    if (p === TIER_PROOF_OTHER) setExpiresAt('');
+                  }}
                 >
                   {p}
                 </Button>
@@ -323,26 +352,48 @@ export function VerifyTierModal({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="tier-evidence-expiry"
-              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
-            >
-              <CalendarClock className="w-4 h-4" />
-              Document expiry date
-            </label>
-            <input
-              id="tier-evidence-expiry"
-              type="date"
-              value={expiresAt}
-              min={todayIso()}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="w-full h-12 rounded-lg border border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            {expiresAt && !expiryValid && (
-              <p className="text-sm text-destructive">The document has already expired.</p>
-            )}
-          </div>
+          {isOther ? (
+            <div className="space-y-2">
+              <label
+                htmlFor="tier-evidence-note"
+                className="text-sm font-medium text-muted-foreground"
+              >
+                What did you check? <span className="text-destructive">*</span>
+              </label>
+              <Input
+                id="tier-evidence-note"
+                value={note}
+                maxLength={TIER_PROOF_NOTE_MAX}
+                placeholder="e.g. Thai driving licence"
+                autoFocus
+                onChange={(e) => setNote(e.target.value)}
+              />
+              {note !== '' && noteProblem && (
+                <p className="text-sm text-destructive">{noteProblem}</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label
+                htmlFor="tier-evidence-expiry"
+                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
+              >
+                <CalendarClock className="w-4 h-4" />
+                Document expiry date
+              </label>
+              <input
+                id="tier-evidence-expiry"
+                type="date"
+                value={expiresAt}
+                min={todayIso()}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="w-full h-12 rounded-lg border border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              {expiresAt && !expiryValid && (
+                <p className="text-sm text-destructive">The document has already expired.</p>
+              )}
+            </div>
+          )}
 
           {/* Recorded automatically — who checked, fixed to the signed-in account. */}
           <div className="flex items-center gap-2 rounded-lg border border-dashed border-foreground/15 bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
@@ -357,8 +408,8 @@ export function VerifyTierModal({
             {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <BadgeCheck className="w-5 h-5" />}
             {busy
               ? 'Saving…'
-              : proofType
-                ? `Verify ${tierLabel(tier)} — ${proofType}`
+              : choiceLabel
+                ? `Verify ${tierLabel(tier)} — ${choiceLabel}`
                 : 'Choose proof to verify'}
           </Button>
         </div>

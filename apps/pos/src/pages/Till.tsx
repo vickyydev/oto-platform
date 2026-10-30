@@ -19,6 +19,7 @@ import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmation
 import { buildSale } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
+import { tierProofLabel } from '@/lib/tierProof';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
@@ -1262,6 +1263,7 @@ export default function Till() {
           tier: verification.tier,
           proofType: verification.proofType,
           ...(verification.expiresAt ? { expiresAt: verification.expiresAt } : {}),
+          ...(verification.note ? { note: verification.note } : {}),
         });
         if (saleEpochRef.current !== epoch) return;
         setTierClaimActionId(claimed);
@@ -2531,7 +2533,7 @@ export default function Till() {
           setPendingVerification(null);
           toast({
             title: `${tierLabel(verification.tier)} rate saved to ${saved.nickname}`,
-            description: `${verification.proofType} · valid until ${verification.expiresAt ?? '—'}`,
+            description: `${tierProofLabel(verification.proofType, verification.note)} · valid until ${verification.expiresAt ?? '—'}`,
           });
         })
         .catch((err: unknown) => {
