@@ -5,7 +5,7 @@ import { CartBandHolderSchema, CartPrepaidSchema } from './band-food';
 import { CartBenefitSchema } from './benefit-checkout';
 import { PAYMENT_METHOD_KINDS, type PaymentAttemptView } from './payments';
 import { SALE_REPRINT_KINDS } from './print';
-import { TIER_PROOF_TYPES } from './tier-proof';
+import { TIER_PROOF_CHOICES } from './tier-proof';
 import { STAFF_OFFLINE_SIGN_IN_DAYS, STAFF_TOKEN_TTL_S } from './staff-token';
 import type { StockLocationType } from './stock';
 import { wholeSatangWhenMoney } from './whole-satang';
@@ -216,9 +216,9 @@ export const OfflineMemberTierChangedSchema = z.discriminatedUnion('direction', 
     memberId: Uuid,
     verificationId: Uuid,
     toTier: z.string().min(1).max(64),
-    // Previously accepted box events must still replay after an upgrade.
-    // New checks use TIER_PROOF_TYPES at the receiving counter.
-    evidenceType: z.enum([...TIER_PROOF_TYPES, 'Other']),
+    // The till's four choices (SCRUM-697); an Other check carries its
+    // description in `note`, which the counter's box requires.
+    evidenceType: z.enum(TIER_PROOF_CHOICES),
     // Optional, as at the online verify step: a document with no expiry date
     // never expires.
     evidenceExpiresAt: IsoDate.nullish(),
