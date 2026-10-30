@@ -1,0 +1,146 @@
+{
+  "ticket": "SCRUM-679",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "ciRunId": "40972211455",
+  "evidenceCommit": "9b252a6c776fb7761ed2a32734834afe883bdc92",
+  "startedAt": "2026-10-30T00:01:55.636Z",
+  "before": {
+    "status": "Testing",
+    "summary": "Audit Admin Console pages, API messages and payment settings"
+  },
+  "children": [
+    {
+      "key": "SCRUM-680",
+      "status": "Deployed",
+      "summary": "Check tax-override ownership and give useful reference refusals"
+    },
+    {
+      "key": "SCRUM-681",
+      "status": "Deployed",
+      "summary": "Keep Console data, empty states and page ranges tied to the current selection"
+    },
+    {
+      "key": "SCRUM-682",
+      "status": "Deployed",
+      "summary": "Make Console refusals actionable and validate legacy operations replies"
+    },
+    {
+      "key": "SCRUM-683",
+      "status": "Deployed",
+      "summary": "Make existing payment settings and long Console lists easier to find"
+    },
+    {
+      "key": "SCRUM-684",
+      "status": "Deployed",
+      "summary": "Keep published Console response enums faithful to unset values"
+    }
+  ],
+  "imageReviewSha256": "cef7a088e387fda9a4d86c25a12d841a4bb8f959deab45ef910921275f4ed925",
+  "screenshots": [
+    {
+      "file": "SCRUM-679-21-recheck-organisation-configuration.png",
+      "sha256": "9c1ec639ebfff2641d1a6806d49240c9f0c60e45edfe14fdb6f833915a5d916b"
+    },
+    {
+      "file": "SCRUM-679-22-recheck-watch-releases.png",
+      "sha256": "45f96f3ccddf5bce4150af4ede6e7f56461f4a05edd3c28c3cd247ff381b5ac4"
+    },
+    {
+      "file": "SCRUM-679-23-recheck-watch-support.png",
+      "sha256": "25677494e1a18f5ec8107dc63a4b1043274076b16e830f3dddb3bed09825403f"
+    },
+    {
+      "file": "SCRUM-679-24-recheck-reports-money.png",
+      "sha256": "1c6bf40451a1964c45486a0fcb1502d6768848cad53f6c44bf175ad48ec0761f"
+    },
+    {
+      "file": "SCRUM-679-25-recheck-catalogue-tenders.png",
+      "sha256": "cd0854dbbb906f960244252558f71cf701a277c5a153633b91dd70cd3e8bd279"
+    },
+    {
+      "file": "SCRUM-679-26-recheck-catalogue-tax.png",
+      "sha256": "3d80fcb9539f82b870a21f0564435bca2dc48498e226695f717a061d877adb27"
+    },
+    {
+      "file": "SCRUM-679-27-recheck-watch-health.png",
+      "sha256": "e086708e8e137449a40a33ad425ef94b67a8999415dc9972ef4f696e6f839281"
+    },
+    {
+      "file": "SCRUM-679-28-recheck-watch-activity.png",
+      "sha256": "44e3408d03b396f626232927b6a300e62f177d61cf384a2a9492cbdf81df24e8"
+    },
+    {
+      "file": "SCRUM-679-29-recheck-devices.png",
+      "sha256": "ea054ad6c56d3be02ed6dd53376880adc448bf59e704567cbc83ec1dcfbed423"
+    },
+    {
+      "file": "SCRUM-679-30-recheck-catalogue-vouchers.png",
+      "sha256": "ad973815277573bde793d5602d82c61f132a810c25aaa2b1d64a0dd5ce85461d"
+    },
+    {
+      "file": "SCRUM-679-31-recheck-watch-integrations.png",
+      "sha256": "2fe63e2408718e05a6ccbae68ce93cb105178b67af5628c90b28c354659ee230"
+    },
+    {
+      "file": "SCRUM-679-32-recheck-overview.png",
+      "sha256": "b0469441a181ba87af10dc9d573008311bcdc58962feecd8cfbe8453080098b0"
+    }
+  ],
+  "attachments": [
+    {
+      "id": "12148",
+      "name": "SCRUM-679-21-recheck-organisation-configuration.png"
+    },
+    {
+      "id": "12149",
+      "name": "SCRUM-679-22-recheck-watch-releases.png"
+    },
+    {
+      "id": "12150",
+      "name": "SCRUM-679-23-recheck-watch-support.png"
+    },
+    {
+      "id": "12151",
+      "name": "SCRUM-679-24-recheck-reports-money.png"
+    },
+    {
+      "id": "12152",
+      "name": "SCRUM-679-25-recheck-catalogue-tenders.png"
+    },
+    {
+      "id": "12153",
+      "name": "SCRUM-679-26-recheck-catalogue-tax.png"
+    },
+    {
+      "id": "12154",
+      "name": "SCRUM-679-27-recheck-watch-health.png"
+    },
+    {
+      "id": "12155",
+      "name": "SCRUM-679-28-recheck-watch-activity.png"
+    },
+    {
+      "id": "12156",
+      "name": "SCRUM-679-29-recheck-devices.png"
+    },
+    {
+      "id": "12157",
+      "name": "SCRUM-679-30-recheck-catalogue-vouchers.png"
+    },
+    {
+      "id": "12158",
+      "name": "SCRUM-679-31-recheck-watch-integrations.png"
+    },
+    {
+      "id": "12159",
+      "name": "SCRUM-679-32-recheck-overview.png"
+    }
+  ],
+  "commentId": "12716",
+  "after": {
+    "status": "Deployed",
+    "summary": "Audit Admin Console pages, API messages and payment settings"
+  },
+  "complete": true,
+  "finishedAt": "2026-10-30T00:02:08.037Z"
+}

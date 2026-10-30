@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-30T00:06:33.580Z",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "dockerStartedByThisUnit": false,
+  "dockerDesktopOrBackendProcessesObserved": 0,
+  "localTestCleanup": {
+    "stoppedClusters": 10,
+    "receipt": {
+      "path": "C:/oto-lanes/admin684-resume-20261030/final-gates-4b/results/summary.json",
+      "sha256": "3fefcd4b18a96e8270e6041f856e500266b5c6a19172e833686401d75b777872"
+    }
+  },
+  "apiProof": {
+    "complete": true,
+    "cleanup": {
+      "originalCookieObserved": true,
+      "signOutStatus": 200,
+      "oldCookieMeStatus": 401,
+      "confirmed": true
+    },
+    "browserCloseFailed": false
+  },
+  "parentProof": {
+    "complete": true,
+    "cleanup": {
+      "originalCookieObserved": true,
+      "signOutStatus": 200,
+      "oldCookieMeStatus": 401,
+      "confirmed": true
+    }
+  },
+  "requiredCiWatch": {
+    "session": 67671,
+    "exitCode": 0
+  },
+  "remoteMainMonitor": {
+    "stopped": true,
+    "receipt": {
+      "path": "C:/oto-lanes/admin684-resume-20261030/remote-main-monitor-stopped.json",
+      "sha256": "93e21d1946943e58c58a73e553754dfc4fa42cb4711a40ec065da44791e38e6e"
+    }
+  },
+  "businessRecordsCreated": 0
+}

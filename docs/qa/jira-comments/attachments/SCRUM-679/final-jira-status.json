@@ -1,0 +1,96 @@
+{
+  "at": "2026-10-30T00:06:33.580Z",
+  "sourceSha": "522294a737db2d10dd6a78d0756dd1ce498517e7",
+  "ciRunId": "40972211455",
+  "states": [
+    {
+      "ticket": "SCRUM-679",
+      "status": "Deployed",
+      "summary": "Audit Admin Console pages, API messages and payment settings"
+    },
+    {
+      "ticket": "SCRUM-680",
+      "status": "Deployed",
+      "summary": "Check tax-override ownership and give useful reference refusals"
+    },
+    {
+      "ticket": "SCRUM-681",
+      "status": "Deployed",
+      "summary": "Keep Console data, empty states and page ranges tied to the current selection"
+    },
+    {
+      "ticket": "SCRUM-682",
+      "status": "Deployed",
+      "summary": "Make Console refusals actionable and validate legacy operations replies"
+    },
+    {
+      "ticket": "SCRUM-683",
+      "status": "Deployed",
+      "summary": "Make existing payment settings and long Console lists easier to find"
+    },
+    {
+      "ticket": "SCRUM-684",
+      "status": "Deployed",
+      "summary": "Keep published Console response enums faithful to unset values"
+    }
+  ],
+  "parentCommentId": "12716",
+  "repairCommentId": "12715",
+  "parentAttachments": [
+    {
+      "id": "12148",
+      "name": "SCRUM-679-21-recheck-organisation-configuration.png"
+    },
+    {
+      "id": "12149",
+      "name": "SCRUM-679-22-recheck-watch-releases.png"
+    },
+    {
+      "id": "12150",
+      "name": "SCRUM-679-23-recheck-watch-support.png"
+    },
+    {
+      "id": "12151",
+      "name": "SCRUM-679-24-recheck-reports-money.png"
+    },
+    {
+      "id": "12152",
+      "name": "SCRUM-679-25-recheck-catalogue-tenders.png"
+    },
+    {
+      "id": "12153",
+      "name": "SCRUM-679-26-recheck-catalogue-tax.png"
+    },
+    {
+      "id": "12154",
+      "name": "SCRUM-679-27-recheck-watch-health.png"
+    },
+    {
+      "id": "12155",
+      "name": "SCRUM-679-28-recheck-watch-activity.png"
+    },
+    {
+      "id": "12156",
+      "name": "SCRUM-679-29-recheck-devices.png"
+    },
+    {
+      "id": "12157",
+      "name": "SCRUM-679-30-recheck-catalogue-vouchers.png"
+    },
+    {
+      "id": "12158",
+      "name": "SCRUM-679-31-recheck-watch-integrations.png"
+    },
+    {
+      "id": "12159",
+      "name": "SCRUM-679-32-recheck-overview.png"
+    }
+  ],
+  "repairAttachments": [
+    {
+      "id": "12147",
+      "name": "SCRUM-684-01-nullable-response-contracts.png"
+    }
+  ],
+  "ownerMovesDone": true
+}
