@@ -102,7 +102,9 @@ export async function seedNannyRoster(
       .limit(1);
     const nannyId = found?.id ?? newId();
     if (!found) {
-      await db.insert(s.nanny).values({ id: nannyId, operatorId: branch.operatorId, branchId: branch.id, name: entry.name });
+      await db
+        .insert(s.nanny)
+        .values({ id: nannyId, operatorId: branch.operatorId, branchId: branch.id, name: entry.name, source: 'seed' });
     }
     if (!entry.onShift) continue;
     for (let d = 0; d < SHIFT_DAYS; d++) {
@@ -117,7 +119,15 @@ export async function seedNannyRoster(
       if (!shift) {
         await db
           .insert(s.nannyShift)
-          .values({ id: newId(), operatorId: branch.operatorId, nannyId, branchId: branch.id, startsAt, endsAt });
+          .values({
+            id: newId(),
+            operatorId: branch.operatorId,
+            nannyId,
+            branchId: branch.id,
+            startsAt,
+            endsAt,
+            source: 'seed',
+          });
       }
     }
   }
