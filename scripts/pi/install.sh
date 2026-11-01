@@ -447,6 +447,11 @@ install -d -m 0700 -o oto-box -g oto-box /var/lib/oto-box
 # the box's own user and to nobody else, the television's display server is
 # told to ignore the keyboard (libinput), so a scan never types into the
 # screen, and ModemManager is told not to probe the serial port as a modem.
+# The group and mode are FINAL assignments (:=): Raspberry Pi OS's own
+# 99-com.rules runs after this file and sets every input node to the "input"
+# group with a plain "=", which would otherwise win and leave the node closed
+# to the box's user. That user is deliberately not in "input", which would let
+# it read every keyboard on the box, not just the cradle.
 # After the user above, because the rule names its group. The serial driver is
 # loaded at boot from here on, so the service's device allow-list (oto-box.service)
 # finds it when the box starts. A cradle already plugged in picks the rule up
@@ -458,11 +463,13 @@ cat >"$SCANNER_RULE" <<'EOF'
 # Written by the OTO box installer (SCRUM-700): the box reads the counter
 # scanner itself. Rewritten on every install run.
 # HID mode (the cradle as it ships): the box's user reads the keyboard's event
-# node; the display server leaves it alone.
-ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{idVendor}=="05e0", GROUP="oto-box", MODE="0640", ENV{LIBINPUT_IGNORE_DEVICE}="1"
+# node; the display server leaves it alone. GROUP and MODE are final (:=) so a
+# later rule (Raspberry Pi OS's 99-com.rules: every input node to "input")
+# cannot take the node back.
+ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{idVendor}=="05e0", GROUP:="oto-box", MODE:="0640", ENV{LIBINPUT_IGNORE_DEVICE}="1"
 # CDC mode (after scanning "USB CDC Host"): the box's user reads the serial port;
-# ModemManager does not probe it.
-ACTION!="remove", SUBSYSTEM=="tty", KERNEL=="ttyACM*", ATTRS{idVendor}=="05e0", GROUP="oto-box", MODE="0660", ENV{ID_MM_DEVICE_IGNORE}="1"
+# ModemManager does not probe it. Final for the same reason.
+ACTION!="remove", SUBSYSTEM=="tty", KERNEL=="ttyACM*", ATTRS{idVendor}=="05e0", GROUP:="oto-box", MODE:="0660", ENV{ID_MM_DEVICE_IGNORE}="1"
 ACTION!="remove", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="05e0", ENV{ID_MM_DEVICE_IGNORE}="1"
 EOF
 chmod 0644 "$SCANNER_RULE"

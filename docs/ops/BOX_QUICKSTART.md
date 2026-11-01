@@ -310,8 +310,14 @@ If the row says instead:
   not the scanner's (a cradle in CDC is `05e0:1701`, in HID `05e0:1200`). On the box,
   `lsusb | grep 05e0` shows which it is; change the row's mode, or scan the other bar
   code.
-- **Plugged in … but not open** — the box's user may not read it: run the installer
-  again (part G), then unplug the cradle and plug it back in once.
+- **Plugged in … but not open** — the box's user may not read the scanner's node. On
+  the box, `ls -l` on the node the row names (`/dev/input/event…` in HID,
+  `/dev/ttyACM…` in CDC) should show the group `oto-box`. If it shows `input` or
+  `dialout`, the scanner rule is missing or another rule took the node back: install
+  the current box release (part G), whose installer rewrites the rule, then unplug the
+  cradle and plug it back in once. `sudo udevadm test /sys/class/input/event… 2>&1 |
+  grep -i group` shows which rule set the group. Do not add the box's user to the
+  `input` group: that group reads every keyboard on the box, not just the cradle.
 - **partial scans dropped** — HID mode with no Enter at the end of a code: scan "Add
   Enter Key" in the Zebra guide (Miscellaneous Scanner Parameters), or use CDC.
 - A television on the box **types the code** — the cradle was plugged in before the
