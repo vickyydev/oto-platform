@@ -1,5 +1,8 @@
 # Current status - read this first when resuming
 
+**2 November 2026, SCRUM-508 STARTED AFTER369 DEPLOYED:** SCRUM-369 is Deployed with its inspected proof attached. SCRUM-508 is now In Progress in C:/oto-lanes/codex-parties-20261102 on lane/codex-parties-20261102 from origin/main07143f29. Frozen prefer-offline install is running. Trace Today Performance to the party-tab write source, preserve analytics question3 money timing, and prove the correction with a local party charge/payment regression. Staging proof uses only ZZ TEST records and Till 2 (test), with no payment, SMS or real hardware action. The owner has authorized necessary narrow cross-file repairs; no new approval wait is required.
+
+
 **2 November 2026, SCRUM-369 DEPLOYED WITH ATTACHED PROOF:** Jira readback confirms Deployed. Source 53c9f49c715a252f1718e91803463bca786f54ca passed all six jobs in CI 41360677250, including six till browser cases. The deliberately broken sign-in failed CI 41351229348 and was reverted on the published proof branch. Inspected ci-red-green-proof.png is attached to SCRUM-369 (attachment12199); its JSON and PNG are published in259018e7570d0e27f9ff52fffcad84c406931090. The card records the live POS source and API descendant, unchanged till CI inputs, exact run links and cleanup. All six local cases also pass on the combined tree. No staging business data, payments, SMS or hardware actions were used. Only the owner moves Done. SCRUM-508 may now be picked up in its own worktree from current main.
 
 
