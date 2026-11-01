@@ -44,6 +44,14 @@ import {
 } from './photo-upload';
 import { BAND_CODE_HANDLER, ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
+import {
+  createScannerHost,
+  nodeScannerIo,
+  scannerSignature,
+  scannerSpecsOf,
+  type ScannerHost,
+  type ScannerIo,
+} from './scanner-device';
 import { StationSessionManager } from './station-session';
 import {
   BoxStoreFeatureMissingError,
@@ -327,6 +335,25 @@ export interface BoxAgentOptions {
     key?: () => string | Uint8Array | null;
   };
   /**
+   * The counter scanner, read by the box itself (SCRUM-700,
+   * `scanner-device.ts`).
+   *
+   * One reader per scanner on this box's stations whose row is reached over
+   * `usb` or `serial` — never a `simulated` one. On by default only on a
+   * Raspberry Pi (a box with a `configCache`), for the reason the gate's
+   * listener is: the virtual box runs inside the api on a server, where there
+   * is no cradle to open and no device node worth looking at.
+   */
+  scanners?: {
+    enabled?: boolean;
+    /** The operating system, for a test. `nodeScannerIo()` by default. */
+    io?: ScannerIo;
+    /** How long a scanner that is not there waits before it is looked for again. */
+    retryMs?: number;
+    /** How often a burst with no suffix is checked for. */
+    tickMs?: number;
+  };
+  /**
    * The sale queue (offline plan Round 4). `crashPoint` is a test's hand on
    * the power lead: called at each named point inside the finalise
    * transaction, and a throw there must leave nothing half-written.
@@ -561,6 +588,12 @@ export interface BoxAgent {
    * a case for every kind of code in the park.
    */
   scanner(): ScanRouter | null;
+  /**
+   * The readers of the scanners plugged into this box, or null when it reads
+   * none (SCRUM-700): a box with no USB or serial scanner on its stations, the
+   * virtual box, or one with the readers off.
+   */
+  scanners(): ScannerHost | null;
   /** Where `edge.sync_change` stood when the cache was last applied. */
   cacheCursorSeq(): number;
   /** The print pipeline and its simulators, or null when printing is off. */
@@ -937,6 +970,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let gateHost: GateHost | null = null;
   /** Whether `prepare` has run since the last `stop`: the gate follows config only then. */
   let gateArmed = false;
+  /** The readers of the scanners plugged into this box (SCRUM-700), and whether they follow config. */
+  let scannerHost: ScannerHost | null = null;
+  let scannersArmed = false;
   let bridge: StationBridge | null = null;
   let photoStore: BlobStore | null = null;
   let photoUploader: PhotoUploader | null = null;
@@ -2401,6 +2437,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     const printerHealth = printing?.jobs.health() ?? {};
     // The gate's controller and readers, as the gate host last saw them (S2-12).
     const gateHealth = gateHost?.deviceHealth() ?? {};
+    // The scanners this box reads itself, as their readers stand (SCRUM-700).
+    const scannerHealth = scannerHost?.health() ?? {};
     for (const device of devices) {
       // One device can serve two roles on one station; it is still one device.
       if (seen.has(device.id)) continue;
@@ -2414,14 +2452,32 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       const fault = options.faults?.[device.id] ?? options.faults?.[device.label];
       const health = printerHealth[device.id];
       const gate = gateHealth[device.id];
+      const reading = scannerHealth[device.id];
+      // A scanner is reachable when the box has it open and is reading it;
+      // seen but not open, or not seen at all, is a fault with its reason.
+      const scannerReach = reading ? (reading.open ? 'reachable' : 'unreachable') : undefined;
       reports.push({
         id: device.id,
         address: device.address ?? undefined,
         kind: device.kind,
         model: device.model ?? undefined,
-        reachability: fault?.reachability ?? health?.reachability ?? gate?.reachability ?? 'unknown',
+        reachability:
+          fault?.reachability ?? health?.reachability ?? gate?.reachability ?? scannerReach ?? 'unknown',
         paperStatus: fault?.paperStatus ?? health?.paperStatus ?? 'unknown',
-        lastError: fault?.lastError ?? health?.lastError ?? gate?.lastError ?? undefined,
+        lastError: fault?.lastError ?? health?.lastError ?? gate?.lastError ?? reading?.lastError ?? undefined,
+        ...(reading
+          ? {
+              scanner: {
+                mode: reading.mode,
+                present: reading.present,
+                open: reading.open,
+                path: reading.path,
+                lastScanAt: reading.lastScanAt,
+                scans: reading.scans,
+                dropped: reading.dropped,
+              },
+            }
+          : {}),
       });
     }
     return reports;
@@ -2494,6 +2550,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
     if (changed) {
       await syncGate().catch((err) => note('error', 'the gate host could not follow the config', { err: String(err) }));
+      syncScanners();
     }
     return changed;
   }
@@ -3154,6 +3211,57 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       note('error', 'the gate host could not start', { err: String(err) });
     });
     note('info', 'gate host running', { stations: stations.map((s) => s.id) });
+  }
+
+  /**
+   * Build, rebuild or drop the scanner readers to match the bundle (SCRUM-700).
+   *
+   * A reader is kept open across a config pull that leaves its scanners as they
+   * were, so a price change does not drop a scan in flight. Each code a reader
+   * finishes goes to the scanning service for the scanner's station exactly as
+   * a simulated scan does (`scanner.scan` in `executeCommand`), stamped by the
+   * box's corrected clock; the tape gets its `scan` line from the service, and
+   * the box log gets one carrying the fingerprint, never the code.
+   */
+  function syncScanners(): void {
+    const enabled = options.scanners?.enabled ?? Boolean(options.configCache);
+    const specs = scannersArmed && enabled && scanner ? scannerSpecsOf(bundle?.stations) : [];
+    if (specs.length === 0) {
+      if (scannerHost) {
+        scannerHost.stop();
+        scannerHost = null;
+        note('info', 'scanner readers stopped: this box reads no scanner now');
+      }
+      return;
+    }
+    if (scannerHost && scannerHost.signature === scannerSignature(specs)) return;
+    scannerHost?.stop();
+    scannerHost = createScannerHost({
+      specs,
+      io: options.scanners?.io ?? nodeScannerIo(),
+      deliver: async (spec, input) => {
+        const router = scanner;
+        if (!router) return;
+        const result = await router.deliver(spec.stationId, input, { screen: 'box' });
+        note('info', 'scan read from the box scanner', {
+          deviceId: spec.deviceId,
+          stationId: spec.stationId,
+          source: input.source,
+          codeKind: result.kind,
+          outcome: result.outcome,
+          handler: result.handler,
+          codeFingerprint: result.codeFingerprint,
+        });
+      },
+      note: (level, message, detail) => note(level, message, detail),
+      stamp: () => new Date(clock()).toISOString(),
+      ...(options.scanners?.retryMs !== undefined ? { retryMs: options.scanners.retryMs } : {}),
+      ...(options.scanners?.tickMs !== undefined ? { tickMs: options.scanners.tickMs } : {}),
+    });
+    scannerHost.start();
+    note('info', 'scanner readers running', {
+      scanners: specs.map((s) => ({ deviceId: s.deviceId, stationId: s.stationId, mode: s.mode })),
+    });
   }
 
   // --- Sales taken with no internet (S2-10a; offline plan Round 4) -----------
@@ -4342,6 +4450,14 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     // A gate, like a booth, runs from the config this box holds (S2-12).
     gateArmed = true;
     await syncGate().catch((err) => note('error', 'the gate host could not be set up', { err: String(err) }));
+    // And so does the counter scanner (SCRUM-700): a scan works before the
+    // first config pull lands, from the copy of the config on the card.
+    scannersArmed = true;
+    try {
+      syncScanners();
+    } catch (err) {
+      note('error', 'the scanner readers could not be set up', { err: String(err) });
+    }
     return true;
   }
 
@@ -4460,6 +4576,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     const stopping = gateHost;
     gateHost = null;
     void stopping?.stop().catch(() => undefined);
+    // The scanners too: their nodes are closed, and the next `prepare` opens them again.
+    scannersArmed = false;
+    scannerHost?.stop();
+    scannerHost = null;
   }
 
   return {
@@ -4477,6 +4597,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     outbox: () => outbox,
     sessions: () => sessions,
     scanner: () => scanner,
+    scanners: () => scannerHost,
     cacheCursorSeq: () => cacheCursorSeq,
     printing: () => printing,
     terminal: () => terminals,

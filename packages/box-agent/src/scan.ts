@@ -46,7 +46,7 @@ import { silentLog, type AgentLog } from './transport';
  *
  * **Where scans come from, and where they do not.** The Zebra DS2278 is on the
  * BOX, not on the iPad (DEVICE_INVENTORY D2): the box reads it over USB CDC or
- * through an exclusive evdev grab and delivers it here, so the till, the
+ * off its input event node (`scanner-device.ts`) and delivers it here, so the till, the
  * display, the gate and the kiosk all receive scans the same way, online or
  * offline. A Bluetooth scanner paired to an iPad and the iPad's own camera
  * remain supported (PROJECT_CONTEXT §7.4) and arrive at the same door from the

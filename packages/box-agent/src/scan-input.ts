@@ -61,9 +61,10 @@ import type { ScanInput, ScanSource } from './scan';
  *
  * **What happens when a scan arrives while a text field has focus.** On the
  * BOX — the arrangement DEVICE_INVENTORY D2 resolves to — nothing does,
- * because there is no focus: the agent reads the device node with an exclusive
- * evdev grab (`EVIOCGRAB`), so the keystrokes never reach a console, a browser
- * or a form. On the iPad fallback path, where a paired scanner really is
+ * because there is no focus: the agent reads the scanner's own event node
+ * (`scanner-device.ts`, SCRUM-700) and the installer's udev rule tells
+ * libinput to ignore the cradle, so the keystrokes never reach the kiosk's
+ * browser or a form. On the iPad fallback path, where a paired scanner really is
  * typing into a page, this same state machine runs on the page's `keydown`
  * events: the keys of a recognised burst are swallowed and the terminator's
  * default action is prevented, so the code does not land in the search box and
