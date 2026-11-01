@@ -29,15 +29,27 @@
 #                         small DHCP server on that cable which always hands the
 #                         printer 192.168.192.168, and leaves Wi-Fi and every
 #                         other connection alone
+#   --tailscale-authkey KEY
+#                         join the private network (Tailscale) with this auth
+#                         key, Tailscale SSH on: installs Tailscale from its own
+#                         apt repository if it is missing. The key is never
+#                         printed or saved. Without it nothing about the
+#                         network changes; the summary still says whether the
+#                         box is on it
+#   --tailscale-hostname NAME
+#                         the box's name on that network (default: the Pi's
+#                         hostname)
 #
 # Written for Raspberry Pi OS 64-bit (Debian 12, Bookworm) WITH the desktop:
 # the television is Chromium on that desktop, so Lite (no desktop) will not do.
 # RUN ONCE ON A RASPBERRY PI 5 so far (the bench, 28 September 2026): the
 # printer link came up. The printer's address service below is newer than that
 # run, and the rest was checked for syntax and in pieces on a bench laptop, so
-# read what it prints. Run it again with a newer release to update: the credential, the
-# store and /etc/oto-box/config are kept, and the previous release stays on
-# disk for a rollback (see PI_BOOTH.md).
+# read what it prints. Run it again with a newer release to update — or push
+# one from the laptop with scripts/agent/push-release.sh, which does exactly
+# that over the private network: the credential, the store and
+# /etc/oto-box/config are kept, and the previous release stays on disk for a
+# rollback (see PI_BOOTH.md).
 #
 # It installs from a RELEASE TARBALL, not a git checkout: the Pi then never
 # needs the source, a build toolchain, pnpm or GitHub credentials, and what
@@ -63,6 +75,10 @@ PRINTER_LINK_NETMASK="255.255.255.0"   # the /24 of PRINTER_LINK_ADDR, written t
 PRINTER_DHCP_ADDR="192.168.192.168"    # the one address the Pi hands the printer on that cable
 PRINTER_DHCP_CONF="/etc/dnsmasq.d/oto-printer-link.conf"
 TARBALL=""
+TS_AUTHKEY=""
+TS_HOSTNAME="$(hostname)"
+TS_KEYRING="/usr/share/keyrings/tailscale-archive-keyring.gpg"
+TS_LIST="/etc/apt/sources.list.d/tailscale.list"
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 warn() { printf '\033[33mwarning:\033[0m %s\n' "$*" >&2; }
@@ -79,6 +95,8 @@ while [ $# -gt 0 ]; do
     --no-kiosk) WITH_KIOSK=0; shift ;;
     --rotate) ROTATE="${2:?--rotate needs cw or ccw}"; shift 2 ;;
     --printer-direct) PRINTER_DIRECT=1; shift ;;
+    --tailscale-authkey) TS_AUTHKEY="${2:?--tailscale-authkey needs a key}"; shift 2 ;;
+    --tailscale-hostname) TS_HOSTNAME="${2:?--tailscale-hostname needs a name}"; shift 2 ;;
     -h|--help) sed -n '2,/^$/p' "$0"; exit 0 ;;
     *.tgz|*.tar.gz) TARBALL="$1"; shift ;;
     *) die "unknown option: $1" ;;
@@ -112,6 +130,15 @@ case "$ROTATE" in
   ""|cw|ccw) ;;
   *) die "--rotate wants cw or ccw, got $ROTATE" ;;
 esac
+if [ -n "$TS_AUTHKEY" ]; then
+  # The key itself is never part of a message: only its shape is checked.
+  case "$TS_AUTHKEY" in
+    tskey-*) ;;
+    *) warn "the --tailscale-authkey value does not look like a Tailscale auth key (they begin tskey-); trying it all the same" ;;
+  esac
+  printf '%s' "$TS_HOSTNAME" | grep -Eq '^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$' \
+    || die "--tailscale-hostname wants letters, digits and hyphens, got $TS_HOSTNAME"
+fi
 
 # --- The release -----------------------------------------------------------
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -146,6 +173,73 @@ fi
 say "Clock: NTP on, timezone $TIMEZONE"
 timedatectl set-ntp true || warn "could not switch NTP on"
 timedatectl set-timezone "$TIMEZONE" || warn "could not set the timezone"
+
+# --- The private network (SCRUM-701) --------------------------------------------
+# A box at the park changed build only when somebody carried the file to it
+# over the local network and ran the installer there; the booth kept an old
+# build for two days that way. Given an auth key, the box joins the private
+# network (Tailscale) here, with Tailscale SSH on, and from then on a release
+# is pushed to it by name from the laptop, from anywhere:
+# scripts/agent/push-release.sh. Tailscale comes from its own apt repository:
+# the signing key and the sources line that tailscale.com/install.sh would
+# put in place are written here instead, so what runs is in this file and
+# not a remote script piped to sh. The auth key goes to `tailscale up` and
+# nowhere else — never printed, never logged, never kept in a file. Join with
+# a reusable, pre-authorised, TAGGED key (BOX_QUICKSTART.md, "Remote access"):
+# a tagged node's own key never expires, so the box never drops off the
+# network for want of somebody logging in again. A box already on the network
+# under this name is left as it is. Without a key nothing changes; the
+# summary still says whether the box is on the network, and at which address.
+ts_name() {
+  # The box's own line of `tailscale status`: "100.x.y.z  name  user@  linux  -".
+  # Nothing while Tailscale is logged out, stopped or not installed.
+  tailscale status --self=true --peers=false 2>/dev/null | awk '$1 ~ /^100\./ { print $2; exit }'
+}
+ts_ip() { tailscale ip -4 2>/dev/null | head -n 1; }
+TS_NOTE="not configured"
+if [ -n "$TS_AUTHKEY" ]; then
+  say "Private network: Tailscale as $TS_HOSTNAME"
+  TS_READY=1
+  if ! command -v tailscale >/dev/null; then
+    # Raspberry Pi OS 64-bit says it is Debian; the 32-bit one, refused
+    # above, would say raspbian. Both read from /etc/os-release above.
+    TS_OS="debian"
+    [ "${ID:-}" = "raspbian" ] && TS_OS="raspbian"
+    TS_CODENAME="${VERSION_CODENAME:-bookworm}"
+    if curl -fsSL "https://pkgs.tailscale.com/stable/$TS_OS/$TS_CODENAME.noarmor.gpg" -o "$TS_KEYRING"; then
+      chmod 0644 "$TS_KEYRING"
+      printf 'deb [signed-by=%s] https://pkgs.tailscale.com/stable/%s %s main\n' "$TS_KEYRING" "$TS_OS" "$TS_CODENAME" >"$TS_LIST"
+      chmod 0644 "$TS_LIST"
+      apt-get update -qq || true
+      if ! apt-get install -y -qq tailscale >/dev/null; then
+        warn "Tailscale did not install (apt's message is above)"
+        TS_READY=0
+      fi
+    else
+      warn "could not fetch Tailscale's package signing key from pkgs.tailscale.com: is the Pi on the internet?"
+      TS_READY=0
+    fi
+  fi
+  if [ "$TS_READY" -eq 1 ]; then
+    systemctl enable --now tailscaled >/dev/null 2>&1 || true
+    if [ "$(ts_name)" = "$TS_HOSTNAME" ]; then
+      echo "already on the network as $TS_HOSTNAME ($(ts_ip)); nothing to join"
+    else
+      # --reset: whatever was set by hand on an earlier join goes back to its
+      # default, so the box ends with exactly this — SSH on, this name — and
+      # `up` cannot refuse over a flag it was not told about. --timeout: a
+      # box with no internet is a warning below, not an installer that hangs.
+      if tailscale up --reset --ssh --hostname "$TS_HOSTNAME" --auth-key "$TS_AUTHKEY" --timeout 90s; then
+        echo "joined as $(ts_name) ($(ts_ip)); Tailscale SSH on"
+      else
+        warn "tailscale up did not complete (its message is above), so the box is NOT on the private network. In the Tailscale admin check that the key is reusable, not expired and tagged, then run the installer again with --tailscale-authkey"
+        TS_NOTE="NOT joined — tailscale up did not complete (the warning above). Run the installer again with --tailscale-authkey"
+      fi
+    fi
+  else
+    TS_NOTE="NOT joined — Tailscale did not install (the warning above). Run the installer again with --tailscale-authkey once the Pi has its internet"
+  fi
+fi
 
 # --- The box stays awake (SCRUM-467) -------------------------------------------
 # At the park the red button, and then the mouse beside it, stopped answering
@@ -534,6 +628,15 @@ else
      create a booth station on this box, put staff on the booth, publish the wheel."
 fi
 
+# The private network, whatever this run did about it: a box joined on an
+# earlier run is reported too, with its address, so the summary always says
+# how the box is reached and how the next release gets to it.
+TS_SELF=""
+if command -v tailscale >/dev/null; then TS_SELF="$(ts_name)"; fi
+if [ -n "$TS_SELF" ]; then
+  TS_NOTE="joined as $TS_SELF ($(ts_ip)). The next release, from the laptop: scripts/agent/push-release.sh $TS_SELF <release>.tgz -- <this box's options, without the key>"
+fi
+
 cat <<EOF
 
 Installed: oto-box $RELEASE, talking to $(grep '^OTO_BOX_API=' /etc/oto-box/config | cut -d= -f2-)
@@ -548,6 +651,7 @@ $PRINTER_STEP
      the television opens the booth; every boot after that does the same.
 
 SSH: $SSH_NOTE
+Tailscale: $TS_NOTE
 Printer: $PRINTER_NOTE
 The credential is /var/lib/oto-box/credential.json (owner-only). Never copy it to another machine.
 EOF
