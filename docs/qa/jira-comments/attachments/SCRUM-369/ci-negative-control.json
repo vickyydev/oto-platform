@@ -1,0 +1,16 @@
+{
+    "kind":  "CI negative control",
+    "sha":  "256f19b2393fe1bcfc679aa559fcfb439ab65818",
+    "run":  41351229348,
+    "job":  124981612664,
+    "url":  "https://github.com/vickyydev/oto-platform/actions/runs/41351229348/job/124981612664",
+    "step":  "Till end-to-end",
+    "stepConclusion":  "failure",
+    "failedCases":  6,
+    "signInHttpStatus":  503,
+    "processExitCode":  1,
+    "disposableDatabaseRemoved":  true,
+    "completedAt":  "2026-11-01T21:29:57Z",
+    "revertCommit":  "907e8220",
+    "scope":  "Branch-only test interception; no application or staging mutation"
+}
