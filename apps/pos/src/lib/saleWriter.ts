@@ -127,7 +127,9 @@ export type SaleWriteState =
        * SCRUM-502 — where the order stands after a money press that failed.
        * `till`: it was rung up on the box lane, which keeps it on this till
        * alone until it is paid, so the platform holds no row of it. Absent:
-       * the platform holds it, unpaid.
+       * the platform holds it, unpaid. A fact about the lane, set whatever the
+       * cause: only a refusal makes "unpaid" certain, since a press whose
+       * answer was lost may already be paid on the box (the panel words each).
        */
       heldOn?: 'till';
     };

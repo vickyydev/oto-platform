@@ -52,6 +52,30 @@ describe('the sale panel after a refused money press', () => {
     expect(out).not.toContain('Try again');
   });
 
+  it.each([
+    ['connection', true],
+    ['in-flight', true],
+    ['stale-key', true],
+  ] as const)(
+    'box lane, %s: nothing is certain, so the panel never says the order is on this till only nor that the platform holds it',
+    (cause, retryable) => {
+      const out = html(failed({ cause, retryable, code: undefined, message: 'The counter box did not answer.', heldOn: 'till' }));
+      expect(out).toContain(
+        'The order was rung up on this counter’s box, not on the platform. The box may already hold this payment; if it does not, the order is still on this till only, unpaid and without a receipt number.',
+      );
+      expect(out).not.toContain('none of it has reached the platform');
+      expect(out).not.toContain('The order is held on this till only');
+      expect(out).not.toContain('saved on the platform');
+      expect(out).toContain('Try again');
+    },
+  );
+
+  it('box lane, the box’s answer lost: the line and the advice agree — the sale may already be saved', () => {
+    const out = html(failed({ cause: 'connection', retryable: true, code: undefined, message: 'Failed to fetch', heldOn: 'till' }));
+    expect(out).toContain('The box may already hold this payment');
+    expect(out).toContain('Nothing answered, so this sale may already be saved');
+  });
+
   it('rung up on the platform, its cash press refused by the box: the platform holds the order, the box said no', () => {
     const out = html(failed({ answeredBy: 'box' }));
     expect(out).toContain('The order itself is saved on the platform, as unpaid and without a receipt number.');

@@ -329,6 +329,31 @@ describe('SCRUM-502 — a refusal at the money press says who refused it and whe
     });
   });
 
+  it('rung up on the box lane, the box’s answer lost: a connection fault, still marked as the box lane’s, and the retry closes the same sale', async () => {
+    let lost = true;
+    stubFetch({
+      bridge: (type, payload) => {
+        if (type === 'cart.quote') return reply({ document: {}, result: boxQuote });
+        if (lost) {
+          lost = false;
+          throw new TypeError('Failed to fetch');
+        }
+        return reply({ document: {}, result: boxAnswer(String(payload.saleId), { replay: true }) });
+      },
+    });
+    const { result } = renderHook(() => useSaleWriter());
+    const rung = await result.current.commit(order());
+    expect(laneSale(rung.saleId)?.lane).toBe('box');
+    const first = await result.current.finalise(cash, 'cash-press');
+    expect(first).toMatchObject({ ok: false, retryable: true });
+    // Nothing answered, so nothing is known: not the box's answer, but the lane's mark stands —
+    // the panel words it without the certainty a refusal earns (s502-sale-panel-lane.test.ts).
+    expect(result.current.state).toMatchObject({ kind: 'failed', stage: 'finalise', cause: 'connection', heldOn: 'till' });
+    expect(result.current.state).not.toHaveProperty('answeredBy');
+    const again = await result.current.finalise(cash, 'cash-press');
+    expect(again).toMatchObject({ ok: true, finalised: true, saleId: rung.saleId, replay: true });
+  });
+
   it('rung up on the platform, its cash press refused by the box: the box answered, and the platform still holds the order', async () => {
     stubFetch({
       platform: (url, body) => {

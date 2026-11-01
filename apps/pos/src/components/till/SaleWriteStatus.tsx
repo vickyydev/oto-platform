@@ -145,12 +145,16 @@ export function SaleWriteFailure({
         <div className="min-w-0 flex-1">
           <div className="text-base font-bold text-rose-700 dark:text-rose-200">{headline}</div>
           {/* SCRUM-502: where the order is follows the lane. A sale rung up on the
-              box lane is held on this till until it is paid; the platform has no row. */}
+              box lane is held on this till until it is paid; the platform has no row.
+              That is certain only when the box refused the press: when its answer was
+              lost, the box may already hold the payment, so the line says so. */}
           {state.stage === 'finalise' && !stockRefused && (
             <p className="mt-1 text-sm text-muted-foreground">
-              {state.heldOn === 'till'
-                ? 'The order is held on this till only, unpaid and without a receipt number — none of it has reached the platform.'
-                : 'The order itself is saved on the platform, as unpaid and without a receipt number.'}
+              {state.heldOn !== 'till'
+                ? 'The order itself is saved on the platform, as unpaid and without a receipt number.'
+                : state.cause === 'refused'
+                  ? 'The order is held on this till only, unpaid and without a receipt number — none of it has reached the platform.'
+                  : 'The order was rung up on this counter’s box, not on the platform. The box may already hold this payment; if it does not, the order is still on this till only, unpaid and without a receipt number.'}
             </p>
           )}
           <p className="mt-1 text-sm text-muted-foreground">{state.message}</p>
