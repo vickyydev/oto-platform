@@ -122,6 +122,108 @@ test('a burst the kernel dropped events from is thrown away whole, never deliver
   assert.equal(scan.input.code, 'ZZTEST67890');
 });
 
+/**
+ * What the kernel leaves when its buffer overflows: `SYN_DROPPED`, stamped with
+ * the newest event it kept, then the rest of the report that event was in.
+ */
+function overflow(atMs: number): Buffer {
+  return Buffer.concat([
+    encodeInputEvent({ atMs, type: EV_SYN, code: SYN_DROPPED, value: 0 }, 24),
+    encodeInputEvent({ atMs, type: EV_KEY, code: 33, value: 0 }, 24),
+    encodeInputEvent({ atMs, type: EV_SYN, code: SYN_REPORT, value: 0 }, 24),
+  ]);
+}
+
+const kinds = (events: ReadonlyArray<{ kind: string }>): string[] => events.map((e) => e.kind);
+
+test('a drop after a stall longer than the burst gap still throws the rest of its burst away', () => {
+  const start = 6_000_000;
+  let now = start;
+  const reader = new EvdevScanReader({ eventSize: 24, now: () => now });
+  const events = [...reader.push(typed('ABCD', { startMs: start, enter: false }))];
+  // The box stops reading for a second and a half; the cradle keeps typing and
+  // the kernel overflows 86 ms into the code. The box reads it all late.
+  now = start + 1_500;
+  const dropAt = start + 86;
+  events.push(...reader.push(overflow(dropAt)));
+  // The box's clock has moved on by far more than the burst gap: a tick here
+  // must not end the damage.
+  const between = reader.tick(now);
+  if (between) events.push(between);
+  // The tail of the code, at the scanner's pace from the drop, is long enough
+  // to pass for a code on its own.
+  events.push(...reader.push(typed('GHIJKLMNOP', { startMs: dropAt + 2 })));
+  now += 600;
+  const after = reader.tick(now);
+  if (after) events.push(after);
+  assert.deepEqual(kinds(events), ['overrun'], JSON.stringify(events));
+
+  // The next scan, after a pause, reads normally.
+  now += 2_000;
+  const next = reader.push(typed('ZZTEST67890', { startMs: now }));
+  const scan = next.find((e) => e.kind === 'scan');
+  assert.ok(scan && scan.kind === 'scan', JSON.stringify(next));
+  assert.equal(scan.input.code, 'ZZTEST67890');
+});
+
+test('a drop before any key of a new burst was read still throws that burst away', () => {
+  let now = 7_000_000;
+  const reader = new EvdevScanReader({ eventSize: 24, now: () => now });
+  const first = reader.push(typed('ZZTEST11111', { startMs: now }));
+  assert.deepEqual(kinds(first), ['scan']);
+  // Three seconds on, the next scan starts while the box is busy: the kernel
+  // overflows before the box reads a single key of it.
+  now += 3_000;
+  const dropAt = now;
+  now += 200;
+  const events = [
+    ...reader.push(overflow(dropAt)),
+    ...reader.push(typed('GHIJKLMNOP', { startMs: dropAt + 2 })),
+  ];
+  assert.deepEqual(kinds(events), ['overrun'], JSON.stringify(events));
+  now += 2_000;
+  assert.deepEqual(kinds(reader.push(typed('ZZTEST22222', { startMs: now }))), ['scan']);
+});
+
+test('a burst the tick closed while its tail sat unread is thrown away, not delivered as the tail', () => {
+  const start = 8_000_000;
+  let now = start;
+  const reader = new EvdevScanReader({ eventSize: 24, now: () => now });
+  const head = 'ZZTEST0123456789';
+  const events = [...reader.push(typed(head, { startMs: start, enter: false }))];
+  // The box stalls for 1.2 s with the last eight characters and the Enter in
+  // the kernel's buffer (too few to overflow it), and its quiet tick runs
+  // before the read that holds them.
+  now = start + 1_200;
+  const cut = reader.tick(now);
+  assert.equal(cut?.kind, 'partial');
+  // The tail, stamped by the kernel at the scanner's pace, straight after the head.
+  events.push(...reader.push(typed('ABCDEFGH', { startMs: start + head.length * 2 })));
+  assert.deepEqual(kinds(events), ['overrun'], JSON.stringify(events));
+
+  now += 2_000;
+  const next = reader.push(typed('ZZTEST33333', { startMs: now }));
+  assert.deepEqual(kinds(next), ['scan']);
+});
+
+test('a code read in full more than a second late is still one scan', () => {
+  const start = 9_000_000;
+  let now = start;
+  const reader = new EvdevScanReader({ eventSize: 24, now: () => now });
+  const head = 'ZZTEST0123456789';
+  const events = [...reader.push(typed(head, { startMs: start, enter: false }))];
+  // A 1.2 s stall with the rest of the code buffered and no tick in between:
+  // the late read is not a pause inside the code.
+  now = start + 1_200;
+  events.push(...reader.push(typed('ABCDEFGH', { startMs: start + head.length * 2 })));
+  const scans = events.filter((e) => e.kind === 'scan');
+  assert.equal(scans.length, 1, JSON.stringify(events));
+  const scan = scans[0];
+  assert.ok(scan && scan.kind === 'scan');
+  assert.equal(scan.input.code, `${head}ABCDEFGH`);
+  assert.equal(events.length, 1, JSON.stringify(events));
+});
+
 test('a code with no suffix is closed by the quiet gap and dropped, as the burst rule says', () => {
   let now = 5_000_000;
   const reader = new EvdevScanReader({ eventSize: 24, now: () => now });
@@ -129,6 +231,9 @@ test('a code with no suffix is closed by the quiet gap and dropped, as the burst
   now += 600;
   const closed = reader.tick(now);
   assert.equal(closed?.kind, 'partial');
+  // The next scan, a pause later, is not mistaken for the rest of that one.
+  now += 2_000;
+  assert.deepEqual(kinds(reader.push(typed('ZZTEST67890', { startMs: now }))), ['scan']);
 });
 
 // --- Finding the scanner -------------------------------------------------------

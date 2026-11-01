@@ -362,27 +362,49 @@ export type ScannerReadEvent = HidBurstEvent | ScanOverrun;
  * got round to reading it, so the burst rule sees the scanner's real pace
  * however late a poll lands. Those timestamps are mapped onto `now()` — the
  * clock `tick` closes a quiet burst by — once, and again only if the two drift
- * apart by a second (the kernel stamps by a clock the box may not run on).
+ * apart by a second (the kernel stamps by a clock the box may not run on), and
+ * never while a burst is open: a burst is timed by one clock from its first
+ * key to its last, or a read that lands late would look like a pause inside it.
  *
  * When the kernel's buffer overflows it says so (`SYN_DROPPED`) and the events
  * up to the next report are unreliable. A code read through that would be a
  * code with characters missing — and the tail of a long code is still long
- * enough to pass for one — so the WHOLE burst the drop fell in is thrown away,
- * up to its suffix or the pause after it, and reported once as an overrun; the
- * person scans again.
+ * enough to pass for one — so the WHOLE burst the drop fell in is thrown away
+ * and reported once as an overrun; the person scans again.
+ *
+ * Where that burst ends is decided by the scanner's clock alone: its suffix, or
+ * a key that comes more than the burst gap after the last one (or after the
+ * drop, which carries the time of the newest event the kernel kept). Never by
+ * the box's own clock: a box that stopped reading long enough to overflow has
+ * stopped for longer than the burst gap, so a pause measured by when the box
+ * read the keys says nothing about the scan.
+ *
+ * The same holds for a burst the quiet tick closes. After a stall the tick can
+ * run before the read that holds the rest of the code, so the box's clock says
+ * the burst went quiet while its tail sits unread in the kernel. A key that
+ * comes within the burst gap of the closed burst's last one, by the kernel's
+ * stamps, is that tail: it is thrown away up to its suffix, as an overrun.
  */
 export class EvdevScanReader {
   private readonly decoder: InputEventDecoder;
   private readonly keyboard = new EvdevKeyboard();
   private readonly burst: HidBurstReader;
   private readonly gapMs: number;
+  private readonly terminatorKey: string;
   private readonly now: () => number;
   private skew: number | null = null;
   /** Between a `SYN_DROPPED` and the report after it: every event is unreliable. */
   private dropping = false;
-  /** The burst a drop fell in, until it ends: whatever it completes is not a code. */
+  /**
+   * The burst in progress lost keys — to a drop, or to a tick that closed it
+   * before its tail was read. Its keys are swallowed until its suffix, or until
+   * a key the kernel stamps more than the burst gap after the last.
+   */
   private poisoned = false;
-  private lastKeyAt: number | null = null;
+  /** The kernel's time of the last key read, or of the drop. */
+  private lastKernelAt: number | null = null;
+  /** The kernel's time of the last key of a burst the quiet tick closed. */
+  private cutAt: number | null = null;
 
   constructor(
     options: {
@@ -394,10 +416,11 @@ export class EvdevScanReader {
   ) {
     this.decoder = new InputEventDecoder(options.eventSize ?? inputEventSize());
     this.gapMs = options.burstGapMs ?? SCANNER_BURST_GAP_MS;
+    this.terminatorKey = options.terminatorKey ?? 'Enter';
     this.burst = new HidBurstReader({
       source: 'box_hid',
       burstGapMs: this.gapMs,
-      ...(options.terminatorKey ? { terminatorKey: options.terminatorKey } : {}),
+      terminatorKey: this.terminatorKey,
     });
     this.now = options.now ?? Date.now;
   }
@@ -405,11 +428,15 @@ export class EvdevScanReader {
   push(chunk: Uint8Array): ScannerReadEvent[] {
     const out: ScannerReadEvent[] = [];
     for (const event of this.decoder.push(chunk)) {
-      const at = this.localTime(event.atMs);
+      const kernelAt = event.atMs;
+      const at = this.localTime(kernelAt);
       if (event.type === EV_SYN && event.code === SYN_DROPPED) {
         if (!this.poisoned) out.push({ kind: 'overrun', at });
         this.dropping = true;
         this.poisoned = true;
+        this.cutAt = null;
+        // The drop is part of the burst it damaged: the next key is timed from it.
+        this.lastKernelAt = kernelAt;
         this.keyboard.reset();
         this.burst.reset();
         continue;
@@ -420,40 +447,48 @@ export class EvdevScanReader {
       }
       const key = this.keyboard.key(event);
       if (key === null) continue;
-      // A pause longer than the burst gap is a new burst: the damaged one is over.
-      if (this.poisoned && this.lastKeyAt !== null && at - this.lastKeyAt > this.gapMs) {
+      if (this.cutAt !== null) {
+        // The tick closed the last burst for quiet. Within the burst gap of its
+        // last key by the scanner's clock, this key is that burst, read late.
+        if (!this.poisoned && kernelAt - this.cutAt <= this.gapMs) {
+          out.push({ kind: 'overrun', at });
+          this.poisoned = true;
+        }
+        this.cutAt = null;
+      }
+      if (this.poisoned) {
+        // The scanner paused after the damage: by its own clock this key starts
+        // a new burst. Anything else is the damaged burst, swallowed up to and
+        // including its suffix.
+        const gap = this.lastKernelAt === null ? Infinity : kernelAt - this.lastKernelAt;
+        if (gap <= this.gapMs) {
+          this.lastKernelAt = kernelAt;
+          if (key === this.terminatorKey) this.poisoned = false;
+          continue;
+        }
         this.poisoned = false;
       }
-      this.lastKeyAt = at;
+      this.lastKernelAt = kernelAt;
       const keyEvent: HidKeyEvent = { key, at };
       const result = this.burst.push(keyEvent);
-      if (!result) continue;
-      if (this.poisoned) {
-        // The end of the damaged burst, by its suffix: already reported.
-        if (result.kind === 'scan' || result.kind === 'partial') this.poisoned = false;
-        continue;
-      }
-      out.push(result);
+      if (result) out.push(result);
     }
     return out;
   }
 
-  /** Close a burst that never got its suffix — `HidBurstReader`'s rule 3. */
+  /**
+   * Close a burst that never got its suffix — `HidBurstReader`'s rule 3. Only
+   * ever closes: a damaged burst is ended by the scanner's clock, in `push`.
+   */
   tick(now: number = this.now()): ScannerReadEvent | null {
     const result = this.burst.tick(now);
-    if (
-      this.poisoned &&
-      (result || (this.lastKeyAt !== null && now - this.lastKeyAt > this.gapMs))
-    ) {
-      this.poisoned = false;
-      return null;
-    }
+    if (result) this.cutAt = this.lastKernelAt;
     return result;
   }
 
   private localTime(eventMs: number): number {
     const wall = this.now();
-    if (this.skew === null || Math.abs(wall - (eventMs + this.skew)) > 1000) {
+    if (this.skew === null || (!this.burst.open && Math.abs(wall - (eventMs + this.skew)) > 1000)) {
       this.skew = wall - eventMs;
     }
     return eventMs + this.skew;
