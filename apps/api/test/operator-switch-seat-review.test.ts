@@ -33,7 +33,8 @@ async function fixture() {
   await ctx.db.insert(box).values({ id: ids.box, operatorId: ids.home, branchId: ids.branch,
     name: 'ZZ TEST 640 station race box', slot: `zz-test-${ids.box}` });
   await ctx.db.insert(station).values({ id: ids.station, operatorId: ids.home, branchId: ids.branch,
-    boxId: ids.box, name: 'ZZ TEST 640 station race till', kind: 'till', accessScope: 'all_staff' });
+    boxId: ids.box, name: 'ZZ TEST 640 station race till', kind: 'till', accessScope: 'all_staff',
+    codePrefix: 'S640', paymentRouting: { card: 'manual', qr: 'none' } });
   // Generated only in memory; the actual local sign-in and token mint remain native.
   const password = randomBytes(24).toString('hex'), phone = '+669' + String(88100640 + fixtureSequence++);
   expect((await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, phone))).length).toBe(0);
