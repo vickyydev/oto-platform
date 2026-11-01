@@ -145,7 +145,9 @@ describe('createQr — Payment Token, then Do Payment', () => {
     });
 
     expect(result.state).toBe('qr_shown');
+    // No `data` on this answer: the documented `extras.qrData` is the fallback.
     expect(result.qrPayload).toBe('00020101021229...6304ABCD');
+    expect(result.qrImageUrl).toBeNull();
     expect(result.expiryTimerMs).toBe(1_200_000);
     expect(result.providerRef).toBe('REF123');
     expect(result.expiresAt.toISOString()).toBe('2026-09-23T03:20:00.000Z');
@@ -257,6 +259,39 @@ describe('Do Payment on the sandbox wire', () => {
     }) as unknown as typeof globalThis.fetch;
     const client = new TwoC2PQrPayment(CONFIG, { fetch: fetchImpl, now: () => NOW });
     await expect(client.createQr(QR_INPUT)).rejects.toThrow(/signature/);
+  });
+
+  /**
+   * The sandbox's answer: the EMVCo string in `data`, `type: "RAW"`, no
+   * `extras`. Read as an image address it would show the guest nothing to
+   * scan. Checked on both wires so it does not lean on the plain-reply fix.
+   */
+  it('reads the QR from data when the answer says RAW, on either wire', async () => {
+    for (const reply of ['plain', 'signed'] as const) {
+      const { fetch } = fakeGateway(
+        {
+          paymentToken: { respCode: '0000', paymentToken: 'tok_abc' },
+          payment: {
+            respCode: '1005',
+            respDesc: 'Pending for user scan QR',
+            channelCode: 'PPQR',
+            type: 'RAW',
+            data: '00020101021230810016A00000067701011201150107536000315080214KB0000019012345303764540540.005802TH6304ABCD',
+            expiryTimer: 1_200_000,
+          },
+        },
+        { payment: reply },
+      );
+      const client = new TwoC2PQrPayment(CONFIG, { fetch, now: () => NOW });
+
+      const result = await client.createQr(QR_INPUT);
+
+      expect(result.state, reply).toBe('qr_shown');
+      expect(result.qrPayload, reply).toMatch(/^000201.*6304ABCD$/);
+      expect(result.qrImageUrl, reply).toBeNull();
+      // No `extras` came back, so there is no slip reference yet.
+      expect(result.providerRef, reply).toBeNull();
+    }
   });
 
   /**

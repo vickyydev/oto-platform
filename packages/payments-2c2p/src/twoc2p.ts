@@ -188,14 +188,10 @@ export class TwoC2PQrPayment implements QrPayment {
 
     const extras = objectOf(payment.claims.extras);
     const respCode = stringOf(payment.claims.respCode) ?? '';
+    const qr = qrOf(payment.claims);
     return {
-      /**
-       * `extras.qrData` is the EMVCo string, present because `qrType` is RAW.
-       * `data` is the fallback — a URL or a deeplink — and is used only when
-       * the raw payload is absent (`:688-693`).
-       */
-      qrPayload: stringOf(extras?.qrData) ?? null,
-      qrImageUrl: stringOf(payment.claims.data) ?? null,
+      qrPayload: qr.payload,
+      qrImageUrl: qr.imageUrl,
       expiresAt,
       expiryTimerMs: numberOf(payment.claims.expiryTimer),
       providerRef: stringOf(extras?.referenceNo) ?? null,
@@ -335,6 +331,23 @@ export class TwoC2PQrPayment implements QrPayment {
     }
     return { claims: plain, httpStatus: res.status };
   }
+}
+
+/**
+ * Where the QR is in a Do Payment answer.
+ *
+ * The sandbox answers a `qrType: RAW` request with the EMVCo string in `data`
+ * and `type: "RAW"`, and sends no `extras` at all (SCRUM-685). The documented
+ * place, `extras.qrData`, is the fallback (`PAYMENT_GATEWAY.md` §2.4). `data`
+ * is an image address or a deeplink only when the answer does NOT say RAW —
+ * a raw string handed to the display as an image would show nothing scannable.
+ */
+function qrOf(claims: Record<string, unknown>): { payload: string | null; imageUrl: string | null } {
+  const raw = stringOf(claims.type)?.toUpperCase() === 'RAW';
+  const data = stringOf(claims.data);
+  const qrData = stringOf(objectOf(claims.extras)?.qrData);
+  if (raw) return { payload: data ?? qrData, imageUrl: null };
+  return { payload: qrData, imageUrl: data };
 }
 
 /**

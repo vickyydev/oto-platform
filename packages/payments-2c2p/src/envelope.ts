@@ -3,13 +3,17 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 /**
  * THE JWT ENVELOPE (`PAYMENT_GATEWAY.md:117-123`).
  *
- * Every request body and every response body 2C2P exchanges is
+ * Payment Token, Payment Inquiry and the notification travel as
  * `{"payload": "<jwt>"}` — header `{"alg":"HS256","typ":"JWT"}`, claims are
  * the fields, signed HMAC-SHA256 with the merchant Secret Key. 2C2P signs its
  * answers with the same key, which is what makes a notification proof of
  * anything at all: `PGW_WEBHOOK_SECRET` in the URL is a filter for internet
  * noise and is NOT authentication (said twice in the document, `:775` and
  * `DEVELOPMENT_PLAN.md:1222-1223`). This signature is.
+ *
+ * Do Payment is the one call outside the envelope: the sandbox takes and
+ * answers it as plain JSON (SCRUM-685), and `twoc2p.ts` says why reading that
+ * answer unsigned cannot make anything paid.
  *
  * THE ORDER IS THE POINT: VERIFY, THEN READ. `verifyJwt` computes the MAC over
  * the encoded header and payload as bytes and compares it before anything is
@@ -134,7 +138,7 @@ export function decodeUnverified(token: string): { header: unknown; claims: unkn
   return { header: read(parts[0]!), claims: read(parts[1]!) };
 }
 
-/** `{"payload": "<jwt>"}` — the only body shape on either side of the wire. */
+/** `{"payload": "<jwt>"}` — the body shape of every signed call. */
 export function envelope(jwt: string): { payload: string } {
   return { payload: jwt };
 }

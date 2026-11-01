@@ -121,6 +121,12 @@ Source: `https://developer.2c2p.com/llms.txt`.
   before the claims are read.
   Source: [JWT](https://developer.2c2p.com/docs/json-web-tokens-jwt),
   [Payment Token](https://developer.2c2p.com/docs/api-payment-token).
+- **Do Payment is the exception (sandbox, 29 Oct 2026, SCRUM-685).** A
+  signed Do Payment is refused with `9005 Invalid Request (PaymentToken)`;
+  the same fields as plain JSON are accepted, and the answer is plain JSON.
+  Payment Token and Payment Inquiry are signed both ways as above. The client
+  sends Do Payment plain, still verifies a Do Payment answer that arrives
+  signed, and never accepts a plain answer to Token or Inquiry.
 - **Payment Maintenance is different**: the Payment Action API uses
   **JWE (RSA-OAEP + A256GCM)** with a **JWS PS256** signature, i.e. an RSA key
   pair exchanged with 2C2P, not the HS256 secret.
@@ -253,6 +259,14 @@ Documented example (Alipay QR, sandbox):
 `extras.qrData`, and the SDK guide says of `QRTypeCode.Raw`: "Build QR image
 by using raw string".
 Source: [QR Payment (SDK)](https://developer.2c2p.com/docs/sdk-method-qr-payment).
+**What the sandbox actually sends (29 Oct 2026, SCRUM-685):** for
+`qrType: RAW` the EMVCo string comes back in `data`, with `type: "RAW"`,
+and there is no `extras` at all. The client reads `data` when `type` is RAW
+and falls back to `extras.qrData`; `data` is treated as an image address
+only when the answer does not say RAW. The sandbox cannot mark a QR paid
+(`supportPaySimulate` is false), so a sandbox QR stays pending and the till's
+rehearsals keep the built-in simulator. The docs now print Do Payment under
+`/payment/4.5/`; `4.3` still answers and is what the client calls.
 That matters for us: the customer display renders the QR itself from the raw
 payload, so the display needs no outbound internet and no image fetch, and a
 blocked S3 host cannot break a sale. Minting still requires the API call.
