@@ -150,6 +150,15 @@ export interface DeviceFault {
   lastError?: string;
 }
 
+/**
+ * How often a box asks whether its cache bundles have moved, unless its
+ * options say otherwise (`cacheRefreshIntervalMs`). Exported because the
+ * platform's watchdog measures against it (SCRUM-506): a staff benefit card
+ * revocation reaches a box on its next refresh, and the window the cloud
+ * gives every box to confirm one is made of this period.
+ */
+export const CACHE_REFRESH_INTERVAL_MS = 60_000;
+
 export interface BoxAgentOptions {
   /** `https://oto-api-staging.onrender.com` or `http://127.0.0.1:3001`. */
   apiBaseUrl: string;
@@ -971,7 +980,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let boothStarted = false;
   let heartbeatIntervalMs = options.heartbeatIntervalMs ?? 60_000;
   const pollIntervalMs = options.pollIntervalMs ?? 5_000;
-  const cacheRefreshIntervalMs = options.cacheRefreshIntervalMs ?? 60_000;
+  const cacheRefreshIntervalMs = options.cacheRefreshIntervalMs ?? CACHE_REFRESH_INTERVAL_MS;
   /**
    * Strictly increasing, because the cloud refuses a heartbeat whose reported
    * time is not after the last one it accepted — that refusal is its replay

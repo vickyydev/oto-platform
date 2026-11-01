@@ -17,6 +17,7 @@ import {
 } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import type { FastifyBaseLogger } from 'fastify';
+import { CACHE_REFRESH_INTERVAL_MS } from '@oto/box-agent';
 import {
   alert,
   alertDelivery,
@@ -1465,6 +1466,66 @@ export interface BoxRuleSettings {
   minAgentVersion: string;
   /** `SYNC_STALE_AFTER_S`: a box that is talking but whose facts are not arriving. */
   syncStaleAfterS: number;
+  /**
+   * SCRUM-506: how long after a staff benefit card is revoked every counter
+   * box is expected to have confirmed taking it. Not a dial of its own:
+   * `revocationStaleAfterS` in `fleetHealth` derives it from the two
+   * windows it is made of.
+   */
+  revocationStaleAfterS: number;
+}
+
+/**
+ * What the platform knows of one box's staff benefit revocations
+ * (SCRUM-506, benefits plan H7), gathered once per evaluation and handed in
+ * beside its devices, for the reason `BoxSyncState` gives.
+ *
+ * Undefined where it could not be read: the rule is then not evaluated at
+ * all, so a standing alert is not closed by a query that never answered.
+ */
+export interface BoxRevocationState {
+  /**
+   * Whether the box is sent the `benefits` scope at all: anything with a
+   * station that is not a booth, or a box with no stations that is not a
+   * booth box — the reading `boxCacheRole` and `cacheScopesOffered` make.
+   */
+  servesBenefits: boolean;
+  /**
+   * When each revocation in its operator's list was made, oldest first: a
+   * card revoked (`revoked_at`), or a person who left holding a card still in
+   * date (`archived_at`). The same two lists `benefitsCacheItem` sends the
+   * boxes, so a card that has expired out of the list is not waited on here.
+   */
+  revokedAt: Date[];
+}
+
+/**
+ * How long a revocation must stand before a box's confirmation counts as
+ * covering it: one of the box's own cache refreshes (SCRUM-506).
+ *
+ * The box dates a confirmation when the answer arrives, and a 304 worked out
+ * in the instant before a revocation committed can arrive just after it. A
+ * confirmation a full refresh later was certainly asked after it. A healthy
+ * box makes one every refresh, so this costs one minute of the window, and an
+ * error here goes towards asking rather than towards a silence.
+ */
+const REVOCATION_CONFIRM_MARGIN_MS = CACHE_REFRESH_INTERVAL_MS;
+
+/**
+ * When the box last had its offline copy confirmed current, as its own
+ * heartbeat reports it (`cache.checkedAt`, SCRUM-323; `appliedAt` where an
+ * older block has only that). Null where the heartbeat carried no cache block.
+ */
+function cacheConfirmedAtMs(status: Record<string, unknown> | null): number | null {
+  const cache = status?.cache;
+  if (!cache || typeof cache !== 'object' || Array.isArray(cache)) return null;
+  const c = cache as Record<string, unknown>;
+  for (const value of [c.checkedAt, c.appliedAt]) {
+    if (typeof value !== 'string') continue;
+    const ms = Date.parse(value);
+    if (Number.isFinite(ms)) return ms;
+  }
+  return null;
 }
 
 /**
@@ -1517,6 +1578,7 @@ export function evaluateBox(
   now: number,
   sync?: BoxSyncState,
   booths: FleetBoothRow[] = [],
+  revocations?: BoxRevocationState,
 ): { health: BoxHealth; conditions: FleetCondition[] } {
   const last = statusOf(row);
   const heartbeatAgeSeconds = secondsSince(row.lastHeartbeatAt, now);
@@ -1923,6 +1985,113 @@ export function evaluateBox(
   });
 
   /**
+   * --- It has not taken a staff benefit card revocation (SCRUM-506, the
+   * benefits plan's hazard H7).
+   *
+   * The cloud refuses a revoked card at once; a counter box refuses it only
+   * once its next cache pull has brought the new revocation list, because a
+   * revocation moves the bundle's version (`benefits` is an administered
+   * scope) and the box takes it on its next refresh. Until then a till
+   * working through that box with the link down would still accept the card.
+   * This is the expectation over that window, measured from what the box
+   * itself reports: its heartbeat's `cache.checkedAt` is when the cloud last
+   * confirmed its copy current — a 304 against its held version, or a pull
+   * that landed — and a confirmation made after a revocation means the
+   * version it holds already carries it.
+   *
+   * The window is `revocationStaleAfterS`: two of the box's refreshes (one
+   * for the margin above, one for the pull) and the silence the offline rule
+   * allows a heartbeat. A box that has not confirmed by then is raised,
+   * naming how many revocations it has not confirmed and since when. A
+   * benefits scope its last pull could not apply leaves every revocation
+   * unconfirmed, however recently it was checked.
+   *
+   * Raised while the box is reporting whatever the hour, because a box that
+   * is calling home and not refreshing is the quiet fault; and while it is
+   * silent only during opening hours, as `box.offline` is — a box switched
+   * off with the park shut accepts nothing. Not evaluated at all where the
+   * revocations could not be read, or for a box that has never reported a
+   * cache block: such a box holds no copy, so no card is accepted on it
+   * offline, and its next heartbeat may carry the block it lost in a restart.
+   */
+  const confirmedAtMs = cacheConfirmedAtMs(last);
+  if (revocations && (!expectedAlive || !revocations.servesBenefits || confirmedAtMs !== null)) {
+    const benefitsFault = cacheFaults.find((e) => e.fingerprint.endsWith(':benefits')) ?? null;
+    const coveredToMs = benefitsFault ? null : confirmedAtMs;
+    const unconfirmed = revocations.servesBenefits
+      ? revocations.revokedAt.filter(
+          (at) => coveredToMs === null || coveredToMs < at.getTime() + REVOCATION_CONFIRM_MARGIN_MS,
+        )
+      : [];
+    const oldest = unconfirmed[0] ?? null;
+    const waitingS = secondsSince(oldest, now);
+    const what =
+      unconfirmed.length === 1
+        ? 'the staff benefit card revocation'
+        : `${unconfirmed.length} staff benefit card revocations, the first`;
+    const revocationClear = (): FleetCondition['clear'] => {
+      if (!expectedAlive) {
+        return {
+          category: 'box.revocations_behind',
+          reason: 'taken out of service',
+          summary: `${subject} had not taken a staff benefit card revocation, and it has been taken out of service`,
+        };
+      }
+      if (!revocations.servesBenefits) {
+        return {
+          category: 'box.revocations_behind',
+          reason: 'runs only booths',
+          summary: `${subject} runs only booths, which are not sent staff benefit cards`,
+        };
+      }
+      if (oldest === null) {
+        return {
+          category: 'box.revocations_behind',
+          reason: 'recovered',
+          summary: `${subject} has taken every staff benefit card revocation`,
+        };
+      }
+      if (reporting || openingHours === 'open') {
+        return {
+          category: 'box.revocations_behind',
+          reason: 'recovered',
+          summary: `${subject} has taken the revocations it was behind on; the one it has not confirmed yet is inside its ${elapsedWords(settings.revocationStaleAfterS)} window`,
+        };
+      }
+      return {
+        category: 'box.revocations_behind',
+        reason: openingHours === 'not_set' ? 'opening hours are not set' : `${row.branchName} is closed`,
+        summary: `${subject} has not taken every staff benefit card revocation; it is silent, and ${
+          openingHours === 'not_set' ? `nobody has said when ${row.branchName} is open` : `${row.branchName} is closed`
+        }`,
+      };
+    };
+    conditions.push({
+      key: `box.revocations_behind:${row.id}`,
+      category: 'box.revocations_behind',
+      severity: 'warning',
+      subject,
+      ...scope,
+      active:
+        expectedAlive &&
+        revocations.servesBenefits &&
+        waitingS !== null &&
+        waitingS > settings.revocationStaleAfterS &&
+        (reporting || openingHours === 'open'),
+      summary: `${subject} has not confirmed taking ${what} made ${elapsedWords(waitingS ?? 0)} ago — until it does, its counter would still accept that card while working offline`,
+      detail: {
+        slot: row.slot,
+        unconfirmed: unconfirmed.length,
+        oldestRevokedAt: iso(oldest),
+        confirmedAt: confirmedAtMs === null ? null : new Date(confirmedAtMs).toISOString(),
+        benefitsFault: benefitsFault?.code ?? null,
+        staleAfterSeconds: settings.revocationStaleAfterS,
+      },
+      clear: revocationClear(),
+    });
+  }
+
+  /**
    * **Quarantine non-empty.** An event the cloud refused is a fact nobody has
    * recorded anywhere, waiting on a person to replay or discard it. Unlike
    * everything else here it does not depend on the box being reachable — the
@@ -2314,6 +2483,7 @@ export async function fleetHealth(
     offlineAfterS: settings.offlineAfterS,
     minAgentVersion: settings.minAgentVersion,
     syncStaleAfterS: syncSettings().staleAfterS,
+    revocationStaleAfterS: revocationStaleAfterS(settings.offlineAfterS),
   };
 
   const scope = deps.operatorId ? eq(box.operatorId, deps.operatorId) : undefined;
@@ -2385,6 +2555,7 @@ export async function fleetHealth(
   );
 
   const booths = await boxBooths(deps.db, rows, new Date(now), onUnread);
+  const revocations = await boxRevocations(deps.db, rows, new Date(now), onUnread);
 
   const snapshot: FleetSnapshot = { boxes: [], conditions: [] };
   for (const row of rows) {
@@ -2395,11 +2566,105 @@ export async function fleetHealth(
       now,
       sync.get(row.id),
       booths.get(row.id) ?? [],
+      revocations?.get(row.id),
     );
     snapshot.boxes.push(health);
     snapshot.conditions.push(...conditions);
   }
   return snapshot;
+}
+
+/**
+ * SCRUM-506: the window a counter box has to confirm a staff benefit card
+ * revocation — two of its cache refreshes (`REVOCATION_CONFIRM_MARGIN_MS`,
+ * then the pull that takes it) and the silence `BOX_OFFLINE_AFTER_S` allows a
+ * heartbeat to carry the answer home. Five minutes at the defaults. Derived
+ * rather than a dial of its own: each of its parts is already one.
+ */
+export function revocationStaleAfterS(offlineAfterS: number): number {
+  return offlineAfterS + Math.ceil((2 * CACHE_REFRESH_INTERVAL_MS) / 1000);
+}
+
+/**
+ * The staff benefit revocations each box is expected to have taken, and
+ * whether it is sent them at all (SCRUM-506), in two statements for the whole
+ * fleet.
+ *
+ * One revocation per card still in date: the moment the cloud stopped
+ * honouring it, the earlier of its own `revoked_at` and its holder's
+ * `archived_at` (`least` passes over a null). That is the same set
+ * `benefitsCacheItem` sends — its revoked cards and its people who left — so
+ * a card that has expired out of the list, or a rehire whose card is good
+ * again, is not waited on. Null when either read did not answer: unread is
+ * not "nothing revoked", and the rule is then not evaluated.
+ */
+async function boxRevocations(
+  db: Db,
+  rows: FleetBoxRow[],
+  now: Date,
+  onUnread?: UnreadRead,
+): Promise<Map<string, BoxRevocationState> | null> {
+  const kinds = await evidenceOr(
+    async () =>
+      db
+        .selectDistinct({ boxId: station.boxId, kind: station.kind })
+        .from(station)
+        .where(
+          and(
+            inArray(
+              station.boxId,
+              rows.map((r) => r.id),
+            ),
+            isNull(station.archivedAt),
+          ),
+        ),
+    null as Array<{ boxId: string | null; kind: string }> | null,
+    onUnread,
+  );
+  if (kinds === null) return null;
+
+  const operators = sql.join(
+    [...new Set(rows.map((r) => r.operatorId))].map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
+  const revoked = await evidenceOr(
+    async () =>
+      (
+        await db.execute<{ operator_id: string; at: string | Date }>(
+          sql`select c.operator_id, least(c.revoked_at, e.archived_at) as at
+                from promo.benefit_credential c
+                join core.employee e on e.id = c.employee_id
+               where c.operator_id in (${operators})
+                 and c.expires_at > ${now.toISOString()}::timestamptz
+                 and (c.revoked_at is not null or e.archived_at is not null)
+               order by at asc`,
+        )
+      ).rows,
+    null as Array<{ operator_id: string; at: string | Date }> | null,
+    onUnread,
+  );
+  if (revoked === null) return null;
+
+  const byOperator = new Map<string, Date[]>();
+  for (const r of revoked) {
+    const list = byOperator.get(r.operator_id) ?? [];
+    list.push(new Date(r.at));
+    byOperator.set(r.operator_id, list);
+  }
+  const kindsByBox = new Map<string, string[]>();
+  for (const k of kinds) {
+    if (!k.boxId) continue;
+    kindsByBox.set(k.boxId, [...(kindsByBox.get(k.boxId) ?? []), k.kind]);
+  }
+
+  const out = new Map<string, BoxRevocationState>();
+  for (const row of rows) {
+    const held = kindsByBox.get(row.id) ?? [];
+    // `boxCacheRole`'s reading: a box with no stations goes by its role.
+    const servesBenefits = held.length === 0 ? row.role !== 'booth' : held.some((k) => k !== 'booth');
+    out.set(row.id, { servesBenefits, revokedAt: byOperator.get(row.operatorId) ?? [] });
+  }
+  return out;
 }
 
 /**
