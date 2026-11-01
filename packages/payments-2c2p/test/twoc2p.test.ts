@@ -26,13 +26,41 @@ const CONFIG: GatewayConfig = {
   backendReturnUrl: 'https://api.invalid/webhooks/2c2p/payment',
 };
 
+/** `signed` is the `{"payload": "<jwt>"}` envelope; `plain` is the fields as JSON. */
+type Wire = 'signed' | 'plain';
+
 interface Call {
   url: string;
+  /** How the request arrived. */
+  wire: Wire;
   claims: Record<string, unknown>;
 }
 
-/** A 2C2P that answers whatever the test tells it to, in the real envelope. */
-function fakeGateway(answers: Record<string, Record<string, unknown>>): {
+/**
+ * How the sandbox wanted each call on 29 Oct 2026 (Thailand demo merchant,
+ * Payment API 4.3, SCRUM-685), and how it answered: Payment Token and Payment
+ * Inquiry signed both ways, Do Payment plain both ways. The cancel call was not
+ * probed and stays as the client sends it.
+ */
+const SANDBOX_WIRE: Record<string, Wire> = {
+  paymentToken: 'signed',
+  paymentInquiry: 'signed',
+  canceltransaction: 'signed',
+  payment: 'plain',
+};
+
+/**
+ * A 2C2P that answers whatever the test tells it to, on the sandbox's wire.
+ *
+ * A request on the wrong wire is refused the way the sandbox refused a signed
+ * Do Payment: `9005`, in plain JSON. `replies` overrides how a path is
+ * ANSWERED, for a gateway that signs its Do Payment answer as the
+ * documentation describes.
+ */
+function fakeGateway(
+  answers: Record<string, Record<string, unknown>>,
+  replies: Partial<Record<string, Wire>> = {},
+): {
   fetch: typeof globalThis.fetch;
   calls: Call[];
 } {
@@ -40,42 +68,60 @@ function fakeGateway(answers: Record<string, Record<string, unknown>>): {
   const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
     const href = String(url);
     const path = href.slice(href.lastIndexOf('/') + 1);
-    const jwt = payloadOf(JSON.parse(String(init?.body)));
-    // The request is verified with the same key, which is what proves the
-    // client signed with the configured secret rather than sending plain JSON.
-    calls.push({ url: href, claims: verifyJwt(jwt!, SECRET) });
+    const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    const jwt = payloadOf(body);
+    // A signed request is verified with the same key, which is what proves the
+    // client signed with the configured secret.
+    const wire: Wire = jwt ? 'signed' : 'plain';
+    calls.push({ url: href, wire, claims: jwt ? verifyJwt(jwt, SECRET) : body });
+    if (wire !== (SANDBOX_WIRE[path] ?? 'signed')) {
+      return new Response(
+        JSON.stringify({ respCode: '9005', respDesc: 'Invalid Request (PaymentToken)' }),
+        { status: 200 },
+      );
+    }
     const answer = answers[path];
     if (!answer) throw new Error(`the test gateway has no answer for ${path}`);
-    return new Response(JSON.stringify(envelope(signJwt(answer, SECRET))), { status: 200 });
+    const reply = replies[path] ?? SANDBOX_WIRE[path] ?? 'signed';
+    return new Response(
+      JSON.stringify(reply === 'signed' ? envelope(signJwt(answer, SECRET)) : answer),
+      { status: 200 },
+    );
   }) as unknown as typeof globalThis.fetch;
   return { fetch: fetchImpl, calls };
 }
+
+const QR_INPUT = {
+  attemptId: '01a0cdcc-0000-7000-8000-000000000001',
+  invoiceNo: 'T01260923000001',
+  amountSatang: 144000,
+  description: 'OTO Park admission',
+  expiryMinutes: 20,
+  userDefined: { stationCode: 'T1', businessDate: '2026-09-23' },
+};
 
 const NOW = new Date('2026-09-23T03:00:00.000Z');
 
 describe('createQr — Payment Token, then Do Payment', () => {
   it('sends PPQR, qrType RAW and a D(12,5) amount, and returns the EMVCo payload', async () => {
-    const { fetch, calls } = fakeGateway({
-      paymentToken: { respCode: '0000', respDesc: 'Success', paymentToken: 'tok_abc' },
-      payment: {
-        respCode: '1005',
-        respDesc: 'Pending for user scan QR.',
-        channelCode: 'PPQR',
-        type: 'RAW',
-        expiryTimer: 1_200_000,
-        extras: { qrData: '00020101021229...6304ABCD', referenceNo: 'REF123' },
+    const { fetch, calls } = fakeGateway(
+      {
+        paymentToken: { respCode: '0000', respDesc: 'Success', paymentToken: 'tok_abc' },
+        payment: {
+          respCode: '1005',
+          respDesc: 'Pending for user scan QR.',
+          channelCode: 'PPQR',
+          type: 'RAW',
+          expiryTimer: 1_200_000,
+          extras: { qrData: '00020101021229...6304ABCD', referenceNo: 'REF123' },
+        },
       },
-    });
+      // The documentation's shape: a signed answer, the QR in `extras.qrData`.
+      { payment: 'signed' },
+    );
     const client = new TwoC2PQrPayment(CONFIG, { fetch, now: () => NOW });
 
-    const result = await client.createQr({
-      attemptId: '01a0cdcc-0000-7000-8000-000000000001',
-      invoiceNo: 'T01260923000001',
-      amountSatang: 144000,
-      description: 'OTO Park admission',
-      expiryMinutes: 20,
-      userDefined: { stationCode: 'T1', businessDate: '2026-09-23' },
-    });
+    const result = await client.createQr(QR_INPUT);
 
     expect(calls).toHaveLength(2);
     expect(calls[0]!.url).toBe('https://gateway.invalid/payment/4.3/paymentToken');
@@ -142,6 +188,96 @@ describe('createQr — Payment Token, then Do Payment', () => {
     });
     expect(result.qrPayload).toBeNull();
     expect(result.qrImageUrl).toBe('https://example.invalid/qr.png');
+  });
+});
+
+/**
+ * SCRUM-685. The sandbox refused a signed Do Payment with `9005` and answered
+ * a plain one in plain JSON, while Payment Token and Payment Inquiry stayed
+ * signed both ways. Each test below fails on the client as it was before.
+ */
+describe('Do Payment on the sandbox wire', () => {
+  it('sends Do Payment as plain JSON and keeps the signed envelope for the token', async () => {
+    const { fetch, calls } = fakeGateway(
+      {
+        paymentToken: { respCode: '0000', paymentToken: 'tok_abc' },
+        payment: { respCode: '1005', type: 'RAW', extras: { qrData: '000201...6304ABCD' } },
+      },
+      { payment: 'signed' },
+    );
+    const client = new TwoC2PQrPayment(CONFIG, { fetch, now: () => NOW });
+
+    const result = await client.createQr(QR_INPUT);
+
+    expect(calls.map((call) => call.wire)).toEqual(['signed', 'plain']);
+    // The fields themselves, with no envelope and no merchant secret around them.
+    expect(calls[1]!.claims).toEqual({
+      paymentToken: 'tok_abc',
+      payment: {
+        code: { channelCode: 'PPQR' },
+        data: { qrType: 'RAW', paymentExpiry: '2026-09-23 10:20:00' },
+      },
+    });
+    expect(result.respCode).toBe('1005');
+    expect(result.state).toBe('qr_shown');
+  });
+
+  it('accepts the plain-JSON answer the sandbox gives to Do Payment', async () => {
+    const { fetch } = fakeGateway({
+      paymentToken: { respCode: '0000', paymentToken: 'tok_abc' },
+      payment: {
+        respCode: '1005',
+        respDesc: 'Pending for user scan QR',
+        channelCode: 'PPQR',
+        type: 'RAW',
+        expiryTimer: 1_200_000,
+        extras: { qrData: '000201...6304ABCD' },
+      },
+    });
+    const client = new TwoC2PQrPayment(CONFIG, { fetch, now: () => NOW });
+
+    const result = await client.createQr(QR_INPUT);
+
+    expect(result.state).toBe('qr_shown');
+    expect(result.respCode).toBe('1005');
+    expect(result.respDesc).toBe('Pending for user scan QR');
+    expect(result.qrPayload).toBe('000201...6304ABCD');
+    expect(result.expiryTimerMs).toBe(1_200_000);
+  });
+
+  it('still verifies a Do Payment answer that does arrive signed', async () => {
+    const otherKey = randomBytes(32).toString('hex');
+    const fetchImpl = (async (url: string | URL | Request) => {
+      const path = String(url).slice(String(url).lastIndexOf('/') + 1);
+      const answer =
+        path === 'paymentToken'
+          ? envelope(signJwt({ respCode: '0000', paymentToken: 'tok' }, SECRET))
+          : envelope(signJwt({ respCode: '1005', type: 'RAW', data: '000201' }, otherKey));
+      return new Response(JSON.stringify(answer), { status: 200 });
+    }) as unknown as typeof globalThis.fetch;
+    const client = new TwoC2PQrPayment(CONFIG, { fetch: fetchImpl, now: () => NOW });
+    await expect(client.createQr(QR_INPUT)).rejects.toThrow(/signature/);
+  });
+
+  /**
+   * The plain answer is Do Payment's only. An unsigned `0000` on an inquiry is
+   * exactly the forgery the envelope exists to refuse.
+   */
+  it('refuses a plain-JSON answer to Payment Token and to Payment Inquiry', async () => {
+    const plain = (answer: Record<string, unknown>) =>
+      (async () => new Response(JSON.stringify(answer), { status: 200 })) as unknown as typeof globalThis.fetch;
+
+    const minting = new TwoC2PQrPayment(CONFIG, {
+      fetch: plain({ respCode: '0000', paymentToken: 'tok' }),
+      now: () => NOW,
+    });
+    await expect(minting.createQr(QR_INPUT)).rejects.toThrow(/no payload/);
+
+    const asking = new TwoC2PQrPayment(CONFIG, {
+      fetch: plain({ respCode: '0000', invoiceNo: 'X', amount: '1440.00000' }),
+      now: () => NOW,
+    });
+    await expect(asking.inquire({ invoiceNo: 'X' })).rejects.toThrow(/no payload/);
   });
 });
 

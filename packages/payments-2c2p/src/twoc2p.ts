@@ -26,15 +26,28 @@ import type {
  * THE REAL GATEWAY (`PAYMENT_GATEWAY.md` §2).
  *
  * Payment Token, then Do Payment on the PromptPay QR channel, then Payment
- * Inquiry — three plain HTTPS POSTs, each carrying one JWT. There is no
- * official Node SDK and none is needed (`:110-112`).
+ * Inquiry — three plain HTTPS POSTs. There is no official Node SDK and none is
+ * needed (`:110-112`).
+ *
+ * DO PAYMENT IS NOT SIGNED. Payment Token and Payment Inquiry travel in the
+ * `{"payload": "<jwt>"}` envelope both ways. Do Payment does not: the sandbox
+ * (Thailand demo merchant, Payment API 4.3, 29 Oct 2026, SCRUM-685) answers a
+ * signed Do Payment with `9005 Invalid Request (PaymentToken)`, accepts the
+ * same fields as plain JSON with `1005`, and answers in plain JSON. The
+ * payment token in the body is what ties the call to the merchant, and it was
+ * minted by a signed, verified call a moment earlier.
  *
  * WHAT THIS CLASS REFUSES TO DO, and why each refusal is here rather than in
  * the caller:
  *
- *  - It never believes a response it has not verified. Every answer is a
- *    `{"payload": "<jwt>"}` signed with our own secret, and `verifyJwt` runs
- *    before a single claim is read (`:117-123`).
+ *  - It never believes a payment answer it has not verified. Token and
+ *    Inquiry answers are `{"payload": "<jwt>"}` signed with our own secret,
+ *    and `verifyJwt` runs before a single claim is read (`:117-123`); a
+ *    plain-JSON answer to either is refused. The one unsigned answer it reads
+ *    is Do Payment's, which only says which QR to show: `gateway.ts` shows a
+ *    QR on `qr_shown` and nothing else, and paid is decided by the signed
+ *    inquiry alone. A Do Payment answer that does arrive signed is verified
+ *    like any other.
  *  - It never proceeds past a Payment Token whose `respCode` is not `0000`
  *    (`:182-183`). A token call that answered `9015` has not minted anything,
  *    and sending Do Payment with the token field it did not return is how a
@@ -54,6 +67,12 @@ export interface TwoC2PDeps {
   now?: () => Date;
   requestTimeoutMs?: number;
 }
+
+/**
+ * How one call crosses the wire. `signed` is the `{"payload": "<jwt>"}`
+ * envelope; `plain` is the fields as JSON, which only Do Payment uses.
+ */
+type Wire = 'signed' | 'plain';
 
 interface PostResult {
   claims: Record<string, unknown>;
@@ -151,16 +170,21 @@ export class TwoC2PQrPayment implements QrPayment {
       throw new Error('the payment token call answered 0000 with no token');
     }
 
-    const payment = await this.post('payment', {
-      paymentToken,
-      payment: {
-        code: { channelCode: this.config.qrChannelCode },
-        data: {
-          qrType: this.config.qrType,
-          paymentExpiry: formatPaymentExpiry(expiresAt),
+    // Plain JSON, not the signed envelope — see the class comment (SCRUM-685).
+    const payment = await this.post(
+      'payment',
+      {
+        paymentToken,
+        payment: {
+          code: { channelCode: this.config.qrChannelCode },
+          data: {
+            qrType: this.config.qrType,
+            paymentExpiry: formatPaymentExpiry(expiresAt),
+          },
         },
       },
-    });
+      'plain',
+    );
 
     const extras = objectOf(payment.claims.extras);
     const respCode = stringOf(payment.claims.respCode) ?? '';
@@ -272,12 +296,25 @@ export class TwoC2PQrPayment implements QrPayment {
     return this.maintenance.action(input);
   }
 
-  private async post(path: string, claims: Record<string, unknown>): Promise<PostResult> {
+  /**
+   * One POST. `wire` is how the request goes out, and it decides what answer
+   * is accepted: a `signed` call is believed only through a verified payload;
+   * a `plain` call (Do Payment) is answered in plain JSON, and a payload on
+   * that answer is still verified before it is read.
+   */
+  private async post(
+    path: string,
+    claims: Record<string, unknown>,
+    wire: Wire = 'signed',
+  ): Promise<PostResult> {
     const url = `${this.host}/payment/${PAYMENT_API_VERSION}/${path}`;
     const res = await this.fetchImpl(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify(envelope(signJwt(claims, this.config.secretKey))),
+      body: JSON.stringify(
+        // `JSON.stringify` drops undefined fields, as `signJwt` does for claims.
+        wire === 'signed' ? envelope(signJwt(claims, this.config.secretKey)) : claims,
+      ),
       signal: AbortSignal.timeout(this.timeoutMs),
     });
     const text = await res.text();
@@ -288,11 +325,15 @@ export class TwoC2PQrPayment implements QrPayment {
       throw new Error(`the gateway answered ${res.status} with something that is not JSON`);
     }
     const jwt = payloadOf(body);
-    if (!jwt) {
+    if (jwt) {
+      // Verified before read, on our way in as well as on the webhook's.
+      return { claims: verifyJwt(jwt, this.config.secretKey), httpStatus: res.status };
+    }
+    const plain = wire === 'plain' ? objectOf(body) : null;
+    if (!plain) {
       throw new Error(`the gateway answered ${res.status} with no payload`);
     }
-    // Verified before read, on our way in as well as on the webhook's.
-    return { claims: verifyJwt(jwt, this.config.secretKey), httpStatus: res.status };
+    return { claims: plain, httpStatus: res.status };
   }
 }
 
