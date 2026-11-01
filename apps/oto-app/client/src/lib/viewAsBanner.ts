@@ -34,6 +34,13 @@ export function timeLeft(expiresAt: string, now: number): string {
   return `${Math.floor(ms / 60_000)}:${String(Math.floor((ms % 60_000) / 1000)).padStart(2, "0")}`;
 }
 
+/**
+ * SCRUM-673 — beside the name on a Schedule History row written inside a
+ * view-as window (`actorType` "impersonated"): the name is the person whose
+ * session it was, and this says somebody else was really acting.
+ */
+export const VIEW_AS_HISTORY_NOTE = "done by a support administrator viewing as them";
+
 export const VIEW_AS_ACTIVE = "view-as-active";
 export function markViewAsOffset(root: { classList: { toggle(token: string, force?: boolean): unknown } }, on: boolean): void {
   root.classList.toggle(VIEW_AS_ACTIVE, on);

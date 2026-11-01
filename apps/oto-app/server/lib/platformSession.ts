@@ -189,6 +189,27 @@ export function viewAsMetadata(
 }
 
 /**
+ * SCRUM-673 — the same mark on a schedule history row
+ * (`storage.logScheduleAudit`), in the row's own columns: inside a window,
+ * `actor_type` "impersonated", the platform account really acting and the
+ * subject's account it acted for; outside one, all four empty. The only input
+ * is the window the sign-on middleware verified and put on this request
+ * (`currentViewAs()`), never anything a request body says: `performedBy`
+ * stays the signed-in user, the person whose session it is.
+ */
+export function scheduleAuditViewAs(
+  viewAs: { id: string; actorAccountId: string; subjectAccountId: string } | null | undefined,
+): { actorType: "impersonated" | null; actorAccountId: string | null; onBehalfOf: string | null; impersonationId: string | null } {
+  if (!viewAs) return { actorType: null, actorAccountId: null, onBehalfOf: null, impersonationId: null };
+  return { actorType: "impersonated", actorAccountId: viewAs.actorAccountId, onBehalfOf: viewAs.subjectAccountId,
+    impersonationId: viewAs.id };
+}
+
+/** SCRUM-673 — Data Admin's answer (409) to a write that would set or change that record. */
+export const VIEW_AS_RECORD_REFUSAL =
+  "Who really acted in a view-as window is recorded by the app itself and cannot be set or changed here.";
+
+/**
  * The routes this app never opens to somebody else's hands, however the window
  * was approved: payroll, and employment contracts and letters with their
  * signing pages (S2-23: "the OTO App refuses it for payroll and contract

@@ -1,0 +1,5 @@
+ALTER TABLE "schedule_audit_log" ADD COLUMN "actor_type" varchar(20);--> statement-breakpoint
+ALTER TABLE "schedule_audit_log" ADD COLUMN "actor_account_id" uuid;--> statement-breakpoint
+ALTER TABLE "schedule_audit_log" ADD COLUMN "on_behalf_of" uuid;--> statement-breakpoint
+ALTER TABLE "schedule_audit_log" ADD COLUMN "impersonation_id" uuid;--> statement-breakpoint
+ALTER TABLE "schedule_audit_log" ADD CONSTRAINT "schedule_audit_log_view_as_check" CHECK (("schedule_audit_log"."actor_type" IS NULL AND "schedule_audit_log"."actor_account_id" IS NULL AND "schedule_audit_log"."on_behalf_of" IS NULL AND "schedule_audit_log"."impersonation_id" IS NULL) OR ("schedule_audit_log"."actor_type" = 'impersonated' AND "schedule_audit_log"."actor_account_id" IS NOT NULL AND "schedule_audit_log"."on_behalf_of" IS NOT NULL AND "schedule_audit_log"."impersonation_id" IS NOT NULL));

@@ -7,6 +7,7 @@ import * as modelTables from '../../shared/schema';
 import { count, eq, ilike, or, and, asc, desc, inArray, SQL, getTableColumns } from 'drizzle-orm';
 import { loadAdminManagement } from '../lib/adminManagement';
 import { storage } from '../storage';
+import { VIEW_AS_RECORD_REFUSAL } from '../lib/platformSession';
 
 // ─── Field & form types ──────────────────────────────────────────────────────
 
@@ -275,6 +276,18 @@ export abstract class ModelAdmin {
     }
     if (this.table === users) delete mutable.platformUserId;
     if (config.name === 'operators') delete mutable.platformRolesEnabled;
+    // SCRUM-673 — who really acted in a view-as window is written by the app
+    // itself from the window's verified mark (storage.logScheduleAudit); a
+    // value sent here is never taken as it.
+    const appWritten: Record<string, string[]> = {
+      schedule_audit_log: ['actorType', 'actorAccountId', 'onBehalfOf', 'impersonationId'],
+    };
+    const blank = (value: unknown) => (value === '' || value === undefined ? null : value);
+    for (const key of appWritten[config.name] ?? []) {
+      if (key in mutable && blank(mutable[key]) !== blank(current?.[key]))
+        throw new DataAdminScopeError(409, VIEW_AS_RECORD_REFUSAL);
+      delete mutable[key];
+    }
     const privateReferences: Record<string, string[]> = {
       contract_instances: ['pdfPath', 'signedPdfPath'],
       employee_letters: ['signedPdfPath'],

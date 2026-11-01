@@ -17064,6 +17064,11 @@ OTO Company Limited`,
         createdAt: scheduleAuditLog.createdAt,
         hasSnapshot: sql<boolean>`${scheduleAuditLog.snapshotData} IS NOT NULL`,
         summaryData: scheduleAuditLog.summaryData,
+        // SCRUM-673 — set only on a row written inside a view-as window.
+        actorType: scheduleAuditLog.actorType,
+        actorAccountId: scheduleAuditLog.actorAccountId,
+        onBehalfOf: scheduleAuditLog.onBehalfOf,
+        impersonationId: scheduleAuditLog.impersonationId,
       })
         .from(scheduleAuditLog)
         .where(and(and(...conditions), scheduleParkPredicate("schedule_audit_log", req.userWithAccess!.tenantId!)))

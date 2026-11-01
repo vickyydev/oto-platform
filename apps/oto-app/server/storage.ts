@@ -351,7 +351,7 @@ import {
 import { retiredShiftEndDate } from "./lib/shiftGroupRequired";
 import { setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
 import { currentViewAs } from "./lib/logger";
-import { viewAsMetadata } from "./lib/platformSession";
+import { scheduleAuditViewAs, viewAsMetadata } from "./lib/platformSession";
 
 /**
  * The database, or a transaction on it: the storage methods an offboarding
@@ -7572,6 +7572,8 @@ export class DatabaseStorage implements IStorage {
                         performedBy: opts.performedBy,
                         snapshotData: opts.snapshotData,
                         summaryData: opts.summaryData as any,
+                        // SCRUM-673 — a row written inside a view-as window names who was really there.
+                        ...scheduleAuditViewAs(currentViewAs()),
                 });
         }
 

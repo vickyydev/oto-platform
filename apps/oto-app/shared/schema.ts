@@ -3698,10 +3698,23 @@ export const scheduleAuditLog = pgTable("schedule_audit_log", {
   snapshotData: jsonb("snapshot_data"), // JSON snapshot of affected data before the action
   summaryData: jsonb("summary_data"), // Structured counts: { shiftRows, assignments, breaks }
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  /**
+   * SCRUM-673 — set only when the action ran inside a support administrator's
+   * view-as window, from the window's mark the sign-on middleware verified
+   * (never from a request body): `performedBy` stays the person whose session
+   * it was, `actorAccountId` is the platform account really acting and
+   * `onBehalfOf` the subject's, the same names the activity log's view-as mark
+   * uses. All four are empty for an ordinary action.
+   */
+  actorType: varchar("actor_type", { length: 20 }),
+  actorAccountId: uuid("actor_account_id"),
+  onBehalfOf: uuid("on_behalf_of"),
+  impersonationId: uuid("impersonation_id"),
 }, (table) => [
   index("idx_schedule_audit_tenant").on(table.tenantId),
   index("idx_schedule_audit_week_plan").on(table.weekPlanId),
   index("idx_schedule_audit_created").on(table.createdAt),
+  check("schedule_audit_log_view_as_check", sql`(${table.actorType} IS NULL AND ${table.actorAccountId} IS NULL AND ${table.onBehalfOf} IS NULL AND ${table.impersonationId} IS NULL) OR (${table.actorType} = 'impersonated' AND ${table.actorAccountId} IS NOT NULL AND ${table.onBehalfOf} IS NOT NULL AND ${table.impersonationId} IS NOT NULL)`),
 ]);
 
 export type ScheduleAuditLog = typeof scheduleAuditLog.$inferSelect;

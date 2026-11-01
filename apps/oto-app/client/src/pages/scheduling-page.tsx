@@ -50,6 +50,7 @@ import { useAvatarWorkStatus, type AvatarWorkStatus, type AvatarStatusMap } from
 import { getWorkStatusColor } from "@/hooks/use-avatar-work-status";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LeaveType } from "@/components/leave/leave-types-manager";
+import { VIEW_AS_HISTORY_NOTE } from "@/lib/viewAsBanner";
 
 type Department = {
   id: string;
@@ -6481,6 +6482,12 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
                     )}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{entry.performedByUser?.fullName || entry.performedByUser?.username || "Unknown"}</span>
+                      {entry.actorType === "impersonated" && (
+                        <>
+                          <span>·</span>
+                          <span data-testid={`text-view-as-${entry.id}`}>{VIEW_AS_HISTORY_NOTE}</span>
+                        </>
+                      )}
                       <span>·</span>
                       <span>{format(new Date(entry.createdAt), "MMM d, yyyy h:mm a")}</span>
                     </div>
@@ -6514,7 +6521,8 @@ function ScheduleHistoryDialog({ open, onOpenChange, branchId, onRestored }: {
                 const deptName = restoreEntry.department?.name;
                 const weekRange = formatWeekRange(restoreEntry.weekStartDate);
                 const branchName = restoreEntry.branch?.name;
-                const performer = restoreEntry.performedByUser?.fullName || restoreEntry.performedByUser?.username || "Unknown";
+                const performer = (restoreEntry.performedByUser?.fullName || restoreEntry.performedByUser?.username || "Unknown")
+                  + (restoreEntry.actorType === "impersonated" ? ` (${VIEW_AS_HISTORY_NOTE})` : "");
                 const timestamp = format(new Date(restoreEntry.createdAt), "d MMM yyyy 'at' h:mm a");
                 const summary = restoreEntry.summaryData;
 

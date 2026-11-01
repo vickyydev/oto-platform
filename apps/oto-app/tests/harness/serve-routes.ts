@@ -13,15 +13,23 @@
 //
 // With HARNESS_FAKE_NOW set, the process's clock starts at that instant
 // (./fake-clock.ts, imported first so it is in place before the app loads).
+//
+// With HARNESS_REQUEST_CONTEXT=1, every request runs inside the request
+// context first, as server/index.ts installs it (`registerRequestLogging`):
+// what a view-as window's mark is put on, so a row written deep inside a
+// service can name who was really there (SCRUM-673). Off by default, so every
+// other check runs on the harness exactly as before.
 import "./fake-clock";
 import "../../server/config/env";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import type { AddressInfo } from "net";
+import { registerRequestLogging } from "../../server/middleware/requestLog";
 import { registerRoutes } from "../../server/routes";
 
 const app = express();
 const httpServer: Server = createServer(app);
+if (process.env.HARNESS_REQUEST_CONTEXT === "1") registerRequestLogging(app);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 
