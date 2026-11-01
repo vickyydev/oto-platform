@@ -318,7 +318,12 @@ export const INTENT_TABLE: Readonly<Record<AiIntent, AiIntentRule>> = {
   age_rules: answer(['age_rules'], { general: true }),
   socks: answer(['socks'], { general: true }),
   about_oto: answer(['about_oto'], { general: true }),
-  faq: answer(['faq'], { general: true }),
+  // SCRUM-676: a price note grounds a faq part too. The playbook files what a
+  // ticket or a deal includes there (parent tickets and Food & Play spent as
+  // food credit, the Dinner Promo), and customers ask it as a food question:
+  // a reply citing the Food & Play note was refused as GROUNDING_TOPIC. The
+  // other topics keep their own intents; a live fact never grounds a faq.
+  faq: answer(['faq', 'prices_note'], { general: true }),
   thanks_closing: answer(null, { mayAutoHandle: true }),
   // Answered in persona the first time; a second ask in the episode is a
   // handover (§B.4). The gate reads `episode.identityAnswered` for that.
