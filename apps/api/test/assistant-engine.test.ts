@@ -1083,15 +1083,17 @@ describe('the test night (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")',
 
   it('D2: a bare follow-up with no earlier ask gets the honest line, not a guard line; a plain question still gets the guard', async () => {
     const me = await staff(w, 'ZZ No Context', 'branch_manager', { scopeType: 'branch', scopeId: w.central }, w.central);
-    script(w, final('Yesterday there were 12 children.'));
+    // A count outside calendar dates: the ask's own clock grounds this month's and last month's
+    // numbers, so 12 passed the guard on every 12th and every day of December and January.
+    script(w, final('Yesterday there were 987654321 children.'));
     const res = await ask(w, me.cookie, 'and yesterday?');
     expect(res.body).toMatchObject({ state: 'failed', reason: 'NO_CONTEXT', answer: INTERNAL_LINES.noContext.en, links: [], smallTalk: false });
-    expect(res.body.answer).not.toContain('12');
+    expect(res.body.answer).not.toContain('987654321');
     expect((await closingAudit(res.body.id)).after).toMatchObject({ state: 'failed', reason: 'NO_CONTEXT', guardRule: 'number', priorTurns: 0 });
     // A failed ask is no prior turn: the next bare follow-up is still without context; a plain question keeps the guard's line.
-    script(w, final('Yesterday there were 12 children.'));
+    script(w, final('Yesterday there were 987654321 children.'));
     expect((await ask(w, me.cookie, 'แล้วเมื่อวานล่ะ')).body).toMatchObject({ state: 'failed', reason: 'NO_CONTEXT', answer: INTERNAL_LINES.noContext.th });
-    script(w, final('There were 12 children.'));
+    script(w, final('There were 987654321 children.'));
     expect((await ask(w, me.cookie, 'How many children were inside?')).body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER' });
     for (const q of ['and yesterday?', 'What about Chalong?', 'แล้วเมื่อวานล่ะ', 'а вчера?', 'and the adults?']) expect(isBareFollowUp(q), q).toBe(true);
     for (const q of ['How many children are inside?', 'ขอบคุณ', 'Anan attendance this month', 'Сколько детей сейчас в парке?', 'and'.repeat(40)]) {
