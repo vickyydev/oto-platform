@@ -270,26 +270,29 @@ export const FIXTURE_KB: readonly KbRow[] = [
   // The deal a price objection is answered with (SCRUM-220 playbook, "that's
   // expensive": the value line and the right deal from the knowledge; only a
   // customer who still pushes is handed over). Fictional, like the rest.
+  // Filed under `prices_note`, as the playbook files its deals on staging, and
+  // saying what the amount buys (SCRUM-676, G21): the replay's Thai question
+  // about it was refused because a `faq` part could not rest on a price note.
   {
     key: 'deals',
-    topic: 'faq',
+    topic: 'prices_note',
     language: 'en',
     question: 'Do you have any deals?',
-    body: 'Food & Play (fixture): a full day of play with a kids’ meal included, ฿420 per child at both parks.',
+    body: 'Food & Play (fixture): a full day of play for ฿420 per child at both parks, and the whole ฿420 is food credit in our café for a kids’ meal, snacks or drinks.',
   },
   {
     key: 'deals',
-    topic: 'faq',
+    topic: 'prices_note',
     language: 'th',
     question: 'มีโปรโมชั่นไหม',
-    body: 'Food & Play (fixture): เล่นได้ทั้งวันพร้อมอาหารเด็ก ราคา ฿420 ต่อเด็ก ทั้งสองสาขาค่ะ',
+    body: 'Food & Play (fixture): เล่นได้ทั้งวัน ราคา ฿420 ต่อเด็ก ทั้งสองสาขา และใช้ยอด ฿420 ทั้งหมดเป็นเครดิตสั่งอาหารเด็ก ขนม หรือเครื่องดื่มในคาเฟ่ของเราได้ค่ะ',
   },
   {
     key: 'deals',
-    topic: 'faq',
+    topic: 'prices_note',
     language: 'ru',
     question: 'Есть ли у вас акции?',
-    body: 'Food & Play (fixture): игра на весь день и детское блюдо, ฿420 за ребёнка в обоих парках.',
+    body: 'Food & Play (fixture): игра на весь день, ฿420 за ребёнка в обоих парках, и все ฿420 можно потратить в нашем кафе на детское блюдо, закуски или напитки.',
   },
   // SCRUM-677 (G19): the nanny service, at Central Floresta only. Fictional, like the rest.
   {
@@ -481,6 +484,8 @@ const NO_FAULT = /our fault|we apologi[sz]e for|it was our|compensat|refund|\bfr
 /** A bubble asking which park (the playbook's branch question, alone or in its combined question). */
 const BRANCH_QUESTION = /which (?:park|branch)|central floresta (?:or|หรือ|или) (?:robinson )?chalong|สาขาไหน/i;
 const NO_PRICE_YET = /฿|บาท|baht/i;
+/** SCRUM-676: no deal, discount, offer or proposal, in any of the three languages. */
+const NO_DEAL_OR_OFFER = /deal|discount|offer|proposal|ส่วนลด|โปร|ข้อเสนอ|скидк|предложени/i;
 /** The live transcript's last line (29 Oct): the model's own promise of the booking follow-up. */
 const FOLLOW_UP_PROMISED = 'A colleague at Central Floresta will help you with the booking.';
 
@@ -489,6 +494,8 @@ const BIRTHDAYS_LINE = { templateKey: 'closing_birthday', route: 'birthdays', br
 const BROCHURE_REQUEST = { templateKey: 'handover_birthday', route: 'birthdays', brochure: true } as const;
 const GM_LINE = { templateKey: 'closing_gm', route: 'gm', brochure: false } as const;
 const UNCLEAR_AT_BRANCH = { templateKey: 'handover_general', route: 'general', brochure: false } as const;
+/** SCRUM-676: a camp, to Birthdays & events with the playbook's unclear line (`CAMPS_PLAN`). */
+const CAMP_LINE = { templateKey: 'closing_unclear', route: 'birthdays', brochure: false } as const;
 /** The episode a second turn sees: one answer before it. */
 const AFTER_ONE_ANSWER = { aiAnswers: 1, aiAnswersLast10Min: 1 } as const;
 
@@ -940,6 +947,72 @@ export const LIVE_GOLDENS: readonly LiveGolden[] = [
       team: 'central',
       followUpOnce: { closingKey: 'closing_booking', modelSays: /colleague|our team|in touch|will (?:help|message|contact|confirm|get back|reach)/i },
     },
+  },
+  // SCRUM-676, the real-chat replay of 2 Nov (anonymised): the two questions
+  // the assistant handled wrongly on staging. Recorded by hand like the rest:
+  // `ai:eval --record --only G20,G21`.
+  //
+  // A camp question was read as a school or group, answered with the group
+  // line's "special deal" and closed with the birthday manager's line. It is
+  // the camps intent now, a hand-over: the playbook's neutral line and the
+  // Birthday & events inbox, and none of the model's words offer anything.
+  {
+    id: 'G20',
+    setup: '12:00, operator-wide number, no park: a camp today and next week',
+    account: 'wide',
+    turns: [
+      {
+        says: 'Hello, is there a camp today? And what about next week?',
+        expect: {
+          action: 'handover',
+          intent: 'camps',
+          language: 'en',
+          plan: CAMP_LINE,
+          mustNotSay: [NO_DEAL_OR_OFFER],
+        },
+        episode: { threadHasBranch: false },
+        rehearsal: d({ intent: 'camps', action: 'handover', reason: 'FACT_MISSING' }),
+      },
+    ],
+    thread: { team: 'birthdays', closingKey: 'closing_unclear' },
+  },
+  // A Thai customer pasted the price calculator's summary and asked how much
+  // of the Food & Play amount buys food; the reply citing the deal (a price
+  // note) was refused and the customer got the unclear line. Answered from
+  // the deal now, with no hand-over.
+  {
+    id: 'G21',
+    setup: '12:00, Central, Thai: the Food & Play amount spent as food credit',
+    account: 'central',
+    turns: [
+      {
+        says: [
+          'สวัสดีค่ะ ขอสอบถามค่าใช้จ่ายการมาเล่นค่ะ',
+          'เซ็นทรัล ฟลอเรสต้า · สุดสัปดาห์ · Food & Play',
+          'เด็ก 1 คน',
+          'รวมโดยประมาณ: ฿420',
+          'ยอดนี้ใช้สั่งอาหารได้เท่าไหร่คะ',
+        ].join('\n'),
+        expect: {
+          action: 'answer',
+          language: 'th',
+          groundingAnyOf: ['deals'],
+          thenHandover: null,
+          // The whole amount is food credit.
+          mustSay: [/เต็มจำนวน|ทั้งหมด|เครดิต|420/],
+          mustNotSay: [NO_DISCOUNT],
+        },
+        rehearsal: d({
+          language: 'th',
+          intent: 'ticket_prices',
+          intents: ['ticket_prices', 'faq'],
+          reason: 'FACT_IN_KB',
+          grounding: ['deals'],
+          bubbles: ['Food & Play ใช้ยอด ฿420 ทั้งหมดเป็นเครดิตสั่งอาหารในคาเฟ่ของเราได้เต็มจำนวนค่ะ 😊'],
+        }),
+      },
+    ],
+    thread: { team: 'unchanged' },
   },
 ];
 
