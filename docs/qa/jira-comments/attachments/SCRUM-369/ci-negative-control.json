@@ -11,6 +11,6 @@
     "processExitCode":  1,
     "disposableDatabaseRemoved":  true,
     "completedAt":  "2026-11-01T21:29:57Z",
-    "revertCommit":  "907e8220",
+    "revertCommit":  "2be949a4b56a6c1a7aaa2cc96c8902310f61b780",
     "scope":  "Branch-only test interception; no application or staging mutation"
 }
