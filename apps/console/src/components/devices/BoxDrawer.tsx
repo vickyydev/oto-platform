@@ -40,6 +40,18 @@ import {
   type BandStock,
 } from '@/lib/bandStock';
 import {
+  SCANNER_MODE_OPTIONS,
+  scannerDefaultIds,
+  scannerHealthOf,
+  scannerHealthWords,
+  scannerSetupOf,
+  scannerSetupProblem,
+  transportForScannerMode,
+  withScannerSetup,
+  type ScannerHealthView,
+  type ScannerSetup,
+} from '@/lib/scannerSetup';
+import {
   boxRetirementOffer,
   boxRoleWord,
   boxStatusWord,
@@ -481,6 +493,9 @@ function BoxDevices({
             <DeviceRowItem
               key={device.id}
               device={device}
+              scannerHealth={
+                device.kind === 'scanner' ? scannerHealthOf(box.lastStatus, device.id) : null
+              }
               canUpdate={canUpdate}
               timezone={timezone}
               onChanged={onChanged}
@@ -494,11 +509,14 @@ function BoxDevices({
 
 function DeviceRowItem({
   device,
+  scannerHealth,
   canUpdate,
   timezone,
   onChanged,
 }: {
   device: DeviceRow;
+  /** What the box last said about this scanner, when it reads it itself (SCRUM-700). */
+  scannerHealth: ScannerHealthView | null;
   canUpdate: boolean;
   timezone?: string | null;
   onChanged: () => void;
@@ -542,6 +560,7 @@ function DeviceRowItem({
         {device.serialNumber && <span className="font-mono">SN {device.serialNumber}</span>}
         {device.lastSeenAt && <span title={formatExact(device.lastSeenAt, timezone)}>seen {timeAgo(device.lastSeenAt)}</span>}
       </div>
+      {scannerHealth && <ScannerHealthLine health={scannerHealth} timezone={timezone} />}
       {device.lastError && (
         <p className="mt-1 text-xs break-words" style={{ color: 'hsl(var(--status-down))' }}>
           {device.lastError}
@@ -560,6 +579,9 @@ const printsEscpos = (kind: string): boolean => SETTINGS_SECTION_FOR_KIND[kind] 
 
 /** The band printer: its settings are the label section, what is on the roll. */
 const printsBands = (kind: string): boolean => SETTINGS_SECTION_FOR_KIND[kind] === 'label';
+
+/** The scanner: its settings say how the box reads it and which USB device it is (SCRUM-700). */
+const readsScanner = (kind: string): boolean => SETTINGS_SECTION_FOR_KIND[kind] === 'scanner';
 
 const PAPER_WIDTHS: { value: EscposDotsPerLine; label: string }[] = [
   { value: 576, label: '576 dots (most 80 mm printers)' },
@@ -652,6 +674,93 @@ function BandStockFields({
   );
 }
 
+/**
+ * The scanner the box reads itself (SCRUM-700), as its newest heartbeat said:
+ * whether it is reading the cradle, and when the last code came through. The
+ * reason it cannot, when it cannot, is the row's last error just below.
+ */
+export function ScannerHealthLine({
+  health,
+  timezone,
+}: {
+  health: ScannerHealthView;
+  timezone?: string | null;
+}) {
+  const { words, tone } = scannerHealthWords(health);
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+      <StatusPill tone={tone}>{words}</StatusPill>
+      <span title={health.lastScanAt ? formatExact(health.lastScanAt, timezone) : undefined}>
+        {health.lastScanAt ? `last scan ${timeAgo(health.lastScanAt)}` : 'no scan since the box started'}
+      </span>
+      {health.dropped !== null && health.dropped > 0 && (
+        <span>
+          {health.dropped} partial scan{health.dropped === 1 ? '' : 's'} dropped
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * `settings.scanner`: how the box reads the cradle and which USB device it is
+ * (SCRUM-700). The ids may be left empty, which is the park's Zebra cradle;
+ * the path is for the rare box with two identical cradles, and is otherwise
+ * left for the box to find.
+ */
+function ScannerFields({
+  value,
+  onChange,
+}: {
+  value: ScannerSetup;
+  onChange: (next: ScannerSetup) => void;
+}) {
+  const defaults = scannerDefaultIds(value.mode);
+  return (
+    <>
+      <Field
+        label="How the box reads it"
+        hint="A cradle switched to serial with the CDC bar code reads cleaner; either works."
+        className="sm:col-span-2"
+      >
+        <Select
+          value={value.mode}
+          onChange={(v) => onChange({ ...value, mode: v === 'cdc' ? 'cdc' : 'hid' })}
+          options={SCANNER_MODE_OPTIONS}
+        />
+      </Field>
+      <Field label="USB vendor id" hint={`Empty is the Zebra cradle, ${defaults.vendorId}.`}>
+        <TextInput
+          value={value.vendorId}
+          onChange={(vendorId) => onChange({ ...value, vendorId })}
+          placeholder={defaults.vendorId}
+          maxLength={4}
+        />
+      </Field>
+      <Field label="USB product id" hint={`Empty is ${defaults.productId} in this mode.`}>
+        <TextInput
+          value={value.productId}
+          onChange={(productId) => onChange({ ...value, productId })}
+          placeholder={defaults.productId}
+          maxLength={4}
+        />
+      </Field>
+      <Field
+        label="Device path (optional)"
+        hint="Only for two identical scanners on one box. Empty lets the box find it."
+        className="sm:col-span-2"
+      >
+        <TextInput
+          value={value.devicePath}
+          onChange={(devicePath) => onChange({ ...value, devicePath })}
+          placeholder={value.mode === 'cdc' ? '/dev/serial/by-id/…' : '/dev/input/by-id/…-event-kbd'}
+          maxLength={120}
+        />
+      </Field>
+    </>
+  );
+}
+
 function AddDeviceForm({
   boxId,
   onClose,
@@ -670,8 +779,24 @@ function AddDeviceForm({
   const [protocol, setProtocol] = useState('');
   const [dotsPerLine, setDotsPerLine] = useState<EscposDotsPerLine>(576);
   const [bandStock, setBandStock] = useState<BandStock>(() => bandStockOf(undefined));
+  const [scanner, setScanner] = useState<ScannerSetup>(() => scannerSetupOf(undefined, 'usb'));
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  const isScanner = readsScanner(kind);
+  const scannerProblem = isScanner ? scannerSetupProblem(scanner) : null;
+
+  // A scanner the box reads is reached over USB as a keyboard or as a serial
+  // port, and which one follows from the mode: picking the mode picks the
+  // transport, which the row cannot change later. A simulated scanner stays
+  // simulated — the Console's simulator drives it, never the box.
+  const chooseKind = (next: DeviceKind) => {
+    setKind(next);
+    if (readsScanner(next) && transport !== 'simulated') setTransport(transportForScannerMode(scanner.mode));
+  };
+  const chooseScanner = (next: ScannerSetup) => {
+    setScanner(next);
+    if (transport !== 'simulated') setTransport(transportForScannerMode(next.mode));
+  };
 
   const submit = async () => {
     if (!working.isCurrent()) return;
@@ -689,7 +814,9 @@ function AddDeviceForm({
           ? { escpos: { dotsPerLine } }
           : printsBands(kind)
             ? { label: withBandStock(undefined, bandStock) }
-            : undefined,
+            : isScanner
+              ? { scanner: withScannerSetup(undefined, scanner) }
+              : undefined,
       }));
       if (!working.isCurrent()) return;
       onAdded();
@@ -710,7 +837,7 @@ function AddDeviceForm({
         <Field label="What it is">
           <Select
             value={kind}
-            onChange={(v) => setKind(v as DeviceKind)}
+            onChange={(v) => chooseKind(v as DeviceKind)}
             options={DEVICE_KINDS.map((k) => ({ value: k, label: deviceKindWord(k) }))}
           />
         </Field>
@@ -735,13 +862,19 @@ function AddDeviceForm({
         </Field>
         {printsEscpos(kind) && <PaperWidthField value={dotsPerLine} onChange={setDotsPerLine} />}
         {printsBands(kind) && <BandStockFields value={bandStock} onChange={setBandStock} />}
+        {isScanner && <ScannerFields value={scanner} onChange={chooseScanner} />}
       </div>
+      {scannerProblem && <p className="text-sm text-destructive break-words">{scannerProblem}</p>}
       {failed && <p className="text-sm text-destructive break-words">{failed}</p>}
       <div className="flex gap-2 justify-end">
         <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => void submit()} disabled={busy || !label.trim()}>
+        <Button
+          size="sm"
+          onClick={() => void submit()}
+          disabled={busy || !label.trim() || scannerProblem !== null}
+        >
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
           Add it
         </Button>
@@ -770,9 +903,14 @@ function EditDeviceForm({
     device.settings?.escpos?.dotsPerLine ?? 576,
   );
   const [bandStock, setBandStock] = useState<BandStock>(() => bandStockOf(device.settings?.label));
+  const [scanner, setScanner] = useState<ScannerSetup>(() =>
+    scannerSetupOf(device.settings?.scanner, device.transport),
+  );
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [orphaned, setOrphaned] = useState<StationAssignmentRef[] | null>(null);
+  const isScanner = readsScanner(device.kind);
+  const scannerProblem = isScanner ? scannerSetupProblem(scanner) : null;
 
   const save = async () => {
     if (!working.isCurrent()) return;
@@ -804,7 +942,16 @@ function EditDeviceForm({
                   label: withBandStock(device.settings?.label, bandStock),
                 },
               }
-            : {}),
+            : isScanner
+              ? {
+                  // The scanner section, with its suffix, burst gap and
+                  // button key carried along untouched (SCRUM-700).
+                  settings: {
+                    ...(device.settings ?? {}),
+                    scanner: withScannerSetup(device.settings?.scanner, scanner),
+                  },
+                }
+              : {}),
       }));
       if (!working.isCurrent()) return;
       onSaved();
@@ -895,6 +1042,7 @@ function EditDeviceForm({
           <PaperWidthField value={dotsPerLine} onChange={setDotsPerLine} />
         )}
         {printsBands(device.kind) && <BandStockFields value={bandStock} onChange={setBandStock} />}
+        {isScanner && <ScannerFields value={scanner} onChange={setScanner} />}
         {isTerminal && (
           <>
             <Field label="Terminal id (TID)">
@@ -906,6 +1054,7 @@ function EditDeviceForm({
           </>
         )}
       </div>
+      {scannerProblem && <p className="text-sm text-destructive break-words">{scannerProblem}</p>}
       {failed && <p className="text-sm text-destructive break-words">{failed}</p>}
       <div className="flex flex-wrap gap-2 justify-end">
         {/*
@@ -925,7 +1074,11 @@ function EditDeviceForm({
         <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => void save()} disabled={busy || !label.trim()}>
+        <Button
+          size="sm"
+          onClick={() => void save()}
+          disabled={busy || !label.trim() || scannerProblem !== null}
+        >
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
           Save
         </Button>
