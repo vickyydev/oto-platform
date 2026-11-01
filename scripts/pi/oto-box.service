@@ -31,9 +31,19 @@ ProtectSystem=strict
 ProtectHome=yes
 ReadWritePaths=/var/lib/oto-box
 PrivateTmp=yes
-# No devices: printing is over the network. A USB printer, or the booth button
-# read on the box itself (both later), will need this relaxed.
-PrivateDevices=yes
+# Devices: the counter scanner only (SCRUM-700). Printing is over the network.
+# The box reads the Zebra cradle itself — its input event node in HID mode, or
+# /dev/ttyACM* in CDC mode — so /dev is the host's, and the device allow-list
+# below lets the agent open the standard pseudo-devices, input event nodes and
+# USB serial ports, read-only, and nothing else; of those, file permissions
+# give its user the cradle alone (the udev rule the installer writes,
+# 61-oto-box-scanner.rules). The serial driver is loaded at boot
+# (modules-load.d) so its group is known when this starts.
+PrivateDevices=no
+DevicePolicy=closed
+DeviceAllow=char-input r
+DeviceAllow=char-ttyACM r
+CapabilityBoundingSet=~CAP_MKNOD CAP_SYS_RAWIO
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes

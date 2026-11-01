@@ -439,6 +439,47 @@ install -d -m 0700 -o oto-box -g oto-box /var/lib/oto-box
 # The credential, if there is one, is the box: owner-only, whatever happened to it.
 [ -f /var/lib/oto-box/credential.json ] && chmod 0600 /var/lib/oto-box/credential.json && chown oto-box:oto-box /var/lib/oto-box/credential.json
 
+# --- The counter scanner (SCRUM-700) ---------------------------------------------
+# The Zebra cradle plugs into the box, and the box reads it itself: as the USB
+# keyboard it ships as (05e0:1200, an input event node) or, after one
+# configuration bar code, as a USB serial port (05e0:1701, /dev/ttyACM*). One
+# udev rule, for any Symbol/Zebra device (vendor 05e0): its node belongs to
+# the box's own user and to nobody else, the television's display server is
+# told to ignore the keyboard (libinput), so a scan never types into the
+# screen, and ModemManager is told not to probe the serial port as a modem.
+# After the user above, because the rule names its group. The serial driver is
+# loaded at boot from here on, so the service's device allow-list (oto-box.service)
+# finds it when the box starts. A cradle already plugged in picks the rule up
+# below; if the screen still reacts to a scan, unplug the cradle and plug it
+# back in once. Rewritten on every install run.
+say "Counter scanner: udev rule for the Zebra cradle"
+SCANNER_RULE="/etc/udev/rules.d/61-oto-box-scanner.rules"
+cat >"$SCANNER_RULE" <<'EOF'
+# Written by the OTO box installer (SCRUM-700): the box reads the counter
+# scanner itself. Rewritten on every install run.
+# HID mode (the cradle as it ships): the box's user reads the keyboard's event
+# node; the display server leaves it alone.
+ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{idVendor}=="05e0", GROUP="oto-box", MODE="0640", ENV{LIBINPUT_IGNORE_DEVICE}="1"
+# CDC mode (after scanning "USB CDC Host"): the box's user reads the serial port;
+# ModemManager does not probe it.
+ACTION!="remove", SUBSYSTEM=="tty", KERNEL=="ttyACM*", ATTRS{idVendor}=="05e0", GROUP="oto-box", MODE="0660", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION!="remove", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="05e0", ENV{ID_MM_DEVICE_IGNORE}="1"
+EOF
+chmod 0644 "$SCANNER_RULE"
+printf '# Written by the OTO box installer (SCRUM-700): the USB serial driver a scanner in CDC mode needs.\ncdc_acm\n' >/etc/modules-load.d/oto-box-scanner.conf
+chmod 0644 /etc/modules-load.d/oto-box-scanner.conf
+modprobe cdc_acm 2>/dev/null || true
+SCANNER_NOTE="the udev rule is in place (vendor 05e0). Plug the cradle into the box, add it in the Console (Devices -> this box -> Add a device -> Scanner), give it to the station's Scanner job"
+if udevadm control --reload-rules 2>/dev/null; then
+  udevadm trigger --action=change --subsystem-match=input --subsystem-match=tty --property-match=ID_VENDOR_ID=05e0 2>/dev/null || true
+else
+  warn "udev did not reload its rules; the scanner rule takes effect at the next boot"
+  SCANNER_NOTE="the udev rule is written but udev did not reload it: reboot once before plugging the cradle in"
+fi
+if grep -qsx 05e0 /sys/bus/usb/devices/*/idVendor; then
+  SCANNER_NOTE="a Zebra device is plugged in (vendor 05e0); $SCANNER_NOTE. If the screen still reacts to a scan, unplug the cradle and plug it back in once"
+fi
+
 # --- The release, beside the previous one ------------------------------------
 say "Release $RELEASE"
 install -d -m 0755 /opt/oto-box/releases
@@ -653,5 +694,6 @@ $PRINTER_STEP
 SSH: $SSH_NOTE
 Tailscale: $TS_NOTE
 Printer: $PRINTER_NOTE
+Scanner: $SCANNER_NOTE
 The credential is /var/lib/oto-box/credential.json (owner-only). Never copy it to another machine.
 EOF

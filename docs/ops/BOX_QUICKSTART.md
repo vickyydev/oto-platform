@@ -276,6 +276,56 @@ part C steps 4 and 5 with the new file's name, from a machine on the box's Wi-Fi
 `--api` may be left out. The previous release stays in `/opt/oto-box/releases/` for a
 rollback (PI_BOOTH.md §7, "Update").
 
+## H. The counter scanner — into the box
+
+The Zebra cradle (DS2278 on its CR2278 cradle) plugs into the **counter box**, not the
+iPad: the box reads it itself and the till, the customer display and the gate on that
+station hear every scan, online or offline. It needs a box release built after SCRUM-700
+landed (part G): the agent in it reads the scanner, and its installer writes the
+scanner's udev rule.
+
+1. **Cradle in**: its USB cable into a black USB port on the Pi.
+2. **Pick the mode.** Either works; the second reads cleaner.
+   - **USB keyboard (HID)** — the cradle as it ships. Nothing to scan. It must still
+     end every code with Enter (the factory setting).
+   - **USB serial (CDC)** — scan the **USB CDC Host** bar code in the Zebra guide
+     (DS2278 Product Reference Guide, chapter 8, "USB Device Type") once; the scanner
+     beeps and restarts. **USB Keyboard (HID)** in the same list switches it back.
+     On a counter box with no television this is the one to use: in HID mode the box's
+     own text console hears the keystrokes too (they land at a login prompt nobody
+     sees; harmless, but noise).
+3. **Console** → Devices → the counter box → **Add a device**: What it is **Scanner** ·
+   a label (`Counter scanner`) · **How the box reads it**: the mode from step 2 (it
+   sets how the box reaches it: USB for HID, Serial for CDC) · leave the USB ids and
+   the path empty (they mean the Zebra cradle: `05e0:1200` in HID, `05e0:1701` in
+   CDC) → Add it.
+4. Devices → the till's station → **Scanner**: the device from step 3 → Save.
+5. **Check**, within a minute: under the scanner row, **Reading /dev/input/event…**
+   (HID) or **Reading /dev/ttyACM0** (CDC). Scan a band or a voucher: the row says
+   "last scan just now" and the till shows it.
+
+If the row says instead:
+
+- **Not plugged into this box** — the cable is not in the box, or the row's mode is
+  not the scanner's (a cradle in CDC is `05e0:1701`, in HID `05e0:1200`). On the box,
+  `lsusb | grep 05e0` shows which it is; change the row's mode, or scan the other bar
+  code.
+- **Plugged in … but not open** — the box's user may not read it: run the installer
+  again (part G), then unplug the cradle and plug it back in once.
+- **partial scans dropped** — HID mode with no Enter at the end of a code: scan "Add
+  Enter Key" in the Zebra guide (Miscellaneous Scanner Parameters), or use CDC.
+- A television on the box **types the code** — the cradle was plugged in before the
+  rule existed: unplug it and plug it back in once.
+
+On the box: `journalctl -u oto-box | grep -i scanner` shows when it opened the scanner,
+lost it and found it again; each scan logs its fingerprint, never the code.
+
+**The fallback — the iPad wedge.** If the box cannot read the cradle, plug the cradle
+into the iPad running the till (USB-C) instead, set the iPad's keyboard to **English
+(US)**, and scan with no text field selected: the till reads it as a keyboard, as it
+always has. The scanner row then says "Not plugged into this box", which is expected
+while the cradle is on the iPad.
+
 ## Resetting the game
 
 - Fresh game: `sudo systemctl restart oto-kiosk` (10 s). Fresh game and box:
