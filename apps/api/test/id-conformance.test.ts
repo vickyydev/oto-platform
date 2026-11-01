@@ -283,6 +283,11 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /booths/:id/prizes': NEXT_PASS,
   'POST /booths/:id/duty': NEXT_PASS,
   'POST /booths/:id/duty/sync': 'derived: the dated roster is keyed by booth and day, never by a client id',
+  // SCRUM-699: the nanny roster, mirrored on the booth's — a hand-added shift
+  // as the booth's manual add, and the sync keyed by branch and day.
+  'POST /branches/:id/nannies/manual': NEXT_PASS,
+  'POST /branches/:id/nannies/sync':
+    'derived: the dated nanny roster is keyed by branch and day, and by the rota assignment it copies, never by a client id',
   // S2-21 round 2: the id is signed into the staff member's benefit QR, and a
   // credential is never named by a client — as a voucher's code is not.
   'POST /benefits/credentials':
