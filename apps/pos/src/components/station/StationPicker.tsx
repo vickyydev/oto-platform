@@ -46,7 +46,7 @@ export function StationPicker() {
   const mayEdit = can('admin:station:update');
 
   const take = async (target: PickableStation) => {
-    if (busyId) return;
+    if (busyId || target.ready === false) return;
     setBusyId(target.id);
     try {
       await pick(target.id);
@@ -171,7 +171,7 @@ export function StationPicker() {
   );
 }
 
-function StationTile({
+export function StationTile({
   station,
   active,
   busy,
@@ -188,10 +188,11 @@ function StationTile({
     <button
       type="button"
       onClick={onSelect}
-      disabled={busy}
+      disabled={busy || station.ready === false}
       className={cn(
         'rounded-xl border p-4 text-left transition-colors min-h-[88px]',
         active ? 'border-primary bg-primary/10' : 'hover:bg-muted',
+        station.ready === false && 'opacity-50 cursor-not-allowed',
       )}
     >
       <div className="flex items-center justify-between gap-2">
@@ -222,6 +223,9 @@ function StationTile({
           <span className="truncate text-amber-600 dark:text-amber-400">No box assigned</span>
         )}
       </div>
+      {station.ready === false && (
+        <p className="mt-2 text-xs text-muted-foreground">{station.reasons?.[0] ?? 'Not ready for selling'}</p>
+      )}
       {station.accessScope === 'selected_staff' && (
         <div className="text-xs mt-1 flex items-center gap-1.5 text-muted-foreground">
           <UserCheck className="w-3.5 h-3.5 shrink-0" />

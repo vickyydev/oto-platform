@@ -1,7 +1,7 @@
 import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { BOOTH_CODE_PREFIX_LENGTH } from '@oto/shared';
+import { BOOTH_CODE_PREFIX_LENGTH, stationPrefixReadiness } from '@oto/shared';
 import {
   fleetApi,
   mergeRouting,
@@ -195,7 +195,8 @@ export function StationDrawer({
       ? 'Required for a booth: the first two characters of every voucher code.'
       : null;
 
-  const ready = name.trim().length > 0 && boxId.length > 0 && prefixMissing === null;
+  const selling = stationPrefixReadiness({ kind, codePrefix: codePrefix.trim().toUpperCase() || null });
+  const canSave = name.trim().length > 0 && boxId.length > 0 && prefixMissing === null;
 
   return (
     <Drawer
@@ -225,7 +226,7 @@ export function StationDrawer({
             <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
               Cancel
             </Button>
-            <Button size="sm" onClick={() => void save()} disabled={busy || !ready}>
+            <Button size="sm" onClick={() => void save()} disabled={busy || !canSave}>
               {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
               {station ? 'Save the station' : 'Create the station'}
             </Button>
@@ -242,6 +243,13 @@ export function StationDrawer({
         // An alert, so a screen reader says the refusal the moment it lands.
         <div ref={failedRef} role="alert">
           <ErrorNote message={failed} />
+        </div>
+      )}
+
+      {kind === 'till' && (
+        <div className="text-sm" style={{ color: selling.ready ? undefined : 'hsl(var(--status-warn))' }}>
+          <p>{selling.ready ? 'Ready for selling' : 'Not ready for selling'}</p>
+          {selling.reasons.map((reason) => <p key={reason}>{reason}</p>)}
         </div>
       )}
 

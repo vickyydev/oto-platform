@@ -24,6 +24,7 @@ import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { boxStoreFor } from '../lib/box-store';
 import { stationChannels } from '../lib/station-channel';
+import { assertStationReady } from '../services/fleet';
 import { holdsGrantAt } from '../services/access-control';
 import {
   loadStationRow,
@@ -334,6 +335,16 @@ export async function stationSessionRoutes(app: App): Promise<void> {
     '/stations/:id/lease',
     {
       config: { dynamicPermission: true },
+      preSerialization: async (req, reply, payload) => {
+        // A repeated request must not re-offer a lease after setup was cleared.
+        if (reply.statusCode === 200 && reply.getHeader('x-oto-replay')) {
+          const auth = req.requireAuth();
+          const { row, role } = await standing(req, req.params.id);
+          requireHolder(role, row);
+          await assertStationReady(app.db, auth.operatorId, row.id);
+        }
+        return payload;
+      },
       schema: {
         description:
           'Take this station for this screen. A free or expired lease is claimed outright; a live one is refused unless `takeover` is set, which needs pos:station:takeover and is audited as station.takeover.',
@@ -358,6 +369,7 @@ export async function stationSessionRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const { row, role } = await standing(req, req.params.id);
       requireHolder(role, row);
+      await assertStationReady(app.db, auth.operatorId, row.id);
       if (req.body.takeover) {
         // The manager gate. Asked at the STATION's branch rather than the
         // session's, so a manager scoped to one branch cannot reach across to

@@ -18413,6 +18413,15 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "ready": {
+                            "type": "boolean"
+                          },
+                          "reasons": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
                           "id": {
                             "type": "string",
                             "format": "uuid"
@@ -18461,6 +18470,8 @@
                           }
                         },
                         "required": [
+                          "ready",
+                          "reasons",
                           "id",
                           "name",
                           "kind",
@@ -18519,6 +18530,15 @@
                     "station": {
                       "type": "object",
                       "properties": {
+                        "ready": {
+                          "type": "boolean"
+                        },
+                        "reasons": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "format": "uuid"
@@ -18691,6 +18711,8 @@
                         }
                       },
                       "required": [
+                        "ready",
+                        "reasons",
                         "id",
                         "branchId",
                         "name",
@@ -18791,6 +18813,15 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "ready": {
+                            "type": "boolean"
+                          },
+                          "reasons": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
                           "id": {
                             "type": "string",
                             "format": "uuid"
@@ -18963,6 +18994,8 @@
                           }
                         },
                         "required": [
+                          "ready",
+                          "reasons",
                           "id",
                           "branchId",
                           "name",
@@ -19162,6 +19195,15 @@
                     "station": {
                       "type": "object",
                       "properties": {
+                        "ready": {
+                          "type": "boolean"
+                        },
+                        "reasons": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "format": "uuid"
@@ -19334,6 +19376,8 @@
                         }
                       },
                       "required": [
+                        "ready",
+                        "reasons",
                         "id",
                         "branchId",
                         "name",
@@ -19391,6 +19435,15 @@
                     "station": {
                       "type": "object",
                       "properties": {
+                        "ready": {
+                          "type": "boolean"
+                        },
+                        "reasons": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "format": "uuid"
@@ -19563,6 +19616,8 @@
                         }
                       },
                       "required": [
+                        "ready",
+                        "reasons",
                         "id",
                         "branchId",
                         "name",
@@ -19752,6 +19807,15 @@
                     "station": {
                       "type": "object",
                       "properties": {
+                        "ready": {
+                          "type": "boolean"
+                        },
+                        "reasons": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "format": "uuid"
@@ -19924,6 +19988,8 @@
                         }
                       },
                       "required": [
+                        "ready",
+                        "reasons",
                         "id",
                         "branchId",
                         "name",

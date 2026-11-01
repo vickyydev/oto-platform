@@ -206,6 +206,9 @@ export interface PaymentRouting {
 }
 
 export interface StationRow {
+  /** Absent only while talking to an older API during rollout. */
+  ready?: boolean;
+  reasons?: string[];
   id: string;
   branchId: string;
   name: string;

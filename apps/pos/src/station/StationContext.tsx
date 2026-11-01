@@ -270,7 +270,11 @@ export function StationProvider({ children }: { children: ReactNode }) {
           }
         } catch (err) {
           if (cancelled) return;
-          if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+          if (err instanceof ApiError && err.code === 'STATION_NOT_READY') {
+            forgetRemembered(branch.id);
+            forgetStaffToken();
+            setNotice(err.message);
+          } else if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
             // The API refused it: the station was archived, or it is now kept
             // for named staff this account is not among. Forget it and say so,
             // because a picker that has quietly lost a station is worse than

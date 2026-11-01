@@ -27,6 +27,7 @@ import {
   type StationKind,
 } from '@oto/db';
 import {
+  stationPrefixReadiness,
   KIOSK_DEVICE_SCOPES,
   SIMULATOR_ACTIONS_WITH_SECRETS,
   SimulatorActionSchema,
@@ -93,6 +94,8 @@ import { lockActiveOrganisation } from './organisation-archive';
  * that before the first sale — and nothing else.
  */
 export interface PickableStation {
+  ready: boolean;
+  reasons: string[];
   id: string;
   name: string;
   kind: StationKind;
@@ -121,6 +124,8 @@ export interface StationDeviceView {
 }
 
 export interface StationView {
+  ready: boolean;
+  reasons: string[];
   id: string;
   branchId: string;
   name: string;
@@ -575,6 +580,7 @@ export async function listPickableStations(
       name: station.name,
       kind: station.kind,
       accessScope: station.accessScope,
+      codePrefix: station.codePrefix,
       boxId: station.boxId,
       boxName: box.name,
       boxStatus: box.status,
@@ -593,6 +599,7 @@ export async function listPickableStations(
     .orderBy(asc(station.name));
 
   return rows.map((r) => ({
+    ...stationPrefixReadiness(r),
     id: r.id,
     name: r.name,
     kind: r.kind,
@@ -727,6 +734,8 @@ export async function pickStation(
     throw new AppError(403, 'STATION_NOT_YOURS', 'You are not on this station’s list');
   }
 
+  await assertStationReady(db, auth.operatorId, row.id);
+
   let minted: MintedStaffToken | null = null;
   let unavailable: string | null = null;
   await withTx(db, ctx, 'session.station_pick', async (tx) => {
@@ -805,6 +814,20 @@ export async function pickStation(
   };
 }
 
+/** Re-read stored setup for every selection and lease claim, including an old session. */
+export async function readStationReadiness(exec: Exec, operatorId: string, stationId: string) {
+  const [row] = await exec.select().from(station)
+    .where(and(eq(station.id, stationId), eq(station.operatorId, operatorId), isNull(station.archivedAt)))
+    .limit(1);
+  if (!row) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
+  return stationPrefixReadiness(row);
+}
+
+export async function assertStationReady(exec: Exec, operatorId: string, stationId: string): Promise<void> {
+  const readiness = await readStationReadiness(exec, operatorId, stationId);
+  if (!readiness.ready) throw new AppError(409, 'STATION_NOT_READY', readiness.reasons[0]!, { reasons: readiness.reasons });
+}
+
 // --- Assembling a station for the admin screens -----------------------------
 
 /**
@@ -879,6 +902,7 @@ async function stationViews(
   return rows.map((r) => {
     const b = r.boxId ? boxById.get(r.boxId) : undefined;
     return {
+      ...stationPrefixReadiness(r),
       id: r.id,
       branchId: r.branchId,
       name: r.name,

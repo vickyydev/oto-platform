@@ -763,6 +763,9 @@ export interface StationDeviceAssignment {
 }
 
 export interface ApiStation {
+  /** Absent only while talking to an older API during rollout. */
+  ready?: boolean;
+  reasons?: string[];
   id: string;
   branchId: string;
   boxId: string | null;
@@ -792,6 +795,9 @@ export interface ApiStation {
  * the moment they try to hand somebody a receipt.
  */
 export interface PickableStation {
+  /** Absent only while talking to an older API during rollout. */
+  ready?: boolean;
+  reasons?: string[];
   id: string;
   name: string;
   kind: StationKind | string;

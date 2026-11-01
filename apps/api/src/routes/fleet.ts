@@ -43,6 +43,7 @@ import {
   queueCommand,
   readBoxLog,
   readStationRefusals,
+  readStationReadiness,
   reissueClaimCode,
   revokeCredential,
   updateBox,
@@ -128,6 +129,8 @@ const StationDeviceViewSchema = z.object({
 const RoutingSchema = z.record(z.string(), z.unknown());
 
 const StationSchema = z.object({
+  ready: z.boolean(),
+  reasons: z.array(z.string()),
   id: z.string().uuid(),
   branchId: z.string().uuid(),
   name: z.string(),
@@ -148,6 +151,8 @@ const StationSchema = z.object({
 });
 
 const PickableStationSchema = z.object({
+  ready: z.boolean(),
+  reasons: z.array(z.string()),
   id: z.string().uuid(),
   name: z.string(),
   kind: z.enum(STATION_KINDS),
@@ -318,6 +323,18 @@ const codeExpiry = z.string().optional();
 const ACTION_ID = /^[A-Za-z0-9._-]{8,64}$/;
 
 export async function fleetRoutes(app: App): Promise<void> {
+  // A replay may predate these fields, or its setup may have changed since.
+  // Keep the stored write result and compute only today's readiness afresh.
+  app.addHook('preSerialization', async (req, reply, payload) => {
+    if (reply.statusCode !== 200 || !reply.getHeader(REPLAY_HEADER)
+      || typeof payload !== 'object' || payload === null || !('station' in payload)) return payload;
+    const result = payload as { station: { id?: unknown } };
+    if (typeof result.station?.id !== 'string') return payload;
+    const auth = req.requireAuth();
+    const readiness = await readStationReadiness(app.db, auth.operatorId, result.station.id);
+    return { ...result, station: { ...result.station, ...readiness } };
+  });
+
   // --- The picker: the only place the visibility rule lives -----------------
 
   /**

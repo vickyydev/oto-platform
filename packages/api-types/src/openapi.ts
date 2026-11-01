@@ -8972,6 +8972,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             stations: {
+                                ready: boolean;
+                                reasons: string[];
                                 /** Format: uuid */
                                 id: string;
                                 name: string;
@@ -9032,6 +9034,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             station: {
+                                ready: boolean;
+                                reasons: string[];
                                 /** Format: uuid */
                                 id: string;
                                 /** Format: uuid */
@@ -9121,6 +9125,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             stations: {
+                                ready: boolean;
+                                reasons: string[];
                                 /** Format: uuid */
                                 id: string;
                                 /** Format: uuid */
@@ -9228,6 +9234,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             station: {
+                                ready: boolean;
+                                reasons: string[];
                                 /** Format: uuid */
                                 id: string;
                                 /** Format: uuid */
@@ -9307,6 +9315,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             station: {
+                                ready: boolean;
+                                reasons: string[];
                                 /** Format: uuid */
                                 id: string;
                                 /** Format: uuid */
@@ -9441,6 +9451,8 @@ export interface paths {
                     content: {
                         "application/json": {
                             station: {
+                                ready: boolean;
+                                reasons: string[];
                                 /** Format: uuid */
                                 id: string;
                                 /** Format: uuid */

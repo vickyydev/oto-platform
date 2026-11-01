@@ -977,7 +977,7 @@ const STATION_ICONS: Record<string, LucideIcon> = {
 };
 
 /** One station as one equal card; its name opens the editor. */
-function StationCard({
+export function StationCard({
   station,
   branchLabel,
   onOpen,
@@ -1022,6 +1022,13 @@ function StationCard({
           <span className="tabular-nums">config v{station.configVersion ?? 1}</span>
         </p>
       </div>
+
+      {station.kind === 'till' && station.ready !== undefined && (
+        <div className="text-xs" style={{ color: station.ready ? undefined : 'hsl(var(--status-warn))' }}>
+          <p>{station.ready ? 'Ready for selling' : 'Not ready for selling'}</p>
+          {station.reasons?.map((reason) => <p key={reason}>{reason}</p>)}
+        </div>
+      )}
 
       {capabilities.length > 0 && (
         <p className="text-xs text-muted-foreground">{capabilities.map(capabilityWord).join(', ')}</p>

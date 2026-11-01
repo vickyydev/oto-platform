@@ -73,3 +73,4 @@ export * from './assistant-asks';
 export * from './suite-screens';
 export * from './handoff-target';
 export * from './ui-preferences';
+export * from './station-readiness';

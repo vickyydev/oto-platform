@@ -418,8 +418,8 @@ describe('the station picker — the visibility rule (S2-04)', () => {
     );
     expect(tile).toMatchObject({ id: tillId, kind: 'till', boxId, boxName: 'Virtual box 1' });
     expect(tile!.deviceCount).toBe(7);
-    // No `visible`, no `available`, no `reason`: a field a client could use to
-    // discover a hidden station defeats the rule this route exists for.
+    // Readiness describes setup only for visible stations; it must never expose
+    // a station outside this account's access list.
     expect(Object.keys(tile!).sort()).toEqual([
       'accessScope',
       'boxId',
@@ -429,6 +429,8 @@ describe('the station picker — the visibility rule (S2-04)', () => {
       'id',
       'kind',
       'name',
+      'ready',
+      'reasons',
     ]);
   });
 
@@ -605,6 +607,7 @@ describe('a station edit resolves its own branch (S2-04 review, finding 2)', () 
       payload: {
         name: 'Second Till',
         kind: 'till',
+        codePrefix: 'S2',
         boxId: otherBoxId,
         capabilities: ['tickets'],
         accessScope: 'all_staff',
