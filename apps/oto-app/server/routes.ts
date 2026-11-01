@@ -15773,6 +15773,7 @@ OTO Company Limited`,
 
       const resolutionMap = new Map(conflictResolutions.map(r => [r.sourceAssignmentId, r.action]));
       const targetAssignments = targetRow.assignments || [];
+      const tenantId = req.userWithAccess!.tenantId!;
 
       let moved = 0;
       let skipped = 0;
@@ -15789,11 +15790,25 @@ OTO Company Limited`,
         })
       );
 
+      // SCRUM-546: the merge is one transaction, all or nothing, like the
+      // deletes (SCRUM-542). The source rows it deletes are not in Schedule
+      // History, so a failure part-way must leave the rota exactly as it was
+      // rather than half-merged. Every read inside it goes through the
+      // transaction too, so a later source row sees what an earlier one moved.
+      await db.transaction(async (tx) => {
       for (const sourceId of sourceRowIds) {
-        const sourceRow = await storage.getShiftRow(sourceId, req.userWithAccess!.tenantId!);
+        const [sourceRow] = await tx.select({ id: scheduleShiftRows.id }).from(scheduleShiftRows)
+          .where(and(eq(scheduleShiftRows.id, sourceId), scheduleParkPredicate("schedule_shift_rows", tenantId)));
         if (!sourceRow) continue;
+        const sourceAssignments = await tx.select({
+          id: scheduleAssignments.id,
+          employeeId: scheduleAssignments.employeeId,
+          casualWorkerId: scheduleAssignments.casualWorkerId,
+          shiftDate: scheduleAssignments.shiftDate,
+        }).from(scheduleAssignments)
+          .where(and(eq(scheduleAssignments.shiftRowId, sourceId), scheduleParkPredicate("schedule_assignments", tenantId)));
 
-        for (const sa of (sourceRow.assignments || [])) {
+        for (const sa of sourceAssignments) {
           const assigneeKey = sa.casualWorkerId
             ? `casual:${sa.casualWorkerId}`
             : `emp:${sa.employeeId}`;
@@ -15805,22 +15820,22 @@ OTO Company Limited`,
             const resolution = resolutionMap.get(sa.id);
             if (resolution === "keep_source") {
               // Remove whichever assignment holds this person+date on the target now
-              await db.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, occupantId), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
-              await db.update(scheduleAssignments)
+              await tx.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, occupantId), scheduleParkPredicate("schedule_assignments", tenantId)));
+              await tx.update(scheduleAssignments)
                 .set({ shiftRowId: targetRowId })
-                .where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
+                .where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", tenantId)));
               occupantByKey.set(comboKey, sa.id);
               replaced++;
             } else {
               // keep_target (default): delete the source assignment
-              await db.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
+              await tx.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", tenantId)));
               skipped++;
             }
           } else {
             // No conflict - just move the assignment to target row
-            await db.update(scheduleAssignments)
+            await tx.update(scheduleAssignments)
               .set({ shiftRowId: targetRowId })
-              .where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
+              .where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", tenantId)));
             moved++;
             occupantByKey.set(comboKey, sa.id);
           }
@@ -15828,13 +15843,13 @@ OTO Company Limited`,
 
         // Move any roles from source that target doesn't have
         const targetRoleIds = new Set(
-          (await db.select().from(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, targetRowId), scheduleParkPredicate("schedule_shift_row_roles", req.userWithAccess!.tenantId!))))
+          (await tx.select().from(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, targetRowId), scheduleParkPredicate("schedule_shift_row_roles", tenantId))))
             .map(r => r.roleId)
         );
-        const sourceRoles = await db.select().from(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_row_roles", req.userWithAccess!.tenantId!)));
+        const sourceRoles = await tx.select().from(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_row_roles", tenantId)));
         for (const sr of sourceRoles) {
           if (!targetRoleIds.has(sr.roleId)) {
-            await db.insert(scheduleShiftRowRoles).values({
+            await tx.insert(scheduleShiftRowRoles).values({
               shiftRowId: targetRowId,
               roleId: sr.roleId,
               tenantId: sr.tenantId,
@@ -15844,14 +15859,15 @@ OTO Company Limited`,
         }
 
         // Move any shift breaks from source to target
-        await db.update(scheduleShiftBreaks)
+        await tx.update(scheduleShiftBreaks)
           .set({ shiftRowId: targetRowId })
-          .where(and(eq(scheduleShiftBreaks.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_breaks", req.userWithAccess!.tenantId!)));
+          .where(and(eq(scheduleShiftBreaks.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_breaks", tenantId)));
 
         // Hard-delete the now-empty source row and its roles
-        await db.delete(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_row_roles", req.userWithAccess!.tenantId!)));
-        await db.delete(scheduleShiftRows).where(and(eq(scheduleShiftRows.id, sourceId), scheduleParkPredicate("schedule_shift_rows", req.userWithAccess!.tenantId!)));
+        await tx.delete(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_row_roles", tenantId)));
+        await tx.delete(scheduleShiftRows).where(and(eq(scheduleShiftRows.id, sourceId), scheduleParkPredicate("schedule_shift_rows", tenantId)));
       }
+      });
 
       res.json({ success: true, moved, skipped, replaced, sourceRowsDeleted: sourceRowIds.length });
     } catch (error) {
@@ -19781,18 +19797,32 @@ OTO Company Limited`,
     }
   });
 
+  // SCRUM-546: the edit, reorder and delete below act on the same park group's
+  // statuses the list and create use (getDefaultTenantId), and on no other: a
+  // status of another park group answers "Status not found" and is left as it
+  // was, and a reorder naming one changes nothing at all.
   app.post("/api/admin/event-statuses/reorder", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { orderedIds } = req.body;
-      if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+      if (!Array.isArray(orderedIds) || orderedIds.length === 0 || orderedIds.some((id) => typeof id !== "string")) {
         return res.status(400).json({ message: "orderedIds array is required" });
       }
-      for (let i = 0; i < orderedIds.length; i++) {
-        await db
-          .update(eventStatuses)
-          .set({ sortOrder: i })
-          .where(eq(eventStatuses.id, orderedIds[i]));
+      const tenantId = await getDefaultTenantId();
+      const owned = await db
+        .select({ id: eventStatuses.id })
+        .from(eventStatuses)
+        .where(and(eq(eventStatuses.tenantId, tenantId), inArray(eventStatuses.id, orderedIds)));
+      if (owned.length !== new Set(orderedIds).size) {
+        return res.status(404).json({ message: "Status not found" });
       }
+      await db.transaction(async (tx) => {
+        for (let i = 0; i < orderedIds.length; i++) {
+          await tx
+            .update(eventStatuses)
+            .set({ sortOrder: i })
+            .where(and(eq(eventStatuses.id, orderedIds[i]), eq(eventStatuses.tenantId, tenantId)));
+        }
+      });
       res.json({ success: true });
     } catch (error) {
       next(error);
@@ -19804,15 +19834,16 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const { name, color, sortOrder } = req.body;
-      
+      const tenantId = await getDefaultTenantId();
+
       const [updated] = await db
         .update(eventStatuses)
-        .set({ 
+        .set({
           ...(name !== undefined && { name }),
           ...(color !== undefined && { color }),
           ...(sortOrder !== undefined && { sortOrder }),
         })
-        .where(eq(eventStatuses.id, id))
+        .where(and(eq(eventStatuses.id, id), eq(eventStatuses.tenantId, tenantId)))
         .returning();
       
       if (!updated) {
@@ -19829,22 +19860,23 @@ OTO Company Limited`,
   app.delete("/api/admin/event-statuses/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { id } = req.params;
-      
+      const tenantId = await getDefaultTenantId();
+
       // Check if this is a default status
       const [status] = await db
         .select()
         .from(eventStatuses)
-        .where(eq(eventStatuses.id, id));
-      
+        .where(and(eq(eventStatuses.id, id), eq(eventStatuses.tenantId, tenantId)));
+
       if (!status) {
         return res.status(404).json({ message: "Status not found" });
       }
-      
+
       if (status.isDefault) {
         return res.status(400).json({ message: "Cannot delete default status" });
       }
-      
-      await db.delete(eventStatuses).where(eq(eventStatuses.id, id));
+
+      await db.delete(eventStatuses).where(and(eq(eventStatuses.id, id), eq(eventStatuses.tenantId, tenantId)));
       res.status(204).send();
     } catch (error) {
       next(error);

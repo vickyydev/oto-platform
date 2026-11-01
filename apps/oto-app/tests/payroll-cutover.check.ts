@@ -22,6 +22,10 @@
 //      and no sheet, drawer or alert dialog bypasses it.
 //   5. The HR employee editor's Payroll tab keeps our gated pay fields and
 //      links payroll roles to the person's payroll profile.
+//   6. SCRUM-546: the pages let in exactly whom the payroll API serves — the
+//      same canViewHrSalary on the same signed-in user, with a platform
+//      salary claim, without one, and with an unreadable one — so a manager
+//      the API refuses is never left on a company payroll page.
 //
 // Usage, from apps/oto-app:
 //   npx tsx tests/payroll-cutover.check.ts
@@ -32,6 +36,7 @@ import { fileURLToPath } from "node:url";
 import {
   OLD_PAYROLL_REDIRECTS, PAYROLL_ENTRIES, PAYROLL_HUB_CARDS, PAYROLL_PATHS, payrollMenuFor, redirectTarget,
 } from "../client/src/lib/payroll/nav";
+import { canViewHrSalary } from "../shared/hr-salary-permission";
 
 const APP = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CLIENT = join(APP, "client", "src");
@@ -188,6 +193,38 @@ await check("5. the HR editor's Payroll tab: our gated pay fields, and a payroll
   assert.match(pane, /href=\{`\/payroll\/people\/\$\{encodeURIComponent\(id\)\}`\}/);
   assert.match(pane, /name="defaultMergeData\.salaryThb"/, "the gated pay fields stay the editing surface");
   assert.doesNotMatch(pane, /payroll-prototype|employee-payroll-panel/, "no prototype payroll panel");
+});
+
+await check("6. SCRUM-546: a payroll page opens for exactly whom the payroll API serves, with or without a platform claim", () => {
+  // The API's read gate: salary visibility first, and that is the whole of
+  // hr.view_salary, over req.userWithAccess (the same user /api/user hands the
+  // client). Read from the source, as the rest of this check reads App.tsx:
+  // importing the routes would need the server's environment.
+  const server = readFileSync(join(APP, "server", "payroll", "routes.ts"), "utf8");
+  assert.match(server, /const subjectOf = \(req: Request\) => req\.userWithAccess \?\? req\.user;/);
+  assert.match(server, /export function payrollAllows\([^)]*\): boolean \{[^}]*?if \(!canViewHrSalary\(subject\)\) return false;\n\s*if \(permission === "hr\.view_salary"\) return true;/,
+    "the API's payroll read gate is canViewHrSalary");
+  // The pages' gate is the same function on the signed-in user: the hub, every company payroll page, the menu.
+  assert.match(app, /function PayrollProtectedLayout\(\{ component: Component \}: \{ component: React\.ComponentType \}\) \{\n {2}const \{ user \} = useAuth\(\);\n {2}if \(!canViewHrSalary\(user\)\) return <Redirect to=\{PAYROLL_PATHS\.myPayslips\} replace \/>;/);
+  const tenantId = "01900000-0000-7000-8000-000000000546";
+  const claim = (role: string, salary: boolean) => ({ platformRolesEnabled: true, userId: "zz-test-546", operatorId: tenantId, tenantId, role,
+    permissions: { "hr:salary:view": salary } });
+  for (const role of ALL_ROLES) {
+    for (const mapping of [undefined, claim(role, true), claim(role, false), { unreadable: true }]) {
+      const subject = mapping === undefined ? { role } : { role, platformRoleMapping: mapping };
+      const opens = payrollMenuFor(subject).some((e) => e.id === "hub");
+      assert.equal(opens, canViewHrSalary(subject), `${role} ${JSON.stringify(mapping ?? "no claim")}: the menu and the API agree`);
+      for (const r of OLD_PAYROLL_REDIRECTS) {
+        const expected = canViewHrSalary(subject) ? EXPECTED_HOMES[r.from] : PAYROLL_PATHS.myPayslips;
+        assert.equal(redirectTarget(r, SAMPLE_PARAMS, subject), expected, `${r.from} as ${role} ${JSON.stringify(mapping ?? "no claim")}`);
+      }
+    }
+  }
+  // The ticket's case: a branch manager without a salary claim is refused by
+  // the API and so never shown a company payroll page; with the claim, both open.
+  assert.equal(canViewHrSalary({ role: "manager" }), false);
+  assert.deepEqual(payrollMenuFor({ role: "manager" }).map((e) => e.id), ["myPayslips"]);
+  assert.equal(canViewHrSalary({ role: "manager", platformRoleMapping: claim("manager", true) }), true);
 });
 
 console.log(`payroll-cutover.check: ${passed} passed, ${failures} failed`);
