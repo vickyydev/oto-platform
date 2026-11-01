@@ -138,6 +138,8 @@ already claimed — then only part A applies.
 
    Afterwards `oto-box status` names the build installed (`oto-box 0.1.0 build 2026-10-29
    b25b644 (…)`), and Console → Devices shows the same id as the box's agent version.
+   Every update after this one is part G: one command from the laptop, no trip to the
+   box — once the box is on the private network (part F).
 
 6. **Claim**: Mac browser → `https://oto-console-staging.onrender.com` → Devices →
    **Add a box** (name, slot e.g. `booth-1`, role **Booth**) → copy the code (one-time,
@@ -168,6 +170,111 @@ Red button into a black USB port (it sends Space; nothing to set). Nobody signs 
 press the button, the slip prints with today's staff in its Staff row. No slip within 3 seconds → the
 code and QR show on the TV, and the slip follows once the printer answers. Redeem the
 slip at a till per [COUNTER_VOUCHERS.md](COUNTER_VOUCHERS.md).
+
+## F. Remote access — the private network (Tailscale)
+
+A box on the private network is reached from the laptop by name, from anywhere —
+`ssh oto@oto-till`, `ssh oto@oto-booth` — and a release is pushed to it with one
+command (part G). The counter box is on it already (`oto-till`, 100.89.6.16); the
+booth is not yet. The laptop itself has to be on the network too (the Tailscale app,
+signed in to the same account).
+
+**One reusable key for every box, made once** (the Tailscale admin console, in the
+browser):
+
+1. **Access controls** → the policy file. Add a tag for the boxes and an SSH rule that
+   lets your own devices in with no periodic re-check (`action` is `accept`, not
+   `check`):
+
+   ```
+   "tagOwners": { "tag:oto-box": ["autogroup:admin"] },
+   "ssh": [
+     { "action": "accept", "src": ["autogroup:member"], "dst": ["tag:oto-box"], "users": ["oto", "root"] }
+   ]
+   ```
+
+   Leave the rules already there in place. If the `acls` list at the top is no longer
+   the allow-all default, add
+   `{ "action": "accept", "src": ["autogroup:member"], "dst": ["tag:oto-box:22"] }` to
+   it as well.
+2. **Settings → Keys → Generate auth key**: a description (`oto boxes`), **Reusable**
+   on, **Expiration** the longest offered (90 days — that is the key's own life, after
+   which a new one is made the same way; a box already joined is not affected),
+   **Ephemeral** off, **Pre-approved** on if it is shown, **Tags**: `tag:oto-box`.
+   Generate, copy — it is shown once.
+3. On the laptop, put it in the repo-root `.env` (a file git never commits):
+
+   ```
+   TAILSCALE_AUTHKEY=tskey-auth-…
+   ```
+
+   Nowhere else: not in the repository, not in a ticket, not in a message. The
+   installer and `push-release.sh` never print it.
+
+A box joined with a tagged key has no key expiry of its own: it stays on the network
+until it is removed in the admin console (**Machines** → the box → Remove).
+
+**Join an existing box, once.** Run the installer again with the key. The quickest way
+is part G's command with the key added, over the box's local address while the laptop
+is on the same Wi-Fi (the key the box was imaged with, part C step 1, is the one that
+opens it):
+
+```
+PUSH_RELEASE_KEY=~/.ssh/id_ed25519 scripts/agent/push-release.sh <ip> ~/Downloads/oto-box-0.1.0-20261029-b25b644.tgz -- --api https://oto-api-staging.onrender.com --printer-direct --tailscale-hostname oto-booth --tailscale-authkey "$(sed -n 's/^TAILSCALE_AUTHKEY=//p' .env)"
+```
+
+The installer puts Tailscale in from its own package repository, joins with Tailscale
+SSH on, and its summary ends `Tailscale: joined as oto-booth (100.x.y.z)`. Or by hand
+at the box (the Ctrl+Alt+F2 console, or an SSH window), two commands:
+
+```
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up --ssh --hostname oto-booth --auth-key tskey-auth-…
+```
+
+The counter box (`oto-till`) was joined by hand under your own login, so its key
+expires one day unless told otherwise: in the admin console, **Machines** →
+`oto-till` → **Edit ACL tags** → `tag:oto-box`. A tagged machine's key expiry is off,
+and the SSH rule above then covers it. Nothing to run on the box.
+
+**Check**: on the box, `tailscale status` and `tailscale ip -4`; from the laptop,
+`ssh oto@oto-booth hostname`.
+
+## G. Update the box — one command from the laptop, from anywhere
+
+The release file and its checksum come as a pair, `oto-box-….tgz` and
+`oto-box-….tgz.sha256`: CI's **Pi release** artifact on the run of the commit holds
+both, and `pnpm --filter @oto/box-agent pack:pi` on the laptop writes both into
+`packages/box-agent/dist/`. Keep them side by side under their own names: the push
+refuses to run without the checksum, and refuses a file renamed away from it.
+
+In Git Bash (Windows) or a Mac terminal, from the repository folder:
+
+```
+# the counter box (no television; printer on the Pi's own cable)
+scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --no-kiosk --printer-direct
+
+# the booth box (television; printer on the Pi's own cable)
+scripts/agent/push-release.sh oto-booth ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct
+```
+
+The flags after `--` are the installer's — the same ones each box was first installed
+with; `--api` may be left out on an update, the box keeps the api it has. It prints
+the build line before, copies the pair, checks the checksum on the box, unpacks, runs
+the installer (its output scrolls by as it would on the box) and prints the build line
+after. Any failure stops it with a non-zero exit, and the box keeps what it ran before
+unless the installer had already reached "Starting" — then the new build is in, and
+`oto-box status` says which. `--dry-run` (before the `--`) prints the commands and
+runs none of them.
+
+The SSH key: `~/.ssh/oto_till_ed25519` when that file exists, else
+`PUSH_RELEASE_KEY=<path>` in front of the command (or in `.env`). A box on the private
+network with part F's SSH rule needs no key at all.
+
+**By hand instead** (a box not on the private network, or no laptop with the script):
+part C steps 4 and 5 with the new file's name, from a machine on the box's Wi-Fi;
+`--api` may be left out. The previous release stays in `/opt/oto-box/releases/` for a
+rollback (PI_BOOTH.md §7, "Update").
 
 ## Resetting the game
 
