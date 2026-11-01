@@ -68,7 +68,7 @@ jobs:
         run: |
           set -u
           BASE='${{ github.event.pull_request.base.sha || github.event.before }}'
-          all() { for f in workspace db e2e pi; do echo "$f=true" >> "$GITHUB_OUTPUT"; done; }
+          all() { for f in workspace db e2e pos_e2e pi; do echo "$f=true" >> "$GITHUB_OUTPUT"; done; }
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
             echo "no usable base — running everything"; all; exit 0
           fi
@@ -80,6 +80,7 @@ jobs:
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then flag workspace true; else flag workspace false; fi
           if echo "$FILES" | grep -q -E '^packages/db/'; then flag db true; else flag db false; fi
           if echo "$FILES" | grep -q -E '^(apps/console/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag e2e true; else flag e2e false; fi
+          if echo "$FILES" | grep -q -E '^(apps/pos/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag pos_e2e true; else flag pos_e2e false; fi
           if echo "$FILES" | grep -q -E '^(packages/|apps/booth/|scripts/pi/)'; then flag pi true; else flag pi false; fi
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -161,6 +162,17 @@ jobs:
       - name: Build
         if: steps.changes.outputs.workspace == 'true'
         run: pnpm build
+      # SCRUM-369: real till sign-in, lock, membership and child confirmation,
+      # on a fresh seeded database; never the workspace's unit-test script.
+      - name: Till end-to-end
+        if: steps.changes.outputs.pos_e2e == 'true'
+        env:
+          POS_E2E_BROWSER: chromium
+          POS_E2E_BUILT: '1'
+        run: |
+          set -eo pipefail
+          pnpm --filter @oto/pos exec playwright install --with-deps chromium
+          pnpm --filter @oto/pos e2e
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
       # installs `oto-box-<version>-<YYYYMMDD>-<commit>.tgz` (the build id:
       # `packages/box-agent/src/build.ts`), and the guide says the file
