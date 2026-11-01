@@ -23,8 +23,9 @@
 //      creates no view-as record, inside one it does not replace the window's.
 //   4. A read-only window is still refused every write, and writes nothing.
 //   5. A permitted window still never reaches payroll or contracts.
-//   6. The record cannot be set or changed from Data Admin, and the table
-//      refuses a half-written one.
+//   6. The record cannot be set or changed from Data Admin, whose form shows
+//      it read-only and offers no input for it, and the table refuses a
+//      half-written one.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -366,6 +367,21 @@ try {
     const [after] = await q("select description, actor_type, actor_account_id, on_behalf_of, impersonation_id from schedule_audit_log where id = $1", [row!.id]);
     assert.deepEqual(after, { description: "ZZ TEST edited", actor_type: "impersonated", actor_account_id: ACTOR_ACCOUNT, on_behalf_of: SUBJECT_ACCOUNT,
       impersonation_id: WRITE.id });
+  });
+  await check("Data Admin's form shows it read-only and offers no input for it", async () => {
+    const admin = await signIn(dataAdmin.email);
+    const res = await call("GET", "/api/data-admin/models", admin);
+    assert.equal(res.status, 200, show(res));
+    type Field = { key: string; readOnly?: boolean; required?: boolean };
+    const model: { slug: string; formFields: Field[] } | undefined =
+      (res.body as { slug: string; formFields: Field[] }[]).find((m) => m.slug === "schedule-audit-logs");
+    assert.ok(model, "Data Admin lists Schedule Audit Log");
+    for (const key of ["actorType", "actorAccountId", "onBehalfOf", "impersonationId"]) {
+      const field: Field | undefined = model.formFields.find((f) => f.key === key);
+      assert.ok(field, `${key} is shown`);
+      assert.deepEqual([field.readOnly, field.required ?? false], [true, false], `${key}: ${JSON.stringify(field)}`);
+    }
+    assert.equal(model.formFields.find((f) => f.key === "description")?.readOnly, undefined, "the rest of the row stays editable");
   });
   await check("the table refuses a view-as record written by halves", async () => {
     for (const [type, actor, behalf, window] of [["impersonated", null, SUBJECT_ACCOUNT, WRITE.id], [null, ACTOR_ACCOUNT, null, null], ["someone", ACTOR_ACCOUNT, SUBJECT_ACCOUNT, WRITE.id]]) {

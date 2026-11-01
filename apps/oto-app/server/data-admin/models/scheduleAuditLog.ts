@@ -18,8 +18,17 @@ class ScheduleAuditLogAdmin extends ModelAdmin {
   searchFields = ["action", "description"];
   defaultOrderBy = "createdAt";
 
+  /**
+   * SCRUM-673 — who really acted in a view-as window is written by the app
+   * from the window's verified mark (storage.logScheduleAudit), and the write
+   * path refuses any change to it (409). Shown read-only on edit and left off
+   * the create form, so the form offers no input it would refuse; on edit the
+   * form sends the unchanged values back, which the write path accepts.
+   */
   get formFields(): FormFieldDef[] {
-    return deriveFormFields(this.table);
+    const appWritten = new Set(["actorType", "actorAccountId", "onBehalfOf", "impersonationId"]);
+    return deriveFormFields(this.table).map((f) =>
+      appWritten.has(f.key) ? { ...f, readOnly: true, required: false } : f);
   }
 }
 
