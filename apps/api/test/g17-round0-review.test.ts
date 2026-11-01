@@ -1383,6 +1383,22 @@ const BOOTH_SEAM = [
   'casual_workers',
 ];
 const BOOTH_READER = 'services/booth-duty.ts';
+/**
+ * SCRUM-699: the nanny roster reads the same rota the booth's does, the way
+ * the booth's does, and no more of it: the day's assignments with their row's
+ * roles, group and department, and a casual worker's name. Duty blocks, duty
+ * types and the employees table stay the booth reader's alone.
+ */
+const NANNY_SEAM = [
+  'schedule_assignments',
+  'schedule_shift_rows',
+  'shift_groups',
+  'departments',
+  'roles',
+  'schedule_shift_row_roles',
+  'casual_workers',
+];
+const NANNY_READER = 'services/nanny-duty.ts';
 
 /** The app's HR and rota tables, read from its own migrations rather than a hand-kept list. */
 function appHrAndRotaTables(): string[] {
@@ -1530,20 +1546,23 @@ describe('D. H1: the POS reads OTO App events through otoapp_v only', () => {
     expect(columns.sort()).toEqual(['id', 'user_id']);
   });
 
-  it('the booth seam’s declarations are imported by the roster reader alone', () => {
+  it('the booth seam’s declarations are imported by the two roster readers alone', () => {
     const declarations = readFileSync(
       fileURLToPath(new URL('../../../packages/db/src/schema/otoapp.ts', import.meta.url)),
       'utf8',
     );
     const symbols = [
       ...declarations.matchAll(/export const (\w+) = otoapp\.table\(\s*'([a-z_]+)'/g),
-    ].flatMap((m) => (BOOTH_SEAM.includes(m[2]!) ? [m[1]!] : []));
+    ].flatMap((m) => (BOOTH_SEAM.includes(m[2]!) ? [{ symbol: m[1]!, table: m[2]! }] : []));
     expect(symbols).toHaveLength(BOOTH_SEAM.length);
-    for (const symbol of symbols) {
+    expect(NANNY_SEAM.filter((t) => !BOOTH_SEAM.includes(t))).toEqual([]);
+    for (const { symbol, table } of symbols) {
       const users = files
         .filter(({ text }) => new RegExp(`\\b${symbol}\\b`).test(text))
-        .map((f) => f.file);
-      expect(users, symbol).toEqual([BOOTH_READER]);
+        .map((f) => f.file)
+        .sort();
+      const readers = NANNY_SEAM.includes(table) ? [BOOTH_READER, NANNY_READER] : [BOOTH_READER];
+      expect(users, symbol).toEqual(readers.sort());
     }
   });
 

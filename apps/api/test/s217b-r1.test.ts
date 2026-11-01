@@ -871,6 +871,17 @@ const SEAMS: Record<string, string[]> = {
     'casual_workers',
     'users',
   ],
+  // SCRUM-699: the nanny roster reads the same rota as the booth's, and less of
+  // it: no duty blocks, no duty types, and who a person is from the view.
+  'apps/api/src/services/nanny-duty.ts': [
+    'schedule_assignments',
+    'schedule_shift_rows',
+    'shift_groups',
+    'departments',
+    'roles',
+    'schedule_shift_row_roles',
+    'casual_workers',
+  ],
   'packages/db/src/schema/otoapp.ts': [
     'users',
     'branches',
