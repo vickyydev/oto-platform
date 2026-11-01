@@ -1,5 +1,8 @@
 # Current status - read this first when resuming
 
+**2 November 2026, SCRUM-369 READY LOCALLY ON THE REPAIRED MAIN BASE:** Both till branches are rebased on56dd686179caeb434775b10f24126ead0a7252dc, whose planner-owned roster guard repair was reviewed and verified locally (28 passed, four inherited skips; clean API typecheck and lint). The clean delivery now passes all six built Edge cases, POS typecheck, touched lint and four harness controls. The deliberate-red CI41351229348 remains bound to256f19b2393fe1bcfc679aa559fcfb439ab65818; reverted proof490d5c80597169423e2d5e27e71b756c037945f1 is ready for publication after green main CI41357325164. The delivery contains no negative-control commit. Next: publish reverted proof, land clean main, exact-SHA CI, verify API/POS deployment, inspect and attach red/green card, then369 Deployed and508 pickup. No staging business records, payment, SMS or hardware actions have occurred.
+
+
 **2 November 2026, SCRUM-369 ROSTER GUARD REPAIR LANDED BY THE PLANNER:** The owner authorized a narrow guard update; refresh found that the planner had already landed exactly that repair at56dd686179caeb434775b10f24126ead0a7252dc. Review confirms nanny-duty is allowed only for the seven tables it actually reads; duty blocks, duty types and employees remain booth-only. No duplicate repair is needed. The unchanged full guard review passes locally (28 passed, four inherited skips); API typecheck has zero diagnostics and touched-file lint passes. Exact main CI41357325164 is watched. Both till branches are rebased on this repair; fresh scoped till gates precede publication. The negative-control revert is490d5c80597169423e2d5e27e71b756c037945f1.369 remains Testing and508 remains queued until attached green proof.
 
 
