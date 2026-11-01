@@ -73,12 +73,17 @@ export const CLOSING_KEY_OF: Readonly<Record<InboxCategory, InboxTemplateKey | n
  * Central, the only park with the service. It is never a fallback for
  * another plan.
  *
- * SCRUM-676: a camp the knowledge does not hold (`CAMPS_PLAN`) closes with
- * the events team's neutral `handover_events` ("…will get back to you
- * shortly"), not the birthday manager's line: it still goes to Birthdays &
- * events, whose own line is the fallback when the events line is not usable.
+ * SCRUM-676: a camp (`CAMPS_PLAN`) closes with the playbook's neutral
+ * "Unclear or not covered" line, `closing_unclear` ("Thanks for your message!
+ * A team member will be with you shortly."), not the birthday manager's line
+ * and not the events line, whose "tailored proposal" (TH "ข้อเสนอ", RU
+ * "предложение") offers the customer something: it still goes to Birthdays &
+ * events, whose own line is the fallback when the unclear line is not usable.
+ * No other plan carries `closing_unclear` as its own line (the unclear
+ * hand-over reaches it through `isUnclearHandover`), so the set changes no
+ * other ladder.
  */
-export const PLAN_CLOSING_KEYS: ReadonlySet<InboxTemplateKey> = new Set<InboxTemplateKey>(['closing_booking', 'handover_events']);
+export const PLAN_CLOSING_KEYS: ReadonlySet<InboxTemplateKey> = new Set<InboxTemplateKey>(['closing_booking', 'closing_unclear']);
 
 /** What the closing ladder reads of a hand-over (`ai-engine.ts` `Handover`). */
 export interface ClosingHandover {
@@ -137,7 +142,8 @@ export function planOwner(intents: readonly AiIntent[], plan: AiHandoverPlan): A
  * line for that row only: an unclear or emotional message, a request the
  * knowledge does not cover, and the model handing over on its own. The
  * discount pusher goes the same way but is the deals path, and keeps the
- * destination's line.
+ * destination's line. A camp (SCRUM-676) carries the same line as its plan's
+ * own (`PLAN_CLOSING_KEYS`), to the Birthday & events queue.
  */
 export const UNCLEAR_CLOSING_KEY = 'closing_unclear' satisfies InboxTemplateKey;
 

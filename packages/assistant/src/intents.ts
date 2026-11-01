@@ -22,8 +22,8 @@
  *                                          its own fallback)
  *
  * Two plans carry a line of their own instead of the destination's: the
- * nanny booking's `closing_booking` (SCRUM-677) and a camp the knowledge does
- * not hold, `handover_events` to `birthdays` (SCRUM-676).
+ * nanny booking's `closing_booking` (SCRUM-677) and a camp's, the playbook's
+ * neutral "not covered" line `closing_unclear` to `birthdays` (SCRUM-676).
  */
 
 import type { InboxCategoryKey } from '@oto/shared';
@@ -53,8 +53,8 @@ export const AI_INTENTS = [
   'birthday_brochure',
   'special_event',
   // SCRUM-676 (real-chat replay, 2 Nov): a kids' camp is its own matter, not a
-  // birthday or a group: answered when the knowledge holds a camp, else the
-  // events team's neutral line, never the group deal.
+  // birthday or a group: handed to the Birthday & events team with a neutral
+  // line, never the group deal.
   'camps',
   // The Golden Ticket: answered first; wanting to buy goes to the events team.
   'special_tickets',
@@ -92,8 +92,9 @@ export type AiAction = (typeof AI_ACTIONS)[number];
  * `INBOX_TEMPLATE_KEYS` handover keys, `handover_general` (migration
  * `0080_inbox_ai`, rails change R1), and the playbook's closing lines
  * (`0094_inbox_playbook`): three keyed by destination, and the unclear
- * line the engine sends for an unclear or emotional hand-over; and one
- * plan's own line, `closing_booking` (SCRUM-677). Kept here as
+ * line the engine sends for an unclear or emotional hand-over (and, as its
+ * plan's own line, for a camp: SCRUM-676); and one plan's own line,
+ * `closing_booking` (SCRUM-677). Kept here as
  * a literal list because this package has no database dependency; the
  * engine reads the template rows by this key.
  */
@@ -175,12 +176,15 @@ export const GM_PLAN: AiHandoverPlan = { templateKey: 'closing_gm', route: 'gm',
 /** The playbook's Branch destination: the thread's park's reception. */
 export const BRANCH_PLAN: AiHandoverPlan = { templateKey: 'closing_branch', route: 'general', brochure: false };
 /**
- * SCRUM-676: a camp the knowledge does not hold goes to the Birthday & events
- * team with the events team's own neutral line (`handover_events`): no
- * birthday manager, no group deal. The engine sends it as the plan's own
- * line (`ai-destination.ts` `PLAN_CLOSING_KEYS`).
+ * SCRUM-676: a camp goes to the Birthday & events team with the playbook's
+ * "Unclear or not covered" line (`closing_unclear`: "Thanks for your
+ * message! A team member will be with you shortly."), which the playbook
+ * words, which is translated in Thai and Russian, and which promises nothing:
+ * no birthday manager, no group deal, and not the events line's "tailored
+ * proposal". The engine sends it as the plan's own line, ahead of the
+ * destination's (`ai-destination.ts` `PLAN_CLOSING_KEYS`).
  */
-export const CAMPS_PLAN: AiHandoverPlan = { templateKey: 'handover_events', route: 'birthdays', brochure: false };
+export const CAMPS_PLAN: AiHandoverPlan = { templateKey: 'closing_unclear', route: 'birthdays', brochure: false };
 /** Nanny bookings go to the Central inbox (the only park with the service). */
 export const CENTRAL_PLAN: AiHandoverPlan = { ...BRANCH_PLAN, branch: 'central' };
 /**
@@ -338,9 +342,14 @@ export const INTENT_TABLE: Readonly<Record<AiIntent, AiIntentRule>> = {
   // Loaded: sold right away (description and booking link). Not loaded: the
   // closing line and the Birthday & events inbox.
   special_event: answer(['faq', 'about_oto', 'prices_note'], { fallback: { plan: BIRTHDAYS_PLAN, lead: false } }),
-  // SCRUM-676: a camp the knowledge holds is answered from it (the same
-  // sources as an event); none held, the events team's line and its inbox.
-  camps: answer(['faq', 'about_oto', 'prices_note'], { fallback: { plan: CAMPS_PLAN, lead: false } }),
+  // SCRUM-676: a camp is handed over, never answered. The knowledge holds no
+  // camp, and the gate cannot tell a camp fact from any other entry an answer
+  // cites, so an answer row would let "yes, camp today" or a deal through on
+  // any citation. As a hand-over the gate overrules every camp answer, and the
+  // burst's other parts are still answered first (D1a). No lead line: the
+  // closing line goes alone (the model's checked words only where no closing
+  // template is usable in the language, as on every hand-over).
+  camps: handover(CAMPS_PLAN),
   special_tickets: answer([...PRICE_TOPICS, 'faq', 'about_oto'], { fallback: { plan: BIRTHDAYS_PLAN, lead: true } }),
   special_tickets_buy: handover(BIRTHDAYS_PLAN, { lead: true }),
   events_groups: handover(BIRTHDAYS_PLAN, { lead: true }),
