@@ -309,11 +309,13 @@ export function FnbCart({
                           {/* SCRUM-503: the panel's own ink, as the lines beside it; the prototype's violet-100 was
                               drawn for a dark surface and read pale-on-pale here, so it stays behind `dark:`. */}
                           <span className="truncate text-foreground dark:text-violet-100">{line.menuItem.name}</span>
-                          <span className="ml-1 rounded px-1.5 py-0.5 bg-violet-500/30 text-violet-300 text-[10px] font-bold uppercase tracking-wide shrink-0">
+                          {/* SCRUM-503: the badge, the note and the ฿0 take the deep violet the mobile order
+                              station already uses on light; the prototype's pale shades stay behind `dark:`. */}
+                          <span className="ml-1 rounded px-1.5 py-0.5 bg-violet-500/30 text-violet-800 dark:text-violet-300 text-[10px] font-bold uppercase tracking-wide shrink-0">
                             Prepaid
                           </span>
                         </div>
-                        <div className="text-xs text-violet-400/70 italic mt-0.5">Already paid at check-in</div>
+                        <div className="text-xs text-violet-700 dark:text-violet-400/70 italic mt-0.5">Already paid at check-in</div>
                       </div>
                     ) : (
                       <button
@@ -355,7 +357,7 @@ export function FnbCart({
                         ariaLabel={line.menuItem.name}
                       />
                     )}
-                    <div className={`font-bold tabular-nums shrink-0 w-16 text-right ${isPrepaid ? 'text-violet-300' : ''}`}>
+                    <div className={`font-bold tabular-nums shrink-0 w-16 text-right ${isPrepaid ? 'text-violet-700 dark:text-violet-300' : ''}`}>
                       {isPrepaid ? '฿0' : `฿${line.lineTotal}`}
                     </div>
                   </div>

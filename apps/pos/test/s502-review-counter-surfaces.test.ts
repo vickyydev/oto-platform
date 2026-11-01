@@ -243,9 +243,11 @@ describe('6 — the prepaid name is legible where it is drawn, and the prototype
       expect(classes).toContain('text-foreground');
       expect(classes).toContain('dark:text-violet-100');
       expect(classes).not.toContain('text-violet-100');
-      // The rest of the prepaid look is the prototype's, untouched.
+      // The tinted row and the badge's tint are the prototype's, untouched. The
+      // badge's ink is the second pass below (SCRUM-503), the prototype's
+      // violet-300 kept behind dark:.
       expect(markup).toContain('bg-violet-500/10');
-      expect(markup).toContain('bg-violet-500/30 text-violet-300');
+      expect(markup).toContain('bg-violet-500/30 text-violet-800 dark:text-violet-300');
     }
   });
 
@@ -257,6 +259,91 @@ describe('6 — the prepaid name is legible where it is drawn, and the prototype
       expect(contrast(violet(100), tinted)).toBeLessThan(1.5);
       const darkTinted = over(row, token('.dark', surface), 0.1);
       expect(contrast(violet(100), darkTinted)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
+/**
+ * SCRUM-503, the second pass — the three labels beside the prepaid name that
+ * the walkthrough measured pale-on-pale too: the Prepaid badge, the "Already
+ * paid at check-in" note and the ฿0, on the order panel and on the Order
+ * Confirmed card (its item list and its kitchen ticket). Same recipe as the
+ * name and as the mobile order station: a deep violet on light, the
+ * prototype's shade kept behind `dark:`.
+ */
+describe('SCRUM-503 — the Prepaid badge, the already-paid note and the ฿0 are legible on light', () => {
+  const item = (id: string, name: string): MenuItem => ({ id, name, price: 80, category: 'food' }) as unknown as MenuItem;
+  const prepaidLine: FnbOrderLine = { id: 'l-2', menuItem: item('hotdog', 'Hot dog'), qty: 1, selectedModifiers: [], lineTotal: 0, isPrepaid: true, prepaidStayId: 's' };
+  const juiceLine: FnbOrderLine = { id: 'l-1', menuItem: item('juice', 'Juice'), qty: 1, selectedModifiers: [], lineTotal: 50 };
+  const noop = () => undefined;
+  const classesOf = (markup: string, pattern: RegExp): string[][] =>
+    [...markup.matchAll(pattern)].map((m) => (m[1] ?? '').split(' '));
+
+  const cart = () => html(React.createElement(FnbCart, {
+    wristband: null, lines: [juiceLine, prepaidLine], total: 50, manualDiscounts: [], manualAmounts: {},
+    taxBreakdown: { netSubtotal: 50, discountTotal: 0, serviceChargeTotal: 0, exclusiveTaxTotal: 0, inclusiveTaxTotal: 0, taxTotal: 0, categories: [], grandTotal: 50 },
+    onChangeQty: noop, onEditLine: noop, onClear: noop, onCheckout: noop, onSwitchTab: noop,
+    onAddManualDiscount: noop, onRemoveManualDiscount: noop,
+  }));
+  const confirmation = () => html(React.createElement(FnbConfirmation, {
+    order: {
+      id: 'o-1', operatorId: 'op', operatorName: 'Som', lines: [juiceLine, prepaidLine], manualDiscounts: [], total: 50,
+      pickupCode: '42', payment: { creditUsed: 0, cash: 50, card: 0, promptpay: 0 }, createdAt: '2026-10-07T03:00:00.000Z',
+      status: 'completed', refunds: [],
+    } as unknown as FnbOrder,
+    newBalance: null as never,
+    onNewOrder: noop,
+  }));
+
+  it('the order panel: badge violet-800, note and ฿0 violet-700, each with the prototype’s shade only behind dark:', () => {
+    const out = cart();
+    const [badge] = classesOf(out, /<span class="([^"]*)">\s*Prepaid\s*<\/span>/g);
+    expect(badge).toEqual(expect.arrayContaining(['bg-violet-500/30', 'text-violet-800', 'dark:text-violet-300']));
+    expect(badge).not.toContain('text-violet-300');
+    const [note] = classesOf(out, /<div class="([^"]*)">Already paid at check-in<\/div>/g);
+    expect(note).toEqual(expect.arrayContaining(['text-violet-700', 'dark:text-violet-400/70', 'italic']));
+    expect(note).not.toContain('text-violet-400/70');
+    const [zero] = classesOf(out, /<div class="([^"]*)">฿0<\/div>/g);
+    expect(zero).toEqual(expect.arrayContaining(['text-violet-700', 'dark:text-violet-300']));
+    expect(zero).not.toContain('text-violet-300');
+    // The sibling line's price keeps the panel's own ink.
+    expect(out).toMatch(/<div class="font-bold tabular-nums shrink-0 w-16 text-right ">฿50<\/div>/);
+  });
+
+  it('the Order Confirmed card: the item list’s badge and ฿0, and the kitchen ticket’s badge, the same way', () => {
+    const out = confirmation();
+    // Every Prepaid badge on the card is the violet-tinted chip: its item list's
+    // and, where the kitchen ticket shows, the ticket's (which carries the gift).
+    const badges = classesOf(out, /<span class="([^"]*bg-violet-500\/30[^"]*)">/g);
+    expect(badges.length).toBe(out.match(/Prepaid\s*<\/span>/g)?.length ?? 0);
+    expect(badges.length).toBeGreaterThanOrEqual(1);
+    for (const badge of badges) {
+      expect(badge).toEqual(expect.arrayContaining(['text-violet-800', 'dark:text-violet-300']));
+      expect(badge).not.toContain('text-violet-300');
+    }
+    const [zero] = classesOf(out, /<span class="([^"]*)">฿0<\/span>/g);
+    expect(zero).toEqual(expect.arrayContaining(['text-violet-700', 'dark:text-violet-300']));
+    expect(zero).not.toContain('text-violet-300');
+  });
+
+  it('measured: 4.5:1 or better on light where each is drawn; the old inks were not; dark keeps the prototype’s', () => {
+    for (const surface of ['card', 'background'] as const) {
+      const light = token(':root', surface);
+      const row = over(violet(500), light, 0.1);
+      const badgeOnRow = over(violet(500), row, 0.3);
+      const badgeOnCard = over(violet(500), light, 0.3);
+      for (const ground of [badgeOnRow, badgeOnCard]) {
+        expect(contrast(violet(800), ground)).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(violet(300), ground)).toBeLessThan(1.5);
+      }
+      expect(contrast(violet(700), row)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(violet(300), row)).toBeLessThan(2);
+      expect(contrast(over(violet(400), row, 0.7), row)).toBeLessThan(2);
+
+      const dark = token('.dark', surface);
+      const darkRow = over(violet(500), dark, 0.1);
+      expect(contrast(violet(300), over(violet(500), darkRow, 0.3))).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(violet(300), darkRow)).toBeGreaterThanOrEqual(4.5);
     }
   });
 });
