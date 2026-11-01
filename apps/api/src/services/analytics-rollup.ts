@@ -18,6 +18,7 @@ import {
 } from '@oto/shared';
 import { rollupReportDay, saleKindOf } from './analytics-reports';
 import { rollupBenefitDay } from './analytics-benefits';
+import { partyFactsOf } from './analytics-parties';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -36,9 +37,9 @@ import type { Exec, Tx } from './tx';
  *   job:rollup.hourly  the same interval: today, and every day the daily
  *                      rollup handed over, per wall-clock hour.
  *
- * Both read one set of per-sale facts (`saleFactsOf`) and apply formula
- * version 1 (`summariseAnalyticsDayV1` in `@oto/shared`), so a day's hours add
- * up to the day.
+ * Both read the same sale and party-payment facts. Formula version 1's sale
+ * arithmetic is unchanged; parties add their same-day takings and payment
+ * count (analytics Q3), so a day's hours add up to the day.
  *
  * SAFE TO RUN TWICE AT ONCE. A branch-day is computed and written under a
  * transaction-scoped advisory lock of its own, so two runs serialise on it and
@@ -353,6 +354,11 @@ export async function rollupDailyBranchDay(
       return 'frozen';
     }
     const figures = summariseAnalyticsDayV1(await saleFactsOf(tx, clock.id, date));
+    const parties = await partyFactsOf(tx, clock, date);
+    figures.partiesCount = parties.count;
+    figures.partiesSatang = parties.payments.reduce((sum, payment) => sum + payment.amountSatang, 0);
+    figures.revenueSatang += figures.partiesSatang;
+    figures.txnCount += parties.payments.length;
     const provisional = date >= branchToday(clock, now);
     const values = {
       formulaVersion: ANALYTICS_FORMULA_VERSION,
@@ -453,6 +459,18 @@ export async function rollupHourlyBranchDay(
       return { outcome: 'frozen' as const, hoursWritten: 0, hoursRemoved: 0 };
     }
     const hours = summariseAnalyticsHoursV1(await saleFactsOf(tx, clock.id, date));
+    const parties = await partyFactsOf(tx, clock, date);
+    for (const payment of parties.payments) {
+      let hour = hours.find((row) => row.hour === payment.hour);
+      if (!hour) {
+        hour = { hour: payment.hour, ticketsSatang: 0, fnbSatang: 0, merchSatang: 0,
+          partiesSatang: 0, dropoffSatang: 0, revenueSatang: 0, txnCount: 0, guests: 0 };
+        hours.push(hour);
+      }
+      hour.partiesSatang += payment.amountSatang;
+      hour.revenueSatang += payment.amountSatang;
+      hour.txnCount += 1;
+    }
     const h = hourlySummary;
     let hoursWritten = 0;
     for (const hour of hours) {

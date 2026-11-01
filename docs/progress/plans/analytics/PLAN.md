@@ -147,8 +147,12 @@ Flagged, not changed:
   the prototype has them, each labelled; they are never added together.
 - **Party timing.** A deposit taken earlier for today's party, or a payment
   today for a future party, appears on neither day.
-- **Parties bucket is 0 until S2-20/21.** The platform has no party
-  payments yet; the bucket and count stay at 0 rather than show mock data.
+- **Party source (SCRUM-508).** Daily and hourly rollups now read the events
+  seam and the party tab's payment ledger. The count uses non-archived parties
+  held at the branch on the date; takings use their taken payments on that
+  business date, following Q3. Charges and the app's deposit are not additional
+  revenue. The app's confirmed date governs money, as in End of Day; a pending
+  till edit does not move it. Existing frozen and legacy summaries stay intact.
 
 ## 7. The data model (migration 0063)
 
