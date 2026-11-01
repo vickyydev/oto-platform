@@ -64,6 +64,7 @@ const FILES = {
   posCheckout: 'apps/pos/test/s221-r3-checkout.test.ts',
   posWords: 'apps/pos/test/s221-r3-review-words.test.ts',
   posClosing: 'apps/pos/test/s221-r4-closing-audit.test.ts',
+  revocationLag: 'apps/api/test/s506-revocation-lag.test.ts',
 } as const;
 type Suite = keyof typeof FILES;
 type Named = [Suite, string];
@@ -99,6 +100,10 @@ const HAZARDS: Record<string, Named[]> = {
   H7: [
     ['boxCredential', 'H7: revoked, left, unknown and not-configured are refused — "Benefit revoked" in the revocation’s own words'],
     ['r2', 'the cloud refuses it from the moment it is revoked; the box from its next pull'],
+    // The window between the two, alerted on (SCRUM-506).
+    ['revocationLag', 'stale: a card revoked ten minutes ago, a box whose copy was last confirmed twenty minutes ago — raised, naming the wait'],
+    ['revocationLag', 'fresh: the same card, a box that confirmed its copy a minute ago — not raised, and the clear says it has taken it'],
+    ['revocationLag', 'a card revoked ten minutes ago and a box last confirmed before it: raised on Health and by the watchdog; confirmed, it closes'],
   ],
   H8: [
     ['r2', 'sign-in: a QR read into the phone field opens no session and is no attempt on anybody'],
@@ -530,12 +535,9 @@ describe('what remains open, named', () => {
    */
   it.todo('H13 with a skewed box clock: an offline benefit priced under low clock trust is refused');
   /**
-   * H7's alert half: a box's revocation list is as old as its last
-   * `benefits` pull; a box that stops calling home is raised (fleet health),
-   * and a pull that lands incomplete is `box.cache_incomplete`, but no
-   * expectation measures the revocation-to-pull lag on its own.
+   * H7's alert half is no longer open: the revocation-to-pull lag is the
+   * fleet rule `box.revocations_behind` (SCRUM-506), named under H7 above.
    */
-  it.todo('H7’s lag: the time between a revocation and every box’s next pull alerted on by an ops expectation');
   /**
    * `benefit.comp` is written sensitive (`after.sensitive`) and reads on the
    * Activity log by its action, but the Console's "Admin log" preset filters
