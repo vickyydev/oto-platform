@@ -7,6 +7,7 @@ import {
   BIRTHDAYS_PLAN,
   BRANCH_PLAN,
   BY_BRANCH,
+  CAMPS_PLAN,
   CENTRAL_PLAN,
   NANNY_BOOKING_PLAN,
   GM_PLAN,
@@ -42,6 +43,7 @@ describe('the intent table (PLAN §B.2, SCRUM-220 playbook)', () => {
         'age_rules',
         'birthday_brochure',
         'birthday_party',
+        'camps',
         'directions_parking',
         'discount_negotiation',
         'drop_off_service',
@@ -107,6 +109,12 @@ describe('the intent table (PLAN §B.2, SCRUM-220 playbook)', () => {
     expect(nanny.thenHandover).toEqual(NANNY_BOOKING_PLAN);
     expect(NANNY_BOOKING_PLAN).toEqual({ ...CENTRAL_PLAN, templateKey: 'closing_booking' });
     expect(nanny.fallback?.plan).toEqual(CENTRAL_PLAN);
+    // SCRUM-676: a camp the knowledge does not hold goes to Birthdays & events with the events line.
+    const camps = INTENT_TABLE.camps;
+    if (camps.action !== 'answer') throw new Error('camps');
+    expect(camps.fallback).toEqual({ plan: CAMPS_PLAN, lead: false });
+    expect(CAMPS_PLAN).toEqual({ templateKey: 'handover_events', route: 'birthdays', brochure: false });
+    expect(AI_HOLDING_TEMPLATE_KEYS).toContain(CAMPS_PLAN.templateKey);
     for (const i of handoverIntents) {
       for (const known of [true, false]) expect(AI_HOLDING_TEMPLATE_KEYS).toContain(resolvePlan(plan(i), known).templateKey);
     }

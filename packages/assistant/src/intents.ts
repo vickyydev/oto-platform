@@ -20,6 +20,10 @@
  *                                          whichever queue it goes to (the
  *                                          plan keeps `handover_general` as
  *                                          its own fallback)
+ *
+ * Two plans carry a line of their own instead of the destination's: the
+ * nanny booking's `closing_booking` (SCRUM-677) and a camp the knowledge does
+ * not hold, `handover_events` to `birthdays` (SCRUM-676).
  */
 
 import type { InboxCategoryKey } from '@oto/shared';
@@ -48,6 +52,10 @@ export const AI_INTENTS = [
   'birthday_cake',
   'birthday_brochure',
   'special_event',
+  // SCRUM-676 (real-chat replay, 2 Nov): a kids' camp is its own matter, not a
+  // birthday or a group: answered when the knowledge holds a camp, else the
+  // events team's neutral line, never the group deal.
+  'camps',
   // The Golden Ticket: answered first; wanting to buy goes to the events team.
   'special_tickets',
   'special_tickets_buy',
@@ -166,6 +174,13 @@ export const BIRTHDAYS_PLAN: AiHandoverPlan = { templateKey: 'closing_birthday',
 export const GM_PLAN: AiHandoverPlan = { templateKey: 'closing_gm', route: 'gm', brochure: false };
 /** The playbook's Branch destination: the thread's park's reception. */
 export const BRANCH_PLAN: AiHandoverPlan = { templateKey: 'closing_branch', route: 'general', brochure: false };
+/**
+ * SCRUM-676: a camp the knowledge does not hold goes to the Birthday & events
+ * team with the events team's own neutral line (`handover_events`): no
+ * birthday manager, no group deal. The engine sends it as the plan's own
+ * line (`ai-destination.ts` `PLAN_CLOSING_KEYS`).
+ */
+export const CAMPS_PLAN: AiHandoverPlan = { templateKey: 'handover_events', route: 'birthdays', brochure: false };
 /** Nanny bookings go to the Central inbox (the only park with the service). */
 export const CENTRAL_PLAN: AiHandoverPlan = { ...BRANCH_PLAN, branch: 'central' };
 /**
@@ -318,6 +333,9 @@ export const INTENT_TABLE: Readonly<Record<AiIntent, AiIntentRule>> = {
   // Loaded: sold right away (description and booking link). Not loaded: the
   // closing line and the Birthday & events inbox.
   special_event: answer(['faq', 'about_oto', 'prices_note'], { fallback: { plan: BIRTHDAYS_PLAN, lead: false } }),
+  // SCRUM-676: a camp the knowledge holds is answered from it (the same
+  // sources as an event); none held, the events team's line and its inbox.
+  camps: answer(['faq', 'about_oto', 'prices_note'], { fallback: { plan: CAMPS_PLAN, lead: false } }),
   special_tickets: answer([...PRICE_TOPICS, 'faq', 'about_oto'], { fallback: { plan: BIRTHDAYS_PLAN, lead: true } }),
   special_tickets_buy: handover(BIRTHDAYS_PLAN, { lead: true }),
   events_groups: handover(BIRTHDAYS_PLAN, { lead: true }),

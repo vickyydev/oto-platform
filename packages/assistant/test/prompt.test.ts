@@ -171,7 +171,7 @@ describe('the prohibitions are all in the compiled system prompt (PLAN §B.4)', 
     expect(CERTAINTY_RULE).toContain('never a reason to be unsure');
     expect(MULTI_PART_RULE).toContain('a turn where you stayed silent is not a reason to stay silent again');
     expect(STATIC_SYSTEM_TEXT).toContain('intents: every intent the open messages hold');
-    expect(PERSONA_VERSION).toBe('persona-2026-10-28.4');
+    expect(PERSONA_VERSION).toBe('persona-2026-11-02.1');
   });
 
   it('SCRUM-678: the intent is read through bad grammar, typos and shorthand, in all three languages', () => {

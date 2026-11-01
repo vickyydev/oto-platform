@@ -174,7 +174,7 @@ describe('SCRUM-678: the reply that answers something else', () => {
 
 describe('SCRUM-677 live case (29 Oct): a fixed line whose job a writer line already does', () => {
   it('is redundant and dropped, judged by its function, with the live transcript as the example', () => {
-    expect(REVIEW_VERSION).toBe('review-2026-10-29.1');
+    expect(REVIEW_VERSION).toBe('review-2026-11-02.1');
     // The criterion: the job, not the wording — closing, or promising a follow-up.
     expect(REVIEW_SYSTEM_TEXT).toContain('whose job');
     expect(REVIEW_SYSTEM_TEXT).toMatch(/closing the conversation, or promising that someone will follow up/);

@@ -57,7 +57,7 @@ import { AI_INTENTS, type AiIntent } from './intents';
 import { inertJson, type EpisodeAuthor } from './prompt';
 
 /** Bump with any change to the reviewer's words or schema: the turn's record names it. */
-export const REVIEW_VERSION = 'review-2026-10-29.1';
+export const REVIEW_VERSION = 'review-2026-11-02.1';
 /** The hard cap on the review: past it the reply goes as composed. */
 export const REVIEW_TIMEOUT_MS = 6_000;
 export const REVIEW_MAX_OUTPUT_TOKENS = 600;

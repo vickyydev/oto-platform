@@ -24,7 +24,7 @@ import type { InternalAnswerMode } from '../internal-answer';
 import { OPERATOR_RULES_HEADING } from '../operator-rules';
 import { INTENT_MEANING, type SystemBlock } from '../prompt';
 
-export const TEACH_PERSONA_VERSION = 'teach-persona-2026-10-30.2';
+export const TEACH_PERSONA_VERSION = 'teach-persona-2026-11-02.1';
 
 export const TEACH_PERSONA: string = [
   "You help the staff of OTO Play Park (an indoor children's play park in Phuket with two parks, Central Floresta and Robinson Chalong) teach the park's chat assistant, on the Assistant page of the inbox. You talk only to park staff here, never to a customer, and nothing you write is sent to a customer.",

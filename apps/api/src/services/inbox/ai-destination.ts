@@ -72,8 +72,13 @@ export const CLOSING_KEY_OF: Readonly<Record<InboxCategory, InboxTemplateKey | n
  * reception got the generic branch line) — a nanny booking always ends at
  * Central, the only park with the service. It is never a fallback for
  * another plan.
+ *
+ * SCRUM-676: a camp the knowledge does not hold (`CAMPS_PLAN`) closes with
+ * the events team's neutral `handover_events` ("…will get back to you
+ * shortly"), not the birthday manager's line: it still goes to Birthdays &
+ * events, whose own line is the fallback when the events line is not usable.
  */
-export const PLAN_CLOSING_KEYS: ReadonlySet<InboxTemplateKey> = new Set<InboxTemplateKey>(['closing_booking']);
+export const PLAN_CLOSING_KEYS: ReadonlySet<InboxTemplateKey> = new Set<InboxTemplateKey>(['closing_booking', 'handover_events']);
 
 /** What the closing ladder reads of a hand-over (`ai-engine.ts` `Handover`). */
 export interface ClosingHandover {

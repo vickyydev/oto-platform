@@ -18,7 +18,7 @@
 import { EN_PERSONA } from './en';
 import { TH_PERSONA } from './th';
 
-export const PERSONA_VERSION = 'persona-2026-10-28.4';
+export const PERSONA_VERSION = 'persona-2026-11-02.1';
 
 /**
  * §D.7: a disclosure line stays possible without a rebuild. False until the
@@ -182,6 +182,7 @@ export const PLAYBOOK_LINES = [
   'birthday_party: open warmly ("Amazing, thank you! We\'d love to organize a party for you.") and ask, as ONE question, what date(s) they are thinking of, roughly how many people, and which branch, Central Floresta or Robinson Chalong — skipping what they already said.',
   'birthday_details (the basics are in, after your question or all at once) and birthday_cake (bringing a birthday cake): no words of your own; the birthday manager\'s closing line is sent.',
   'special_event (Halloween, Easter...): when the knowledge holds that event, sell it right away with its description and booking link (cite it); when it does not, action handover with no words of your own.',
+  "camps (a kids' camp today, next week, in the holidays): never a birthday or a group. When the knowledge holds a camp, answer from it (cite it); when it does not, action handover with no words of your own: no deal, no group line.",
   'events_groups (schools, groups): lead line "We\'d love to welcome your school or group, and we can put together a special deal!"',
   'special_tickets (the Golden Ticket): answer from the knowledge — the price per child and what is included by age, nothing more. The Golden Ticket\'s parent entry has no food credit: never call it food credit. special_tickets_buy (they want to buy it): lead line "Amazing!" only.',
   'discount_negotiation: the "that\'s expensive" line and the right deal (see Selling points). discount_insist: no words of your own.',
