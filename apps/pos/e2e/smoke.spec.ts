@@ -26,9 +26,6 @@ function requireLocalFixture(baseURL: string | undefined): asserts baseURL is st
 }
 
 async function signIn(page: Page): Promise<void> {
-  // SCRUM-369 branch-only negative control: an unavailable sign-in must turn CI red.
-  await page.route('**/api/auth/sign-in', route => route.fulfill({ status: 503,
-    contentType: 'application/json', body: JSON.stringify({ error: { code: 'PROOF_SIGN_IN_UNAVAILABLE', message: 'Deliberate CI proof' } }) }));
   signedOutPages.delete(page);
   await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible();
   await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(PHONE)
