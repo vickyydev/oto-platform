@@ -87,9 +87,11 @@ export const NANNY_DUTY_JOB = 'job:nanny.duty_sync';
  * The advisory lock namespace for one branch's nanny roster on one trading
  * day. `0x070a`..`0x0711` are taken (the job runner, the QR invoice number,
  * an operator's barcodes, a person's voucher misses, the virtual box lease,
- * the booth roster and voucher promotions, the employee sync, exclusive jobs).
+ * the booth roster and voucher promotions, the employee sync, exclusive jobs),
+ * and the OTO App, on the same database, holds `0x0712` (its night batches,
+ * apps/oto-app/server/lib/nightBatchLock.ts) and `0x0713` (its attention items).
  */
-const NANNY_DUTY_LOCK_NAMESPACE = 0x0712;
+const NANNY_DUTY_LOCK_NAMESPACE = 0x0714;
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
