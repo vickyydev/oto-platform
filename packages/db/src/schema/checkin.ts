@@ -6,6 +6,7 @@ import {
   index,
   integer,
   jsonb,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -55,6 +56,14 @@ export type RegistrationSource = (typeof REGISTRATION_SOURCES)[number];
 /** How an authorised collector came to be on the list. */
 export const GUARDIAN_SOURCES = ['in_person', 'from_chat', 'on_the_spot'] as const;
 export type GuardianSource = (typeof GUARDIAN_SOURCES)[number];
+
+/**
+ * Where a nanny or a nanny shift came from (SCRUM-699): the demo seed, the OTO
+ * App's rota (`apps/api/src/services/nanny-duty.ts` writes these and only
+ * these), or a person adding one by hand on the Console.
+ */
+export const NANNY_SOURCES = ['seed', 'app_schedule', 'manual'] as const;
+export type NannySource = (typeof NANNY_SOURCES)[number];
 
 /** What happens to prepaid food a child did not use (prototype `prepaidFoodRefundPolicy`). */
 export const PREPAID_FOOD_POLICIES = ['refund', 'forfeit'] as const;
@@ -111,6 +120,13 @@ export const supervisionPolicy = pos.table(
     nannyRatioSoftMax: integer('nanny_ratio_soft_max').notNull().default(3),
     /** How long a registration's photo is kept after the stay ends (OD-C2). */
     photoRetentionDays: integer('photo_retention_days').notNull().default(30),
+    /**
+     * SCRUM-699 (D1): the text that makes somebody on the OTO App's rota a
+     * nanny at this park — matched, case-folded, inside the shift row's group,
+     * department or one of its roles. "พี่เลี้ยง" always matches as well; an
+     * empty text turns off only the English term.
+     */
+    nannyMatchText: text('nanny_match_text').notNull().default('Nanny'),
     ...timestamps,
   },
   (t) => [
@@ -124,6 +140,7 @@ export const supervisionPolicy = pos.table(
       'supervision_policy_numbers_check',
       sql`${t.guardianMinAge} >= 0 and ${t.nannyRatioSoftMax} >= 1 and ${t.photoRetentionDays} >= 0`,
     ),
+    check('supervision_policy_nanny_match_text_check', sql`char_length(${t.nannyMatchText}) <= 100`),
   ],
 );
 
@@ -193,7 +210,13 @@ export const dropOffPricing = pos.table(
 
 // --- The nanny roster (OD-C4) ----------------------------------------------------
 
-/** A nanny the park can assign. Seeded now; fed from the staff rota later. */
+/**
+ * A nanny the park can assign. The demo seed wrote the first ones; since
+ * SCRUM-699 the OTO App's rota feeds them (`source` 'app_schedule', keyed by
+ * the app's employee id) and the Console adds one by hand when nobody is
+ * rostered ('manual'). A sync never archives or deletes a nanny (D3): a
+ * check-in names her for good.
+ */
 export const nanny = pos.table(
   'nanny',
   {
@@ -206,6 +229,9 @@ export const nanny = pos.table(
       .references(() => branch.id, { onDelete: 'restrict' }),
     name: text('name').notNull(),
     employeeId: uuid('employee_id').references(() => employee.id, { onDelete: 'restrict' }),
+    source: text('source').$type<NannySource>().notNull().default('manual'),
+    /** The OTO App's `employees.id` (varchar there, so text; no FK) — set exactly on 'app_schedule' rows. */
+    appEmployeeId: text('app_employee_id'),
     ...timestamps,
     ...archivedAt,
   },
@@ -213,10 +239,20 @@ export const nanny = pos.table(
     index('nanny_operator_idx').on(t.operatorId),
     index('nanny_branch_idx').on(t.branchId),
     index('nanny_employee_idx').on(t.employeeId),
+    uniqueIndex('nanny_branch_app_employee_unique')
+      .on(t.branchId, t.appEmployeeId)
+      .where(sql`app_employee_id is not null and archived_at is null`),
+    check('nanny_source_check', sql`${t.source} in ('seed','app_schedule','manual')`),
+    check('nanny_app_employee_check', sql`(${t.source} = 'app_schedule') = (${t.appEmployeeId} is not null)`),
   ],
 );
 
-/** On shift = a shift row covering now. The load is derived from in-park assignments. */
+/**
+ * On shift = a shift row covering now. The load is derived from in-park
+ * assignments. A sync writes and removes only its own 'app_schedule' rows,
+ * keyed by the app's assignment id; manual and seed rows belong to people and
+ * are never touched by it.
+ */
 export const nannyShift = pos.table(
   'nanny_shift',
   {
@@ -232,13 +268,67 @@ export const nannyShift = pos.table(
       .references(() => branch.id, { onDelete: 'restrict' }),
     startsAt: timestamp('starts_at', { withTimezone: true, mode: 'date' }).notNull(),
     endsAt: timestamp('ends_at', { withTimezone: true, mode: 'date' }).notNull(),
+    source: text('source').$type<NannySource>().notNull().default('manual'),
+    /** The trading day an app or manual shift was written for; null on seed rows and rows tests insert directly. */
+    businessDate: date('business_date'),
+    /** `otoapp.schedule_assignments.id` — set exactly on 'app_schedule' rows. */
+    appAssignmentId: text('app_assignment_id'),
+    syncedAt: timestamp('synced_at', { withTimezone: true, mode: 'date' }),
+    addedByAccountId: uuid('added_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
     ...timestamps,
   },
   (t) => [
     index('nanny_shift_operator_idx').on(t.operatorId),
     index('nanny_shift_nanny_idx').on(t.nannyId, t.startsAt),
     index('nanny_shift_branch_idx').on(t.branchId, t.startsAt),
+    uniqueIndex('nanny_shift_app_assignment_unique')
+      .on(t.branchId, t.appAssignmentId, t.nannyId)
+      .where(sql`app_assignment_id is not null`),
+    index('nanny_shift_branch_date_idx').on(t.branchId, t.businessDate),
+    index('nanny_shift_added_by_idx').on(t.addedByAccountId),
     check('nanny_shift_span_check', sql`${t.endsAt} > ${t.startsAt}`),
+    check('nanny_shift_source_check', sql`${t.source} in ('seed','app_schedule','manual')`),
+    check(
+      'nanny_shift_app_check',
+      sql`(${t.source} = 'app_schedule') = (${t.appAssignmentId} is not null) and (${t.source} <> 'app_schedule' or ${t.businessDate} is not null)`,
+    ),
+  ],
+);
+
+/**
+ * The day's nanny sync, one row per branch and trading day (SCRUM-699): when
+ * the OTO App's rota was last read, what the read found about the app itself,
+ * and whom it could not make a nanny. Its existence is also what tells the
+ * morning job the branch is done for the day — the booth's `booth_duty_sync`,
+ * per branch rather than per booth.
+ */
+export const nannySync = pos.table(
+  'nanny_sync',
+  {
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    businessDate: date('business_date').notNull(),
+    syncedAt: timestamp('synced_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /** `ok`, `app_not_installed`, `no_app_branch` or `ambiguous_app_branch`. */
+    appState: text('app_state').notNull(),
+    /** `[{ name, reason }]`, reason `no_employee_row`, `no_name` or `casual_worker`. */
+    unmatched: jsonb('unmatched').notNull().default([]),
+    /** Null for the morning job; the person who pressed "Sync now" otherwise. */
+    syncedByAccountId: uuid('synced_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.branchId, t.businessDate] }),
+    index('nanny_sync_operator_idx').on(t.operatorId),
+    index('nanny_sync_synced_by_idx').on(t.syncedByAccountId),
+    check(
+      'nanny_sync_app_state_check',
+      sql`${t.appState} in ('ok','app_not_installed','no_app_branch','ambiguous_app_branch')`,
+    ),
   ],
 );
 

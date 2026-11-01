@@ -1185,6 +1185,13 @@ export const otoappScheduleShiftRows = otoapp.table('schedule_shift_rows', {
   branchId: varchar('branch_id').notNull(),
   departmentId: varchar('department_id'),
   shiftGroupId: varchar('shift_group_id').notNull(),
+  /**
+   * The shift's wall-clock hours on the branch's own clock (`time` there; read
+   * as text the way `shiftDate` is). The nanny roster (SCRUM-699) turns them
+   * into instants in Postgres; an end at or before the start ends next day.
+   */
+  startTime: text('start_time').notNull(),
+  endTime: text('end_time').notNull(),
 });
 
 export const otoappShiftGroups = otoapp.table('shift_groups', {
