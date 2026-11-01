@@ -10156,6 +10156,8 @@ export interface paths {
                                     scanner?: {
                                         /** @enum {string} */
                                         mode?: "hid" | "cdc";
+                                        vendorId?: string;
+                                        productId?: string;
                                         devicePath?: string;
                                         /** @enum {string} */
                                         suffix?: "enter" | "tab" | "none";
@@ -10223,6 +10225,8 @@ export interface paths {
                             scanner?: {
                                 /** @enum {string} */
                                 mode?: "hid" | "cdc";
+                                vendorId?: string;
+                                productId?: string;
                                 devicePath?: string;
                                 /** @enum {string} */
                                 suffix?: "enter" | "tab" | "none";
@@ -10284,6 +10288,8 @@ export interface paths {
                                     scanner?: {
                                         /** @enum {string} */
                                         mode?: "hid" | "cdc";
+                                        vendorId?: string;
+                                        productId?: string;
                                         devicePath?: string;
                                         /** @enum {string} */
                                         suffix?: "enter" | "tab" | "none";
@@ -10395,6 +10401,8 @@ export interface paths {
                             scanner?: {
                                 /** @enum {string} */
                                 mode?: "hid" | "cdc";
+                                vendorId?: string;
+                                productId?: string;
                                 devicePath?: string;
                                 /** @enum {string} */
                                 suffix?: "enter" | "tab" | "none";
@@ -10456,6 +10464,8 @@ export interface paths {
                                     scanner?: {
                                         /** @enum {string} */
                                         mode?: "hid" | "cdc";
+                                        vendorId?: string;
+                                        productId?: string;
                                         devicePath?: string;
                                         /** @enum {string} */
                                         suffix?: "enter" | "tab" | "none";
@@ -36474,6 +36484,17 @@ export interface paths {
                             /** @enum {string} */
                             paperStatus?: "unknown" | "ok" | "low" | "out";
                             lastError?: string;
+                            scanner?: {
+                                /** @enum {string} */
+                                mode: "hid" | "cdc";
+                                present: boolean;
+                                open: boolean;
+                                path: string | null;
+                                /** Format: date-time */
+                                lastScanAt: string | null;
+                                scans?: number;
+                                dropped?: number;
+                            };
                         }[];
                         /** @default [] */
                         leases?: {

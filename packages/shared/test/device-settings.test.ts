@@ -1,5 +1,40 @@
 import { describe, expect, it } from 'vitest';
-import { DeviceSettingsSchema, LABEL_SENSING, LabelDeviceSettingsSchema } from '../src/device-settings';
+import {
+  DeviceSettingsSchema,
+  LABEL_SENSING,
+  LabelDeviceSettingsSchema,
+  SCANNER_USB_DEFAULTS,
+  ScannerDeviceSettingsSchema,
+} from '../src/device-settings';
+
+/**
+ * SCRUM-700 — the scanner the box reads itself: how (HID or CDC), which USB
+ * device (vendor and product ids), and optionally where.
+ */
+describe('ScannerDeviceSettingsSchema', () => {
+  it('takes the mode, the USB ids in either case, and a path', () => {
+    expect(
+      ScannerDeviceSettingsSchema.parse({ mode: 'hid', vendorId: '05E0', productId: '1200' }),
+    ).toEqual({ mode: 'hid', vendorId: '05E0', productId: '1200' });
+    expect(
+      ScannerDeviceSettingsSchema.parse({ mode: 'cdc', devicePath: '/dev/serial/by-id/usb-Symbol-if00' }),
+    ).toEqual({ mode: 'cdc', devicePath: '/dev/serial/by-id/usb-Symbol-if00' });
+    expect(ScannerDeviceSettingsSchema.parse({})).toEqual({});
+  });
+
+  it('refuses an id that is not four hex digits, a mode it does not read, and a mistyped key', () => {
+    expect(ScannerDeviceSettingsSchema.safeParse({ vendorId: '5e0' }).success).toBe(false);
+    expect(ScannerDeviceSettingsSchema.safeParse({ productId: '12000' }).success).toBe(false);
+    expect(ScannerDeviceSettingsSchema.safeParse({ productId: 'zz00' }).success).toBe(false);
+    expect(ScannerDeviceSettingsSchema.safeParse({ mode: 'serial' }).success).toBe(false);
+    expect(ScannerDeviceSettingsSchema.safeParse({ vendor: '05e0' }).success).toBe(false);
+    expect(DeviceSettingsSchema.safeParse({ scanner: { mode: 'cdc', productId: '1701' } }).success).toBe(true);
+  });
+
+  it('names the Zebra cradle’s ids for each mode as the defaults', () => {
+    expect(SCANNER_USB_DEFAULTS).toEqual({ vendorId: '05e0', productId: { hid: '1200', cdc: '1701' } });
+  });
+});
 
 /**
  * The band printer's roll, as the unit's row describes it: how the printer

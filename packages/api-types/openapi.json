@@ -21459,6 +21459,14 @@
                                       "cdc"
                                     ]
                                   },
+                                  "vendorId": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{4}$"
+                                  },
+                                  "productId": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{4}$"
+                                  },
                                   "devicePath": {
                                     "type": "string",
                                     "maxLength": 120
@@ -21705,6 +21713,14 @@
                               "cdc"
                             ]
                           },
+                          "vendorId": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{4}$"
+                          },
+                          "productId": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{4}$"
+                          },
                           "devicePath": {
                             "type": "string",
                             "maxLength": 120
@@ -21938,6 +21954,14 @@
                                     "cdc"
                                   ]
                                 },
+                                "vendorId": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{4}$"
+                                },
+                                "productId": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{4}$"
+                                },
                                 "devicePath": {
                                   "type": "string",
                                   "maxLength": 120
@@ -22156,6 +22180,14 @@
                               "hid",
                               "cdc"
                             ]
+                          },
+                          "vendorId": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{4}$"
+                          },
+                          "productId": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{4}$"
                           },
                           "devicePath": {
                             "type": "string",
@@ -22384,6 +22416,14 @@
                                     "hid",
                                     "cdc"
                                   ]
+                                },
+                                "vendorId": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{4}$"
+                                },
+                                "productId": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{4}$"
                                 },
                                 "devicePath": {
                                   "type": "string",
@@ -92044,6 +92084,50 @@
                         "lastError": {
                           "type": "string",
                           "maxLength": 200
+                        },
+                        "scanner": {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "hid",
+                                "cdc"
+                              ]
+                            },
+                            "present": {
+                              "type": "boolean"
+                            },
+                            "open": {
+                              "type": "boolean"
+                            },
+                            "path": {
+                              "type": "string",
+                              "maxLength": 128,
+                              "nullable": true
+                            },
+                            "lastScanAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            },
+                            "scans": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "dropped": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "present",
+                            "open",
+                            "path",
+                            "lastScanAt"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [

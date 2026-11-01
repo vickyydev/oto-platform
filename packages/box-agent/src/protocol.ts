@@ -110,6 +110,28 @@ export interface BoxRegisterResponse {
 export const DEVICE_REACHABILITY = ['unknown', 'reachable', 'unreachable'] as const;
 export const DEVICE_PAPER_STATES = ['unknown', 'ok', 'low', 'out'] as const;
 
+/**
+ * A scanner the box reads itself (SCRUM-700), as the box last saw it.
+ *
+ * Three facts answer "why does the cradle do nothing": whether the box can SEE
+ * a device with the scanner's USB ids (`present`), whether it has the device
+ * OPEN and is reading it (`open`), and when the last code came through
+ * (`lastScanAt`, by the box's corrected clock). `path` is the node it found
+ * or was told — `/dev/input/event3`, `/dev/ttyACM0` — which is configuration,
+ * not a payload. Counts only, never a code: `scans` delivered and `dropped`
+ * bursts that were not a whole code, since the agent started.
+ */
+export const ScannerHealthSchema = z.object({
+  mode: z.enum(['hid', 'cdc']),
+  present: z.boolean(),
+  open: z.boolean(),
+  path: z.string().max(128).nullable(),
+  lastScanAt: z.string().datetime().nullable(),
+  scans: z.number().int().min(0).optional(),
+  dropped: z.number().int().min(0).optional(),
+});
+export type ScannerHealth = z.infer<typeof ScannerHealthSchema>;
+
 export const DeviceReportSchema = z.object({
   /** The device id from the config bundle, when the box knows which row it is. */
   id: z.string().uuid().optional(),
@@ -121,6 +143,13 @@ export const DeviceReportSchema = z.object({
   paperStatus: z.enum(DEVICE_PAPER_STATES).optional(),
   /** A short label for the last fault. Never a device payload. */
   lastError: z.string().max(200).optional(),
+  /**
+   * Present only for a scanner this box reads itself (SCRUM-700). Optional, so
+   * every older agent's heartbeat is still accepted, and absent for a scanner
+   * the box does not read — a simulated one, or one on a box whose reader is
+   * off.
+   */
+  scanner: ScannerHealthSchema.optional(),
 });
 export type DeviceReport = z.infer<typeof DeviceReportSchema>;
 

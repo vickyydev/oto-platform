@@ -122,7 +122,12 @@ export const LabelDeviceSettingsSchema = z
   );
 export type LabelDeviceSettings = z.infer<typeof LabelDeviceSettingsSchema>;
 
-/** How the box reads the scanner (D2, §9.2). */
+/**
+ * How the box reads the scanner (D2, §9.2): `hid`, the cradle as it ships — a
+ * USB keyboard the box reads through its input event node — or `cdc`, the
+ * cradle switched to USB serial by scanning one configuration bar code, read
+ * as lines off `/dev/ttyACM*`.
+ */
 export const SCANNER_MODES = ['hid', 'cdc'] as const;
 export type ScannerMode = (typeof SCANNER_MODES)[number];
 
@@ -130,10 +135,37 @@ export type ScannerMode = (typeof SCANNER_MODES)[number];
 export const SCANNER_SUFFIXES = ['enter', 'tab', 'none'] as const;
 export type ScannerSuffix = (typeof SCANNER_SUFFIXES)[number];
 
+/**
+ * The USB ids the box looks for when a scanner row names none (SCRUM-700): the
+ * Symbol/Zebra vendor, and the product the DS2278's cradle presents in each
+ * mode (DEVICE_INVENTORY §9.2 — `1200` the HID keyboard, `1701` the CDC serial
+ * device). Four lower-case hex digits, as Linux writes them.
+ */
+export const SCANNER_USB_DEFAULTS = {
+  vendorId: '05e0',
+  productId: { hid: '1200', cdc: '1701' },
+} as const satisfies { vendorId: string; productId: Record<ScannerMode, string> };
+
+/** A USB vendor or product id: four hex digits, `05e0`, either case. */
+const USB_ID = z
+  .string()
+  .regex(/^[0-9a-fA-F]{4}$/, 'A USB id is four hex digits, such as 05e0');
+
 export const ScannerDeviceSettingsSchema = z
   .object({
     mode: z.enum(SCANNER_MODES).optional(),
-    /** `/dev/input/event3` for HID with an exclusive grab, `/dev/ttyACM0` for CDC. */
+    /**
+     * Which USB device on the box is this scanner (SCRUM-700). Absent means
+     * `SCANNER_USB_DEFAULTS` for the mode: the park's Zebra cradle.
+     */
+    vendorId: USB_ID.optional(),
+    productId: USB_ID.optional(),
+    /**
+     * Where to open it, when the USB ids are not enough — two identical
+     * cradles on one box, say. `/dev/input/by-id/…-event-kbd` or
+     * `/dev/input/event3` for HID, `/dev/serial/by-id/…` or `/dev/ttyACM0` for
+     * CDC. Absent, the box finds the node from the USB ids itself.
+     */
     devicePath: z.string().max(120).optional(),
     suffix: z.enum(SCANNER_SUFFIXES).optional(),
     /**

@@ -886,6 +886,13 @@ export async function recordHeartbeat(
       reachability: report.reachability,
       paperStatus: report.paperStatus ?? 'unknown',
       lastError: report.lastError ?? null,
+      /**
+       * A scanner the box reads itself (SCRUM-700): whether it sees the
+       * cradle, has it open, and when the last code came through — what the
+       * Console's device panel shows beside the row. Only when the box sent
+       * it, and only on a row of THIS box's, like the rest of the report.
+       */
+      ...(report.scanner ? { scanner: report.scanner } : {}),
     })),
     /** Addresses the box can see that no device row claims — a wizard hint. */
     discovered,
