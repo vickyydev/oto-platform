@@ -1,0 +1,68 @@
+{
+  "capturedAt": "2026-11-01T23:37:19.263Z",
+  "scope": "GitHub CI acceptance; no staging business workflow",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "id": "dep-dbjsngijnfac738uo79g",
+      "status": "live",
+      "sha": "8e6e30278114fa3bf138afd384ae35ea347d0836",
+      "finishedAt": "2026-11-01T23:34:39.015368Z",
+      "containsProvedSource": true,
+      "tillCiInputsUnchanged": true
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "dep-dbjsngbbc2fs73ds4m30",
+      "status": "live",
+      "sha": "53c9f49c715a252f1718e91803463bca786f54ca",
+      "finishedAt": "2026-11-01T23:32:17.422459Z",
+      "containsProvedSource": true,
+      "tillCiInputsUnchanged": true
+    }
+  ],
+  "green": {
+    "sha": "53c9f49c715a252f1718e91803463bca786f54ca",
+    "run": 41360677250,
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/41360677250",
+    "job": 125010170727,
+    "step": {
+      "completedAt": "2026-11-01T23:23:42Z",
+      "conclusion": "success",
+      "name": "Till end-to-end",
+      "number": 20,
+      "startedAt": "2026-11-01T23:20:38Z",
+      "status": "completed"
+    },
+    "passedCases": 6
+  },
+  "negative": {
+    "sha": "256f19b2393fe1bcfc679aa559fcfb439ab65818",
+    "run": 41351229348,
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/41351229348",
+    "job": 124981612664,
+    "step": {
+      "completedAt": "2026-11-01T21:29:57Z",
+      "conclusion": "failure",
+      "name": "Till end-to-end",
+      "number": 20,
+      "startedAt": "2026-11-01T21:29:08Z",
+      "status": "completed"
+    },
+    "failedCases": 6,
+    "signInStatus": 503,
+    "exitCode": 1,
+    "databaseRemoved": true
+  },
+  "revert": {
+    "sha": "490d5c80597169423e2d5e27e71b756c037945f1",
+    "branch": "lane/codex-till-ci-proof-reverted-20261102"
+  },
+  "local": {
+    "browser": "Edge",
+    "cases": 6,
+    "harnessControls": 4,
+    "posTypecheck": "passed",
+    "touchedFileLint": "passed"
+  }
+}
