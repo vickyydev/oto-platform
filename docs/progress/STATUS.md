@@ -1,5 +1,8 @@
 # Current status - read this first when resuming
 
+**2 November 2026, SCRUM-369 SECOND ROSTER BOUNDARY VERIFIED:** Main9b92c4aa / CI41355921405 also failed s217b-r1.test.ts:948 on the same seven nanny roster tables. This exact SHA reproduces one failure,29 passes and one inherited skip; planner repair56dd6861 gives30 passes and the same skip, with both guard files lint-clean. The first guard already passed28 checks with four inherited skips. No duplicate repair was needed. The older run has finished; repaired-main CI41357325164 is next. Both till branches remain green locally, with no feature push while main is unproven.
+
+
 **2 November 2026, SCRUM-369 BOTH REBASED TREES GREEN LOCALLY; OWNER AUTHORIZES NECESSARY CROSS-FILE REPAIRS:** Delivery and reverted-proof branches on56dd6861 each pass all six built Edge cases, POS typecheck, five-file lint and four harness controls; both private databases were removed. The owner has authorized in advance necessary additional files discovered while finishing and deploying these two units, so further CI repairs do not wait for a file-ownership reply. Keep fixes narrow, preserve the other lanes and all staging restrictions, and keep369 before508. Current main CI41357325164 is still queued; publication remains held until green main.
 
 
