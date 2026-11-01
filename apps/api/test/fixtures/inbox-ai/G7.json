@@ -3,21 +3,21 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.4",
-  "kbVersion": "bdfb4ba5c8d2a04d",
-  "recordedOn": "2026-10-28",
+  "personaVersion": "persona-2026-11-02.1",
+  "kbVersion": "8bac8945f3709121",
+  "recordedOn": "2026-11-01",
   "turns": [
     {
       "says": "Your staff were rude and my daughter got hurt today. Unacceptable.",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV8sFq9C5mzhb1GrzdUZ",
+        "id": "msg_011Cgd64sP2yQXUYtSiKGPR9",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"en\",\"intent\":\"complaint_onsite\",\"intents\":[\"complaint_onsite\"],\"certainty\":\"sure\",\"action\":\"handover\",\"grounding\":[],\"bubbles\":[\"We're so sorry to hear about your daughter and your experience today.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"NEEDS_PERSON\"}"
+            "text": "{\"language\":\"en\",\"intent\":\"complaint_onsite\",\"intents\":[\"complaint_onsite\"],\"certainty\":\"sure\",\"action\":\"handover\",\"grounding\":[],\"bubbles\":[\"We're so sorry to hear about your experience and that your daughter got hurt.\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"NEEDS_PERSON\"}"
           }
         ],
         "container": null,
@@ -25,18 +25,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 219,
+          "input_tokens": 218,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11430,
+          "cache_read_input_tokens": 11719,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 219,
-              "output_tokens": 127,
-              "cache_read_input_tokens": 11430,
+              "input_tokens": 218,
+              "output_tokens": 131,
+              "cache_read_input_tokens": 11719,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 127,
+          "output_tokens": 131,
           "output_tokens_details": {
             "thinking_tokens": 0
           },

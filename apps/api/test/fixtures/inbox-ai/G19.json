@@ -3,21 +3,21 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.4",
-  "kbVersion": "bdfb4ba5c8d2a04d",
-  "recordedOn": "2026-10-28",
+  "personaVersion": "persona-2026-11-02.1",
+  "kbVersion": "8bac8945f3709121",
+  "recordedOn": "2026-11-01",
   "turns": [
     {
       "says": "Hi, do you have a nanny service? I would like to book one",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV8uQNPco3dm33MhHFyy",
+        "id": "msg_011Cgd66zopPyCe1M2ShG4f8",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"en\",\"intent\":\"nanny_booking\",\"intents\":[\"nanny_booking\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"nanny\"],\"bubbles\":[\"Hi! Yes, we do 😊 Our nanny service is one-on-one care at Central Floresta, for kids from 3 years old.\",\"It's best to book ahead, so great that you're reaching out early!\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
+            "text": "{\"language\":\"en\",\"intent\":\"nanny_booking\",\"intents\":[\"nanny_booking\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"nanny\"],\"bubbles\":[\"Hi! Yes, we do 😊 Our nanny service is one-on-one care at Central Floresta for children from 3 years old. It's best to book ahead!\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"FACT_IN_KB\"}"
           }
         ],
         "container": null,
@@ -25,18 +25,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 212,
+          "input_tokens": 211,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11430,
+          "cache_read_input_tokens": 11719,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 212,
-              "output_tokens": 175,
-              "cache_read_input_tokens": 11430,
+              "input_tokens": 211,
+              "output_tokens": 161,
+              "cache_read_input_tokens": 11719,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 175,
+          "output_tokens": 161,
           "output_tokens_details": {
             "thinking_tokens": 0
           },

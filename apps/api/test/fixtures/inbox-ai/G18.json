@@ -3,21 +3,26 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.4",
-  "kbVersion": "bdfb4ba5c8d2a04d",
-  "recordedOn": "2026-10-28",
+  "personaVersion": "persona-2026-11-02.1",
+  "kbVersion": "8bac8945f3709121",
+  "recordedOn": "2026-11-01",
   "turns": [
     {
       "says": "what are your hours and can I book a party for the 20th?",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV8tsrrFxnfAdkL661Zc",
+        "id": "msg_011Cgd66L6R1d8asPGTHR1xG",
         "type": "message",
         "role": "assistant",
         "content": [
           {
+            "type": "thinking",
+            "thinking": "",
+            "signature": "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"
+          },
+          {
             "type": "text",
-            "text": "{\"language\":\"en\",\"intent\":\"hours\",\"intents\":[\"hours\",\"birthday_party\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\",\"hours-holidays\"],\"bubbles\":[\"Central Floresta is open every day 10:00–20:00, last entry one hour before closing 😊\",\"Amazing, thank you! We'd love to organize a party for you. Roughly how many people are you thinking of, and is it at Central Floresta or Robinson Chalong?\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"MIXED_INTENTS\"}"
+            "text": "{\"language\":\"en\",\"intent\":\"birthday_party\",\"intents\":[\"birthday_party\",\"hours\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[\"fact.hours.central\"],\"bubbles\":[\"We're open every day 10:00–20:00 at Central Floresta 😊\",\"Amazing, thank you! We'd love to organize a party for you. Roughly how many people are you thinking of, and is Central Floresta the branch you'd like?\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"MIXED_INTENTS\"}"
           }
         ],
         "container": null,
@@ -25,18 +30,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 210,
+          "input_tokens": 209,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11430,
+          "cache_read_input_tokens": 11719,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 210,
-              "output_tokens": 206,
-              "cache_read_input_tokens": 11430,
+              "input_tokens": 209,
+              "output_tokens": 517,
+              "cache_read_input_tokens": 11719,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,9 +51,9 @@
               "model": null
             }
           ],
-          "output_tokens": 206,
+          "output_tokens": 517,
           "output_tokens_details": {
-            "thinking_tokens": 0
+            "thinking_tokens": 326
           },
           "service_tier": "standard",
           "inference_geo": "global",
@@ -59,16 +64,18 @@
       "recorded": {
         "action": "answer",
         "reason": "OK",
-        "intent": "hours",
-        "pass": true,
-        "failures": []
+        "intent": "birthday_party",
+        "pass": false,
+        "failures": [
+          "intent birthday_party, expected hours"
+        ]
       }
     },
     {
       "says": "about 12 kids, at Central Floresta",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV8uFiVWefjDWppD1nNy",
+        "id": "msg_011Cgd66sDvRf8CB369dRYbd",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -82,18 +89,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 394,
+          "input_tokens": 382,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11430,
+          "cache_read_input_tokens": 11719,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 394,
+              "input_tokens": 382,
               "output_tokens": 103,
-              "cache_read_input_tokens": 11430,
+              "cache_read_input_tokens": 11719,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,

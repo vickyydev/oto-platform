@@ -3,21 +3,21 @@
   "note": "Fictional fixture dialogue and fixture KB only (SCRUM-590 A4). The model response is recorded verbatim; no request, header or key is stored.",
   "requestedModel": "claude-opus-5-5",
   "servedModel": "claude-opus-5-5",
-  "personaVersion": "persona-2026-10-28.4",
-  "kbVersion": "bdfb4ba5c8d2a04d",
-  "recordedOn": "2026-10-28",
+  "personaVersion": "persona-2026-11-02.1",
+  "kbVersion": "8bac8945f3709121",
+  "recordedOn": "2026-11-01",
   "turns": [
     {
       "says": "จองวันเสาร์ที่ 14 ให้หน่อยได้ไหมคะ ลูกสาวครบ 5 ขวบ",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV8rnWq9yx5KbHFisnqz",
+        "id": "msg_011Cgd64SNsQdLC6FRY4beg2",
         "type": "message",
         "role": "assistant",
         "content": [
           {
             "type": "text",
-            "text": "{\"language\":\"th\",\"intent\":\"birthday_party\",\"intents\":[\"birthday_party\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[],\"bubbles\":[\"ยินดีด้วยนะคะ 🎈 แอดมินยินดีช่วยจัดปาร์ตี้วันเกิดให้น้องเลยค่ะ\",\"ขอทราบจำนวนแขกโดยประมาณ และสาขาที่สนใจ Central Floresta หรือ Robinson Chalong คะ\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"CLEAR_INTENT\"}"
+            "text": "{\"language\":\"th\",\"intent\":\"birthday_party\",\"intents\":[\"birthday_party\"],\"certainty\":\"sure\",\"action\":\"answer\",\"grounding\":[],\"bubbles\":[\"ยินดีด้วยนะคะ 🎈 แอดมินดีใจมากที่จะได้จัดปาร์ตี้วันเกิดให้น้องค่ะ\",\"ไม่ทราบว่าจะมากันประมาณกี่ท่าน และสนใจจัดที่สาขาไหนคะ Central Floresta หรือ Robinson Chalong คะ\"],\"sendBrochure\":false,\"branchNamed\":null,\"askBranch\":false,\"reason\":\"CLEAR_INTENT\"}"
           }
         ],
         "container": null,
@@ -25,18 +25,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 244,
+          "input_tokens": 243,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11430,
+          "cache_read_input_tokens": 11719,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 244,
-              "output_tokens": 222,
-              "cache_read_input_tokens": 11430,
+              "input_tokens": 243,
+              "output_tokens": 237,
+              "cache_read_input_tokens": 11719,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
@@ -46,7 +46,7 @@
               "model": null
             }
           ],
-          "output_tokens": 222,
+          "output_tokens": 237,
           "output_tokens_details": {
             "thinking_tokens": 0
           },
@@ -68,7 +68,7 @@
       "says": "ประมาณ 12 คนค่ะ จัดที่ Central Floresta ค่ะ",
       "response": {
         "model": "claude-opus-5-5",
-        "id": "msg_011CgV8s5azZY58ovdSdd758",
+        "id": "msg_011Cgd64hK4Rkj3A4G7VeL5S",
         "type": "message",
         "role": "assistant",
         "content": [
@@ -82,18 +82,18 @@
         "stop_sequence": null,
         "stop_details": null,
         "usage": {
-          "input_tokens": 479,
+          "input_tokens": 493,
           "cache_creation_input_tokens": 0,
-          "cache_read_input_tokens": 11430,
+          "cache_read_input_tokens": 11719,
           "cache_creation": {
             "ephemeral_5m_input_tokens": 0,
             "ephemeral_1h_input_tokens": 0
           },
           "iterations": [
             {
-              "input_tokens": 479,
+              "input_tokens": 493,
               "output_tokens": 103,
-              "cache_read_input_tokens": 11430,
+              "cache_read_input_tokens": 11719,
               "cache_creation_input_tokens": 0,
               "cache_creation": {
                 "ephemeral_5m_input_tokens": 0,
