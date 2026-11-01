@@ -302,3 +302,69 @@ describe('the box lane in the sale writer', () => {
     expect(laneSale(rung.saleId)).toBeNull();
   });
 });
+
+describe('SCRUM-502 — a refusal at the money press says who refused it and where the order is', () => {
+  const USED_UP = "Mint's prepaid Hot dog has already been served.";
+  const usedUp = () => reply({ error: { code: 'PREPAID_USED_UP', message: USED_UP } }, 409);
+
+  it('rung up on the box lane, refused by the box: the box answered, and the order is on this till alone', async () => {
+    stubFetch({
+      bridge: (type) => (type === 'cart.quote' ? reply({ document: {}, result: boxQuote }) : usedUp()),
+    });
+    const { result } = renderHook(() => useSaleWriter());
+    const rung = await result.current.commit(order());
+    expect(laneSale(rung.saleId)?.lane).toBe('box');
+    const paid = await result.current.finalise(cash, 'cash-press');
+    expect(paid).toMatchObject({ ok: false, message: USED_UP, retryable: false, code: 'PREPAID_USED_UP' });
+    expect(result.current.state).toEqual({
+      kind: 'failed',
+      saleId: rung.saleId,
+      stage: 'finalise',
+      cause: 'refused',
+      message: USED_UP,
+      code: 'PREPAID_USED_UP',
+      retryable: false,
+      answeredBy: 'box',
+      heldOn: 'till',
+    });
+  });
+
+  it('rung up on the platform, its cash press refused by the box: the box answered, and the platform still holds the order', async () => {
+    stubFetch({
+      platform: (url, body) => {
+        if (url === '/api/sales') return reply({ sale: apiSale({ id: String(body!.id), stationId: STATION }), replay: false });
+        throw new TypeError('Failed to fetch');
+      },
+      bridge: () => usedUp(),
+    });
+    const { result } = renderHook(() => useSaleWriter());
+    const rung = await result.current.commit(order());
+    expect(laneSale(rung.saleId)?.lane).toBe('platform');
+    await result.current.finalise(cash, 'cash-press');
+    expect(result.current.state).toMatchObject({ kind: 'failed', stage: 'finalise', cause: 'refused', answeredBy: 'box' });
+    expect(result.current.state).not.toHaveProperty('heldOn');
+  });
+
+  it('refused by the platform: neither mark, so the panel keeps the platform’s words', async () => {
+    stubFetch({
+      platform: (url, body) => {
+        if (url === '/api/sales') return reply({ sale: apiSale({ id: String(body!.id), stationId: STATION }), replay: false });
+        return reply({ error: { code: 'PREPAID_USED_UP', message: USED_UP } }, 409);
+      },
+    });
+    const { result } = renderHook(() => useSaleWriter());
+    await result.current.commit(order());
+    await result.current.finalise(cash, 'cash-press');
+    expect(result.current.state).toMatchObject({ kind: 'failed', stage: 'finalise', cause: 'refused', code: 'PREPAID_USED_UP' });
+    expect(result.current.state).not.toHaveProperty('answeredBy');
+    expect(result.current.state).not.toHaveProperty('heldOn');
+  });
+
+  it('a commit the box refused on the box lane is marked as the box’s', async () => {
+    stubFetch({ bridge: () => usedUp() });
+    const { result } = renderHook(() => useSaleWriter());
+    const rung = await result.current.commit(order());
+    expect(rung).toMatchObject({ ok: false, message: USED_UP });
+    expect(result.current.state).toMatchObject({ kind: 'failed', stage: 'commit', cause: 'refused', answeredBy: 'box' });
+  });
+});

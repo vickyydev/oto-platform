@@ -41,8 +41,12 @@ import type { CartQuote } from '@/api/sales';
  * judgement about the cart. A person sent to a manager over a burnt
  * idempotency key learns to distrust the panel, and the one refusal that really
  * does need a manager then reads like all the others.
+ *
+ * SCRUM-502 — a refusal names who gave it: on the box lane the counter's box
+ * looked at the sale and said no, and sending staff after the platform for it
+ * sends them after the wrong thing. The instruction is the same either way.
  */
-function advice(cause: SaleFailureCause): ReactNode {
+function advice(cause: SaleFailureCause, answeredBy?: 'box'): ReactNode {
   switch (cause) {
     case 'connection':
       return (
@@ -73,9 +77,9 @@ function advice(cause: SaleFailureCause): ReactNode {
     case 'refused':
       return (
         <>
-          <span className="font-semibold text-foreground">Trying again will not help</span> — the
-          platform looked at this sale and refused it. Go back, check the order, and call a manager
-          if it still refuses.
+          <span className="font-semibold text-foreground">Trying again will not help</span> —{' '}
+          {answeredBy === 'box' ? 'this counter’s box' : 'the platform'} looked at this sale and
+          refused it. Go back, check the order, and call a manager if it still refuses.
         </>
       );
   }
@@ -140,14 +144,18 @@ export function SaleWriteFailure({
         <ServerCrash className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400" />
         <div className="min-w-0 flex-1">
           <div className="text-base font-bold text-rose-700 dark:text-rose-200">{headline}</div>
+          {/* SCRUM-502: where the order is follows the lane. A sale rung up on the
+              box lane is held on this till until it is paid; the platform has no row. */}
           {state.stage === 'finalise' && !stockRefused && (
             <p className="mt-1 text-sm text-muted-foreground">
-              The order itself is saved on the platform, as unpaid and without a receipt number.
+              {state.heldOn === 'till'
+                ? 'The order is held on this till only, unpaid and without a receipt number — none of it has reached the platform.'
+                : 'The order itself is saved on the platform, as unpaid and without a receipt number.'}
             </p>
           )}
           <p className="mt-1 text-sm text-muted-foreground">{state.message}</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {stockRefused && state.code ? stockRefusalAdvice(state.code) : advice(state.cause)}
+            {stockRefused && state.code ? stockRefusalAdvice(state.code) : advice(state.cause, state.answeredBy)}
           </p>
           <p className="mt-2 font-mono text-xs text-muted-foreground">Sale {state.saleId}</p>
           <div className="mt-4 flex items-center gap-3">
