@@ -16,6 +16,9 @@ test.use({ trace: 'off', video: 'off', screenshot: 'off' });
 test.setTimeout(120_000);
 
 function requireLocalFixture(baseURL: string | undefined): asserts baseURL is string {
+  if (process.env.POS_E2E_DATABASE_URL && (!PHONE || !PASSWORD || !ADMIN_PHONE || !ADMIN_PASSWORD)) {
+    throw new Error('The isolated till harness must supply all four sign-in settings');
+  }
   test.skip(!PHONE || !PASSWORD || !ADMIN_PHONE || !ADMIN_PASSWORD,
     'Set POS_E2E_PHONE, POS_E2E_PASSWORD, POS_E2E_ADMIN_PHONE and POS_E2E_ADMIN_PASSWORD');
   test.skip(!baseURL || !['localhost', '127.0.0.1', '[::1]'].includes(new URL(baseURL).hostname),
@@ -29,7 +32,10 @@ async function signIn(page: Page): Promise<void> {
     .catch(() => { throw new Error('The staff phone field could not be filled'); });
   await page.locator('input[type="password"][autocomplete="current-password"]').fill(PASSWORD)
     .catch(() => { throw new Error('The staff password field could not be filled'); });
+  const signedIn = page.waitForResponse(response => response.url().endsWith('/api/auth/sign-in')
+    && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  expect((await signedIn).status(), 'The real staff sign-in must succeed').toBe(200);
   const stationPicker = page.getByRole('heading', { name: 'Which station are you on?' });
   await expect.poll(async () => (await stationPicker.isVisible())
     || (await page.getByText('Membership Check', { exact: true }).isVisible())).toBe(true);
@@ -71,7 +77,7 @@ async function clearStaffPage(page: Page): Promise<void> {
 
 async function displayPrompt(page: Page, expectedId?: string): Promise<string> {
   const response = await page.waitForResponse(async candidate => {
-    if (!candidate.url().endsWith('/api/display/session') || candidate.request().method() !== 'GET'
+    if (!candidate.url().endsWith('/display/session') || candidate.request().method() !== 'GET'
       || candidate.status() !== 200) return false;
     return expectedId === undefined || (await candidate.json()).document?.prompt?.requestId === expectedId;
   });
@@ -114,12 +120,25 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
   const context = await browser.newContext({ baseURL, viewport: { width: 1024, height: 768 } });
   const display = await context.newPage();
   const admin = await request.newContext({ baseURL });
+  const publicationChecks: string[] = [];
+  const observePublication = async (response: Response) => {
+    const path = new URL(response.url()).pathname;
+    if (/\/stations\/[^/]+\/(displays|lease|intents|session)$/.test(path)) {
+      const name = path.split('/').at(-1);
+      publicationChecks.push(`${name}:${response.status()}`);
+      if (name === 'displays' && response.ok()) {
+        const body = await response.json().catch(() => null);
+        publicationChecks.push(`connected:${body?.displays?.filter((item: { connected: boolean }) => item.connected).length ?? 'unknown'}`);
+      }
+    }
+  };
+  staff.on('response', observePublication);
   let credentialId: string | null = null;
   let stationId: string | null = null;
   let ownLeaseId: string | null = null;
   const pendingClaims = new Set<Promise<void>>();
   const observeLease = (response: Response) => {
-    if (!stationId || response.url().split('?')[0] !== new URL(`/api/stations/${stationId}/lease`, baseURL).href
+    if (!stationId || response.url().split('?')[0] !== new URL(`/api/box/v1/station/${stationId}/lease`, baseURL).href
       || response.request().method() !== 'POST' || response.status() !== 200) return;
     const pending = response.json().then(body => {
       if (body.document?.stationId === stationId && typeof body.lease?.leaseId === 'string') ownLeaseId = body.lease.leaseId;
@@ -131,7 +150,7 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
   const releaseLease = async () => {
     await Promise.allSettled([...pendingClaims]);
     if (!stationId || !ownLeaseId) return;
-    const response = await staff.request.post(`/api/stations/${stationId}/lease/release`, {
+    const response = await staff.request.post(`/api/box/v1/station/${stationId}/lease/release`, {
       data: { leaseId: ownLeaseId }, headers: { 'Idempotency-Key': `display-smoke-release-${crypto.randomUUID()}` },
     });
     expect(response.status()).toBe(200);
@@ -161,6 +180,7 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
     await display.goto('about:blank').catch(() => undefined);
     await context.close();
     staff.off('response', observeLease);
+    staff.off('response', observePublication);
     await admin.post('/api/auth/sign-out').catch(() => undefined);
     await admin.dispose();
     if (revokeFailed) throw new Error('The dedicated display credential could not be revoked');
@@ -191,7 +211,7 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
     await expect(display.getByRole('heading', { name: 'Set up this display' })).toBeVisible();
     const code = await display.getByTestId('display-pairing-code').textContent();
     expect(typeof code === 'string' && /^\d{6}$/.test(code)).toBe(true);
-    const publication = staff.waitForResponse(response => response.url().endsWith(`/api/stations/${link.stationId}/intents`)
+    const publication = staff.waitForResponse(response => response.url().endsWith(`/api/box/v1/station/${link.stationId}/intents`)
       && response.request().method() === 'POST' && response.status() === 200
       && response.request().postDataJSON()?.type === 'session.publish_display'
       && response.request().postDataJSON()?.payload?.stage === 'identify').catch(() => null);
@@ -205,7 +225,7 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
     credentialId = paired.device.id;
     expect(paired.station?.id === link.stationId).toBe(true);
     const published = await publication;
-    expect(published !== null).toBe(true);
+    expect(published !== null, `Display publication: ${publicationChecks.slice(-20).join(', ')}`).toBe(true);
     if (!published) throw new Error('The staff till did not publish its new display prompt');
     const payload = published.request().postDataJSON()?.payload;
     expect(payload?.stage === 'identify' && typeof payload.prompt?.requestId === 'string').toBe(true);
@@ -245,7 +265,7 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
     await page.getByLabel('Lock screen').click();
     await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
     expect((await displayPrompt(fixture.display)) === promptId).toBe(true);
-    const answered = fixture.display.waitForResponse((response) => response.url().endsWith('/api/display/intents')
+    const answered = fixture.display.waitForResponse((response) => response.url().endsWith('/display/intents')
       && response.request().method() === 'POST' && response.request().postDataJSON()?.type === 'display.identify');
     await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
     expect((await answered).status()).toBe(200);
@@ -284,7 +304,7 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
     await fixture.display.reload();
     await expect(fixture.display.getByTestId('display-station')).toContainText(STATION_NAME, { timeout: 20_000 });
     await signIn(page);
-    const rejected = fixture.display.waitForResponse((response) => response.url().endsWith('/api/display/session') && response.status() === 401);
+    const rejected = fixture.display.waitForResponse((response) => response.url().endsWith('/display/session') && response.status() === 401);
     await fixture.revoke();
     expect((await rejected).status()).toBe(401);
     await expect(fixture.display.getByRole('heading', { name: 'Set up this display' })).toBeVisible({ timeout: 20_000 });
@@ -316,7 +336,7 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
     const unknown = `06${String(Math.floor(10000000 + Math.random() * 89999999))}`;
     const expectedPhone = `+66${unknown.slice(1)}`;
     await typePhone(fixture.display, unknown.slice(1));
-    const answered = fixture.display.waitForResponse(response => response.url().endsWith('/api/display/intents')
+    const answered = fixture.display.waitForResponse(response => response.url().endsWith('/display/intents')
       && response.request().method() === 'POST' && response.request().postDataJSON()?.type === 'display.identify');
     const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?')
       && response.request().method() === 'GET').catch(() => null);
@@ -362,7 +382,7 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
   }
 });
 
-test('separate display saved-child review persists before Done and retries a lost save reply', async ({ page, browser, baseURL }) => {
+test('separate display saved-child review persists before Done and retries a lost upstream save reply', async ({ page, browser, baseURL }) => {
   test.setTimeout(120_000);
   requireLocalFixture(baseURL);
   await page.goto('/');
@@ -393,7 +413,7 @@ test('separate display saved-child review persists before Done and retries a los
     await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
     await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
     await page.getByRole('button', { name: 'Add one Kids', exact: true }).first().click();
-    const publishedReview = fixture.display.waitForResponse(async response => response.url().endsWith('/api/display/session')
+    const publishedReview = fixture.display.waitForResponse(async response => response.url().endsWith('/display/session')
       && response.status() === 200 && (await response.json()).document?.prompt?.kind === 'child_review');
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     const prompt = (await (await publishedReview).json()).document.prompt;
@@ -421,7 +441,7 @@ test('separate display saved-child review persists before Done and retries a los
 
     // A declared saved profile is explicitly selected; the other slot's draft survives its acknowledgement.
     await secondName.fill('Other child local draft');
-    const selected = fixture.display.waitForResponse(response => response.url().endsWith('/api/display/intents')
+    const selected = fixture.display.waitForResponse(response => response.url().endsWith('/display/intents')
       && response.request().postDataJSON()?.payload?.action === 'select');
     await review.getByLabel('Child 1 saved profile', { exact: true }).selectOption(childId);
     expect((await selected).status()).toBe(200);
@@ -455,7 +475,11 @@ test('separate display saved-child review persists before Done and retries a los
         expect(actual.status()).toBe(200);
         signalCommitted?.();
         await lostReply;
-        await route.abort('failed');
+        // The write reached the platform but its upstream reply was lost.
+        // A socket abort now correctly moves the till to the box (OD-1),
+        // which completes this write; it cannot exercise the platform retry.
+        await route.fulfill({ status: 504, contentType: 'application/json',
+          body: JSON.stringify({ error: { code: 'UPSTREAM_TIMEOUT', message: 'The upstream save reply was lost' } }) });
       } else {
         expect(typeof key === 'string' && key === firstPatchKey && JSON.stringify(body) === JSON.stringify(firstPatchBody)).toBe(true);
         await route.continue();
@@ -535,7 +559,7 @@ test('separate display guest F&B uses the captured order through lock, cash paym
     let lastKind = 'none';
     let lastSupported = false;
     return fixture.display.waitForResponse(async response => {
-      if (!response.url().endsWith('/api/display/session')) return false;
+      if (!response.url().endsWith('/display/session')) return false;
       lastStatus = response.status();
       if (lastStatus !== 200) return false;
       const document = (await response.json().catch(() => null))?.document;
@@ -609,7 +633,7 @@ test('separate display guest F&B uses the captured order through lock, cash paym
     await expect(page.getByRole('button', { name: `Charge ฿${document.totals.total}`, exact: true })).toBeVisible();
     await expect(publicFnb.getByText('Local menu note', { exact: true })).toBeVisible();
     await publicFnb.getByLabel('Change language').click();
-    const languageSet = fixture.display.waitForResponse(response => response.url().endsWith('/api/display/intents')
+    const languageSet = fixture.display.waitForResponse(response => response.url().endsWith('/display/intents')
       && response.request().postDataJSON()?.type === 'display.set_language'
       && response.request().postDataJSON()?.payload?.language === 'fr' && response.status() === 200);
     await publicFnb.getByRole('button', { name: 'Français', exact: true }).click();
@@ -618,7 +642,7 @@ test('separate display guest F&B uses the captured order through lock, cash paym
     expect((await (await languageSet).json()).document?.language === 'fr').toBe(true);
     await expect(publicFnb.getByText('Frites', { exact: true })).toBeVisible();
     await publicFnb.getByLabel('Change language').click();
-    const languageReset = fixture.display.waitForResponse(response => response.url().endsWith('/api/display/intents')
+    const languageReset = fixture.display.waitForResponse(response => response.url().endsWith('/display/intents')
       && response.request().postDataJSON()?.type === 'display.set_language'
       && response.request().postDataJSON()?.payload?.language === 'en' && response.status() === 200);
     await publicFnb.getByRole('button', { name: 'English', exact: true }).click();
@@ -682,7 +706,7 @@ test('separate display guardian acknowledgement retains lock and retry, while st
       || /^\/api\/members\/[^/]+\/children(\/|$)/.test(pathname)) businessWrites += 1;
   };
   const readConsent = (ready?: boolean, completed?: boolean) => fixture.display.waitForResponse(async response => {
-    if (!response.url().endsWith('/api/display/session') || response.status() !== 200) return false;
+    if (!response.url().endsWith('/display/session') || response.status() !== 200) return false;
     const document = (await response.json()).document;
     return document?.prompt?.kind === 'consent' && (ready === undefined || document.prompt.canContinue === ready)
       && (completed === undefined || document.prompt.completed === completed);
@@ -727,10 +751,10 @@ test('separate display guardian acknowledgement retains lock and retry, while st
     await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
     await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardian');
     let originalGesture: { actionId: string; payload: unknown } | undefined;
-    await fixture.display.route('**/api/display/session', async route => {
+    await fixture.display.route('**/display/session', async route => {
       if (blockRead) await route.abort('failed'); else await route.continue();
     });
-    await fixture.display.route('**/api/display/intents', async route => {
+    await fixture.display.route('**/display/intents', async route => {
       const body = route.request().postDataJSON();
       if (body.type !== 'display.consent' || body.payload.action !== 'acknowledge') { await route.continue(); return; }
       publicWrites += 1;
@@ -821,7 +845,7 @@ test('separate display guest shop uses captured sizes, lock retention, disconnec
     let lastStage = 'none';
     let lastSupported = false;
     return fixture.display.waitForResponse(async response => {
-      if (!response.url().endsWith('/api/display/session')) return false;
+      if (!response.url().endsWith('/display/session')) return false;
       lastStatus = response.status();
       if (lastStatus !== 200) return false;
       const document = (await response.json().catch(() => null))?.document;
