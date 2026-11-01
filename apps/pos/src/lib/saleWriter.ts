@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { newId, type PaymentAttemptView } from '@oto/shared';
 import { ApiError, NetworkError } from '@/api/client';
+import { answeredByBox } from '@/api/bridge';
 import {
   apiSaleOfBox,
   finaliseOnBox,
@@ -117,6 +118,18 @@ export type SaleWriteState =
       message: string;
       code?: string;
       retryable: boolean;
+      /**
+       * SCRUM-502 — the counter's box gave this answer, not the platform, so
+       * the panel names the box. Absent: the platform answered, or nothing did.
+       */
+      answeredBy?: 'box';
+      /**
+       * SCRUM-502 — where the order stands after a money press that failed.
+       * `till`: it was rung up on the box lane, which keeps it on this till
+       * alone until it is paid, so the platform holds no row of it. Absent:
+       * the platform holds it, unpaid.
+       */
+      heldOn?: 'till';
     };
 
 export interface SaleWriteInput {
@@ -546,6 +559,7 @@ export function useSaleWriter(): SaleWriter {
             message,
             ...(err instanceof ApiError ? { code: err.code } : {}),
             retryable,
+            ...(answeredByBox(err) ? { answeredBy: 'box' as const } : {}),
           });
         }
         return { ok: false, saleId: ids.saleId, message, retryable };
@@ -688,6 +702,12 @@ export function useSaleWriter(): SaleWriter {
           message,
           ...(err instanceof ApiError ? { code: err.code } : {}),
           retryable,
+          // SCRUM-502: who said no, and where the order is now. A sale rung up
+          // on the box lane exists on this till alone until it is paid; one
+          // rung up on the platform whose cash press fell to the box is still
+          // the platform's unpaid row.
+          ...(answeredByBox(err) ? { answeredBy: 'box' as const } : {}),
+          ...(onTheBox?.lane === 'box' ? { heldOn: 'till' as const } : {}),
         });
       }
       return { ok: false, saleId: held.id, message, retryable, ...(err instanceof ApiError ? { code: err.code } : {}) };
