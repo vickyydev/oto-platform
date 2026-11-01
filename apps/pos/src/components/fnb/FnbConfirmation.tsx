@@ -210,8 +210,9 @@ export function FnbConfirmation({
                         {isPrepaid && <Gift className="inline w-3.5 h-3.5 text-violet-400 mr-1 -mt-0.5" />}
                         {/* SCRUM-503: the card's own ink, as the order panel's prepaid line now has it. */}
                         <span className={isPrepaid ? 'text-foreground dark:text-violet-100' : ''}>{line.menuItem.name}</span>
+                        {/* SCRUM-503: the badge and the ฿0 as on the order panel — deep violet on light. */}
                         {isPrepaid && (
-                          <span className="ml-1.5 rounded px-1.5 py-0.5 bg-violet-500/30 text-violet-300 text-[10px] font-bold uppercase tracking-wide">
+                          <span className="ml-1.5 rounded px-1.5 py-0.5 bg-violet-500/30 text-violet-800 dark:text-violet-300 text-[10px] font-bold uppercase tracking-wide">
                             Prepaid
                           </span>
                         )}
@@ -225,7 +226,7 @@ export function FnbConfirmation({
                           </span>
                         )}
                       </span>
-                      <span className={`font-bold tabular-nums shrink-0 ${isPrepaid ? 'text-violet-300' : ''}`}>
+                      <span className={`font-bold tabular-nums shrink-0 ${isPrepaid ? 'text-violet-700 dark:text-violet-300' : ''}`}>
                         {isPrepaid ? '฿0' : `฿${line.lineTotal}`}
                       </span>
                     </div>
@@ -350,7 +351,7 @@ export function FnbConfirmation({
                           <span className="font-bold">{line.qty}×</span>{' '}
                           {line.menuItem.name}
                           {line.isPrepaid && (
-                            <span className="ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 bg-violet-500/30 text-violet-300 text-[10px] font-bold uppercase tracking-wide">
+                            <span className="ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 bg-violet-500/30 text-violet-800 dark:text-violet-300 text-[10px] font-bold uppercase tracking-wide">
                               <Gift className="w-2.5 h-2.5" />
                               Prepaid
                             </span>
