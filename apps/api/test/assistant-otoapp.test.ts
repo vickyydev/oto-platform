@@ -88,6 +88,25 @@ const today = isoDay(new Date());
 const firstOfMonth = `${today.slice(0, 7)}-01`;
 const tomorrow = isoDay(new Date(), 1);
 
+describe('the worked-attendance fixture at the start of a month (SCRUM-369 CI repair)', () => {
+  it.each([
+    ['2026-11-01', 1, '2026-11-01'], // Sunday: no weekday yet.
+    ['2026-11-02', 1, '2026-11-02'], // Only one weekday.
+    ['2026-11-03', 2, '2026-11-03'], // Normal second-weekday anomaly.
+  ] as const)('keeps a worked period and one in-period late arrival on %s', (day, count, lateDay) => {
+    const id = 'zz-calendar-fixture';
+    try {
+      expect(fakeAttendanceThisMonth(fake, id, new Date(`${day}T12:00:00Z`)))
+        .toEqual({ days: count, hours: count * 8.5 });
+      const stored = fake.data.attendance.get(id)!;
+      expect(stored.anomalies).toEqual([{ type: 'LATE_ARRIVAL', date: lateDay }]);
+      expect(stored.days.every(row => row.date >= day.slice(0, 7) + '-01' && row.date <= day)).toBe(true);
+    } finally {
+      fake.data.attendance.delete(id);
+    }
+  });
+});
+
 beforeAll(async () => {
   fake = await FakeOtoApp.start();
   w = await askWorld({
@@ -1242,7 +1261,7 @@ describe('the test night (SCRUM-591, 2026-10-21): a named screen’s link, groun
     const worked = script(w, attendanceCall(anan.id), final('Checked.'));
     expect((await ask(w, manager.cookie, "Anan's attendance this month")).body.state).toBe('answered');
     expect((toolResultsSeen(worked)[0]!.data as { data: { words: string } }).data.words).toBe(
-      `ZZ Anan Fixture: ${attendance.days} days worked, ${attendance.hours} hours, 1 late arrival, 0 no-shows between ${periodSentence(firstOfMonth, today)}.`,
+      `ZZ Anan Fixture: ${attendance.days} day${attendance.days === 1 ? '' : 's'} worked, ${attendance.hours} hours, 1 late arrival, 0 no-shows between ${periodSentence(firstOfMonth, today)}.`,
     );
   });
 });

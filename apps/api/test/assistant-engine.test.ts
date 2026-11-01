@@ -813,7 +813,8 @@ describe('links are grounded like figures (§C, §E.4)', () => {
 
 describe('the guard’s fallback line (§C, §E.4)', () => {
   it('a figure no tool returned, with no link to offer: the line stands alone as a sentence, and the ask is failed', async () => {
-    script(w, final('There are 31 children inside.'));
+    // A count outside calendar dates cannot be grounded by this month's clock.
+    script(w, final('There are 987654321 children inside.'));
     const res = await ask(w, receptionCookie, 'How many children are inside?');
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
@@ -824,7 +825,7 @@ describe('the guard’s fallback line (§C, §E.4)', () => {
     });
     // A complete sentence: nothing follows it, so no colon may end it.
     expect(res.body.answer).not.toMatch(/:\s*$/);
-    expect(res.body.answer).not.toContain('31');
+    expect(res.body.answer).not.toContain('987654321');
     // The audit words are the guard's, as before: the state, the reason and the rule.
     const [closing] = await w.ctx.db
       .select()
@@ -834,13 +835,13 @@ describe('the guard’s fallback line (§C, §E.4)', () => {
   });
 
   it('with a link to offer: the existing line, the link under it, link_only', async () => {
-    script(w, final('There are 31 children inside.', [{ key: 'launcher.account', params: [] }]));
+    script(w, final('There are 987654321 children inside.', [{ key: 'launcher.account', params: [] }]));
     const res = await ask(w, receptionCookie, 'How many children are inside?');
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ state: 'link_only', reason: 'GUARD_NUMBER', answer: INTERNAL_LINES.guardFallback.en });
     expect(res.body.answer).toMatch(/:$/);
     expect(res.body.links.map((l) => l.key)).toEqual(['launcher.account']);
-    expect(res.body.answer).not.toContain('31');
+    expect(res.body.answer).not.toContain('987654321');
   });
 });
 
@@ -1290,7 +1291,7 @@ describe('the test night (SCRUM-591, 2026-10-21; plan "Test night 2026-10-21")',
     expect(one.body.smallTalk).toBe(true);
     script(w, final('Noted.'));
     expect((await ask(w, receptionCookie, 'Anything?')).body.smallTalk).toBe(false);
-    script(w, final('There are 31 children inside.', [], 'en', { smallTalk: true }));
+    script(w, final('There are 987654321 children inside.', [], 'en', { smallTalk: true }));
     expect((await ask(w, receptionCookie, 'How many children are inside?')).body).toMatchObject({ state: 'failed', reason: 'GUARD_NUMBER', smallTalk: false });
   });
 });

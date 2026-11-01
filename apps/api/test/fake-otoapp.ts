@@ -860,6 +860,8 @@ export function isoDay(base: Date, days = 0): string {
 /**
  * Attendance for an employee: every weekday from the 1st of `now`'s month to
  * `now`, 8.5 hours in one session, one LATE_ARRIVAL on the second working day.
+ * This is the worked-period fixture: before two weekdays have elapsed, use
+ * the first available day (a weekend shift on the 1st when necessary).
  */
 export function fakeAttendanceThisMonth(fake: FakeOtoApp, employeeId: string, now: Date): { days: number; hours: number } {
   const today = isoDay(now);
@@ -870,7 +872,8 @@ export function fakeAttendanceThisMonth(fake: FakeOtoApp, employeeId: string, no
     if (dow === 0 || dow === 6) continue;
     days.push({ date: isoDay(d), hours: 8.5, sessions: 1 });
   }
-  const anomalies: FakeOtoAppAnomaly[] = days[1] ? [{ type: 'LATE_ARRIVAL', date: days[1].date }] : [];
+  if (days.length === 0) days.push({ date: first, hours: 8.5, sessions: 1 });
+  const anomalies: FakeOtoAppAnomaly[] = [{ type: 'LATE_ARRIVAL', date: (days[1] ?? days[0])!.date }];
   fake.data.attendance.set(employeeId, { days, anomalies });
   return { days: days.length, hours: Math.round(days.length * 8.5 * 100) / 100 };
 }
