@@ -1,5 +1,8 @@
 # Current status - read this first when resuming
 
+**2 November 2026, SCRUM-369 BOTH REBASED TREES GREEN LOCALLY; OWNER AUTHORIZES NECESSARY CROSS-FILE REPAIRS:** Delivery and reverted-proof branches on56dd6861 each pass all six built Edge cases, POS typecheck, five-file lint and four harness controls; both private databases were removed. The owner has authorized in advance necessary additional files discovered while finishing and deploying these two units, so further CI repairs do not wait for a file-ownership reply. Keep fixes narrow, preserve the other lanes and all staging restrictions, and keep369 before508. Current main CI41357325164 is still queued; publication remains held until green main.
+
+
 **2 November 2026, SCRUM-369 READY LOCALLY ON THE REPAIRED MAIN BASE:** Both till branches are rebased on56dd686179caeb434775b10f24126ead0a7252dc, whose planner-owned roster guard repair was reviewed and verified locally (28 passed, four inherited skips; clean API typecheck and lint). The clean delivery now passes all six built Edge cases, POS typecheck, touched lint and four harness controls. The deliberate-red CI41351229348 remains bound to256f19b2393fe1bcfc679aa559fcfb439ab65818; reverted proof490d5c80597169423e2d5e27e71b756c037945f1 is ready for publication after green main CI41357325164. The delivery contains no negative-control commit. Next: publish reverted proof, land clean main, exact-SHA CI, verify API/POS deployment, inspect and attach red/green card, then369 Deployed and508 pickup. No staging business records, payment, SMS or hardware actions have occurred.
 
 
