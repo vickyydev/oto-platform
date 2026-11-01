@@ -1,5 +1,8 @@
 # Current status - read this first when resuming
 
+**2 November 2026, SCRUM-369 CLEAN TILL RELEASE LANDING:** Main base 56dd686179caeb434775b10f24126ead0a7252dc passed all six CI jobs in run41357325164. The reverted negative-control branch is published at490d5c80597169423e2d5e27e71b756c037945f1; the original deliberate-red run41351229348 remains preserved at256f19b2393fe1bcfc679aa559fcfb439ab65818. Both rebased till trees passed six built Edge cases, four harness controls, POS typecheck and touched lint. The clean delivery now lands without the deliberate-break history. Watch its exact main SHA, require the Till end-to-end step to pass all six cases, verify API/POS live deployment, then inspect and attach the red/green CI card before369 Deployed.508 stays queued. The owner has authorized necessary narrow cross-file repairs; all staging restrictions still apply. No staging business records, payments, SMS or hardware actions were used.
+
+
 **2 November 2026, SCRUM-369 SECOND ROSTER BOUNDARY VERIFIED:** Main9b92c4aa / CI41355921405 also failed s217b-r1.test.ts:948 on the same seven nanny roster tables. This exact SHA reproduces one failure,29 passes and one inherited skip; planner repair56dd6861 gives30 passes and the same skip, with both guard files lint-clean. The first guard already passed28 checks with four inherited skips. No duplicate repair was needed. The older run has finished; repaired-main CI41357325164 is next. Both till branches remain green locally, with no feature push while main is unproven.
 
 
