@@ -866,9 +866,12 @@ test('separate display guest shop uses captured sizes, lock retention, disconnec
     await expect(publicShop.getByText(/wristband|credit balance|remaining credit/i)).toHaveCount(0);
     await page.getByRole('button', { name: /No wristband.*continue as guest/ }).click();
     await page.getByRole('button', { name: /Grip Socks/ }).click();
+    // Stocked sizes include their live quantity in the button's accessible name.
+    const medium = page.getByRole('dialog', { name: 'Choose size — Grip Socks', exact: true })
+      .getByRole('button').filter({ has: page.getByText('M', { exact: true }) });
+    await expect(medium).toBeEnabled();
     const picked = shopSession('order', 1);
-    await page.getByRole('dialog', { name: 'Choose size — Grip Socks', exact: true })
-      .getByRole('button', { name: 'M', exact: true }).click();
+    await medium.click();
     await picked;
     const quoted = page.waitForResponse(response => response.url().endsWith('/api/sales/quote')
       && response.request().method() === 'POST' && response.status() === 200
