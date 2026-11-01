@@ -21272,6 +21272,495 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/branches/{id}/nannies/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The branch’s nannies for one trading day (SCRUM-699): each nanny with where she came from (the demo seed, the OTO App’s rota, or added by hand), her shifts that overlap the day of any source, whether she is on shift now and her load — both read exactly as the till reads them — the last sync from the OTO App and the names it could not make a nanny, the match text, and the day’s log lines. `date` defaults to the branch’s trading day now. Reads only. */
+        get: {
+            parameters: {
+                query?: {
+                    date?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            businessDate: string;
+                            timezone: string;
+                            asOf: string;
+                            rule: {
+                                matchText: string;
+                                alsoMatches: string[];
+                            };
+                            nannies: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                source: "seed" | "app_schedule" | "manual";
+                                /** Format: uuid */
+                                employeeId: string | null;
+                                onShift: boolean;
+                                load: number;
+                                shifts: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** @enum {string} */
+                                    source: "seed" | "app_schedule" | "manual";
+                                    startsAt: string;
+                                    endsAt: string;
+                                    syncedAt: string | null;
+                                    /** Format: uuid */
+                                    addedByAccountId: string | null;
+                                }[];
+                            }[];
+                            lastSync: {
+                                syncedAt: string;
+                                /** @enum {string} */
+                                appState: "ok" | "app_not_installed" | "no_app_branch" | "ambiguous_app_branch";
+                                unmatched: {
+                                    name: string | null;
+                                    /** @enum {string} */
+                                    reason: "no_employee_row" | "no_name" | "casual_worker";
+                                }[];
+                                /** Format: uuid */
+                                syncedByAccountId: string | null;
+                            } | null;
+                            log: {
+                                at: string;
+                                action: string;
+                                /** Format: uuid */
+                                actorAccountId: string | null;
+                                detail: {
+                                    [key: string]: unknown;
+                                } | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branches/{id}/nannies/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sync now: read the OTO App’s schedule for this branch and today’s trading day, and write the difference into the nanny roster — a new shift audited `nanny_duty.assign`, a changed one `nanny_duty.reshift`, one the rota no longer names `nanny_duty.unassign` (deleted if it has not started, cut short now if it is in progress; a finished shift stays). Nothing is written back to the app; manual and seed shifts are never touched; nothing is removed when the rota cannot be read; no nanny is ever archived. A re-run with nothing changed writes nothing. Casual workers and people with no employee row come back in `unmatched`. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            sync: {
+                                businessDate: string;
+                                /** @enum {string} */
+                                appState: "ok" | "app_not_installed" | "no_app_branch" | "ambiguous_app_branch";
+                                added: number;
+                                removed: number;
+                                renamed: number;
+                                reshifted: number;
+                                unmatched: {
+                                    name: string | null;
+                                    /** @enum {string} */
+                                    reason: "no_employee_row" | "no_name" | "casual_worker";
+                                }[];
+                            };
+                            view: {
+                                /** Format: uuid */
+                                branchId: string;
+                                businessDate: string;
+                                timezone: string;
+                                asOf: string;
+                                rule: {
+                                    matchText: string;
+                                    alsoMatches: string[];
+                                };
+                                nannies: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                    /** @enum {string} */
+                                    source: "seed" | "app_schedule" | "manual";
+                                    /** Format: uuid */
+                                    employeeId: string | null;
+                                    onShift: boolean;
+                                    load: number;
+                                    shifts: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        /** @enum {string} */
+                                        source: "seed" | "app_schedule" | "manual";
+                                        startsAt: string;
+                                        endsAt: string;
+                                        syncedAt: string | null;
+                                        /** Format: uuid */
+                                        addedByAccountId: string | null;
+                                    }[];
+                                }[];
+                                lastSync: {
+                                    syncedAt: string;
+                                    /** @enum {string} */
+                                    appState: "ok" | "app_not_installed" | "no_app_branch" | "ambiguous_app_branch";
+                                    unmatched: {
+                                        name: string | null;
+                                        /** @enum {string} */
+                                        reason: "no_employee_row" | "no_name" | "casual_worker";
+                                    }[];
+                                    /** Format: uuid */
+                                    syncedByAccountId: string | null;
+                                } | null;
+                                log: {
+                                    at: string;
+                                    action: string;
+                                    /** Format: uuid */
+                                    actorAccountId: string | null;
+                                    detail: {
+                                        [key: string]: unknown;
+                                    } | null;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branches/{id}/nannies/manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add a nanny for the day by hand when nobody is rostered (D2), so a nanny drop-off never blocks: a name and wall-clock hours `from`–`to` on the branch’s day (`to` at or before `from` ends the next day; the API does the time-zone work). The oldest live nanny of the branch with that name is reused, otherwise a new one is made; audited `nanny_duty.assign` with source `manual`. Refused 400 `NANNY_SHIFT_OVER` for a shift that has already ended. The same shift twice changes nothing. A sync never touches it. Answers with the day’s roster. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        name: string;
+                        from: string;
+                        to: string;
+                        date?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            businessDate: string;
+                            timezone: string;
+                            asOf: string;
+                            rule: {
+                                matchText: string;
+                                alsoMatches: string[];
+                            };
+                            nannies: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                source: "seed" | "app_schedule" | "manual";
+                                /** Format: uuid */
+                                employeeId: string | null;
+                                onShift: boolean;
+                                load: number;
+                                shifts: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** @enum {string} */
+                                    source: "seed" | "app_schedule" | "manual";
+                                    startsAt: string;
+                                    endsAt: string;
+                                    syncedAt: string | null;
+                                    /** Format: uuid */
+                                    addedByAccountId: string | null;
+                                }[];
+                            }[];
+                            lastSync: {
+                                syncedAt: string;
+                                /** @enum {string} */
+                                appState: "ok" | "app_not_installed" | "no_app_branch" | "ambiguous_app_branch";
+                                unmatched: {
+                                    name: string | null;
+                                    /** @enum {string} */
+                                    reason: "no_employee_row" | "no_name" | "casual_worker";
+                                }[];
+                                /** Format: uuid */
+                                syncedByAccountId: string | null;
+                            } | null;
+                            log: {
+                                at: string;
+                                action: string;
+                                /** Format: uuid */
+                                actorAccountId: string | null;
+                                detail: {
+                                    [key: string]: unknown;
+                                } | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branches/{id}/nannies/shifts/{shiftId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Take a nanny shift off this branch’s roster, whatever put it there (audited `nanny_duty.unassign`): deleted if it has not started, cut short now if it is in progress. A finished shift stays on the record (409 `NANNY_SHIFT_ENDED`). A shift from the OTO App’s rota comes back at the next sync while the rota still names her — the rota is the staff app’s, and a wrong shift is fixed there. Answers with the shift’s day’s roster. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    shiftId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            businessDate: string;
+                            timezone: string;
+                            asOf: string;
+                            rule: {
+                                matchText: string;
+                                alsoMatches: string[];
+                            };
+                            nannies: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                source: "seed" | "app_schedule" | "manual";
+                                /** Format: uuid */
+                                employeeId: string | null;
+                                onShift: boolean;
+                                load: number;
+                                shifts: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** @enum {string} */
+                                    source: "seed" | "app_schedule" | "manual";
+                                    startsAt: string;
+                                    endsAt: string;
+                                    syncedAt: string | null;
+                                    /** Format: uuid */
+                                    addedByAccountId: string | null;
+                                }[];
+                            }[];
+                            lastSync: {
+                                syncedAt: string;
+                                /** @enum {string} */
+                                appState: "ok" | "app_not_installed" | "no_app_branch" | "ambiguous_app_branch";
+                                unmatched: {
+                                    name: string | null;
+                                    /** @enum {string} */
+                                    reason: "no_employee_row" | "no_name" | "casual_worker";
+                                }[];
+                                /** Format: uuid */
+                                syncedByAccountId: string | null;
+                            } | null;
+                            log: {
+                                at: string;
+                                action: string;
+                                /** Format: uuid */
+                                actorAccountId: string | null;
+                                detail: {
+                                    [key: string]: unknown;
+                                } | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branches/{id}/nannies/rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Change the text that makes somebody on the OTO App’s rota a nanny at this branch: matched inside a shift row’s group, department or role name, case-insensitive, surrounding spaces trimmed; “Nanny” by default. พี่เลี้ยง always matches as well, so an empty text turns off only the English term. Audited `nanny_duty.rule`; the next sync applies it. Answers with today’s roster. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        matchText: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            businessDate: string;
+                            timezone: string;
+                            asOf: string;
+                            rule: {
+                                matchText: string;
+                                alsoMatches: string[];
+                            };
+                            nannies: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                source: "seed" | "app_schedule" | "manual";
+                                /** Format: uuid */
+                                employeeId: string | null;
+                                onShift: boolean;
+                                load: number;
+                                shifts: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    /** @enum {string} */
+                                    source: "seed" | "app_schedule" | "manual";
+                                    startsAt: string;
+                                    endsAt: string;
+                                    syncedAt: string | null;
+                                    /** Format: uuid */
+                                    addedByAccountId: string | null;
+                                }[];
+                            }[];
+                            lastSync: {
+                                syncedAt: string;
+                                /** @enum {string} */
+                                appState: "ok" | "app_not_installed" | "no_app_branch" | "ambiguous_app_branch";
+                                unmatched: {
+                                    name: string | null;
+                                    /** @enum {string} */
+                                    reason: "no_employee_row" | "no_name" | "casual_worker";
+                                }[];
+                                /** Format: uuid */
+                                syncedByAccountId: string | null;
+                            } | null;
+                            log: {
+                                at: string;
+                                action: string;
+                                /** Format: uuid */
+                                actorAccountId: string | null;
+                                detail: {
+                                    [key: string]: unknown;
+                                } | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/checkin/pickups/registrations/{id}": {
         parameters: {
             query?: never;

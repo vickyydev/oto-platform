@@ -50118,6 +50118,1388 @@
         }
       }
     },
+    "/branches/{id}/nannies/today": {
+      "get": {
+        "description": "The branch’s nannies for one trading day (SCRUM-699): each nanny with where she came from (the demo seed, the OTO App’s rota, or added by hand), her shifts that overlap the day of any source, whether she is on shift now and her load — both read exactly as the till reads them — the last sync from the OTO App and the names it could not make a nanny, the match text, and the day’s log lines. `date` defaults to the branch’s trading day now. Reads only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "in": "query",
+            "name": "date",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "businessDate": {
+                      "type": "string"
+                    },
+                    "timezone": {
+                      "type": "string"
+                    },
+                    "asOf": {
+                      "type": "string"
+                    },
+                    "rule": {
+                      "type": "object",
+                      "properties": {
+                        "matchText": {
+                          "type": "string"
+                        },
+                        "alsoMatches": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "matchText",
+                        "alsoMatches"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "nannies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "seed",
+                              "app_schedule",
+                              "manual"
+                            ]
+                          },
+                          "employeeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "onShift": {
+                            "type": "boolean"
+                          },
+                          "load": {
+                            "type": "integer"
+                          },
+                          "shifts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "seed",
+                                    "app_schedule",
+                                    "manual"
+                                  ]
+                                },
+                                "startsAt": {
+                                  "type": "string"
+                                },
+                                "endsAt": {
+                                  "type": "string"
+                                },
+                                "syncedAt": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "addedByAccountId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "source",
+                                "startsAt",
+                                "endsAt",
+                                "syncedAt",
+                                "addedByAccountId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "source",
+                          "employeeId",
+                          "onShift",
+                          "load",
+                          "shifts"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "lastSync": {
+                      "type": "object",
+                      "properties": {
+                        "syncedAt": {
+                          "type": "string"
+                        },
+                        "appState": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "app_not_installed",
+                            "no_app_branch",
+                            "ambiguous_app_branch"
+                          ]
+                        },
+                        "unmatched": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_employee_row",
+                                  "no_name",
+                                  "casual_worker"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "reason"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "syncedByAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "syncedAt",
+                        "appState",
+                        "unmatched",
+                        "syncedByAccountId"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "log": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "at": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "actorAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "detail": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "at",
+                          "action",
+                          "actorAccountId",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "businessDate",
+                    "timezone",
+                    "asOf",
+                    "rule",
+                    "nannies",
+                    "lastSync",
+                    "log"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/branches/{id}/nannies/sync": {
+      "post": {
+        "description": "Sync now: read the OTO App’s schedule for this branch and today’s trading day, and write the difference into the nanny roster — a new shift audited `nanny_duty.assign`, a changed one `nanny_duty.reshift`, one the rota no longer names `nanny_duty.unassign` (deleted if it has not started, cut short now if it is in progress; a finished shift stays). Nothing is written back to the app; manual and seed shifts are never touched; nothing is removed when the rota cannot be read; no nanny is ever archived. A re-run with nothing changed writes nothing. Casual workers and people with no employee row come back in `unmatched`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sync": {
+                      "type": "object",
+                      "properties": {
+                        "businessDate": {
+                          "type": "string"
+                        },
+                        "appState": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "app_not_installed",
+                            "no_app_branch",
+                            "ambiguous_app_branch"
+                          ]
+                        },
+                        "added": {
+                          "type": "integer"
+                        },
+                        "removed": {
+                          "type": "integer"
+                        },
+                        "renamed": {
+                          "type": "integer"
+                        },
+                        "reshifted": {
+                          "type": "integer"
+                        },
+                        "unmatched": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_employee_row",
+                                  "no_name",
+                                  "casual_worker"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "reason"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "businessDate",
+                        "appState",
+                        "added",
+                        "removed",
+                        "renamed",
+                        "reshifted",
+                        "unmatched"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "view": {
+                      "type": "object",
+                      "properties": {
+                        "branchId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "businessDate": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        },
+                        "asOf": {
+                          "type": "string"
+                        },
+                        "rule": {
+                          "type": "object",
+                          "properties": {
+                            "matchText": {
+                              "type": "string"
+                            },
+                            "alsoMatches": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "matchText",
+                            "alsoMatches"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "nannies": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "seed",
+                                  "app_schedule",
+                                  "manual"
+                                ]
+                              },
+                              "employeeId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "onShift": {
+                                "type": "boolean"
+                              },
+                              "load": {
+                                "type": "integer"
+                              },
+                              "shifts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid"
+                                    },
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "seed",
+                                        "app_schedule",
+                                        "manual"
+                                      ]
+                                    },
+                                    "startsAt": {
+                                      "type": "string"
+                                    },
+                                    "endsAt": {
+                                      "type": "string"
+                                    },
+                                    "syncedAt": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "addedByAccountId": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "source",
+                                    "startsAt",
+                                    "endsAt",
+                                    "syncedAt",
+                                    "addedByAccountId"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "source",
+                              "employeeId",
+                              "onShift",
+                              "load",
+                              "shifts"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "lastSync": {
+                          "type": "object",
+                          "properties": {
+                            "syncedAt": {
+                              "type": "string"
+                            },
+                            "appState": {
+                              "type": "string",
+                              "enum": [
+                                "ok",
+                                "app_not_installed",
+                                "no_app_branch",
+                                "ambiguous_app_branch"
+                              ]
+                            },
+                            "unmatched": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "enum": [
+                                      "no_employee_row",
+                                      "no_name",
+                                      "casual_worker"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "reason"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "syncedByAccountId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "syncedAt",
+                            "appState",
+                            "unmatched",
+                            "syncedByAccountId"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "log": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "at": {
+                                "type": "string"
+                              },
+                              "action": {
+                                "type": "string"
+                              },
+                              "actorAccountId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "detail": {
+                                "type": "object",
+                                "additionalProperties": {},
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "at",
+                              "action",
+                              "actorAccountId",
+                              "detail"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "branchId",
+                        "businessDate",
+                        "timezone",
+                        "asOf",
+                        "rule",
+                        "nannies",
+                        "lastSync",
+                        "log"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "sync",
+                    "view"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/branches/{id}/nannies/manual": {
+      "post": {
+        "description": "Add a nanny for the day by hand when nobody is rostered (D2), so a nanny drop-off never blocks: a name and wall-clock hours `from`–`to` on the branch’s day (`to` at or before `from` ends the next day; the API does the time-zone work). The oldest live nanny of the branch with that name is reused, otherwise a new one is made; audited `nanny_duty.assign` with source `manual`. Refused 400 `NANNY_SHIFT_OVER` for a shift that has already ended. The same shift twice changes nothing. A sync never touches it. Answers with the day’s roster.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "from": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "to": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "date": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "name",
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "businessDate": {
+                      "type": "string"
+                    },
+                    "timezone": {
+                      "type": "string"
+                    },
+                    "asOf": {
+                      "type": "string"
+                    },
+                    "rule": {
+                      "type": "object",
+                      "properties": {
+                        "matchText": {
+                          "type": "string"
+                        },
+                        "alsoMatches": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "matchText",
+                        "alsoMatches"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "nannies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "seed",
+                              "app_schedule",
+                              "manual"
+                            ]
+                          },
+                          "employeeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "onShift": {
+                            "type": "boolean"
+                          },
+                          "load": {
+                            "type": "integer"
+                          },
+                          "shifts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "seed",
+                                    "app_schedule",
+                                    "manual"
+                                  ]
+                                },
+                                "startsAt": {
+                                  "type": "string"
+                                },
+                                "endsAt": {
+                                  "type": "string"
+                                },
+                                "syncedAt": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "addedByAccountId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "source",
+                                "startsAt",
+                                "endsAt",
+                                "syncedAt",
+                                "addedByAccountId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "source",
+                          "employeeId",
+                          "onShift",
+                          "load",
+                          "shifts"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "lastSync": {
+                      "type": "object",
+                      "properties": {
+                        "syncedAt": {
+                          "type": "string"
+                        },
+                        "appState": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "app_not_installed",
+                            "no_app_branch",
+                            "ambiguous_app_branch"
+                          ]
+                        },
+                        "unmatched": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_employee_row",
+                                  "no_name",
+                                  "casual_worker"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "reason"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "syncedByAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "syncedAt",
+                        "appState",
+                        "unmatched",
+                        "syncedByAccountId"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "log": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "at": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "actorAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "detail": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "at",
+                          "action",
+                          "actorAccountId",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "businessDate",
+                    "timezone",
+                    "asOf",
+                    "rule",
+                    "nannies",
+                    "lastSync",
+                    "log"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/branches/{id}/nannies/shifts/{shiftId}": {
+      "delete": {
+        "description": "Take a nanny shift off this branch’s roster, whatever put it there (audited `nanny_duty.unassign`): deleted if it has not started, cut short now if it is in progress. A finished shift stays on the record (409 `NANNY_SHIFT_ENDED`). A shift from the OTO App’s rota comes back at the next sync while the rota still names her — the rota is the staff app’s, and a wrong shift is fixed there. Answers with the shift’s day’s roster.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "shiftId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "businessDate": {
+                      "type": "string"
+                    },
+                    "timezone": {
+                      "type": "string"
+                    },
+                    "asOf": {
+                      "type": "string"
+                    },
+                    "rule": {
+                      "type": "object",
+                      "properties": {
+                        "matchText": {
+                          "type": "string"
+                        },
+                        "alsoMatches": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "matchText",
+                        "alsoMatches"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "nannies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "seed",
+                              "app_schedule",
+                              "manual"
+                            ]
+                          },
+                          "employeeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "onShift": {
+                            "type": "boolean"
+                          },
+                          "load": {
+                            "type": "integer"
+                          },
+                          "shifts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "seed",
+                                    "app_schedule",
+                                    "manual"
+                                  ]
+                                },
+                                "startsAt": {
+                                  "type": "string"
+                                },
+                                "endsAt": {
+                                  "type": "string"
+                                },
+                                "syncedAt": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "addedByAccountId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "source",
+                                "startsAt",
+                                "endsAt",
+                                "syncedAt",
+                                "addedByAccountId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "source",
+                          "employeeId",
+                          "onShift",
+                          "load",
+                          "shifts"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "lastSync": {
+                      "type": "object",
+                      "properties": {
+                        "syncedAt": {
+                          "type": "string"
+                        },
+                        "appState": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "app_not_installed",
+                            "no_app_branch",
+                            "ambiguous_app_branch"
+                          ]
+                        },
+                        "unmatched": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_employee_row",
+                                  "no_name",
+                                  "casual_worker"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "reason"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "syncedByAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "syncedAt",
+                        "appState",
+                        "unmatched",
+                        "syncedByAccountId"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "log": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "at": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "actorAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "detail": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "at",
+                          "action",
+                          "actorAccountId",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "businessDate",
+                    "timezone",
+                    "asOf",
+                    "rule",
+                    "nannies",
+                    "lastSync",
+                    "log"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/branches/{id}/nannies/rule": {
+      "patch": {
+        "description": "Change the text that makes somebody on the OTO App’s rota a nanny at this branch: matched inside a shift row’s group, department or role name, case-insensitive, surrounding spaces trimmed; “Nanny” by default. พี่เลี้ยง always matches as well, so an empty text turns off only the English term. Audited `nanny_duty.rule`; the next sync applies it. Answers with today’s roster.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "matchText": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "matchText"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "businessDate": {
+                      "type": "string"
+                    },
+                    "timezone": {
+                      "type": "string"
+                    },
+                    "asOf": {
+                      "type": "string"
+                    },
+                    "rule": {
+                      "type": "object",
+                      "properties": {
+                        "matchText": {
+                          "type": "string"
+                        },
+                        "alsoMatches": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "matchText",
+                        "alsoMatches"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "nannies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "seed",
+                              "app_schedule",
+                              "manual"
+                            ]
+                          },
+                          "employeeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "onShift": {
+                            "type": "boolean"
+                          },
+                          "load": {
+                            "type": "integer"
+                          },
+                          "shifts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "seed",
+                                    "app_schedule",
+                                    "manual"
+                                  ]
+                                },
+                                "startsAt": {
+                                  "type": "string"
+                                },
+                                "endsAt": {
+                                  "type": "string"
+                                },
+                                "syncedAt": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "addedByAccountId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "source",
+                                "startsAt",
+                                "endsAt",
+                                "syncedAt",
+                                "addedByAccountId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "source",
+                          "employeeId",
+                          "onShift",
+                          "load",
+                          "shifts"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "lastSync": {
+                      "type": "object",
+                      "properties": {
+                        "syncedAt": {
+                          "type": "string"
+                        },
+                        "appState": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "app_not_installed",
+                            "no_app_branch",
+                            "ambiguous_app_branch"
+                          ]
+                        },
+                        "unmatched": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "no_employee_row",
+                                  "no_name",
+                                  "casual_worker"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "reason"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "syncedByAccountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "syncedAt",
+                        "appState",
+                        "unmatched",
+                        "syncedByAccountId"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "log": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "at": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "actorAccountId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "detail": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "at",
+                          "action",
+                          "actorAccountId",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "businessDate",
+                    "timezone",
+                    "asOf",
+                    "rule",
+                    "nannies",
+                    "lastSync",
+                    "log"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/checkin/pickups/registrations/{id}": {
       "get": {
         "description": "A registration's authorised-pickup list: the dropper-off first, with the sign-up photo, then everyone added and not revoked",
