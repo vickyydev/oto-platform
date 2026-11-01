@@ -15,6 +15,7 @@ import { createConsoleCare } from '@/api/care';
 import { fleetApi, type StationRow } from '@/api/fleet';
 import { organisationApi } from '@/api/organisation';
 import { useSession } from '@/auth/SessionContext';
+import { TodayNanniesPanel } from '@/components/care/TodayNanniesPanel';
 import { ErrorNote, Loading, PermissionRequired } from '@/components/Panel';
 import { CommandBar } from '@/components/redesign/CommandBar';
 import { SelectChip } from '@/components/redesign/chips';
@@ -135,6 +136,7 @@ export function Care({ page }: { page: Page }) {
               if (current()) setStored(previous => previous?.version === version && previous.config ? { ...previous, config: { ...previous.config, policy } } : previous);
               return policy;
             } }} />
+          <TodayNanniesPanel key={'nannies-' + parkId} branchId={parkId} canManage={can('pos:checkin:update', parkId)} canEditRule={can('catalog:package:update', parkId)} />
         </>}
         {page === 'print-templates' && <TemplatesPanelWithPorts key={askedType ?? 'list'} ports={{ templates: snapshot.templates, live: true, stationId,
           canEdit: can('admin:branch:update', parkId), canTestPrint: !!stationId && can('admin:box:command', parkId), api: snapshot.api.printApi,
