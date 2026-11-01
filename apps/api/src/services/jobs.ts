@@ -9,6 +9,7 @@ import { ROLLUP_BOOTH_JOB, runBoothRollupJob } from './analytics-booth';
 import { BENEFIT_ROLLOVER_JOB, runBenefitRolloverJob } from './analytics-benefits';
 import { BOOTH_DUTY_JOB, runMorningBoothDutySync } from './booth-duty';
 import { EVENTS_CACHE_REFRESH_JOB, runEventsCacheRefresh } from './events';
+import { NANNY_DUTY_JOB, runMorningNannyDutySync } from './nanny-duty';
 import {
   expireStaleCommands,
   markSilentBoxesOffline,
@@ -670,6 +671,26 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       intervalSeconds: 300,
       run: async ({ db, now }) => ({
         detail: await runMorningBoothDutySync(db, now, withinOpeningHours),
+      }),
+    },
+    /**
+     * `job:nanny.duty_sync` — THE DAY'S NANNIES, AT THE BRANCH'S OPEN
+     * (SCRUM-699).
+     *
+     * The booth roster's tick, per branch: the first tick at which a live
+     * branch is open and has no nanny sync recorded for today reads the OTO
+     * App's schedule and writes the day's nanny shifts
+     * (`runMorningNannyDutySync` in `services/nanny-duty.ts`), which is what
+     * the till's "On shift" reads. "Sync now" on the Console's Care page is
+     * the same sync on demand, and a branch synced that way is not synced
+     * again by this job the same day.
+     */
+    {
+      name: NANNY_DUTY_JOB,
+      description: "Reads the OTO App's schedule at each branch's open and writes the day's nanny shifts",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({
+        detail: await runMorningNannyDutySync(db, now, withinOpeningHours),
       }),
     },
     /**

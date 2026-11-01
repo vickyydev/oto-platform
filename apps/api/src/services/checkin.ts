@@ -2119,7 +2119,7 @@ async function assertBranchOf(db: Exec, operatorId: string, branchId: string): P
 }
 
 /** The policy row, created from the prototype's seed when a branch has none yet. */
-async function policyRowFor(tx: Tx, operatorId: string, branchId: string): Promise<typeof supervisionPolicy.$inferSelect> {
+export async function policyRowFor(tx: Tx, operatorId: string, branchId: string): Promise<typeof supervisionPolicy.$inferSelect> {
   const [row] = await tx
     .select()
     .from(supervisionPolicy)

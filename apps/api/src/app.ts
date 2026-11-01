@@ -52,6 +52,7 @@ import { stockRoutes } from './routes/stock';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { checkinRoutes } from './routes/checkin';
+import { nannyDutyRoutes } from './routes/nanny-duty';
 import { releaseRoutes } from './routes/release';
 import { walletRoutes } from './routes/wallets';
 import { eventRoutes } from './routes/events';
@@ -519,6 +520,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(fileRoutes, { prefix: '/files' });
   // S2-13 — the supervision gate, the consent and the check-in choice (round 1, online).
   await app.register(checkinRoutes, { prefix: '/checkin' });
+  // SCRUM-699 — the day's nannies from the OTO App rota, with a Console fallback.
+  await app.register(nannyDutyRoutes);
   // S2-13 round 3 — the authorised-pickup list and the release (online).
   await app.register(releaseRoutes, { prefix: '/checkin/pickups' });
   // S2-14a — reading a wallet by key or id (round 1; the Wallet view builds on it).

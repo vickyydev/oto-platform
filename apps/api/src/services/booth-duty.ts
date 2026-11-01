@@ -413,7 +413,7 @@ async function readAppDuty(
  * granted this role SELECT on it is a fault to fix, never "nobody is on the
  * booth": answered as a 503 that names the missing grant.
  */
-async function employeeSeamReadable(exec: Exec): Promise<boolean> {
+export async function employeeSeamReadable(exec: Exec): Promise<boolean> {
   try {
     return await otoAppEmployeesInstalled(exec);
   } catch (err) {
