@@ -74,11 +74,13 @@ describe('SCRUM-24 — sign out', () => {
     expect(me.statusCode).toBe(401);
   });
 
+  let tillCount = 0;
   const newTill = async () => {
     const [base] = await ctx.db.select().from(station).where(eq(station.name, 'Reception Till 1')).limit(1);
     const id = newId();
     const [target] = await ctx.db.insert(station).values({ id, name: `Sign-out proof ${id}`,
-      operatorId: base!.operatorId, branchId: base!.branchId, boxId: base!.boxId, kind: 'till' }).returning();
+      operatorId: base!.operatorId, branchId: base!.branchId, boxId: base!.boxId, kind: 'till',
+      codePrefix: `SO${++tillCount}`, paymentRouting: { card: 'manual', qr: 'none' } }).returning();
     return target!;
   };
   const pick = async (cookie: string, stationId: string) => {

@@ -53,7 +53,12 @@ test('AUDIT: late booth A version history cannot replace selected booth B histor
     await frames(page);
     await expect(page.getByText(/ZZ TEST Current booth history/)).toBeVisible();
     await expect(page.getByText(/ZZ TEST Previous booth late history/)).toHaveCount(0);
-  } finally { release(); }
+  } finally {
+    release();
+    // The booth panels also fetch their own records. Let those forwarded
+    // responses finish before Playwright disposes this test's request context.
+    await page.unrouteAll({ behavior: 'wait' });
+  }
 });
 
 test('AUDIT: a real missing booth404 keeps the native resource reason instead of claiming an undeployed route', async ({ page }) => {
