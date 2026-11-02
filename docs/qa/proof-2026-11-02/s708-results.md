@@ -46,7 +46,7 @@ all six jobs passed; the exact-SHA watcher exited zero. The run completed at
 2026-11-02T14:33:14Z. Full receipt: [s708-ci.json](s708-ci.json). The workspace
 job includes its tests, production build, built till and Console browser
 journeys. The unchanged OTO App job is path-gated; this is not a new full-app
-acceptance claim. Jira remains Testing pending inspected staging proof.
+acceptance claim. Jira read-back is Deployed with the inspected proof attached.
 
 ## Staging proof
 
@@ -107,7 +107,7 @@ alone does not.
 
 ## Cleanup and publication
 
-Independent cleanup readback at 2026-11-02T15:06:00.194Z confirms both synthetic
+Independent cleanup readback at 2026-11-02T15:09:02.335Z confirms both synthetic
 children out. Before retirement the dedicated box was online with zero queued
 facts and no lease. Only its ZZ TEST station and box were archived; primary
 `virtual-1` remains unarchived. Only `BOX_AGENT_TEST_SLOT` was removed: all other
@@ -117,8 +117,11 @@ returned 200, and the temporary option is absent. The final readback session
 also signed out 200 and then returned `/me` 401. Receipt:
 [s708-cleanup.json](s708-cleanup.json).
 
-The final PNG is copied under
-`docs/qa/jira-comments/attachments/SCRUM-708/s708-staging-proof.png` for attachment.
-The two inspected control-target images are retained under the SCRUM-722
-attachment directory. Jira remains Testing until this evidence is pushed and
-the proof is attached. Done remains the owner's acceptance.
+Evidence is on main in `f735427ada0abc62fdde89f40efbde8d3bb5fa5f`. The inspected
+`docs/qa/jira-comments/attachments/SCRUM-708/s708-staging-proof.png` is attached
+as **12232**. Jira read-back confirms **Deployed**. Receipt:
+[s708-jira-closeout.json](s708-jira-closeout.json). The two inspected control-target
+images are attached to SCRUM-722 as 12233 and 12234; that ticket and SCRUM-723
+remain To Do. SCRUM-717 also remains Deployed. Final cleanup sees the primary
+agent's heartbeat at 15:08:35.567Z after the restart. Done remains the owner's
+acceptance.

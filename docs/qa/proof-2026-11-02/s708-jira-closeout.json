@@ -1,0 +1,44 @@
+{
+  "at": "2026-11-02T15:08:38.735Z",
+  "evidenceCommit": "f735427ada0abc62fdde89f40efbde8d3bb5fa5f",
+  "before": {
+    "status": "Testing",
+    "summary": "Offline booked check-in drops a freshly acknowledged guardian consent"
+  },
+  "attachments": {
+    "SCRUM-708": [
+      {
+        "id": "12232",
+        "name": "s708-staging-proof.png"
+      }
+    ],
+    "SCRUM-722": [
+      {
+        "id": "12234",
+        "name": "s708-consent-acknowledged.png"
+      },
+      {
+        "id": "12233",
+        "name": "s708-direct-checkbox.png"
+      }
+    ]
+  },
+  "after": {
+    "status": "Deployed",
+    "summary": "Offline booked check-in drops a freshly acknowledged guardian consent"
+  },
+  "related": {
+    "SCRUM-717": {
+      "status": "Deployed",
+      "summary": "The box lane follows the station's payment routing and readiness"
+    },
+    "SCRUM-722": {
+      "status": "To Do",
+      "summary": "Booked check-in consent checkbox does not stay selected when its small control is clicked"
+    },
+    "SCRUM-723": {
+      "status": "To Do",
+      "summary": "Console forced-offline mode still allows booked check-in on a fresh till page"
+    }
+  }
+}

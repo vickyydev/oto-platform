@@ -41,6 +41,12 @@
       "origin": "https://oto-console-staging.onrender.com",
       "signOutStatus": 200,
       "afterStatus": 401
+    },
+    {
+      "action": "post-restart readback",
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
     }
   ],
   "restart": {
@@ -51,7 +57,7 @@
     "finishedAt": "2026-11-02T15:05:31.56138Z"
   },
   "postRestart": {
-    "at": "2026-11-02T15:06:00.194Z",
+    "at": "2026-11-02T15:09:02.335Z",
     "healthStatus": 200,
     "readyStatus": 200,
     "envNameCount": 56,
@@ -59,7 +65,7 @@
       "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
       "slot": "virtual-1",
       "archived": false,
-      "lastHeartbeatAt": "2026-11-02T15:05:05.273Z"
+      "lastHeartbeatAt": "2026-11-02T15:08:35.567Z"
     },
     "fixtureArchived": true,
     "testOptionAbsent": true,
@@ -78,5 +84,5 @@
       }
     ]
   },
-  "completedAt": "2026-11-02T15:06:00.194Z"
+  "completedAt": "2026-11-02T15:09:02.336Z"
 }
