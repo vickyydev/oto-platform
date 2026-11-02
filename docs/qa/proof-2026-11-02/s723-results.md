@@ -30,6 +30,10 @@ separate small-control correction follows 723 Deployed.
 
 ## Release preparation
 
+Published source: `de29ebf481f179431a1ff8166ed86ddfcd5077a9`.
+Exact-source [CI 41500821248](https://github.com/vickyydev/oto-platform/actions/runs/41500821248)
+is running. Jira is Testing; staging proof remains pending.
+
 Rebased onto `07f4393b`, including the completed forwarder and staging-link
 changes, with all progress blocks preserved. All 16 workspace typecheck tasks
 and five production builds passed; the full POS suite passed 1,645 tests in
