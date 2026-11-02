@@ -38,7 +38,11 @@ onto `54271076` changed only other-lane documentation; product bytes match the
 completed run. Main source `796a3724505ee9cd46f93584c975971ad50a3e4d` passed
 CI [41452442131](https://github.com/vickyydev/oto-platform/actions/runs/41452442131).
 
-This unit's release CI and staging acceptance are pending.
+## Source release
+
+Source release: `14e1432492f603e3b774d512aa797e5a57061595`.
+Exact-source CI: [41459443462](https://github.com/vickyydev/oto-platform/actions/runs/41459443462),
+still running. Jira read-back is Testing. Staging acceptance is pending.
 
 ## Staging proof plan and limits
 
