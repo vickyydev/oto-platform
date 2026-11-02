@@ -1,32 +1,28 @@
 # SCRUM-717 — station rules on the box lane
 
-The owner approved Q717-1 on 2 November: one dedicated staging test agent
-inside the existing API, preserving the primary virtual box and adding no
-paid service. The source landed on main at
-`f8c4d4294c4a1b350e37635d1e17eaa92f7079fa`. Its
-[CI 41443707967](https://github.com/vickyydev/oto-platform/actions/runs/41443707967)
-passed all six jobs, confirmed by the exact-SHA watcher. API, Console and
-POS deployed that source. The approved test-slot setting is now saved and
-the API is restarting on that same commit; native offline proof remains
-pending. `s717-ci.json` and `s717-agent-env.json` hold the receipts.
+SCRUM-717 is Deployed. Source
+`f8c4d4294c4a1b350e37635d1e17eaa92f7079fa` passed all six jobs in
+[CI 41443707967](https://github.com/vickyydev/oto-platform/actions/runs/41443707967),
+confirmed by the exact-SHA watcher. API, Console and POS deployed that source.
+The native proof completed at `2026-11-02T12:53:13.476Z`, after the API's
+same-source restart completed at `12:51:10.442866Z`. The inspected
+`s717-staging-proof.png` is attached to SCRUM-717 as **12228**. Jira read-back
+confirmed Deployed; Done remains the owner's acceptance.
 
-The current base includes SCRUM-718 at
-`c2fdd28fdc9e944d058af62dec1347e5f2b7a56f`, whose
-[CI 41439428324](https://github.com/vickyydev/oto-platform/actions/runs/41439428324)
-passed. It also includes the planner's complete recovery repair, including
-`119e2c59`; that source passed all six jobs in
-[CI 41436309930](https://github.com/vickyydev/oto-platform/actions/runs/41436309930).
+The owner approved Q717-1: one dedicated staging test agent inside the
+existing API, preserving the primary virtual box and adding no paid service.
+Only `BOX_AGENT_TEST_SLOT` was added; all 56 existing environment values
+were verified unchanged. The fixture is online and ready, with an empty
+outbox and no held lease. It is retained for the assigned SCRUM-708 proof.
 
 Before the staging-host addition, the combined local API battery passed
 6,068 tests across three embedded-Postgres shards, with the existing 401
 skips and four TODOs. All 838 box tests passed after the final recovery
 follow-up. Shared tests (857), package typechecks, touched-file lint,
-generated contracts and the workspace build passed. The new host has 13
-review pins plus 25 routing, lease and existing agent regressions: all 38
-passed after restoring the mutations. Its API
-typecheck, lint and generated-contract check pass. A deliberate mutation
-removed the environment and late-start guards: four HIGH findings
+generated contracts and the workspace build passed. The final host/routing/
+lease regressions passed all 38 cases. Four deliberate HIGH host mutations
 reproduced while nine controls passed, then the guarded source was restored.
+The final source CI covers the combined tree including the host addition.
 
 Earlier branch checkpoint, 2 November 2026:
 `a1d88200c3ea7451f90583fa8a94e96a495277ac`.
@@ -100,7 +96,7 @@ checkpoint were published as documentation only in `d457e574`.
 
 The required proof uses a new ZZ TEST virtual box and till, forced offline
 through Console, showing the QR-none refusal, the not-ready refusal and a
-ready cash sale. It has not been run.
+ready cash sale. The completed evidence is below.
 
 Read-only inspection of the staging API's 56 Render environment entries found
 `BOX_AGENT_BRANCH_CODE=hkt-central`, `PROCESS_ROLES=api,edge,jobs`, and no
@@ -128,25 +124,38 @@ Exact IDs and independently confirmed session sign-outs are in
 `s717-fixture.json`. Only `BOX_AGENT_TEST_SLOT` was added: all 56 previous environment values
 were independently verified unchanged (57 names afterward). Existing box
 and station assignments remain unchanged; no payment or SMS was attempted.
-SCRUM-717 stays Testing until the specified proof is inspected and attached.
-SCRUM-708 has not started and waits for that Deployed state.
+The proof is inspected and attached, and SCRUM-717 is Deployed.
+SCRUM-708 may now start under its separate specification.
 
-## Planned staging procedure — not yet executed
+## Completed native staging proof
 
-1. Verify the green release SHA and the completed API deployment before
-   enabling the prepared ZZ TEST virtual box and till. Preserve their exact IDs in
-   the proof receipt. Start the test agent only through the chosen host setup.
-2. Give that till its own receipt prefix, manual-card routing and QR none.
-   Confirm its configuration/cache has arrived, then use Console's offline
-   switch. Capture the actual box-bridge refusal and the POS sentence for QR.
-3. Reconnect the test box, release the test lease, remove the test till's
-   prefix, wait for the new readiness to reach its cache, and force it offline
-   again. Capture the not-ready lease response and its sentence on screen.
-4. Restore the test prefix, refresh the cache and force offline again. Sell
-   one guest cash order with a ZZ TEST note; record its box-bridge result,
-   receipt and queued fact without using real customer data or a real tender.
-5. Reconnect and verify the one test sale reaches the platform once. Release
-   the test lease and sign out both sessions. Record the exact fixture state
-   and any remaining synthetic sale; do not call an unexecuted cleanup done.
-6. Inspect the native captures, publish the timestamped receipt and evidence,
-   attach the image to SCRUM-717, and only then move it to Deployed.
+| Check | Observed result |
+| --- | --- |
+| Dedicated agent and configuration | New ZZ TEST virtual box served its own station and fresh catalogue; primary identity and virtual-1 slot unchanged |
+| Known not-ready setup | Cleared only the test till's prefix, applied config, used Console Go offline; the box lease answered 409 STATION_NOT_READY / No receipt prefix, also visible on the disabled native till tile |
+| QR none | Restored Z717, refreshed config and forced offline again; native PromptPay press answered 409 QR_DISABLED_FOR_STATION and displayed This counter is not set up to take QR payments |
+| Ready cash | Native guest F&B order with ZZ TEST note completed for 90 baht, receipt Z717-000001; one queued fact while offline |
+| Reconnect | Console Go online drained the outbox; the same finalised sale and receipt were read twice from the platform |
+| Cleanup | Independent read-back at 12:55:04.632Z: online, ready, Z717 restored, zero queued facts, no held lease; every proof/read-back session signed out 200 and subsequently answered /me 401 |
+
+The sale is `01a19c52-0d21-7ab7-a1c2-507dc9ab1962`. The native screenshots
+are `s717-qr-none.png`, `s717-not-ready.png`, `s717-cash-offline.png` and
+`s717-console-offline.png`. The Console capture shows the command being
+queued; its succeeded result and the bridge's forced-offline state were
+independently awaited before the sale. The box's green heartbeat badge
+reports that the process is alive, not that its deliberate offline switch
+is off.
+
+Receipts: `s717-ci.json`, `s717-agent-env.json`, `s717-fixture.json`,
+`s717-staging-proof.json`. The composed, inspected screenshot is
+`s717-staging-proof.png`, also committed under
+`docs/qa/jira-comments/attachments/SCRUM-717/`.
+
+Scope: this is the deployed virtual mount with an existing platform session,
+using the Console's real offline control. No browser network substitution,
+physical Pi, fresh offline staff unlock, terminal payment, SMS or real-person
+data was used. Staging has no staff-token signing key; this unit does not
+claim or change that separate setup. The synthetic fixture and its dedicated
+agent remain for SCRUM-708; its 90-baht cash order is a staging test record,
+not money collected. No recovery, installer, display-lane or POS-server file
+was edited.

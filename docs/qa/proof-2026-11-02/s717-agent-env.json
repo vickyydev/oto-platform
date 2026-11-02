@@ -13,5 +13,6 @@
   "slot": "zz-test-s717-20261102",
   "valueFingerprint": "cb8002cd78aedbb99dd055b7c15b32e85861891389f9d5ea555d7aa8ac20c13b",
   "deployId": "dep-dbk8crmtlv9c73f5bn0g",
-  "deployStatus": "build_in_progress"
+  "deployStatus": "live",
+  "deployFinishedAt": "2026-11-02T12:51:10.442866Z"
 }

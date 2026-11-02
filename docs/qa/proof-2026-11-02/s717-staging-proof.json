@@ -1,0 +1,158 @@
+{
+  "unit": "SCRUM-717",
+  "sha": "f8c4d4294c4a1b350e37635d1e17eaa92f7079fa",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41443707967",
+  "deployment": {
+    "id": "dep-dbk8crmtlv9c73f5bn0g",
+    "sha": "f8c4d4294c4a1b350e37635d1e17eaa92f7079fa",
+    "finishedAt": "2026-11-02T12:51:10.442866Z"
+  },
+  "surfaceDeployments": [
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbk8b0qvcj2c73fpa9tg",
+      "sha": "f8c4d4294c4a1b350e37635d1e17eaa92f7079fa",
+      "finishedAt": "2026-11-02T12:44:38.4946Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk8b0qvcj2c73fpa9ng",
+      "sha": "f8c4d4294c4a1b350e37635d1e17eaa92f7079fa",
+      "finishedAt": "2026-11-02T12:44:38.511334Z"
+    }
+  ],
+  "startedAt": "2026-11-02T12:51:46.505Z",
+  "fixture": {
+    "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be",
+    "stationId": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
+    "slot": "zz-test-s717-20261102"
+  },
+  "checks": [
+    {
+      "name": "The dedicated virtual agent has the station and fresh prices; the primary slot remains virtual-1",
+      "passed": true,
+      "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be"
+    },
+    {
+      "name": "Known not-ready till is refused by the box lease, with the same reason shown in the native till",
+      "passed": true,
+      "status": 409,
+      "code": "STATION_NOT_READY",
+      "message": "No receipt prefix"
+    },
+    {
+      "name": "QR none displays the shared refusal after the real box bridge answers; no payment was taken",
+      "passed": true,
+      "status": 409,
+      "code": "QR_DISABLED_FOR_STATION",
+      "message": "This counter is not set up to take QR payments"
+    },
+    {
+      "name": "A ready till completes its synthetic cash order on the box lane with a Z717 receipt",
+      "passed": true,
+      "receiptNumber": "Z717-000001",
+      "outboxDepth": 1
+    },
+    {
+      "name": "Reconnect drains the outbox and the same finalised sale and receipt are read back twice",
+      "passed": true,
+      "saleId": "01a19c52-0d21-7ab7-a1c2-507dc9ab1962",
+      "receiptNumber": "Z717-000001"
+    }
+  ],
+  "commands": [
+    {
+      "id": "01a19c51-3cfd-7bc7-9028-012e0e1f50ad",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T12:52:16.319Z"
+    },
+    {
+      "id": "01a19c51-5218-7033-9bb6-aa71c5f38f22",
+      "kind": "config_apply",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T12:52:21.774Z"
+    },
+    {
+      "id": "01a19c51-6ef7-7958-8579-75225f82866c",
+      "kind": "config_apply",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T12:52:27.092Z"
+    },
+    {
+      "id": "01a19c51-7bfc-7872-b010-2bbd21576b2c",
+      "kind": "go_offline",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T12:52:32.426Z"
+    },
+    {
+      "id": "01a19c51-aa9c-7f86-be32-639b8b2e0875",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T12:52:42.361Z"
+    },
+    {
+      "id": "01a19c51-bc5f-7724-a7ba-49d3bd16dec5",
+      "kind": "config_apply",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T12:52:46.917Z"
+    },
+    {
+      "id": "01a19c51-dce1-7d33-b14e-2045a55e0695",
+      "kind": "go_offline",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T12:52:57.606Z"
+    },
+    {
+      "id": "01a19c52-1c4b-7fcc-b6b8-7c3728293eff",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T12:53:11.463Z"
+    }
+  ],
+  "cleanup": [
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-pos-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "primary": {
+    "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "slot": "virtual-1"
+  },
+  "sale": {
+    "id": "01a19c52-0d21-7ab7-a1c2-507dc9ab1962",
+    "receiptNumber": "Z717-000001",
+    "totalSatang": 9000
+  },
+  "completedAt": "2026-11-02T12:53:13.476Z",
+  "fixtureRetainedFor708": true,
+  "independentCleanup": {
+    "at": "2026-11-02T12:55:04.632Z",
+    "noHeldLease": true,
+    "offline": false,
+    "lane": "platform",
+    "outboxDepth": 0,
+    "stationReady": true,
+    "receiptPrefix": "Z717",
+    "signOutStatus": 200,
+    "afterStatus": 401
+  },
+  "jira": {
+    "key": "SCRUM-717",
+    "status": "Deployed",
+    "attachmentId": "12228",
+    "filename": "s717-staging-proof.png"
+  }
+}
