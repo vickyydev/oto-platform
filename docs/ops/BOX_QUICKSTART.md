@@ -402,6 +402,41 @@ Only 1 fits the whole step. Do not go above 1.25 in landscape: at 1.6 the keypad
 4-5-6, so a family cannot type a number without knowing to swipe. Check it on the real
 monitor. It is a line in the config file, no release needed.
 
+## If the drive dies
+
+Keep `OTO_BOX_MIRROR_DIR` on a **second physical drive**, mounted and writable by
+`oto-box`. The service reads it alongside `OTO_BOX_HOME`. `oto-box status` says
+when no directory is configured. A checked SQLite mirror is made every minute,
+and after a new unsent record when the last mirror is over ten seconds old.
+`oto-box store mirror-now` makes one on demand. The directory holds
+`box.sqlite.mirror`, `.mirror.1` and `.mirror.2`; keep all three. A mirror is a
+recent snapshot, so records newer than that snapshot are not protected by it.
+If a record arrives within ten seconds of a mirror and no further record arrives,
+it waits for the next minute's mirror. This is not a ten-second maximum loss window.
+Health reports drive errors, low space and missing or old mirrors.
+
+1. Stop the box (`sudo systemctl stop oto-box`). Keep the failed drive for
+   recovery; do not format it. Install the current release on the replacement
+   drive as in part C and connect the separate mirror drive.
+2. In Console > Devices, open **the existing box** and issue a new claim code.
+   Re-register that same box with `oto-box claim` (part C), then stop the service
+   again. Do not create a different box: the mirrored records belong to the
+   original box identity. Keep the new credential and service configuration.
+3. With the service stopped, run as the service account, using its configured
+   home: `sudo -u oto-box oto-box store restore /path/to/box.sqlite.mirror --home /var/lib/oto-box`.
+   A damaged file is refused. Try `.mirror.1` or `.mirror.2` if necessary. The
+   command checks the copy, preserves the current store and its WAL/SHM beside
+   it as `box.sqlite.replaced-<time>` files, then prints the unsent record count.
+   It does not change the credential or `/etc/oto-box/config`.
+4. Start the service and inspect Health and Failures > Quarantine. Re-registering
+   onto a blank store advances the journal epoch: restored records from the old
+   epoch can need an administrator's review in Quarantine; the restore does not
+   rewrite or automatically approve them. Confirm their outcome before reopening
+   the counter. Keep the mirror and replaced files until that check is complete.
+
+The local restore rehearsal checks file integrity and preserves unsent records.
+A physical drive swap and the park's recovery time still need a Pi visit.
+
 ## Resetting the game
 
 - Fresh game: `sudo systemctl restart oto-kiosk` (10 s). Fresh game and box:

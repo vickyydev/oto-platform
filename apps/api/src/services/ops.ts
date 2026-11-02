@@ -17,7 +17,7 @@ import {
 } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import type { FastifyBaseLogger } from 'fastify';
-import { CACHE_REFRESH_INTERVAL_MS } from '@oto/box-agent';
+import { BoxHeartbeatRequestSchema, CACHE_REFRESH_INTERVAL_MS } from '@oto/box-agent';
 import {
   alert,
   alertDelivery,
@@ -1607,6 +1607,44 @@ export function evaluateBox(
   const subject = `${row.name} (${row.slot})`;
   const scope = { operatorId: row.operatorId, branchId: row.branchId };
   const conditions: FleetCondition[] = [];
+
+  // Older agents never reported storage. Unknown is not a healthy measurement
+  // and must not close an existing warning; disabling the box does close it.
+  const parsedStorage = BoxHeartbeatRequestSchema.shape.storage.safeParse(last?.storage);
+  const storage = parsedStorage.success ? parsedStorage.data : undefined;
+  if (storage || !expectedAlive) {
+    const protectedWords = !storage?.mirrorConfigured
+      ? 'is not mirrored: no mirror directory is configured'
+      : storage.mirrorAgeS === null
+        ? 'has no completed mirror; check the mirror drive'
+        : storage.mirrorAgeS > 600
+          ? `has a mirror ${elapsedWords(storage.mirrorAgeS)} old; newer sales may not be in it`
+          : `has a mirror ${elapsedWords(storage.mirrorAgeS)} old`;
+    const addStorage = (category: string, active: boolean, summary: string, recovered: string, severity: AlertSeverity = 'warning') => {
+      conditions.push({
+        key: `${category}:${row.id}`, category, severity, subject, ...scope,
+        active: expectedAlive && active,
+        summary: `${subject}: ${summary}; its store ${protectedWords}.`,
+        detail: { slot: row.slot, ...(storage ?? {}) },
+        clear: { category, reason: expectedAlive ? 'recovered' : 'taken out of service',
+          summary: `${subject}: ${expectedAlive ? recovered : 'taken out of service'}` },
+      });
+    };
+    if (!expectedAlive || storage) {
+      addStorage('box.storage_failing', storage?.readOnly === true || (storage?.ioErrors ?? 0) > 0,
+        'the drive is failing: replace it today', 'the latest heartbeat reports no drive failure', 'critical');
+    }
+    if (!expectedAlive || storage?.freeBytes != null) {
+      addStorage('box.storage_low', storage?.freeBytes != null &&
+        (storage.freeBytes < 2_000_000_000 || (storage.totalBytes !== null && storage.totalBytes > 0 && storage.freeBytes / storage.totalBytes < 0.1)),
+        'the drive is nearly full: free space or replace it before the counter stops saving sales',
+        'the drive has enough free space again');
+    }
+    addStorage('box.mirror_stale', Boolean(storage?.mirrorConfigured && (storage.mirrorAgeS === null || storage.mirrorAgeS > 600)),
+      storage?.mirrorAgeS === null ? 'no completed sales mirror is available: check the mirror drive' : 'the sales mirror is over 10 minutes old: check the mirror drive',
+      storage?.mirrorConfigured ? 'a recent sales mirror is available again' : 'mirroring is not configured');
+  }
+
 
   /**
    * The queue, read before the offline rule rather than beside the sync rules

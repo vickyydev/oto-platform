@@ -395,6 +395,7 @@ export interface BoxAgentOptions {
    * none and reports null for both — a server in a data centre is not a booth
    * in a mall, and its temperature would be a lie about one.
    */
+  storage?: () => Promise<NonNullable<BoxHeartbeatRequest['storage']>>;
   hardware?: {
     /** °C, or null when it cannot be read. */
     tempC?: () => Promise<number | null>;
@@ -3344,6 +3345,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       note('error', 'the print retry tick failed', { err: String(err) });
       return [];
     });
+    const storage = await options.storage?.().catch(() => undefined);
     const previousReportedAt = lastReportedAt;
     const reportedMs = Math.max(clock(), lastReportedAt + 1);
     lastReportedAt = reportedMs;
@@ -3368,6 +3370,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       // Null, not zero: a virtual box has no thermometer, and zero reads as cold.
       // A Pi reads its own (SCRUM-419).
       tempC: await readHardware(options.hardware?.tempC),
+      ...(storage ? { storage } : {}),
       outboxDepth: state.outboxDepth,
       oldestUnackedS: state.oldestUnackedS,
       configVersion: state.configVersion ?? undefined,

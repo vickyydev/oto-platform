@@ -31,6 +31,8 @@ import { fileCredentialStore } from '../credentials';
 import type { AgentLog } from '../transport';
 import { readJsonFile, readOverrides, readRunnerState, runnerPaths } from './home';
 import { KIOSK_DEFAULT_PORT } from './kiosk-server';
+import { StoreMirror, MIRROR_NAME } from '../store-mirror';
+import { restoreStore } from './store-restore';
 import {
   RunnerError,
   claimBox,
@@ -140,11 +142,15 @@ const USAGE = `oto-box ${BOX_AGENT_BUILD.id} — the OTO booth box
   oto-box status [--home <dir>]
       Say which build this is, whether this box is registered, which booth it
       runs and what it holds.
+  oto-box store mirror-now [--home <dir>]
+      Make a checked store mirror in OTO_BOX_MIRROR_DIR.
+  oto-box store restore FILE [--home <dir>]
+      With the service stopped, restore a checked mirror and keep the old store.
   oto-box version
       The build: version, build date, commit and build time.
 
 Environment: OTO_BOX_API, OTO_BOX_HOME, OTO_BOX_PORT, OTO_BOX_PAGE, OTO_BOX_HOSTNAME,
-OTO_BOX_BRIDGE_ORIGINS and OTO_BOX_BRIDGE_PORT (the station bridge, on a counter box).
+OTO_BOX_MIRROR_DIR, OTO_BOX_BRIDGE_ORIGINS and OTO_BOX_BRIDGE_PORT (the station bridge, on a counter box).
 `;
 
 export async function main(argv: readonly string[], io: CliStreams = {}): Promise<number> {
@@ -210,6 +216,7 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
       try {
         box = await startRunner({
           home,
+          mirrorDirectory: process.env.OTO_BOX_MIRROR_DIR || null,
           apiBaseUrl: option(parsed, 'api', 'OTO_BOX_API') ?? null,
           port,
           pageDir: option(parsed, 'page', 'OTO_BOX_PAGE') ?? defaultPageDir(),
@@ -247,6 +254,30 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
       });
     }
 
+    case 'store': {
+      try {
+        if (parsed.positional[0] === 'mirror-now' && parsed.positional.length === 1) {
+          const directory = process.env.OTO_BOX_MIRROR_DIR;
+          if (!directory) { out('Not mirrored: OTO_BOX_MIRROR_DIR is not configured.'); return 1; }
+          const mirror = new StoreMirror({ database: runnerPaths(home).database, directory });
+          const result = await mirror.run();
+          out(result === 'mirrored' ? `Checked mirror saved: ${join(directory, MIRROR_NAME)}` : `Mirror ${result}; the live store is unchanged.`);
+          return result === 'mirrored' ? 0 : 1;
+        }
+        if (parsed.positional[0] === 'restore' && parsed.positional.length === 2) {
+          const result = await restoreStore(home, parsed.positional[1]!);
+          for (const file of result.replaced) out(`Previous store kept: ${file}`);
+          out(`Restored: ${result.unsent} unsent record(s) waiting to reach the cloud. Credential and service configuration unchanged.`);
+          return 0;
+        }
+        err('Usage: oto-box store mirror-now | oto-box store restore FILE');
+        return 2;
+      } catch {
+        err('Store operation refused or failed. Stop the service before restoring; check that the file is a readable, checked box mirror and the destination is writable. The previous store is preserved.');
+        return 1;
+      }
+    }
+
     case 'status': {
       const paths = runnerPaths(home);
       const credential = await fileCredentialStore(paths.credential).read();
@@ -259,6 +290,9 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
       const { overrides, problem } = await readOverrides(paths);
       out(`build       ${describeBuild()}`);
       out(`home        ${home}`);
+      const mirror = new StoreMirror({ database: paths.database, directory: process.env.OTO_BOX_MIRROR_DIR });
+      const mirrorAge = await mirror.ageSeconds();
+      out(`mirror      ${process.env.OTO_BOX_MIRROR_DIR ? (mirrorAge === null ? 'no completed mirror found' : `${mirrorAge}s old`) : 'not mirrored: OTO_BOX_MIRROR_DIR is not configured'}`);
       out(`registered  ${credential ? `yes — box ${credential.boxId}` : 'no (enter the claim code on the television, or run "oto-box claim")'}`);
       // Before a claim, runner.json names no api; the configuration does, and
       // it is the one a claim or a run would use (closing audit L25).

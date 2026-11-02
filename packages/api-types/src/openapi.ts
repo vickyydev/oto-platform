@@ -36526,6 +36526,16 @@ export interface paths {
                             } | null;
                             pointerPresent?: boolean | null;
                         };
+                        storage?: {
+                            freeBytes: number | null;
+                            totalBytes: number | null;
+                            readOnly: boolean | null;
+                            ioErrors: number;
+                            mirrorConfigured: boolean;
+                            mirrorAgeS: number | null;
+                            mirrorFreeBytes: number | null;
+                            mirrorErrors: number;
+                        };
                         cache?: {
                             /** Format: date-time */
                             appliedAt?: string | null;
