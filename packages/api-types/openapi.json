@@ -18583,6 +18583,11 @@
                           ],
                           "nullable": true
                         },
+                        "bridgeOrigin": {
+                          "type": "string",
+                          "nullable": true,
+                          "default": null
+                        },
                         "capabilities": {
                           "type": "array",
                           "items": {
@@ -18865,6 +18870,11 @@
                               "disabled"
                             ],
                             "nullable": true
+                          },
+                          "bridgeOrigin": {
+                            "type": "string",
+                            "nullable": true,
+                            "default": null
                           },
                           "capabilities": {
                             "type": "array",
@@ -19248,6 +19258,11 @@
                           ],
                           "nullable": true
                         },
+                        "bridgeOrigin": {
+                          "type": "string",
+                          "nullable": true,
+                          "default": null
+                        },
                         "capabilities": {
                           "type": "array",
                           "items": {
@@ -19487,6 +19502,11 @@
                             "disabled"
                           ],
                           "nullable": true
+                        },
+                        "bridgeOrigin": {
+                          "type": "string",
+                          "nullable": true,
+                          "default": null
                         },
                         "capabilities": {
                           "type": "array",
@@ -19860,6 +19880,11 @@
                           ],
                           "nullable": true
                         },
+                        "bridgeOrigin": {
+                          "type": "string",
+                          "nullable": true,
+                          "default": null
+                        },
                         "capabilities": {
                           "type": "array",
                           "items": {
@@ -20205,6 +20230,11 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "bridgeOrigin": {
+                            "type": "string",
+                            "nullable": true,
+                            "default": null
+                          },
                           "agentVersion": {
                             "type": "string",
                             "nullable": true
@@ -20312,6 +20342,11 @@
                       "virtual"
                     ],
                     "default": "counter"
+                  },
+                  "bridgeOrigin": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "nullable": true
                   }
                 },
                 "required": [
@@ -20382,6 +20417,11 @@
                         "hostname": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "bridgeOrigin": {
+                          "type": "string",
+                          "nullable": true,
+                          "default": null
                         },
                         "agentVersion": {
                           "type": "string",
@@ -20501,6 +20541,11 @@
                       "offline",
                       "disabled"
                     ]
+                  },
+                  "bridgeOrigin": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "nullable": true
                   }
                 },
                 "additionalProperties": false
@@ -20567,6 +20612,11 @@
                         "hostname": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "bridgeOrigin": {
+                          "type": "string",
+                          "nullable": true,
+                          "default": null
                         },
                         "agentVersion": {
                           "type": "string",

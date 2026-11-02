@@ -140,6 +140,10 @@ export interface KioskServerOptions {
   host?: string;
   /** The built booth page (`apps/booth/dist/public`), or null when it is not installed. */
   pageDir: string | null;
+  /** The customer-display bundle shipped with this agent; independent of the booth page. */
+  displayPageDir?: string | null;
+  /** Paired display routes only. Host/Origin/peer guards run before this handler. */
+  display?: (req: IncomingMessage, res: ServerResponse) => Promise<void>;
   /** The `/booth/*` contract for the booth this box runs, or null when there is none yet. */
   booth: () => BoothHandler | null;
   state: () => Promise<KioskState>;
@@ -381,13 +385,14 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
     return refuse(res, 404, 'not_found', 'No such route on this box');
   }
 
-  async function serveStatic(res: ServerResponse, route: string, method: string): Promise<void> {
+  async function serveStatic(res: ServerResponse, route: string, method: string, root = pageRoot, display = false): Promise<void> {
+    const pageRoot = root;
     if (method !== 'GET' && method !== 'HEAD') return refuse(res, 405, 'method_not_allowed', 'Use GET');
     if (!pageRoot) {
       res.statusCode = 503;
       res.setHeader('content-type', 'text/plain; charset=utf-8');
       res.setHeader('cache-control', 'no-store');
-      res.end('The booth page is not installed beside this box agent.');
+      res.end(`The ${display ? 'customer display' : 'booth'} page is not installed beside this box agent.`);
       return;
     }
     let relative: string;
@@ -417,7 +422,7 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
     } catch {
       return refuse(res, 404, 'not_found', 'No such file');
     }
-    if (isIndex) bytes = Buffer.from(markServedByBox(bytes.toString('utf8')), 'utf8');
+    if (isIndex && !display) bytes = Buffer.from(markServedByBox(bytes.toString('utf8')), 'utf8');
     res.statusCode = 200;
     res.setHeader('content-type', CONTENT_TYPES[extname(target).toLowerCase()] ?? 'application/octet-stream');
     res.setHeader('x-content-type-options', 'nosniff');
@@ -427,7 +432,7 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
     // be cached, or an update would leave the television on the old one.
     res.setHeader(
       'cache-control',
-      !isIndex && wanted.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
+      !isIndex && wanted.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : display ? 'no-store' : 'no-cache',
     );
     res.setHeader('content-length', String(bytes.length));
     res.end(method === 'HEAD' ? undefined : bytes);
@@ -445,6 +450,10 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
       const method = (req.method ?? 'GET').toUpperCase();
       const url = new URL(req.url ?? '/', 'http://kiosk.invalid');
       const route = url.pathname;
+      const displayApi = route.startsWith('/api/display/') || route.startsWith('/api/box/');
+      // Customer display reads are credentialed too; never let another page
+      // use this local listener as a cross-origin API or a DNS-rebinding proxy.
+      if (displayApi && !originAllowed(headerValue(req, 'origin'))) return refuse(res, 403, 'origin_not_allowed', 'This display answers its own page only');
       const writes = method !== 'GET' && method !== 'HEAD';
       if (writes) {
         if (!originAllowed(headerValue(req, 'origin'))) {
@@ -462,6 +471,14 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
         return await serveBooth(req, res, route.slice('/booth'.length), method);
       }
       if (route.startsWith('/kiosk/')) return await serveKiosk(req, res, route, method);
+      if (displayApi) {
+        if (refusedUntilRunning(res)) return;
+        if (writes && headerValue(req, 'content-type')?.split(';')[0]?.trim() !== 'application/json') return refuse(res, 415, 'json_required', 'Use JSON');
+        if (!options.display) return refuse(res, 404, 'not_found', 'The local display is not configured');
+        return await options.display(req, res);
+      }
+      if (route === '/display' || route.startsWith('/display/')) return await serveStatic(res, route.slice('/display'.length) || '/', method,
+        options.displayPageDir ? resolve(options.displayPageDir) : null, true);
       return await serveStatic(res, route, method);
     } catch (err) {
       if (err instanceof RequestProblem) return refuse(res, err.status, err.code, err.message);

@@ -41,6 +41,10 @@
 #                         about the mirror changes. On a RECOVERY install leave it
 #                         off until the store is back: BOX_QUICKSTART.md, "If the
 #                         drive dies"
+#   --bridge-host NAME   publish the station bridge over HTTPS using DNS-01.
+#                         Requires root-only /etc/caddy/env; see
+#                         BOX_BRIDGE_BENCH.md. This option has not yet been run
+#                         on a real Pi. Without it no bridge setting changes.
 #   --printer-direct      the receipt printer plugs by network cable straight into
 #                         the Pi's Ethernet socket, no router between them: gives
 #                         eth0 a fixed address for it (192.168.192.10), runs a
@@ -104,6 +108,7 @@ TS_LIST="/etc/apt/sources.list.d/tailscale.list"
 MIRROR_UUID=""
 MIRROR_MOUNT="/mnt/oto-mirror"
 MIRROR_DIR="$MIRROR_MOUNT/box"
+BRIDGE_HOST=""
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 warn() { printf '\033[33mwarning:\033[0m %s\n' "$*" >&2; }
@@ -125,6 +130,7 @@ while [ $# -gt 0 ]; do
     --tailscale-authkey) TS_AUTHKEY="${2:?--tailscale-authkey needs a key}"; shift 2 ;;
     --tailscale-hostname) TS_HOSTNAME="${2:?--tailscale-hostname needs a name}"; shift 2 ;;
     --mirror-uuid) MIRROR_UUID="${2:?--mirror-uuid needs the UUID of the drive, from sudo blkid}"; shift 2 ;;
+    --bridge-host) BRIDGE_HOST="${2:?--bridge-host needs a DNS hostname}"; shift 2 ;;
     -h|--help) sed -n '2,/^$/p' "$0"; exit 0 ;;
     *.tgz|*.tar.gz) TARBALL="$1"; shift ;;
     *) die "unknown option: $1" ;;
@@ -204,6 +210,11 @@ fi
 #   oto-box 0.1.0 b25b644 built 2026-10-29T05:38:23Z            → 0.1.0-b25b644  (older tarballs)
 RELEASE="$(awk 'NR == 1 { if ($3 == "built") print $2; else print $2"-"$3 }' "$SOURCE/VERSION" 2>/dev/null | tr -c 'A-Za-z0-9.+-' '_' | sed 's/_*$//')"
 [ -n "$RELEASE" ] || RELEASE="release-$(date +%Y%m%d%H%M%S)"
+
+if [ -n "$BRIDGE_HOST" ]; then
+  . "$SOURCE/pi/bridge-install.sh"
+  bridge_preflight
+fi
 
 # --- Packages, time and the screen ------------------------------------------
 say "System packages"
@@ -641,6 +652,7 @@ else
   [ -z "$MIRROR_UUID" ] || config_set OTO_BOX_MIRROR_DIR "$MIRROR_DIR"
 fi
 chmod 0644 /etc/oto-box/config
+[ -z "$BRIDGE_HOST" ] || bridge_install
 # What the screen opens from here on, whichever run set it.
 KIOSK_URL_NOW="$(sed -n 's/^OTO_KIOSK_URL=//p' /etc/oto-box/config | tail -n 1)"
 
@@ -757,6 +769,10 @@ systemctl daemon-reload
 # release, and --now leaves a running service alone.
 systemctl enable oto-box.service
 systemctl restart oto-box.service
+if [ -n "$BRIDGE_HOST" ]; then
+  systemctl enable oto-box-bridge.service
+  systemctl restart oto-box-bridge.service
+fi
 systemctl enable --now oto-box-watchdog.timer
 [ -n "$DAILY_REBOOT" ] && systemctl enable --now oto-box-reboot.timer
 if [ "$WITH_KIOSK" -eq 1 ]; then

@@ -168,6 +168,8 @@ export function BoxDrawer({
           </Fact>
         </dl>
 
+        <BridgeAddress key={box.id} box={box} canUpdate={canUpdateBox} onChanged={onChanged} />
+
         {box.status === 'unclaimed' && (
           <ClaimCodeRow box={box} canUpdateBox={canUpdateBox} timezone={timezone} onChanged={onChanged} />
         )}
@@ -259,6 +261,34 @@ export function BoxDrawer({
 const CACHE_CHECK_LATE_AFTER_S = 150;
 /** And before it is red: a box that has not confirmed its copies in a day. */
 const CACHE_CHECK_STALE_AFTER_S = 86_400;
+
+export function BridgeAddress({ box, canUpdate, onChanged }: { box: BoxRow; canUpdate: boolean; onChanged: () => void }) {
+  const working = useWorkingAuthority();
+  const [value, setValue] = useState(box.bridgeOrigin ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { setValue(box.bridgeOrigin ?? ''); setError(null); setSaved(false); }, [box.bridgeOrigin]);
+  if (box.role === 'virtual') return <p className="mt-3 text-xs text-muted-foreground">This virtual box uses the platform address.</p>;
+  const save = async () => {
+    if (!canUpdate || !working.isCurrent() || busy) return;
+    setBusy(true); setError(null); setSaved(false);
+    try {
+      await working.run(() => fleetApi.updateBox(box.id, { bridgeOrigin: value.trim() || null }));
+      if (working.isCurrent()) { setSaved(true); onChanged(); }
+    } catch (err) {
+      if (working.isCurrent()) setError(err instanceof Error ? err.message : 'The bridge address could not be saved.');
+    } finally { if (working.isCurrent()) setBusy(false); }
+  };
+  return <div className="mt-4 space-y-2">
+    <Field label="Counter bridge address" hint="The HTTPS address tills use to reach this box without the internet. Leave empty until its network address is ready.">
+      <TextInput value={value} onChange={(next) => { setValue(next); setSaved(false); }} disabled={!canUpdate || busy} placeholder="https://counter-1.example.com" maxLength={2048} />
+    </Field>
+    {canUpdate && <Button variant="outline" size="sm" disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Save bridge address'}</Button>}
+    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+    {saved && <p role="status" className="text-xs text-muted-foreground">Saved. Pick the station again on its till to use this address.</p>}
+  </div>;
+}
 
 /**
  * When this box last applied its offline copies, and how many it holds

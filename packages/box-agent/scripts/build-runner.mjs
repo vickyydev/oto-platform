@@ -78,6 +78,7 @@ try {
       '--',
       'packages',
       'apps/booth',
+      'apps/pos',
       'scripts/pi',
     ],
     { cwd: ROOT },
@@ -165,6 +166,16 @@ if (existsSync(join(page, 'index.html'))) {
 }
 
 const piKit = join(ROOT, 'scripts', 'pi');
+// Always rebuild this page with the exact agent build ID, even --no-page:
+// that existing option skips only the booth build. Reusing display assets
+// from another release would break cold-start version verification.
+const displayBuild = spawnSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['--filter', '@oto/pos', 'run', 'build:display'], {
+  cwd: ROOT, stdio: 'inherit', shell: process.platform === 'win32',
+  env: { ...process.env, OTO_BOX_BUILD_ID: buildId },
+});
+if (displayBuild.status !== 0) throw new Error('the customer display page did not build');
+cpSync(join(ROOT, 'apps', 'pos', 'dist', 'display'), join(OUT, 'display'), { recursive: true });
+
 if (existsSync(piKit)) {
   cpSync(piKit, join(OUT, 'pi'), { recursive: true });
   /**
@@ -179,6 +190,7 @@ if (existsSync(piKit)) {
 }
 const guide = join(ROOT, 'docs', 'ops', 'PI_BOOTH.md');
 if (existsSync(guide)) cpSync(guide, join(OUT, 'PI_BOOTH.md'));
+cpSync(join(ROOT, 'docs', 'ops', 'BOX_BRIDGE_BENCH.md'), join(OUT, 'BOX_BRIDGE_BENCH.md'));
 
 writeFileSync(
   join(OUT, 'package.json'),

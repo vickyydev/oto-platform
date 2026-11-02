@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --config vite.config.ts",
     "build": "tsc -p server/tsconfig.json && vite build --config vite.config.ts && node server/dist/compress.js",
+    "build:display": "vite build --config vite.display.config.ts",
     "start": "node server/dist/index.js",
     "serve": "vite preview --config vite.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p server/tsconfig.json --noEmit",

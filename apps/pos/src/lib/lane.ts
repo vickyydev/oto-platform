@@ -1,18 +1,19 @@
 import { useSyncExternalStore } from 'react';
 import { BOX_LANE_PAYMENT_REFUSAL, BOX_LANE_UNREACHABLE, type BridgeLane } from '@oto/shared';
 import { ApiError, NetworkError } from '@/api/client';
-import { bridgeApi } from '@/api/bridge';
+import { bridgeApi, hasBridgeOrigin } from '@/api/bridge';
 
 /**
  * THE LANE ARBITER — which way this till is working (offline plan OD-1, Round 3).
  *
  * While the internet is up the till works through the platform, exactly as it
  * always has. It moves to its BOX — the station bridge, `api/bridge.ts` —
- * the moment any of three things is true:
+ * the moment one of these things is true:
  *
  *   - the platform answers `503 STATION_FORCED_OFFLINE` (the Console's test
  *     switch, SCRUM-285);
  *   - a call reaches nothing at all (`NetworkError`: the mall's link is down);
+ *   - the forwarder cannot reach its API and this station has a local bridge;
  *   - the box itself says its link is down (`GET status`).
  *
  * And it moves back when the box says its link is up again and the Console's
@@ -76,7 +77,10 @@ export function currentLane(): BridgeLane {
 /** Whether a failure means "go to the box" rather than "the platform said no". */
 export function isBoxLaneTrigger(err: unknown): boolean {
   if (err instanceof NetworkError) return true;
-  return err instanceof ApiError && err.status === 503 && err.code === 'STATION_FORCED_OFFLINE';
+  return err instanceof ApiError && (
+    (err.status === 503 && err.code === 'STATION_FORCED_OFFLINE')
+    || (hasBridgeOrigin() && err.status === 502 && err.code === 'UPSTREAM_UNAVAILABLE')
+  );
 }
 
 /** Note a failure the platform lane met; moves to the box when it is a trigger. */

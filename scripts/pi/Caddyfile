@@ -1,3 +1,4 @@
+# Managed by oto-box --bridge-host (SCRUM-713).
 # The station bridge, published on the counter's LAN (offline plan §2.2,
 # Round 3; SCRUM-269).
 #
@@ -17,24 +18,28 @@
 # points the name at this box's LAN address, and the iPad's one-time
 # local-network permission.
 #
-# Installed to /etc/caddy/Caddyfile with the three values below filled in:
+# Installed to /etc/caddy/Caddyfile; values are supplied by the service:
 #   OTO_BRIDGE_HOST    this box's name, e.g. till-1.hkt-central.box.<zone>
 #   OTO_DNS_PROVIDER   the Caddy DNS module for the zone, e.g. cloudflare
 #   OTO_DNS_API_TOKEN  that provider's token, from /etc/caddy/env (never here)
+#   OTO_ACME_EMAIL    certificate notices, from /etc/caddy/env
 #
 # The agent is told which POS origins may call it with OTO_BOX_BRIDGE_ORIGINS
 # in /etc/oto-box/config; Caddy passes the browser's Origin through untouched
 # so the agent is the one that checks it, and answers CORS and the Private
 # Network Access preflight itself.
-
 {
-	# The box talks to nothing on the internet to renew: DNS-01 only.
-	email {$OTO_ACME_EMAIL:ops@invalid}
+	# DNS-01 needs outbound ACME and DNS-provider access when issuing/renewing.
+	# No inbound internet port or local administrative endpoint is needed.
+	admin off
+	persist_config off
+	auto_https disable_redirects
+	email {$OTO_ACME_EMAIL}
 }
 
 {$OTO_BRIDGE_HOST} {
 	tls {
-		dns {$OTO_DNS_PROVIDER} {$OTO_DNS_API_TOKEN}
+		dns {$OTO_DNS_PROVIDER} {env.OTO_DNS_API_TOKEN}
 	}
 
 	# Only the bridge's own paths; everything else on this name is refused.

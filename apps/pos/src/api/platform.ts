@@ -771,6 +771,8 @@ export interface ApiStation {
   boxId: string | null;
   boxName?: string | null;
   boxStatus?: BoxStatus | string | null;
+  /** Missing on older deployments and null for a virtual box. */
+  bridgeOrigin?: string | null;
   name: string;
   kind: StationKind | string;
   capabilities?: (StationCapability | string)[];

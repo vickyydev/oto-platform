@@ -82,6 +82,8 @@ const EnvSchema = z.object({
    * gated on this instead.
    */
   DEPLOY_ENV: z.enum(['local', 'staging', 'production']).default('local'),
+  /** Synthetic local-agent proof only; production never accepts loopback origins. */
+  BOX_BRIDGE_ALLOW_LOOPBACK: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   DATABASE_URL: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
   SESSION_TTL_HOURS: z.coerce.number().default(12),

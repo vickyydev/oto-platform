@@ -332,6 +332,12 @@ services:
       - key: COOKIE_SECURE
         # HTTPS only. The api refuses to boot in production without this.
         value: 'true'
+      - key: STAFF_TOKEN_PRIVATE_KEY
+        # SCRUM-713: Ed25519 PKCS#8 PEM, held only in the API environment.
+        # Publishes the public key and enables bound shift-token issuance.
+        # STAFF_OFFLINE_SIGN_IN remains absent/false. The temporary proof-only
+        # BOX_BRIDGE_ALLOW_LOOPBACK is removed after the local-agent proof.
+        sync: false
       - key: ALLOWED_ORIGINS
         # BLOCKS THE FIRST DEPLOY IF LEFT BLANK. Each static site is served
         # from its own origin and reaches the api through that site's /api

@@ -694,6 +694,13 @@
       "when": 1793567045270,
       "tag": "0098_nanny_duty",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1793641894410,
+      "tag": "0099_box_bridge_origin",
+      "breakpoints": true
     }
   ]
 }

@@ -80,6 +80,7 @@ import {
 import { applyPrinterOverride } from './printer-override';
 import { piHardware } from './hardware';
 import { createBridgeServer, type BridgeServer } from './bridge-server';
+import { createLocalDisplayHttp } from './display-http';
 import { MIRROR_NAME, StoreMirror, copiesHoldingUnsent } from '../store-mirror';
 import { StorageHealth } from '../storage-health';
 import { holdStoreLock } from './store-lock';
@@ -581,6 +582,8 @@ export interface RunnerOptions {
   port?: number;
   /** The built booth page. Null serves a line saying it is missing. */
   pageDir?: string | null;
+  /** Paired customer-display assets from this same release. */
+  displayPageDir?: string | null;
   hostname?: string;
   fetch?: AgentFetch;
   /**
@@ -886,10 +889,17 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
    * asks this server for `/kiosk/health`, restarted the box into the same wait
    * for as long as the stall lasted.
    */
+  let localDisplay: ReturnType<typeof createLocalDisplayHttp> | null = null;
   const kiosk = createKioskServer({
     port: options.port ?? KIOSK_DEFAULT_PORT,
     host: '127.0.0.1',
     pageDir: options.pageDir ?? null,
+    displayPageDir: options.displayPageDir ?? null,
+    display: async (req, res) => {
+      if (localDisplay) return localDisplay(req, res);
+      res.writeHead(503, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify({ error: { code: 'BOX_NOT_READY', message: 'This box is starting.' } }));
+    },
     booth: boothHandler,
     state: kioskState,
     claim,
@@ -909,6 +919,10 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
    * POS origins its tills are served from. It answers from whichever agent is
    * running now, and says the box is starting until there is one.
    */
+  localDisplay = createLocalDisplayHttp({
+    agent: () => (fault ? null : agent), apiBaseUrl,
+    origins: [`http://127.0.0.1:${port}`, `http://localhost:${port}`, `http://[::1]:${port}`],
+  });
   const bridgeServer: BridgeServer | null =
     options.bridge && options.bridge.origins.length > 0
       ? createBridgeServer({

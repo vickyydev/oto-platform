@@ -107,6 +107,7 @@ export interface BoxRow {
   name: string;
   /** The position on site — "counter-1", "gate-north". Survives a Pi being swapped. */
   slot: string;
+  bridgeOrigin?: string | null;
   role: BoxRole | string;
   status: BoxStatus | string;
   agentVersion?: string | null;
@@ -443,7 +444,7 @@ export const fleetApi = {
 
   updateBox: (
     id: string,
-    body: { name?: string; slot?: string; role?: BoxRole; status?: BoxStatus },
+    body: { name?: string; slot?: string; role?: BoxRole; status?: BoxStatus; bridgeOrigin?: string | null },
   ) => api.patch<{ box: BoxRow }>(`/boxes/${encodeURIComponent(id)}`, body),
 
   /**

@@ -81,7 +81,7 @@ jobs:
           if echo "$FILES" | grep -q -E '^packages/db/'; then flag db true; else flag db false; fi
           if echo "$FILES" | grep -q -E '^(apps/console/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag e2e true; else flag e2e false; fi
           if echo "$FILES" | grep -q -E '^(apps/pos/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag pos_e2e true; else flag pos_e2e false; fi
-          if echo "$FILES" | grep -q -E '^(packages/|apps/booth/|scripts/pi/)'; then flag pi true; else flag pi false; fi
+          if echo "$FILES" | grep -q -E '^(packages/|apps/booth/|apps/pos/|scripts/pi/)'; then flag pi true; else flag pi false; fi
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

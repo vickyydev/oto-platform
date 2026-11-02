@@ -615,6 +615,46 @@ describe('a sale taken with no internet reaches the ledger (SCRUM-206)', () => {
 });
 
 describe('the same money arriving twice (SCRUM-206)', () => {
+  it.each(['commit', 'cash'] as const)('SCRUM-713 HIGH: reconnect after an unknown %s answer preserves one sale, receipt and cash attempt', async (lost) => {
+    const b = await freshBox();
+    // This case starts online, so use a fully configured counter, unlike
+    // the raw historical sync-fact fixtures elsewhere in this suite.
+    const receiptId = newId();
+    await ctx.db.insert(device).values({ id: receiptId, operatorId, branchId, boxId: b.boxId,
+      kind: 'receipt_printer', label: 'ZZ TEST receipt', transport: 'simulated', protocol: 'escpos', model: 'Welltech G4 (Xprinter XP-C260)' });
+    await ctx.db.insert(stationDevice).values({ id: newId(), stationId: b.stationId, deviceId: receiptId, role: 'receipt' });
+    await ctx.db.update(station).set({ paymentRouting: { card: 'manual', qr: 'none' } }).where(eq(station.id, b.stationId));
+    const lines = [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }];
+    const quote = await ctx.app.inject({ method: 'POST', url: '/sales/quote', headers: { cookie: receptionCookie }, payload: { stationId: b.stationId, lines } });
+    expect(quote.statusCode).toBe(200);
+    const total = Number(quote.json().totals.grossSatang);
+    const saleId = newId(), actionId = `sale-${newId()}`, tender = cashTender(total);
+    const sameCart = { lines, expectedTotalSatang: total };
+    const recorded = await ctx.app.inject({ method: 'POST', url: '/sales', headers: { cookie: receptionCookie },
+      payload: { id: saleId, stationId: b.stationId, actionId, cart: sameCart } });
+    expect(recorded.statusCode, recorded.json().error?.code).toBe(200);
+    let originalReceipt: string | null = null;
+    if (lost === 'cash') {
+      const finalised = await ctx.app.inject({ method: 'POST', url: `/sales/${saleId}/finalise`, headers: { cookie: receptionCookie },
+        payload: { actionId: tender.actionId, tender: { method: 'cash', kind: 'cash', amountSatang: total, tenderedSatang: total, changeSatang: 0 } } });
+      expect(finalised.statusCode).toBe(200);
+      originalReceipt = (await saleRow(saleId))!.receiptNumber;
+    }
+    // The forwarder loses that successful answer. The till's 502 branch uses
+    // these exact IDs (box-lane-selling.test.ts), and its box seals this fact.
+    const fact = mint(b, 'sale.finalised', { saleId, cart: sameCart, tenders: [tender],
+      receipt: { series: b.prefix, seq: 1, number: `${b.prefix}-000001` } }, { actionId });
+    const returned = await push(b, [fact]);
+    expect(returned.quarantined).toBe(0); expect(returned.applied).toBe(1);
+    expect((await push(b, [fact])).duplicates).toBe(1);
+    const rows = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    expect(rows).toHaveLength(1); expect(rows[0]!.status).toBe('finalised');
+    expect(rows[0]!.receiptNumber).toBe(originalReceipt ?? `${b.prefix}-000001`);
+    const attempts = await attemptsOf(saleId);
+    expect(attempts).toHaveLength(1); expect(attempts[0]!.amountSatang).toBe(total);
+    const [series] = await ctx.db.select().from(receiptSeries).where(and(eq(receiptSeries.stationId, b.stationId), eq(receiptSeries.series, b.prefix)));
+    expect(series!.nextSeq).toBe(2);
+  });
   /**
    * THE CASE THE SYNC LEDGER'S OWN DUPLICATE INDEX CANNOT SEE.
    *

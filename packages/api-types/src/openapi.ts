@@ -9049,6 +9049,8 @@ export interface paths {
                                 boxName: string | null;
                                 /** @enum {string|null} */
                                 boxStatus: "unclaimed" | "online" | "offline" | "disabled" | null;
+                                /** @default null */
+                                bridgeOrigin: string | null;
                                 capabilities: ("tickets" | "fnb" | "dropoff" | "parties")[];
                                 /** @enum {string} */
                                 accessScope: "all_staff" | "selected_staff";
@@ -9140,6 +9142,8 @@ export interface paths {
                                 boxName: string | null;
                                 /** @enum {string|null} */
                                 boxStatus: "unclaimed" | "online" | "offline" | "disabled" | null;
+                                /** @default null */
+                                bridgeOrigin: string | null;
                                 capabilities: ("tickets" | "fnb" | "dropoff" | "parties")[];
                                 /** @enum {string} */
                                 accessScope: "all_staff" | "selected_staff";
@@ -9249,6 +9253,8 @@ export interface paths {
                                 boxName: string | null;
                                 /** @enum {string|null} */
                                 boxStatus: "unclaimed" | "online" | "offline" | "disabled" | null;
+                                /** @default null */
+                                bridgeOrigin: string | null;
                                 capabilities: ("tickets" | "fnb" | "dropoff" | "parties")[];
                                 /** @enum {string} */
                                 accessScope: "all_staff" | "selected_staff";
@@ -9330,6 +9336,8 @@ export interface paths {
                                 boxName: string | null;
                                 /** @enum {string|null} */
                                 boxStatus: "unclaimed" | "online" | "offline" | "disabled" | null;
+                                /** @default null */
+                                bridgeOrigin: string | null;
                                 capabilities: ("tickets" | "fnb" | "dropoff" | "parties")[];
                                 /** @enum {string} */
                                 accessScope: "all_staff" | "selected_staff";
@@ -9466,6 +9474,8 @@ export interface paths {
                                 boxName: string | null;
                                 /** @enum {string|null} */
                                 boxStatus: "unclaimed" | "online" | "offline" | "disabled" | null;
+                                /** @default null */
+                                bridgeOrigin: string | null;
                                 capabilities: ("tickets" | "fnb" | "dropoff" | "parties")[];
                                 /** @enum {string} */
                                 accessScope: "all_staff" | "selected_staff";
@@ -9588,6 +9598,8 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "unclaimed" | "online" | "offline" | "disabled";
                                 hostname: string | null;
+                                /** @default null */
+                                bridgeOrigin: string | null;
                                 agentVersion: string | null;
                                 currentEpoch: number;
                                 registeredAt: string | null;
@@ -9630,6 +9642,7 @@ export interface paths {
                          * @enum {string}
                          */
                         role?: "counter" | "gate" | "booth" | "kiosk" | "standby" | "virtual";
+                        bridgeOrigin?: string | null;
                     };
                 };
             };
@@ -9653,6 +9666,8 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "unclaimed" | "online" | "offline" | "disabled";
                                 hostname: string | null;
+                                /** @default null */
+                                bridgeOrigin: string | null;
                                 agentVersion: string | null;
                                 currentEpoch: number;
                                 registeredAt: string | null;
@@ -9737,6 +9752,7 @@ export interface paths {
                         role?: "counter" | "gate" | "booth" | "kiosk" | "standby" | "virtual";
                         /** @enum {string} */
                         status?: "unclaimed" | "online" | "offline" | "disabled";
+                        bridgeOrigin?: string | null;
                     };
                 };
             };
@@ -9760,6 +9776,8 @@ export interface paths {
                                 /** @enum {string} */
                                 status: "unclaimed" | "online" | "offline" | "disabled";
                                 hostname: string | null;
+                                /** @default null */
+                                bridgeOrigin: string | null;
                                 agentVersion: string | null;
                                 currentEpoch: number;
                                 registeredAt: string | null;

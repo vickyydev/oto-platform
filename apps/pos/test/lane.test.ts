@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '@/api/client';
+import { bridgeApi, bridgeUrl, holdBoxSession, setBridgeOrigin } from '@/api/bridge';
 import { confirmVisitChildren, membersApi, visitsApi } from '@/api/platform';
 import { salesApi } from '@/api/sales';
 import * as React from 'react';
@@ -55,17 +56,44 @@ const forcedOffline = () =>
   );
 
 beforeEach(() => {
+  setBridgeOrigin(null);
   setLaneStation(null);
   setLaneStation(STATION);
 });
 
 afterEach(() => {
+  setBridgeOrigin(null);
   setLaneStation(null);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
 describe('which lane a call takes', () => {
+  it('uses a configured bridge for the precise forwarder outage, never a platform refusal or an unconfigured box', async () => {
+    const unavailable = new ApiError(502, 'UPSTREAM_UNAVAILABLE', 'API unavailable');
+    const platform = vi.fn(async () => { throw unavailable; });
+    const local = vi.fn(async () => 'local');
+    await expect(viaLane(platform, local)).rejects.toBe(unavailable);
+    expect(local).not.toHaveBeenCalled();
+    setBridgeOrigin('https://counter.example.test');
+    await expect(viaLane(async () => 'online', local)).resolves.toBe('online');
+    await expect(viaLane(async () => { throw new ApiError(502, 'OTHER', 'no'); }, local)).rejects.toMatchObject({ code: 'OTHER' });
+    expect(local).not.toHaveBeenCalled();
+    await expect(viaLane(platform, local)).resolves.toBe('local');
+    expect(local).toHaveBeenCalledTimes(1);
+    expect(currentLane()).toBe('box');
+  });
+
+  it('drops the RAM box credential when the destination changes', async () => {
+    setBridgeOrigin('https://first.example.test'); holdBoxSession('test-only-session');
+    setBridgeOrigin('https://second.example.test');
+    const fetch = vi.fn(async () => reply({ link: { lane: 'platform' } }));
+    vi.stubGlobal('fetch', fetch);
+    await bridgeApi.status(STATION);
+    expect(fetch).toHaveBeenCalledWith(`https://second.example.test/box/v1/station/${STATION}/status`, expect.objectContaining({ credentials: 'omit', headers: {} }));
+    setBridgeOrigin(null);
+    expect(bridgeUrl(STATION, 'status')).toBe(`/api/box/v1/station/${STATION}/status`);
+  });
   it('stays on the platform while it answers, and a refusal there stands', async () => {
     const fetch = vi.fn(async (_url: string) =>
       reply({ error: { code: 'VALIDATION', message: 'no' } }, 400),
@@ -309,6 +337,35 @@ describe('the selected park and its station lane', () => {
       expect(value().stations?.[0]?.id).toBe('station-b');
       expect(value().station).toBeNull();
       expect(memory.size).toBe(0);
+    } finally { hook.unmount(); }
+  });
+
+  it('adopts and remembers the bridge, restores it during outage, and clears it on leaving or an older station answer', async () => {
+    const selected = { branch: parks[0]!, branches: parks, switching: false, setActiveBranchId: () => {} };
+    vi.spyOn(branchContext, 'useBranch').mockReturnValue(selected);
+    vi.spyOn(operatorContext, 'useOperator').mockReturnValue({ operator: { id: 'operator' }, mustChangePassword: false } as ReturnType<typeof operatorContext.useOperator>);
+    const memory = new Map<string, string>();
+    vi.stubGlobal('window', { localStorage: { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => memory.set(key, value), removeItem: (key: string) => memory.delete(key) } });
+    vi.spyOn(stationsApi, 'mine').mockResolvedValue({ stations: [] });
+    const record = { id: STATION, branchId: parks[0]!.id, name: 'ZZ TEST bridge', kind: 'till', boxId: 'box', bridgeOrigin: 'https://counter.example.test' };
+    const pick = vi.spyOn(stationsApi, 'pick').mockResolvedValue({ station: record, staffToken: null, staffTokenUnavailable: null });
+    let hook = renderHook(() => StationProvider({ children: null }));
+    const value = () => hook.result.current.props.value as ReturnType<typeof import('@/station/StationContext').useStation>;
+    try {
+      await flush(); await value().pick(STATION);
+      expect(bridgeUrl(STATION, 'status')).toBe(`https://counter.example.test/box/v1/station/${STATION}/status`);
+      hook.unmount();
+      expect(bridgeUrl(STATION, 'status')).toBe(`/api/box/v1/station/${STATION}/status`);
+      pick.mockRejectedValue(new NetworkError());
+      hook = renderHook(() => StationProvider({ children: null }));
+      await flush();
+      expect(value().station?.stationId).toBe(STATION);
+      expect(bridgeUrl(STATION, 'status')).toBe(`https://counter.example.test/box/v1/station/${STATION}/status`);
+      value().clearStation();
+      expect(bridgeUrl(STATION, 'status')).toBe(`/api/box/v1/station/${STATION}/status`);
+      pick.mockResolvedValue({ station: { ...record, bridgeOrigin: undefined }, staffToken: null, staffTokenUnavailable: null });
+      await value().pick(STATION);
+      expect(bridgeUrl(STATION, 'status')).toBe(`/api/box/v1/station/${STATION}/status`);
     } finally { hook.unmount(); }
   });
 });

@@ -15,6 +15,7 @@ import { ApiError, isMissingRoute } from '@/api/client';
 import { forgetStationDevices, rememberStation, toStationProfile } from '@/station/fleet';
 import { forgetStaffToken, rememberStaffToken } from '@/auth/staffToken';
 import { setLaneStation } from '@/lib/lane';
+import { holdBoxSession, setBridgeOrigin } from '@/api/bridge';
 
 interface StationContextValue {
   /** The station this till is working, or null while none has been picked. */
@@ -66,6 +67,7 @@ const StationContext = createContext<StationContextValue | null>(null);
 interface RememberedStation {
   id: string;
   name: string;
+  bridgeOrigin?: string | null;
   /**
    * Camera, or a scanner paired to this iPad. A scanner plugged into the box
    * belongs to the station and comes back from the API with it; these two are
@@ -82,7 +84,8 @@ function readRemembered(branchId: string): RememberedStation | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<RememberedStation>;
     return parsed.id && parsed.name
-      ? { id: parsed.id, name: parsed.name, scannerMode: parsed.scannerMode }
+      ? { id: parsed.id, name: parsed.name, scannerMode: parsed.scannerMode,
+        bridgeOrigin: typeof parsed.bridgeOrigin === 'string' ? parsed.bridgeOrigin : null }
       : null;
   } catch {
     // Private browsing, blocked site data, or a value from an older shape:
@@ -145,6 +148,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
   const generation = scope.current.generation;
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => () => { setBridgeOrigin(null); holdBoxSession(null); setLaneStation(null); }, []);
 
   const [stations, setStations] = useState<PickableStation[] | null>(null);
   const [active, setActive] = useState<ApiStation | null>(null);
@@ -164,9 +168,12 @@ export function StationProvider({ children }: { children: ReactNode }) {
     (station: ApiStation, scannerMode?: ScannerMode) => {
       const mode = scannerMode ?? readRemembered(branch.id)?.scannerMode;
       rememberStation(station);
+      setBridgeOrigin(station.bridgeOrigin ?? null);
+      holdBoxSession(null);
+      setLaneStation(station.id);
       setActive(station);
       setPicked(toStationProfile(station, branch.id, mode));
-      writeRemembered(branch.id, { id: station.id, name: station.name, scannerMode: mode });
+      writeRemembered(branch.id, { id: station.id, name: station.name, scannerMode: mode, bridgeOrigin: station.bridgeOrigin ?? null });
       setNotice(null);
     },
     [branch.id],
@@ -222,6 +229,9 @@ export function StationProvider({ children }: { children: ReactNode }) {
   // person fixed the thing they were told to fix and the screen did not move.
   const accountId = operator?.id ?? null;
   useEffect(() => {
+    setBridgeOrigin(null);
+    holdBoxSession(null);
+    setLaneStation(null);
     if (!accountId || mustChangePassword || switching) {
       setStations(null);
       setActive(null);
@@ -285,6 +295,8 @@ export function StationProvider({ children }: { children: ReactNode }) {
             // Not a refusal — the API did not answer at all. Keep working the
             // station this device remembers rather than stopping the counter
             // over a network that may already be back.
+            setBridgeOrigin(remembered.bridgeOrigin ?? null);
+            setLaneStation(remembered.id);
             setPicked({
               stationId: remembered.id,
               stationName: remembered.name,
@@ -313,6 +325,9 @@ export function StationProvider({ children }: { children: ReactNode }) {
   );
 
   const clearStation = useCallback(() => {
+    setBridgeOrigin(null);
+    holdBoxSession(null);
+    setLaneStation(null);
     forgetRemembered(branch.id);
     forgetStationDevices();
     setActive(null);

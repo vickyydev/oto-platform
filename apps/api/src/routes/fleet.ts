@@ -139,6 +139,7 @@ const StationSchema = z.object({
   boxId: z.string().uuid().nullable(),
   boxName: z.string().nullable(),
   boxStatus: z.enum(BOX_STATUSES).nullable(),
+  bridgeOrigin: z.string().nullable().default(null),
   capabilities: z.array(z.enum(STATION_CAPABILITIES)),
   accessScope: z.enum(STATION_ACCESS_SCOPES),
   configVersion: z.number().int(),
@@ -206,6 +207,7 @@ const BoxSchema = z.object({
   role: z.enum(BOX_ROLES),
   status: z.enum(BOX_STATUSES),
   hostname: z.string().nullable(),
+  bridgeOrigin: z.string().nullable().default(null),
   agentVersion: z.string().nullable(),
   currentEpoch: z.number().int(),
   registeredAt: z.string().nullable(),
@@ -643,6 +645,7 @@ export async function fleetRoutes(app: App): Promise<void> {
           name: z.string().min(1),
           slot: z.string().min(1),
           role: z.enum(BOX_ROLES).default('counter'),
+          bridgeOrigin: z.string().max(2048).nullable().optional(),
         }),
         response: {
           200: z.object({ box: BoxSchema, claimCode: oneTimeCode, expiresAt: codeExpiry }),
@@ -652,7 +655,7 @@ export async function fleetRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await loadBranchForOperator(app.db, auth.operatorId, req.params.branchId);
-      return createBox(app.db, opCtx(req), auth, req.params.branchId, req.body);
+      return createBox(app.db, opCtx(req), auth, req.params.branchId, req.body, app.env);
     },
   );
 
@@ -670,6 +673,7 @@ export async function fleetRoutes(app: App): Promise<void> {
             slot: z.string().min(1).optional(),
             role: z.enum(BOX_ROLES).optional(),
             status: z.enum(BOX_STATUSES).optional(),
+            bridgeOrigin: z.string().max(2048).nullable().optional(),
           })
           .strict(),
         response: { 200: z.object({ box: BoxSchema }) },
@@ -679,7 +683,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const row = await loadBox(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:box:update', { branchId: row.branchId });
-      return updateBox(app.db, opCtx(req), auth, row, req.body);
+      return updateBox(app.db, opCtx(req), auth, row, req.body, app.env);
     },
   );
 

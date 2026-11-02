@@ -1,0 +1,1 @@
+ALTER TABLE "core"."box" ADD COLUMN "bridge_origin" text;

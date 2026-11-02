@@ -48,8 +48,12 @@ export function answeredByBox(err: unknown): boolean {
  * box), or a Pi's LAN origin once the platform names one.
  */
 export function setBridgeOrigin(value: string | null): void {
-  origin = value ? value.replace(/\/$/, '') : null;
+  const next = value ? value.replace(/\/$/, '') : null;
+  if (next !== origin) boxSession = null;
+  origin = next;
 }
+
+export function hasBridgeOrigin(): boolean { return origin !== null; }
 
 /** The box session from the last unlock, held in memory only: a lock or a reload ends it. */
 export function holdBoxSession(value: string | null): void {

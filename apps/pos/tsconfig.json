@@ -1,6 +1,6 @@
 {
   "extends": "../../packages/config/tsconfig.base.json",
-  "include": ["src/**/*", "vite.config.ts"],
+  "include": ["src/**/*", "box-display/**/*", "vite.config.ts", "vite.display.config.ts"],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "incremental": true,

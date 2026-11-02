@@ -8,6 +8,15 @@ is re-read before a round. The cluster follows S2-11 (`AGENTS.md`) and lets SCRU
 
 ## 1. Offline selling, in the park's terms
 
+SCRUM-713 first stage (2 November 2026): the counter bridge integration is
+being implemented after 721/725. The boxed display is bundled with the agent
+so an empty asset cache can cold-start offline; a different page build refuses
+to start until reloaded. Nullable box origins preserve the older/virtual path.
+The configured-bridge-only forwarder-502 fallback keeps the original sale and
+press IDs. The opt-in installer and real iPad/Pi/certificate work are described
+in [BOX_BRIDGE_BENCH.md](../../../ops/BOX_BRIDGE_BENCH.md). This stage ends at
+Testing; the historical round account below is not a real-device acceptance.
+
 The mall's internet drops on a Saturday afternoon, and the only change at the counter is a small
 "offline" banner. Reception still finds a family by phone or signs up a new one, confirms the
 children and their allergy notes, and rings up tickets, food and shop items at the same prices.

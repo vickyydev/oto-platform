@@ -83,6 +83,8 @@ export const box = core.table(
     slot: text('slot').notNull(),
     /** What the agent reports about itself; useful when a slot holds the wrong Pi. */
     hostname: text('hostname'),
+    /** Optional HTTPS origin of this box's counter-network bridge. */
+    bridgeOrigin: text('bridge_origin'),
     role: text('role').$type<BoxRole>().notNull().default('counter'),
     /**
      * SHA-256 of the per-box secret minted at `POST /box/v1/register`, which

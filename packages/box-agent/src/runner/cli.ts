@@ -82,10 +82,10 @@ function defaultHome(): string {
 }
 
 /** `<folder of this file>/booth`, which is where the release tarball puts the page. */
-function defaultPageDir(): string | null {
+function defaultPageDir(page = 'booth'): string | null {
   try {
     const here = dirname(fileURLToPath(import.meta.url));
-    const candidate = join(here, 'booth');
+    const candidate = join(here, page);
     return existsSync(join(candidate, 'index.html')) ? candidate : null;
   } catch {
     return null;
@@ -255,6 +255,7 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
           apiBaseUrl: option(parsed, 'api', 'OTO_BOX_API') ?? null,
           port,
           pageDir: option(parsed, 'page', 'OTO_BOX_PAGE') ?? defaultPageDir(),
+          displayPageDir: option(parsed, 'display-page', 'OTO_BOX_DISPLAY_PAGE') ?? defaultPageDir('display'),
           hostname: option(parsed, 'hostname', 'OTO_BOX_HOSTNAME'),
           log,
           /**

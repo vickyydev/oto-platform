@@ -3,7 +3,7 @@ import type { BridgeSaleAnswer, BridgeSaleBand } from '@oto/shared';
 import { renderHook } from './support/hooks';
 import { apiSale } from './support/fixtures';
 import { paymentsApi } from '@/api/payments';
-import { setBridgeStaffName } from '@/api/bridge';
+import { setBridgeOrigin, setBridgeStaffName } from '@/api/bridge';
 import { boxSaleIssue, laneSale } from '@/api/boxSales';
 import type { SaleCartPayload, SaleTenderPayload } from '@/api/sales';
 import { currentLane, setLaneStation } from '@/lib/lane';
@@ -24,6 +24,7 @@ vi.mock('react', () => import('./support/hooks'));
 
 const STATION = '018f0000-0000-7000-8000-0000000057a1';
 const intentsUrl = `/api/box/v1/station/${STATION}/intents`;
+const isIntentUrl = (url: string) => url === intentsUrl || url === `https://counter.example.test${intentsUrl.slice(4)}`;
 
 const reply = (data: unknown, status = 200) =>
   ({ ok: status >= 200 && status < 300, status, json: async () => data }) as Response;
@@ -111,7 +112,7 @@ function stubFetch(routes: {
   const fetch = vi.fn(async (url: string, init?: RequestInit) => {
     const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null;
     seen.push({ url, body });
-    if (url === intentsUrl) {
+    if (isIntentUrl(url)) {
       const intent = body as { type: string; payload: Record<string, unknown> };
       return routes.bridge ? routes.bridge(intent.type, intent.payload) : reply({}, 500);
     }
@@ -122,21 +123,54 @@ function stubFetch(routes: {
 }
 
 const bridgeCalls = (seen: Seen[]) =>
-  seen.filter((s) => s.url === intentsUrl).map((s) => s.body as { type: string; payload: Record<string, unknown> });
+  seen.filter((s) => isIntentUrl(s.url)).map((s) => s.body as { type: string; payload: Record<string, unknown> });
 
 beforeEach(() => {
+  setBridgeOrigin(null);
   setLaneStation(null);
   setLaneStation(STATION);
   setBridgeStaffName('Nok');
 });
 
 afterEach(() => {
+  setBridgeOrigin(null);
   setLaneStation(null);
   setBridgeStaffName(null);
   vi.unstubAllGlobals();
 });
 
 describe('the box lane in the sale writer', () => {
+  it.each(['commit', 'cash'] as const)('HIGH: a 502 after the platform accepted %s carries the same IDs to the box and never repeats a cash press', async (lost) => {
+    setBridgeOrigin('https://counter.example.test');
+    let acceptedCommit: Record<string, unknown> | null = null;
+    const unavailable = () => reply({ error: { code: 'UPSTREAM_UNAVAILABLE', message: 'Unavailable' } }, 502);
+    const seen = stubFetch({
+      platform: (url, body) => {
+        if (url === '/api/sales') {
+          acceptedCommit = body;
+          return lost === 'commit' ? unavailable() : reply({ sale: apiSale({ id: String(body!.id), stationId: STATION }), replay: false });
+        }
+        return unavailable();
+      },
+      bridge: (type, payload) => type === 'cart.quote' ? reply({ document: {}, result: boxQuote })
+        : reply({ document: {}, result: boxAnswer(String(payload.saleId)) }),
+    });
+    const { result, unmount } = renderHook(() => useSaleWriter());
+    try {
+      const rung = await result.current.commit(order());
+      const paid = await result.current.finalise(cash, 'same-cash-action');
+      expect(paid).toMatchObject({ ok: true, written: true, finalised: true });
+      const finalise = bridgeCalls(seen).find(c => c.type === 'sale.finalise')!.payload;
+      expect(finalise).toMatchObject({ saleId: rung.saleId, actionId: acceptedCommit!.actionId, occurredAt: acceptedCommit!.occurredAt,
+        tender: { actionId: 'same-cash-action' }, cart: { lines: cart().lines } });
+      expect(acceptedCommit!.id).toBe(rung.saleId);
+      const before = seen.length;
+      await result.current.finalise(cash, 'same-cash-action');
+      expect(seen).toHaveLength(before);
+      expect(seen.filter(c => c.url === '/api/sales')).toHaveLength(1);
+      expect(bridgeCalls(seen).filter(c => c.type === 'sale.finalise')).toHaveLength(1);
+    } finally { unmount(); }
+  });
   it('rings the sale up on the box when the platform refuses the station, and closes it there with cash', async () => {
     const seen = stubFetch({
       bridge: (type, payload) =>

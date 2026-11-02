@@ -41,6 +41,7 @@ import {
 } from '@oto/shared';
 import { TerminalCommandPayloadSchema } from '@oto/box-agent';
 import { AppError } from '../lib/errors';
+import { boxBridgeOrigin } from '../lib/box-bridge-origin';
 import { pgErrorOf } from '../lib/scrub';
 import { holdsGrantAt } from './access-control';
 import { resolveEffectivePermissions } from './permissions';
@@ -136,6 +137,7 @@ export interface StationView {
   boxId: string | null;
   boxName: string | null;
   boxStatus: BoxStatus | null;
+  bridgeOrigin: string | null;
   capabilities: StationCapability[];
   accessScope: StationAccessScope;
   configVersion: number;
@@ -156,6 +158,7 @@ export interface BoxView {
   role: BoxRole;
   status: BoxStatus;
   hostname: string | null;
+  bridgeOrigin: string | null;
   agentVersion: string | null;
   currentEpoch: number;
   registeredAt: string | null;
@@ -850,7 +853,7 @@ async function stationViews(
   const boxIds = [...new Set(rows.map((r) => r.boxId).filter((v): v is string => v !== null))];
   const boxes = boxIds.length
     ? await exec
-        .select({ id: box.id, name: box.name, status: box.status })
+        .select({ id: box.id, name: box.name, status: box.status, role: box.role, bridgeOrigin: box.bridgeOrigin })
         .from(box)
         .where(inArray(box.id, boxIds))
     : [];
@@ -916,6 +919,7 @@ async function stationViews(
       boxId: r.boxId,
       boxName: b?.name ?? null,
       boxStatus: b?.status ?? null,
+      bridgeOrigin: b?.role === 'virtual' ? null : b?.bridgeOrigin ?? null,
       capabilities: (r.capabilities ?? []) as StationCapability[],
       accessScope: r.accessScope,
       configVersion: r.configVersion,
@@ -1450,6 +1454,7 @@ function boxView(
     role: row.role,
     status: row.status,
     hostname: row.hostname,
+    bridgeOrigin: row.role === 'virtual' ? null : row.bridgeOrigin,
     agentVersion: row.agentVersion,
     currentEpoch: row.currentEpoch,
     registeredAt: row.registeredAt?.toISOString() ?? null,
@@ -1530,8 +1535,11 @@ export async function createBox(
   ctx: OpContext,
   actor: { accountId: string; operatorId: string },
   branchId: string,
-  input: { id?: string | null; name: string; slot: string; role: BoxRole },
+  input: { id?: string | null; name: string; slot: string; role: BoxRole; bridgeOrigin?: string | null },
+  env: Pick<Env, 'DEPLOY_ENV' | 'BOX_BRIDGE_ALLOW_LOOPBACK'> = { DEPLOY_ENV: 'production', BOX_BRIDGE_ALLOW_LOOPBACK: false },
 ): Promise<{ box: BoxView; claimCode: string; expiresAt: string }> {
+  const bridgeOrigin = boxBridgeOrigin(input.bridgeOrigin, env);
+  if (input.role === 'virtual' && bridgeOrigin) throw new AppError(400, 'VIRTUAL_BOX_BRIDGE', 'A virtual box uses the platform address. Leave its bridge address empty.');
   /**
    * SCRUM-270 — a body id naming this branch's box is the registration
    * arriving again, and it is REFUSED rather than replayed: the answer to a
@@ -1564,6 +1572,7 @@ export async function createBox(
         name: input.name,
         slot: input.slot,
         role: input.role,
+        bridgeOrigin,
         status: 'unclaimed',
       });
       code = await issueClaimCode(tx, id, {
@@ -1579,7 +1588,7 @@ export async function createBox(
         action: 'box.create',
         entityType: 'box',
         entityId: id,
-        after: { name: input.name, slot: input.slot, role: input.role },
+        after: { name: input.name, slot: input.slot, role: input.role, bridgeOrigin },
         requestId: ctx.requestId,
       });
       return { box: view };
@@ -1604,8 +1613,11 @@ export async function updateBox(
   ctx: OpContext,
   actor: { accountId: string; operatorId: string },
   before: typeof box.$inferSelect,
-  patch: { name?: string; slot?: string; role?: BoxRole; status?: BoxStatus },
+  patch: { name?: string; slot?: string; role?: BoxRole; status?: BoxStatus; bridgeOrigin?: string | null },
+  env: Pick<Env, 'DEPLOY_ENV' | 'BOX_BRIDGE_ALLOW_LOOPBACK'> = { DEPLOY_ENV: 'production', BOX_BRIDGE_ALLOW_LOOPBACK: false },
 ): Promise<{ box: BoxView }> {
+  const bridgeOrigin = patch.bridgeOrigin === undefined ? before.bridgeOrigin : boxBridgeOrigin(patch.bridgeOrigin, env);
+  if ((patch.role ?? before.role) === 'virtual' && bridgeOrigin) throw new AppError(400, 'VIRTUAL_BOX_BRIDGE', 'A virtual box uses the platform address. Clear its bridge address first.');
   if (patch.status !== undefined && patch.status !== 'disabled' && patch.status !== 'offline') {
     throw new AppError(
       400,
@@ -1619,6 +1631,7 @@ export async function updateBox(
       if (patch.name !== undefined) set.name = patch.name;
       if (patch.slot !== undefined) set.slot = patch.slot;
       if (patch.role !== undefined) set.role = patch.role;
+      if (patch.bridgeOrigin !== undefined) set.bridgeOrigin = bridgeOrigin;
       if (patch.status === 'disabled') {
         set.status = 'disabled';
         /**
@@ -1655,8 +1668,8 @@ export async function updateBox(
         action: patch.status === 'disabled' ? 'box.disable' : 'box.update',
         entityType: 'box',
         entityId: before.id,
-        before: { name: before.name, slot: before.slot, role: before.role, status: before.status },
-        after: { name: after!.name, slot: after!.slot, role: after!.role, status: after!.status },
+        before: { name: before.name, slot: before.slot, role: before.role, status: before.status, bridgeOrigin: before.bridgeOrigin },
+        after: { name: after!.name, slot: after!.slot, role: after!.role, status: after!.status, bridgeOrigin: after!.bridgeOrigin },
         requestId: ctx.requestId,
       });
       const counts = await boxCounts(tx, [before.id]);
