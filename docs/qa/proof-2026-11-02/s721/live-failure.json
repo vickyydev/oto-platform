@@ -1,0 +1,56 @@
+{
+  "unit": "SCRUM-721",
+  "source": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41472577991",
+  "startedAt": "2026-11-02T16:00:03.667Z",
+  "serviceId": "srv-dbk7qu8n74is73bm894g",
+  "origin": "https://oto-pos-web-staging.onrender.com",
+  "changedEnvNames": [
+    "API_UPSTREAM"
+  ],
+  "beforeNameCount": 4,
+  "envNames": [
+    "API_UPSTREAM",
+    "NODE_ENV",
+    "NODE_VERSION",
+    "VITE_LAUNCHER_URL"
+  ],
+  "originalUpstreamFingerprint": "e8b2a49115e2a54efec894c34deb5996bc42572be54fe5348e96203ec3c9be46",
+  "beforeDeploy": {
+    "id": "dep-dbkb59p5efls73eu9990",
+    "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+    "finishedAt": "2026-11-02T15:59:03.175934Z"
+  },
+  "checks": [],
+  "phase": "restored-after-proof-failure",
+  "faultDeploy": {
+    "id": "dep-dbkb71mc6qcc73e2su4g",
+    "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+    "status": "live",
+    "finishedAt": "2026-11-02T16:02:34.414139Z"
+  },
+  "requestAt": "2026-11-02T16:02:38.959Z",
+  "proofFailure": {
+    "name": "AssertionError",
+    "phase": "temporary-upstream-failure"
+  },
+  "afterNameCount": 4,
+  "allEnvironmentValuesRestored": true,
+  "restoredDeploy": {
+    "id": "dep-dbkb88dg1s2s739rpf60",
+    "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+    "status": "live",
+    "finishedAt": "2026-11-02T16:05:13.080807Z"
+  },
+  "restoredHealth": 200,
+  "oldPosHealth": 200,
+  "finishedAt": "2026-11-02T16:06:32.980Z",
+  "diagnostic": {
+    "apiObservedRequestAt": "2026-11-02T16:02:39.858102032Z",
+    "apiStatus": 404,
+    "readinessProbeAt": "2026-11-02T16:03:53.610Z",
+    "readinessStatus": 502,
+    "readinessCode": "UPSTREAM_UNAVAILABLE",
+    "explanation": "Render live state preceded the traffic handover. The new test waits for observed fault readiness and restored health. The first synthetic POST was not retried."
+  }
+}

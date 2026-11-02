@@ -38,7 +38,45 @@ cases, 1,644 POS tests, seven built till journeys, whole POS typecheck, touched-
 lint and build passed. The tests cover four write methods, preserved read pooling,
 one safe failure line, stale-GET recovery, response interruption and cancellation.
 
-Exact-source CI, live forced-failure/restoration evidence and inspected image
-attachment remain pending. 721 stays Testing after the source push until they
-pass. The revised owner order is 721, then staging-link switch-over 725, then the
-first stage of 713 at Testing. No physical Pi/iPad or production change is allowed.
+All six jobs passed in [CI 41472577991](https://github.com/vickyydev/oto-platform/actions/runs/41472577991)
+for source `5671ac24dbf0bcef687362956e3ccc64a8923d67`. API and both POS services
+were independently read back live on that source. The OTO App job applied its
+existing path exclusions; this unit does not claim a fresh OTO App test run.
+
+## Live failure, restoration and browser proof
+
+At 16:09:38.790 UTC, one synthetic POST to an absent ZZ TEST route answered
+502 UPSTREAM_UNAVAILABLE and produced exactly one structured log line with
+ECONNREFUSED and reusedSocket=false. Query, body, Cookie, Authorization,
+x-oto-action-id and Idempotency-Key test markers were absent from the service
+logs. The request was never replayed. The forwarder's own health, direct API
+and old POS path remained healthy during the fault.
+
+Only API_UPSTREAM on oto-pos-web-staging was temporarily changed through a
+single-key write. All four environment names and every original value were
+restored and verified; no API or old-site setting changed. Same-source restore
+`dep-dbkbbjmc6qcc73e39fh0` finished at 16:12:34.471562 UTC, and the routed new
+POS path was healthy at 16:12:42.635 UTC. The deployment proof window is closed.
+`live-failure-verified.json` is the passing receipt; `live-commits.json` names
+all three live service commits.
+
+The earlier attempt is retained in `live-failure.json`. Render's live status
+preceded its traffic handover: the first synthetic POST reached the previous
+healthy instance and the API logged 404 on the absent route. Restoration had
+the same delay before its first 200. The repeated proof waited for three
+read-only checks showing the active fault, then sent a new single POST, and
+waited for observed healthy routing after restoration. No product test was
+weakened and no write was retried.
+
+The real browser then verified the installed shell offline with no cached API
+response, a genuine API network failure, online recovery, one synthetic scan
+heard once over EventSource (84 ms), refusal of a foreign Origin with no CORS,
+and preserved login. Normal sign-out returned 200 and /me returned 401. The
+shell screenshot was recaptured after its entrance animation settled; input
+fields are masked. No financial record was created or altered in these checks.
+
+The labelled `s721-staging-proof.png` was opened and inspected after deployment,
+and copied to `docs/qa/jira-comments/attachments/SCRUM-721/` for attachment.
+Jira remains Testing until that attachment and the required Deployed walk.
+The revised order is 721, then staging-link switch-over 725, then the first
+stage of 713 at Testing. No physical Pi/iPad or production change is allowed.

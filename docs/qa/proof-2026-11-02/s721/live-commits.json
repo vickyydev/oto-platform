@@ -1,0 +1,29 @@
+{
+  "unit": "SCRUM-721",
+  "at": "2026-11-02T16:14:16.480Z",
+  "source": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41472577991",
+  "live": [
+    {
+      "name": "POS web",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+      "deployId": "dep-dbkbbjmc6qcc73e39fh0",
+      "finishedAt": "2026-11-02T16:12:34.471562Z"
+    },
+    {
+      "name": "API",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+      "deployId": "dep-dbkb59p5efls73eu97u0",
+      "finishedAt": "2026-11-02T15:59:51.68623Z"
+    },
+    {
+      "name": "Old POS",
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+      "deployId": "dep-dbkb59p5efls73eu99e0",
+      "finishedAt": "2026-11-02T15:57:27.930616Z"
+    }
+  ]
+}

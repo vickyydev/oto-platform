@@ -1,0 +1,82 @@
+{
+  "unit": "SCRUM-721",
+  "source": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41472577991",
+  "startedAt": "2026-11-02T16:06:35.503Z",
+  "serviceId": "srv-dbk7qu8n74is73bm894g",
+  "origin": "https://oto-pos-web-staging.onrender.com",
+  "changedEnvNames": [
+    "API_UPSTREAM"
+  ],
+  "beforeNameCount": 4,
+  "envNames": [
+    "API_UPSTREAM",
+    "NODE_ENV",
+    "NODE_VERSION",
+    "VITE_LAUNCHER_URL"
+  ],
+  "originalUpstreamFingerprint": "e8b2a49115e2a54efec894c34deb5996bc42572be54fe5348e96203ec3c9be46",
+  "beforeDeploy": {
+    "id": "dep-dbkb88dg1s2s739rpf60",
+    "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+    "finishedAt": "2026-11-02T16:05:13.080807Z"
+  },
+  "checks": [
+    {
+      "name": "forwarder health during upstream failure",
+      "status": 200
+    },
+    {
+      "name": "API remains healthy",
+      "status": 200
+    },
+    {
+      "name": "old POS remains healthy",
+      "status": 200
+    }
+  ],
+  "phase": "restored-and-verified",
+  "faultDeploy": {
+    "id": "dep-dbkba3m7bikc739opulg",
+    "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+    "status": "live",
+    "finishedAt": "2026-11-02T16:09:27.345723Z"
+  },
+  "faultRouteReadyAt": "2026-11-02T16:09:38.790Z",
+  "faultReadinessStatuses": [
+    404,
+    404,
+    404,
+    404,
+    404,
+    502,
+    502,
+    502
+  ],
+  "requestAt": "2026-11-02T16:09:38.790Z",
+  "failureResponse": {
+    "status": 502,
+    "code": "UPSTREAM_UNAVAILABLE"
+  },
+  "log": {
+    "event": "pos_upstream_failure",
+    "method": "POST",
+    "path": "/ZZ-TEST-SCRUM-721-4691ccf6-cf36-4062-bd53-1c57286c5b8f",
+    "code": "ECONNREFUSED",
+    "reusedSocket": false
+  },
+  "logCount": 1,
+  "sensitiveSentinelsAbsent": true,
+  "logVerifiedAt": "2026-11-02T16:09:47.782Z",
+  "afterNameCount": 4,
+  "allEnvironmentValuesRestored": true,
+  "restoredDeploy": {
+    "id": "dep-dbkbbjmc6qcc73e39fh0",
+    "sha": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+    "status": "live",
+    "finishedAt": "2026-11-02T16:12:34.471562Z"
+  },
+  "restoredHealth": 200,
+  "oldPosHealth": 200,
+  "finishedAt": "2026-11-02T16:12:42.635Z"
+}
