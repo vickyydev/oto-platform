@@ -1,0 +1,242 @@
+{
+  "unit": "SCRUM-716",
+  "featureSha": "b36267b34c8da83f614fa3ed4578d6c764c03fca",
+  "sha": "b36267b34c8da83f614fa3ed4578d6c764c03fca",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41407986927",
+  "deployments": [
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk4h615efls73ekuqq0",
+      "sha": "b36267b34c8da83f614fa3ed4578d6c764c03fca",
+      "finishedAt": "2026-11-02T08:24:46.434048Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk4h615efls73ekuplg",
+      "sha": "b36267b34c8da83f614fa3ed4578d6c764c03fca",
+      "finishedAt": "2026-11-02T08:27:42.809399Z"
+    }
+  ],
+  "surfaces": [
+    {
+      "name": "desktop",
+      "fastClock": false,
+      "reads": [
+        {
+          "receivedAt": "2026-11-02T08:29:34.029Z",
+          "sha256": "8e13379b07dbf9e69c218263e975fe0ee9ea8e62ef16fd08634479b41f0c9557",
+          "signedAt": "2026-11-02T08:29:34.000Z",
+          "expiresAt": "2026-11-02T08:34:34.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:34:03.886Z",
+          "sha256": "5debeb27d532495cb67e6f36a15c3790371cd0ea332e20b08601900eb512c844",
+          "signedAt": "2026-11-02T08:34:04.000Z",
+          "expiresAt": "2026-11-02T08:39:04.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:38:33.857Z",
+          "sha256": "224915617d56e6cf824acde42c76d4b2cde5e355e16a7db1b0bf9c42c79e0e2d",
+          "signedAt": "2026-11-02T08:38:33.000Z",
+          "expiresAt": "2026-11-02T08:43:33.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:42:34.495Z",
+          "sha256": "5b3aa8602d8ed1a96a487698de56fea683403c21ffb938fc3e3506d18547f8fc",
+          "signedAt": "2026-11-02T08:42:34.000Z",
+          "expiresAt": "2026-11-02T08:47:34.000Z"
+        }
+      ],
+      "imageFailures": 0,
+      "imageFailureTimes": [],
+      "checks": [
+        "Still showing after 16 real minutes without a reload, with 4 link reads"
+      ],
+      "initialLoadedAt": "2026-11-02T08:29:34.946Z",
+      "finalImage": {
+        "sha256": "5b3aa8602d8ed1a96a487698de56fea683403c21ffb938fc3e3506d18547f8fc",
+        "signedAt": "2026-11-02T08:42:34.000Z",
+        "expiresAt": "2026-11-02T08:47:34.000Z",
+        "naturalWidth": 640
+      },
+      "gapsSeconds": [
+        269.9,
+        270,
+        240.6
+      ],
+      "finishedAt": "2026-11-02T08:46:14.179Z"
+    },
+    {
+      "name": "fast clock",
+      "fastClock": true,
+      "reads": [
+        {
+          "receivedAt": "2026-11-02T08:29:53.720Z",
+          "sha256": "1706e1a7a0f7de9a39c25c040c17f4408209c86705dd2de2199c850ac7c6b16f",
+          "signedAt": "2026-11-02T08:29:53.000Z",
+          "expiresAt": "2026-11-02T08:34:53.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:30:23.583Z",
+          "sha256": "43e02aa400c620c0fd74022fa2684bce7a7b8324d3dac6526f2a97956d82ab85",
+          "signedAt": "2026-11-02T08:30:23.000Z",
+          "expiresAt": "2026-11-02T08:35:23.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:34:53.609Z",
+          "sha256": "fd2fbbd8ac800421be365ef97c1de2f690563078e332a377d71d6207c1efbe14",
+          "signedAt": "2026-11-02T08:34:53.000Z",
+          "expiresAt": "2026-11-02T08:39:53.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:39:23.618Z",
+          "sha256": "b7d43a01d6ab69190055b7b5e077b20a7c257424552341ab07cd6acc0c8b1fbd",
+          "signedAt": "2026-11-02T08:39:23.000Z",
+          "expiresAt": "2026-11-02T08:44:23.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:43:53.534Z",
+          "sha256": "6e26c83727ad7a209490837cd85f0179001e629c12dec9da61b1041bec3c3583",
+          "signedAt": "2026-11-02T08:43:53.000Z",
+          "expiresAt": "2026-11-02T08:48:53.000Z"
+        }
+      ],
+      "imageFailures": 0,
+      "imageFailureTimes": [],
+      "checks": [
+        "A device 10 minutes fast read 5 times in 16 minutes; on every 30-second poll that would be about 32. Gaps in seconds: 29.9, 270, 270, 269.9"
+      ],
+      "clockOffsetSeconds": 600,
+      "initialLoadedAt": "2026-11-02T08:29:54.011Z",
+      "finalImage": {
+        "sha256": "6e26c83727ad7a209490837cd85f0179001e629c12dec9da61b1041bec3c3583",
+        "signedAt": "2026-11-02T08:43:53.000Z",
+        "expiresAt": "2026-11-02T08:48:53.000Z",
+        "naturalWidth": 640
+      },
+      "gapsSeconds": [
+        29.9,
+        270,
+        270,
+        269.9
+      ],
+      "finishedAt": "2026-11-02T08:46:14.305Z"
+    },
+    {
+      "name": "phone",
+      "fastClock": false,
+      "reads": [
+        {
+          "receivedAt": "2026-11-02T08:30:12.822Z",
+          "sha256": "e19c9c7dc757e0728718f07d4bd5207c6241f6d76e4b458fe579788c62d5abcd",
+          "signedAt": "2026-11-02T08:30:12.000Z",
+          "expiresAt": "2026-11-02T08:35:12.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:30:13.306Z",
+          "sha256": "703f9ffdd838d211ae6bfddc81654dd998165771a81b1248ba0f0be5d8458be8",
+          "signedAt": "2026-11-02T08:30:13.000Z",
+          "expiresAt": "2026-11-02T08:35:13.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:31:12.770Z",
+          "sha256": "7d516ef733e0fccaaf9f2acec05e35f5c17a3b46303c3686c5faa96eb2cd64bd",
+          "signedAt": "2026-11-02T08:31:12.000Z",
+          "expiresAt": "2026-11-02T08:36:12.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:32:42.853Z",
+          "sha256": "1f2070ef78b1fdbe692ff2379cec96c52f9790726281c1d82b22f8ffd8ae32d6",
+          "signedAt": "2026-11-02T08:32:42.000Z",
+          "expiresAt": "2026-11-02T08:37:42.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:35:12.781Z",
+          "sha256": "1ec6cb061a3ff58d8efea2e5b14be8f0fe84f9afb18c1f58bb68be39658a635b",
+          "signedAt": "2026-11-02T08:35:12.000Z",
+          "expiresAt": "2026-11-02T08:40:12.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:39:42.874Z",
+          "sha256": "3127287a36aef411d83921093d270786c4430bce6aef8c5a0104cb549100f112",
+          "signedAt": "2026-11-02T08:39:42.000Z",
+          "expiresAt": "2026-11-02T08:44:42.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:43:42.970Z",
+          "sha256": "5b8eaadb7272bcefb7d20542a362814186ec9945c1f81a99c159c9594440dbcf",
+          "signedAt": "2026-11-02T08:43:43.000Z",
+          "expiresAt": "2026-11-02T08:48:43.000Z"
+        },
+        {
+          "receivedAt": "2026-11-02T08:43:43.447Z",
+          "sha256": "5b8eaadb7272bcefb7d20542a362814186ec9945c1f81a99c159c9594440dbcf",
+          "signedAt": "2026-11-02T08:43:43.000Z",
+          "expiresAt": "2026-11-02T08:48:43.000Z"
+        }
+      ],
+      "imageFailures": 6,
+      "imageFailureTimes": [
+        "2026-11-02T08:30:12.823Z",
+        "2026-11-02T08:30:13.305Z",
+        "2026-11-02T08:31:12.770Z",
+        "2026-11-02T08:32:42.852Z",
+        "2026-11-02T08:35:12.780Z",
+        "2026-11-02T08:43:42.970Z"
+      ],
+      "checks": [
+        "A photo that cannot load paced its link reads: gaps of 0.5, 59.5, 90.1, 149.9 seconds, against one or two reads on every 30-second poll before",
+        "When the image could load again, the next allowed read showed it",
+        "A successful load reset the count: the next failure retried 0.5 seconds later rather than waiting the pause"
+      ],
+      "imagesRepairedAt": "2026-11-02T08:35:12.968Z",
+      "recoveredAt": "2026-11-02T08:39:43.507Z",
+      "readsWhenRecovered": 6,
+      "finalImage": {
+        "sha256": "5b8eaadb7272bcefb7d20542a362814186ec9945c1f81a99c159c9594440dbcf",
+        "signedAt": "2026-11-02T08:43:43.000Z",
+        "expiresAt": "2026-11-02T08:48:43.000Z",
+        "naturalWidth": 640
+      },
+      "gapsSeconds": [
+        0.5,
+        59.5,
+        90.1,
+        149.9,
+        270.1,
+        240.1,
+        0.5
+      ],
+      "finishedAt": "2026-11-02T08:46:14.441Z",
+      "resetRetrySeconds": 0.5
+    }
+  ],
+  "cleanup": [
+    {
+      "surface": "desktop",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "surface": "fast clock",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "surface": "phone",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "fixture": {
+    "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "childId": "01a111c0-63e6-7e46-9b28-8b53a8ab24c5",
+    "fileId": "01a111c5-b483-773a-8e8c-11395531900f",
+    "childName": "ZZ TEST Child 496",
+    "existing": true,
+    "image": "Existing synthetic green test image; no person is depicted"
+  },
+  "startedAt": "2026-11-02T08:30:12.367Z",
+  "completedAt": "2026-11-02T08:46:14.566Z",
+  "elapsedSeconds": 962.199
+}
