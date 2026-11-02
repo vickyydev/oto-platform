@@ -1,0 +1,16 @@
+{
+  "key": "SCRUM-673",
+  "status": "Deployed",
+  "readBackAt": "2026-11-02T22:53:18.571Z",
+  "evidenceCommit": "e49377d563d2537444c8f39292245005156f7429",
+  "images": [
+    {
+      "id": "12251",
+      "name": "s673-staging-proof.png"
+    },
+    {
+      "id": "12252",
+      "name": "s673-view-as-history.png"
+    }
+  ]
+}

@@ -18,3 +18,5 @@ Early harness stops and the privileged-subject refusal are retained in the recei
 | oto-app-staging | 629714f266253c4b6951b68237da7db13c8cf26e | dep-dbjsjmk9v7es73b1lhpg |
 
 Proof: [s673](./s673/). Opened images: `s673-staging-proof.png` and `s673-view-as-history.png`. Keep Testing until those images are attached and the Jira helper walk reads back Deployed.
+
+Jira read-back: **Deployed** at 2026-11-02T22:53:18.571Z. Evidence commit `e49377d563d2537444c8f39292245005156f7429`; attached images 12251, 12252.
