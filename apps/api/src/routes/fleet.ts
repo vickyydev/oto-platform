@@ -894,7 +894,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile.',
+          'Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. A terminal’s `protocol` is one of the dialects the box speaks, or blank for a draft. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile.',
         params: BoxIdParams,
         body: z.object({
           /**
@@ -933,7 +933,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Edit a device. Its kind, its transport and its box do not move. `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll.',
+          'Edit a device. Its kind, its transport and its box do not move. A new `protocol` on a terminal is one of the dialects the box speaks, or blank; an older stored value sent back unchanged still saves. `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll.',
         params: IdParams,
         body: z
           .object({

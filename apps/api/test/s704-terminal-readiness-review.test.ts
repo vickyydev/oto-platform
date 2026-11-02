@@ -48,12 +48,15 @@ describe('SCRUM-704 adversarial review: routed terminal setup', () => {
   it('HIGH fixed finding: an absent QR terminal is offered for selling; apply readiness to each routed tender', async () => {
     expect(await draft({ card: 'manual', qr: 'qr_terminal' })).toMatchObject({ ready: false, reasons: ['QR is routed to the terminal but no terminal is assigned'] });
   });
-  it('HIGH fixed finding: unset routing bypasses the terminal requirement; preserve the existing default card route', async () => {
-    expect(await draft(null)).toMatchObject({ ready: false, reasons: ['Card is routed to the terminal but no terminal is assigned'] });
+  it('HIGH fixed finding: unset routing bypasses the terminal requirement; preserve the existing default routes to both terminals', async () => {
+    expect(await draft(null)).toMatchObject({ ready: false, reasons: ['Card is routed to the terminal but no terminal is assigned', 'QR is routed to the terminal but no terminal is assigned'] });
   });
   it.each([null, 'unknown'])('HIGH fixed finding: protocol %s can be assigned to a routed tender; refuse the unusable assignment', async (protocol) => {
     const saved = await draft();
-    const response = await assign(saved.id, await terminal(protocol));
+    // A terminal write now refuses an unlisted value, so 'unknown' is one stored before that rule.
+    const terminalId = await terminal(null);
+    if (protocol) await ctx.db.update(device).set({ protocol }).where(eq(device.id, terminalId));
+    const response = await assign(saved.id, terminalId);
     expect(response.statusCode).toBe(400);
     expect(response.json().error.message).toBe('The assigned terminal has no supported protocol');
     expect(await ctx.db.select().from(stationDevice).where(eq(stationDevice.stationId, saved.id))).toHaveLength(0);

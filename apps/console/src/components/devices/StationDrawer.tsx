@@ -1,7 +1,7 @@
 import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { BOOTH_CODE_PREFIX_LENGTH, routedTerminalRoles, stationPrefixReadiness, stationSellingReadiness, supportedSellingTerminalProtocol } from '@oto/shared';
+import { BOOTH_CODE_PREFIX_LENGTH, routedTerminalRoles, stationPrefixReadiness, stationSellingReadiness, supportedSellingTerminalProtocol, type SellingTerminalAssignment } from '@oto/shared';
 import {
   fleetApi,
   mergeRouting,
@@ -196,9 +196,12 @@ export function StationDrawer({
       : null;
 
   const setup = { kind, boxId, codePrefix: codePrefix.trim().toUpperCase() || null, paymentRouting: routing };
-  const terminalAssignments = Object.entries(assignments).flatMap(([role, deviceId]) => {
+  const terminalAssignments = Object.entries(assignments).flatMap(([role, deviceId]): SellingTerminalAssignment[] => {
     const found = boxDevices.find(d => d.id === deviceId);
-    return found ? [{ ...found, role }] : [];
+    if (found) return [{ ...found, role }];
+    // A saved assignment this box does not list is plugged into another box.
+    const saved = station?.devices?.find(d => d.role === role && d.deviceId === deviceId);
+    return saved ? [{ role, kind: saved.kind ?? '', boxId: null }] : [];
   });
   const selling = stationSellingReadiness(setup, terminalAssignments);
   if (kind === 'till' && routedTerminalRoles(routing).length > 0 && boxList.state !== 'read') {

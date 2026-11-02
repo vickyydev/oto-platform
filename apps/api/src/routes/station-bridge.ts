@@ -22,6 +22,7 @@ import { AppError } from '../lib/errors';
 import { displayDeviceOf, kioskDeviceOf } from '../plugins/credential';
 import { holdsGrantAt } from '../services/access-control';
 import { displayBearerHash, displayIntent, displaySession } from '../services/display';
+import { assertStationReady } from '../services/fleet';
 import { abandonKioskSession, kioskState, redeemAtKiosk, startKioskSession } from '../services/kiosk';
 import { bridgeForStation, platformCaller, subscribeDisplayChannel, unlockThroughBridge } from '../services/station-bridge';
 import { loadStationRow, type StationRow } from '../services/station-session';
@@ -253,9 +254,17 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     '/box/v1/station/:stationId/lease',
     {
       config: { dynamicPermission: true },
+      preSerialization: async (req, reply, payload) => {
+        // A repeated request must not re-offer a lease after setup was cleared.
+        if (reply.statusCode === 200 && reply.getHeader('x-oto-replay')) {
+          const { row } = await standing(req, req.params.stationId, false);
+          await assertStationReady(app.db, req.requireAuth().operatorId, row.id);
+        }
+        return payload;
+      },
       schema: {
         description:
-          'Take this station for this screen, on the box. A live lease held by another account is refused.',
+          'Take this station for this screen, on the box. A till that is not ready for selling is refused with its reason, and a live lease held by another account is refused.',
         params: Params,
         body: z.object({ holder: z.string().min(1).max(64) }),
         response: { 200: LeaseAnswer },
@@ -263,6 +272,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { row, caller } = await standing(req, req.params.stationId, false);
+      await assertStationReady(app.db, req.requireAuth().operatorId, row.id);
       const { bridge } = await bridgeForStation(app.db, row, req.log);
       const result = await bridged(() =>
         bridge.claim(row.id, caller!, req.body.holder, actionIdOf(req)),

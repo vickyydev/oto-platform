@@ -2174,6 +2174,20 @@ export async function listDevices(
   return rows.map(deviceView);
 }
 
+/**
+ * A terminal is written with a dialect the box can speak, or with none yet: a
+ * blank protocol stays a saveable draft that readiness explains. Other kinds of
+ * device keep their own words here (`escpos`, `tspl2`, `hid`).
+ */
+function assertTerminalProtocol(kind: string, protocol: string | null | undefined): void {
+  if (kind !== 'terminal' || !protocol || supportedSellingTerminalProtocol(protocol)) return;
+  throw new AppError(
+    400,
+    'TERMINAL_PROTOCOL_UNSUPPORTED',
+    'That terminal protocol is not one the box can speak. Choose one from the list or leave it blank.',
+  );
+}
+
 export async function createDevice(
   db: Db,
   ctx: OpContext,
@@ -2202,6 +2216,7 @@ export async function createDevice(
     (row) => row.boxId === boxRow.id,
   );
   if (claim.replay) return markReplay({ device: deviceView(claim.row) });
+  assertTerminalProtocol(input.kind, input.protocol);
   const id = claim.id;
   try {
     return await withTx(db, ctx, 'device.create', async (tx) => {
@@ -2261,6 +2276,11 @@ export async function updateDevice(
     settings?: DeviceSettings | null;
   },
 ): Promise<{ device: DeviceView }> {
+  // Only a change is judged: an edit that sends an older stored value back as
+  // it was still saves, and readiness goes on saying why that terminal cannot sell.
+  if (patch.protocol !== undefined && patch.protocol !== before.protocol) {
+    assertTerminalProtocol(before.kind, patch.protocol);
+  }
   try {
     return await withTx(db, ctx, 'device.update', async (tx) => {
       const [after] = await tx.update(device).set(patch).where(eq(device.id, before.id)).returning();

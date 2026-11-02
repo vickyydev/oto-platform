@@ -10175,7 +10175,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** @description Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile. */
+        /** @description Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. A terminal’s `protocol` is one of the dialects the box speaks, or blank for a draft. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile. */
         post: {
             parameters: {
                 query?: never;
@@ -10357,7 +10357,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** @description Edit a device. Its kind, its transport and its box do not move. `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll. */
+        /** @description Edit a device. Its kind, its transport and its box do not move. A new `protocol` on a terminal is one of the dialects the box speaks, or blank; an older stored value sent back unchanged still saves. `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll. */
         patch: {
             parameters: {
                 query?: never;
@@ -37364,7 +37364,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Take this station for this screen, on the box. A live lease held by another account is refused. */
+        /** @description Take this station for this screen, on the box. A till that is not ready for selling is refused with its reason, and a live lease held by another account is refused. */
         post: {
             parameters: {
                 query?: never;
