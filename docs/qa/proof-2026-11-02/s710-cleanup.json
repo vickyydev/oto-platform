@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-02T08:00:50.372Z",
+  "stationId": "01a19afe-d88c-74d2-b7b9-7cdde25d43b8",
+  "activeDisplays": 0,
+  "leasePresent": false,
+  "revokedDisplays": [
+    {
+      "id": "01a19b44-813b-7460-b5c3-bb5e6eef64e9",
+      "label": "ZZ TEST SCRUM-710 display 1793606299217",
+      "revokedAt": "2026-11-02T07:59:22.365Z"
+    },
+    {
+      "id": "01a19b38-b11a-7960-b66f-953fcdaff9bf",
+      "label": "ZZ TEST SCRUM-710 browser display",
+      "revokedAt": "2026-11-02T07:46:25.416Z"
+    }
+  ]
+}

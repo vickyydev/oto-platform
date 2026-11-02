@@ -1,0 +1,68 @@
+{
+  "unit": "SCRUM-710",
+  "source": "ab528a549f22fb9d204b4c7404c9deb36b6e0c94",
+  "measuredAt": "2026-11-02T07:57:07.184Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a19afe-d33c-7ea1-b583-c525b9322da7",
+    "boxName": "ZZ TEST SCRUM-710 display",
+    "stationId": "01a19afe-d88c-74d2-b7b9-7cdde25d43b8",
+    "stationName": "ZZ TEST SCRUM-710 display",
+    "createdAt": "2026-11-02T06:42:35.251Z"
+  },
+  "streamChecks": [
+    {
+      "label": "direct-api",
+      "origin": "https://oto-api-staging.onrender.com",
+      "startedAt": "2026-11-02T07:56:59.662Z",
+      "headersReceived": true,
+      "firstChunkReceived": true,
+      "status": 200,
+      "headersMs": 255,
+      "contentType": "text/event-stream; charset=utf-8",
+      "allowOrigin": null,
+      "firstChunkMs": 255,
+      "bytes": 938
+    },
+    {
+      "label": "static-proxy",
+      "origin": "https://oto-pos-staging.onrender.com",
+      "startedAt": "2026-11-02T07:56:59.919Z",
+      "headersReceived": false,
+      "firstChunkReceived": false,
+      "result": "No response within 3000 ms",
+      "elapsedMs": 3001
+    }
+  ],
+  "latencyChecks": [
+    {
+      "route": "direct API health",
+      "milliseconds": [
+        187,
+        65,
+        62
+      ]
+    },
+    {
+      "route": "POS proxy health",
+      "milliseconds": [
+        506,
+        498,
+        518
+      ]
+    },
+    {
+      "route": "POS proxy staff session",
+      "milliseconds": [
+        533,
+        849,
+        497
+      ]
+    }
+  ],
+  "testDisplay": {
+    "credentialId": "01a19b38-b11a-7960-b66f-953fcdaff9bf",
+    "revokedAt": "2026-11-02T07:46:25.416Z"
+  },
+  "note": "Diagnostic only. The stream check uses the unchanged staff route, which shares openChannel with the new display route. Staff cookies stayed in memory and no snapshot content was recorded. No hosting or authentication changes were made."
+}

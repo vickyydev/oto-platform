@@ -1,0 +1,73 @@
+{
+  "unit": "SCRUM-710",
+  "source": "ab528a549f22fb9d204b4c7404c9deb36b6e0c94",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41405433935",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a19afe-d33c-7ea1-b583-c525b9322da7",
+    "boxName": "ZZ TEST SCRUM-710 display",
+    "stationId": "01a19afe-d88c-74d2-b7b9-7cdde25d43b8",
+    "stationName": "ZZ TEST SCRUM-710 display",
+    "createdAt": "2026-11-02T06:42:35.251Z"
+  },
+  "deployments": [
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk3t77b9u1s73cb1uag",
+      "sha": "ab528a549f22fb9d204b4c7404c9deb36b6e0c94",
+      "finishedAt": "2026-11-02T07:42:13.423179Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk3t77b9u1s73cb1tc0",
+      "sha": "ab528a549f22fb9d204b4c7404c9deb36b6e0c94",
+      "finishedAt": "2026-11-02T07:45:03.388755Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "10-second grace",
+      "at": "2026-11-02T07:59:08.067Z",
+      "elapsedMs": 10649,
+      "passed": true
+    },
+    {
+      "name": "20-second paused screen hides total",
+      "at": "2026-11-02T07:59:18.051Z",
+      "elapsedMs": 20633,
+      "passed": true
+    },
+    {
+      "name": "automatic recovery",
+      "at": "2026-11-02T07:59:19.515Z",
+      "passed": true
+    },
+    {
+      "name": "revoked credential returns display to pairing",
+      "at": "2026-11-02T07:59:23.799Z",
+      "passed": true
+    },
+    {
+      "name": "replacement unpaired code expired",
+      "at": "2026-11-02T07:59:26.478Z",
+      "passed": true
+    }
+  ],
+  "startedAt": "2026-11-02T07:58:17.609Z",
+  "displayName": "ZZ TEST SCRUM-710 display 1793606299217",
+  "phoneToTill": {
+    "clickAt": 1793606324723,
+    "snapshotAt": 1793606326432,
+    "milliseconds": 1709,
+    "transport": "poll"
+  },
+  "tillToDisplay": {
+    "clickAt": 1793606333892,
+    "snapshotAt": 1793606336122,
+    "milliseconds": 2230,
+    "transport": "poll"
+  },
+  "revokedAt": "2026-11-02T07:59:23.157Z",
+  "displayId": "01a19b44-813b-7460-b5c3-bb5e6eef64e9",
+  "completedAt": "2026-11-02T07:59:26.478Z"
+}

@@ -1,0 +1,62 @@
+{
+  "unit": "SCRUM-710",
+  "source": "ab528a549f22fb9d204b4c7404c9deb36b6e0c94",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41405433935",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a19afe-d33c-7ea1-b583-c525b9322da7",
+    "boxName": "ZZ TEST SCRUM-710 display",
+    "stationId": "01a19afe-d88c-74d2-b7b9-7cdde25d43b8",
+    "stationName": "ZZ TEST SCRUM-710 display",
+    "createdAt": "2026-11-02T06:42:35.251Z"
+  },
+  "deployments": [
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk3t77b9u1s73cb1uag",
+      "sha": "ab528a549f22fb9d204b4c7404c9deb36b6e0c94",
+      "finishedAt": "2026-11-02T07:42:13.423179Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk3t77b9u1s73cb1tc0",
+      "sha": "ab528a549f22fb9d204b4c7404c9deb36b6e0c94",
+      "finishedAt": "2026-11-02T07:45:03.388755Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "10-second grace",
+      "at": "2026-11-02T07:46:10.679Z",
+      "elapsedMs": 10035,
+      "passed": true
+    },
+    {
+      "name": "20-second paused screen hides total",
+      "at": "2026-11-02T07:46:20.676Z",
+      "elapsedMs": 20032,
+      "passed": true
+    },
+    {
+      "name": "automatic recovery",
+      "at": "2026-11-02T07:46:22.036Z",
+      "passed": true
+    }
+  ],
+  "startedAt": "2026-11-02T07:45:21.578Z",
+  "phoneToTill": {
+    "clickAt": 1793605551334,
+    "snapshotAt": 1793605552575,
+    "milliseconds": 1241,
+    "transport": "poll"
+  },
+  "tillToDisplay": {
+    "clickAt": 1793605558342,
+    "snapshotAt": 1793605560533,
+    "milliseconds": 2191,
+    "transport": "poll"
+  },
+  "step": "cleanup",
+  "revokedAt": "2026-11-02T07:46:25.416Z",
+  "outcome": "Timing target failed; Console revocation succeeded and was independently read back; the harness timed out waiting for its hidden revoked row."
+}
