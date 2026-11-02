@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -67,6 +67,7 @@ export function CheckInBookedModal({
   softMax,
   onConfirm,
 }: CheckInBookedModalProps) {
+  const consentControlId = useId();
   const rep = family[0];
   const nannyChildren = useMemo(() => family.filter((c) => c.serviceType === 'nanny'), [family]);
   const needsNanny = nannyChildren.length > 0;
@@ -242,18 +243,17 @@ export function CheckInBookedModal({
                   </div>
                 ))}
               {consentNeeded && (
-                <button
-                  type="button"
-                  onClick={() => setConsentAck((v) => !v)}
-                  className="flex w-full items-start gap-3 rounded-lg border border-border bg-card p-3 text-left"
+                <label
+                  htmlFor={consentControlId}
+                  className="flex w-full cursor-pointer items-start gap-3 rounded-lg border border-border bg-card p-3 text-left"
                 >
-                  <Checkbox checked={consentAck} onCheckedChange={(v) => setConsentAck(v === true)} className="mt-0.5" />
+                  <Checkbox id={consentControlId} checked={consentAck} onCheckedChange={(v) => setConsentAck(v === true)} className="mt-0.5" />
                   <span className="text-sm leading-snug text-foreground/80">
                     Parent / guardian authorizes Oto Play Park staff to supervise their child and
                     consents to a photo of the child and parent / guardian together being taken
                     for safe check-in and pickup verification.
                   </span>
-                </button>
+                </label>
               )}
             </div>
           )}

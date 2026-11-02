@@ -1,0 +1,11 @@
+{
+  "unit": "SCRUM-722",
+  "date": "2026-11-03",
+  "review": "apps/api/test/s722-consent-control-review.test.ts",
+  "method": "Real browser events against the actual dialog and Radix checkbox",
+  "before": { "failed": 2, "passed": 4, "failure": "Expected true but received false after a small-checkbox click and after Space" },
+  "after": { "failed": 0, "passed": 6 },
+  "controls": ["text click changes once", "missing photo still blocks", "reopening resets acknowledgement", "existing consent is not replaced"],
+  "productionFile": "apps/pos/src/components/dropoff/CheckInBookedModal.tsx",
+  "staging": "pending"
+}
