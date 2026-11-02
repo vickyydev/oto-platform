@@ -453,7 +453,10 @@ describe('the routes', () => {
 
   it('reception adds a nanny for today by hand, and the till shows her on shift', async () => {
     const now = Date.now();
-    const start = new Date(now - 30 * 60_000);
+    // Keep this active shift in the returned trading-day window even when
+    // the suite runs between midnight and the seeded branch's 05:00 cutoff.
+    // A short shift wholly before 05:00 belongs to the previous day's view.
+    const start = new Date(now - 8 * 60 * 60_000);
     const payload = { name: 'Noon', from: bkkTime(start), to: bkkTime(new Date(now + 60 * 60_000)), date: bkkDate(start) };
     const key = idem();
     const res = await ctx.app.inject({

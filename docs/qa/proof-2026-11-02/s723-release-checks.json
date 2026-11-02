@@ -1,0 +1,24 @@
+{
+  "unit": "SCRUM-723",
+  "date": "2026-11-03",
+  "workspaceTypecheckTasks": 16,
+  "productionBuilds": 5,
+  "pos": { "files": 122, "passed": 1645 },
+  "apiInitialShards": [
+    { "shard": "1/3", "passed": 2120, "failed": 3, "skipped": 106, "todo": 0 },
+    { "shard": "2/3", "passed": 2101, "failed": 0, "skipped": 174, "todo": 3 },
+    { "shard": "3/3", "passed": 1887, "failed": 0, "skipped": 121, "todo": 1 }
+  ],
+  "corrections": [
+    "Add booked check-in to the stationTrading route inventory",
+    "Keep the active nanny test shift overlapping its returned trading-day view before 05:00; preserve every assertion"
+  ],
+  "correctedFilesRerun": { "files": ["routes-guarded.test.ts", "nanny-duty.test.ts"], "passed": 46, "failed": 0 },
+  "apiCombined": { "passed": 6111, "failed": 0, "skipped": 401, "todo": 4 },
+  "changedFileLint": "passed",
+  "apiTypecheckAfterTestCorrections": "passed with zero diagnostics",
+  "apiContracts": "matched",
+  "runtimeSourceUnchangedDuringFullRun": true,
+  "ci": "pending",
+  "stagingProof": "pending"
+}

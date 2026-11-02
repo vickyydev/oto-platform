@@ -248,6 +248,9 @@ describe('route guards (S2-01b)', () => {
       // walk-up that charges the same tab.
       'PATCH /parties/:id',
       'POST /bookings/:id/redeem',
+      // SCRUM-723: a fresh booked arrival must select the box before any
+      // platform check-in or idempotency replay can complete.
+      'POST /checkin/check-in-booked',
       // S2-20 E2: a pass is a sale and a walk-up a charge on a party's tab —
       // online only, like the sale path they ride and the members they name.
       'POST /events/:id/attendees',
