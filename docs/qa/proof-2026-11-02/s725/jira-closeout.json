@@ -1,0 +1,12 @@
+{
+  "unit": "SCRUM-725",
+  "at": "2026-11-02T17:46:13.732Z",
+  "status": "Deployed",
+  "source": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41485215834",
+  "proofCommit": "e31d36d1a8a57dbb6323d76142ef9ea2b57c87e7",
+  "image": {
+    "id": "12236",
+    "name": "s725-staging-proof.png"
+  }
+}
