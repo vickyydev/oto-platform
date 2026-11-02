@@ -1,0 +1,94 @@
+{
+  "started": "2026-11-02T07:06:30.917Z",
+  "station": "Till 2 (test)",
+  "address": "https://oto-pos-staging.onrender.com/display?keyboard=screen",
+  "viewport": "1200x675 at device scale 1.6",
+  "steps": [
+    {
+      "name": "till on the test station",
+      "station": "Till 2 (test)",
+      "offline": false
+    },
+    {
+      "name": "pairing screen",
+      "size": {
+        "w": 1200,
+        "h": 675,
+        "scrollH": 675,
+        "dpr": 1.600000023841858
+      },
+      "keyboardFlagInAddress": "?keyboard=screen"
+    },
+    {
+      "name": "paired",
+      "station": "Till 2 (test)",
+      "credentialKept": true
+    },
+    {
+      "name": "identify step on the kiosk address",
+      "placed": "Till 2 (test) · ZZ TEST counter display (SCRUM-711)",
+      "keyboardBeforeATouch": 0,
+      "fold": {
+        "six": 452,
+        "nine": 544,
+        "zero": 636,
+        "visibleUntil": 462
+      }
+    },
+    {
+      "name": "typed on the screen keyboard",
+      "value": "Zz Test",
+      "inputMode": "none",
+      "inView": true,
+      "keyboardBox": {
+        "x": 376,
+        "y": 252,
+        "width": 448,
+        "height": 210
+      }
+    },
+    {
+      "name": "done puts it away",
+      "keyboardAfterDone": 0,
+      "valueKept": "Zz Test"
+    },
+    {
+      "name": "a second touch brings it back",
+      "ok": true
+    },
+    {
+      "name": "plain /display, field touched",
+      "keyboard": 0,
+      "inputMode": null
+    },
+    {
+      "name": "browser restarted on the same profile",
+      "sameCredential": true,
+      "pairingCodeShown": 0,
+      "setUpShown": 0,
+      "identifyShown": 1,
+      "placed": "Till 2 (test) · ZZ TEST counter display (SCRUM-711)"
+    },
+    {
+      "name": "display revoked",
+      "status": 200
+    },
+    {
+      "name": "the screen went back to set-up by itself"
+    },
+    {
+      "name": "lease released",
+      "status": 200
+    },
+    {
+      "name": "reception signed out",
+      "status": 200
+    },
+    {
+      "name": "admin signed out",
+      "status": 200
+    }
+  ],
+  "finished": "2026-11-02T07:07:16.979Z",
+  "cleanupFailed": false
+}
