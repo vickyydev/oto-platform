@@ -1,0 +1,114 @@
+{
+  "unit": "SCRUM-708",
+  "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41459443462",
+  "deployments": [
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk9ubavcj2c73frrc8g",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:37:01.972371Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk9ubivcj2c73frrdtg",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:34:16.74601Z"
+    },
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbk9ubivcj2c73frre1g",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:34:12.20643Z"
+    }
+  ],
+  "startedAt": "2026-11-02T14:37:32.152Z",
+  "fixture": {
+    "registrationId": "1a1be8a1-dc99-4a36-bc0a-e486edb7ab91",
+    "checkinId": "7928ff92-1b12-44eb-b9b5-df3d70f12a3c",
+    "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be",
+    "stationId": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0"
+  },
+  "checks": [
+    {
+      "name": "Console forced only the dedicated ZZ TEST box offline; the platform registration has no consent",
+      "passed": true,
+      "before": {
+        "id": "1a1be8a1-dc99-4a36-bc0a-e486edb7ab91",
+        "consentRecordedAt": null,
+        "status": "registered"
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "01a19cb2-2b92-75c7-8126-e3436de8e9a1",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:38:06.769Z"
+    },
+    {
+      "id": "01a19cb3-4fd1-7b22-ad93-a6d7c97786a6",
+      "kind": "config_apply",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:39:21.926Z"
+    },
+    {
+      "id": "01a19cb3-5e82-7eb2-85d3-c3aad30f827b",
+      "kind": "go_offline",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:39:25.309Z"
+    },
+    {
+      "id": "01a19cb3-9002-710a-ba2e-37ab272a0161",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:39:42.056Z"
+    }
+  ],
+  "cleanup": [
+    {
+      "origin": "https://oto-pos-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "fixturePreparation": {
+    "jobId": "job-dbka0lgae00c73899m3g",
+    "mode": "clear-fixture-consent",
+    "at": "2026-11-02T14:39:11.542Z",
+    "registration": {
+      "id": "1a1be8a1-dc99-4a36-bc0a-e486edb7ab91",
+      "guardian_name": "ZZ TEST SCRUM-708 guardian",
+      "branch_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "station_id": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
+      "consent_recorded_at": null,
+      "checkin_id": "7928ff92-1b12-44eb-b9b5-df3d70f12a3c",
+      "child_name": "ZZ TEST SCRUM-708 child",
+      "status": "registered",
+      "sale_id": "24db3fda-d3ee-488a-8cce-8d13e482a3a1",
+      "band_id": null
+    },
+    "audits": []
+  },
+  "before": {
+    "id": "1a1be8a1-dc99-4a36-bc0a-e486edb7ab91",
+    "consentRecordedAt": null,
+    "status": "registered"
+  },
+  "failure": {
+    "step": "use the unchanged native booked-arrival dialog offline",
+    "message": "Expected values to be strictly equal:\n\nfalse !== true\n",
+    "at": "2026-11-02T14:39:34.614Z"
+  }
+}

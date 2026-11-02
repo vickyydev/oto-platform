@@ -1,0 +1,102 @@
+{
+  "unit": "SCRUM-708",
+  "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41459443462",
+  "deployments": [
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk9ubavcj2c73frrc8g",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:37:01.972371Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk9ubivcj2c73frrdtg",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:34:16.74601Z"
+    },
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbk9ubivcj2c73frre1g",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:34:12.20643Z"
+    }
+  ],
+  "startedAt": "2026-11-02T14:42:14.979Z",
+  "fixture": {
+    "registrationId": "1a1be8a1-dc99-4a36-bc0a-e486edb7ab91",
+    "checkinId": "7928ff92-1b12-44eb-b9b5-df3d70f12a3c",
+    "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be",
+    "stationId": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0"
+  },
+  "checks": [
+    {
+      "name": "Console forced only the dedicated ZZ TEST box offline; the platform registration has no consent",
+      "passed": true,
+      "before": {
+        "id": "1a1be8a1-dc99-4a36-bc0a-e486edb7ab91",
+        "consentRecordedAt": null,
+        "status": "registered"
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "01a19cb6-523e-7e7c-9781-1ea77f965bc5",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:42:40.772Z"
+    },
+    {
+      "id": "01a19cb6-6e16-755c-9621-8153512c421e",
+      "kind": "config_apply",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:42:46.195Z"
+    },
+    {
+      "id": "01a19cb6-7c56-7ba6-b04a-13a16ad95dfa",
+      "kind": "go_offline",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:42:51.620Z"
+    },
+    {
+      "id": "01a19cb7-6276-78d8-bcc7-2a30c43ecf04",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:43:50.607Z"
+    }
+  ],
+  "cleanup": [
+    {
+      "origin": "https://oto-pos-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "before": {
+    "id": "1a1be8a1-dc99-4a36-bc0a-e486edb7ab91",
+    "consentRecordedAt": null,
+    "status": "registered"
+  },
+  "dialogTargetCheck": {
+    "checkboxSelected": false,
+    "confirmEnabled": false,
+    "consentRowSelected": true
+  },
+  "confirmPressedAt": "2026-11-02T14:43:00.006Z",
+  "failure": {
+    "step": "use the unchanged native booked-arrival dialog offline",
+    "message": "page.waitForResponse: Timeout 45000ms exceeded while waiting for event \"response\"",
+    "at": "2026-11-02T14:43:45.008Z"
+  }
+}

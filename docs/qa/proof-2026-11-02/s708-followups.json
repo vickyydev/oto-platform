@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-02T14:58:58.425Z",
+  "source": "14e1432492f603e3b774d512aa797e5a57061595",
+  "issues": [
+    {
+      "question": "Q708-1",
+      "key": "SCRUM-722",
+      "summary": "Booked check-in consent checkbox does not stay selected when its small control is clicked",
+      "status": "To Do"
+    },
+    {
+      "question": "Q708-2",
+      "key": "SCRUM-723",
+      "summary": "Console forced-offline mode still allows booked check-in on a fresh till page",
+      "status": "To Do"
+    }
+  ]
+}

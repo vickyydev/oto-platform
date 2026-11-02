@@ -1,0 +1,65 @@
+{
+  "unit": "SCRUM-708",
+  "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41459443462",
+  "deployments": [
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk9ubavcj2c73frrc8g",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:37:01.972371Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk9ubivcj2c73frrdtg",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:34:16.74601Z"
+    },
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbk9ubivcj2c73frre1g",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:34:12.20643Z"
+    }
+  ],
+  "startedAt": "2026-11-02T14:46:05.353Z",
+  "fixture": {
+    "registrationId": "1a1be8a1-dc99-4a36-bc0a-e486edb7ab91",
+    "checkinId": "7928ff92-1b12-44eb-b9b5-df3d70f12a3c",
+    "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be",
+    "stationId": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0"
+  },
+  "checks": [],
+  "commands": [
+    {
+      "id": "01a19cb9-dbf2-7ec5-b9bd-0a35f3fd17c1",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:46:30.670Z"
+    }
+  ],
+  "cleanup": [
+    {
+      "origin": "https://oto-pos-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "requests": [],
+  "browserErrors": [],
+  "failure": {
+    "step": "prepare one new synthetic booked family",
+    "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ '2026-11-02T14:43:00.964Z'\n- null\n",
+    "at": "2026-11-02T14:46:32.435Z"
+  }
+}

@@ -42,7 +42,11 @@ CI [41452442131](https://github.com/vickyydev/oto-platform/actions/runs/41452442
 
 Source release: `14e1432492f603e3b774d512aa797e5a57061595`.
 Exact-source CI: [41459443462](https://github.com/vickyydev/oto-platform/actions/runs/41459443462),
-still running. Jira read-back is Testing. Staging acceptance is pending.
+all six jobs passed; the exact-SHA watcher exited zero. The run completed at
+2026-11-02T14:33:14Z. Full receipt: [s708-ci.json](s708-ci.json). The workspace
+job includes its tests, production build, built till and Console browser
+journeys. The unchanged OTO App job is path-gated; this is not a new full-app
+acceptance claim. Jira remains Testing pending inspected staging proof.
 
 ## Staging proof plan and limits
 
@@ -56,3 +60,30 @@ audit afterward. Inspect and attach the evidence before Deployed.
 No physical Pi, real person, real payment or SMS is part of this proof. The
 virtual mount uses the existing platform session; fresh offline staff unlock is
 outside this unit. Recovery, display and POS-server lane files are untouched.
+
+## Staging attempts and separate follow-ups
+
+The first attempt found that the small checkbox did not stay selected. Clicking
+the consent sentence works. The second attempt completed online, so it does not
+count as offline evidence: after a fresh page load, the booked-arrival route
+answered on the platform despite the Console switch. Independent database
+readback found one consent audit with no box source event. That synthetic child
+was released normally; its consent was not reset. A third attempt safely stopped
+at the initial missing-consent assertion. The retained receipts are
+`s708-first-attempt.json`, `s708-second-attempt.json`, `s708-third-attempt.json`
+and `s708-online-control.json`.
+
+- Q708-1 / [SCRUM-722](https://oto-suite-dev.atlassian.net/browse/SCRUM-722):
+  clicking the small consent control leaves check-in disabled, while clicking
+  the sentence selects it. The enclosing button and nested checkbox both handle
+  the same click. The prototype dialog is explicitly outside this change.
+- Q708-2 / [SCRUM-723](https://oto-suite-dev.atlassian.net/browse/SCRUM-723):
+  Console forced-offline mode does not fence booked arrival on a fresh till
+  page. The station-offline plugin checks `stationTrading`; this route has only
+  `dynamicPermission`. The browser initially selects the platform lane. This
+  is a test-routing follow-up, not evidence that consent replay failed.
+
+Both follow-ups are To Do and linked to SCRUM-708. The retry uses a new family,
+an existing guarded unpaid F&B quote to enter the box lane, and native SPA
+navigation to Check-in. It must inspect the box request and platform state on
+each side of reconnect; the switch alone does not establish offline proof.
