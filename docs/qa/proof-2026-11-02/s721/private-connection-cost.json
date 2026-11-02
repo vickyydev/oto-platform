@@ -1,0 +1,1438 @@
+{
+  "unit": "SCRUM-721",
+  "event": "s721-private-connection-cost",
+  "at": "2026-11-02T15:16:21.737Z",
+  "startedAt": "2026-11-02T15:16:21.737Z",
+  "serviceId": "srv-dbk7qu8n74is73bm894g",
+  "ownerId": "tea-dakeu6p42hec73abs5g0",
+  "jobId": "job-dbkaihjbc2fs73eta6g0",
+  "jobStatus": "succeeded",
+  "result": {
+    "event": "s721-private-connection-cost",
+    "at": "2026-11-02T15:17:22.338Z",
+    "source": "14e1432492f603e3b774d512aa797e5a57061595",
+    "privateNetwork": true,
+    "method": "POST",
+    "path": "/ZZ-TEST-SCRUM-721-absent-route",
+    "businessWrites": 0,
+    "summary": [
+      {
+        "mode": "pooled",
+        "n": 100,
+        "p50Ms": 0.7567379999999844,
+        "p95Ms": 1.9464669999999842,
+        "reused": 100
+      },
+      {
+        "mode": "fresh",
+        "n": 100,
+        "p50Ms": 1.9844009999999912,
+        "p95Ms": 2.791390999999976,
+        "reused": 0
+      }
+    ],
+    "rows": [
+      {
+        "round": 0,
+        "mode": "pooled",
+        "ms": 1.4999030000000175,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 0,
+        "mode": "fresh",
+        "ms": 2.6913140000000055,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 1,
+        "mode": "fresh",
+        "ms": 2.2697019999999952,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 1,
+        "mode": "pooled",
+        "ms": 1.1097939999999937,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 2,
+        "mode": "pooled",
+        "ms": 1.0065659999999923,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 2,
+        "mode": "fresh",
+        "ms": 2.487238000000019,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 3,
+        "mode": "fresh",
+        "ms": 2.4492150000000095,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 3,
+        "mode": "pooled",
+        "ms": 1.6592150000000174,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 4,
+        "mode": "pooled",
+        "ms": 46.603792,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 4,
+        "mode": "fresh",
+        "ms": 2.902659,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 5,
+        "mode": "fresh",
+        "ms": 2.0999490000000094,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 5,
+        "mode": "pooled",
+        "ms": 0.7134440000000097,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 6,
+        "mode": "pooled",
+        "ms": 0.800629999999984,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 6,
+        "mode": "fresh",
+        "ms": 2.1237600000000043,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 7,
+        "mode": "fresh",
+        "ms": 1.5924699999999916,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 7,
+        "mode": "pooled",
+        "ms": 0.6821109999999919,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 8,
+        "mode": "pooled",
+        "ms": 0.692212000000012,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 8,
+        "mode": "fresh",
+        "ms": 1.652115000000009,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 9,
+        "mode": "fresh",
+        "ms": 1.9710790000000031,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 9,
+        "mode": "pooled",
+        "ms": 0.7050529999999924,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 10,
+        "mode": "pooled",
+        "ms": 0.6074560000000133,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 10,
+        "mode": "fresh",
+        "ms": 1.5479270000000156,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 11,
+        "mode": "fresh",
+        "ms": 1.6476750000000209,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 11,
+        "mode": "pooled",
+        "ms": 1.5662889999999834,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 12,
+        "mode": "pooled",
+        "ms": 0.7405160000000137,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 12,
+        "mode": "fresh",
+        "ms": 1.8817020000000184,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 13,
+        "mode": "fresh",
+        "ms": 1.8760420000000124,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 13,
+        "mode": "pooled",
+        "ms": 0.7267149999999845,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 14,
+        "mode": "pooled",
+        "ms": 0.6178069999999991,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 14,
+        "mode": "fresh",
+        "ms": 2.0307240000000206,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 15,
+        "mode": "fresh",
+        "ms": 1.48871299999999,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 15,
+        "mode": "pooled",
+        "ms": 0.7751789999999801,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 16,
+        "mode": "pooled",
+        "ms": 0.7926099999999963,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 16,
+        "mode": "fresh",
+        "ms": 1.8078569999999843,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 17,
+        "mode": "fresh",
+        "ms": 1.6837380000000053,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 17,
+        "mode": "pooled",
+        "ms": 0.7406159999999886,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 18,
+        "mode": "pooled",
+        "ms": 0.755437999999998,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 18,
+        "mode": "fresh",
+        "ms": 2.029953000000006,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 19,
+        "mode": "fresh",
+        "ms": 2.0526749999999936,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 19,
+        "mode": "pooled",
+        "ms": 0.7627080000000035,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 20,
+        "mode": "pooled",
+        "ms": 0.7863590000000045,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 20,
+        "mode": "fresh",
+        "ms": 2.240899000000013,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 21,
+        "mode": "fresh",
+        "ms": 2.3817700000000173,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 21,
+        "mode": "pooled",
+        "ms": 1.7359409999999968,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 22,
+        "mode": "pooled",
+        "ms": 0.6974429999999927,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 22,
+        "mode": "fresh",
+        "ms": 2.2701120000000117,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 23,
+        "mode": "fresh",
+        "ms": 2.2200479999999914,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 23,
+        "mode": "pooled",
+        "ms": 0.9193290000000047,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 24,
+        "mode": "pooled",
+        "ms": 0.8052310000000205,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 24,
+        "mode": "fresh",
+        "ms": 2.285002999999989,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 25,
+        "mode": "fresh",
+        "ms": 2.3438170000000014,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 25,
+        "mode": "pooled",
+        "ms": 0.691791999999964,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 26,
+        "mode": "pooled",
+        "ms": 0.6829119999999875,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 26,
+        "mode": "fresh",
+        "ms": 1.9833799999999542,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 27,
+        "mode": "fresh",
+        "ms": 2.5499430000000416,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 27,
+        "mode": "pooled",
+        "ms": 0.8910869999999704,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 28,
+        "mode": "pooled",
+        "ms": 0.8407829999999876,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 28,
+        "mode": "fresh",
+        "ms": 2.1036589999999933,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 29,
+        "mode": "fresh",
+        "ms": 1.5112639999999828,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 29,
+        "mode": "pooled",
+        "ms": 0.7395850000000337,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 30,
+        "mode": "pooled",
+        "ms": 0.6863819999999805,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 30,
+        "mode": "fresh",
+        "ms": 2.278661999999997,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 31,
+        "mode": "fresh",
+        "ms": 1.4700409999999806,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 31,
+        "mode": "pooled",
+        "ms": 20.050535000000025,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 32,
+        "mode": "pooled",
+        "ms": 1.5210149999999771,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 32,
+        "mode": "fresh",
+        "ms": 2.4195530000000076,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 33,
+        "mode": "fresh",
+        "ms": 1.8398490000000152,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 33,
+        "mode": "pooled",
+        "ms": 0.7054829999999583,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 34,
+        "mode": "pooled",
+        "ms": 0.6784610000000271,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 34,
+        "mode": "fresh",
+        "ms": 1.9251160000000027,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 35,
+        "mode": "fresh",
+        "ms": 1.5353759999999852,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 35,
+        "mode": "pooled",
+        "ms": 0.7567379999999844,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 36,
+        "mode": "pooled",
+        "ms": 0.7131940000000441,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 36,
+        "mode": "fresh",
+        "ms": 1.8505999999999858,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 37,
+        "mode": "fresh",
+        "ms": 1.6562450000000126,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 37,
+        "mode": "pooled",
+        "ms": 0.6518689999999765,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 38,
+        "mode": "pooled",
+        "ms": 0.8693660000000136,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 38,
+        "mode": "fresh",
+        "ms": 1.7363710000000196,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 39,
+        "mode": "fresh",
+        "ms": 1.6871080000000234,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 39,
+        "mode": "pooled",
+        "ms": 0.7198850000000334,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 40,
+        "mode": "pooled",
+        "ms": 0.6063359999999989,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 40,
+        "mode": "fresh",
+        "ms": 1.85163,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 41,
+        "mode": "fresh",
+        "ms": 1.7013689999999997,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 41,
+        "mode": "pooled",
+        "ms": 0.7560169999999857,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 42,
+        "mode": "pooled",
+        "ms": 0.7080139999999915,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 42,
+        "mode": "fresh",
+        "ms": 1.7751439999999548,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 43,
+        "mode": "fresh",
+        "ms": 1.799205000000029,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 43,
+        "mode": "pooled",
+        "ms": 0.6799310000000105,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 44,
+        "mode": "pooled",
+        "ms": 0.6025759999999991,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 44,
+        "mode": "fresh",
+        "ms": 1.8134670000000028,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 45,
+        "mode": "fresh",
+        "ms": 1.9180150000000253,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 45,
+        "mode": "pooled",
+        "ms": 0.7151440000000093,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 46,
+        "mode": "pooled",
+        "ms": 0.7145140000000083,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 46,
+        "mode": "fresh",
+        "ms": 1.9815790000000106,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 47,
+        "mode": "fresh",
+        "ms": 1.8375389999999925,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 47,
+        "mode": "pooled",
+        "ms": 0.6776010000000383,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 48,
+        "mode": "pooled",
+        "ms": 0.638148000000001,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 48,
+        "mode": "fresh",
+        "ms": 2.263300999999956,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 49,
+        "mode": "fresh",
+        "ms": 1.7093590000000063,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 49,
+        "mode": "pooled",
+        "ms": 0.7887989999999832,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 50,
+        "mode": "pooled",
+        "ms": 0.6689200000000142,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 50,
+        "mode": "fresh",
+        "ms": 2.2718909999999823,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 51,
+        "mode": "fresh",
+        "ms": 1.9060739999999896,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 51,
+        "mode": "pooled",
+        "ms": 0.7728290000000015,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 52,
+        "mode": "pooled",
+        "ms": 0.7409260000000017,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 52,
+        "mode": "fresh",
+        "ms": 1.8492100000000278,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 53,
+        "mode": "fresh",
+        "ms": 1.5249959999999874,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 53,
+        "mode": "pooled",
+        "ms": 0.7477269999999976,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 54,
+        "mode": "pooled",
+        "ms": 0.5939240000000154,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 54,
+        "mode": "fresh",
+        "ms": 1.8994030000000066,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 55,
+        "mode": "fresh",
+        "ms": 1.8695020000000113,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 55,
+        "mode": "pooled",
+        "ms": 0.6241180000000099,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 56,
+        "mode": "pooled",
+        "ms": 0.7235140000000229,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 56,
+        "mode": "fresh",
+        "ms": 2.1749439999999822,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 57,
+        "mode": "fresh",
+        "ms": 1.4569700000000125,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 57,
+        "mode": "pooled",
+        "ms": 0.6203370000000064,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 58,
+        "mode": "pooled",
+        "ms": 0.7557280000000333,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 58,
+        "mode": "fresh",
+        "ms": 2.021061999999972,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 59,
+        "mode": "fresh",
+        "ms": 2.0343940000000202,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 59,
+        "mode": "pooled",
+        "ms": 0.7548170000000027,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 60,
+        "mode": "pooled",
+        "ms": 0.8013210000000299,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 60,
+        "mode": "fresh",
+        "ms": 2.024183999999991,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 61,
+        "mode": "fresh",
+        "ms": 23.569930999999997,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 61,
+        "mode": "pooled",
+        "ms": 1.0968229999999721,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 62,
+        "mode": "pooled",
+        "ms": 0.7861689999999726,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 62,
+        "mode": "fresh",
+        "ms": 2.575474999999983,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 63,
+        "mode": "fresh",
+        "ms": 2.381110000000035,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 63,
+        "mode": "pooled",
+        "ms": 0.8595050000000128,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 64,
+        "mode": "pooled",
+        "ms": 0.8993879999999876,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 64,
+        "mode": "fresh",
+        "ms": 2.303894000000014,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 65,
+        "mode": "fresh",
+        "ms": 1.9310449999999832,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 65,
+        "mode": "pooled",
+        "ms": 1.0210069999999973,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 66,
+        "mode": "pooled",
+        "ms": 0.7771490000000085,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 66,
+        "mode": "fresh",
+        "ms": 1.9483079999999973,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 67,
+        "mode": "fresh",
+        "ms": 1.9362259999999765,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 67,
+        "mode": "pooled",
+        "ms": 0.8070920000000115,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 68,
+        "mode": "pooled",
+        "ms": 1.9464669999999842,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 68,
+        "mode": "fresh",
+        "ms": 2.14989300000002,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 69,
+        "mode": "fresh",
+        "ms": 1.8684209999999553,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 69,
+        "mode": "pooled",
+        "ms": 0.8156710000000089,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 70,
+        "mode": "pooled",
+        "ms": 0.8370030000000384,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 70,
+        "mode": "fresh",
+        "ms": 1.895413000000019,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 71,
+        "mode": "fresh",
+        "ms": 1.738630999999998,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 71,
+        "mode": "pooled",
+        "ms": 0.7666980000000194,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 72,
+        "mode": "pooled",
+        "ms": 2.0967880000000036,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 72,
+        "mode": "fresh",
+        "ms": 2.8474749999999744,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 73,
+        "mode": "fresh",
+        "ms": 2.9310409999999933,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 73,
+        "mode": "pooled",
+        "ms": 2.488349000000028,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 74,
+        "mode": "pooled",
+        "ms": 3.51980599999996,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 74,
+        "mode": "fresh",
+        "ms": 2.6732020000000034,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 75,
+        "mode": "fresh",
+        "ms": 2.250479999999982,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 75,
+        "mode": "pooled",
+        "ms": 0.9760840000000144,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 76,
+        "mode": "pooled",
+        "ms": 0.8904269999999883,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 76,
+        "mode": "fresh",
+        "ms": 2.274591999999984,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 77,
+        "mode": "fresh",
+        "ms": 2.1997460000000046,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 77,
+        "mode": "pooled",
+        "ms": 0.9024279999999862,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 78,
+        "mode": "pooled",
+        "ms": 0.8189919999999802,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 78,
+        "mode": "fresh",
+        "ms": 2.254930999999999,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 79,
+        "mode": "fresh",
+        "ms": 2.4535459999999603,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 79,
+        "mode": "pooled",
+        "ms": 0.9489820000000009,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 80,
+        "mode": "pooled",
+        "ms": 0.8889570000000049,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 80,
+        "mode": "fresh",
+        "ms": 2.791390999999976,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 81,
+        "mode": "fresh",
+        "ms": 2.365887999999984,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 81,
+        "mode": "pooled",
+        "ms": 0.8052010000000109,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 82,
+        "mode": "pooled",
+        "ms": 0.8416139999999928,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 82,
+        "mode": "fresh",
+        "ms": 2.3526580000000195,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 83,
+        "mode": "fresh",
+        "ms": 1.9608479999999986,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 83,
+        "mode": "pooled",
+        "ms": 0.77651800000001,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 84,
+        "mode": "pooled",
+        "ms": 0.6948130000000106,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 84,
+        "mode": "fresh",
+        "ms": 2.0557249999999954,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 85,
+        "mode": "fresh",
+        "ms": 1.9844009999999912,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 85,
+        "mode": "pooled",
+        "ms": 0.6955820000000017,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 86,
+        "mode": "pooled",
+        "ms": 0.7292749999999728,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 86,
+        "mode": "fresh",
+        "ms": 2.777780000000007,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 87,
+        "mode": "fresh",
+        "ms": 12.574310000000025,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 87,
+        "mode": "pooled",
+        "ms": 1.2568949999999859,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 88,
+        "mode": "pooled",
+        "ms": 0.9707440000000247,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 88,
+        "mode": "fresh",
+        "ms": 2.460215000000005,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 89,
+        "mode": "fresh",
+        "ms": 2.331326000000047,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 89,
+        "mode": "pooled",
+        "ms": 0.95169199999998,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 90,
+        "mode": "pooled",
+        "ms": 0.7835299999999847,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 90,
+        "mode": "fresh",
+        "ms": 2.482498000000021,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 91,
+        "mode": "fresh",
+        "ms": 1.7696540000000027,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 91,
+        "mode": "pooled",
+        "ms": 0.6732410000000186,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 92,
+        "mode": "pooled",
+        "ms": 0.6714209999999525,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 92,
+        "mode": "fresh",
+        "ms": 2.104788000000042,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 93,
+        "mode": "fresh",
+        "ms": 1.9995509999999967,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 93,
+        "mode": "pooled",
+        "ms": 0.6523489999999583,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 94,
+        "mode": "pooled",
+        "ms": 0.7186940000000277,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 94,
+        "mode": "fresh",
+        "ms": 1.5734989999999698,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 95,
+        "mode": "fresh",
+        "ms": 1.787005000000022,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 95,
+        "mode": "pooled",
+        "ms": 0.7513470000000098,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 96,
+        "mode": "pooled",
+        "ms": 0.729645000000005,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 96,
+        "mode": "fresh",
+        "ms": 1.7296810000000278,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 97,
+        "mode": "fresh",
+        "ms": 1.5465770000000703,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 97,
+        "mode": "pooled",
+        "ms": 0.7275750000000016,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 98,
+        "mode": "pooled",
+        "ms": 0.7784990000000107,
+        "status": 404,
+        "reused": true
+      },
+      {
+        "round": 98,
+        "mode": "fresh",
+        "ms": 1.738591999999926,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 99,
+        "mode": "fresh",
+        "ms": 1.8198579999999538,
+        "status": 404,
+        "reused": false
+      },
+      {
+        "round": 99,
+        "mode": "pooled",
+        "ms": 0.7486360000000332,
+        "status": 404,
+        "reused": true
+      }
+    ]
+  },
+  "verifiedAt": "2026-11-02T15:17:33.256Z"
+}

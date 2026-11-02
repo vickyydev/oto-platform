@@ -1,0 +1,22 @@
+{
+  "unit": "SCRUM-721",
+  "findings": [
+    "MEDIUM: idle pooled sockets can reject a write that must not be replayed",
+    "MEDIUM: upstream failure and interrupted response have no service trace"
+  ],
+  "prescribedFix": "Fresh connections for writes; pooled safe reads; one allow-listed structured line per failed attempt, query-free and without request/error payloads.",
+  "before": {
+    "failed": 7,
+    "passed": 33
+  },
+  "after": {
+    "forwarderTests": 40,
+    "posTests": 1644,
+    "builtTillJourneys": 7,
+    "typecheck": "passed with zero diagnostics",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "sourceSha256": "dfe6b77b51b48156ee1ce4ba433f414964ed1db122e90b9996d3231f61367f3c",
+  "stagingProofPending": true
+}

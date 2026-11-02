@@ -22,6 +22,7 @@ beforeAll(async () => {
 });
 afterEach(async () => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   for (const server of servers.splice(0).reverse()) {
     server.closeAllConnections();
     await new Promise<void>(resolve => server.close(() => resolve()));
@@ -91,7 +92,7 @@ describe('the POS HTTP forwarder (SCRUM-718)', () => {
     const { url } = await fixture((_req, res) => { res.setHeader('Set-Cookie', cookies); res.end('ok'); });
     expect((await raw(url, '/api/auth/sign-in')).headers['set-cookie']).toEqual(cookies);
   });
-  it.each(['POST', 'PUT', 'PATCH', 'DELETE'])('never retries %s when a reused upstream connection resets after the write', async method => {
+  it.each(['POST', 'PUT', 'PATCH', 'DELETE'])('never retries %s when the upstream connection resets after the write', async method => {
     let calls = 0;
     const { url } = await fixture((req, res) => {
       if (req.url === '/warm') { res.end('warm'); return; }
@@ -101,6 +102,90 @@ describe('the POS HTTP forwarder (SCRUM-718)', () => {
     const r = await fetch(`${url}/api/sale`, { method, body: 'ZZ TEST sale' });
     expect(r.status).toBe(502); await r.text();
     expect(calls).toBe(1);
+  });
+  // MEDIUM, SCRUM-721: a write may use an idle socket the API is closing.
+  // Prescribed fix: fresh write connections; retain pooling only for safe reads.
+  it.each(['POST', 'PUT', 'PATCH', 'DELETE'])('keeps %s off a closing pooled socket and never reuses a write socket', async method => {
+    let warmSocket: IncomingMessage['socket'] | undefined;
+    const writes = new Set<IncomingMessage['socket']>();
+    const { url } = await fixture((req, res) => {
+      if (req.url === '/warm') { warmSocket = req.socket; res.end('warm'); return; }
+      writes.add(req.socket);
+      if (req.socket === warmSocket) { req.socket.destroy(); return; }
+      req.resume(); req.once('end', () => res.end('accepted once'));
+    });
+    await (await fetch(`${url}/api/warm`)).text();
+    const originalWarmSocket = warmSocket;
+    for (let i = 0; i < 2; i += 1) {
+      const result = await fetch(`${url}/api/sale`, { method, body: 'ZZ TEST write' });
+      expect(result.status).toBe(200); expect(await result.text()).toBe('accepted once');
+    }
+    expect(writes.size).toBe(2); expect(writes.has(originalWarmSocket!)).toBe(false);
+    await (await fetch(`${url}/api/warm`)).text();
+    expect(warmSocket).toBe(originalWarmSocket);
+  });
+  // MEDIUM, SCRUM-721: a failed request has no trace. Log only this fixed
+  // allow-list, once per upstream failure, never the raw error or request.
+  it('logs one write failure with a query-free path and no authority or body', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let calls = 0;
+    const { url } = await fixture((req, _res) => {
+      void bytes(req).then(() => { calls += 1; req.socket.destroy(); });
+    });
+    const result = await fetch(`${url}/api/sales/ZZ-TEST?secret=ZZ-TEST-query`, {
+      method: 'POST', body: 'ZZ-TEST-private-body', headers: {
+        cookie: 'session=ZZ-TEST-cookie', authorization: 'Bearer ZZ-TEST-authority',
+        'x-oto-action-id': 'ZZ-TEST-action', 'idempotency-key': 'ZZ-TEST-key',
+      },
+    });
+    expect(result.status).toBe(502); await result.text(); expect(calls).toBe(1);
+    expect(log).toHaveBeenCalledTimes(1); expect(log.mock.calls[0]).toHaveLength(1);
+    expect(JSON.parse(String(log.mock.calls[0]![0]))).toEqual({
+      event: 'pos_upstream_failure', method: 'POST', path: '/sales/ZZ-TEST',
+      code: 'ECONNRESET', reusedSocket: false,
+    });
+  });
+  it('records a recovered stale GET failure once with its reused socket', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let reads = 0;
+    const { url } = await fixture((req, res) => {
+      if (req.url === '/warm') { res.end('warm'); return; }
+      if (++reads === 1) req.socket.destroy(); else res.end('recovered');
+    });
+    await (await fetch(`${url}/api/warm`)).text();
+    expect(await (await fetch(`${url}/api/read?secret=ZZ-TEST`)).text()).toBe('recovered');
+    expect(reads).toBe(2); expect(log).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(log.mock.calls[0]![0]))).toEqual({
+      event: 'pos_upstream_failure', method: 'GET', path: '/read',
+      code: 'ECONNRESET', reusedSocket: true,
+    });
+  });
+  it('records an upstream response cut after headers once without logging the partial body', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { url } = await fixture((req, res) => {
+      res.writeHead(200, { 'content-length': 1000 }); res.write('ZZ-TEST-private-response');
+      setTimeout(() => req.socket.destroy(), 20);
+    });
+    const result = await fetch(`${url}/api/partial?secret=ZZ-TEST`);
+    expect(result.status).toBe(200); await expect(result.text()).rejects.toThrow();
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(log.mock.calls[0]![0]))).toEqual({
+      event: 'pos_upstream_failure', method: 'GET', path: '/partial',
+      code: 'ECONNRESET', reusedSocket: false,
+    });
+  });
+  it('does not label a deliberate client stream cancellation an upstream failure', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let closed = false;
+    const { url } = await fixture((_req, res) => {
+      res.on('close', () => { closed = true; });
+      res.writeHead(200, { 'content-type': 'text/event-stream' }); res.write(': open\n\n');
+    });
+    const controller = new AbortController();
+    const result = await fetch(`${url}/api/stream`, { signal: controller.signal });
+    const reader = result.body!.getReader(); await reader.read();
+    controller.abort(); await reader.cancel().catch(() => undefined);
+    await expect.poll(() => closed).toBe(true); expect(log).not.toHaveBeenCalled();
   });
   it('retries one bodyless GET on a stale reused socket, keeping warm sockets reusable', async () => {
     let calls = 0; const sockets = new Set();

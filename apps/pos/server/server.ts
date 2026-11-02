@@ -86,12 +86,29 @@ export function createPosServer({ root, apiUpstream }: PosServerOptions): http.S
     res.once('close', () => { if (!res.writableFinished) cancel(); });
 
     const forward = (retry = false): void => {
-      const outgoing = transport.request(upstream, { agent, method: req.method, headers,
+      // Writes never inherit an idle connection that the API may be closing.
+      // Fresh private-network connections cost about 1 ms in the staging check;
+      // safe reads retain the pool and the narrowly bounded stale-GET retry.
+      const pooled = ['GET', 'HEAD', 'OPTIONS'].includes(req.method ?? 'GET');
+      const outgoing = transport.request(upstream, { agent: pooled ? agent : false, method: req.method, headers,
         path: upstreamPath.startsWith('/') ? upstreamPath : `/${upstreamPath}` });
       active = outgoing;
+      let loggedFailure = false;
+      const logFailure = (error: NodeJS.ErrnoException): void => {
+        if (gone || loggedFailure) return;
+        loggedFailure = true;
+        // An allow-list, not a serialized request/error: no query, authority,
+        // headers, body or free-form error message may enter this line.
+        console.error(JSON.stringify({ event: 'pos_upstream_failure', method: req.method ?? 'GET',
+          path: upstreamPath.split('?')[0] || '/',
+          code: error.code && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code) ? error.code : 'UPSTREAM_ERROR',
+          reusedSocket: outgoing.reusedSocket }));
+      };
       // Bound only DNS/connect/agent queue time. Once connected, the API owns
       // completion: a new response deadline could cut off an in-flight sale.
-      timer = setTimeout(() => { outgoing.destroy(); unavailable(res); }, 30_000);
+      timer = setTimeout(() => {
+        outgoing.destroy(Object.assign(new Error('Upstream connection timeout'), { code: 'ETIMEDOUT' }));
+      }, 30_000);
       timer.unref();
       outgoing.once('socket', socket => {
         if (!socket.connecting) clearTimeout(timer);
@@ -107,12 +124,13 @@ export function createPosServer({ root, apiUpstream }: PosServerOptions): http.S
         }
         res.writeHead(incoming.statusCode ?? 502, responseHeaders);
         res.flushHeaders();
-        incoming.once('error', () => res.destroy());
+        incoming.once('error', (error: NodeJS.ErrnoException) => { logFailure(error); res.destroy(); });
         incoming.pipe(res); // Backpressure, no body parsing, buffering or compression.
       });
       outgoing.once('error', (error: NodeJS.ErrnoException) => {
         clearTimeout(timer);
         if (gone) return;
+        logFailure(error);
         // Only a bodyless GET on a stale kept-alive socket, once, before any
         // response. In particular POST/PATCH/DELETE/PUT are NEVER replayed.
         if (!retried && req.method === 'GET' && outgoing.reusedSocket && error.code === 'ECONNRESET'
