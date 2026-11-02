@@ -11,13 +11,15 @@ Recovery release [41430108569](https://github.com/vickyydev/oto-platform/actions
 cleared storage, build and seven till browser journeys, then failed ShellCheck
 SC1087 at install.sh lines 505-506. The planner fixed those expansions.
 Its [new run 41432225603](https://github.com/vickyydev/oto-platform/actions/runs/41432225603)
-has a green workspace job; API shards are still running. SCRUM-717 is not on
-main yet. No green release or staging acceptance is claimed. Q717-1 remains
-the proof dependency, and SCRUM-708 remains unstarted.
+passed all six jobs, watched by full SHA
+`f227d9bfad0b1a15f0bc484e49f960abf73a746e`. SCRUM-717's source is landing
+after that green base; its own exact-SHA CI and staging proof remain required.
+Q717-1 remains the proof dependency, and SCRUM-708 remains unstarted.
 
-2 November 2026. Source: `a1d88200c3ea7451f90583fa8a94e96a495277ac`.
+Earlier branch checkpoint, 2 November 2026:
+`a1d88200c3ea7451f90583fa8a94e96a495277ac`.
 
-The source is on `lane/codex-box-lane-20261102`, not main. The full branch
+The source was first pushed on `lane/codex-box-lane-20261102`. The full branch
 battery, [CI 41424651622](https://github.com/vickyydev/oto-platform/actions/runs/41424651622),
 failed its workspace job on both attempts. All three API shards, POS and
 OTO App jobs passed. This is not a green release or staging acceptance.
@@ -78,9 +80,9 @@ the same storage assertion in
 Its exact source also passed all 11 storage cases locally. Its single
 workspace-job retry also failed on the same assertion (attempt 2, workspace
 job `125220163645`). All its API shards, POS and OTO App jobs passed. The
-recovery and display tickets both carry the evidence. Feature pushes and staging deployment are
-held while main is red. This report and its checkpoint may be published as
-documentation only, without landing the feature.
+recovery and display tickets both carry the evidence. Feature pushes and
+staging deployment were held while main was red. The initial report and
+checkpoint were published as documentation only in `d457e574`.
 
 ## Q717-1 — staging proof host
 
