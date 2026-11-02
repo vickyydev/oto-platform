@@ -1,7 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import { Sale, Member, ChargeTarget, ContactChannel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QrCode } from './QrCode';
+import { ScreenKeyboard } from './ScreenKeyboard';
 import { PaymentExpiry, PaymentQr } from './PaymentQr';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import type { DisplayLineBreakdown } from '@oto/shared';
@@ -23,6 +25,8 @@ import { taxRowsOf, ticketTotals, unpricedDropOffLines, type OrderTotals } from 
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { paymentMethodKind, paymentMethodLabel } from '@/lib/payments';
 import { tierNeedsProof } from '@/lib/membership';
+import { kioskFlags } from '@/lib/kioskFlags';
+import { cn } from '@/lib/utils';
 import {
   Sparkles,
   Baby,
@@ -183,6 +187,68 @@ function Brand() {
   );
 }
 
+const NICKNAME_INPUT =
+  'h-16 mt-2 text-2xl px-5 bg-foreground/5 border-foreground/10 text-foreground placeholder:text-foreground/30';
+
+/**
+ * The nickname box. On a screen with no keyboard of its own (`kioskFlags`, the
+ * counter box's touch monitor; SCRUM-711) a touch opens the on-screen keyboard
+ * under it and Done puts it away. Everywhere else it is the plain field. The
+ * phone number's keypad is PhoneInput's and needs nothing here.
+ */
+export function NicknameField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const { t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const holder = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // The field sits low on a screen that scrolls: the keys must not open out of sight.
+    if (open) holder.current?.scrollIntoView({ block: 'nearest' });
+  }, [open]);
+
+  if (!kioskFlags.screenKeyboard) {
+    return (
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={t('till.identify.nicknamePlaceholder')}
+        className={NICKNAME_INPUT}
+      />
+    );
+  }
+  return (
+    <div ref={holder}>
+      {/* A press, not a focus: Done leaves the focus in the field, and the next
+          touch must still open the keys. inputMode none keeps the system's own
+          keyboard away; autocomplete off keeps the last family's name off the screen. */}
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onClick={() => setOpen(true)}
+        placeholder={t('till.identify.nicknamePlaceholder')}
+        // The input's own md:text-sm would draw the name tiny on this wide screen.
+        className={cn(NICKNAME_INPUT, 'md:text-2xl')}
+        inputMode="none"
+        autoComplete="off"
+        spellCheck={false}
+      />
+      {open && (
+        <ScreenKeyboard
+          value={value}
+          onChange={onChange}
+          onDone={() => setOpen(false)}
+          doneLabel={t('common.done')}
+        />
+      )}
+    </div>
+  );
+}
+
 export function CustomerDisplay({
   stage,
   sale,
@@ -241,12 +307,7 @@ export function CustomerDisplay({
                 {t('till.identify.nickname')}{' '}
                 <span className="text-foreground/40 text-base">({t('till.identify.optional')})</span>
               </label>
-              <Input
-                value={nickname}
-                onChange={(e) => onNicknameChange(e.target.value)}
-                placeholder={t('till.identify.nicknamePlaceholder')}
-                className="h-16 mt-2 text-2xl px-5 bg-foreground/5 border-foreground/10 text-foreground placeholder:text-foreground/30"
-              />
+              <NicknameField value={nickname} onChange={onNicknameChange} />
             </div>
           </div>
         </div>
@@ -592,12 +653,7 @@ export function CustomerDisplay({
 
             <div>
               <label className="text-foreground/70 text-lg">{t('till.identify.nickname')}</label>
-              <Input
-                value={nickname}
-                onChange={(e) => onNicknameChange(e.target.value)}
-                placeholder={t('till.identify.nicknamePlaceholder')}
-                className="h-16 mt-2 text-2xl px-5 bg-foreground/5 border-foreground/10 text-foreground placeholder:text-foreground/30"
-              />
+              <NicknameField value={nickname} onChange={onNicknameChange} />
             </div>
           </div>
         </div>
