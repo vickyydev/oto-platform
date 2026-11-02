@@ -357,7 +357,7 @@ describe('eod-r2-gate close away from a printing counter: the day closes, the re
 
   it('a counter with no box closes the day and its receipt waits', async () => {
     const boxless = newId();
-    await ctx.db.insert(schema.station).values({ id: boxless, operatorId, branchId: central, name: 'Boxless till', kind: 'till', codePrefix: 'BX' });
+    await ctx.db.insert(schema.station).values({ id: boxless, operatorId, branchId: central, name: 'Boxless till', kind: 'till', codePrefix: 'BX', paymentRouting: { card: 'manual', qr: 'none' } });
     const seated = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
     await takeStation(ctx.app, seated, boxless);
     const res = await close(seated, { date: day(7), stationId: boxless });
