@@ -1,6 +1,8 @@
 # SCRUM-713 first-stage evidence
 
-Status: **Testing**. The software stage passed staging proof. Real iPad private
+Status: **Testing**. The software stage passed staging proof. Jira read-back confirms
+the three inspected images are attached as 12239, 12240 and 12241.
+[jira-closeout.json](jira-closeout.json) records the attachment and status receipt. Real iPad private
 HTTPS access, a real certificate and real Pi acceptance remain bench work.
 
 Source: `f3b793dcc35d296a03582d617a9a94a3b555da60`. All six jobs passed in
