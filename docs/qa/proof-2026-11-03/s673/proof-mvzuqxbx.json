@@ -1,0 +1,152 @@
+{
+  "unit": "SCRUM-673",
+  "startedAt": "2026-11-02T22:50:23.421Z",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "name": "ZZ TEST SCRUM-673 mvzucpi4",
+  "accountId": "ea83ecac-ee45-4bda-83f0-9a9f58b4ed57",
+  "employeeId": "93a1400b-ceac-4177-bf42-af7866476fa2",
+  "checks": [
+    {
+      "name": "Temporary administrator is a distinct signed-in account; role and password setup used normal authorization and no SMS",
+      "at": "2026-11-02T22:50:37.601Z"
+    },
+    {
+      "name": "New ZZ TEST subject has only app access and no Console authority; the existing demo manager is unchanged",
+      "at": "2026-11-02T22:50:42.242Z"
+    },
+    {
+      "name": "Read-only view-as still refuses the schedule write",
+      "at": "2026-11-02T22:50:45.873Z"
+    },
+    {
+      "name": "A second platform administrator approved this exact write window",
+      "approvalId": "01a19e75-45c2-72be-b43b-b177d000a441",
+      "at": "2026-11-02T22:50:47.725Z"
+    },
+    {
+      "name": "Native Schedule History visibly identifies the support administrator acting for the subject",
+      "id": "2d11d2c9-9558-451a-8388-fb028cb7eeba",
+      "actorType": "impersonated",
+      "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "onBehalfOf": "6688b20b-6be9-45eb-9717-adcef2689050",
+      "impersonationId": "01a19e75-496c-70b7-96c4-25a6cf56caec",
+      "performedBy": "01a19e75-2755-7f00-b1b8-b814468da4dc",
+      "at": "2026-11-02T22:50:51.647Z"
+    },
+    {
+      "name": "An ordinary schedule history action has no view-as attribution",
+      "at": "2026-11-02T22:50:51.834Z"
+    },
+    {
+      "name": "Temporary administrator is inactive with zero grants and its live session is rejected; test department is inactive",
+      "at": "2026-11-02T22:50:59.301Z"
+    }
+  ],
+  "deployments": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgtimc6qcc73fpsdu0",
+      "liveAt": "2026-11-02T22:33:15.853661Z"
+    },
+    {
+      "id": "srv-danng2p42hec73f38e3g",
+      "name": "oto-console-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gf0",
+      "liveAt": "2026-11-02T22:16:14.197736Z"
+    },
+    {
+      "id": "srv-danli3ajnfac7391jrk0",
+      "name": "oto-launcher-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gt0",
+      "liveAt": "2026-11-02T22:16:07.330408Z"
+    },
+    {
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "name": "oto-app-staging",
+      "sha": "629714f266253c4b6951b68237da7db13c8cf26e",
+      "deployId": "dep-dbjsjmk9v7es73b1lhpg",
+      "liveAt": "2026-11-01T23:27:20.626127Z"
+    }
+  ],
+  "outcome": "passed",
+  "resumedFrom": "docs/qa/proof-2026-11-03/s673/proof-mvzup194.json",
+  "provision": {
+    "jobId": "job-dbkh28dbedkc73f8539g",
+    "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+    "startedAt": "2026-11-02T22:39:28.422Z",
+    "status": "succeeded",
+    "result": {
+      "event": "s673_fixture",
+      "at": "2026-11-02T22:40:15.056Z",
+      "accountId": "ea83ecac-ee45-4bda-83f0-9a9f58b4ed57",
+      "employeeId": "93a1400b-ceac-4177-bf42-af7866476fa2",
+      "status": "invited",
+      "roles": 0,
+      "sms": false,
+      "passed": true
+    }
+  },
+  "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "subjectAccountId": "6688b20b-6be9-45eb-9717-adcef2689050",
+  "dualControl": true,
+  "resumedInactiveFixture": true,
+  "roleAssignmentId": "01a19e75-0aca-7db3-91f3-dee6010486e1",
+  "subjectFixture": {
+    "accountId": "6688b20b-6be9-45eb-9717-adcef2689050",
+    "employeeId": "9717d4b3-2f80-445f-925c-db9b5281d5ba",
+    "name": "ZZ TEST SCRUM-673 mvzucpi4 subject",
+    "userId": "01a19e75-2755-7f00-b1b8-b814468da4dc",
+    "grantIds": [
+      "01a19e75-2767-7415-9843-bcc3e68b34bf"
+    ],
+    "retired": true
+  },
+  "subjectProvision": {
+    "jobId": "job-dbkh6qom7kps739560dg",
+    "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+    "startedAt": "2026-11-02T22:49:14.579Z",
+    "status": "succeeded",
+    "result": {
+      "event": "s673_fixture",
+      "at": "2026-11-02T22:49:22.588Z",
+      "accountId": "6688b20b-6be9-45eb-9717-adcef2689050",
+      "employeeId": "9717d4b3-2f80-445f-925c-db9b5281d5ba",
+      "status": "invited",
+      "roles": 0,
+      "sms": false,
+      "passed": true
+    }
+  },
+  "branchId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+  "departmentId": "3113ac41-d2ff-4773-8863-19754e5fa923",
+  "departmentName": "ZZ TEST SCRUM-673 mvzucpi4 department mvzuqxbx",
+  "clearPreview": {
+    "assignments": 0,
+    "breaks": 0,
+    "employees": 0
+  },
+  "readWindowId": "01a19e75-3dc8-788c-b3b6-6f0fc7a2bf75",
+  "readWindowEnded": true,
+  "approvalId": "01a19e75-45c2-72be-b43b-b177d000a441",
+  "writeWindowId": "01a19e75-496c-70b7-96c4-25a6cf56caec",
+  "subjectAppUserId": "01a19e75-2755-7f00-b1b8-b814468da4dc",
+  "history": {
+    "id": "2d11d2c9-9558-451a-8388-fb028cb7eeba",
+    "actorType": "impersonated",
+    "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "onBehalfOf": "6688b20b-6be9-45eb-9717-adcef2689050",
+    "impersonationId": "01a19e75-496c-70b7-96c4-25a6cf56caec",
+    "performedBy": "01a19e75-2755-7f00-b1b8-b814468da4dc"
+  },
+  "ordinaryHistoryId": "3c61f83a-f0f3-4de0-9be3-4b98c0edee50",
+  "departmentInactive": true,
+  "writeWindowEnded": true,
+  "accountInactive": true,
+  "approverSessionRevoked": true,
+  "roleRemoved": true,
+  "finishedAt": "2026-11-02T22:51:00.480Z"
+}

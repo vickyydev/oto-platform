@@ -1,0 +1,28 @@
+{
+  "jobId": "job-dbkh7nom7kps739597f0",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "startedAt": "2026-11-02T22:51:10.254Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s673_database_proof",
+    "at": "2026-11-02T22:51:50.982Z",
+    "readOnly": true,
+    "passed": true,
+    "accountInactive": true,
+    "roleGrants": 0,
+    "distinctApprover": true,
+    "approvalConsumed": true,
+    "endedWindows": 2,
+    "attributedHistory": {
+      "id": "2d11d2c9-9558-451a-8388-fb028cb7eeba",
+      "department_id": "3113ac41-d2ff-4773-8863-19754e5fa923",
+      "performed_by": "01a19e75-2755-7f00-b1b8-b814468da4dc",
+      "actor_type": "impersonated",
+      "actor_account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "on_behalf_of": "6688b20b-6be9-45eb-9717-adcef2689050",
+      "impersonation_id": "01a19e75-496c-70b7-96c4-25a6cf56caec"
+    },
+    "ordinaryHistoryUnmarked": true,
+    "departmentInactive": true
+  }
+}

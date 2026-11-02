@@ -1,0 +1,37 @@
+{
+  "at": "2026-11-02T22:52:45.571Z",
+  "live": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgtimc6qcc73fpsdu0",
+      "liveAt": "2026-11-02T22:33:15.853661Z",
+      "finishedAt": "2026-11-02T22:33:15.853661Z"
+    },
+    {
+      "id": "srv-danng2p42hec73f38e3g",
+      "name": "oto-console-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gf0",
+      "liveAt": "2026-11-02T22:16:14.197736Z",
+      "finishedAt": "2026-11-02T22:16:14.197736Z"
+    },
+    {
+      "id": "srv-danli3ajnfac7391jrk0",
+      "name": "oto-launcher-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gt0",
+      "liveAt": "2026-11-02T22:16:07.330408Z",
+      "finishedAt": "2026-11-02T22:16:07.330408Z"
+    },
+    {
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "name": "oto-app-staging",
+      "sha": "629714f266253c4b6951b68237da7db13c8cf26e",
+      "deployId": "dep-dbjsjmk9v7es73b1lhpg",
+      "liveAt": "2026-11-01T23:27:20.626127Z",
+      "finishedAt": "2026-11-01T23:27:20.626127Z"
+    }
+  ]
+}
