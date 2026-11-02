@@ -1,0 +1,87 @@
+{
+  "unit": "SCRUM-715",
+  "featureSha": "94f1d226a3937af43c875b00f2b16c5ba108201c",
+  "sha": "b36267b34c8da83f614fa3ed4578d6c764c03fca",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41407986927",
+  "deployments": [
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbk4h615efls73ekuqmg",
+      "sha": "b36267b34c8da83f614fa3ed4578d6c764c03fca",
+      "finishedAt": "2026-11-02T08:24:46.201296Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk4h615efls73ekuqq0",
+      "sha": "b36267b34c8da83f614fa3ed4578d6c764c03fca",
+      "finishedAt": "2026-11-02T08:24:46.434048Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk4h615efls73ekuplg",
+      "sha": "b36267b34c8da83f614fa3ed4578d6c764c03fca",
+      "finishedAt": "2026-11-02T08:27:42.809399Z"
+    }
+  ],
+  "startedAt": "2026-11-02T08:28:01.988Z",
+  "checks": [
+    {
+      "check": "On the ready till, the lease the till really takes (the station bridge) is granted and released",
+      "passed": true
+    },
+    {
+      "check": "QR left unset with only a card terminal saves as a draft and the Console says why it cannot sell",
+      "passed": true
+    },
+    {
+      "check": "The till picker shows it greyed with the same reason, and direct selection is refused",
+      "passed": true
+    },
+    {
+      "check": "The bridge lease is refused on that till with the same sentence the station lease gives",
+      "passed": true
+    },
+    {
+      "check": "The API refuses a terminal protocol outside the list in a plain sentence and the stored value is unchanged",
+      "passed": true
+    },
+    {
+      "check": "With the routing restored it reads ready on both screens and the bridge lease is granted again",
+      "passed": true
+    }
+  ],
+  "station": {
+    "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "name": "ZZ TEST setup traps 20261102",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxRole": "virtual",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "routingBefore": {
+      "qr": "none",
+      "card": "card_terminal"
+    },
+    "routingAfter": {
+      "qr": "none",
+      "card": "card_terminal"
+    }
+  },
+  "protocolRefusal": "That terminal protocol is not one the box can speak. Choose one from the list or leave it blank.",
+  "completedAt": "2026-11-02T08:28:56.865Z",
+  "cleanup": [
+    {
+      "surface": "Console",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "surface": "POS",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "surface": "POS",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ]
+}
