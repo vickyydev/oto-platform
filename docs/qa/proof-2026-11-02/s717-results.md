@@ -1,14 +1,19 @@
 # SCRUM-717 — station rules on the box lane
 
-Latest checkpoint: SCRUM-719 has landed its timing repair, and this lane has
-rebased onto `eacfc97f`. The combined tree passes all 838 box tests, all 62 API
-routing/readiness/recovery tests, box/API typechecks and generated contracts.
-The workspace build also passes. The full API suite is running locally in
-three isolated embedded-Postgres shards while recovery release CI
-[41430108569](https://github.com/vickyydev/oto-platform/actions/runs/41430108569)
-runs. SCRUM-717 is not on main yet. The earlier failures below are historical
-evidence; a new green release has not yet been established. Q717-1 remains
-the staging-proof dependency, and SCRUM-708 remains unstarted.
+Latest checkpoint: this lane has rebased onto installer correction `f227d9bf`.
+The combined tree passes all 838 box tests and the full API battery: 6,068
+passed across three embedded-Postgres shards, with the existing 401 skips
+and four TODOs unchanged. Box/API typechecks, generated contracts and the
+workspace build pass. The earlier 857 shared tests and touched-file lint
+also passed; the rebase changes no shared or 717 product bytes.
+
+Recovery release [41430108569](https://github.com/vickyydev/oto-platform/actions/runs/41430108569)
+cleared storage, build and seven till browser journeys, then failed ShellCheck
+SC1087 at install.sh lines 505-506. The planner fixed those expansions.
+Its [new run 41432225603](https://github.com/vickyydev/oto-platform/actions/runs/41432225603)
+has a green workspace job; API shards are still running. SCRUM-717 is not on
+main yet. No green release or staging acceptance is claimed. Q717-1 remains
+the proof dependency, and SCRUM-708 remains unstarted.
 
 2 November 2026. Source: `a1d88200c3ea7451f90583fa8a94e96a495277ac`.
 
@@ -94,6 +99,10 @@ way to perform this proof from the deployed POS.
 
 The question on SCRUM-717 is which staging host should run that additional
 test virtual box while preserving the existing box and station assignments.
+The recommended option is an explicitly enabled staging-only additional
+ZZ TEST agent inside the existing API, under its existing single-instance
+protection. This needs a small startup change beyond the routing unit;
+the owner has been asked whether to include it. It has not been implemented.
 No staging record, environment setting, existing virtual box, park Pi or
 station has been changed for this unit. No payment or SMS was attempted.
 SCRUM-717 stays Testing until the specified proof is inspected and attached.
