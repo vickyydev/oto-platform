@@ -1,0 +1,20 @@
+{
+  "key": "SCRUM-503",
+  "at": "2026-11-02T22:36:39.988Z",
+  "statusBefore": "Testing",
+  "files": [
+    {
+      "id": "12248",
+      "name": "s503-staging-proof.png"
+    },
+    {
+      "id": "12249",
+      "name": "s503-prepaid-order.png"
+    },
+    {
+      "id": "12250",
+      "name": "s503-prepaid-confirmed.png"
+    }
+  ],
+  "commentPosted": true
+}

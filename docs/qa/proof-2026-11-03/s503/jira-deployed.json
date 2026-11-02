@@ -1,0 +1,20 @@
+{
+  "key": "SCRUM-503",
+  "status": "Deployed",
+  "readBackAt": "2026-11-02T22:36:58.341Z",
+  "evidenceCommit": "46db2c2b6362652dffc61c073069763a3686277c",
+  "images": [
+    {
+      "id": "12248",
+      "name": "s503-staging-proof.png"
+    },
+    {
+      "id": "12249",
+      "name": "s503-prepaid-order.png"
+    },
+    {
+      "id": "12250",
+      "name": "s503-prepaid-confirmed.png"
+    }
+  ]
+}

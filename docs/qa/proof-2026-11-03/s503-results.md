@@ -14,3 +14,5 @@ The independent read-only database check (job-dbkh0gdbedkc73f817pg) confirms one
 | oto-console-staging | 7a00aa1ce44af50622d3cde0bd5e84f80607c2a6 | dep-dbkgmspsrm7s73b81gf0 |
 
 Proof files: [s503](./s503/). Jira images: `s503-staging-proof.png`, `s503-prepaid-order.png`, `s503-prepaid-confirmed.png`. This closes the prepaid visual proof named in the ticket's prior comments. No new product change was needed. Simulated printing does not claim physical printer acceptance. No real person, park device, electronic payment or SMS was used.
+
+Jira read-back: **Deployed** at 2026-11-02T22:36:58.341Z. Evidence commit `46db2c2b6362652dffc61c073069763a3686277c`; attached images 12248, 12249, 12250.
