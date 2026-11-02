@@ -32,7 +32,7 @@ if [ -n "$KIOSK_URL" ]; then
 fi
 # How large the page is drawn, for a screen whose pixels are small: 1 asks for
 # nothing, the booth's way. Chromium's flag, so the page simply sees a smaller
-# window (1920 x 1080 at 1.6 is 1200 x 675).
+# window (1920 x 1080 at 1.25 is 1536 x 864).
 SCALE="$(sed -n 's/^OTO_KIOSK_SCALE=//p' /etc/oto-box/config 2>/dev/null | tail -n 1 | tr -d '[:space:]')"
 SCALE_FLAG=()
 case "$SCALE" in

@@ -33,7 +33,14 @@
 #                         the box's own page
 #   --kiosk-scale N       how large the screen draws the page: Chromium's device
 #                         scale factor, 1 by default (the booth); the counter's
-#                         customer display uses 1.6
+#                         customer display uses 1.25
+#   --mirror-uuid UUID    the second drive the box copies its store to, by its
+#                         filesystem UUID (sudo blkid), ext4. Mounted at
+#                         /mnt/oto-mirror; nofail, so a missing drive never stops
+#                         the box from booting or selling. Without this nothing
+#                         about the mirror changes. On a RECOVERY install leave it
+#                         off until the store is back: BOX_QUICKSTART.md, "If the
+#                         drive dies"
 #   --printer-direct      the receipt printer plugs by network cable straight into
 #                         the Pi's Ethernet socket, no router between them: gives
 #                         eth0 a fixed address for it (192.168.192.10), runs a
@@ -94,6 +101,9 @@ TS_AUTHKEY=""
 TS_HOSTNAME="$(hostname)"
 TS_KEYRING="/usr/share/keyrings/tailscale-archive-keyring.gpg"
 TS_LIST="/etc/apt/sources.list.d/tailscale.list"
+MIRROR_UUID=""
+MIRROR_MOUNT="/mnt/oto-mirror"
+MIRROR_DIR="$MIRROR_MOUNT/box"
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 warn() { printf '\033[33mwarning:\033[0m %s\n' "$*" >&2; }
@@ -114,6 +124,7 @@ while [ $# -gt 0 ]; do
     --printer-direct) PRINTER_DIRECT=1; shift ;;
     --tailscale-authkey) TS_AUTHKEY="${2:?--tailscale-authkey needs a key}"; shift 2 ;;
     --tailscale-hostname) TS_HOSTNAME="${2:?--tailscale-hostname needs a name}"; shift 2 ;;
+    --mirror-uuid) MIRROR_UUID="${2:?--mirror-uuid needs the UUID of the drive, from sudo blkid}"; shift 2 ;;
     -h|--help) sed -n '2,/^$/p' "$0"; exit 0 ;;
     *.tgz|*.tar.gz) TARBALL="$1"; shift ;;
     *) die "unknown option: $1" ;;
@@ -156,7 +167,12 @@ if [ -n "$KIOSK_URL" ]; then
 fi
 if [ -n "$KIOSK_SCALE" ]; then
   { printf '%s' "$KIOSK_SCALE" | grep -Eq '^[0-9]+(\.[0-9]+)?$' && printf '%s' "$KIOSK_SCALE" | grep -q '[1-9]'; } \
-    || die "--kiosk-scale wants a number such as 1.6, got $KIOSK_SCALE"
+    || die "--kiosk-scale wants a number such as 1.25, got $KIOSK_SCALE"
+fi
+if [ -n "$MIRROR_UUID" ]; then
+  # It goes into /etc/fstab: only what a filesystem UUID is made of.
+  printf '%s' "$MIRROR_UUID" | grep -Eq '^[A-Fa-f0-9-]{8,36}$' \
+    || die "--mirror-uuid wants a filesystem UUID (sudo blkid), got $MIRROR_UUID"
 fi
 if [ -n "$TS_AUTHKEY" ]; then
   # The key itself is never part of a message: only its shape is checked.
@@ -467,6 +483,44 @@ install -d -m 0700 -o oto-box -g oto-box /var/lib/oto-box
 # The credential, if there is one, is the box: owner-only, whatever happened to it.
 [ -f /var/lib/oto-box/credential.json ] && chmod 0600 /var/lib/oto-box/credential.json && chown oto-box:oto-box /var/lib/oto-box/credential.json
 
+# --- The mirror drive (SCRUM-712, SCRUM-719) --------------------------------------
+# A checked copy of the store goes to a second physical drive, so a dead boot
+# drive does not take the unsent sales with it. nofail and the short device
+# timeout are what keep a missing drive from holding up the boot: the counter must
+# sell without it, and Health says it is gone. The mount point is root's and is
+# made immutable while nothing is mounted on it, so an agent can never write there
+# on the boot drive; the agent refuses a directory on the store's own device as
+# well. The directory on the drive is made only if the drive really is mounted.
+# chown -R, because a replaced boot drive can give the oto-box user another id.
+MIRROR_NOTE="not configured: this box does not copy its store to a second drive. To add one, run the installer again with --mirror-uuid UUID (sudo blkid shows it)"
+if [ -n "$MIRROR_UUID" ]; then
+  say "Mirror drive: UUID $MIRROR_UUID at $MIRROR_MOUNT"
+  # Only when it is not there yet: an immutable mount point refuses a chmod, and
+  # this script stops at the first refusal.
+  [ -d "$MIRROR_MOUNT" ] || install -d -m 0755 -o root -g root "$MIRROR_MOUNT"
+  if ! mountpoint -q "$MIRROR_MOUNT"; then
+    chattr +i "$MIRROR_MOUNT" 2>/dev/null || warn "could not make $MIRROR_MOUNT immutable; the agent still refuses to copy onto the store's own drive"
+  fi
+  FSTAB_LINE="UUID=$MIRROR_UUID $MIRROR_MOUNT ext4 defaults,noatime,nofail,x-systemd.device-timeout=10s 0 2"
+  if grep -Eq "^[^#]*[[:space:]]$MIRROR_MOUNT[[:space:]]" /etc/fstab; then
+    sed -i -E "s|^[^#]*[[:space:]]$MIRROR_MOUNT[[:space:]].*$|$FSTAB_LINE|" /etc/fstab
+  else
+    printf '%s\n' "$FSTAB_LINE" >>/etc/fstab
+  fi
+  systemctl daemon-reload
+  if mountpoint -q "$MIRROR_MOUNT" || mount "$MIRROR_MOUNT"; then
+    if mountpoint -q "$MIRROR_MOUNT"; then
+      install -d -m 0700 -o oto-box -g oto-box "$MIRROR_DIR"
+      chown -R oto-box:oto-box "$MIRROR_DIR"
+      MIRROR_NOTE="$MIRROR_DIR on the drive $MIRROR_UUID, mounted"
+    fi
+  fi
+  if ! mountpoint -q "$MIRROR_MOUNT"; then
+    warn "the mirror drive is not mounted, so no copy can be made yet. Plug it in and run the installer again with --mirror-uuid; the box sells without it meanwhile, and Health says so"
+    MIRROR_NOTE="configured for the drive $MIRROR_UUID, which is NOT mounted (the warning above): no copy is being made"
+  fi
+fi
+
 # --- The counter scanner (SCRUM-700) ---------------------------------------------
 # The Zebra cradle plugs into the box, and the box reads it itself: as the USB
 # keyboard it ships as (05e0:1200, an input event node) or, after one
@@ -567,6 +621,7 @@ OTO_KIOSK_ROTATE=${ROTATE:-cw}
 # scale factor. Each followed by the same restart.
 OTO_KIOSK_URL=$KIOSK_URL
 OTO_KIOSK_SCALE=${KIOSK_SCALE:-1}
+${MIRROR_UUID:+OTO_BOX_MIRROR_DIR=$MIRROR_DIR}
 EOF
 else
   if [ "$API_GIVEN" -eq 1 ]; then
@@ -583,6 +638,7 @@ else
   [ -z "$ROTATE" ] || config_set OTO_KIOSK_ROTATE "$ROTATE"
   [ "$KIOSK_URL_GIVEN" -eq 0 ] || config_set OTO_KIOSK_URL "$KIOSK_URL"
   [ -z "$KIOSK_SCALE" ] || config_set OTO_KIOSK_SCALE "$KIOSK_SCALE"
+  [ -z "$MIRROR_UUID" ] || config_set OTO_BOX_MIRROR_DIR "$MIRROR_DIR"
 fi
 chmod 0644 /etc/oto-box/config
 # What the screen opens from here on, whichever run set it.
@@ -597,7 +653,7 @@ set -a; . /etc/oto-box/config; set +a
 # The box's files belong to the oto-box user: anybody else goes through sudo.
 if [ "\$(id -u)" -ne 0 ] && [ "\$(id -un)" != oto-box ]; then exec sudo "\$0" "\$@"; fi
 if [ "\$(id -u)" -eq 0 ]; then
-  exec runuser -u oto-box -- env OTO_BOX_API="\$OTO_BOX_API" OTO_BOX_HOME="\$OTO_BOX_HOME" OTO_BOX_PORT="\$OTO_BOX_PORT" OTO_BOX_PAGE="\$OTO_BOX_PAGE" \\
+  exec runuser -u oto-box -- env OTO_BOX_API="\$OTO_BOX_API" OTO_BOX_HOME="\$OTO_BOX_HOME" OTO_BOX_PORT="\$OTO_BOX_PORT" OTO_BOX_PAGE="\$OTO_BOX_PAGE" OTO_BOX_MIRROR_DIR="\$OTO_BOX_MIRROR_DIR" \\
     "$NODE_BIN" --disable-warning=ExperimentalWarning /opt/oto-box/current/oto-box.mjs "\$@"
 fi
 exec "$NODE_BIN" --disable-warning=ExperimentalWarning /opt/oto-box/current/oto-box.mjs "\$@"
@@ -622,6 +678,18 @@ install -m 0644 "$SOURCE/pi/oto-box-journald.conf" /etc/systemd/journald.conf.d/
 install -d -m 2755 -g systemd-journal /var/log/journal 2>/dev/null || install -d -m 0755 /var/log/journal
 systemctl restart systemd-journald || warn "journald did not restart; the journal is kept from the next boot"
 journalctl --flush 2>/dev/null || true
+
+# --- Less wear on the drive (SCRUM-712, SCRUM-719) --------------------------------
+# Raspberry Pi OS keeps a swap file on the boot drive, and a box under memory
+# pressure then writes to it constantly: on a flash stick, that is what wears it
+# out. Off, on every run, wherever the service is there. The box runs well inside
+# its memory, and a page dropped and read again costs less than a dead drive.
+if command -v dphys-swapfile >/dev/null; then
+  say "Swap off"
+  dphys-swapfile swapoff || warn "could not switch the swap file off now; it stays off from the next boot"
+  dphys-swapfile uninstall || warn "could not remove the swap file"
+  systemctl disable --now dphys-swapfile >/dev/null 2>&1 || warn "could not disable dphys-swapfile"
+fi
 
 if [ -n "$DAILY_REBOOT" ]; then
   say "Daily reboot at $DAILY_REBOOT"
@@ -765,5 +833,6 @@ SSH: $SSH_NOTE
 Tailscale: $TS_NOTE
 Printer: $PRINTER_NOTE
 Scanner: $SCANNER_NOTE
+Mirror: $MIRROR_NOTE
 ${SCREEN_LINE}The credential is /var/lib/oto-box/credential.json (owner-only). Never copy it to another machine.
 EOF

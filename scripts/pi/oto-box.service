@@ -7,6 +7,11 @@ Description=OTO booth box (agent, printing, sync, booth page on 127.0.0.1:8780)
 # line, and it must play (and print) from its own copy in the meantime.
 Wants=network-online.target time-sync.target
 After=network-online.target time-sync.target
+# The mirror drive, when there is one (install.sh --mirror-uuid). Wanted and not
+# required, and never RequiresMountsFor: the counter must sell without it, and
+# Health says it is gone. A box with no such drive has no such unit, and is fine.
+Wants=mnt-oto\x2dmirror.mount
+After=mnt-oto\x2dmirror.mount
 # Never let a crash loop hammer the card or the api: at most 10 starts a
 # minute. These are [Unit] settings; systemd ignores them under [Service].
 # A box that hits the limit is not left dead: the watchdog timer starts it
@@ -24,12 +29,15 @@ ExecStart=@NODE@ --disable-warning=ExperimentalWarning /opt/oto-box/current/oto-
 Restart=always
 RestartSec=3
 TimeoutStopSec=15
-# What the box may touch: its own home, nothing else.
+# What the box may touch: its own home, and its mirror directory. The dash is not
+# optional: without it a missing mirror directory fails this unit with 226/NAMESPACE
+# and the counter cannot sell. The store lock is an abstract socket (store-lock.ts),
+# so PrivateNetwork, or a RestrictAddressFamilies without AF_UNIX, would break it.
 UMask=0077
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/var/lib/oto-box
+ReadWritePaths=/var/lib/oto-box -/mnt/oto-mirror/box
 PrivateTmp=yes
 # Devices: the counter scanner only (SCRUM-700). Printing is over the network.
 # The box reads the Zebra cradle itself — its input event node in HID mode, or
