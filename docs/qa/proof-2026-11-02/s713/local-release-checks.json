@@ -1,0 +1,107 @@
+{
+  "unit": "SCRUM-713",
+  "at": "2026-11-02T19:27:51.431Z",
+  "sourceBeforeRecord": "e1a62617f502b724d02a8f7fb4679fc92980bbb9",
+  "runtimeRehearsalSource": "2c48b966b24e571a57b869f143671a30b77dd02d",
+  "apiUniquePassed": 6131,
+  "apiExistingSkipped": 401,
+  "apiExistingTodo": 4,
+  "apiTimeout": "demo-reset.test.ts: a second fresh database exceeded the existing 30-second test deadline under concurrent load; all seven cases passed unchanged in the complete-file rerun",
+  "posPassed": 1652,
+  "boxPassed": 843,
+  "consolePassed": 588,
+  "consoleExistingTodo": 3,
+  "dbPassed": 384,
+  "browserJourneysPassed": 7,
+  "typechecks": [
+    "@oto/api",
+    "@oto/db",
+    "@oto/box-agent",
+    "@oto/console",
+    "@oto/pos"
+  ],
+  "generatedApiContracts": "passed",
+  "changedFileLint": "passed",
+  "migrationSnapshotOnlyAddsBridgeOrigin": true,
+  "shellGates": "bash -n for every scripts/pi/*.sh; ShellCheck 0.11.0 --severity=error all scripts/pi/*.sh passed",
+  "limitations": [
+    "Real iPad, certificate, Pi installer and physical power-cut acceptance are bench work.",
+    "This is local release evidence; staging proof follows the source CI and deployments."
+  ],
+  "logs": [
+    {
+      "name": "s713-api-shard-1",
+      "sha256": "6b06b5c4f399ea8c8d56aa84a808d2bc2006404cf1de980f469497088981b5f2",
+      "summary": [
+        " Test Files  144 passed | 2 skipped (146)",
+        "      Tests  2123 passed | 106 skipped (2229)"
+      ]
+    },
+    {
+      "name": "s713-api-shard-2",
+      "sha256": "54f3d2cf018e8dcdeb357a943201fa6121eb2ab5b85d8096dcc26661ee34a25c",
+      "summary": [
+        " Test Files  1 failed | 141 passed | 4 skipped (146)",
+        "      Tests  1 failed | 2102 passed | 174 skipped | 3 todo (2280)"
+      ]
+    },
+    {
+      "name": "s713-api-shard-3",
+      "sha256": "c056d0f52e6ee9aa454ba6f7d5196f818d76508d0f627e8c638cb5fc9f6abe81",
+      "summary": [
+        " Test Files  144 passed | 2 skipped (146)",
+        "      Tests  1905 passed | 121 skipped | 1 todo (2027)"
+      ]
+    },
+    {
+      "name": "s713-demo-reset-rerun",
+      "sha256": "7c2784436d86beb752e212451328d700132fb00d6e767c53f7dbc1fb744acf9c",
+      "summary": [
+        " Test Files  1 passed (1)",
+        "      Tests  7 passed (7)"
+      ]
+    },
+    {
+      "name": "s713-pos-release",
+      "sha256": "1a7a087dc54e8ed90889b0796c84927ffd7f7b8798741e863dba4e7b0c9b1a51",
+      "summary": [
+        " Test Files  122 passed (122)",
+        "      Tests  1652 passed (1652)"
+      ]
+    },
+    {
+      "name": "s713-e2e-release",
+      "sha256": "d967922bc7ac1a414dde02d191a9d49344bfc51b5cafc27ac0bffff27a9caaa5",
+      "summary": [
+        "  7 passed (2.4m)"
+      ]
+    },
+    {
+      "name": "s713-box-tests",
+      "sha256": "6d49c6f52d8a68adfc08aae760204618982e280126177b67be5c75a7d22afee3",
+      "summary": [
+        "# tests 843",
+        "# pass 843",
+        "# fail 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "name": "s713-console-tests",
+      "sha256": "0cb6ad9c7a95117aab0019ace7d6f97a620964fd938f557f3d6517eefebea424",
+      "summary": [
+        " Test Files  60 passed (60)",
+        "      Tests  588 passed | 3 todo (591)"
+      ]
+    },
+    {
+      "name": "s713-db-shared-tests",
+      "sha256": "c18297a77923377b5e160d1e54a1f626edaf62faf2dd7599ab49005da616f576",
+      "summary": [
+        " Test Files  55 passed (55)",
+        "      Tests  384 passed (384)"
+      ]
+    }
+  ]
+}
