@@ -581,23 +581,43 @@ interface PhotoRead {
   promise: Promise<string | null>;
   url: string | null;
   refreshAt: number;
+  /** The link looked older on arrival than one signed on request should. */
+  arrivedOld: boolean;
 }
 const photoUrls = new Map<string, PhotoRead>();
 
-/** MinIO/R2's signature carries its signing time and lifetime, not a client-side TTL. */
-function photoRefreshAt(url: string): number {
+/** Longer than a working reply takes: one board poll. */
+const PHOTO_OLD_ON_ARRIVAL_MS = 30_000;
+
+/**
+ * MinIO/R2's signature carries its signing time and lifetime, not a client-side
+ * TTL. Its time is on the server's clock and `receivedAt` is on this device's.
+ *
+ * The earlier of the two expiries holds a slow clock to the link's real lifetime.
+ * On a fast clock the signature's expiry is the earlier one and can already have
+ * passed, so that cap alone would ask again on every poll. The endpoint signs
+ * when asked, which makes two old-looking links in a row a fact about this
+ * device's clock rather than about the links: from then on the device measures
+ * the lifetime from the moment it received the link.
+ */
+function photoTiming(url: string, receivedAt: number, previousArrivedOld: boolean): Pick<PhotoRead, 'refreshAt' | 'arrivedOld'> {
   try {
     const query = new URL(url).searchParams;
     const date = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(query.get('X-Amz-Date') ?? '');
     const seconds = Number(query.get('X-Amz-Expires'));
-    if (!date || !Number.isFinite(seconds) || seconds <= 0) return 0;
+    if (!date || !Number.isFinite(seconds) || seconds <= 0) return { refreshAt: 0, arrivedOld: false };
     const signedAt = Date.UTC(+date[1], +date[2] - 1, +date[3], +date[4], +date[5], +date[6]);
     // The boards poll every thirty seconds. Reserve two intervals so a poll
     // just before this threshold still renews on the next one before expiry.
-    return signedAt + seconds * 1000 - 60_000;
+    const usable = seconds * 1000 - 60_000;
+    const arrivedOld = receivedAt - signedAt > PHOTO_OLD_ON_ARRIVAL_MS;
+    return {
+      refreshAt: arrivedOld && previousArrivedOld ? receivedAt + usable : Math.min(signedAt + usable, receivedAt + usable),
+      arrivedOld,
+    };
   } catch {
     // An answer without a readable expiry may be used now, but never kept indefinitely.
-    return 0;
+    return { refreshAt: 0, arrivedOld: false };
   }
 }
 
@@ -614,11 +634,11 @@ export function forgetPhotoUrl(fileId: string, failedUrl: string): void {
 export function photoUrlOf(fileId: string): Promise<string | null> {
   const found = photoUrls.get(fileId);
   if (found && Date.now() < found.refreshAt) return found.promise;
-  const next: PhotoRead = { promise: Promise.resolve(null), url: null, refreshAt: Infinity };
+  const next: PhotoRead = { promise: Promise.resolve(null), url: null, refreshAt: Infinity, arrivedOld: false };
   next.promise = api.get<{ url: string }>(`/files/${fileId}/url`)
     .then(({ url }) => {
       next.url = url;
-      next.refreshAt = photoRefreshAt(url);
+      Object.assign(next, photoTiming(url, Date.now(), found?.arrivedOld === true));
       return url;
     })
     .catch(() => {

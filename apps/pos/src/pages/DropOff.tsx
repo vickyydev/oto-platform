@@ -452,7 +452,7 @@ export default function DropOff() {
   }, [branchId]);
   const [board, setBoard] = useState<ApiBoard | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
-  const { photos, handlePhotoError } = useBoardPhotos(board);
+  const { photos, handlePhotoError, handlePhotoLoad } = useBoardPhotos(board);
 
   const loadBoard = useCallback(async () => {
     if (!platformBranchId) {
@@ -1035,7 +1035,7 @@ export default function DropOff() {
                 </div>
               ) : (
                 <ScrollArea className="flex-1 -mx-1 px-1">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-2" onErrorCapture={handlePhotoError}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-2" onErrorCapture={handlePhotoError} onLoadCapture={handlePhotoLoad}>
                     {visibleFamilies.map((family) => (
                       <FamilyCheckInCard
                         key={family[0].registrationId}

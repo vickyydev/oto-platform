@@ -176,7 +176,7 @@ export function MobileDropOffBoard() {
   }, [branch.id]);
   const [board, setBoard] = useState<ApiBoard | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
-  const { photos, handlePhotoError } = useBoardPhotos(board);
+  const { photos, handlePhotoError, handlePhotoLoad } = useBoardPhotos(board);
 
   const loadBoard = useCallback(async () => {
     if (!platformBranchId) {
@@ -939,7 +939,7 @@ export function MobileDropOffBoard() {
             </div>
           ) : (
             <ScrollArea className="flex-1 mt-2 min-h-0">
-              <div className="px-4 pb-4 space-y-2" onErrorCapture={handlePhotoError}>
+              <div className="px-4 pb-4 space-y-2" onErrorCapture={handlePhotoError} onLoadCapture={handlePhotoLoad}>
                 {visibleFamilies.map((family) => (
                   <MobileChildCard
                     key={family[0].registrationId}
