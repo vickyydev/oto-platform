@@ -1,0 +1,71 @@
+{
+  "unit": "SCRUM-704",
+  "featureSha": "7fabc445335efc682d3cbee668c50a82364f71ab",
+  "sha": "7fabc445335efc682d3cbee668c50a82364f71ab",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41369923051",
+  "deployments": [
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbjub8e417fc73bcda0g",
+      "sha": "7fabc445335efc682d3cbee668c50a82364f71ab",
+      "finishedAt": "2026-11-02T01:22:25.697607Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbjub8e417fc73bcd9k0",
+      "sha": "7fabc445335efc682d3cbee668c50a82364f71ab",
+      "finishedAt": "2026-11-02T01:22:30.523751Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbjub8e417fc73bcd8k0",
+      "sha": "7fabc445335efc682d3cbee668c50a82364f71ab",
+      "finishedAt": "2026-11-02T01:25:21.186843Z"
+    }
+  ],
+  "startedAt": "2026-11-02T01:29:51.686Z",
+  "checks": [
+    {
+      "check": "The routed draft saves with a reason, stays greyed in the till, and refuses direct selection",
+      "passed": true
+    },
+    {
+      "check": "A blank-protocol terminal is visibly unusable and the API refuses its assignment to the routed tender",
+      "passed": true
+    },
+    {
+      "check": "The protocol picker offers supported simulated dialects; assigning the repaired terminal enables selection and a lease",
+      "passed": true
+    },
+    {
+      "check": "Clearing a selected till terminal protocol refuses a new lease; the supported protocol is restored",
+      "passed": true
+    }
+  ],
+  "station": {
+    "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "name": "ZZ TEST setup traps 20261102",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxRole": "virtual",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "terminal": {
+    "id": "01a199dd-cf6c-7962-a74d-872b990ef805",
+    "label": "ZZ TEST setup traps terminal 20261102",
+    "transport": "simulated",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc"
+  },
+  "completedAt": "2026-11-02T01:30:27.859Z",
+  "cleanup": [
+    {
+      "surface": "Console",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "surface": "POS",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ]
+}
