@@ -70,6 +70,11 @@ const ENGINE_NAMES = ['applyStaffBenefits', 'resolveEffectiveBenefitProfile', 'b
 
 /** A copied model declaration describes the host shape; it does not read mock state. */
 function runtimeBenefitNames(text: string): string[] {
+  // Removing declarations replaces characters with spaces, so it cannot add
+  // a name absent from the original text. Parse only files with candidates;
+  // the whole-app inventory and the final runtime check stay identical.
+  const candidates = MOCK_BENEFIT_NAMES.filter(name => new RegExp(`\\b${name}\\b`).test(text));
+  if (!candidates.length) return [];
   const source = ts.createSourceFile('benefit-guard.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const declarations: Array<{ start: number; end: number }> = [];
   function visit(node: ts.Node) {
@@ -84,14 +89,17 @@ function runtimeBenefitNames(text: string): string[] {
   for (const declaration of declarations.sort((a, b) => b.start - a.start)) {
     runtime = runtime.slice(0, declaration.start) + runtime.slice(declaration.start, declaration.end).replace(/[^\r\n]/g, ' ') + runtime.slice(declaration.end);
   }
-  return MOCK_BENEFIT_NAMES.filter(name => new RegExp(`\\b${name}\\b`).test(runtime));
+  return candidates.filter(name => new RegExp(`\\b${name}\\b`).test(runtime));
 }
 
 describe('no benefit screen is left on a mock path', () => {
   it('the runtime guard ignores pure declared shapes but catches real variable and member reads', () => {
-    expect(runtimeBenefitNames('interface HostShape { roleBenefitTemplates: unknown[] }\ntype Snapshot = { roleBenefitTemplates: readonly unknown[] };')).toEqual([]);
-    for (const runtime of ['const roleBenefitTemplates = [];', 'const templates = store.roleBenefitTemplates;', 'const { roleBenefitTemplates } = store;']) {
-      expect(runtimeBenefitNames(runtime), runtime).toEqual(['roleBenefitTemplates']);
+    expect(runtimeBenefitNames('const unrelated = 1;')).toEqual([]);
+    for (const name of MOCK_BENEFIT_NAMES) {
+      expect(runtimeBenefitNames(`interface HostShape { ${name}: unknown[] }\ntype Snapshot = { ${name}: readonly unknown[] };`)).toEqual([]);
+      for (const runtime of [`const ${name} = [];`, `const templates = store.${name};`, `const { ${name} } = store;`]) {
+        expect(runtimeBenefitNames(runtime), runtime).toEqual([name]);
+      }
     }
   });
 
