@@ -1,4 +1,28 @@
+import { z } from 'zod';
 import { PaymentRoutingSchema } from './payments';
+
+/** The tender services and readiness use the same defaults, including an unreadable routing. */
+export function stationPaymentRoutes(paymentRouting: unknown) {
+  const parsed = PaymentRoutingSchema.safeParse(paymentRouting ?? {});
+  const routing = parsed.success ? parsed.data : {};
+  return { card: routing.card ?? 'card_terminal', qr: routing.qr ?? 'qr_terminal' } as const;
+}
+
+export const STATION_QR_DISABLED = {
+  code: 'QR_DISABLED_FOR_STATION',
+  message: 'This counter is not set up to take QR payments',
+} as const;
+
+/** Missing or malformed bundle evidence is unknown, not a reason to stop an offline till. */
+const StationSellingReadinessSchema = z.object({
+  ready: z.boolean(),
+  reasons: z.array(z.string().min(1)),
+}).refine(value => value.ready ? value.reasons.length === 0 : value.reasons.length > 0);
+
+export function knownStationSellingReadiness(value: unknown) {
+  const parsed = StationSellingReadinessSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
 
 /** The box speaks these two dialects, including on its simulated transport. */
 export const SELLING_TERMINAL_PROTOCOLS = ['ghl_linkpos', 'digio_tlv'] as const;
@@ -13,8 +37,7 @@ export function supportedSellingTerminalProtocol(protocol?: string | null): bool
  * routing that fails to parse is treated as unset because the tender ignores it.
  */
 export function routedTerminalRoles(paymentRouting: unknown): Array<'card_terminal' | 'qr_terminal'> {
-  const parsed = PaymentRoutingSchema.safeParse(paymentRouting ?? {});
-  const routing = parsed.success ? parsed.data : {};
+  const routing = stationPaymentRoutes(paymentRouting);
   const roles: Array<'card_terminal' | 'qr_terminal'> = [];
   if (routing.card !== 'manual') roles.push('card_terminal');
   if (routing.qr !== 'gateway' && routing.qr !== 'none') roles.push('qr_terminal');

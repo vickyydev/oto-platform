@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { sale, station, type Db } from '@oto/db';
-import { PaymentRoutingSchema, type PaymentAttemptView } from '@oto/shared';
+import { stationPaymentRoutes, STATION_QR_DISABLED, type PaymentAttemptView } from '@oto/shared';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Env } from '../../env';
 import { errors } from '../../lib/errors';
@@ -102,15 +102,15 @@ export async function startPaymentTender(
       ) {
         throw errors.badRequest('This sale names a station that is no longer available');
       }
-      const routing = PaymentRoutingSchema.safeParse(st.paymentRouting ?? {});
-      if (tender === 'qr' && routing.success) {
-        if (routing.data.qr === 'none') {
+      const routing = stationPaymentRoutes(st.paymentRouting);
+      if (tender === 'qr') {
+        if (routing.qr === 'none') {
           throw errors.conflict(
-            'QR_DISABLED_FOR_STATION',
-            'This counter is not set up to take QR payments',
+            STATION_QR_DISABLED.code,
+            STATION_QR_DISABLED.message,
           );
         }
-        if (routing.data.qr === 'gateway') {
+        if (routing.qr === 'gateway') {
           return {
             route: 'gateway',
             input: {

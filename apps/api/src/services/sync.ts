@@ -93,6 +93,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
+import { readStationsSellingReadiness } from './payments/terminal';
 /**
  * The redemption a booking travels with (SCRUM-304). `services/bookings.ts`
  * imports `recordChange` from here, so this pair is a cycle — the same
@@ -5355,6 +5356,7 @@ export async function cacheBundle(
         .from(station)
         .where(and(eq(station.boxId, auth.boxId), isNull(station.archivedAt)))
         .orderBy(asc(station.name));
+      const readiness = await readStationsSellingReadiness(db, operatorId, stations);
       const assignments = stations.length
         ? await db
             .select({ stationId: stationDevice.stationId, role: stationDevice.role, device })
@@ -5407,6 +5409,8 @@ export async function cacheBundle(
           name: s.name,
           kind: s.kind,
           codePrefix: s.codePrefix,
+          paymentRouting: s.paymentRouting ?? null,
+          readiness: readiness.get(s.id),
           capabilities: s.capabilities ?? [],
           accessScope: s.accessScope,
           configVersion: s.configVersion,

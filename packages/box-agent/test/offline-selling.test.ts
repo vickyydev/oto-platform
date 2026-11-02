@@ -162,10 +162,12 @@ interface SellingBox {
   close(): void;
 }
 
-async function openSellingBox(opts: { mark?: number; terminals?: 'both' | 'card' | 'none' } = {}): Promise<SellingBox> {
+async function openSellingBox(opts: { mark?: number; terminals?: 'both' | 'card' | 'none'; paymentRouting?: unknown; readiness?: unknown } = {}): Promise<SellingBox> {
   const bundle: BoxConfigBundle = tillBundle();
   const which = opts.terminals ?? 'both';
   const station = bundle.stations[0]!;
+  if (Object.hasOwn(opts, 'paymentRouting')) station.paymentRouting = opts.paymentRouting;
+  if (Object.hasOwn(opts, 'readiness')) station.readiness = opts.readiness;
   if (which !== 'none') station.devices.push(terminal(CARD, 'card_terminal', 'ghl_linkpos', 'EDC 1') as never);
   if (which === 'both') station.devices.push(terminal(PAX, 'qr_terminal', 'digio_tlv', 'EDC 3') as never);
   const cloud = fakeBoxCloud(bundle);
@@ -316,6 +318,98 @@ async function ticketSale(box: SellingBox, over: Record<string, unknown> = {}) {
     },
   };
 }
+
+for (const example of [
+  { label: 'QR none', routing: { qr: 'none' }, kind: 'qr', terminals: 'both', code: 'QR_DISABLED_FOR_STATION', message: 'This counter is not set up to take QR payments' },
+  { label: 'QR gateway even with a PAX assigned', routing: { qr: 'gateway' }, kind: 'qr', terminals: 'both', ...BOX_LANE_REFUSALS.qr2c2p },
+  { label: 'manual card with a terminal assigned', routing: { card: 'manual' }, kind: 'card', terminals: 'both', ...BOX_LANE_REFUSALS.noTerminal },
+  { label: 'manual card without a terminal', routing: { card: 'manual' }, kind: 'card', terminals: 'none', ...BOX_LANE_REFUSALS.noTerminal },
+] as const) {
+  test(`SCRUM-717: ${example.label} refuses before a terminal command or sale fact`, async () => {
+    const box = await openSellingBox({ paymentRouting: example.routing, terminals: example.terminals });
+    try {
+      const { body, total } = await ticketSale(box);
+      await assert.rejects(send(box, 'payment.start', { ...body, tender: {
+        actionId: 'route-refusal', method: example.kind === 'qr' ? 'promptpay' : 'card', kind: example.kind, amountSatang: total,
+      } }), (error: unknown) => error instanceof BridgeError && error.code === example.code && error.message === example.message);
+      assert.equal(await box.harness.store.readRuntimeValue(BOX_ID, `terminal_tender:${body.saleId}`), null);
+      assert.equal(await box.agent.sales()!.recorded(body.saleId), null);
+      assert.equal((await box.agent.outbox()!.depth()).queued, 0);
+      for (const id of [CARD, PAX]) assert.equal(box.agent.terminal()!.events(id).filter(e => e.kind === 'request').length, 0);
+    } finally { box.close(); }
+  });
+}
+
+for (const example of [
+  { label: 'card terminal', routing: { card: 'card_terminal' }, kind: 'card', provider: 'ghl' },
+  { label: 'QR terminal', routing: { qr: 'qr_terminal' }, kind: 'qr', provider: 'digio' },
+  { label: 'QR unset', routing: { card: 'manual' }, kind: 'qr', provider: 'digio' },
+  { label: 'card unset', routing: { qr: 'none' }, kind: 'card', provider: 'ghl' },
+  { label: 'unreadable routing retains the terminal default', routing: { card: 'manual', qr: 'future_route' }, kind: 'card', provider: 'ghl' },
+] as const) {
+  test(`SCRUM-717: ${example.label} reaches the original terminal`, async () => {
+    const box = await openSellingBox({ paymentRouting: example.routing });
+    try {
+      const { body, total } = await ticketSale(box);
+      const answer = await send(box, 'payment.start', { ...body, tender: {
+        actionId: 'routed-payment', method: example.kind === 'qr' ? 'promptpay' : 'card', kind: example.kind, amountSatang: total,
+      } });
+      assert.equal(answer.finalised, true);
+      assert.equal(answer.attempt?.provider, example.provider);
+      assert.equal((await box.agent.outbox()!.depth()).queued, 1);
+    } finally { box.close(); }
+  });
+}
+
+test('SCRUM-717: known not-ready facts refuse only a new lease; a ready cash till keeps selling', async () => {
+  const reason = 'QR is routed to the terminal but no terminal is assigned';
+  const box = await openSellingBox({ terminals: 'none', paymentRouting: { card: 'manual', qr: 'none' }, readiness: { ready: false, reasons: [reason] } });
+  try {
+    await assert.rejects(box.bridge.claim(STATION_ID, box.caller, 'not-ready', null), (error: unknown) => {
+      assert.ok(error instanceof BridgeError);
+      assert.equal(error.code, 'STATION_NOT_READY');
+      assert.equal(error.message, reason);
+      assert.deepEqual(error.details, { reasons: [reason] });
+      return true;
+    });
+    box.cloud.bundle.stations[0]!.readiness = { ready: true, reasons: [] };
+    await box.agent.syncConfig();
+    const taken = await box.bridge.claim(STATION_ID, box.caller, 'ready', null);
+    assert.ok(taken.lease.leaseId);
+    const { body } = await ticketSale(box);
+    assert.equal((await send(box, 'sale.finalise', body)).finalised, true);
+    box.cloud.bundle.stations[0]!.readiness = { ready: false, reasons: [reason] };
+    await box.agent.syncConfig();
+    assert.ok((await box.bridge.renew(STATION_ID, box.caller, taken.lease.leaseId)).lease.leaseId);
+  } finally { box.close(); }
+});
+
+for (const readiness of [undefined, null, false, 'not ready', { ready: false }, { ready: false, reasons: [] }, { ready: 'false', reasons: ['No receipt prefix'] }, { ready: false, reasons: [null] }]) {
+  test(`SCRUM-717: old or unreadable readiness allows the offline lease (${JSON.stringify(readiness)})`, async () => {
+    const box = await openSellingBox({ terminals: 'none', readiness });
+    try { assert.ok((await box.bridge.claim(STATION_ID, box.caller, 'legacy-till', null)).lease.leaseId); }
+    finally { box.close(); }
+  });
+}
+
+test('SCRUM-717: changing routing never abandons an uncertain terminal payment or sends it twice', async () => {
+  const box = await openSellingBox();
+  try {
+    box.agent.terminal()!.setOutcome(CARD, 'no_response');
+    const { body, total } = await ticketSale(box);
+    const start = { ...body, tender: { actionId: 'card-routing-change', method: 'card', kind: 'card', amountSatang: total } };
+    const held = await send(box, 'payment.start', start);
+    assert.equal(held.attempt?.status, 'awaiting_staff_confirmation');
+    const requests = () => box.agent.terminal()!.events(CARD).filter(e => e.kind === 'request').length;
+    const before = requests();
+    box.cloud.bundle.stations[0]!.paymentRouting = { card: 'manual', qr: 'none' };
+    await box.agent.syncConfig();
+    const repeated = await send(box, 'payment.start', start);
+    assert.equal(repeated.attempt?.id, held.attempt?.id);
+    assert.equal(requests(), before);
+    assert.equal((await box.agent.outbox()!.depth()).queued, 0);
+  } finally { box.close(); }
+});
 
 test('cash on the box lane: numbered from the mark, banded with the park key, printed from the box queue, one fact', async () => {
   const box = await openSellingBox();

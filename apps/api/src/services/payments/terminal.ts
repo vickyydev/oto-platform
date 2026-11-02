@@ -11,7 +11,7 @@ import {
   type PaymentProvider,
 } from '@oto/db';
 import {
-  PaymentRoutingSchema,
+  stationPaymentRoutes,
   stationSellingReadiness,
   type SellingStationSetup,
   newId,
@@ -634,14 +634,14 @@ export async function startTerminalTender(
   if (!stationRow) throw errors.badRequest('This sale names a station that no longer exists');
 
   const tender: TerminalTender = input.tender ?? 'card';
-  const routing = PaymentRoutingSchema.safeParse(stationRow.paymentRouting ?? {});
+  const routing = stationPaymentRoutes(stationRow.paymentRouting);
   /**
    * A STATION THAT HAS NEVER BEEN CONFIGURED USES ITS TERMINAL, for the reason
    * `resolveDrawerKick` gives about the drawer: `payment_routing` is absent on
    * every station the platform has today and the park's counters all have an
    * EDC. `card: 'manual'` is how a station says otherwise, and it is honoured.
    */
-  if (tender === 'card' && routing.success && routing.data.card === 'manual') {
+  if (tender === 'card' && routing.card === 'manual') {
     return { route: 'manual', attempt: null, replayed: false, outstandingSatang: owed };
   }
 
