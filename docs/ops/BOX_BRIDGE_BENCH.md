@@ -6,6 +6,11 @@ DNS, a real certificate, physical printers or power recovery. Keep the ticket
 at Testing until the owner schedules those checks. No park device is switched
 by this work.
 
+The software stage passed staging proof on source `f3b793dcc35d296a03582d617a9a94a3b555da60`
+with [the receipts and inspected images](../qa/proof-2026-11-02/s713/README.md).
+The staff signing key is configured; the temporary loopback flag is removed.
+The test box/station are archived. The physical checks below remain open.
+
 ## What this release adds
 
 Console > Devices > the counter box > Bridge address records a bare HTTPS

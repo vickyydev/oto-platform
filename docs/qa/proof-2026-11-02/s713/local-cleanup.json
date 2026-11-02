@@ -1,0 +1,9 @@
+{
+  "unit": "SCRUM-713",
+  "at": "2026-11-02T20:46:43.533Z",
+  "localAgentHomeRemoved": false,
+  "excludedFullConsoleCaptureRemoved": false,
+  "outcome": "blocked by automatic approval review",
+  "reason": "blocked by policy",
+  "scope": "Local generated files outside Git only; staging retirement is independently verified"
+}

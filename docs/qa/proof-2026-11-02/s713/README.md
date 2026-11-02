@@ -1,8 +1,72 @@
 # SCRUM-713 first-stage evidence
 
-Status: software implemented, local release checks complete; full-SHA CI and
-staging proof are next. This stage ends at Testing. Real iPad, certificate,
-Pi installation and physical power-cut acceptance remain unproved.
+Status: **Testing**. The software stage passed staging proof. Real iPad private
+HTTPS access, a real certificate and real Pi acceptance remain bench work.
+
+Source: `f3b793dcc35d296a03582d617a9a94a3b555da60`. All six jobs passed in
+[CI 41515189496](https://github.com/vickyydev/oto-platform/actions/runs/41515189496).
+The OTO App job's unrelated checks were skipped by its path gate on this follow-up;
+its full suite passed in the initial source run below. [ci.json](ci.json) preserves
+the exact job and step outcomes.
+
+API, new POS, old POS and Console were live at that source before proof. Their
+post-cleanup commit/deployment read-back is in [live-commits.json](live-commits.json).
+The real local agent was built cleanly as `oto-box 0.1.0-20261102-f3b793dc built 2026-11-02T20:00:39.735Z`.
+
+The real Edge browser and actual agent proof ran from 2026-11-02T20:35:14.003Z
+to 2026-11-02T20:38:09.486Z. [The full receipt](proof-mvzpx429.json)
+records each assertion and its time. The inspected staging card is
+[s713-staging-proof.png](s713-staging-proof.png).
+
+## Staging outcome
+
+- The real Console saved the dedicated ZZ TEST counter's bridge address, and
+  both station selections returned it. The public staff key reached the agent.
+- One synthetic cash sale on each POS address stayed on the platform. A normal
+  online unlock also connected the local customer display.
+- With browser API access and agent WAN cut, the token alone was refused and
+  the native till unlocked with token **and password**. A synthetic customer
+  reply reached the till and its captured order reached the local display.
+- The real agent and browser restarted with the HTTP asset cache empty. Pairing
+  remained and the display loaded with zero external page requests. A different
+  page/agent version refused to start; matching versions recovered.
+- The unavailable QR tender showed its box refusal. Synthetic cash sealed
+  receipt `Z713-000003` for sale `01a19dfa-d28b-7e4c-8593-8e373c61ac90`.
+  Reconnect drained the queue with zero quarantine.
+- The independent read-only database job job-dbkf9ooae00c73cir98g found one finalised sale,
+  one approved cash attempt, one receipt number and zero sync anomalies.
+  [database-proof.json](database-proof.json) records the counts and public-key
+  fingerprint. No real electronic payment was taken.
+
+## Settings and cleanup
+
+Only STAFF_TOKEN_PRIVATE_KEY and temporary BOX_BRIDGE_ALLOW_LOOPBACK were added
+through individual named-key writes after private reads. The API count went
+57 → 59; every prior value was byte-identical.
+The loopback flag was then removed, 59 → 58,
+with all remaining values byte-identical and the same source redeployed.
+Routed health passed at 2026-11-02T20:44:07.120Z. The signing key remains;
+STAFF_OFFLINE_SIGN_IN stays off and BOX_AGENT_TEST_SLOT is preserved for 722.
+The API proof window is closed. See [enable](env-enable.json) and
+[cleanup](env-restore.json) receipts; these contain names/fingerprints, never values.
+
+The exact ZZ TEST box and station are archived, its bridge address is cleared,
+the paired display is revoked and the staff sessions are signed out. Native
+cleanup completed at 2026-11-02T20:38:08.974Z; the independent database read confirms
+those records. Synthetic financial audit rows remain.
+
+Automatic approval review rejected deletion of the local proof-agent cache and excluded full-page Console capture with only "blocked by policy". Those files remain outside Git; the staging fixture and sessions are retired. See [local-cleanup.json](local-cleanup.json). No park Pi, iPad,
+production, old-site setting or new Render service was changed.
+
+## Remaining bench acceptance and way back
+
+The proof used Windows loopback. It does not prove a real iPad reaching private
+HTTPS, certificate issuance/renewal, router DNS, local-network permission,
+physical power loss, Linux installation or a real printer. The dark installer
+has not run on a Pi. Follow [BOX_BRIDGE_BENCH.md](../../../ops/BOX_BRIDGE_BENCH.md)
+for the domain/DNS preparation, production key list, acceptance and rollback.
+Do not rotate or remove the signing key as a UI rollback; issued shifts depend
+on it. This first stage stays Testing, not Deployed or Done.
 
 ## Local release checks
 
@@ -76,5 +140,4 @@ red before correction. Full POS now passes 1,659 tests; all seven built native
 journeys, whole POS/Console types, touched lint and builds pass. The full real
 agent/browser rehearsal passed again, now also proving online unlock connects
 the display before the outage. Its exact local build and checks are retained in
-[local-followup-checks.json](local-followup-checks.json). Final source CI and
-staging proof follow; physical bench acceptance remains open.
+[local-followup-checks.json](local-followup-checks.json). Final source CI and staging proof are recorded above; physical bench acceptance remains open.

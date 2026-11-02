@@ -1,0 +1,43 @@
+{
+  "unit": "SCRUM-713",
+  "at": "2026-11-02T20:45:23.775Z",
+  "source": "f3b793dcc35d296a03582d617a9a94a3b555da60",
+  "live": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "service": "oto-api-staging",
+      "sha": "f3b793dcc35d296a03582d617a9a94a3b555da60",
+      "deployId": "dep-dbkfa94ipgvc73aquhh0",
+      "liveAt": "2026-11-02T20:34:21.862502Z",
+      "finishedAt": "2026-11-02T20:43:49.964304Z"
+    },
+    {
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "name": "oto-pos-web-staging",
+      "service": "oto-pos-web-staging",
+      "sha": "f3b793dcc35d296a03582d617a9a94a3b555da60",
+      "deployId": "dep-dbkf3nh42hec7387d7qg",
+      "liveAt": "2026-11-02T20:28:35.860159Z",
+      "finishedAt": "2026-11-02T20:28:35.860159Z"
+    },
+    {
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "name": "oto-pos-staging",
+      "service": "oto-pos-staging",
+      "sha": "f3b793dcc35d296a03582d617a9a94a3b555da60",
+      "deployId": "dep-dbkf3nh42hec7387d7v0",
+      "liveAt": "2026-11-02T20:27:03.178886Z",
+      "finishedAt": "2026-11-02T20:27:03.178886Z"
+    },
+    {
+      "id": "srv-danng2p42hec73f38e3g",
+      "name": "oto-console-staging",
+      "service": "oto-console-staging",
+      "sha": "f3b793dcc35d296a03582d617a9a94a3b555da60",
+      "deployId": "dep-dbkf3nh42hec7387d820",
+      "liveAt": "2026-11-02T20:26:57.607379Z",
+      "finishedAt": "2026-11-02T20:26:57.607379Z"
+    }
+  ]
+}

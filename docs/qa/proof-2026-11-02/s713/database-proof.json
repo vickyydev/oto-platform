@@ -1,0 +1,33 @@
+{
+  "unit": "SCRUM-713",
+  "source": "f3b793dcc35d296a03582d617a9a94a3b555da60",
+  "jobId": "job-dbkf9ooae00c73cir98g",
+  "startedAt": "2026-11-02T20:38:58.722Z",
+  "readOnly": true,
+  "status": "succeeded",
+  "result": {
+    "event": "s713_database_proof",
+    "at": "2026-11-02T20:39:45.847Z",
+    "readOnly": true,
+    "kid": "ddc53eda85cb9a78",
+    "publicFingerprint": "ddc53eda85cb9a7892aa764a4c8b1dd2e537db16a8c8f6abd448b6a458315866",
+    "publicKeyRows": 1,
+    "saleId": "01a19dfa-d28b-7e4c-8593-8e373c61ac90",
+    "saleRows": 1,
+    "receiptNumber": "Z713-000003",
+    "receiptRows": 1,
+    "paymentRows": 1,
+    "payment": {
+      "id": "01a19dfa-dc84-7eae-9d68-ba2e3fbfffb0",
+      "method": "cash",
+      "status": "approved",
+      "amount_satang": 9000
+    },
+    "syncAnomalies": 0,
+    "boxArchived": true,
+    "stationArchived": true,
+    "bridgeCleared": true,
+    "displayRevoked": true,
+    "passed": true
+  }
+}
