@@ -1,0 +1,24 @@
+{
+  "unit": "SCRUM-725",
+  "mutations": [
+    {
+      "mutation": "discard-other-apps",
+      "severity": "HIGH",
+      "expectedFailureObserved": true,
+      "exitCode": 1
+    },
+    {
+      "mutation": "accept-duplicate-pos",
+      "severity": "HIGH",
+      "expectedFailureObserved": true,
+      "exitCode": 1
+    }
+  ],
+  "sourceRestored": true,
+  "sourceFingerprint": "a175204593a950a1f57a8524e2d20c8288931a151eb357ae5cab043816b0c16a",
+  "initialHarnessNote": "The first restoration comparison mixed normalized text with Windows line endings. Both mutations were repeated with byte snapshots and exact restoration.",
+  "prescribedFixes": [
+    "Keep every non-POS entry byte-identical.",
+    "Refuse duplicate POS mappings before any write."
+  ]
+}

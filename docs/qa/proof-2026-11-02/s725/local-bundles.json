@@ -1,0 +1,17 @@
+{
+  "unit": "SCRUM-725",
+  "localBuilds": [
+    {
+      "app": "launcher",
+      "filesScanned": 6,
+      "oldAddressMatches": [],
+      "newAddressPresent": true
+    },
+    {
+      "app": "console",
+      "filesScanned": 8,
+      "oldAddressMatches": [],
+      "newAddressPresent": true
+    }
+  ]
+}

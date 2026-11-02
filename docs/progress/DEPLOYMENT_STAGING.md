@@ -1,5 +1,16 @@
 # Staging deployment — what exists on Render
 
+**2 November 2026, current POS path:** SCRUM-725 moves staging's launcher,
+Console links and API POS hand-off to https://oto-pos-web-staging.onrender.com.
+The setting changes and browser acceptance are pending in this source checkpoint.
+The old https://oto-pos-staging.onrender.com stays running without a redirect;
+existing bookmarks and installed apps keep working. The new service is the
+approved single Starter web service beside it. No park Pi/iPad or production
+address is moved. See [the current procedure and rollback](../ops/POS_WEB_SWITCHOVER.md).
+
+The September account below is retained as historical deployment evidence;
+its old POS URL and smoke command describe the paths tested then.
+
 _Last updated 2026-09-20, with the console (S2-03) and the OTO App (S2-17a)._
 
 Everything below is live in the **Oto dev** Render workspace. Nothing here is

@@ -242,6 +242,10 @@ and the SSH rule above then covers it. Nothing to run on the box.
 
 ## G. Update the box — one command from the laptop, from anywhere
 
+The examples use the new staging POS address (SCRUM-725). They do not switch
+an existing park Pi or iPad: keep its current address until the owner schedules
+the separate device/bench step in `POS_WEB_SWITCHOVER.md`.
+
 The release file and its checksum come as a pair, `oto-box-….tgz` and
 `oto-box-….tgz.sha256`: CI's **Pi release** artifact on the run of the commit holds
 both, and `pnpm --filter @oto/box-agent pack:pi` on the laptop writes both into
@@ -255,7 +259,7 @@ In Git Bash (Windows) or a Mac terminal, from the repository folder:
 scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --no-kiosk --printer-direct
 
 # the counter box with its customer display (part I; printer on the Pi's own cable)
-scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct --kiosk-url "https://oto-pos-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
+scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
 
 # the booth box (television; printer on the Pi's own cable)
 scripts/agent/push-release.sh oto-booth ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct
@@ -352,7 +356,7 @@ page in Chromium, full screen, on that monitor. The addresses below are staging'
 runs the same thing from the laptop):
 
 ```
-sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct --kiosk-url "https://oto-pos-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
+sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
 ```
 
 Keep the quotes around the address. `--no-kiosk` is gone from this box's options from

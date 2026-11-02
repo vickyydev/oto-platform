@@ -3,7 +3,7 @@
 //
 // node scripts/agent/render.mjs status              latest deploy of every staging service
 // node scripts/agent/render.mjs deploys <name>      recent deploys of one service (e.g. oto-api-staging)
-// node scripts/agent/render.mjs deploy <name|all> [sha]  trigger a deploy (staging does not follow main by itself)
+// node scripts/agent/render.mjs deploy <name|all> [sha]  trigger a specific-source deploy
 // node scripts/agent/render.mjs job "<command>"     one-off job on oto-api-staging, waits, prints its logs
 //
 // One-off job commands run from the repo root on the api image: use
@@ -46,10 +46,9 @@ async function deploys(name) {
 }
 
 async function deploy(name, sha) {
-  const names = name === 'all' ? ['oto-api-staging', 'oto-pos-staging', 'oto-console-staging', 'oto-launcher-staging', 'oto-booth-staging'] : [name];
-  // SCRUM-718 lands before the additive service exists. Include it in later
-  // all-service operations only once creation is confirmed by the API.
-  if (name === 'all' && await service('oto-pos-web-staging')) names.push('oto-pos-web-staging');
+  // The old static POS remains available by its explicit service name for
+  // rollback. Normal suite operations use the staging web service (SCRUM-725).
+  const names = name === 'all' ? ['oto-api-staging', 'oto-pos-web-staging', 'oto-console-staging', 'oto-launcher-staging', 'oto-booth-staging'] : [name];
   for (const n of names) {
     const s = await service(n);
     if (!s) throw new Error(`no staging service named ${n}`);
@@ -103,4 +102,32 @@ export const appendEnvList = async (serviceId, key, entry) => {
   if (old === null || old === '') throw new Error(`${key}: current value unreadable or empty — refusing to append`);
   if (old.includes(entry)) return { key, unchanged: true };
   return render('PUT', `/services/${serviceId}/env-vars/${key}`, { value: `${old},${entry}` });
+};
+
+/**
+ * SCRUM-725: replace the single POS hand-off destination, including rollback.
+ * Every other entry and separator keeps its exact bytes. Refuse unreadable,
+ * empty, duplicate or unexpected input; never use Render's bulk env endpoint.
+ * The caller separately checks every service setting and redeploys the same SHA.
+ */
+export const replacePosHandoffOrigin = async (serviceId, expectedOrigin, nextOrigin) => {
+  for (const origin of [expectedOrigin, nextOrigin]) {
+    let url;
+    try { url = new URL(origin); } catch { throw new Error('POS hand-off needs an HTTPS origin'); }
+    if (url.protocol !== 'https:' || url.origin !== origin) throw new Error('POS hand-off needs an HTTPS origin');
+  }
+  const key = 'HANDOFF_APP_ORIGINS';
+  const old = await envValue(serviceId, key);
+  if (typeof old !== 'string' || old.trim() === '') throw new Error(`${key}: current value unreadable or empty`);
+  const entries = old.split(',');
+  const positions = entries.flatMap((entry, index) => entry.trim().startsWith('pos=') ? [index] : []);
+  if (positions.length !== 1) throw new Error(`${key}: exactly one pos entry is required`);
+  const index = positions[0];
+  if (entries[index].trim() !== `pos=${expectedOrigin}`) throw new Error(`${key}: POS destination changed; refusing replacement`);
+  if (expectedOrigin === nextOrigin) return { key, unchanged: true };
+  entries[index] = entries[index].replace(expectedOrigin, nextOrigin);
+  const next = entries.join(',');
+  await render('PUT', `/services/${serviceId}/env-vars/${key}`, { value: next });
+  if (await envValue(serviceId, key) !== next) throw new Error(`${key}: replacement read-back did not match`);
+  return { key, unchanged: false, otherEntriesPreserved: true };
 };

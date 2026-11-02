@@ -347,6 +347,7 @@ services:
         # it sees a browser. Scheme and host, no trailing slash:
         #
         #   https://oto-pos-staging.onrender.com,
+        #   https://oto-pos-web-staging.onrender.com,
         #   https://oto-launcher-staging.onrender.com,
         #   https://oto-console-staging.onrender.com,
         #   https://oto-app-staging.onrender.com,
@@ -415,7 +416,7 @@ services:
         # whether or not a `booth=` entry is here. An entry left over on the
         # dashboard is harmless; drop it when the variable is next edited.
         value: >-
-          pos=https://oto-pos-staging.onrender.com,console=https://oto-console-staging.onrender.com,oto_app=https://oto-app-staging.onrender.com
+          pos=https://oto-pos-web-staging.onrender.com,console=https://oto-console-staging.onrender.com,oto_app=https://oto-app-staging.onrender.com
       - key: HANDOFF_TOKEN_TTL_S
         # The seconds a browser needs to carry a token from one origin to the
         # next, not minutes: long enough for a redirect, short enough that a
@@ -939,13 +940,11 @@ services:
       # S2-03, VITE_OTO_APP_URL with S2-17, VITE_RADAR_URL with S2-18,
       # VITE_BOOTH_URL with S2-07, VITE_INBOX_URL with S2-19.
       #
-      # Note what this variable is NOT: it is the address the browser is sent
-      # to, while the api's HANDOFF_APP_ORIGINS above is the address the api
-      # will accept an exchange from. The two have to agree, and they are
-      # deliberately set in different places — one is public and built into a
-      # bundle, the other decides whether a credential is honoured.
+      # The API returns the signed-in destination in launchUrl. This built
+      # value controls tile availability and direct unsigned entry. Keep both
+      # on the new staging origin; preserve every other hand-off entry.
       - key: VITE_POS_URL
-        value: https://oto-pos-staging.onrender.com
+        value: https://oto-pos-web-staging.onrender.com
       - key: VITE_CONSOLE_URL
         value: https://oto-console-staging.onrender.com
       # Build-time, baked into the bundle, so changing it is a rebuild of the
@@ -988,6 +987,9 @@ services:
       # change is sent — the console has no front door of its own for that.
       - key: VITE_LAUNCHER_URL
         value: https://oto-launcher-staging.onrender.com
+      # SCRUM-725: dashboard value; requires a rebuild after a change.
+      - key: VITE_POS_URL
+        value: https://oto-pos-web-staging.onrender.com
 
   # ---------------------------------------------------------------------------
   # inbox — static site. The Unified Inbox shell (S2-19 I3a, SCRUM-587; plan

@@ -142,7 +142,7 @@ export function parseAppOrigins(raw: string): Map<HandoffApp, string> {
     const m = ORIGIN_ENTRY.exec(entry);
     if (!m) {
       throw new Error(
-        `"${entry}" is not "<app>=<origin>" — e.g. pos=https://oto-pos-staging.onrender.com, ` +
+        `"${entry}" is not "<app>=<origin>" — e.g. pos=https://oto-pos-web-staging.onrender.com, ` +
           'scheme and host only, no path and no trailing slash',
       );
     }

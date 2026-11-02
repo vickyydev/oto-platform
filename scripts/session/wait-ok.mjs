@@ -11,7 +11,7 @@ for (const line of readFileSync(ROOT + '/.env', 'utf8').split(/\r?\n/)) {
   if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
 }
 const H = { authorization: `Bearer ${process.env.RENDER_API_KEY}`, accept: 'application/json' };
-const WANT = ['oto-api-staging', 'oto-pos-staging', 'oto-console-staging'];
+const WANT = ['oto-api-staging', 'oto-pos-web-staging', 'oto-console-staging'];
 const OK = new Set(process.argv.slice(2));
 const svcs = (await (await fetch('https://api.render.com/v1/services?limit=50', { headers: H })).json())
   .map((r) => r.service ?? r)

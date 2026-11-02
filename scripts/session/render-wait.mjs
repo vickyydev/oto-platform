@@ -11,7 +11,7 @@ const H = { authorization: `Bearer ${process.env.RENDER_API_KEY}`, accept: 'appl
 // green push. The OTO App (rootDir apps/oto-app) deploys only when its own
 // files change, so it is not expected on the target sha and is left out —
 // the launcher sat three days stale unnoticed while this list held three.
-const WANT = ['oto-api-staging', 'oto-pos-staging', 'oto-console-staging', 'oto-launcher-staging', 'oto-booth-staging'];
+const WANT = ['oto-api-staging', 'oto-pos-web-staging', 'oto-console-staging', 'oto-launcher-staging', 'oto-booth-staging'];
 const TARGET = process.argv[2];
 const svcs = (await (await fetch('https://api.render.com/v1/services?limit=50', { headers: H })).json())
   .map((r) => r.service ?? r)

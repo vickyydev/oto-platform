@@ -14,7 +14,7 @@ import { ROOT, need } from './env.mjs';
 const require = createRequire(resolve(ROOT, 'apps/pos/package.json'));
 const { chromium } = require('@playwright/test');
 
-export const POS = process.env.STAGING_POS_URL ?? 'https://oto-pos-staging.onrender.com';
+export const POS = process.env.STAGING_POS_URL ?? 'https://oto-pos-web-staging.onrender.com';
 export const CONSOLE = process.env.STAGING_CONSOLE_URL ?? 'https://oto-console-staging.onrender.com';
 /** Screenshots committed with the ticket's evidence. */
 export const attachmentsDir = (key) => resolve(ROOT, 'docs/qa/jira-comments/attachments', key);

@@ -26,7 +26,7 @@
 #                         off for a screen that stands the way it is made (the
 #                         counter's customer display)
 #   --kiosk-url URL       what the screen opens instead of the box's own page, e.g.
-#                         "https://oto-pos-staging.onrender.com/display?keyboard=screen"
+#                         "https://oto-pos-web-staging.onrender.com/display?keyboard=screen"
 #                         for the counter's customer display (BOX_QUICKSTART.md
 #                         part I). Default: the box's own page. An update keeps
 #                         the address the box has; --kiosk-url "" goes back to

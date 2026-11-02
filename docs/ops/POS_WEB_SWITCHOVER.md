@@ -1,5 +1,77 @@
 # POS web service: staging proof and owner switch-over
 
+## Staging links: SCRUM-725
+
+The owner approved the staging link switch on 2 November 2026. The new destination
+is `https://oto-pos-web-staging.onrender.com`. This source checkpoint records the
+procedure; the live setting changes and browser acceptance are still pending.
+Park Pi/iPad addresses, production and the old static site's settings are unchanged.
+No new service or redirect is part of this operation.
+
+The read-only inventory found no old POS hostname in 425 tables and 2,299
+text/JSON/string columns, including settings, message templates, assistant
+knowledge, print templates and booking links. There is no database edit to make.
+The safe inventory and service-setting fingerprints are in
+`docs/qa/proof-2026-11-02/s725/`.
+
+### Forward order
+
+1. Land the records, defaults and guarded replacement with green exact-source CI.
+   Check the latest STATUS for another lane's active proof before restarting API.
+2. Read every API environment value privately and count its names. Read
+   HANDOFF_APP_ORIGINS separately and stop if it is empty or unreadable. Require
+   exactly one `pos=` entry naming the old origin. Keep ALLOWED_ORIGINS unchanged,
+   with both addresses present.
+3. Use `replacePosHandoffOrigin` in `scripts/agent/render.mjs` with the old origin
+   as the expected value and the new origin as the replacement. It writes only
+   `/services/{id}/env-vars/HANDOFF_APP_ORIGINS`, never the bulk endpoint, and reads
+   the result back. Check every non-POS entry byte for byte, every other API value,
+   and the unchanged name count (56 in the initial inventory).
+4. Redeploy the API's same green commit. Wait for observed routing as well as
+   Render's live state: SCRUM-721 measured a short handover after that state.
+   The launcher follows the API's returned `launchUrl` even on its older build.
+   A hand-off minted immediately before or during the handover can still name
+   the old origin and fail until its normal one-minute expiry; return to the
+   launcher and open the app again. Existing sessions and old native sign-in
+   remain available. Record the actual cutover window.
+5. Read and set VITE_POS_URL separately on launcher and Console, with one key per
+   write and every other setting preserved. Rebuild both on their same green
+   source; saving a Vite variable alone does not change a built page.
+6. Read each affected live commit. Inspect the served bundles for the old address,
+   then click the launcher/Console/POS links and all suite sign-ons in a real
+   browser. Prove deep entry, sign-out, display pairing, scan and a ZZ TEST cash
+   sale. No real payment, SMS, booth action or channel-mode change is involved.
+   Finish and inspect the image before the ticket's Deployed walk.
+
+### Way back and paper check
+
+Use the currently live green source; a rollback changes addresses, not money
+records or source history. Read the settings again and check the actual counts
+against the completed switch receipt. Call `replacePosHandoffOrigin` with the new
+origin as the expected value and the old origin as its replacement. Preserve
+every other entry and API value, redeploy that same API commit, and wait for
+observed routing. Set launcher and Console VITE_POS_URL back to the old origin
+through separate single-key writes, rebuild both, and repeat the sign-on checks.
+The same brief hand-off window applies in reverse. ALLOWED_ORIGINS keeps both
+addresses throughout; the old site has no redirect to undo. No database rollback
+or sale replay is needed. Existing old bookmarks and home-screen icons stay valid.
+
+The live paper check must confirm: both service IDs and origins exist; the old
+site still answers; each expected key is readable; exactly one `pos=` entry
+exists; the other five hand-off entries and other settings match their saved
+fingerprints; both origins remain allowed; and the reversal changes only the
+same three keys. Record that result with the final proof without executing it.
+
+Old-address references are deliberately retained in the old service definition,
+ALLOWED_ORIGINS, regression fixtures, this rollback/history, dated handovers and
+QA evidence, the September POS gap audit, and the September owner-action CORS
+example (an allow-list, not a POS destination). Current script defaults and
+operating examples use the new origin. Updating a Pi command example does not
+authorize running it on a park device.
+
+The SCRUM-718 creation and acceptance account below is historical. Its original
+address-change restriction is superseded only for the staging links above.
+
 **Final staging measurements passed:** source `796a3724505ee9cd46f93584c975971ad50a3e4d`,
 CI 41452442131. The final [acceptance report](../qa/proof-2026-11-02/final/README.md)
 contains the current live commits and proof. The earlier 540 ms miss is retained;
@@ -40,7 +112,9 @@ seconds and verified the successful answer arrived exactly once.
 
 Streams are piped with backpressure and no compression or response lifetime timer.
 A disconnected client cancels its upstream request, including before headers.
-Ordinary completed requests keep their upstream socket for reuse. SIGTERM drains
+Safe reads keep their upstream socket for reuse. SCRUM-721 gives writes a fresh
+connection (measured added p50/p95 1.228/0.845 ms on the private network) and logs
+upstream failures without bodies, headers or query strings. SIGTERM drains
 ordinary work and closes remaining streams after 25 seconds for normal reconnect.
 
 Static compression is generated at build time (Brotli and gzip), keeping request
@@ -129,6 +203,7 @@ This is a future operation, **not authorization to execute it during SCRUM-718**
 | ALLOWED_ORIGINS on API | Keep both old and new origins during the transition. | Leave both allowed while reverting devices; do not remove a still-used origin. |
 | HANDOFF_APP_ORIGINS on API | Change the single `pos=` destination from old to new in a separately approved, reviewed operation; other app mappings remain byte-identical. Do not use appendEnvList for a replacement. | Restore only the old `pos=` mapping using the then-approved guarded replacement procedure. Never bulk replace environment variables. |
 | Launcher VITE_POS_URL | Coordinate its rebuild with the handoff destination; both must name the same origin. | Restore old value and rebuild the launcher. The old static site stays available. |
+| Console VITE_POS_URL | Save the new origin and rebuild the Console so its own POS links follow it. | Restore old value and rebuild the Console. |
 | POS VITE_LAUNCHER_URL / other VITE values | Preserve the launcher URL and existing build-time settings; rebuild if a value changes. | Use the preserved old site's build/settings. |
 | TRUST_PROXY_ADDRS | Retain the verified private and edge hops only; record the measured caller chain. | Retain the existing valid list. Never add shared public egress to make a test pass. |
 | iPads' installed-app address | At an idle, settled till, install/open the new address and sign in normally. Its worker/cache/cookie belong to that origin. | Open the old installed app/address and sign in normally; preserve old installation until accepted. |
