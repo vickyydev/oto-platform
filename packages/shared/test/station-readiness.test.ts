@@ -1,10 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { routedTerminalRoles, stationSellingReadiness } from '../src/station-readiness';
+import { knownStationSellingReadiness, routedTerminalRoles, stationPaymentRoutes, stationSellingReadiness } from '../src/station-readiness';
 
 const till = (paymentRouting: unknown) => ({ kind: 'till', codePrefix: 'T1', boxId: 'box', paymentRouting });
 const terminal = (role: string, overrides: Record<string, unknown> = {}) => ({ role, kind: 'terminal', boxId: 'box', protocol: 'digio_tlv', ...overrides });
 const NO_CARD = 'Card is routed to the terminal but no terminal is assigned';
 const NO_QR = 'QR is routed to the terminal but no terminal is assigned';
+
+describe('SCRUM-717: a shared routing and readable readiness result', () => {
+  it.each([
+    [undefined, { card: 'card_terminal', qr: 'qr_terminal' }],
+    [null, { card: 'card_terminal', qr: 'qr_terminal' }],
+    [{ card: 'manual', qr: 'none' }, { card: 'manual', qr: 'none' }],
+    [{ qr: 'gateway' }, { card: 'card_terminal', qr: 'gateway' }],
+    [{ card: 'manual', qr: 'later' }, { card: 'card_terminal', qr: 'qr_terminal' }],
+  ])('the tender default for %j is shared by both lanes', (routing, expected) => {
+    expect(stationPaymentRoutes(routing)).toEqual(expected);
+  });
+  it('recognises a complete readiness decision, including future extra fields', () => {
+    expect(knownStationSellingReadiness({ ready: true, reasons: [], later: 1 })).toEqual({ ready: true, reasons: [] });
+    expect(knownStationSellingReadiness({ ready: false, reasons: [NO_QR] })).toEqual({ ready: false, reasons: [NO_QR] });
+  });
+  it.each([undefined, null, {}, false, { ready: false, reasons: [] }, { ready: false, reasons: [null] }, { ready: 'false', reasons: [NO_QR] }])(
+    'does not turn missing or unreadable evidence into not-ready: %j', value => expect(knownStationSellingReadiness(value)).toBeNull(),
+  );
+});
 
 describe('routedTerminalRoles reads the routing as the tender service does', () => {
   it.each([

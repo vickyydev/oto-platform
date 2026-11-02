@@ -2218,7 +2218,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           const branch = bundle?.branch;
           const operatorId = branch?.operatorId ?? state.operatorId;
           if (!station || !branch || !operatorId) return null;
-          return { id: station.id, name: station.name, kind: station.kind, branchId: branch.id, operatorId };
+          return { id: station.id, name: station.name, kind: station.kind, branchId: branch.id, operatorId,
+            paymentRouting: station.paymentRouting, readiness: station.readiness };
         },
         branch: () => {
           const branch = bundle?.branch;

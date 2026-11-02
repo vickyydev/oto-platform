@@ -518,6 +518,8 @@ export interface BoxConfigStation {
   capabilities: string[];
   configVersion: number;
   paymentRouting: unknown;
+  /** Shared selling decision; absent or unreadable on an older bundle means unknown. */
+  readiness?: unknown;
   offlineWalletCapSatang: number | null;
   accessScope: string;
   devices: BoxConfigDevice[];

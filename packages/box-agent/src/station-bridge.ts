@@ -15,6 +15,9 @@ import {
   BridgeBookingRedeemSchema,
   PAID_ONLINE_TENDER_CODE,
   PAID_ONLINE_TENDER_METHOD,
+  knownStationSellingReadiness,
+  stationPaymentRoutes,
+  STATION_QR_DISABLED,
   isoDateInTz,
   parseBookingQr,
   verifyBookingQr,
@@ -295,6 +298,8 @@ export interface BridgeStation {
   kind: string;
   branchId: string;
   operatorId: string;
+  paymentRouting?: unknown;
+  readiness?: unknown;
 }
 
 export interface BridgeBranch {
@@ -1078,6 +1083,13 @@ export class StationBridge {
     return this.host.store.readBundle(this.host.boxId, scope).catch(() => null);
   }
 
+  /** A Pi has its config bundle; the virtual mount reads the same facts from its box cache. */
+  private async sellingSetup(station: BridgeStation) {
+    if (Object.hasOwn(station, 'paymentRouting') || Object.hasOwn(station, 'readiness')) return station;
+    const bundle = await this.bundle('station_config');
+    return itemsOf(bundle).map(rec).find(row => row?.id === station.id) ?? {};
+  }
+
   /** The offline policy for a station: its `station_config` entry, else the plan's defaults. */
   async policy(stationId: string): Promise<OfflinePolicy> {
     const config = await this.bundle('station_config');
@@ -1451,7 +1463,11 @@ export class StationBridge {
     holder: string,
     actionId: string | null,
   ) {
-    this.station(stationId);
+    const station = this.station(stationId);
+    const readiness = knownStationSellingReadiness((await this.sellingSetup(station)).readiness);
+    if (station.kind === 'till' && readiness?.ready === false) {
+      throw new BridgeError(409, 'STATION_NOT_READY', readiness.reasons[0]!, { reasons: readiness.reasons });
+    }
     const result = await this.host.sessions.claim({
       stationId,
       holder,
@@ -4074,6 +4090,13 @@ export class StationBridge {
         if (!this.host.store.features().boothRuntime) {
           throw new BridgeError(503, BOX_LANE_PAYMENT_REFUSAL.code, BOX_LANE_PAYMENT_REFUSAL.message);
         }
+        const routing = stationPaymentRoutes((await this.sellingSetup(station)).paymentRouting);
+        if (body.tender.kind === 'qr' && routing.qr === 'none') {
+          throw new BridgeError(409, STATION_QR_DISABLED.code, STATION_QR_DISABLED.message);
+        }
+        if (body.tender.kind === 'qr' && routing.qr === 'gateway') this.refuse('qr2c2p');
+        // Manual approval is recorded by /payments/manual on the platform, not by this lane.
+        if (body.tender.kind === 'card' && routing.card === 'manual') this.refuse('noTerminal');
         const terminals = this.host.terminals?.() ?? null;
         const role = body.tender.kind === 'card' ? 'card_terminal' : 'qr_terminal';
         const routed = terminals?.route(station.id, role) ?? null;

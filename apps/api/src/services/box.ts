@@ -44,6 +44,7 @@ import { audit } from './audit';
 import { currentBandKey } from './bands';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
+import { readStationsSellingReadiness } from './payments/terminal';
 import { registerProductBarcodeHandler } from './scanning-product';
 import {
   boxOutboxState,
@@ -1155,6 +1156,7 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
     devicesByStation.set(row.stationId, list);
   }
 
+  const readiness = await readStationsSellingReadiness(db, auth.operatorId, stationRows);
   const stations: BoxConfigStation[] = stationRows.map((s) => ({
     id: s.id,
     name: s.name,
@@ -1163,6 +1165,7 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
     capabilities: (s.capabilities ?? []) as string[],
     configVersion: s.configVersion,
     paymentRouting: s.paymentRouting ?? null,
+    readiness: readiness.get(s.id),
     offlineWalletCapSatang: s.offlineWalletCapSatang,
     accessScope: s.accessScope,
     devices: devicesByStation.get(s.id) ?? [],
