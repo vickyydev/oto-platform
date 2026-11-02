@@ -502,8 +502,8 @@ if [ -n "$MIRROR_UUID" ]; then
     chattr +i "$MIRROR_MOUNT" 2>/dev/null || warn "could not make $MIRROR_MOUNT immutable; the agent still refuses to copy onto the store's own drive"
   fi
   FSTAB_LINE="UUID=$MIRROR_UUID $MIRROR_MOUNT ext4 defaults,noatime,nofail,x-systemd.device-timeout=10s 0 2"
-  if grep -Eq "^[^#]*[[:space:]]$MIRROR_MOUNT[[:space:]]" /etc/fstab; then
-    sed -i -E "s|^[^#]*[[:space:]]$MIRROR_MOUNT[[:space:]].*$|$FSTAB_LINE|" /etc/fstab
+  if grep -Eq "^[^#]*[[:space:]]${MIRROR_MOUNT}[[:space:]]" /etc/fstab; then
+    sed -i -E "s|^[^#]*[[:space:]]${MIRROR_MOUNT}[[:space:]].*$|$FSTAB_LINE|" /etc/fstab
   else
     printf '%s\n' "$FSTAB_LINE" >>/etc/fstab
   fi
