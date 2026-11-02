@@ -814,6 +814,42 @@ services:
         # a till on a park counter with no launcher in front of it should see.
         value: https://oto-launcher-staging.onrender.com
 
+  # SCRUM-718: owner-approved additive staging service. No blueprint is linked;
+  # create/read back through the API, in the API service's owner and region.
+  # Kept commented deliberately: this records the separately managed service,
+  # and does not replace or change the static site above. No device switch-over.
+  # - type: web
+  #   name: oto-pos-web-staging
+  #   runtime: node
+  #   plan: starter
+  #   numInstances: 1
+  #   region: singapore
+  #   branch: main
+  #   rootDir: .
+  #   buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @oto/pos build
+  #   startCommand: pnpm --filter @oto/pos start
+  #   healthCheckPath: /healthz
+  #   autoDeployTrigger: checksPass
+  #   buildFilter:
+  #     paths:
+  #       - apps/pos/**
+  #       - packages/shared/**
+  #       - packages/api-types/**
+  #       - packages/config/**
+  #       - package.json
+  #       - pnpm-lock.yaml
+  #       - pnpm-workspace.yaml
+  #       - .npmrc
+  #   envVars:
+  #     - key: NODE_VERSION
+  #       value: '22'
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: API_UPSTREAM
+  #       sync: false # verified API private address; never an app credential
+  #     - key: VITE_LAUNCHER_URL
+  #       value: https://oto-launcher-staging.onrender.com
+
   # ---------------------------------------------------------------------------
   # booth — static site. The Lucky Wheel television (S2-07a, SCRUM-199).
   #

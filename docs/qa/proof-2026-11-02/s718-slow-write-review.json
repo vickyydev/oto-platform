@@ -1,0 +1,24 @@
+{
+  "unit": "SCRUM-718",
+  "scope": "LOCAL ONLY",
+  "finding": "P0: a response deadline can cut off a connected sale before the API answers",
+  "red": {
+    "simulatedSeconds": 31,
+    "expectedStatus": 200,
+    "actualStatus": 502,
+    "failed": 1,
+    "passed": 31
+  },
+  "fix": "Bound connection setup only; let the API own completion after the socket connects",
+  "green": {
+    "serverCases": 32,
+    "offlineLaneCases": 13,
+    "failed": 0,
+    "writeCalls": 1,
+    "status": 200
+  },
+  "logs": [
+    "C:/oto-lanes/s718-slow-write-red.log",
+    "C:/oto-lanes/s718-slow-write-green.log"
+  ]
+}

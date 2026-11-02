@@ -1,0 +1,12 @@
+{
+  "unit": "SCRUM-718",
+  "scope": "local adversarial test sensitivity control",
+  "risk": "P0: dropping Idempotency-Key changes sale replay protection",
+  "prescribedRule": "Preserve all application correlation and authority headers",
+  "mutation": "drop Idempotency-Key before forwarding",
+  "exitCode": 1,
+  "expected": "red",
+  "sourceRestored": true,
+  "priorControl": "Cancelling an already-completed request did not close its freed socket in this Node version; that control survived and is not a proven defect.",
+  "measuredAt": "2026-11-02T10:18:36.850Z"
+}

@@ -47,6 +47,9 @@ async function deploys(name) {
 
 async function deploy(name, sha) {
   const names = name === 'all' ? ['oto-api-staging', 'oto-pos-staging', 'oto-console-staging', 'oto-launcher-staging', 'oto-booth-staging'] : [name];
+  // SCRUM-718 lands before the additive service exists. Include it in later
+  // all-service operations only once creation is confirmed by the API.
+  if (name === 'all' && await service('oto-pos-web-staging')) names.push('oto-pos-web-staging');
   for (const n of names) {
     const s = await service(n);
     if (!s) throw new Error(`no staging service named ${n}`);

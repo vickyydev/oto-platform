@@ -1,0 +1,50 @@
+{
+  "unit": "SCRUM-718",
+  "origin": "https://oto-pos-staging.onrender.com",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a19ba8-d8d5-76cc-923b-aca24002ab7f",
+    "boxName": "ZZ TEST SCRUM-718 path",
+    "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+    "stationName": "ZZ TEST SCRUM-718 path",
+    "createdAt": "2026-11-02T09:48:18.531Z"
+  },
+  "startedAt": "2026-11-02T09:49:58.956Z",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "at": 1793612999962,
+      "phase": "first page",
+      "status": 401,
+      "headersMs": 469,
+      "totalMs": 470
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "at": 1793613001136,
+      "phase": "sign in and select station",
+      "status": 400,
+      "headersMs": 411,
+      "totalMs": 414
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "at": 1793613002022,
+      "phase": "cleanup",
+      "status": 401,
+      "headersMs": 457,
+      "totalMs": 457
+    }
+  ],
+  "steps": [],
+  "outcome": "incomplete",
+  "firstPageMs": 1857,
+  "failedStep": "sign in and select station",
+  "errorName": "AssertionError",
+  "signOutStatus": 200,
+  "afterSignOutStatus": 401,
+  "finishedAt": "2026-11-02T09:50:03.493Z"
+}

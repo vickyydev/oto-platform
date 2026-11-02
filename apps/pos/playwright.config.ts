@@ -19,7 +19,7 @@ const root = resolve(import.meta.dirname, '../..');
  * (S2-01c): on Render the POS is a static site that rewrites `/api/*` to the
  * api service, so the same flows exercise the real two-service topology —
  * cookie, rewrite and all — without a single change to the specs. Unset, it
- * runs against the local Vite proxy as before.
+ * uses the production forwarder for built checks and Vite for development.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -47,15 +47,16 @@ export default defineConfig({
       env: {
         DATABASE_URL: databaseUrl!, API_PORT: apiPort!, PROCESS_ROLES: 'api,edge',
         DEPLOY_ENV: 'local', NODE_ENV: 'development', COOKIE_SECURE: 'false', LOG_LEVEL: 'warn',
+        ALLOWED_ORIGINS: `http://127.0.0.1:${posPort}`,
       },
     },
     {
       command: process.env.POS_E2E_BUILT === '1'
-        ? 'pnpm --filter @oto/pos exec vite preview --config vite.config.ts'
+        ? 'pnpm --filter @oto/pos start'
         : 'pnpm --filter @oto/pos exec vite --config vite.config.ts',
       cwd: root, url: `http://127.0.0.1:${posPort}/`, reuseExistingServer: false,
       timeout: 120_000, stdout: 'ignore', stderr: 'pipe',
-      env: { POS_PORT: posPort!, API_PORT: apiPort! },
+      env: { POS_PORT: posPort!, API_PORT: apiPort!, PORT: posPort!, API_UPSTREAM: `http://127.0.0.1:${apiPort}` },
     },
   ] : undefined,
 });

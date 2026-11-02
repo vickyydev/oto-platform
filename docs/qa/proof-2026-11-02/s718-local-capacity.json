@@ -1,0 +1,19 @@
+{
+  "scope": "LOCAL ONLY: separate production proxy process; simulated 32 event streams with 500 ms heartbeats plus ordinary reads",
+  "startedAt": "2026-11-02T10:12:54.895Z",
+  "streams": 32,
+  "ordinaryReads": 925,
+  "measurement": {
+    "seconds": 20.1555841,
+    "cpuMs": 688,
+    "cpuCores": 0.034134461030082476,
+    "rssBytes": 59146240,
+    "peakRssBytes": 64638976
+  },
+  "starterMemoryLimitBytes": 536870912,
+  "starterCpuCores": 0.5,
+  "memoryHeadroomPercent": 87.96005249023438,
+  "cpuHeadroomPercent": 93.1731077939835,
+  "upstreamsAfterDisconnect": 0,
+  "finishedAt": "2026-11-02T10:13:15.384Z"
+}

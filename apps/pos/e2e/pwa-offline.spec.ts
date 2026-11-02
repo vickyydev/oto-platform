@@ -9,7 +9,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
  * WHY THIS SPEC SERVES ITS OWN BUILD instead of using the smoke config's base
  * URL: a service worker only exists in a production build, and the dev server
  * the other specs run against emits no `sw.js` at all. So this one builds
- * nothing but does require a build to exist, starts `vite preview` over
+ * nothing but does require a build to exist, starts the production server over
  * `dist/public` on a port of its own, and drives a private browser context so
  * the worker it registers cannot outlive the test and control the dev server
  * afterwards.
@@ -55,9 +55,9 @@ test.describe('PWA shell', () => {
 
   test.beforeAll(async () => {
     preview = spawn(
-      process.platform === 'win32' ? 'npx.cmd' : 'npx',
-      ['vite', 'preview', '--config', 'vite.config.ts', '--port', String(PORT), '--strictPort'],
-      { cwd: POS_ROOT, stdio: 'ignore', shell: process.platform === 'win32' },
+      process.execPath,
+      ['server/dist/index.js'],
+      { cwd: POS_ROOT, stdio: 'ignore', env: { ...process.env, PORT: String(PORT), API_UPSTREAM: 'http://127.0.0.1:1' } },
     );
     await waitForServer(`${BASE}/sw.js`, 60_000);
   });
