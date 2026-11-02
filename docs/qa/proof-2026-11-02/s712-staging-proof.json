@@ -1,0 +1,106 @@
+{
+  "unit": "SCRUM-712",
+  "sha": "1cee5458796caac51c1ddcab4f66ffab2adcd08a",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41407327041",
+  "deployments": [
+    {
+      "service": "oto-console-staging",
+      "sha": "1cee5458796caac51c1ddcab4f66ffab2adcd08a",
+      "finishedAt": "2026-11-02T08:04:48.243008Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "sha": "1cee5458796caac51c1ddcab4f66ffab2adcd08a",
+      "finishedAt": "2026-11-02T08:07:34.487406Z"
+    }
+  ],
+  "version": "oto-box 0.1.0-20261102-1cee5458 built 2026-11-02T07:35:32.841Z",
+  "startedAt": "2026-11-02T08:10:04.449Z",
+  "checks": [
+    {
+      "check": "The registered local agent raises storage_low and mirror_stale on the real staging Health page",
+      "passed": true,
+      "at": "2026-11-02T08:10:37.212Z"
+    },
+    {
+      "check": "The bundled restore command refuses while the local agent is running",
+      "passed": true,
+      "at": "2026-11-02T08:10:37.329Z"
+    },
+    {
+      "check": "The sixty-second mirror runs after the busy lock is released; real free-space readings and the fresh mirror clear both alerts",
+      "passed": true,
+      "at": "2026-11-02T08:12:31.931Z"
+    },
+    {
+      "check": "The stopped bundled CLI restores one sealed local rehearsal record, preserves the two-record previous store byte-for-byte, and leaves its credential unchanged",
+      "passed": true,
+      "at": "2026-11-02T08:12:32.633Z"
+    },
+    {
+      "check": "The test box is taken out of service and archived through Console, with a read-back confirming both",
+      "passed": true,
+      "at": "2026-11-02T08:12:40.062Z"
+    }
+  ],
+  "home": "C:/oto-lanes/s712-local-18d9b55b",
+  "simulation": "Only the test agent reports 100 MB free; a valid local mirror is aged to eleven minutes and its mirror lock is held during alert capture. No disk is filled. Two local-only sealed rehearsal records are queued after the agent stops, never uploaded.",
+  "box": {
+    "id": "01a19b4f-164d-7cef-8c2e-5313f6dc4b42",
+    "name": "ZZ TEST storage box",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "slot": "zz-storage-1793607012990",
+    "role": "counter"
+  },
+  "registrationMs": 404,
+  "warningAlerts": [
+    {
+      "key": "box.mirror_stale:01a19b4f-164d-7cef-8c2e-5313f6dc4b42",
+      "title": "ZZ TEST storage box (zz-storage-1793607012990): the sales mirror is over 10 minutes old: check the mirror drive; its store has a mirror 11 minutes old; newer sales may not be in it.",
+      "detail": "ZZ TEST storage box (zz-storage-1793607012990)"
+    },
+    {
+      "key": "box.storage_low:01a19b4f-164d-7cef-8c2e-5313f6dc4b42",
+      "title": "ZZ TEST storage box (zz-storage-1793607012990): the drive is nearly full: free space or replace it before the counter stops saving sales; its store has a mirror 11 minutes old; newer sales may not be in it.",
+      "detail": "ZZ TEST storage box (zz-storage-1793607012990)"
+    }
+  ],
+  "runningRestore": "Store operation refused or failed. Stop the service before restoring; check that the file is a readable, checked box mirror and the destination is writable. The previous store is preserved.\n",
+  "periodicMirrorAt": "2026-11-02T08:11:15.334Z",
+  "mirrorListing": [
+    {
+      "file": "box.sqlite.mirror",
+      "bytes": 262144,
+      "modifiedAt": "2026-11-02T08:12:32.272Z"
+    },
+    {
+      "file": "box.sqlite.mirror.1",
+      "bytes": 262144,
+      "modifiedAt": "2026-11-02T08:12:15.340Z"
+    },
+    {
+      "file": "box.sqlite.mirror.2",
+      "bytes": 262144,
+      "modifiedAt": "2026-11-02T08:11:15.334Z"
+    }
+  ],
+  "restore": {
+    "stdout": "Previous store kept: C:\\oto-lanes\\s712-local-18d9b55b\\box.sqlite.replaced-2026-11-02T08-12-32-609Z-366402ba\nRestored: 1 unsent record(s) waiting to reach the cloud. Credential and service configuration unchanged.\n",
+    "elapsedMs": 137,
+    "currentUnsent": 1,
+    "displacedUnsent": 2,
+    "displacedSha256": "8f1a3688fbb07a7bb6b695c890d10cdf04f36294b982a551df108630798d650a",
+    "credentialUnchanged": true
+  },
+  "archived": {
+    "id": "01a19b4f-164d-7cef-8c2e-5313f6dc4b42",
+    "archived": true,
+    "status": "disabled",
+    "at": "2026-11-02T08:12:40.062Z"
+  },
+  "completedAt": "2026-11-02T08:12:40.062Z",
+  "session": {
+    "signOut": 200,
+    "after": 401
+  }
+}
