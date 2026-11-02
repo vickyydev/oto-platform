@@ -1,0 +1,27 @@
+{
+  "at": "2026-11-02T18:55:34.400Z",
+  "sha": "de29ebf481f179431a1ff8166ed86ddfcd5077a9",
+  "deployments": [
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbkdnk17lnhs73cmn2k0",
+      "sha": "de29ebf481f179431a1ff8166ed86ddfcd5077a9",
+      "status": "live",
+      "finishedAt": "2026-11-02T18:55:33.527325Z"
+    },
+    {
+      "service": "oto-pos-web-staging",
+      "id": "dep-dbkdnk17lnhs73cmn3ig",
+      "sha": "de29ebf481f179431a1ff8166ed86ddfcd5077a9",
+      "status": "live",
+      "finishedAt": "2026-11-02T18:54:27.230981Z"
+    },
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbkdnk17lnhs73cmn270",
+      "sha": "de29ebf481f179431a1ff8166ed86ddfcd5077a9",
+      "status": "live",
+      "finishedAt": "2026-11-02T18:53:01.157196Z"
+    }
+  ]
+}

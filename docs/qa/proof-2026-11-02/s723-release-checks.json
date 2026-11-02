@@ -19,6 +19,6 @@
   "apiTypecheckAfterTestCorrections": "passed with zero diagnostics",
   "apiContracts": "matched",
   "runtimeSourceUnchangedDuringFullRun": true,
-  "ci": "pending",
-  "stagingProof": "pending"
+  "ci": { "run": 41500821248, "sha": "de29ebf481f179431a1ff8166ed86ddfcd5077a9", "conclusion": "success" },
+  "stagingProof": { "completedAt": "2026-11-02T19:03:45.803Z", "receipt": "s723-staging-proof.json", "cleanup": "s723-cleanup.json" }
 }

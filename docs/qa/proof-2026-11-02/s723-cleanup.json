@@ -1,0 +1,28 @@
+{
+  "unit": "SCRUM-723",
+  "at": "2026-11-02T19:04:07.396Z",
+  "checks": [
+    {
+      "lane": "platform",
+      "outboxDepth": 0,
+      "lease": null,
+      "childStatus": "out",
+      "consentRecordedAt": "2026-11-02T19:02:28.798Z",
+      "dedicatedBoxId": "01a19d64-335b-7d9d-8d3b-b5b7eb59280c",
+      "primarySlotUnchanged": true
+    }
+  ],
+  "sessions": [
+    {
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "retainedFor": "SCRUM-722"
+}

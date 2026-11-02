@@ -10,7 +10,7 @@
   "stationId": "45492e2d-438c-4772-9276-edfbf384f4f1",
   "receiptPrefix": "Z723",
   "preparedAt": "2026-11-02T17:52:32.511Z",
-  "agentEnabled": false,
+  "agentEnabled": true,
   "sessionCleanup": [
     {
       "origin": "https://oto-console-staging.onrender.com",
@@ -22,5 +22,6 @@
       "signOutStatus": 200,
       "afterStatus": 401
     }
-  ]
+  ],
+  "agentEnabledAt": "2026-11-02T18:56:15.477Z"
 }

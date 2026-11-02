@@ -1,0 +1,17 @@
+{
+  "unit": "SCRUM-723",
+  "at": "2026-11-02T18:56:15.477Z",
+  "sha": "de29ebf481f179431a1ff8166ed86ddfcd5077a9",
+  "serviceId": "srv-danh2ljtqb8s73bt9en0",
+  "envNamesTouched": [
+    "BOX_AGENT_TEST_SLOT"
+  ],
+  "beforeNameCount": 56,
+  "afterNameCount": 57,
+  "allExistingValuesPreserved": true,
+  "primarySlotUnchanged": true,
+  "slot": "zz-test-s723-20261102",
+  "valueFingerprint": "05e582bfd0d2500cc37461a2d779ec85e768ecbad220e2d6993a723847918453",
+  "deployId": "dep-dbkdpk4ipgvc73f9u9q0",
+  "deployStatus": "build_in_progress"
+}
