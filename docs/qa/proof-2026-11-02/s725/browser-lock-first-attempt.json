@@ -1,0 +1,52 @@
+{
+  "unit": "SCRUM-725",
+  "mode": "lock",
+  "startedAt": "2026-11-02T17:30:18.691Z",
+  "checks": [
+    {
+      "name": "POS back to launcher",
+      "passed": true,
+      "at": "2026-11-02T17:30:20.819Z"
+    },
+    {
+      "name": "Lock-screen booking link",
+      "passed": true,
+      "at": "2026-11-02T17:30:22.047Z"
+    },
+    {
+      "name": "Lock-screen Admin and return link",
+      "passed": true,
+      "at": "2026-11-02T17:30:23.867Z"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:30:19.019Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:30:20.522Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:30:20.827Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:30:22.055Z"
+    }
+  ],
+  "outcome": "incomplete",
+  "failedStep": "stock lock-screen link",
+  "errorName": "TimeoutError",
+  "finishedAt": "2026-11-02T17:30:55.353Z"
+}

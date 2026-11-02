@@ -1,0 +1,36 @@
+{
+  "unit": "SCRUM-725",
+  "service": "launcher",
+  "id": "srv-danli3ajnfac7391jrk0",
+  "key": "VITE_POS_URL",
+  "sha": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+  "startedAt": "2026-11-02T17:23:09.394Z",
+  "outcome": "live",
+  "namesBefore": [
+    "NODE_VERSION",
+    "VITE_BOOTH_URL",
+    "VITE_CONSOLE_URL",
+    "VITE_INBOX_URL",
+    "VITE_OTO_APP_URL",
+    "VITE_POS_URL",
+    "VITE_RADAR_URL"
+  ],
+  "countBefore": 7,
+  "previousDeploy": "dep-dbkc9obncjis73ej3qgg",
+  "writeStartedAt": "2026-11-02T17:23:10.601Z",
+  "otherValuesByteIdentical": true,
+  "countAfter": 7,
+  "savedAt": "2026-11-02T17:23:11.392Z",
+  "environmentFingerprints": {
+    "VITE_POS_URL": "fe589a36f8d267dfbff7ae071a6c0883c2a1d7d5ee330752ded9b6ea84475df0",
+    "VITE_INBOX_URL": "480a960fe8188c1b5583f6cc1a441ec45ca6d3c445baa0631b5213c0d59ea895",
+    "VITE_RADAR_URL": "2f8630b14ed6708b1bd1cd3018d2daa2252382123cc9408c4ca9f8e55bbad1b0",
+    "VITE_BOOTH_URL": "77019aa46ce61720c543e0b0388ce279e5748f7141ce393119e834bfbb93c705",
+    "VITE_OTO_APP_URL": "7424125e1a2eefe0b603ca461109a69421e2faed3f89e5d41261fbcada23ef3b",
+    "VITE_CONSOLE_URL": "7f4ea16cd1497fdf700d96f9a01df587246da51f575661fda447b33d8ac6e249",
+    "NODE_VERSION": "785f3ec7eb32f30b90cd0fcf3657d388b5ff4297f2f9716ff66e9b69c05ddd09"
+  },
+  "deployId": "dep-dbkce00473hc7389ehp0",
+  "liveAt": "2026-11-02T17:24:08.549498Z",
+  "routingGraceEndedAt": "2026-11-02T17:24:29.997Z"
+}

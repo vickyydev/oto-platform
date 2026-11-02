@@ -1,0 +1,36 @@
+{
+  "unit": "SCRUM-725",
+  "at": "2026-11-02T17:35:31.950Z",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a19d33-d18d-7295-a202-a621b5c13657",
+    "boxName": "ZZ TEST SCRUM-725 links",
+    "stationId": "01a19d33-d588-750e-9a5c-e34fd521116f",
+    "stationName": "ZZ TEST SCRUM-725 links",
+    "createdAt": "2026-11-02T16:59:41.766Z"
+  },
+  "checks": [
+    {
+      "name": "no test lease",
+      "base": "/box/v1/station/01a19d33-d588-750e-9a5c-e34fd521116f",
+      "passed": true
+    },
+    {
+      "name": "no test lease",
+      "base": "/stations/01a19d33-d588-750e-9a5c-e34fd521116f",
+      "passed": true
+    }
+  ],
+  "activeDisplays": 0,
+  "retainedSale": {
+    "id": "01a19d53-9d66-7197-9c40-019de90e6351",
+    "status": "finalised",
+    "stationId": "01a19d33-d588-750e-9a5c-e34fd521116f",
+    "grossSatang": 9000,
+    "receiptNumber": "Z725-000001"
+  },
+  "fixtureArchived": true,
+  "signOutStatus": 200,
+  "afterSignOutStatus": 401,
+  "finishedAt": "2026-11-02T17:35:33.290Z"
+}

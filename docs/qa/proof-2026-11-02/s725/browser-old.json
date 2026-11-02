@@ -1,0 +1,45 @@
+{
+  "unit": "SCRUM-725",
+  "mode": "old",
+  "startedAt": "2026-11-02T17:34:08.814Z",
+  "checks": [
+    {
+      "name": "Old POS native sign-in and ZZ TEST station still work without redirect",
+      "passed": true,
+      "at": "2026-11-02T17:34:17.589Z"
+    },
+    {
+      "name": "Old POS native sign-out",
+      "passed": true,
+      "at": "2026-11-02T17:34:19.502Z"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:34:09.128Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-staging.onrender.com",
+      "path": "/api/auth/sign-in",
+      "at": "2026-11-02T17:34:11.841Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-staging.onrender.com",
+      "path": "/api/auth/lock",
+      "at": "2026-11-02T17:34:17.613Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-staging.onrender.com",
+      "path": "/api/auth/sign-out",
+      "at": "2026-11-02T17:34:18.443Z"
+    }
+  ],
+  "outcome": "passed",
+  "finishedAt": "2026-11-02T17:34:19.504Z"
+}

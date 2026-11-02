@@ -1,0 +1,193 @@
+{
+  "unit": "SCRUM-725",
+  "mode": "suite",
+  "startedAt": "2026-11-02T17:27:08.648Z",
+  "checks": [
+    {
+      "name": "Native launcher phone/password sign-in",
+      "passed": true,
+      "at": "2026-11-02T17:27:12.667Z"
+    },
+    {
+      "name": "Launcher POS sign-on",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "passed": true,
+      "at": "2026-11-02T17:27:15.528Z"
+    },
+    {
+      "name": "Launcher Admin sign-on",
+      "origin": "https://oto-console-staging.onrender.com",
+      "passed": true,
+      "at": "2026-11-02T17:27:21.488Z"
+    },
+    {
+      "name": "Console All apps returns to signed-in launcher",
+      "passed": true,
+      "at": "2026-11-02T17:27:22.431Z"
+    },
+    {
+      "name": "Launcher Inbox sign-on",
+      "origin": "https://oto-inbox-staging.onrender.com",
+      "passed": true,
+      "at": "2026-11-02T17:27:27.115Z"
+    },
+    {
+      "name": "Inbox Back to suite link",
+      "passed": true,
+      "at": "2026-11-02T17:27:27.217Z"
+    },
+    {
+      "name": "Launcher OTO App sign-on",
+      "origin": "https://oto-app-staging.onrender.com",
+      "passed": true,
+      "at": "2026-11-02T17:27:30.544Z"
+    },
+    {
+      "name": "cleanup sign-out",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "status": 200
+    },
+    {
+      "name": "cleanup sign-out",
+      "origin": "https://oto-console-staging.onrender.com",
+      "status": 200
+    },
+    {
+      "name": "cleanup sign-out",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "status": 200
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:08.972Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/api/auth/sign-in",
+      "at": "2026-11-02T17:27:10.451Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:12.675Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/api/auth/handoff",
+      "at": "2026-11-02T17:27:14.119Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:14.631Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/api/auth/handoff/exchange",
+      "at": "2026-11-02T17:27:15.037Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:17.335Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/api/auth/handoff",
+      "at": "2026-11-02T17:27:18.799Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-console-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:19.263Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-console-staging.onrender.com",
+      "path": "/api/auth/handoff/exchange",
+      "at": "2026-11-02T17:27:19.959Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:22.346Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:22.441Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/api/auth/handoff",
+      "at": "2026-11-02T17:27:23.861Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-inbox-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:24.335Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-inbox-staging.onrender.com",
+      "path": "/api/auth/handoff/exchange",
+      "at": "2026-11-02T17:27:25.016Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:27.139Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:27.224Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/api/auth/handoff",
+      "at": "2026-11-02T17:27:28.675Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-app-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:27:29.133Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-app-staging.onrender.com",
+      "path": "/api/auth/handoff",
+      "at": "2026-11-02T17:27:29.522Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-app-staging.onrender.com",
+      "path": "/roles",
+      "at": "2026-11-02T17:27:30.552Z"
+    }
+  ],
+  "outcome": "incomplete",
+  "failedStep": "OTO App own link",
+  "errorName": "TimeoutError",
+  "finishedAt": "2026-11-02T17:28:02.589Z"
+}

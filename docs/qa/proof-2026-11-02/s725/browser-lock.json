@@ -1,0 +1,89 @@
+{
+  "unit": "SCRUM-725",
+  "mode": "lock",
+  "startedAt": "2026-11-02T17:33:58.258Z",
+  "checks": [
+    {
+      "name": "POS back to launcher",
+      "passed": true,
+      "at": "2026-11-02T17:34:00.274Z"
+    },
+    {
+      "name": "Lock-screen booking link",
+      "passed": true,
+      "at": "2026-11-02T17:34:01.543Z"
+    },
+    {
+      "name": "Lock-screen Admin and return link",
+      "passed": true,
+      "at": "2026-11-02T17:34:03.319Z"
+    },
+    {
+      "name": "Lock-screen stock link completes native sign-in",
+      "passed": true,
+      "at": "2026-11-02T17:34:05.099Z"
+    },
+    {
+      "name": "Direct /today visit retains signed-in session",
+      "passed": true,
+      "at": "2026-11-02T17:34:06.583Z"
+    },
+    {
+      "name": "Native lock and sign-out revokes POS session",
+      "passed": true,
+      "at": "2026-11-02T17:34:07.575Z"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:33:58.579Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:34:00.041Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:34:00.283Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:34:01.550Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/api/auth/sign-in",
+      "at": "2026-11-02T17:34:04.185Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/today",
+      "at": "2026-11-02T17:34:05.106Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/api/auth/lock",
+      "at": "2026-11-02T17:34:06.603Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/api/auth/sign-out",
+      "at": "2026-11-02T17:34:07.436Z"
+    }
+  ],
+  "outcome": "passed",
+  "finishedAt": "2026-11-02T17:34:08.236Z"
+}

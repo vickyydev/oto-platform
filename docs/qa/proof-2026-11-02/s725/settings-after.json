@@ -1,0 +1,141 @@
+{
+  "unit": "SCRUM-725",
+  "at": "2026-11-02T17:26:58.218Z",
+  "services": [
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "envNameCount": 4,
+      "changedNames": [],
+      "allOtherValuesByteIdentical": true,
+      "live": {
+        "sha": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+        "id": "dep-dbkc9obncjis73ej3pag",
+        "finishedAt": "2026-11-02T17:16:37.740118Z"
+      }
+    },
+    {
+      "name": "oto-inbox-staging",
+      "id": "srv-dbbb4srrjlhs73dk2rm0",
+      "envNameCount": 2,
+      "changedNames": [],
+      "allOtherValuesByteIdentical": true,
+      "live": {
+        "sha": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+        "id": "dep-dbkc9obncjis73ej3qsg",
+        "finishedAt": "2026-11-02T17:15:21.64424Z"
+      }
+    },
+    {
+      "name": "oto-qa-worker-staging",
+      "id": "srv-dba9i4rbc2fs73aiuq5g",
+      "envNameCount": 23,
+      "changedNames": [],
+      "allOtherValuesByteIdentical": true,
+      "live": {
+        "sha": "b91e957c779cb74a0c1495f24257bd69218286ae",
+        "id": "dep-dbemorm7bikc73be3bo0",
+        "finishedAt": "2026-10-25T02:43:34.647837Z"
+      }
+    },
+    {
+      "name": "oto-radar-staging",
+      "id": "srv-db79h5id0e5s73fpal7g",
+      "envNameCount": 9,
+      "changedNames": [],
+      "allOtherValuesByteIdentical": true,
+      "live": {
+        "sha": "608b1fd1ae6b95113cb4d353d5a96304bfd1c560",
+        "id": "dep-dbckuuss728c73fd0dtg",
+        "finishedAt": "2026-10-21T23:51:33.106042Z"
+      }
+    },
+    {
+      "name": "oto-booth-staging",
+      "id": "srv-dapkbobtqb8s73delilg",
+      "envNameCount": 2,
+      "changedNames": [],
+      "allOtherValuesByteIdentical": true,
+      "live": {
+        "sha": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+        "id": "dep-dbkc9obncjis73ej3qm0",
+        "finishedAt": "2026-11-02T17:14:53.510032Z"
+      }
+    },
+    {
+      "name": "oto-app-staging",
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "envNameCount": 34,
+      "changedNames": [],
+      "allOtherValuesByteIdentical": true,
+      "live": {
+        "sha": "629714f266253c4b6951b68237da7db13c8cf26e",
+        "id": "dep-dbjsjmk9v7es73b1lhpg",
+        "finishedAt": "2026-11-01T23:27:20.626127Z"
+      }
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "srv-danng2p42hec73f38e3g",
+      "envNameCount": 3,
+      "changedNames": [
+        "VITE_POS_URL"
+      ],
+      "allOtherValuesByteIdentical": true,
+      "paperRollbackMatchesOriginalFingerprint": true,
+      "live": {
+        "sha": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+        "id": "dep-dbkcer0u01pc739mhqa0",
+        "finishedAt": "2026-11-02T17:26:14.663274Z"
+      }
+    },
+    {
+      "name": "oto-launcher-staging",
+      "id": "srv-danli3ajnfac7391jrk0",
+      "envNameCount": 7,
+      "changedNames": [
+        "VITE_POS_URL"
+      ],
+      "allOtherValuesByteIdentical": true,
+      "paperRollbackMatchesOriginalFingerprint": true,
+      "live": {
+        "sha": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+        "id": "dep-dbkce00473hc7389ehp0",
+        "finishedAt": "2026-11-02T17:24:08.549498Z"
+      }
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "envNameCount": 2,
+      "changedNames": [],
+      "allOtherValuesByteIdentical": true,
+      "settingsByteIdentical": true,
+      "oldSiteNoRedirect": true,
+      "live": {
+        "sha": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+        "id": "dep-dbkc9obncjis73ej3qdg",
+        "finishedAt": "2026-11-02T17:15:02.569586Z"
+      }
+    },
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "envNameCount": 56,
+      "changedNames": [
+        "HANDOFF_APP_ORIGINS"
+      ],
+      "allOtherValuesByteIdentical": true,
+      "otherHandoffEntriesByteIdentical": true,
+      "bothOriginsUnchanged": true,
+      "paperRollbackMatchesOriginalFingerprint": true,
+      "live": {
+        "sha": "0f4061d6e9076638258a79daa453026a39d2e2dd",
+        "id": "dep-dbkcbigu01pc739m84p0",
+        "finishedAt": "2026-11-02T17:21:34.485793Z"
+      }
+    }
+  ],
+  "paperRollbackPassed": true,
+  "noRollbackExecuted": true
+}

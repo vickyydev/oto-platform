@@ -1,0 +1,86 @@
+{
+  "unit": "SCRUM-725",
+  "mode": "lock",
+  "startedAt": "2026-11-02T17:32:20.344Z",
+  "checks": [
+    {
+      "name": "POS back to launcher",
+      "passed": true,
+      "at": "2026-11-02T17:32:22.875Z"
+    },
+    {
+      "name": "Lock-screen booking link",
+      "passed": true,
+      "at": "2026-11-02T17:32:24.032Z"
+    },
+    {
+      "name": "Lock-screen Admin and return link",
+      "passed": true,
+      "at": "2026-11-02T17:32:25.810Z"
+    },
+    {
+      "name": "Lock-screen stock link completes native sign-in",
+      "passed": true,
+      "at": "2026-11-02T17:32:27.555Z"
+    },
+    {
+      "name": "Direct /today visit retains signed-in session",
+      "passed": true,
+      "at": "2026-11-02T17:32:29.043Z"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:32:20.658Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:32:22.077Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:32:22.883Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/",
+      "at": "2026-11-02T17:32:24.040Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/api/auth/sign-in",
+      "at": "2026-11-02T17:32:26.672Z"
+    },
+    {
+      "method": "GET",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/today",
+      "at": "2026-11-02T17:32:27.563Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/api/auth/lock",
+      "at": "2026-11-02T17:32:29.066Z"
+    },
+    {
+      "method": "POST",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "path": "/api/auth/sign-out",
+      "at": "2026-11-02T17:32:29.891Z"
+    }
+  ],
+  "outcome": "incomplete",
+  "failedStep": "POS native sign-out",
+  "errorName": "AssertionError",
+  "finishedAt": "2026-11-02T17:32:30.635Z"
+}

@@ -1,0 +1,10 @@
+{
+  "unit": "SCRUM-725",
+  "startedAt": "2026-11-02T17:22:50.502Z",
+  "newHandoffObservedAt": "2026-11-02T17:22:54.784Z",
+  "origin": "https://oto-pos-web-staging.onrender.com",
+  "signedIn": true,
+  "launcherBuildValueStillOld": true,
+  "signOut": 200,
+  "afterSignOut": 401
+}

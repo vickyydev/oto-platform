@@ -3,8 +3,8 @@
 ## Staging links: SCRUM-725
 
 The owner approved the staging link switch on 2 November 2026. The new destination
-is `https://oto-pos-web-staging.onrender.com`. This source checkpoint records the
-procedure; the live setting changes and browser acceptance are still pending.
+is `https://oto-pos-web-staging.onrender.com`. The live switch and browser acceptance passed on 2 November, 17:35 UTC,
+on source `0f4061d6e9076638258a79daa453026a39d2e2dd`, CI 41485215834.
 Park Pi/iPad addresses, production and the old static site's settings are unchanged.
 No new service or redirect is part of this operation.
 
@@ -13,6 +13,33 @@ text/JSON/string columns, including settings, message templates, assistant
 knowledge, print templates and booking links. There is no database edit to make.
 The safe inventory and service-setting fingerprints are in
 `docs/qa/proof-2026-11-02/s725/`.
+
+### Completed staging switch
+
+The API restarted on the same green source at 17:21:34 UTC; a fresh native
+launcher sign-on reached the new POS at 17:22:54. Launcher and Console rebuilt
+at 17:24:08 and 17:26:14. A hand-off minted before the routing change can retain
+the old destination until its one-minute expiry; continuous zero outage was
+not measured. Reopening from the launcher obtains a fresh hand-off.
+
+API, launcher and Console retain 56, 7 and 3 environment names. Only the named
+three keys changed. Every other value across ten services, all five non-POS
+hand-off entries, and both allowed origins stayed byte-identical. The old
+site settings match their original fingerprint; it has no redirect and native
+sign-in/sign-out still pass. No stored old-hostname match needed a database edit.
+
+All 302 served frontend files across eight sites are free of the old address.
+The native browser matrix covered launcher and other-app sign-ons/links,
+Console POS links, POS booking/stock/admin/Today/launcher links and sign-out.
+The ZZ TEST cash journey took 3.431 seconds, 39 calls and one finalise request.
+Visible display updates took 304/233 ms; single scan delivery took 82 ms.
+Grace, pause, recovery, revocation, installed offline shell and Origin checks
+passed. The exact test station/box are archived, all paired screens and leases
+cleared, sessions signed out, and receipt Z725-000001 retained for audit.
+
+[The final report](../qa/proof-2026-11-02/s725/README.md) records exact live
+commits, deploy IDs, attempts, cleanup and inspected proof. The forward order
+below is the executed procedure; the way back remains available.
 
 ### Forward order
 
@@ -56,11 +83,12 @@ The same brief hand-off window applies in reverse. ALLOWED_ORIGINS keeps both
 addresses throughout; the old site has no redirect to undo. No database rollback
 or sale replay is needed. Existing old bookmarks and home-screen icons stay valid.
 
-The live paper check must confirm: both service IDs and origins exist; the old
+The live paper check passed at 17:26:58 UTC (`settings-after.json`): both service IDs and origins exist; the old
 site still answers; each expected key is readable; exactly one `pos=` entry
 exists; the other five hand-off entries and other settings match their saved
 fingerprints; both origins remain allowed; and the reversal changes only the
-same three keys. Record that result with the final proof without executing it.
+same three keys. All three reversed values reproduce the original fingerprints. The rollback was
+checked on paper and was not executed.
 
 Old-address references are deliberately retained in the old service definition,
 ALLOWED_ORIGINS, regression fixtures, this rollback/history, dated handovers and
