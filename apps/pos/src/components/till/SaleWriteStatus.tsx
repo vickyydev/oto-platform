@@ -133,10 +133,13 @@ export function SaleWriteFailure({
   // commit, or the counter's box at the money press — took nothing and saved
   // nothing anywhere, whichever call it answered. Its words stand as they came.
   const stockRefused = isStockRefusalCode(state.code);
+  const boxPaymentUnconfirmed = state.stage === 'finalise' && state.heldOn === 'till' && state.cause !== 'refused';
   const headline =
     state.stage === 'commit' || stockRefused
       ? 'This sale has not been saved.'
-      : 'The payment has not been recorded.';
+      : boxPaymentUnconfirmed
+        ? 'The payment is not yet confirmed.'
+        : 'The payment has not been recorded.';
 
   return (
     <div className="mt-6 rounded-xl border border-rose-500/40 bg-rose-500/10 p-4">

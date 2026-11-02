@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import type { SaleWriteState } from '@/lib/saleWriter';
+import { BOX_LANE_UNREACHABLE } from '@oto/shared';
 
 /**
  * SCRUM-502 — the sale panel's explainer follows the lane.
@@ -38,6 +39,16 @@ const failed = (over: Partial<Extract<SaleWriteState, { kind: 'failed' }>> = {})
 });
 
 describe('the sale panel after a refused money press', () => {
+  it('resolved HIGH: an unanswered box cash press stays uncertain in the heading and actual connection message', () => {
+    // Neither heading nor connection message claims a lost reply took nothing.
+    const out = html(failed({ cause: 'connection', retryable: true, code: undefined,
+      message: BOX_LANE_UNREACHABLE.message, heldOn: 'till' }));
+    expect(out).toContain('The payment is not yet confirmed.');
+    expect(out).toContain('may already have recorded');
+    expect(out).not.toContain('nothing was taken');
+    expect(out).not.toContain('The payment has not been recorded.');
+  });
+
   it('box lane: the box refused, and the order is on this till only — never "saved on the platform" nor "the platform looked"', () => {
     const out = html(failed({ answeredBy: 'box', heldOn: 'till' }));
     expect(out).toContain('The payment has not been recorded.');

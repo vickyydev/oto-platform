@@ -345,14 +345,13 @@ export const BOX_LANE_PAYMENT_REFUSAL = {
 } as const;
 
 /**
- * What a till on the box lane says when its box did not answer either: the
- * sale was not taken anywhere, and the counter's own network is the thing to
- * look at.
+ * A lost box reply does not show whether the payment was recorded. Keep that
+ * uncertainty explicit; the same sale can be checked without taking it twice.
  */
 export const BOX_LANE_UNREACHABLE = {
   code: 'BOX_LANE_UNREACHABLE',
   message:
-    'Neither the internet nor this counter’s box answered, so nothing was taken. Check the counter’s box and its network, then try again.',
+    'Neither the internet nor this counter’s box answered. The box may already have recorded this payment. Check the counter’s box and its network, then check this same sale again.',
 } as const;
 
 /**
