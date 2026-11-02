@@ -1,0 +1,13 @@
+{
+  "unit": "SCRUM-721",
+  "at": "2026-11-02T16:17:57.106Z",
+  "status": "Deployed",
+  "source": "5671ac24dbf0bcef687362956e3ccc64a8923d67",
+  "ciRun": "41472577991",
+  "proofCommit": "5557e5ae",
+  "attachment": {
+    "id": "12235",
+    "name": "s721-staging-proof.png"
+  },
+  "imageOpened": true
+}

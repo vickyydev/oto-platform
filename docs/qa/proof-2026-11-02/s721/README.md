@@ -77,6 +77,8 @@ fields are masked. No financial record was created or altered in these checks.
 
 The labelled `s721-staging-proof.png` was opened and inspected after deployment,
 and copied to `docs/qa/jira-comments/attachments/SCRUM-721/` for attachment.
-Jira remains Testing until that attachment and the required Deployed walk.
+The required jira.mjs walk completed and independent read-back confirmed
+Deployed at 16:17:57 UTC. The inspected image is attachment 12235;
+`jira-closeout.json` records that result. Done remains the owner's acceptance.
 The revised order is 721, then staging-link switch-over 725, then the first
 stage of 713 at Testing. No physical Pi/iPad or production change is allowed.
