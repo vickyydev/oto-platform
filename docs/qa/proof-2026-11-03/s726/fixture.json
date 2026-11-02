@@ -31,5 +31,11 @@
   "categoryId": "01a19e80-5b1a-7307-8f6d-0756f2d1d4bd",
   "productId": "01a19e80-5b74-72ce-81be-9da630e6ba3e",
   "productName": "ZZ TEST SCRUM-726 mvzv6zgu item",
-  "createdAt": "2026-11-02T23:02:53.878Z"
+  "createdAt": "2026-11-02T23:02:53.878Z",
+  "boards": [
+    {
+      "id": "01a19e88-2a5d-7685-989b-22601c493045",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu board 1"
+    }
+  ]
 }

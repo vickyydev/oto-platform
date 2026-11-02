@@ -1,0 +1,1474 @@
+{
+  "startedAt": "2026-11-02T23:11:23.516Z",
+  "phases": [
+    {
+      "name": "background_hosted_agent",
+      "description": "No POS pages open; dedicated hosted agent included in background",
+      "startedAt": "2026-11-02T23:11:47.516Z",
+      "targetSeconds": 180,
+      "samples": [
+        {
+          "at": "2026-11-02T23:11:48.984Z",
+          "dbSampleAt": "2026-11-02T23:11:24.386Z",
+          "connections": {
+            "total": 12,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 6,
+            "idle": 6,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 102064128,
+            "heapTotal": 55128064,
+            "heapUsed": 51764936,
+            "external": 5112147,
+            "arrayBuffers": 1375899
+          }
+        },
+        {
+          "at": "2026-11-02T23:12:05.182Z",
+          "dbSampleAt": "2026-11-02T23:11:54.437Z",
+          "connections": {
+            "total": 10,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 2,
+            "idle": 2,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 104824832,
+            "heapTotal": 56541184,
+            "heapUsed": 54256680,
+            "external": 5153272,
+            "arrayBuffers": 1416984
+          }
+        },
+        {
+          "at": "2026-11-02T23:12:20.526Z",
+          "dbSampleAt": "2026-11-02T23:12:09.462Z",
+          "connections": {
+            "total": 7,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 2,
+            "idle": 2,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 104763392,
+            "heapTotal": 55914496,
+            "heapUsed": 50640480,
+            "external": 5110286,
+            "arrayBuffers": 1373998
+          }
+        },
+        {
+          "at": "2026-11-02T23:12:36.145Z",
+          "dbSampleAt": "2026-11-02T23:12:24.479Z",
+          "connections": {
+            "total": 11,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 5,
+            "idle": 5,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 104996864,
+            "heapTotal": 55914496,
+            "heapUsed": 52139208,
+            "external": 5144353,
+            "arrayBuffers": 1411423
+          }
+        },
+        {
+          "at": "2026-11-02T23:12:57.133Z",
+          "dbSampleAt": "2026-11-02T23:12:39.506Z",
+          "connections": {
+            "total": 10,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 4,
+            "idle": 4,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 105644032,
+            "heapTotal": 56803328,
+            "heapUsed": 54102880,
+            "external": 5399273,
+            "arrayBuffers": 1662985
+          }
+        },
+        {
+          "at": "2026-11-02T23:13:12.627Z",
+          "dbSampleAt": "2026-11-02T23:13:09.555Z",
+          "connections": {
+            "total": 7,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 2,
+            "idle": 2,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 103497728,
+            "heapTotal": 56336384,
+            "heapUsed": 48832952,
+            "external": 3833928,
+            "arrayBuffers": 100998
+          }
+        },
+        {
+          "at": "2026-11-02T23:13:27.730Z",
+          "dbSampleAt": "2026-11-02T23:13:09.555Z",
+          "connections": {
+            "total": 7,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 5,
+            "idle": 5,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 104419328,
+            "heapTotal": 58011648,
+            "heapUsed": 50817072,
+            "external": 3871870,
+            "arrayBuffers": 138940
+          }
+        },
+        {
+          "at": "2026-11-02T23:13:42.887Z",
+          "dbSampleAt": "2026-11-02T23:13:39.608Z",
+          "connections": {
+            "total": 10,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 5,
+            "idle": 5,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 105246720,
+            "heapTotal": 57589760,
+            "heapUsed": 52128872,
+            "external": 3921885,
+            "arrayBuffers": 185597
+          }
+        },
+        {
+          "at": "2026-11-02T23:13:58.867Z",
+          "dbSampleAt": "2026-11-02T23:13:39.608Z",
+          "connections": {
+            "total": 10,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 4,
+            "idle": 4,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 105893888,
+            "heapTotal": 58216448,
+            "heapUsed": 54116336,
+            "external": 4169046,
+            "arrayBuffers": 436116
+          }
+        },
+        {
+          "at": "2026-11-02T23:14:14.277Z",
+          "dbSampleAt": "2026-11-02T23:14:09.657Z",
+          "connections": {
+            "total": 7,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 2,
+            "idle": 2,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 107171840,
+            "heapTotal": 59891712,
+            "heapUsed": 56208432,
+            "external": 4206992,
+            "arrayBuffers": 474062
+          }
+        },
+        {
+          "at": "2026-11-02T23:14:29.441Z",
+          "dbSampleAt": "2026-11-02T23:14:09.657Z",
+          "connections": {
+            "total": 7,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 10,
+            "idle": 10,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 105943040,
+            "heapTotal": 58011648,
+            "heapUsed": 47886640,
+            "external": 5118487,
+            "arrayBuffers": 1382199
+          }
+        },
+        {
+          "at": "2026-11-02T23:15:03.017Z",
+          "dbSampleAt": "2026-11-02T23:14:39.704Z",
+          "connections": {
+            "total": 15,
+            "active": 1,
+            "waiting_on_lock": 0
+          },
+          "nonTestSessions": 0,
+          "nonTestSales": 0,
+          "stationChannels": {
+            "stations": 0,
+            "connections": 0,
+            "perStation": {}
+          },
+          "pool": {
+            "total": 2,
+            "idle": 2,
+            "waiting": 0,
+            "max": 10
+          },
+          "nativeStreams": 0,
+          "scriptedStreams": 0,
+          "leaseRenewals": 0,
+          "nodeMemory": {
+            "rss": 106635264,
+            "heapTotal": 57589760,
+            "heapUsed": 49954808,
+            "external": 5156432,
+            "arrayBuffers": 1420144
+          }
+        }
+      ],
+      "metricWindows": [
+        {
+          "startTime": "2026-11-02T23:11:47.516Z",
+          "endTime": "2026-11-02T23:11:48.984Z",
+          "at": "2026-11-02T23:11:48.984Z",
+          "series": {
+            "cpu": [],
+            "cpu-limit": [],
+            "memory": [],
+            "memory-limit": [],
+            "active-connections": []
+          },
+          "summary": {
+            "srv-danh2ljtqb8s73bt9en0": {
+              "name": "oto-api-staging",
+              "plan": "standard"
+            },
+            "srv-dbk7qu8n74is73bm894g": {
+              "name": "oto-pos-web-staging",
+              "plan": "starter"
+            },
+            "dpg-dangso3m8hqs73b9ir80-a": {
+              "name": "oto-db-staging",
+              "plan": "1c-2g"
+            }
+          }
+        },
+        {
+          "startTime": "2026-11-02T23:11:48.227Z",
+          "endTime": "2026-11-02T23:12:48.227Z",
+          "at": "2026-11-02T23:12:48.227Z",
+          "series": {
+            "cpu": [
+              {
+                "labels": [],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 0.00022823333
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 0.00047513333
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 0.00047513333
+                  }
+                ],
+                "resourceId": "srv-dbk7qu8n74is73bm894g"
+              },
+              {
+                "labels": [],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 0.008363433
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 0.0331364
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 0.0331364
+                  }
+                ],
+                "resourceId": "srv-danh2ljtqb8s73bt9en0"
+              },
+              {
+                "labels": [],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 0.011884933
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 0.027418934
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 0.027418934
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ],
+            "cpu-limit": [
+              {
+                "labels": [
+                  {
+                    "field": "instance",
+                    "value": "srv-dbk7qu8n74is73bm894g-tvldq"
+                  },
+                  {
+                    "field": "service",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  }
+                ],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 0.5
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 0.5
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 0.5
+                  }
+                ],
+                "resourceId": "srv-dbk7qu8n74is73bm894g"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "service",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "instance",
+                    "value": "srv-danh2ljtqb8s73bt9en0-gjqlr"
+                  }
+                ],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 1
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 1
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 1
+                  }
+                ],
+                "resourceId": "srv-danh2ljtqb8s73bt9en0"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "resource",
+                    "value": "dpg-dangso3m8hqs73b9ir80-a"
+                  }
+                ],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 1
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 1
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 1
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ],
+            "memory": [
+              {
+                "labels": [
+                  {
+                    "field": "instance",
+                    "value": "srv-dbk7qu8n74is73bm894g-tvldq"
+                  },
+                  {
+                    "field": "service",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 168742910
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 168742910
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 168742910
+                  }
+                ],
+                "resourceId": "srv-dbk7qu8n74is73bm894g"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "service",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "instance",
+                    "value": "srv-danh2ljtqb8s73bt9en0-gjqlr"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 392032260
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 394731520
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 394731520
+                  }
+                ],
+                "resourceId": "srv-danh2ljtqb8s73bt9en0"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "resource",
+                    "value": "dpg-dangso3m8hqs73b9ir80-a"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 658501600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 648695800
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 648695800
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ],
+            "memory-limit": [
+              {
+                "labels": [
+                  {
+                    "field": "instance",
+                    "value": "srv-dbk7qu8n74is73bm894g-tvldq"
+                  },
+                  {
+                    "field": "service",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 536870900
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 536870900
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 536870900
+                  }
+                ],
+                "resourceId": "srv-dbk7qu8n74is73bm894g"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "instance",
+                    "value": "srv-danh2ljtqb8s73bt9en0-gjqlr"
+                  },
+                  {
+                    "field": "service",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 2147483600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 2147483600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 2147483600
+                  }
+                ],
+                "resourceId": "srv-danh2ljtqb8s73bt9en0"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "resource",
+                    "value": "dpg-dangso3m8hqs73b9ir80-a"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 2147483600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 2147483600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 2147483600
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ],
+            "active-connections": [
+              {
+                "labels": [
+                  {
+                    "field": "resource",
+                    "value": "dpg-dangso3m8hqs73b9ir80-a"
+                  }
+                ],
+                "unit": "unitless",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:11:48.227Z",
+                    "value": 11
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:18.227Z",
+                    "value": 11
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:12:48.227Z",
+                    "value": 11
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ]
+          },
+          "summary": {
+            "srv-danh2ljtqb8s73bt9en0": {
+              "name": "oto-api-staging",
+              "plan": "standard",
+              "cpu": {
+                "samples": 3,
+                "min": 0.008363433,
+                "max": 0.0331364,
+                "mean": 0.02487874433333333
+              },
+              "cpu-limit": {
+                "samples": 3,
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "memory": {
+                "samples": 3,
+                "min": 392032260,
+                "max": 394731520,
+                "mean": 393831766.6666667
+              },
+              "memory-limit": {
+                "samples": 3,
+                "min": 2147483600,
+                "max": 2147483600,
+                "mean": 2147483600
+              },
+              "cpuPercentMax": 3.3136400000000004,
+              "memoryPercentMax": 18.381119185264094
+            },
+            "srv-dbk7qu8n74is73bm894g": {
+              "name": "oto-pos-web-staging",
+              "plan": "starter",
+              "cpu": {
+                "samples": 3,
+                "min": 0.00022823333,
+                "max": 0.00047513333,
+                "mean": 0.00039283333
+              },
+              "cpu-limit": {
+                "samples": 3,
+                "min": 0.5,
+                "max": 0.5,
+                "mean": 0.5
+              },
+              "memory": {
+                "samples": 3,
+                "min": 168742910,
+                "max": 168742910,
+                "mean": 168742910
+              },
+              "memory-limit": {
+                "samples": 3,
+                "min": 536870900,
+                "max": 536870900,
+                "mean": 536870900
+              },
+              "cpuPercentMax": 0.09502666600000001,
+              "memoryPercentMax": 31.4308169803951
+            },
+            "dpg-dangso3m8hqs73b9ir80-a": {
+              "name": "oto-db-staging",
+              "plan": "1c-2g",
+              "cpu": {
+                "samples": 3,
+                "min": 0.011884933,
+                "max": 0.027418934,
+                "mean": 0.022240933666666667
+              },
+              "cpu-limit": {
+                "samples": 3,
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "memory": {
+                "samples": 3,
+                "min": 648695800,
+                "max": 658501600,
+                "mean": 651964400
+              },
+              "memory-limit": {
+                "samples": 3,
+                "min": 2147483600,
+                "max": 2147483600,
+                "mean": 2147483600
+              },
+              "active-connections": {
+                "samples": 3,
+                "min": 11,
+                "max": 11,
+                "mean": 11
+              },
+              "cpuPercentMax": 2.7418934,
+              "memoryPercentMax": 30.663870960411526
+            }
+          }
+        },
+        {
+          "startTime": "2026-11-02T23:12:48.930Z",
+          "endTime": "2026-11-02T23:13:48.930Z",
+          "at": "2026-11-02T23:13:48.930Z",
+          "series": {
+            "cpu": [
+              {
+                "labels": [],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 0.00036626667
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 0.00039416668
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 0.00039416668
+                  }
+                ],
+                "resourceId": "srv-dbk7qu8n74is73bm894g"
+              },
+              {
+                "labels": [],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 0.0054843
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 0.046311468
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 0.046311468
+                  }
+                ],
+                "resourceId": "srv-danh2ljtqb8s73bt9en0"
+              },
+              {
+                "labels": [],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 0.0114813335
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 0.023400268
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 0.023400268
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ],
+            "cpu-limit": [
+              {
+                "labels": [
+                  {
+                    "field": "instance",
+                    "value": "srv-dbk7qu8n74is73bm894g-tvldq"
+                  },
+                  {
+                    "field": "service",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  }
+                ],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 0.5
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 0.5
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 0.5
+                  }
+                ],
+                "resourceId": "srv-dbk7qu8n74is73bm894g"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "service",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "instance",
+                    "value": "srv-danh2ljtqb8s73bt9en0-gjqlr"
+                  }
+                ],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 1
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 1
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 1
+                  }
+                ],
+                "resourceId": "srv-danh2ljtqb8s73bt9en0"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "resource",
+                    "value": "dpg-dangso3m8hqs73b9ir80-a"
+                  }
+                ],
+                "unit": "cpu",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 1
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 1
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 1
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ],
+            "memory": [
+              {
+                "labels": [
+                  {
+                    "field": "service",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  },
+                  {
+                    "field": "instance",
+                    "value": "srv-dbk7qu8n74is73bm894g-tvldq"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 169267200
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 168742910
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 168742910
+                  }
+                ],
+                "resourceId": "srv-dbk7qu8n74is73bm894g"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "service",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "instance",
+                    "value": "srv-danh2ljtqb8s73bt9en0-gjqlr"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 400601100
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 382443520
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 382443520
+                  }
+                ],
+                "resourceId": "srv-danh2ljtqb8s73bt9en0"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "resource",
+                    "value": "dpg-dangso3m8hqs73b9ir80-a"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 647438340
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 638267400
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 638267400
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ],
+            "memory-limit": [
+              {
+                "labels": [
+                  {
+                    "field": "service",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-dbk7qu8n74is73bm894g"
+                  },
+                  {
+                    "field": "instance",
+                    "value": "srv-dbk7qu8n74is73bm894g-tvldq"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 536870900
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 536870900
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 536870900
+                  }
+                ],
+                "resourceId": "srv-dbk7qu8n74is73bm894g"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "service",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "resource",
+                    "value": "srv-danh2ljtqb8s73bt9en0"
+                  },
+                  {
+                    "field": "instance",
+                    "value": "srv-danh2ljtqb8s73bt9en0-gjqlr"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 2147483600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 2147483600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 2147483600
+                  }
+                ],
+                "resourceId": "srv-danh2ljtqb8s73bt9en0"
+              },
+              {
+                "labels": [
+                  {
+                    "field": "resource",
+                    "value": "dpg-dangso3m8hqs73b9ir80-a"
+                  }
+                ],
+                "unit": "bytes",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 2147483600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 2147483600
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 2147483600
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ],
+            "active-connections": [
+              {
+                "labels": [
+                  {
+                    "field": "resource",
+                    "value": "dpg-dangso3m8hqs73b9ir80-a"
+                  }
+                ],
+                "unit": "unitless",
+                "values": [
+                  {
+                    "timestamp": "2026-11-02T23:12:48.93Z",
+                    "value": 10
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:18.93Z",
+                    "value": 10
+                  },
+                  {
+                    "timestamp": "2026-11-02T23:13:48.93Z",
+                    "value": 10
+                  }
+                ],
+                "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
+              }
+            ]
+          },
+          "summary": {
+            "srv-danh2ljtqb8s73bt9en0": {
+              "name": "oto-api-staging",
+              "plan": "standard",
+              "cpu": {
+                "samples": 3,
+                "min": 0.0054843,
+                "max": 0.046311468,
+                "mean": 0.032702412
+              },
+              "cpu-limit": {
+                "samples": 3,
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "memory": {
+                "samples": 3,
+                "min": 382443520,
+                "max": 400601100,
+                "mean": 388496046.6666667
+              },
+              "memory-limit": {
+                "samples": 3,
+                "min": 2147483600,
+                "max": 2147483600,
+                "mean": 2147483600
+              },
+              "cpuPercentMax": 4.6311468,
+              "memoryPercentMax": 18.654442809248927
+            },
+            "srv-dbk7qu8n74is73bm894g": {
+              "name": "oto-pos-web-staging",
+              "plan": "starter",
+              "cpu": {
+                "samples": 3,
+                "min": 0.00036626667,
+                "max": 0.00039416668,
+                "mean": 0.00038486667666666664
+              },
+              "cpu-limit": {
+                "samples": 3,
+                "min": 0.5,
+                "max": 0.5,
+                "mean": 0.5
+              },
+              "memory": {
+                "samples": 3,
+                "min": 168742910,
+                "max": 169267200,
+                "mean": 168917673.33333334
+              },
+              "memory-limit": {
+                "samples": 3,
+                "min": 536870900,
+                "max": 536870900,
+                "mean": 536870900
+              },
+              "cpuPercentMax": 0.078833336,
+              "memoryPercentMax": 31.528473605106925
+            },
+            "dpg-dangso3m8hqs73b9ir80-a": {
+              "name": "oto-db-staging",
+              "plan": "1c-2g",
+              "cpu": {
+                "samples": 3,
+                "min": 0.0114813335,
+                "max": 0.023400268,
+                "mean": 0.019427289833333333
+              },
+              "cpu-limit": {
+                "samples": 3,
+                "min": 1,
+                "max": 1,
+                "mean": 1
+              },
+              "memory": {
+                "samples": 3,
+                "min": 638267400,
+                "max": 647438340,
+                "mean": 641324380
+              },
+              "memory-limit": {
+                "samples": 3,
+                "min": 2147483600,
+                "max": 2147483600,
+                "mean": 2147483600
+              },
+              "active-connections": {
+                "samples": 3,
+                "min": 10,
+                "max": 10,
+                "mean": 10
+              },
+              "cpuPercentMax": 2.3400268,
+              "memoryPercentMax": 30.148697759554484
+            }
+          }
+        }
+      ],
+      "outcome": "passed",
+      "leaseRenewalsBefore": 0,
+      "attemptsBefore": 0,
+      "finishedAt": "2026-11-02T23:15:04.029Z",
+      "seconds": 196.513,
+      "database": {
+        "from": "2026-11-02T23:11:24.386Z",
+        "to": "2026-11-02T23:14:54.731Z",
+        "seconds": 210.345,
+        "changes": [
+          {
+            "name": "core.alert",
+            "inserted": 0,
+            "updated": 12,
+            "deleted": 0
+          },
+          {
+            "name": "core.audit_log",
+            "inserted": 2,
+            "updated": 0,
+            "deleted": 0
+          },
+          {
+            "name": "core.auth_throttle",
+            "inserted": 0,
+            "updated": 282,
+            "deleted": 0
+          },
+          {
+            "name": "core.box",
+            "inserted": 0,
+            "updated": 8,
+            "deleted": 0
+          },
+          {
+            "name": "core.device",
+            "inserted": 0,
+            "updated": 60,
+            "deleted": 0
+          },
+          {
+            "name": "core.idempotency_key",
+            "inserted": 1,
+            "updated": 1,
+            "deleted": 0
+          },
+          {
+            "name": "core.ops_last",
+            "inserted": 0,
+            "updated": 190,
+            "deleted": 0
+          },
+          {
+            "name": "core.ops_run",
+            "inserted": 96,
+            "updated": 0,
+            "deleted": 0
+          },
+          {
+            "name": "core.session",
+            "inserted": 1,
+            "updated": 0,
+            "deleted": 0
+          },
+          {
+            "name": "core.station",
+            "inserted": 1,
+            "updated": 0,
+            "deleted": 0
+          },
+          {
+            "name": "core.station_device",
+            "inserted": 3,
+            "updated": 0,
+            "deleted": 0
+          },
+          {
+            "name": "edge.box_cache",
+            "inserted": 0,
+            "updated": 22,
+            "deleted": 0
+          },
+          {
+            "name": "edge.box_heartbeat",
+            "inserted": 8,
+            "updated": 0,
+            "deleted": 0
+          },
+          {
+            "name": "edge.box_runtime",
+            "inserted": 0,
+            "updated": 16,
+            "deleted": 0
+          },
+          {
+            "name": "edge.box_state",
+            "inserted": 0,
+            "updated": 1,
+            "deleted": 0
+          }
+        ]
+      },
+      "traffic": {
+        "phase": "background_hosted_agent",
+        "calls": 0,
+        "errors": 0,
+        "p50": null,
+        "p95": null,
+        "routes": {}
+      },
+      "requestsPerMinute": 0,
+      "rowChanges": 704,
+      "databaseWritesPerMinute": 200.81295015331955,
+      "leaseRenewals": 0,
+      "sales": {
+        "at": "2026-11-02T23:15:06.153Z",
+        "attempts": 0,
+        "sales": 0,
+        "cashAttempts": 0,
+        "passed": true
+      }
+    }
+  ],
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "outcome": "incomplete",
+  "browser": "156.0.4314.58",
+  "error": {
+    "name": "TimeoutError",
+    "message": "locator.waitFor: Timeout 30000ms exceeded."
+  },
+  "stop": null
+}
