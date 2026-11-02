@@ -1,0 +1,117 @@
+{
+  "startedAt": "2026-11-02T23:46:29.088Z",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "error": {
+    "name": "TimeoutError",
+    "message": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog').getByRole('button', { name: /^Add to order/ })\u001b[22m\n",
+    "stack": [
+      "    at Rig.nativeCash (C:\\oto-lanes\\s726-browser.mjs:18:654)",
+      "    at async file:///C:/oto-lanes/s726-diagnose.mjs:3:66"
+    ]
+  },
+  "buttons": [
+    "Hide customer display",
+    "0in parkno gate",
+    "Oto Play Park, Central Floresta",
+    "Tickets",
+    "Shop",
+    "Events",
+    "Check-in",
+    "History",
+    "Today",
+    "7Messages",
+    "Cash",
+    "",
+    "ZZ TEST SCRUM-726 mvzv6zgu till 1",
+    "",
+    "",
+    "1ZZ TEST SCRUM-726 mvzv6zgu item฿1",
+    "",
+    "Clear",
+    "ZZ TEST SCRUM-726 mvzv6zgu itemTap to add a note",
+    "",
+    "",
+    "Apply",
+    "Redeem",
+    "Add manual discount",
+    "Scan staff benefit",
+    "Charge ฿1",
+    "English"
+  ],
+  "database": {
+    "at": "2026-11-02T23:47:17.671Z",
+    "sampleAt": "2026-11-02T23:47:13.025Z",
+    "attempts": 0,
+    "sales": 0,
+    "cashAttempts": 0,
+    "allBoxSales": 1,
+    "unexpectedBoxSales": 0,
+    "passed": true
+  },
+  "attempts": [],
+  "traffic": {
+    "phase": "browser_diagnostic",
+    "calls": 33,
+    "errors": 0,
+    "p50": 75.65740000000005,
+    "p95": 169.96780000000035,
+    "routes": {
+      "GET /stations/:id/displays": {
+        "calls": 20,
+        "errors": 0,
+        "p50": 73.99239999999918,
+        "p95": 88.8809999999994
+      },
+      "GET /ops/demo-reset": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 88.9400999999998,
+        "p95": 88.9400999999998
+      },
+      "GET /branches/:id/pricing-mode": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 88.98359999999957,
+        "p95": 88.98359999999957
+      },
+      "GET /stations/:id/printers": {
+        "calls": 2,
+        "errors": 0,
+        "p50": 73.73270000000048,
+        "p95": 113.80289999999877
+      },
+      "GET /stations/:id/channel [stream open]": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 169.96780000000035,
+        "p95": 169.96780000000035
+      },
+      "GET /me/station/link": {
+        "calls": 2,
+        "errors": 0,
+        "p50": 70.10889999999927,
+        "p95": 175.6115000000009
+      },
+      "POST /sales/quote": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 84.1265000000003,
+        "p95": 84.1265000000003
+      },
+      "GET /branches/:id/occupancy": {
+        "calls": 5,
+        "errors": 0,
+        "p50": 79.54299999999967,
+        "p95": 88.06410000000324
+      }
+    }
+  },
+  "ready": {
+    "stations": 1,
+    "connections": 1,
+    "perStation": {
+      "01a19e88-2a5d-7685-989b-22601c493045": 1
+    }
+  },
+  "finishedAt": "2026-11-02T23:47:37.856Z"
+}

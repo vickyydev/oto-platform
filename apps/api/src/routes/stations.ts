@@ -672,6 +672,10 @@ export function openChannel(
 ): void {
   reply.hijack();
   const raw = reply.raw;
+  // Authorization may finish after the browser has already disconnected.
+  // Its close event has fired; attaching now would retain a subscriber and
+  // heartbeat forever because there is no later close event to release them.
+  if (req.raw.aborted || raw.destroyed || raw.writableEnded) return;
   raw.writeHead(200, {
     'content-type': 'text/event-stream; charset=utf-8',
     'cache-control': 'no-cache, no-transform',

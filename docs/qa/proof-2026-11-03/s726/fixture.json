@@ -40,6 +40,29 @@
   ],
   "displayIds": [
     "01a19e94-738b-724a-b235-7f90cd25cd90",
-    "01a19e97-a6a8-7530-9f46-12632a43eb31"
+    "01a19e97-a6a8-7530-9f46-12632a43eb31",
+    "01a19ea5-0822-7f6f-b95a-7956498f801b"
+  ],
+  "family": {
+    "registrationId": "10a75e20-51f2-4a1c-b194-0aceea83f9ed",
+    "checkinId": "38fe058c-61d5-414b-9590-01edf98a48a2",
+    "saleId": "9f914963-0af1-4b2b-9496-a0a0d533499d",
+    "childName": "ZZ TEST SCRUM-726 mvzv6zgu child",
+    "photoId": "40d98b1f-e194-4aa5-b07f-fc6901203b94",
+    "grossSatang": 111500,
+    "receiptNumber": "Z72601-000001",
+    "bandId": "01a19ea4-b779-761c-8b1d-43c75e5a801d",
+    "inPark": false,
+    "pickupPhotoId": "01d2c963-aa06-4b95-93fb-9c094e32d46b",
+    "releasedAt": "2026-11-02T23:44:49.555Z",
+    "releaseId": "fc0d60f9-17df-4e3a-86d6-5e2e2e975a01"
+  },
+  "voidedDrafts": [
+    {
+      "id": "01a19eab-58a5-7673-bb84-4df6eda2424f",
+      "grossSatang": 100,
+      "reason": "ZZ TEST incomplete harness selection",
+      "voidedAt": "2026-11-02T23:53:33.407Z"
+    }
   ]
 }
