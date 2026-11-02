@@ -27,3 +27,20 @@ hard-load Check-in after Console Go offline, observe the refused platform call
 and accepted box intent, then compare platform state before and after reconnect.
 No park device, real person, payment or SMS is part of the proof. SCRUM-722's
 separate small-control correction follows 723 Deployed.
+
+## Release preparation
+
+Rebased onto `07f4393b`, including the completed forwarder and staging-link
+changes, with all progress blocks preserved. All 16 workspace typecheck tasks
+and five production builds passed; the full POS suite passed 1,645 tests in
+122 files. Changed-file lint and generated contracts also passed after rebase.
+The full three-shard API regression remains in progress.
+
+A new dedicated fixture is prepared in [s723-box-fixture.json](s723-box-fixture.json).
+Its box is `01a19d64-335b-7d9d-8d3b-b5b7eb59280c`, station
+`45492e2d-438c-4772-9276-edfbf384f4f1`, and receipt prefix `Z723`.
+Preparation sessions signed out successfully and returned 401 afterward. Its
+agent is not enabled yet, and no test registration or sale has been made.
+The proof will use `https://oto-pos-web-staging.onrender.com`, which SCRUM-725
+made the current staging destination. No service address or other lane setting
+is changed by this unit.
