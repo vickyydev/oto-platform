@@ -2,8 +2,13 @@
 
 The owner approved Q717-1 on 2 November: one dedicated staging test agent
 inside the existing API, preserving the primary virtual box and adding no
-paid service. The implementation is ready locally; source CI, deployment
-and the native offline proof remain pending.
+paid service. The source landed on main at
+`f8c4d4294c4a1b350e37635d1e17eaa92f7079fa`. Its
+[CI 41443707967](https://github.com/vickyydev/oto-platform/actions/runs/41443707967)
+passed all six jobs, confirmed by the exact-SHA watcher. API, Console and
+POS deployed that source. The approved test-slot setting is now saved and
+the API is restarting on that same commit; native offline proof remains
+pending. `s717-ci.json` and `s717-agent-env.json` hold the receipts.
 
 The current base includes SCRUM-718 at
 `c2fdd28fdc9e944d058af62dec1347e5f2b7a56f`, whose
@@ -17,7 +22,8 @@ Before the staging-host addition, the combined local API battery passed
 skips and four TODOs. All 838 box tests passed after the final recovery
 follow-up. Shared tests (857), package typechecks, touched-file lint,
 generated contracts and the workspace build passed. The new host has 13
-review pins plus 25 routing, lease and existing agent regressions; its API
+review pins plus 25 routing, lease and existing agent regressions: all 38
+passed after restoring the mutations. Its API
 typecheck, lint and generated-contract check pass. A deliberate mutation
 removed the environment and late-start guards: four HIGH findings
 reproduced while nine controls passed, then the guarded source was restored.
@@ -119,7 +125,8 @@ The new fixture was prepared at `2026-11-02T12:11:07.296Z`:
 `ZZ TEST SCRUM-717 virtual box`, slot `zz-test-s717-20261102`, and
 `ZZ TEST SCRUM-717 till`, prefix `Z717`, manual card and QR none.
 Exact IDs and independently confirmed session sign-outs are in
-`s717-fixture.json`. The test agent has not yet been enabled. Existing box
+`s717-fixture.json`. Only `BOX_AGENT_TEST_SLOT` was added: all 56 previous environment values
+were independently verified unchanged (57 names afterward). Existing box
 and station assignments remain unchanged; no payment or SMS was attempted.
 SCRUM-717 stays Testing until the specified proof is inspected and attached.
 SCRUM-708 has not started and waits for that Deployed state.
