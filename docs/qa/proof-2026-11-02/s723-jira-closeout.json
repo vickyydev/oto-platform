@@ -1,0 +1,29 @@
+{
+  "unit": "SCRUM-723",
+  "at": "2026-11-02T19:07:15.846Z",
+  "before": {
+    "status": "Testing",
+    "summary": "Console forced-offline mode still allows booked check-in on a fresh till page"
+  },
+  "attached": {
+    "status": 200,
+    "files": [
+      {
+        "id": "12237",
+        "name": "s723-staging-proof.png"
+      },
+      {
+        "id": "12238",
+        "name": "s723-offline-in-park.png"
+      }
+    ]
+  },
+  "commentStatus": 201,
+  "after": {
+    "status": "Deployed",
+    "summary": "Console forced-offline mode still allows booked check-in on a fresh till page"
+  },
+  "source": "de29ebf481f179431a1ff8166ed86ddfcd5077a9",
+  "ciRun": 41500821248,
+  "evidenceCommit": "eaf5e0360476b9db9d21f61486a746a4bd846580"
+}

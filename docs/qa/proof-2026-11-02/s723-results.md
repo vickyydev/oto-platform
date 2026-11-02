@@ -1,5 +1,10 @@
 # SCRUM-723 - a fresh booked-arrival page honors forced offline
 
+**Deployed:** Jira read-back at `2026-11-02T19:07:15.846Z` confirms Deployed.
+Inspected proof images are attached as 12237 and 12238. Evidence commit:
+`eaf5e0360476b9db9d21f61486a746a4bd846580`.
+[Jira closeout receipt](s723-jira-closeout.json). Final acceptance remains with the owner.
+
 The booked-arrival route now opts into the existing station offline guard.
 The guard returns `503 STATION_FORCED_OFFLINE` before a platform mutation or
 idempotency replay. The existing client falls back to the box on its first
