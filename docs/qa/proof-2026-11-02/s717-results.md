@@ -1,5 +1,15 @@
 # SCRUM-717 — station rules on the box lane
 
+Latest checkpoint: SCRUM-719 has landed its timing repair, and this lane has
+rebased onto `eacfc97f`. The combined tree passes all 838 box tests, all 62 API
+routing/readiness/recovery tests, box/API typechecks and generated contracts.
+The workspace build also passes. The full API suite is running locally in
+three isolated embedded-Postgres shards while recovery release CI
+[41430108569](https://github.com/vickyydev/oto-platform/actions/runs/41430108569)
+runs. SCRUM-717 is not on main yet. The earlier failures below are historical
+evidence; a new green release has not yet been established. Q717-1 remains
+the staging-proof dependency, and SCRUM-708 remains unstarted.
+
 2 November 2026. Source: `a1d88200c3ea7451f90583fa8a94e96a495277ac`.
 
 The source is on `lane/codex-box-lane-20261102`, not main. The full branch
