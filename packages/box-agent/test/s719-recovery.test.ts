@@ -253,8 +253,10 @@ test('a heartbeat-style write that changes no record does not cost a copy; a sea
   await f.fact(1);
   const mirror = new StoreMirror(f);
   assert.equal(await mirror.run(), 'mirrored');
-  // What a running box writes while idle: its clock measurement and the receipt mark.
+  // What a running box writes while idle, measured on the real agent: its clock
+  // measurement, the last time it trusts, and the receipt mark.
   await f.store.writeRuntimeValue(BOX_ID, 'box.clock_measurement', '{"offsetMs":1}');
+  await f.store.markTimeSeen(BOX_ID, new Date(Date.now() + 60_000).toISOString());
   f.db.exec(`insert into box_cache (box_id, scope, payload, applied_at) values ('${BOX_ID}', 'receipt_series', '{}', '2026-11-02T00:00:00.000Z')
     on conflict (box_id, scope) do update set applied_at = excluded.applied_at`);
   assert.equal(await mirror.run(), 'unchanged');

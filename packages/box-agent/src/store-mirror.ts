@@ -45,8 +45,9 @@ const STOP_WAIT_MS = 5_000;
  *    new copy. A medium with no hard links falls back to copying.
  *  - AN UNCHANGED STORE WRITES NO COPY. The file's time moves, so its age keeps
  *    saying when the copy was last known to match. The comparison is a logical
- *    one: a running box writes its clock measurement and receipt mark every
- *    minute while nothing happens, so the file's own size and time never rest.
+ *    one: a running box writes its clock measurement, the last time it trusts and
+ *    its receipt mark every minute while nothing happens, so the file's own size
+ *    and time never rest, and those keys are left out of it.
  */
 const WORKER = String.raw`
 const { parentPort, workerData } = require('node:worker_threads');
@@ -61,7 +62,7 @@ const previous = temp + '.previous';
 const UNSENT = "c.state in ('queued', 'sending', 'failed')";
 const LACKING = 'select c.event_id as id from copy.box_outbox c not indexed where ' + UNSENT + ' and not exists (select 1 from main.box_outbox l where l.event_id = c.event_id) and not exists (select 1 from main.box_state s where s.box_id = c.box_id and s.journal_epoch = c.journal_epoch and c.box_seq < s.next_box_seq and not exists (select 1 from main.box_outbox o where o.box_id = c.box_id and o.journal_epoch = c.journal_epoch and o.box_seq = c.box_seq))';
 const ALL_UNSENT = 'select c.event_id as id from copy.box_outbox c not indexed where ' + UNSENT;
-const FINGERPRINT = "select (select coalesce(group_concat(box_id || '/' || journal_epoch || '/' || next_box_seq || '/' || offline || '/' || coalesce(applied_config_version, '-')), '') from box_state) as state, (select count(*) || '/' || coalesce(sum(state in ('queued', 'sending', 'failed')), 0) || '/' || coalesce(sum(state = 'acked'), 0) from box_outbox not indexed) as outbox, (select count(*) || '/' || coalesce(sum(counter_value), 0) from box_counter) as counters, (select count(*) || '/' || coalesce(max(updated_at), '') from box_overlay) as overlay, (select count(*) || '/' || coalesce(max(updated_at), '') from box_print_job) as prints, (select count(*) || '/' || coalesce(max(updated_at), '') from box_runtime where runtime_key <> 'box.clock_measurement') as runtime";
+const FINGERPRINT = "select (select coalesce(group_concat(box_id || '/' || journal_epoch || '/' || next_box_seq || '/' || offline || '/' || coalesce(applied_config_version, '-')), '') from box_state) as state, (select count(*) || '/' || coalesce(sum(state in ('queued', 'sending', 'failed')), 0) || '/' || coalesce(sum(state = 'acked'), 0) from box_outbox not indexed) as outbox, (select count(*) || '/' || coalesce(sum(counter_value), 0) from box_counter) as counters, (select count(*) || '/' || coalesce(max(updated_at), '') from box_overlay) as overlay, (select count(*) || '/' || coalesce(max(updated_at), '') from box_print_job) as prints, (select count(*) || '/' || coalesce(max(updated_at), '') from box_runtime where runtime_key not in ('box.clock_measurement', 'last_good_time')) as runtime";
 const unreadable = (error) => {
   const primary = typeof error.errcode === 'number' ? error.errcode & 0xff : null;
   return primary === 11 || primary === 26 || /no such table/.test(String(error.message));
