@@ -1,6 +1,6 @@
 # SCRUM-718: POS forwarding path
 
-**Final staging measurements passed on `796a3724505ee9cd46f93584c975971ad50a3e4d`**,
+**SCRUM-718 and SCRUM-710 are Deployed. Final staging measurements passed on `796a3724505ee9cd46f93584c975971ad50a3e4d`**,
 [CI 41452442131](https://github.com/vickyydev/oto-platform/actions/runs/41452442131). See [the final acceptance report](final/README.md)
 for all current numbers, live service commits and safety/cleanup evidence.
 Image attachment and the required Jira walk are recorded in the newest STATUS

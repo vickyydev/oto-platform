@@ -1,0 +1,30 @@
+{
+  "source": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41452442131",
+  "proofCommit": "35e3405dfd8a99a3596225f6a3c4c283e2176d42",
+  "at": "2026-11-02T14:06:14.066Z",
+  "tickets": [
+    {
+      "key": "SCRUM-718",
+      "before": "Testing",
+      "attachment": {
+        "id": "12230",
+        "name": "s718-final-staging-proof.png"
+      },
+      "commentStatus": 201,
+      "after": "Deployed",
+      "verifiedAt": "2026-11-02T14:07:19.764Z"
+    },
+    {
+      "key": "SCRUM-710",
+      "before": "Testing",
+      "attachment": {
+        "id": "12231",
+        "name": "s710-final-staging-proof.png"
+      },
+      "commentStatus": 201,
+      "after": "Deployed",
+      "verifiedAt": "2026-11-02T14:07:20.174Z"
+    }
+  ]
+}

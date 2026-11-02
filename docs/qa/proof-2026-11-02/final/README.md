@@ -2,8 +2,8 @@
 
 Measured after deployment on 2 November 2026. Source `796a3724505ee9cd46f93584c975971ad50a3e4d`,
 [CI 41452442131](https://github.com/vickyydev/oto-platform/actions/runs/41452442131), all six jobs successful. The dedicated new POS
-address is https://oto-pos-web-staging.onrender.com. Both timing gates passed; the evidence is ready for
-the required image attachment and Deployed walk. No park device has switched.
+address is https://oto-pos-web-staging.onrender.com. Both timing gates passed. Both tickets are **Deployed**, confirmed by the required
+helper walk and independent read-back. No park device has switched.
 
 ## Exact live versions
 
@@ -13,10 +13,9 @@ the required image attachment and Deployed walk. No park device has switched.
 | oto-api-staging | `796a3724505ee9cd46f93584c975971ad50a3e4d` | `dep-dbk986bm8hqs738k1shg` | 2026-11-02T13:49:22.62076Z |
 | oto-pos-staging | `796a3724505ee9cd46f93584c975971ad50a3e4d` | `dep-dbk986jm8hqs738k1tkg` | 2026-11-02T13:46:48.368302Z |
 
-Every measured service's application/dependency tree was checked against the
-validated source. An older API SHA, if shown, has an identical API runtime tree;
-it is not relabelled as the newer POS commit. All deployments preceded this proof
-and stayed stable through the corresponding measurement windows.
+All three services ran the exact validated source. Their application/dependency
+trees were checked, their deployments preceded this proof, and their versions
+stayed stable through the corresponding measurement windows.
 SCRUM-720 polling source: `2513e1fb385190c38f494d81006cfc1e44302f79`.
 Initial forwarder source: `c2fdd28fdc9e944d058af62dec1347e5f2b7a56f`.
 
@@ -161,9 +160,13 @@ During creation/API redeployment, the old address passed 466/466 probes; it also
 passes the final comparison and native cash journey.
 
 `s718-staging-proof.png` and `s710-staging-proof.png` are the final combined proof
-cards. The matching JSON records the actual source/live commits, timing windows,
-resource samples and acceptance assertions. The cards must be opened before
-attachment and the required Deployed walks. Earlier failures remain available.
+cards. Both were opened and inspected, then attached as
+`s718-final-staging-proof.png` (SCRUM-718, attachment 12230) and
+`s710-final-staging-proof.png` (SCRUM-710, attachment 12231). The required helper
+walk and independent read-back confirmed both tickets Deployed. See
+`image-inspection.json` and `jira-closeout.json`. The matching proof JSON records
+the actual source/live commits, timing windows, resource samples and acceptance
+assertions. Earlier failures remain available.
 
 The [owner's forward and rollback checklist](../../../ops/POS_WEB_SWITCHOVER.md)
 is complete. Staff, iPads, Pi configuration, launcher destination, old-site
