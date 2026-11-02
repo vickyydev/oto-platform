@@ -24,6 +24,7 @@ import { useItemCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { useFnbDisplay } from '@/lib/fnbDisplaySession';
+import { hasBridgeOrigin } from '@/api/bridge';
 import { readBenefitScan, readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { useScannerBurst } from '@/lib/scannerBurst';
 import {
@@ -1344,7 +1345,7 @@ export default function OrderStation() {
 
   const separateDisplay = useFnbDisplay(station?.stationId ?? null, {
     sessionKey: `${operator?.id ?? ''}:${station?.branchId ?? branch.id}:${station?.stationId ?? ''}:${orderEpochRef.current}`,
-    stage: customerStage, online: !stationOffline(),
+    stage: customerStage, online: !stationOffline(), bridgeAvailable: hasBridgeOrigin(),
     // S2-14a round 2 — a scanned wallet no longer excludes the order: its lines
     // and total are the platform's quote, and the credit the stage takes rides
     // the payment frame as a figure (`creditSatang`), so the separate display —
@@ -1355,7 +1356,7 @@ export default function OrderStation() {
       || !!offLedgerOnly(lines) || lines.some(line => line.isPrepaid),
     lines, orderNote, manualDiscounts: effectiveManualDiscounts, quote: order.quote,
     pending: order.pending, quoteFailed: !!order.error, payment: paymentStage.display, completedOrder, platformSale,
-  }, !locked && !stationOffline());
+  }, !locked && (!stationOffline() || hasBridgeOrigin()));
   const inlineDisplay = showCustomerDisplay && (!separateDisplay.connected.length || !separateDisplay.supported || !!separateDisplay.error);
 
   // Keep the order and payment hooks mounted, without staff controls or portals.

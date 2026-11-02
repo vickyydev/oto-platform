@@ -11,6 +11,8 @@ export interface FnbDisplayState {
   sessionKey: string;
   stage: 'welcome' | 'order' | 'payment' | 'thankyou';
   online: boolean;
+  /** A configured local bridge can publish a validated quote during WAN loss. */
+  bridgeAvailable?: boolean;
   excluded: boolean;
   lines: readonly FnbOrderLine[];
   orderNote: string;
@@ -29,11 +31,11 @@ const validMoney = (value: number) => Number.isFinite(value) && value >= 0
 const emptyCart = (): DisplayFnbCart => ({ kind: 'fnb', supported: false,
   lines: [], orderNote: '', manualDiscounts: [], completion: null });
 
-/** Only server-captured guest rows cross the display boundary. */
+/** Only platform/box-captured guest rows cross the display boundary. */
 export function fnbDisplayPresentation(state: FnbDisplayState) {
   const fallback = { stage: state.stage as StationSessionStage, step: null,
     cart: emptyCart(), member: null, prompt: null, totals: null, payment: null };
-  if (!state.online || state.excluded) return fallback;
+  if ((!state.online && !state.bridgeAvailable) || state.excluded) return fallback;
   if (state.stage === 'welcome') return { ...fallback, cart: { ...emptyCart(), supported: true } };
   if (state.quote.source !== 'platform' || state.pending || state.quoteFailed || !state.lines.length) return fallback;
   const lines: DisplayFnbCart['lines'] = [];

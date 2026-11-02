@@ -57,6 +57,30 @@ describe('the stations publish the credit to the separate display', () => {
   });
   const written = apiSale({ status: 'finalised', totals: { ...apiSale().totals, grossSatang: 9_000 } });
 
+  it('HIGH SCRUM-713: an offline F&B bridge publishes captured prices, never a till estimate', () => {
+    const state = fnbState({ online: false, bridgeAvailable: true });
+    expect(fnbDisplayPresentation(state).cart.supported).toBe(true);
+    expect(fnbDisplayPresentation(state).payment?.online).toBe(false);
+    expect(fnbDisplayPresentation({ ...state, bridgeAvailable: false }).cart.supported).toBe(false);
+    for (const unsafe of [{ source: 'till' as const }, { itemPresentation: undefined }]) {
+      expect(fnbDisplayPresentation({ ...state, quote: { ...state.quote, ...unsafe } }).cart.supported).toBe(false);
+    }
+    expect(fnbDisplayPresentation({ ...state, excluded: true }).cart.supported).toBe(false);
+    expect(fnbDisplayPresentation({ ...state, quoteFailed: true }).cart.supported).toBe(false);
+  });
+
+  it('HIGH SCRUM-713: an offline Shop bridge keeps the same quote and redaction gates', () => {
+    const state = merchState({ online: false, bridgeAvailable: true });
+    expect(merchDisplayPresentation(state).cart.supported).toBe(true);
+    expect(merchDisplayPresentation(state).payment?.online).toBe(false);
+    expect(merchDisplayPresentation({ ...state, bridgeAvailable: false }).cart.supported).toBe(false);
+    for (const unsafe of [{ source: 'till' as const }, { itemPresentation: undefined }]) {
+      expect(merchDisplayPresentation({ ...state, quote: { ...state.quote, ...unsafe } }).cart.supported).toBe(false);
+    }
+    expect(merchDisplayPresentation({ ...state, excluded: true }).cart.supported).toBe(false);
+    expect(merchDisplayPresentation({ ...state, pending: true }).cart.supported).toBe(false);
+  });
+
   it('F&B: the payment frame keeps the figure; a thank-you paid ฿50 credit + ฿40 cash lists both', () => {
     const frame = fnbDisplayPresentation(fnbState());
     expect(frame.cart.supported).toBe(true);

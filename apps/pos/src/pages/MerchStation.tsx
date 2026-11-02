@@ -13,6 +13,7 @@ import { useItemCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { useMerchDisplay } from '@/lib/merchDisplaySession';
+import { hasBridgeOrigin } from '@/api/bridge';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
 import { useStation } from '@/station/StationContext';
@@ -619,14 +620,14 @@ export default function MerchStation() {
 
   const separateDisplay = useMerchDisplay(station?.stationId ?? null, {
     sessionKey: `${operator?.id ?? ''}:${station?.branchId ?? branch.id}:${station?.stationId ?? ''}:${saleEpochRef.current}`,
-    stage: customerStage, online: !stationOffline(),
+    stage: customerStage, online: !stationOffline(), bridgeAvailable: hasBridgeOrigin(),
     // S2-14a round 2 — a scanned wallet no longer excludes the purchase: the
     // credit the stage takes rides the payment frame as a figure, so the
     // separate display shows "From your credit / Left to pay" (CLAUDE.md §7 rule 4).
     excluded: promoCodes.length > 0 || !shopFromPlatform,
     lines, manualDiscounts, quote: sale.quote, pending: sale.pending, quoteFailed: !!sale.error,
     payment: paymentStage.display, completedOrder, platformSale,
-  }, !locked && !stationOffline());
+  }, !locked && (!stationOffline() || hasBridgeOrigin()));
   const inlineDisplay = showCustomerDisplay && (!separateDisplay.connected.length || !separateDisplay.supported || !!separateDisplay.error);
 
   // Preserve the sale hooks across a lock without staff controls or portals.
