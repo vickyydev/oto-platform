@@ -255,7 +255,7 @@ In Git Bash (Windows) or a Mac terminal, from the repository folder:
 scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --no-kiosk --printer-direct
 
 # the counter box with its customer display (part I; printer on the Pi's own cable)
-scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct --kiosk-url "https://oto-pos-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.6 --rotate off
+scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct --kiosk-url "https://oto-pos-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
 
 # the booth box (television; printer on the Pi's own cable)
 scripts/agent/push-release.sh oto-booth ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct
@@ -352,7 +352,7 @@ page in Chromium, full screen, on that monitor. The addresses below are staging'
 runs the same thing from the laptop):
 
 ```
-sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct --kiosk-url "https://oto-pos-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.6 --rotate off
+sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct --kiosk-url "https://oto-pos-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
 ```
 
 Keep the quotes around the address. `--no-kiosk` is gone from this box's options from
@@ -396,11 +396,11 @@ where it is pressed, a nickname can be typed, it comes back paired after `sudo r
 after a release pushed with part G, and it does not blank through a long idle spell. A
 bare screen: `journalctl -u oto-kiosk -n 20`.
 
-**Decide at the bench: the scale.** At 1.6 the "Are you a member?" step shows the keypad
-down to 4-5-6, and the family swipes up for 7-8-9, 0 and the nickname. At 1.25 every digit
-is on the screen and only the channel and the nickname need the swipe; only 1 fits the
-whole step. Try `OTO_KIOSK_SCALE=1.25` as above if 1.6 reads large but the swipe gets in
-the way. It is a line in the config file, no release needed.
+**The scale.** 1.25 is the largest that keeps the whole keypad on the screen: every digit
+shows on the "Are you a member?" step, and only the channel and the nickname need a swipe.
+Only 1 fits the whole step. Do not go above 1.25 in landscape: at 1.6 the keypad stops at
+4-5-6, so a family cannot type a number without knowing to swipe. Check it on the real
+monitor. It is a line in the config file, no release needed.
 
 ## Resetting the game
 
