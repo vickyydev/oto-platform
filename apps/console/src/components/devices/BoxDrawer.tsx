@@ -2012,7 +2012,7 @@ export function TerminalProtocolField({ value, onChange, transport }: {
     <Field label="Protocol" hint={supported
       ? transport === 'simulated' ? 'Simulated terminal; this device does not contact a real payment terminal.' : 'Choose the protocol supported by this terminal.'
       : 'Unusable: no supported protocol. Choose one before assigning a routed tender.'}>
-      <Select value={supported ? value : ''} onChange={onChange} placeholder="Not set ? unusable"
+      <Select value={supported ? value : ''} onChange={onChange} placeholder="Not set (unusable)"
         options={[
           { value: 'ghl_linkpos', label: transport === 'simulated' ? 'Simulated GHL LinkPOS' : 'GHL LinkPOS' },
           { value: 'digio_tlv', label: transport === 'simulated' ? 'Simulated Digio TLV' : 'Digio TLV' },
