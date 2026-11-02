@@ -61,8 +61,9 @@ Main's display release at `2513e1fb385190c38f494d81006cfc1e44302f79` failed
 the same storage assertion in
 [CI 41425308521](https://github.com/vickyydev/oto-platform/actions/runs/41425308521).
 Its exact source also passed all 11 storage cases locally. Its single
-workspace-job retry is running at this checkpoint; the recovery and display
-tickets both carry the evidence. Feature pushes and staging deployment are
+workspace-job retry also failed on the same assertion (attempt 2, workspace
+job `125220163645`). All its API shards, POS and OTO App jobs passed. The
+recovery and display tickets both carry the evidence. Feature pushes and staging deployment are
 held while main is red. This report and its checkpoint may be published as
 documentation only, without landing the feature.
 
