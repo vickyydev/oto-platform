@@ -592,7 +592,9 @@ function photoRefreshAt(url: string): number {
     const seconds = Number(query.get('X-Amz-Expires'));
     if (!date || !Number.isFinite(seconds) || seconds <= 0) return 0;
     const signedAt = Date.UTC(+date[1], +date[2] - 1, +date[3], +date[4], +date[5], +date[6]);
-    return signedAt + seconds * 1000 - 30_000;
+    // The boards poll every thirty seconds. Reserve two intervals so a poll
+    // just before this threshold still renews on the next one before expiry.
+    return signedAt + seconds * 1000 - 60_000;
   } catch {
     // An answer without a readable expiry may be used now, but never kept indefinitely.
     return 0;

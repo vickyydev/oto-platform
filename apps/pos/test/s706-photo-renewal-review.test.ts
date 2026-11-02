@@ -18,13 +18,13 @@ describe('SCRUM-706 adversarial photo-cache review', () => {
     expect(await photoUrlOf('shared')).toBe(signed('shared'));
     expect(api.get).toHaveBeenCalledTimes(1);
   });
-  it('MEDIUM fixed finding: renew thirty seconds before the link signed expiry', async () => {
+  it('MEDIUM fixed finding: stop sharing sixty seconds before the link signed expiry', async () => {
     vi.mocked(api.get).mockResolvedValueOnce({ url: signed('first') }).mockResolvedValueOnce({ url: signed('renewed') });
     await photoUrlOf('expiry');
-    vi.setSystemTime(start + 269_999);
+    vi.setSystemTime(start + 239_999);
     expect(await photoUrlOf('expiry')).toBe(signed('first'));
     expect(api.get).toHaveBeenCalledTimes(1);
-    vi.setSystemTime(start + 270_000);
+    vi.setSystemTime(start + 240_000);
     expect(await photoUrlOf('expiry')).toBe(signed('renewed'));
     expect(api.get).toHaveBeenCalledTimes(2);
   });
@@ -33,6 +33,15 @@ describe('SCRUM-706 adversarial photo-cache review', () => {
     vi.mocked(api.get).mockResolvedValueOnce({ url: signed('short', 120) }).mockResolvedValueOnce({ url: signed('fresh') });
     await photoUrlOf('short');
     expect(await photoUrlOf('short')).toBe(signed('fresh'));
+  });
+  it('MEDIUM fixed finding: a board poll just before the refresh threshold leaves a full interval before expiry', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({ url: signed('poll-first') }).mockResolvedValueOnce({ url: signed('poll-renewed') });
+    await photoUrlOf('poll-headroom');
+    vi.setSystemTime(start + 239_999);
+    expect(await photoUrlOf('poll-headroom')).toBe(signed('poll-first'));
+    vi.setSystemTime(start + 269_999);
+    expect(await photoUrlOf('poll-headroom')).toBe(signed('poll-renewed'));
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
   it('control: a refused URL request is not remembered', async () => {
     vi.mocked(api.get).mockRejectedValueOnce(new Error('unavailable')).mockResolvedValueOnce({ url: signed('recovered') });
