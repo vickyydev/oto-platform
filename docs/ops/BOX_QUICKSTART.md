@@ -251,8 +251,11 @@ refuses to run without the checksum, and refuses a file renamed away from it.
 In Git Bash (Windows) or a Mac terminal, from the repository folder:
 
 ```
-# the counter box (no television; printer on the Pi's own cable)
+# the counter box before its customer display is in (no screen; printer on the Pi's own cable)
 scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --no-kiosk --printer-direct
+
+# the counter box with its customer display (part I; printer on the Pi's own cable)
+scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct --kiosk-url "https://oto-pos-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.6 --rotate off
 
 # the booth box (television; printer on the Pi's own cable)
 scripts/agent/push-release.sh oto-booth ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct
@@ -332,12 +335,79 @@ into the iPad running the till (USB-C) instead, set the iPad's keyboard to **Eng
 always has. The scanner row then says "Not plugged into this box", which is expected
 while the cradle is on the iPad.
 
+## I. The counter's customer display
+
+The Edatec 15.6-inch touch monitor stands at the counter, landscape, facing the family.
+The counter box drives it and the iPad stays the till: the box opens the POS's display
+page in Chromium, full screen, on that monitor. The addresses below are staging's.
+
+**Cables**, power last:
+
+1. **Picture**: micro-HDMI from the Pi to the monitor's HDMI.
+2. **Touch**: the monitor's USB-C touch port to a USB port on the Pi, with a **data**
+   cable. A charge-only cable gives a picture that does not answer touch.
+3. **Power**: the monitor's own 12 V adapter. Never power it from the Pi.
+
+**Install** on the box, the file as in part C steps 4 and 5 (or part G's command, which
+runs the same thing from the laptop):
+
+```
+sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct --kiosk-url "https://oto-pos-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.6 --rotate off
+```
+
+Keep the quotes around the address. `--no-kiosk` is gone from this box's options from
+here on, and the box needs the desktop image (part C step 1; on Lite there is nothing to
+draw the page on). The installer's summary ends with a `Screen:` line: the address, the
+scale, and whether screen blanking is off. Then `sudo reboot` once. The monitor's own
+sleep or eco timer, if it has one, is switched off once in its own menu.
+
+**Pair it.** The screen shows *Set up this display* and a code. Console → Devices →
+**Pair a display**: enter the code, choose the counter's station. The screen follows
+that till from then on.
+
+**What is kept.** A reboot, the 04:30 reboot, a power cut and a release update all come
+back paired with nobody touching anything: the pairing lives in the browser's profile,
+`/home/oto/.config/oto-kiosk`, and nothing clears it. The address, the scale and the turn
+stay in `/etc/oto-box/config`. Chromium's cache is in RAM to spare the drive, so it starts
+empty on every boot; that costs one page load and nothing else.
+
+**The one step that loses the pairing** is a fresh profile, for a browser that has gone
+wrong and will not recover by restarting:
+
+```
+sudo systemctl stop oto-kiosk && rm -rf /home/oto/.config/oto-kiosk && sudo systemctl start oto-kiosk
+```
+
+The screen then shows a new code. Pair it again, and revoke the old entry in Console →
+Devices. `sudo systemctl restart oto-kiosk` on its own loses nothing: try that first.
+
+**The nickname.** Touch the nickname field and a keyboard opens under it: English letters,
+space, backspace, Done. The phone number has its keypad as it always had. `?keyboard=screen`
+on the address is what asks for this keyboard; the plain `/display`, on an iPad or a
+laptop, has none.
+
+**Changing it later**: `sudo nano /etc/oto-box/config` (`OTO_KIOSK_URL`, `OTO_KIOSK_SCALE`,
+`OTO_KIOSK_ROTATE`), then `sudo systemctl restart oto-kiosk`. The installer with
+`--kiosk-url "" --kiosk-scale 1 --rotate cw` puts a box back on its own page.
+
+**Still to prove on the real monitor (SCRUM-711):** the page fills the screen, touch lands
+where it is pressed, a nickname can be typed, it comes back paired after `sudo reboot` and
+after a release pushed with part G, and it does not blank through a long idle spell. A
+bare screen: `journalctl -u oto-kiosk -n 20`.
+
+**Decide at the bench: the scale.** At 1.6 the "Are you a member?" step shows the keypad
+down to 4-5-6, and the family swipes up for 7-8-9, 0 and the nickname. At 1.25 every digit
+is on the screen and only the channel and the nickname need the swipe; only 1 fits the
+whole step. Try `OTO_KIOSK_SCALE=1.25` as above if 1.6 reads large but the swipe gets in
+the way. It is a line in the config file, no release needed.
+
 ## Resetting the game
 
 - Fresh game: `sudo systemctl restart oto-kiosk` (10 s). Fresh game and box:
   `sudo systemctl restart oto-box oto-kiosk`. No keyboard/SSH: pull the power, wait
   5 s, plug back — a cold start is safe by design.
-- TV amnesia (forgets the chosen booth, rotation, everything the page remembered):
+- TV amnesia (forgets the chosen booth, rotation, everything the page remembered; on
+  the counter's customer display it also loses the pairing, part I):
   `sudo systemctl stop oto-kiosk && rm -rf /home/oto/.config/oto-kiosk && sudo systemctl start oto-kiosk`
 - Button dead but the game is up? Press the keyboard's space bar: keyboard spins but
   button does not → replug the button (other black USB port); neither spins → the
