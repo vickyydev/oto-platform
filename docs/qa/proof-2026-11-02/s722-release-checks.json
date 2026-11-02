@@ -1,0 +1,65 @@
+{
+  "unit": "SCRUM-722",
+  "recordedAt": "2026-11-02T20:23:20Z",
+  "fullApi": {
+    "testedSource": "c195b4de60d78d86b703e7fafbd2acab4e27db1d",
+    "method": "Three unpiped serial-file shards, each with a separate disposable embedded Postgres",
+    "passed": 6137,
+    "skipped": 401,
+    "todo": 4,
+    "passedFiles": 431,
+    "skippedFiles": 8,
+    "shards": [
+      {
+        "shard": "1/3",
+        "exitCode": 0,
+        "passed": 2129,
+        "skipped": 106,
+        "todo": 0
+      },
+      {
+        "shard": "2/3",
+        "exitCode": 0,
+        "passed": 2119,
+        "skipped": 174,
+        "todo": 3
+      },
+      {
+        "shard": "3/3",
+        "exitCode": 0,
+        "passed": 1889,
+        "skipped": 121,
+        "todo": 1
+      }
+    ]
+  },
+  "followupRebase": {
+    "testedSource": "a0c05f5969e4b4631b7652ed19e1e0a9f5e2a536",
+    "upstream": "f3b793dcc35d296a03582d617a9a94a3b555da60",
+    "apiAndPackagesDiffEmpty": true,
+    "workspaceTypecheckTasks": 16,
+    "apiTypeDiagnostics": 0,
+    "touchedEslint": "passed",
+    "productionBuilds": 5,
+    "consentBrowserReview": {
+      "passed": 6,
+      "failed": 0
+    },
+    "pos": {
+      "files": 122,
+      "passed": 1659,
+      "failed": 0
+    },
+    "builtBrowserJourneys": {
+      "passed": 7,
+      "failed": 0,
+      "disposableDatabaseRemoved": true
+    },
+    "exitCode": 0
+  },
+  "generatedApiContracts": {
+    "testedSource": "c195b4de60d78d86b703e7fafbd2acab4e27db1d",
+    "result": "matched"
+  },
+  "release": "Source publication waits for SCRUM-713 CI and reserved staging proof window to finish"
+}

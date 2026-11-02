@@ -21,9 +21,31 @@ callback and the labelled checkbox's keyboard behavior. The review lives in
 `apps/api/test/s722-consent-control-review.test.ts`; its browser harness lives
 under `apps/pos/test/support/consent-harness/`.
 
-Release checks, full-SHA CI and staging proof are pending. SCRUM-713 owns the
-next source/proof slot; this unit will rebase onto it and wait for that window
-to close before publishing source. The retained SCRUM-723 ZZ TEST box/till is
-online with no queued fact or lease. The native proof will use a new ZZ TEST
-family, then retire only this dedicated fixture and test-agent option while
-preserving the neighboring lane's settings and source.
+## Local release checks
+
+Three full API shards passed on frozen source
+`c195b4de60d78d86b703e7fafbd2acab4e27db1d`: 6,137 tests across 431 passing
+files. The existing 401 skips, four TODOs and eight skipped files remain.
+All six consent browser cases passed as part of that full run.
+
+The unit then rebased onto SCRUM-713's final display follow-up
+`f3b793dcc35d296a03582d617a9a94a3b555da60`. The API and package trees are
+identical across that rebase. Combined source
+`a0c05f5969e4b4631b7652ed19e1e0a9f5e2a536` passed all 16 workspace
+typecheck tasks, touched-file eslint, five production builds, all six consent
+browser cases again, all 1,659 POS tests and all seven built browser journeys.
+The disposable browser-test database was removed. Generated API contracts
+matched before the follow-up, which changed no API schema.
+
+Commands ran unpiped with failure propagation. API suites ran whole files;
+the full battery used three isolated embedded databases with Docker off.
+Counts and source identities are in `s722-release-checks.json`.
+
+## Release and staging
+
+Full-SHA CI and staging proof are pending. SCRUM-713 owns the current
+source/proof slot; this unit will wait for that window to close before
+publishing source. No SCRUM-722 staging family or setting has been changed.
+The native proof will use a new ZZ TEST family on the retained SCRUM-723
+dedicated box/till, then retire only that fixture and its test-agent option
+while preserving the neighboring lane's settings and source.
