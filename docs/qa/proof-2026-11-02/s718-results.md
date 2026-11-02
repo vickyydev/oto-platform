@@ -1,5 +1,11 @@
 # SCRUM-718: POS forwarding path
 
+**Current acceptance: Testing.** The later f8c4d429 refresh missed the visible
+display limit at 540 ms. The earlier c2fdd28f results below are retained history;
+they do not override that miss. See [the refresh and trace](f8c4d429/README.md).
+A narrow item-quote scheduling correction is locally green and awaits its
+source CI, deployment and fresh proof.
+
 2 November 2026. Staging acceptance passed on source `c2fdd28fdc9e944d058af62dec1347e5f2b7a56f`,
 [CI 41439428324](https://github.com/vickyydev/oto-platform/actions/runs/41439428324), all six jobs green.
 The approved single Starter service is live beside the old site. No park device

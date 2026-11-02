@@ -190,6 +190,9 @@ function cartSignature(
 
 /** How long the till waits after the last cart change before asking the platform. */
 const QUOTE_DEBOUNCE_MS = 200;
+// Item displays wait for the platform's captured price before publishing.
+// Keep a short burst window without spending 200 ms of their response budget.
+const ITEM_QUOTE_DEBOUNCE_MS = 50;
 
 /** One empty list, so a cart with no voucher does not hand a new array to every render. */
 const NO_CODES: readonly string[] = [];
@@ -451,7 +454,7 @@ export function useItemCartQuote(args: {
           setError(quoteErrorOf(err, 'The platform did not price this order.'));
           setPending(false);
         });
-    }, QUOTE_DEBOUNCE_MS);
+    }, ITEM_QUOTE_DEBOUNCE_MS);
     return () => { window.clearTimeout(timer); seqRef.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature, enabled]);

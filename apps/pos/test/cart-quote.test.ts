@@ -22,7 +22,7 @@ import type { CartLine, Discount, FnbOrderLine, ManualDiscount, MerchOrder } fro
  * stations, which keep one contract:
  *
  *   - this device's figure is on the screen at once, and the platform is asked
- *     200 ms after the last change to the cart;
+ *     200 ms after the last ticket-cart change, or 50 ms for an item counter;
  *   - the cart's SIGNATURE decides whether it changed: only what moves money is
  *     in it, so an unchanged cart re-rendered asks nothing;
  *   - every request carries a SEQUENCE number, and an answer that is not the
@@ -444,6 +444,55 @@ describe('useItemCartQuote — the F&B and shop stations', () => {
 
   beforeEach(() => {
     stationAsked = holdAnswers(askStation);
+  });
+
+  // SCRUM-718, MEDIUM: the old 200 ms wait consumes the display's latency
+  // budget before the price request starts. Keep burst coalescing and every
+  // price/sequence guard; ask for the latest item cart within 50 ms instead.
+  it('coalesces rapid item edits into one quote after 50 ms, keeping the price pending until its answer', async () => {
+    const line = friesLine(['fries-sauce-ketchup']);
+    const view = mountStation([line]);
+    await vi.advanceTimersByTimeAsync(25);
+    view.rerender({ kind: 'fnb', lines: [{ ...line, qty: 2, lineTotal: 180 }],
+      manualDiscounts: [], identity: stationIdentity });
+    await vi.advanceTimersByTimeAsync(49);
+    expect(askStation).not.toHaveBeenCalled();
+    expect(view.result.current.pending).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(askStation).toHaveBeenCalledTimes(1);
+    expect(stationAsked[0]!.args.lines[0]).toMatchObject({ id: 'fnb-1', qty: 2 });
+    expect(view.result.current.quote.source).toBe('till');
+    expect(view.result.current.pending).toBe(true);
+    await stationAsked[0]!.answer(platformQuote(180));
+    expect(view.result.current.quote.source).toBe('platform');
+    expect(view.result.current.totals.total).toBe(180);
+    expect(view.result.current.pending).toBe(false);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(askStation).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('ignores an overtaken price at the faster item cadence and sends nothing while disabled', async () => {
+    const line = friesLine(['fries-sauce-ketchup']);
+    const view = mountStation([line]);
+    await vi.advanceTimersByTimeAsync(50);
+    expect(askStation).toHaveBeenCalledTimes(1);
+    const changed: StationArgs = { kind: 'fnb', lines: [{ ...line, qty: 2, lineTotal: 180 }],
+      manualDiscounts: [], identity: stationIdentity };
+    view.rerender(changed);
+    await vi.advanceTimersByTimeAsync(50);
+    expect(askStation).toHaveBeenCalledTimes(2);
+    await stationAsked[0]!.answer(platformQuote(90));
+    expect(view.result.current.quote.source).toBe('till');
+    expect(view.result.current.totals.total).toBe(180);
+    expect(view.result.current.pending).toBe(true);
+    await stationAsked[1]!.answer(platformQuote(180));
+    expect(view.result.current.quote.source).toBe('platform');
+    expect(view.result.current.pending).toBe(false);
+    view.rerender({ ...changed, enabled: false });
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(askStation).toHaveBeenCalledTimes(2);
+    view.unmount();
   });
 
   it('pauses sent quote responses and refusals during a staff lock, retaining the last same-cart quote on resume', async () => {

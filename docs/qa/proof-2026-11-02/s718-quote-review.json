@@ -1,0 +1,32 @@
+{
+  "unit": "SCRUM-718",
+  "baseSource": "f8c4d4294c4a1b350e37635d1e17eaa92f7079fa",
+  "finding": "MEDIUM: the item price debounce consumes 200 ms before a captured price can reach the display",
+  "observedMiss": {
+    "streamMs": 533,
+    "visibleMs": 540,
+    "limitMs": 500
+  },
+  "diagnosticTrace": {
+    "quoteStartMs": 210,
+    "quoteFinishedMs": 298,
+    "publishStartMs": 368,
+    "snapshotMs": 491,
+    "visibleMs": 497
+  },
+  "scope": "Item-counter scheduling only: 200 to 50 ms; the ticket till stays at 200 ms. All price/sequence/pending/lock/commit/offline rules remain.",
+  "before": {
+    "newTestsFailed": 2,
+    "otherTestsPassed": 29
+  },
+  "after": {
+    "quoteTestsPassed": 31,
+    "fullPosTestsPassed": 1635,
+    "typecheck": "passed, zero diagnostics",
+    "touchedLint": "passed",
+    "builtTillJourneysPassed": 7,
+    "build": "passed"
+  },
+  "stagingRetestRequired": true,
+  "sourceFingerprint": "da5999c6069112075bd75bece4645fc299edee84d1084fe2e3475f6c205e59c2"
+}

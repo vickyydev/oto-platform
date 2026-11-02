@@ -1,5 +1,10 @@
 # POS web service: staging proof and owner switch-over
 
+**Current hold:** the f8c4d429 refresh measured 540 ms to the visible display,
+over the 500 ms gate. Both tickets remain Testing pending the narrow quote
+scheduling fix and its fresh proof. Earlier passing measurements below remain
+historical evidence. The owner must not switch devices on this acceptance.
+
 SCRUM-718, 2 November 2026. **The owner approved one staging Starter web service
 beside the existing POS static site. No staff, iPad or Pi address is switched by
 this unit. Production, another service and a larger plan need a separate decision.**

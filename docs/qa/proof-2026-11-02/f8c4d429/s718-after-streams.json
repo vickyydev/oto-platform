@@ -1,0 +1,1783 @@
+{
+  "unit": "SCRUM-718",
+  "startedAt": "2026-11-02T12:56:50.319Z",
+  "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+  "deadlineMs": 3000,
+  "samples": [
+    {
+      "round": 0,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 81.10000002384186,
+      "firstByteMs": 81.20000004768372,
+      "bytes": 938
+    },
+    {
+      "round": 0,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 81,
+      "firstByteMs": 81.20000004768372,
+      "bytes": 938
+    },
+    {
+      "round": 0,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 0,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 0,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 177.34,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 0,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 189.076,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 1,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 82.5,
+      "firstByteMs": 82.69999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 1,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 96.39999997615814,
+      "firstByteMs": 96.60000002384186,
+      "bytes": 938
+    },
+    {
+      "round": 1,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 1,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 142.166,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 1,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 1,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 132.869,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 2,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 101,
+      "firstByteMs": 101.10000002384186,
+      "bytes": 938
+    },
+    {
+      "round": 2,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 103.69999998807907,
+      "firstByteMs": 103.89999997615814,
+      "bytes": 938
+    },
+    {
+      "round": 2,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 2,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 189.624,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 2,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 2,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 141.557,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 3,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 79.69999998807907,
+      "firstByteMs": 79.80000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 3,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 83.30000001192093,
+      "firstByteMs": 83.5,
+      "bytes": 938
+    },
+    {
+      "round": 3,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 3,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 135.763,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 3,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 142.986,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 3,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 4,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 141.69999998807907,
+      "firstByteMs": 141.80000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 4,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 141.80000001192093,
+      "firstByteMs": 141.9000000357628,
+      "bytes": 938
+    },
+    {
+      "round": 4,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 4,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 154.79899999999998,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 4,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 4,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 132.085,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 5,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 80.59999996423721,
+      "firstByteMs": 80.80000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 5,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 80.40000003576279,
+      "firstByteMs": 80.70000004768372,
+      "bytes": 938
+    },
+    {
+      "round": 5,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 5,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 144.643,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 5,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 5,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 135.323,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 6,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 76,
+      "firstByteMs": 76.19999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 6,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 75.90000003576279,
+      "firstByteMs": 76,
+      "bytes": 938
+    },
+    {
+      "round": 6,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 6,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 141.31099999999998,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 6,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 172.184,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 6,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 7,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 74.19999998807907,
+      "firstByteMs": 74.30000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 7,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 81.39999997615814,
+      "firstByteMs": 81.5,
+      "bytes": 938
+    },
+    {
+      "round": 7,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 7,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 7,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 162.49099999999999,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 7,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 130.958,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 8,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 79.5,
+      "firstByteMs": 79.69999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 8,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 79.70000004768372,
+      "firstByteMs": 79.80000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 8,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 8,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 8,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 149.91,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 8,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 149.5,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 9,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 74.69999998807907,
+      "firstByteMs": 74.80000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 9,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 89.69999998807907,
+      "firstByteMs": 89.90000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 9,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 9,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 141.046,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 9,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 9,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 138.763,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 10,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 90.80000001192093,
+      "firstByteMs": 90.89999997615814,
+      "bytes": 938
+    },
+    {
+      "round": 10,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 90.70000004768372,
+      "firstByteMs": 90.90000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 10,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 10,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 10,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 177.944,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 10,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 137.017,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 11,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 85.20000004768372,
+      "firstByteMs": 85.30000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 11,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 85,
+      "firstByteMs": 85.09999996423721,
+      "bytes": 938
+    },
+    {
+      "round": 11,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 11,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 152.888,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 11,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 11,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 156.307,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 12,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 75.69999998807907,
+      "firstByteMs": 75.79999995231628,
+      "bytes": 938
+    },
+    {
+      "round": 12,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 79.5,
+      "firstByteMs": 79.59999996423721,
+      "bytes": 938
+    },
+    {
+      "round": 12,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 12,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 230.536,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 12,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 12,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 140.17,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 13,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 83.09999996423721,
+      "firstByteMs": 83.19999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 13,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 83.09999996423721,
+      "firstByteMs": 83.19999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 13,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 13,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 133.163,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 13,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 168.663,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 13,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 14,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 111.30000001192093,
+      "firstByteMs": 111.30000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 14,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 111.59999996423721,
+      "firstByteMs": 111.69999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 14,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 14,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 170.936,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 14,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 214.69,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 14,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 15,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 76.10000002384186,
+      "firstByteMs": 76.20000004768372,
+      "bytes": 938
+    },
+    {
+      "round": 15,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 78.70000004768372,
+      "firstByteMs": 78.90000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 15,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 15,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 149.734,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 15,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 15,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 136.887,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 16,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 76.80000001192093,
+      "firstByteMs": 77,
+      "bytes": 938
+    },
+    {
+      "round": 16,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 81.89999997615814,
+      "firstByteMs": 82,
+      "bytes": 938
+    },
+    {
+      "round": 16,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 16,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 137.90099999999998,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 16,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 16,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 174.249,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 17,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 72.10000002384186,
+      "firstByteMs": 72.19999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 17,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 78,
+      "firstByteMs": 78.19999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 17,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 17,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 17,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 161.069,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 17,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 149.504,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 18,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 76,
+      "firstByteMs": 76.20000004768372,
+      "bytes": 938
+    },
+    {
+      "round": 18,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 76,
+      "firstByteMs": 76.10000002384186,
+      "bytes": 938
+    },
+    {
+      "round": 18,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 18,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 131.666,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 18,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 18,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 144.557,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 19,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 79.80000001192093,
+      "firstByteMs": 79.90000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 19,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 82.10000002384186,
+      "firstByteMs": 82.19999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 19,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 19,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 138.461,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 19,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 143.823,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 19,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 20,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 74.89999997615814,
+      "firstByteMs": 75,
+      "bytes": 938
+    },
+    {
+      "round": 20,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 77.30000001192093,
+      "firstByteMs": 77.40000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 20,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 20,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 125.57799999999999,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 20,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 20,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 145.12800000000001,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 21,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 74.79999995231628,
+      "firstByteMs": 74.79999995231628,
+      "bytes": 938
+    },
+    {
+      "round": 21,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 77.69999998807907,
+      "firstByteMs": 77.79999995231628,
+      "bytes": 938
+    },
+    {
+      "round": 21,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 21,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 136.716,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 21,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 21,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 141.59199999999998,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 22,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 88.70000004768372,
+      "firstByteMs": 88.80000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 22,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 91.80000001192093,
+      "firstByteMs": 91.90000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 22,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 22,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 22,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 143.008,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 22,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 156.04100000000003,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 23,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 79.19999998807907,
+      "firstByteMs": 79.30000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 23,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 82.09999996423721,
+      "firstByteMs": 82.19999998807907,
+      "bytes": 938
+    },
+    {
+      "round": 23,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 23,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 23,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 137.173,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 23,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 143.593,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 24,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 77,
+      "firstByteMs": 77.30000001192093,
+      "bytes": 938
+    },
+    {
+      "round": 24,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 97.40000003576279,
+      "firstByteMs": 97.60000002384186,
+      "bytes": 938
+    },
+    {
+      "round": 24,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 24,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 24,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 126.69,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 24,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 149.834,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 25,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 72.30000001192093,
+      "firstByteMs": 72.40000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 25,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 74.89999997615814,
+      "firstByteMs": 75,
+      "bytes": 938
+    },
+    {
+      "round": 25,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 25,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 25,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 142.181,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 25,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 126.67200000000001,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 26,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 77.19999998807907,
+      "firstByteMs": 77.39999997615814,
+      "bytes": 938
+    },
+    {
+      "round": 26,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 77.30000001192093,
+      "firstByteMs": 77.40000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 26,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 26,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 144.22899999999998,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 26,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 131.898,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 26,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 27,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 76.09999996423721,
+      "firstByteMs": 76.29999995231628,
+      "bytes": 938
+    },
+    {
+      "round": 27,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 77.80000001192093,
+      "firstByteMs": 77.90000003576279,
+      "bytes": 938
+    },
+    {
+      "round": 27,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 27,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 137.035,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 27,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 27,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 136.92499999999998,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 28,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 73.80000001192093,
+      "firstByteMs": 74,
+      "bytes": 938
+    },
+    {
+      "round": 28,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 85.5,
+      "firstByteMs": 85.59999996423721,
+      "bytes": 938
+    },
+    {
+      "round": 28,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 28,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 173.30100000000002,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 28,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 177.711,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 28,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 29,
+      "path": "direct-api",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 71.89999997615814,
+      "firstByteMs": 71.89999997615814,
+      "bytes": 938
+    },
+    {
+      "round": 29,
+      "path": "new-pos",
+      "tool": "browser",
+      "opened": true,
+      "status": 200,
+      "headersMs": 78.39999997615814,
+      "firstByteMs": 78.5,
+      "bytes": 938
+    },
+    {
+      "round": 29,
+      "path": "old-pos",
+      "tool": "browser",
+      "opened": false,
+      "deadlineReached": true
+    },
+    {
+      "round": 29,
+      "path": "direct-api",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 145.549,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    },
+    {
+      "round": 29,
+      "path": "old-pos",
+      "tool": "curl",
+      "status": "000",
+      "firstByteMs": 0,
+      "bytes": 0,
+      "exitCode": 28,
+      "opened": false
+    },
+    {
+      "round": 29,
+      "path": "new-pos",
+      "tool": "curl",
+      "status": "200",
+      "firstByteMs": 140.03,
+      "bytes": 938,
+      "exitCode": 28,
+      "opened": true
+    }
+  ],
+  "summary": [
+    {
+      "path": "direct-api",
+      "tool": "curl",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 142.181,
+      "p95Ms": 173.30100000000002
+    },
+    {
+      "path": "direct-api",
+      "tool": "browser",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 77.30000001192093,
+      "p95Ms": 111.30000001192093
+    },
+    {
+      "path": "old-pos",
+      "tool": "curl",
+      "n": 30,
+      "opened": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "path": "old-pos",
+      "tool": "browser",
+      "n": 30,
+      "opened": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "path": "new-pos",
+      "tool": "curl",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 144.557,
+      "p95Ms": 214.69
+    },
+    {
+      "path": "new-pos",
+      "tool": "browser",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 81.20000004768372,
+      "p95Ms": 111.69999998807907
+    }
+  ],
+  "signOut": [
+    {
+      "path": "direct-api",
+      "status": 200
+    },
+    {
+      "path": "old-pos",
+      "status": 200
+    },
+    {
+      "path": "new-pos",
+      "status": 200
+    }
+  ],
+  "finishedAt": "2026-11-02T12:58:25.219Z"
+}

@@ -1,0 +1,30 @@
+{
+  "unit": "SCRUM-718",
+  "at": "2026-11-02T13:09:52.139Z",
+  "origin": "https://oto-pos-web-staging.onrender.com",
+  "checks": [
+    {
+      "name": "missing hashed asset is 404, not the app shell",
+      "passed": true,
+      "status": 404
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/%2e%2e/%2e%2e/ZZ-TEST-private-probe",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/.ZZ-TEST-hidden-probe",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/assets/%5c..%5cZZ-TEST-private-probe",
+      "status": 400,
+      "passed": true
+    }
+  ]
+}
