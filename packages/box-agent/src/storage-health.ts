@@ -7,6 +7,13 @@ import type { StoreMirror } from './store-mirror';
 type Space = { bavail: number; blocks: number; bsize: number };
 export type StorageHeartbeat = NonNullable<BoxHeartbeatRequest['storage']>;
 
+/**
+ * How long one reading may take before the heartbeat goes without it. A drive
+ * that has gone away can leave a filesystem call that never returns, and the
+ * heartbeat is how anybody learns that. Well under the heartbeat's own interval.
+ */
+export const STORAGE_READ_TIMEOUT_MS = 2_000;
+
 /** Longest mount wins; a read-only bind mount can cover a writable device. */
 export function readOnlyMount(file: string, mountinfo: string): boolean | null {
   const decode = (value: string) =>
@@ -48,12 +55,46 @@ export class StorageHealth {
     private readonly options: {
       database: string;
       mirrorDirectory?: string | null;
-      mirror: Pick<StoreMirror, 'ageSeconds' | 'failures'>;
+      mirror: Pick<StoreMirror, 'ageSeconds' | 'failures'> &
+        Partial<Pick<StoreMirror, 'problem' | 'settling'>>;
       statfs?: (path: string) => Promise<Space>;
       readOnly?: (path: string) => Promise<boolean | null>;
       env?: NodeJS.ProcessEnv;
+      readTimeoutMs?: number;
     },
   ) {}
+
+  /** A read still outstanding, by what it reads: never a second call beside a stuck one. */
+  private readonly outstanding = new Map<string, Promise<unknown>>();
+
+  /**
+   * One reading, answered or not within the limit.
+   *
+   * A stuck call sits on a thread of Node's small pool until the kernel lets go of
+   * it, so the same read is never started again while one is out: asking once a
+   * minute would use the whole pool up in four minutes and stop every file call
+   * in the process, the store's included.
+   */
+  private async bounded<T>(key: string, read: () => Promise<T>): Promise<{ value: T } | null> {
+    let pending = this.outstanding.get(key) as Promise<T> | undefined;
+    if (!pending) {
+      pending = read().finally(() => {
+        this.outstanding.delete(key);
+      });
+      this.outstanding.set(key, pending);
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        pending.then((value) => ({ value })),
+        new Promise<null>((done) => {
+          timer = setTimeout(() => done(null), this.options.readTimeoutMs ?? STORAGE_READ_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
 
   recordError(error: unknown): void {
     if (!error || typeof error !== 'object' || this.seen.has(error)) return;
@@ -111,9 +152,18 @@ export class StorageHealth {
 
   async snapshot(): Promise<StorageHeartbeat> {
     const directory = dirname(resolve(this.options.database));
+    let storeSilent = false;
+    let mirrorSilent = false;
     const space = async (path: string): Promise<Space | null> => {
       try {
-        return await (this.options.statfs ?? statfs)(path);
+        const answered = await this.bounded(`space:${path}`, () =>
+          (this.options.statfs ?? statfs)(path),
+        );
+        if (!answered) {
+          if (path === directory) storeSilent = true;
+          else mirrorSilent = true;
+        }
+        return answered?.value ?? null;
       } catch (error) {
         if (path === directory) this.recordError(error);
         return null;
@@ -122,8 +172,13 @@ export class StorageHealth {
     const [store, mirrorSpace, readOnly, age] = await Promise.all([
       space(directory),
       this.options.mirrorDirectory ? space(this.options.mirrorDirectory) : null,
-      (this.options.readOnly ?? mountedReadOnly)(directory).catch(() => null),
-      this.options.mirror.ageSeconds(),
+      this.bounded('read-only', () => (this.options.readOnly ?? mountedReadOnly)(directory))
+        .then((answered) => answered?.value ?? null)
+        .catch(() => null),
+      this.bounded('mirror-age', () => this.options.mirror.ageSeconds()).then((answered) => {
+        if (!answered) mirrorSilent = true;
+        return answered?.value ?? null;
+      }),
     ]);
     const bytes = (value: number | undefined) =>
       value !== undefined && Number.isSafeInteger(value) && value >= 0 ? value : null;
@@ -144,6 +199,14 @@ export class StorageHealth {
       mirrorAgeS: age,
       mirrorFreeBytes: bytes(mirrorSpace ? mirrorSpace.bavail * mirrorSpace.bsize : undefined),
       mirrorErrors: this.options.mirror.failures,
+      ...(storeSilent ? { driveNotAnswering: true } : {}),
+      // What the drive just failed to answer outranks what the last round found.
+      ...(mirrorSilent
+        ? { mirrorProblem: 'not_answering' }
+        : this.options.mirror.problem
+          ? { mirrorProblem: this.options.mirror.problem }
+          : {}),
+      ...(this.options.mirror.settling ? { mirrorSettling: true } : {}),
     };
   }
 }

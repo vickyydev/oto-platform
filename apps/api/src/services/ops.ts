@@ -1571,6 +1571,22 @@ export interface BoxSyncState {
  * last heartbeat: calling a printer unreachable on the evidence of a box we
  * cannot hear from would be inventing a second fault out of the first one.
  */
+/** What Health says of a mirror the box reports a problem with. A name it does not know still warns. */
+function mirrorProblemWords(problem: string): string {
+  switch (problem) {
+    case 'same_device':
+      return 'the sales mirror is on the same drive as the store, or its drive is not mounted, so it protects nothing: check the mirror drive';
+    case 'holds_unsent':
+      return 'the mirror drive holds sales this store does not have, and they have been left in place: restore them before anything else (BOX_QUICKSTART, "If the drive dies")';
+    case 'failing':
+      return 'the sales mirror keeps failing, so new sales are not being copied: check the mirror drive';
+    case 'not_answering':
+      return 'the mirror drive is not answering, so new sales are not being copied: check the mirror drive';
+    default:
+      return 'the sales mirror reports a problem: check the mirror drive';
+  }
+}
+
 export function evaluateBox(
   row: FleetBoxRow,
   devices: FleetDeviceRow[],
@@ -1631,8 +1647,10 @@ export function evaluateBox(
       });
     };
     if (!expectedAlive || storage) {
-      addStorage('box.storage_failing', storage?.readOnly === true || (storage?.ioErrors ?? 0) > 0,
-        'the drive is failing: replace it today', 'the latest heartbeat reports no drive failure', 'critical');
+      const failing = storage?.readOnly === true || (storage?.ioErrors ?? 0) > 0;
+      addStorage('box.storage_failing', failing || storage?.driveNotAnswering === true,
+        !failing && storage?.driveNotAnswering ? 'the drive is not answering: replace it today' : 'the drive is failing: replace it today',
+        'the latest heartbeat reports no drive failure', 'critical');
     }
     if (!expectedAlive || storage?.freeBytes != null) {
       addStorage('box.storage_low', storage?.freeBytes != null &&
@@ -1640,9 +1658,20 @@ export function evaluateBox(
         'the drive is nearly full: free space or replace it before the counter stops saving sales',
         'the drive has enough free space again');
     }
-    addStorage('box.mirror_stale', Boolean(storage?.mirrorConfigured && (storage.mirrorAgeS === null || storage.mirrorAgeS > 600)),
-      storage?.mirrorAgeS === null ? 'no completed sales mirror is available: check the mirror drive' : 'the sales mirror is over 10 minutes old: check the mirror drive',
-      storage?.mirrorConfigured ? 'a recent sales mirror is available again' : 'mirroring is not configured');
+    /**
+     * SCRUM-719: the problem the box names comes first, so a dead mirror drive
+     * is raised in about three minutes rather than waiting out the age. A box
+     * just started says it is settling: its old age means nothing until a round
+     * has had its chance, and it is unknown, so it neither raises nor closes.
+     */
+    const mirrorProblem = storage?.mirrorProblem ?? null;
+    if (mirrorProblem || !storage?.mirrorSettling) {
+      addStorage('box.mirror_stale', Boolean(storage?.mirrorConfigured && (mirrorProblem || storage.mirrorAgeS === null || storage.mirrorAgeS > 600)),
+        mirrorProblem ? mirrorProblemWords(mirrorProblem)
+          : storage?.mirrorAgeS === null ? 'no completed sales mirror is available: check the mirror drive' : 'the sales mirror is over 10 minutes old: check the mirror drive',
+        storage?.mirrorConfigured ? 'a recent sales mirror is available again' : 'mirroring is not configured',
+        mirrorProblem === 'holds_unsent' ? 'critical' : 'warning');
+    }
   }
 
 

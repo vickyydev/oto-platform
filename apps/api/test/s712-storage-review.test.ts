@@ -77,6 +77,8 @@ describe('storage condition pins', () => {
       const mirror = new StoreMirror({
         database: join(directory, 'unused'),
         directory,
+        // One test disk. A real mirror on the store's own device is refused (SCRUM-719).
+        allowSameDevice: true,
         now: () => at + 10_100,
         copy: async () => {
           copied = true;

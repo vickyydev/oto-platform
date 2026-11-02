@@ -91978,6 +91978,10 @@
                       "format": "uuid"
                     },
                     "maxItems": 1000
+                  },
+                  "expectedBoxId": {
+                    "type": "string",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -92298,6 +92302,17 @@
                       "mirrorErrors": {
                         "type": "integer",
                         "minimum": 0
+                      },
+                      "driveNotAnswering": {
+                        "type": "boolean"
+                      },
+                      "mirrorProblem": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      "mirrorSettling": {
+                        "type": "boolean"
                       }
                     },
                     "required": [

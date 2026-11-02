@@ -31,8 +31,10 @@ import { fileCredentialStore } from '../credentials';
 import type { AgentLog } from '../transport';
 import { readJsonFile, readOverrides, readRunnerState, runnerPaths } from './home';
 import { KIOSK_DEFAULT_PORT } from './kiosk-server';
-import { StoreMirror, MIRROR_NAME } from '../store-mirror';
-import { restoreStore } from './store-restore';
+import { JOURNAL_EPOCH_KEY } from '../agent';
+import { StoreMirror, MIRROR_NAME, copiesHoldingUnsent } from '../store-mirror';
+import { StoreBusyError } from './store-lock';
+import { RestoreRefusal, restoreStore, restoredIdentity } from './store-restore';
 import {
   RunnerError,
   claimBox,
@@ -98,6 +100,31 @@ export function jsonLog(write: (line: string) => void = (l) => process.stdout.wr
   return { info: line('info'), warn: line('warn'), error: line('error') };
 }
 
+/** What `store mirror-now` came to, for a person. */
+function mirrorNowWords(result: string, file: string): string {
+  switch (result) {
+    case 'mirrored':
+      return `Checked mirror saved: ${file}`;
+    case 'holds_unsent':
+      return 'Nothing written: the copies hold unsent records this store does not have, and they have been left in place. Restore them first (BOX_QUICKSTART.md, "If the drive dies").';
+    case 'same_device':
+      return "Nothing written: the mirror directory is on the store's own drive, or its drive is not mounted.";
+    case 'nothing_to_copy':
+      return 'Nothing written: this store holds no journal yet, so a copy would protect nothing.';
+    default:
+      return `Mirror ${result}; the live store is unchanged.`;
+  }
+}
+
+/** Each way a store command can fail, in its own words. */
+function storeFailureWords(error: unknown): string {
+  if (error instanceof RestoreRefusal || error instanceof StoreBusyError) return error.message;
+  const message = error instanceof Error ? error.message : '';
+  if (message.startsWith('Stop the oto-box service')) return message;
+  const code = (error as NodeJS.ErrnoException | null)?.code;
+  return `The store operation failed${code ? ` (${code})` : ''}: check that ${process.env.OTO_BOX_HOME ?? 'the box home'} is writable and the drive has room. The previous store is preserved.`;
+}
+
 /** Where the command reads and writes; a test hands in streams of its own. */
 export interface CliStreams {
   stdin?: NodeJS.ReadableStream;
@@ -144,8 +171,10 @@ const USAGE = `oto-box ${BOX_AGENT_BUILD.id} — the OTO booth box
       runs and what it holds.
   oto-box store mirror-now [--home <dir>]
       Make a checked store mirror in OTO_BOX_MIRROR_DIR.
-  oto-box store restore FILE [--home <dir>]
+  oto-box store restore FILE [--home <dir>] [--other-box] [--accept-refused]
       With the service stopped, restore a checked mirror and keep the old store.
+      It holds new sales until Console → Devices → Reset the store, so what was
+      restored can go up first (BOX_QUICKSTART.md, "If the drive dies").
   oto-box version
       The build: version, build date, commit and build time.
 
@@ -184,15 +213,21 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
         return 2;
       }
       try {
-        const { boxId } = await claimBox({
+        const { boxId, restored } = await claimBox({
           home,
           apiBaseUrl: api,
           code,
           hostname: option(parsed, 'hostname', 'OTO_BOX_HOSTNAME'),
           force: parsed.flags.get('force') === true,
+          mirrorDirectory: process.env.OTO_BOX_MIRROR_DIR || null,
           log: jsonLog(),
         });
         out(`Registered: this is box ${boxId}. The credential is in ${runnerPaths(home).credential} (owner-only).`);
+        if (restored) {
+          out(
+            `This store was restored, and ${restored.unsent} record(s) are waiting to go up. Start the service and watch "oto-box status" until the outbox reads 0, then press Reset the store in Console → Devices. New sales are held until then.`,
+          );
+        }
         // A box that needs service (SCRUM-403) picks the credential up when it
         // next tries its store, which it does once a minute.
         out(
@@ -261,19 +296,30 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
           if (!directory) { out('Not mirrored: OTO_BOX_MIRROR_DIR is not configured.'); return 1; }
           const mirror = new StoreMirror({ database: runnerPaths(home).database, directory });
           const result = await mirror.run();
-          out(result === 'mirrored' ? `Checked mirror saved: ${join(directory, MIRROR_NAME)}` : `Mirror ${result}; the live store is unchanged.`);
+          out(mirrorNowWords(result, join(directory, MIRROR_NAME)));
           return result === 'mirrored' ? 0 : 1;
         }
         if (parsed.positional[0] === 'restore' && parsed.positional.length === 2) {
-          const result = await restoreStore(home, parsed.positional[1]!);
+          const result = await restoreStore(home, parsed.positional[1]!, undefined, {
+            allowOtherBox: parsed.flags.get('other-box') === true,
+            acceptRefused: parsed.flags.get('accept-refused') === true,
+          });
           for (const file of result.replaced) out(`Previous store kept: ${file}`);
           out(`Restored: ${result.unsent} unsent record(s) waiting to reach the cloud. Credential and service configuration unchanged.`);
+          out(`This copy is of box ${result.boxIds[0]}, last changed ${result.copyAt ?? 'at a time it does not say'}. Anything sold after that is not in it.`);
+          if (result.receiptSeries > 0) {
+            out(`Receipt numbers moved on by ${result.receiptMargin} on ${result.receiptSeries} series, so no number is used twice. The gap in the numbers is expected.`);
+          }
+          if (result.printJobsHeld > 0) {
+            out(`${result.printJobsHeld} print job(s) in the copy will not print again: any of them may already have come out. Reprint from History the slip a guest does not have.`);
+          }
+          out('New sales are held. Next: if this box has no credential, issue a claim code for that same box in Console → Devices and run "oto-box claim". Start the service, watch "oto-box status" until the outbox reads 0, then press Reset the store in Console → Devices. Then sell.');
           return 0;
         }
         err('Usage: oto-box store mirror-now | oto-box store restore FILE');
         return 2;
-      } catch {
-        err('Store operation refused or failed. Stop the service before restoring; check that the file is a readable, checked box mirror and the destination is writable. The previous store is preserved.');
+      } catch (error) {
+        err(storeFailureWords(error));
         return 1;
       }
     }
@@ -293,6 +339,15 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
       const mirror = new StoreMirror({ database: paths.database, directory: process.env.OTO_BOX_MIRROR_DIR });
       const mirrorAge = await mirror.ageSeconds();
       out(`mirror      ${process.env.OTO_BOX_MIRROR_DIR ? (mirrorAge === null ? 'no completed mirror found' : `${mirrorAge}s old`) : 'not mirrored: OTO_BOX_MIRROR_DIR is not configured'}`);
+      if (process.env.OTO_BOX_MIRROR_DIR) {
+        if (await mirror.onStoresDrive().catch(() => false)) {
+          out(`            ${process.env.OTO_BOX_MIRROR_DIR} is on the store's own drive, or its drive is not mounted: no copy is being made`);
+        }
+        const lacking = await copiesHoldingUnsent(paths.database, process.env.OTO_BOX_MIRROR_DIR).catch(() => 0);
+        if (lacking > 0) {
+          out(`            the copies hold ${lacking} unsent record(s) this store does not have, and are being left in place: restore them before claiming or selling`);
+        }
+      }
       out(`registered  ${credential ? `yes — box ${credential.boxId}` : 'no (enter the claim code on the television, or run "oto-box claim")'}`);
       // Before a claim, runner.json names no api; the configuration does, and
       // it is the one a claim or a run would use (closing audit L25).
@@ -326,9 +381,20 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
           // it (`UNSENT_OUTBOX_SQL` in store-sqlite.ts): a damaged index page
           // would say the store could not be read, and a stale one, none.
           const rows = db
-            .prepare("select count(*) as n from box_outbox not indexed where state in ('queued','sending')")
+            .prepare("select count(*) as n from box_outbox not indexed where state in ('queued','sending','failed')")
             .all() as Array<{ n: number }>;
           out(`outbox      ${rows[0]?.n ?? 0} fact(s) waiting to reach the cloud`);
+          const waits = db
+            .prepare('select value from box_runtime where runtime_key = ?')
+            .all(JOURNAL_EPOCH_KEY) as Array<{ value: string }>;
+          if (waits.some((row) => !row.value.includes('"state":"taken"'))) {
+            const restored = restoredIdentity(db);
+            out(
+              `journal     waits for a new epoch, and holds new sales: press Reset the store in Console → Devices once the outbox reads 0${
+                restored ? ` (restored ${restored.at ?? ''} as box ${restored.boxId})` : ''
+              }`,
+            );
+          }
         } catch {
           out('outbox      (the store could not be read)');
         } finally {

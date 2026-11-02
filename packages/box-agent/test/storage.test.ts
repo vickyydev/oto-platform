@@ -34,7 +34,8 @@ async function fixture(t: TestContext) {
     }
     await rm(home, { recursive: true, force: true });
   });
-  return { home, database, directory, db, store, seal };
+  // Everything here is on one test disk (SCRUM-719 refuses that outside a test).
+  return { home, database, directory, db, store, seal, allowSameDevice: true };
 }
 
 function count(file: string) {

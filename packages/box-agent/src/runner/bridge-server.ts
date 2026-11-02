@@ -5,7 +5,7 @@ import {
   STATION_VIEWS,
   StationIntentSchema,
 } from '@oto/shared';
-import type { BoxAgent } from '../agent';
+import { JournalEpochAwaitedError, type BoxAgent } from '../agent';
 import type { StationChannelMessage, StationView } from '../contract';
 import {
   BridgeError,
@@ -391,6 +391,10 @@ export function createBridgeServer(options: BridgeServerOptions): BridgeServer {
       }
     } catch (err) {
       if (err instanceof Refusal || err instanceof BridgeError) return refuse(res, err);
+      // The hold after a restore (SCRUM-719), by name: the till says why, and retries nothing.
+      if (err instanceof JournalEpochAwaitedError) {
+        return refuse(res, new Refusal(409, 'JOURNAL_AWAITING_EPOCH', err.message));
+      }
       log.error({ module: 'bridge', err: String(err) }, 'a bridge request failed');
       if (!res.headersSent)
         send(res, 500, { error: { code: 'INTERNAL', message: 'The box could not answer that' } });

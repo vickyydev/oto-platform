@@ -75,6 +75,12 @@ export const BoxRegisterRequestSchema = z.object({
    * send it is answered as before, with the box's current epoch.
    */
   journalsKept: z.array(z.string().uuid()).max(BOX_REGISTER_JOURNALS_MAX).optional(),
+  /**
+   * SCRUM-719 — a restored store belongs to one box. A code for any other is
+   * refused here, unspent, rather than leaving the restored sales under an
+   * identity that will never send them.
+   */
+  expectedBoxId: z.string().uuid().optional(),
 });
 export type BoxRegisterRequest = z.infer<typeof BoxRegisterRequestSchema>;
 
@@ -322,6 +328,12 @@ export const BoxHeartbeatRequestSchema = z.object({
     mirrorAgeS: z.number().int().nonnegative().nullable(),
     mirrorFreeBytes: z.number().int().nonnegative().nullable(),
     mirrorErrors: z.number().int().nonnegative(),
+    /** SCRUM-719: a reading of the store's drive that never came back. */
+    driveNotAnswering: z.boolean().optional(),
+    /** SCRUM-719: the mirror's problem, if any (`MirrorProblem`, or `not_answering`). A string, so a later name never loses a heartbeat. */
+    mirrorProblem: z.string().min(1).max(40).optional(),
+    /** SCRUM-719: no round has had its chance since the agent started, so an old age means nothing yet. */
+    mirrorSettling: z.boolean().optional(),
   }).optional(),
   /**
    * The offline copies this box is holding (SCRUM-323).

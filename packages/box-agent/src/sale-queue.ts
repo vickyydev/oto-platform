@@ -452,11 +452,25 @@ export type FinaliseCrashPoint = (typeof FINALISE_CRASH_POINTS)[number];
  * `business_date` gives them, and a receipt series is continuous — a box
  * offline across midnight must not re-issue last evening's numbers.
  */
-const RECEIPT_SEQ_SCOPE = 'receipt_seq';
-const RECEIPT_SERIES_DAY = '1970-01-01';
+/**
+ * How far a restore moves every station's receipt numbering on (SCRUM-719).
+ *
+ * A copy is older than the store it came from, and a guest may be holding a number
+ * sold in between. The margin is the fastest plausible selling rate over the
+ * longest plausible age of a copy: one sale every ten seconds at one station (360
+ * an hour, faster than a cash sale can be taken) for a full day (8,640, a mirror
+ * that failed and whose alert nobody answered until the next morning), rounded up.
+ * A skipped number is harmless: the platform files a sale under the number the box
+ * printed and moves its series past it (`adoptReceipt`), the series has no upper
+ * limit, and a number is text past its padding. The cost is a gap, which the
+ * Console's receipt check lists and the runbook explains.
+ */
+export const RECEIPT_RESTORE_MARGIN = 10_000;
+export const RECEIPT_SEQ_SCOPE = 'receipt_seq';
+export const RECEIPT_SERIES_DAY = '1970-01-01';
 /** `pos.receipt_series.seq_padding`'s default; the ledger's number is authoritative either way. */
 const RECEIPT_SEQ_PADDING = 6;
-const RECEIPT_SERIES = 'receipt_series';
+export const RECEIPT_SERIES = 'receipt_series';
 
 const logKey = (saleId: string) => `sale_log:${saleId}`;
 /**
@@ -467,7 +481,9 @@ const logKey = (saleId: string) => `sale_log:${saleId}`;
  */
 const LOG_INDEX_KEY = 'sale_log_index';
 const jobKey = (jobId: string) => `sale_print_job:${jobId}`;
-const observedKey = (stationId: string) => `receipt_observed:${stationId}`;
+export const observedKey = (stationId: string) => `receipt_observed:${stationId}`;
+/** The one counter a station's offline receipts are numbered from. */
+export const receiptCounterKey = (stationId: string, prefix: string) => `last:${stationId}:${prefix}`;
 
 function parseJson<T>(raw: string | null): T | null {
   if (!raw) return null;
@@ -552,7 +568,7 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
     );
     const key = {
       scope: RECEIPT_SEQ_SCOPE,
-      key: `last:${stationId}:${mark.prefix}`,
+      key: receiptCounterKey(stationId, mark.prefix),
       businessDate: RECEIPT_SERIES_DAY,
     };
     const held = await tx.readCounter(boxId, key);

@@ -13,7 +13,7 @@ import { STOCK_SNAPSHOT_REWRITE_AFTER_MS } from './stock-lane';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
 import { createOutbox, type Outbox } from './outbox';
-import { createSaleQueue, type FinaliseCrashPoint, type SaleQueue } from './sale-queue';
+import { RECEIPT_RESTORE_MARGIN, createSaleQueue, type FinaliseCrashPoint, type SaleQueue } from './sale-queue';
 import { createRefusalBackOff } from './reregister';
 import { generateSyncKeyPair, publicKeyFor, sealEnvelope, uuidv7 } from './signing';
 import {
@@ -236,6 +236,13 @@ export interface BoxAgentOptions {
    */
   journalHoldFor?: string | null;
   /**
+   * The box this store was restored as, if any (SCRUM-719): named at
+   * registration, so the platform refuses a code for any other box without
+   * spending it, rather than leaving the restored facts under an identity that
+   * will never send them.
+   */
+  expectedBoxId?: string | null;
+  /**
    * The operator this box belongs to. Learned at registration; pass it for a
    * box that comes back from its credential file and never registers again.
    */
@@ -396,6 +403,8 @@ export interface BoxAgentOptions {
    * in a mall, and its temperature would be a lie about one.
    */
   storage?: () => Promise<NonNullable<BoxHeartbeatRequest['storage']>>;
+  /** How long the heartbeat waits for `storage` before it goes without (5 s unless a test says). */
+  storageReadLimitMs?: number;
   hardware?: {
     /** °C, or null when it cannot be read. */
     tempC?: () => Promise<number | null>;
@@ -898,6 +907,8 @@ function heartbeatStaleRefusal(status: number, body: unknown): StaleRefusal | nu
  * store from before this rule, and seal at the default epoch.
  */
 export const JOURNAL_EPOCH_KEY = 'journal_epoch';
+/** Which box a restored store came back as, and when (SCRUM-719). Read by the next claim, `status` and Reset the store. */
+export const STORE_RESTORED_KEY = 'store_restored';
 
 interface JournalEpochNote {
   state: 'awaiting' | 'taken';
@@ -911,6 +922,22 @@ interface JournalEpochNote {
 function journalEpochNote(note: JournalEpochNote): string {
   return JSON.stringify(note);
 }
+
+/**
+ * The note a restored store is installed with (SCRUM-719). Its journal is behind
+ * what the platform already holds, so a new fact would seal at an address that is
+ * taken, and come back refused, or acknowledged and lost. It may send what it was
+ * restored with; it seals nothing until Reset the store mints a new epoch.
+ */
+export function awaitingEpochNote(at: string): string {
+  return journalEpochNote({ state: 'awaiting', epoch: null, from: null, at });
+}
+
+/**
+ * What the agent asks of its storage reader before it goes without. Longer than
+ * `StorageHealth`'s own limit on each read, which is what reports the silence.
+ */
+const STORAGE_READ_LIMIT_MS = 5_000;
 
 /**
  * Whether the journal waits, by its note. No note does not wait: a store from
@@ -1257,6 +1284,16 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       note('error', 'the store could not say whether its journal waits for a new epoch', {
         err: String(err),
       });
+      throw err;
+    }
+  }
+
+  /** Whether this store was restored from a copy. A store with no `box_runtime` was not. */
+  async function readJournalRestored(boxId: string): Promise<boolean> {
+    try {
+      return (await store?.readRuntimeValue(boxId, STORE_RESTORED_KEY)) != null;
+    } catch (err) {
+      if (err instanceof BoxStoreFeatureMissingError) return false;
       throw err;
     }
   }
@@ -1995,6 +2032,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         syncPublicKey: pair.publicKeyPem,
         syncKeyAlgorithm: 'ed25519',
         ...(journalsKept ? { journalsKept } : {}),
+        ...(options.expectedBoxId ? { expectedBoxId: options.expectedBoxId } : {}),
       },
     });
     if (status !== 200 || !body) {
@@ -3317,6 +3355,26 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
   }
 
+  /**
+   * The storage reading, or nothing. Bounded here as well as in `StorageHealth`:
+   * whatever else a reader meets, the heartbeat goes, because it is how anybody
+   * learns that something on this box has stopped answering (SCRUM-719).
+   */
+  async function readStorage(): Promise<BoxHeartbeatRequest['storage']> {
+    if (!options.storage) return undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        options.storage().catch(() => undefined),
+        new Promise<undefined>((done) => {
+          timer = setTimeout(() => done(undefined), options.storageReadLimitMs ?? STORAGE_READ_LIMIT_MS);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   async function heartbeat(): Promise<BoxHeartbeatAck | null> {
     if (!credential || state.heartbeatsPaused) return null;
     // Read before the guard below, so the toggle coming back on is noticed on
@@ -3345,7 +3403,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       note('error', 'the print retry tick failed', { err: String(err) });
       return [];
     });
-    const storage = await options.storage?.().catch(() => undefined);
+    const storage = await readStorage();
     const previousReportedAt = lastReportedAt;
     const reportedMs = Math.max(clock(), lastReportedAt + 1);
     lastReportedAt = reportedMs;
@@ -4354,6 +4412,28 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         await setOffline(false);
         return { state: 'succeeded', result: { offline: false } };
       case 'reset_store': {
+        /**
+         * On a restored store, refused here as well as in the Console (SCRUM-719).
+         * The Console reads the last heartbeat, and on a box just restored that
+         * can be the old drive's, saying nothing is waiting. A new epoch now would
+         * strand everything it was restored to send, each refused as
+         * `epoch_regressed` and left to be recorded by hand. Failing leaves the
+         * epoch where it is, and the button works again once they have gone up.
+         */
+        const restored =
+          store && state.boxId && state.journalAwaitingEpoch
+            ? await readJournalRestored(state.boxId)
+            : false;
+        if (restored && store && state.boxId) {
+          const { queued } = await store.depth(state.boxId);
+          if (queued > 0) {
+            return {
+              state: 'failed',
+              errorCode: 'BOX_OUTBOX_UNSYNCED',
+              errorMessage: `This box still has ${queued} unsynced event(s): let it catch up first`,
+            };
+          }
+        }
         // The local side of it: everything the box was holding goes. The new
         // epoch comes back on the acknowledgement, which is what makes a batch
         // replayed from the old store recognisably stale.
@@ -4365,7 +4445,15 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         // The epoch itself is adopted where the acknowledgement arrives, in
         // `runPendingCommands` — computing it here would mean the two ends
         // guessing at the same number instead of one of them being told.
-        return { state: 'succeeded', result: { cleared: true } };
+        /**
+         * A restored store ends its wait here, so this is where the platform
+         * hears of it (SCRUM-719). It has never heard of a number sold after the
+         * copy, and its own online allocator would hand that number out next.
+         */
+        return {
+          state: 'succeeded',
+          result: { cleared: true, ...(restored ? { receiptMargin: RECEIPT_RESTORE_MARGIN } : {}) },
+        };
       }
       default: {
         // A command kind this agent is too old to understand. Failing by name

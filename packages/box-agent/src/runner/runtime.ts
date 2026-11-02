@@ -80,9 +80,10 @@ import {
 import { applyPrinterOverride } from './printer-override';
 import { piHardware } from './hardware';
 import { createBridgeServer, type BridgeServer } from './bridge-server';
-import { StoreMirror } from '../store-mirror';
+import { MIRROR_NAME, StoreMirror, copiesHoldingUnsent } from '../store-mirror';
 import { StorageHealth } from '../storage-health';
 import { holdStoreLock } from './store-lock';
+import { restoredIdentity } from './store-restore';
 
 /** A failure the person running the box can act on, worded for them. */
 export class RunnerError extends Error {
@@ -571,6 +572,8 @@ function reportingCredentials(path: string): CredentialStore {
 
 export interface RunnerOptions {
   mirrorDirectory?: string | null;
+  /** Both directories on one disk, for a test. A proof's way is the test-only variable. */
+  mirrorAllowSameDevice?: boolean;
   /** The box's home directory: credential, store, config copy, choices. */
   home: string;
   /** The api to talk to. Falls back to the one this box was claimed against. */
@@ -685,7 +688,22 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
   const mirror = new StoreMirror({
     database: paths.database,
     directory: options.mirrorDirectory,
-    onFailure: () => log.warn({ module: 'storage' }, 'the store mirror failed; the live store is unchanged; the next round is in one minute'),
+    ...(options.mirrorAllowSameDevice !== undefined ? { allowSameDevice: options.mirrorAllowSameDevice } : {}),
+    onFailure: (why) => {
+      if (why === 'holds_unsent') {
+        log.error(
+          { module: 'storage' },
+          'the copies on the mirror drive hold unsent records this store does not have, so they were left in place and no copy was made: restore them (BOX_QUICKSTART.md, "If the drive dies")',
+        );
+      } else if (why === 'same_device') {
+        log.error(
+          { module: 'storage' },
+          'the mirror directory is on the store\'s own drive, or its drive is not mounted, so no copy was made: check the mirror drive',
+        );
+      } else {
+        log.warn({ module: 'storage' }, 'the store mirror failed; the live store is unchanged; the next round is in one minute');
+      }
+    },
   });
   const storage = new StorageHealth({ database: paths.database, mirrorDirectory: options.mirrorDirectory, mirror });
   const underlyingOpen = options.openDatabase ?? openNodeSqlite;
@@ -696,6 +714,8 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
 
   let selected = state.stationId;
   let pendingClaim: string | null = null;
+  /** The box this store was restored as, while its journal waits (SCRUM-719). */
+  let restoredBox: string | null = null;
   const reportedWithoutPrinter = new Set<string>();
 
   /** The agent running now. Null only between the kiosk listening and the store being looked at. */
@@ -765,6 +785,18 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
     // same answer from the one place that could still be reached.
     if (!current || fault) return { ok: false, reason: 'refused' };
     if (current.state.registered) return { ok: false, reason: 'already_registered' };
+    // A blank store must not be claimed over sales its copies still hold: the
+    // platform would move the journal on, and they would be refused once restored.
+    if (options.mirrorDirectory && !restoredBox) {
+      const lacking = await copiesHoldingUnsent(paths.database, options.mirrorDirectory).catch(() => 0);
+      if (lacking > 0) {
+        log.error(
+          { module: 'runner', lacking },
+          'a claim typed on the kiosk was refused: the copies on the mirror drive hold unsent records this store does not have. Restore them first (BOX_QUICKSTART.md, "If the drive dies")',
+        );
+        return { ok: false, reason: 'refused' };
+      }
+    }
     const previousBox = current.state.boxId;
     pendingClaim = code;
     claimingHere = true;
@@ -912,6 +944,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
       // Only ever a code a person typed on the kiosk's first-run screen, and
       // only for as long as that one registration takes.
       claimCode: async () => (store ? pendingClaim : null),
+      expectedBoxId: store ? restoredBox : null,
       hostname: options.hostname ?? overrides.hostname ?? osHostname(),
       fetch: store
         ? transport
@@ -1038,6 +1071,12 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
       return;
     }
     db = opened;
+    try {
+      restoredBox = restoredIdentity(opened)?.boxId ?? null;
+    } catch {
+      // Read by nothing but a claim; a store that fails here fails at `prepare` too.
+      restoredBox = null;
+    }
     const current = buildAgent(new SqlBoxStore({ driver: sqliteBoxDriver(opened, () => mirror.acceptedUnsent()) }));
     agent = current;
     let registered: boolean;
@@ -1304,6 +1343,8 @@ export interface ClaimOptions {
   openDatabase?: OpenDatabase;
   /** Set aside an existing identity and claim again. */
   force?: boolean;
+  /** The mirror drive, so a blank store is not claimed over sales its copies hold. */
+  mirrorDirectory?: string | null;
 }
 
 /**
@@ -1320,7 +1361,9 @@ export interface ClaimOptions {
  * television's "needs service" notice names, and it has to work on every box
  * that shows it.
  */
-export async function claimBox(options: ClaimOptions): Promise<{ boxId: string }> {
+export async function claimBox(
+  options: ClaimOptions,
+): Promise<{ boxId: string; restored: { unsent: number } | null }> {
   const log = options.log ?? silentLog;
   const paths = runnerPaths(options.home);
   await mkdir(paths.home, { recursive: true, mode: 0o700 });
@@ -1347,6 +1390,27 @@ export async function claimBox(options: ClaimOptions): Promise<{ boxId: string }
   }
 }
 
+/** The box a store was restored as, read without writing, or null. */
+async function restoredOf(
+  file: string,
+  openDatabase: OpenDatabase,
+): Promise<ReturnType<typeof restoredIdentity>> {
+  if (!(await stat(file).catch(() => null))) return null;
+  let db: SqliteDatabaseLike | null = null;
+  try {
+    db = await openDatabase(file, { readOnly: true });
+    return restoredIdentity(db);
+  } catch {
+    return null;
+  } finally {
+    try {
+      db?.close();
+    } catch {
+      /* nothing opened */
+    }
+  }
+}
+
 /** `claimBox`, once it holds the claim lock. */
 async function claimHeld(
   options: ClaimOptions,
@@ -1354,12 +1418,27 @@ async function claimHeld(
   credentials: CredentialStore,
   existing: BoxCredential | null,
   log: AgentLog,
-): Promise<{ boxId: string }> {
+): Promise<{ boxId: string; restored: { unsent: number } | null }> {
   const openDatabase = options.openDatabase ?? openNodeSqlite;
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const storeFiles = [paths.database, `${paths.database}-wal`, `${paths.database}-shm`];
+  /**
+   * RESTORED AND STILL WAITING (SCRUM-719). That store holds the records this
+   * claim is being made to send. It is never set aside, even with --force, which
+   * then replaces the credential alone; and only the box it belongs to may claim
+   * it. Anything else leaves them under an identity that will never send them.
+   */
+  const restored = await restoredOf(paths.database, openDatabase);
+  if (!restored && options.mirrorDirectory) {
+    const lacking = await copiesHoldingUnsent(paths.database, options.mirrorDirectory).catch(() => 0);
+    if (lacking > 0) {
+      throw new RunnerError(
+        `The copies on the mirror drive hold ${lacking} unsent record(s) this store does not have, and claiming now would strand them. Nothing was done, and the claim code was not used. Restore them first: "oto-box store restore ${join(options.mirrorDirectory, MIRROR_NAME)}" (BOX_QUICKSTART.md, "If the drive dies").`,
+      );
+    }
+  }
   if (existing) {
-    for (const file of [paths.credential, ...storeFiles]) {
+    for (const file of restored ? [paths.credential] : [paths.credential, ...storeFiles]) {
       await rename(file, `${file}.replaced-${stamp}`).catch(() => {});
     }
     await rm(paths.configBundle, { force: true });
@@ -1415,6 +1494,7 @@ async function claimHeld(
      * on with its own journal, and a new box — another id — is never held.
      */
     journalHoldFor: existing ? existing.boxId : null,
+    expectedBoxId: restored?.boxId ?? null,
     // Registration only: nothing to print, draw or charge on the way.
     printing: { enabled: false },
     terminal: { enabled: false },
@@ -1436,9 +1516,11 @@ async function claimHeld(
       }
       const refused = err instanceof Error && err.message.startsWith('box registration failed');
       throw new RunnerError(
-        refused
-          ? 'The claim code was refused: it is wrong, used or older than its expiry. Ask for a new one in Console → Devices.'
-          : `The api did not answer at ${apiBaseUrl}: check the internet and the address.`,
+        !refused
+          ? `The api did not answer at ${apiBaseUrl}: check the internet and the address.`
+          : restored
+            ? `The claim code was refused. This store was restored for box ${restored.boxId}, so the code must be for that box: open it in Console → Devices and issue a new one. A code for another box is not used up by this.`
+            : 'The claim code was refused: it is wrong, used or older than its expiry. Ask for a new one in Console → Devices.',
       );
     }
     if (!registered || !agent.state.boxId) {
@@ -1453,7 +1535,7 @@ async function claimHeld(
       );
     }
     await writeRunnerState(paths, { apiBaseUrl, stationId: null });
-    return { boxId: agent.state.boxId };
+    return { boxId: agent.state.boxId, restored: restored ? { unsent: restored.unsent } : null };
   } finally {
     agent.stop();
     db.close();

@@ -9,6 +9,7 @@ import {
   branch,
   device,
   printTemplate,
+  receiptSeries,
   station,
   stationDevice,
   syncCursor,
@@ -52,7 +53,7 @@ import {
   retireSyncKeys,
 } from './sync';
 import { limitPrincipal } from './throttle';
-import { withTx, type Exec, type OpContext } from './tx';
+import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
 /**
  * The cloud side of a box (S2-04).
@@ -405,6 +406,43 @@ export interface RegisterContext extends OpContext {
  * new claim code, which takes seconds and is exactly what the Console shows a
  * box as needing: `registered_at` null and `status` unclaimed.
  */
+/** The most a box may ask its series to move: ten days of the fastest selling. A guard, not a rule. */
+const RECEIPT_MARGIN_LIMIT = 100_000;
+
+/** What a `reset_store` result says, read defensively: it comes from a box. */
+function restoredReceiptMargin(result: unknown): number {
+  const margin = (result as { receiptMargin?: unknown } | null | undefined)?.receiptMargin;
+  return typeof margin === 'number' && Number.isSafeInteger(margin) && margin > 0
+    ? Math.min(margin, RECEIPT_MARGIN_LIMIT)
+    : 0;
+}
+
+/** Every sale series on this box's stations, including one that has not issued a number yet. */
+async function moveReceiptSeriesOn(tx: Tx, auth: BoxAuth, margin: number): Promise<void> {
+  const stations = await tx
+    .select({ id: station.id, prefix: station.codePrefix, branchId: station.branchId })
+    .from(station)
+    .where(and(eq(station.boxId, auth.boxId), isNull(station.archivedAt)));
+  for (const held of stations) {
+    if (!held.prefix) continue;
+    await tx
+      .insert(receiptSeries)
+      .values({
+        id: newId(),
+        operatorId: auth.operatorId,
+        branchId: held.branchId,
+        stationId: held.id,
+        series: held.prefix,
+        kind: 'sale',
+        nextSeq: 1 + margin,
+      })
+      .onConflictDoUpdate({
+        target: [receiptSeries.stationId, receiptSeries.series, receiptSeries.kind],
+        set: { nextSeq: sql`${receiptSeries.nextSeq} + ${margin}` },
+      });
+  }
+}
+
 export async function registerBox(
   db: Db,
   input: BoxRegisterRequest,
@@ -442,6 +480,14 @@ export async function registerBox(
       401,
       'BOX_CLAIM_INVALID',
       'That claim code is not recognised, or it has already been used',
+    );
+  }
+  if (input.expectedBoxId && input.expectedBoxId !== candidate.id) {
+    // Before anything is spent: the store this claim is for belongs to another box.
+    throw new AppError(
+      409,
+      'BOX_CLAIM_OTHER_BOX',
+      'That claim code belongs to a different box from the store on this machine',
     );
   }
   if (candidate.claimCodeExpiresAt && candidate.claimCodeExpiresAt <= new Date()) {
@@ -1456,6 +1502,15 @@ export async function completeCommand(
         reason: 'store_reset',
         keepPublicKeyPem: auth.syncPublicKey,
       });
+      /**
+       * SCRUM-719 — A RESTORED BOX'S NUMBERS. Sales made after the copy the box
+       * came back from may be lost to the platform and still in a guest's hand,
+       * and this series has never heard of them. The box moved its own counters
+       * on when it was restored; this moves the platform's, so the first online
+       * sale after the reset does not print one of those numbers.
+       */
+      const receiptMargin = restoredReceiptMargin(input.result);
+      if (receiptMargin > 0) await moveReceiptSeriesOn(tx, auth, receiptMargin);
       await audit.record(tx, {
         actorAccountId: existing.requestedByAccountId ?? null,
         operatorId: auth.operatorId,
@@ -1464,7 +1519,7 @@ export async function completeCommand(
         entityType: 'box',
         entityId: auth.boxId,
         before: { epoch: auth.currentEpoch },
-        after: { epoch, commandId: existing.id, actionId: existing.actionId, retiredKeys },
+        after: { epoch, commandId: existing.id, actionId: existing.actionId, retiredKeys, ...(receiptMargin > 0 ? { receiptMargin } : {}) },
         requestId: ctx.requestId,
       });
     }

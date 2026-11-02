@@ -36423,6 +36423,8 @@ export interface paths {
                         /** @enum {string} */
                         syncKeyAlgorithm?: "ed25519";
                         journalsKept?: string[];
+                        /** Format: uuid */
+                        expectedBoxId?: string;
                     };
                 };
             };
@@ -36535,6 +36537,9 @@ export interface paths {
                             mirrorAgeS: number | null;
                             mirrorFreeBytes: number | null;
                             mirrorErrors: number;
+                            driveNotAnswering?: boolean;
+                            mirrorProblem?: string;
+                            mirrorSettling?: boolean;
                         };
                         cache?: {
                             /** Format: date-time */
