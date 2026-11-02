@@ -1,5 +1,5 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import pg from 'pg';
 import { schema, type Db } from '@oto/db';
 import { TestSetupError, createTestDatabase, setupStep, stopTestServer } from '@oto/db/testing';
@@ -66,6 +66,14 @@ export async function createTestContext(
     }
   };
   await releaseOnFailure(() => setupStep(`seed ${dbName}`, () => seed(db)));
+  // These two demo tills have printers but no EDC. Tests using them as working
+  // counters need an explicit manual route; production's incomplete seed rows
+  // remain unchanged and correctly show not ready (SCRUM-704).
+  await releaseOnFailure(() => setupStep(`complete test till routing in ${dbName}`, async () => {
+    const operatorId = await operatorIdByName(db, OTO_OPERATOR_NAME);
+    await db.update(schema.station).set({ paymentRouting: { card: 'manual', qr: 'none' } })
+      .where(and(eq(schema.station.operatorId, operatorId), inArray(schema.station.codePrefix, ['T2', 'T3']), isNull(schema.station.paymentRouting)));
+  }));
   // Throttle counters live in Postgres now (S2-01a), so the reset needs the
   // database and each test gets a fresh one anyway — this is belt and braces.
   await releaseOnFailure(() => setupStep(`reset the auth throttle in ${dbName}`, () => _resetThrottle(db)));

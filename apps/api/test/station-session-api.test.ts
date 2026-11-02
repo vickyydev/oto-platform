@@ -1548,6 +1548,7 @@ describe('forced-offline cloud trading is fenced by the selected virtual station
       id: newId(),
       operatorId: proofOperatorId, branchId: proofBranchId, boxId: otherBoxId,
       name: 'Offline proof second till', codePrefix: 'F9', accessScope: 'all_staff',
+      paymentRouting: { card: 'manual', qr: 'none' },
     }).returning();
     otherStationId = freshTill!.id;
     for (const [cookie, stationId] of [[staffCookie, proofStationId], [otherCookie, otherStationId]]) {
