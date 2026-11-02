@@ -1,0 +1,213 @@
+{
+  "unit": "SCRUM-503",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41532107227",
+  "version": "oto-box 0.1.0-20261102-7a00aa1c built 2026-11-02T21:51:28.209Z",
+  "startedAt": "2026-11-02T22:35:01.477Z",
+  "checks": [
+    {
+      "name": "A fresh ZZ TEST child is checked in through the native board after one cash ticket including a prepaid meal",
+      "registrationId": "77254e6b-180e-4d67-a656-8fd71911db2a",
+      "saleId": "f1abc7a8-b8cb-4143-9bd8-64da529f3748",
+      "receiptNumber": "Z503-000001",
+      "at": "2026-11-02T22:35:21.308Z",
+      "passed": true
+    },
+    {
+      "name": "The order panel visibly shows Prepaid, Already paid at check-in and the zero price",
+      "at": "2026-11-02T22:35:21.692Z",
+      "passed": true
+    },
+    {
+      "name": "Order Confirmed and the kitchen ticket show the prepaid badge in readable dark violet; the meal charges zero",
+      "saleId": "01a19e67-2470-74d0-892a-566f0b773609",
+      "receiptNumber": "Z503-000002",
+      "badges": 2,
+      "at": "2026-11-02T22:35:23.421Z",
+      "passed": true
+    },
+    {
+      "name": "The exact synthetic child is out after the meal is served",
+      "at": "2026-11-02T22:35:24.109Z",
+      "passed": true
+    },
+    {
+      "name": "The isolated simulated printers finish all ticket and meal jobs",
+      "jobs": [
+        {
+          "id": "01a19e67-24ab-731d-adf0-3bbebbe3404e",
+          "kind": "kids_wristband",
+          "status": "printed",
+          "errorCode": null
+        },
+        {
+          "id": "01a19e67-1ccb-7bde-a8ec-4fc6bcc7b861",
+          "kind": "receipt",
+          "status": "printed",
+          "errorCode": null
+        },
+        {
+          "id": "01a19e67-29dd-7e2f-8cf2-a3378e3dd015",
+          "kind": "kitchen_ticket",
+          "status": "printed",
+          "errorCode": null
+        },
+        {
+          "id": "01a19e67-29d8-713a-b84a-aa699a8493e7",
+          "kind": "receipt",
+          "status": "printed",
+          "errorCode": null
+        }
+      ],
+      "at": "2026-11-02T22:35:25.857Z",
+      "passed": true
+    },
+    {
+      "name": "Dedicated ZZ TEST station/box retired and sessions signed out; synthetic cash audit retained",
+      "at": "2026-11-02T22:35:29.037Z",
+      "passed": true
+    }
+  ],
+  "deployments": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "service": "oto-api-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgtimc6qcc73fpsdu0",
+      "liveAt": "2026-11-02T22:33:15.853661Z"
+    },
+    {
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "name": "oto-pos-web-staging",
+      "service": "oto-pos-web-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81g6g",
+      "liveAt": "2026-11-02T22:17:49.887147Z"
+    },
+    {
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "name": "oto-pos-staging",
+      "service": "oto-pos-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gag",
+      "liveAt": "2026-11-02T22:16:14.264384Z"
+    },
+    {
+      "id": "srv-danng2p42hec73f38e3g",
+      "name": "oto-console-staging",
+      "service": "oto-console-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gf0",
+      "liveAt": "2026-11-02T22:16:14.197736Z"
+    }
+  ],
+  "outcome": "passed",
+  "limitations": [
+    "Windows loopback, not a real iPad private HTTPS connection",
+    "No real certificate, DNS/router change or Pi installer run",
+    "No physical printer or power-cut acceptance"
+  ],
+  "local": {
+    "kioskOrigin": "http://127.0.0.1:52422",
+    "bridgeOrigin": "http://127.0.0.1:52423",
+    "home": "C:/oto-lanes/s503-agent-mvzu75yd"
+  },
+  "fixture": {
+    "boxId": "01a19e66-f78c-7636-af7c-6fe317722b74",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "name": "ZZ TEST SCRUM-503 mvzu75yd",
+    "stationId": "01a19e67-0336-720a-a7ca-bd1be795111f",
+    "printerId": "01a19e66-fdb0-702f-aa8b-84eca2b9384a"
+  },
+  "stationDevices": [
+    {
+      "role": "kids_band",
+      "deviceId": "01a19e66-ff91-7e1d-8648-f58b6aae6416"
+    },
+    {
+      "role": "kitchen",
+      "deviceId": "01a19e67-0155-755d-89a5-df942a5c9fce"
+    },
+    {
+      "role": "receipt",
+      "deviceId": "01a19e66-fdb0-702f-aa8b-84eca2b9384a"
+    }
+  ],
+  "family": {
+    "registrationId": "77254e6b-180e-4d67-a656-8fd71911db2a",
+    "checkinId": "076d9515-d239-490f-a7b1-3dbfa14b993e",
+    "saleId": "f1abc7a8-b8cb-4143-9bd8-64da529f3748",
+    "childName": "ZZ TEST SCRUM-503 mvzu75yd child",
+    "menuItemId": "01a0cb02-13a9-790f-85a1-73cbf7753e99",
+    "foodPaidSatang": 9000,
+    "photoId": "f739f43c-daf9-4532-b4d7-1e936148ca3c",
+    "ticketReceipt": "Z503-000001",
+    "ticketGrossSatang": 120500,
+    "bandId": "01a19e67-24a3-712a-87ab-d0df0962813e",
+    "pickupPhotoId": "86879418-85db-4818-a817-2cde357614d3"
+  },
+  "orderLabelStyles": {
+    "color": "oklch(0.491 0.27 292.581)",
+    "text": "Already paid at check-in"
+  },
+  "meal": {
+    "id": "01a19e67-2470-74d0-892a-566f0b773609",
+    "receiptNumber": "Z503-000002",
+    "grossSatang": 0
+  },
+  "bridgeTrace": [
+    {
+      "at": "2026-11-02T22:35:22.545Z",
+      "path": "/api/box/v1/station/01a19e67-0336-720a-a7ca-bd1be795111f/intents",
+      "status": 503,
+      "type": "receipt.observed",
+      "failure": "BOX_LANE_PAYMENT_UNAVAILABLE"
+    }
+  ],
+  "prepaidBadgeStyles": [
+    {
+      "text": "Prepaid",
+      "color": "oklch(0.432 0.232 292.759)",
+      "background": "oklab(0.606 0.096545 -0.230606 / 0.3)"
+    },
+    {
+      "text": "Prepaid",
+      "color": "oklch(0.432 0.232 292.759)",
+      "background": "oklab(0.606 0.096545 -0.230606 / 0.3)"
+    }
+  ],
+  "releaseId": "ffd83c7a-3a47-4839-ae2f-e61ed857663d",
+  "familyReleased": true,
+  "printJobs": [
+    {
+      "id": "01a19e67-24ab-731d-adf0-3bbebbe3404e",
+      "kind": "kids_wristband",
+      "status": "printed",
+      "errorCode": null
+    },
+    {
+      "id": "01a19e67-1ccb-7bde-a8ec-4fc6bcc7b861",
+      "kind": "receipt",
+      "status": "printed",
+      "errorCode": null
+    },
+    {
+      "id": "01a19e67-29dd-7e2f-8cf2-a3378e3dd015",
+      "kind": "kitchen_ticket",
+      "status": "printed",
+      "errorCode": null
+    },
+    {
+      "id": "01a19e67-29d8-713a-b84a-aa699a8493e7",
+      "kind": "receipt",
+      "status": "printed",
+      "errorCode": null
+    }
+  ],
+  "tillSignedOutAt": "2026-11-02T22:35:26.016Z",
+  "adminSignedOutAt": "2026-11-02T22:35:29.037Z",
+  "cleanedAt": "2026-11-02T22:35:29.037Z",
+  "finishedAt": "2026-11-02T22:35:29.303Z",
+  "fixtureRetained": false
+}

@@ -1,0 +1,22 @@
+{
+  "jobId": "job-dbkh0gdbedkc73f817pg",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "startedAt": "2026-11-02T22:35:44.752Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s503_database_proof",
+    "at": "2026-11-02T22:35:50.397Z",
+    "readOnly": true,
+    "saleRows": 2,
+    "ticketCashAttempts": 1,
+    "ticketPaidSatang": 120500,
+    "prepaidFoodSatang": 9000,
+    "mealGrossSatang": 0,
+    "prepaidRedeemedQty": 1,
+    "childStatus": "out",
+    "releaseRows": 1,
+    "boxArchived": true,
+    "stationArchived": true,
+    "passed": true
+  }
+}

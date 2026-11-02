@@ -1,0 +1,41 @@
+{
+  "at": "2026-11-02T22:36:08.992Z",
+  "live": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "service": "oto-api-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgtimc6qcc73fpsdu0",
+      "liveAt": "2026-11-02T22:33:15.853661Z",
+      "finishedAt": "2026-11-02T22:33:15.853661Z"
+    },
+    {
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "name": "oto-pos-web-staging",
+      "service": "oto-pos-web-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81g6g",
+      "liveAt": "2026-11-02T22:17:49.887147Z",
+      "finishedAt": "2026-11-02T22:17:49.887147Z"
+    },
+    {
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "name": "oto-pos-staging",
+      "service": "oto-pos-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gag",
+      "liveAt": "2026-11-02T22:16:14.264384Z",
+      "finishedAt": "2026-11-02T22:16:14.264384Z"
+    },
+    {
+      "id": "srv-danng2p42hec73f38e3g",
+      "name": "oto-console-staging",
+      "service": "oto-console-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gf0",
+      "liveAt": "2026-11-02T22:16:14.197736Z",
+      "finishedAt": "2026-11-02T22:16:14.197736Z"
+    }
+  ]
+}
