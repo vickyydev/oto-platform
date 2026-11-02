@@ -43,9 +43,13 @@ Counts and source identities are in `s722-release-checks.json`.
 
 ## Release and staging
 
-Full-SHA CI and staging proof are pending. SCRUM-713 owns the current
-source/proof slot; this unit will wait for that window to close before
-publishing source. No SCRUM-722 staging family or setting has been changed.
+SCRUM-713 recorded its successful staging proof and cleanup with the API
+window closed on 2 November at 20:46 UTC. Its signing key remains and our
+dedicated test-agent option is preserved. The consent fix was rebased again;
+the product tree is identical to the combined source tested above.
+
+This source is landing for full-SHA CI and staging proof. No SCRUM-722
+staging family or setting has been changed.
 The native proof will use a new ZZ TEST family on the retained SCRUM-723
 dedicated box/till, then retire only that fixture and its test-agent option
 while preserving the neighboring lane's settings and source.

@@ -61,5 +61,5 @@
     "testedSource": "c195b4de60d78d86b703e7fafbd2acab4e27db1d",
     "result": "matched"
   },
-  "release": "Source publication waits for SCRUM-713 CI and reserved staging proof window to finish"
+  "release": "SCRUM-713 proof and cleanup window closed; rebased product tree matches the tested source. Landing for full-SHA CI and native staging proof."
 }
