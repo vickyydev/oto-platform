@@ -10,7 +10,7 @@
   "stationId": "45492e2d-438c-4772-9276-edfbf384f4f1",
   "receiptPrefix": "Z723",
   "preparedAt": "2026-11-02T19:00:34.767Z",
-  "agentEnabled": true,
+  "agentEnabled": false,
   "agentEnabledAt": "2026-11-02T18:56:15.477Z",
   "registrationId": "2cdfa5d5-1e88-4944-8e0d-203b286e28bd",
   "checkinId": "ee4adf6e-45f4-44a8-b9ab-ea30dfb85702",
@@ -24,5 +24,7 @@
   "photoFileId": "c0aa43f1-7429-49a6-a28a-3bf274297b7b",
   "consentCleared": true,
   "releaseId": "975a3efe-20b4-47f7-94bc-0e9c07e8bc75",
-  "pickupPhotoFileId": "40ccbb7f-6463-4f1b-ae1d-18fe26485953"
+  "pickupPhotoFileId": "40ccbb7f-6463-4f1b-ae1d-18fe26485953",
+  "archived": true,
+  "retiredAt": "2026-11-02T21:24:24.715Z"
 }

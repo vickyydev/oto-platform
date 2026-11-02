@@ -87,9 +87,13 @@ box fact `01a19da4-41e0-709c-88b2-0dcc0ab1b0ab`; the queue drained to zero.
 The synthetic child was released through the ordinary pickup API. Independent
 cleanup at `2026-11-02T19:04:07.396Z` confirmed the child out, platform lane,
 empty queue, no lease, and the primary `virtual-1` selector unchanged. Every
-proof and cleanup session signed out and returned 401. The dedicated box,
-till and test-agent option are retained for SCRUM-722 and will be retired
-after that proof. The API proof window is closed.
+proof and cleanup session signed out and returned 401. At that point the
+dedicated box, till and test-agent option were retained for SCRUM-722.
+After its successful proof, final cleanup at `2026-11-02T21:24:24.718Z`
+confirmed both children out, archived the dedicated box/till and removed
+only the test-agent option. The same-source restart and fresh primary-agent
+heartbeat passed; all other environment values were preserved. See
+[the follow-on cleanup receipt](s722-cleanup.json). The API window is closed.
 
 Evidence: [inspected proof card](s723-staging-proof.png),
 [native offline board](s723-offline-in-park.png),
@@ -97,8 +101,9 @@ Evidence: [inspected proof card](s723-staging-proof.png),
 [independent cleanup](s723-cleanup.json), and
 [same-source agent deployment](s723-agent-deployments.json).
 
-The existing small-checkbox defect still reproduced; clicking the consent
-sentence enabled confirmation. That is SCRUM-722 and was not changed here.
+During this proof, the existing small-checkbox defect still reproduced;
+clicking the consent sentence enabled confirmation. That separate correction
+is now verified in [the SCRUM-722 report](s722-results.md).
 No physical Pi, printer, park station, real person, real payment or SMS was
 used. This proves the Console's forced-offline path on a virtual staging box;
 it does not claim a fresh staff unlock or a physical network-outage test.

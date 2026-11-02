@@ -1,0 +1,93 @@
+{
+  "unit": "SCRUM-722",
+  "startedAt": "2026-11-02T21:18:54.092Z",
+  "sha": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+  "checks": [
+    {
+      "action": "Previous SCRUM-723 child independently confirmed out",
+      "registrationId": "2cdfa5d5-1e88-4944-8e0d-203b286e28bd",
+      "checkinId": "ee4adf6e-45f4-44a8-b9ab-ea30dfb85702"
+    },
+    {
+      "action": "Independent readback",
+      "lane": "platform",
+      "outboxDepth": 0,
+      "lease": null,
+      "childStatus": "out",
+      "consentRecordedAt": "2026-11-02T21:16:59.372Z"
+    },
+    {
+      "action": "Only the dedicated test station and box archived and read back",
+      "stationId": "45492e2d-438c-4772-9276-edfbf384f4f1",
+      "boxId": "01a19d64-335b-7d9d-8d3b-b5b7eb59280c",
+      "primaryUnchanged": true
+    },
+    {
+      "action": "Removed only the test-agent option",
+      "envName": "BOX_AGENT_TEST_SLOT",
+      "beforeNameCount": 58,
+      "afterNameCount": 57,
+      "everyOtherValuePreserved": true
+    }
+  ],
+  "sessions": [
+    {
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "action": "post-restart readback",
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "action": "post-restart readback",
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "restart": {
+    "serviceId": "srv-danh2ljtqb8s73bt9en0",
+    "deployId": "dep-dbkfshu1egvs7393c7b0",
+    "sha": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+    "status": "live",
+    "finishedAt": "2026-11-02T21:22:47.900932Z"
+  },
+  "postRestart": {
+    "at": "2026-11-02T21:24:24.715Z",
+    "healthStatus": 200,
+    "readyStatus": 200,
+    "envNameCount": 57,
+    "primaryBox": {
+      "id": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+      "slot": "virtual-1",
+      "archived": false,
+      "lastHeartbeatAt": "2026-11-02T21:23:51.801Z"
+    },
+    "fixtureArchived": true,
+    "testOptionAbsent": true,
+    "children": [
+      {
+        "registrationId": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+        "checkinId": "a524230a-c593-402b-8450-e1dd174135af",
+        "status": "out",
+        "consentRecordedAt": "2026-11-02T21:16:59.372Z"
+      },
+      {
+        "registrationId": "2cdfa5d5-1e88-4944-8e0d-203b286e28bd",
+        "checkinId": "ee4adf6e-45f4-44a8-b9ab-ea30dfb85702",
+        "status": "out",
+        "consentRecordedAt": "2026-11-02T19:02:28.798Z"
+      }
+    ]
+  },
+  "completedAt": "2026-11-02T21:24:24.718Z"
+}

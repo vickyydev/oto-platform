@@ -1,0 +1,386 @@
+{
+  "unit": "SCRUM-722",
+  "sha": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41522382629",
+  "deployments": [
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbkfocbbc2fs73bcjhc0",
+      "sha": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+      "finishedAt": "2026-11-02T21:13:53.27029Z"
+    },
+    {
+      "service": "oto-pos-web-staging",
+      "id": "dep-dbkfocbbc2fs73bcjie0",
+      "sha": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+      "finishedAt": "2026-11-02T21:12:58.998151Z"
+    },
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbkfocjbc2fs73bcjj40",
+      "sha": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+      "finishedAt": "2026-11-02T21:11:13.02131Z"
+    }
+  ],
+  "startedAt": "2026-11-02T21:14:58.121Z",
+  "fixture": {
+    "registrationId": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+    "checkinId": "a524230a-c593-402b-8450-e1dd174135af",
+    "boxId": "01a19d64-335b-7d9d-8d3b-b5b7eb59280c",
+    "stationId": "45492e2d-438c-4772-9276-edfbf384f4f1"
+  },
+  "checks": [
+    {
+      "name": "Acknowledgement still cannot bypass the missing-photo requirement",
+      "passed": true,
+      "sha": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+      "consentSelected": true,
+      "confirmationDisabled": true,
+      "at": "2026-11-02T21:16:41.367Z"
+    },
+    {
+      "name": "Console forced only the dedicated ZZ TEST box offline; the platform registration has no consent",
+      "passed": true,
+      "before": {
+        "id": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+        "consentRecordedAt": null,
+        "status": "registered"
+      }
+    },
+    {
+      "name": "The small control, its sentence and Space each change consent once",
+      "passed": true,
+      "targets": [
+        {
+          "name": "Small checkbox selects once",
+          "selected": true,
+          "confirmationEnabled": true,
+          "at": "2026-11-02T21:16:57.818Z"
+        },
+        {
+          "name": "Small checkbox clears once",
+          "selected": false,
+          "confirmationEnabled": false,
+          "at": "2026-11-02T21:16:58.132Z"
+        },
+        {
+          "name": "Consent sentence selects once",
+          "selected": true,
+          "confirmationEnabled": true,
+          "at": "2026-11-02T21:16:58.367Z"
+        },
+        {
+          "name": "Consent sentence clears once",
+          "selected": false,
+          "confirmationEnabled": false,
+          "at": "2026-11-02T21:16:58.600Z"
+        },
+        {
+          "name": "Space selects once",
+          "selected": true,
+          "confirmationEnabled": true,
+          "at": "2026-11-02T21:16:58.817Z"
+        },
+        {
+          "name": "Space clears once",
+          "selected": false,
+          "confirmationEnabled": false,
+          "at": "2026-11-02T21:16:59.034Z"
+        },
+        {
+          "name": "Small checkbox acknowledges the actual arrival",
+          "selected": true,
+          "confirmationEnabled": true,
+          "at": "2026-11-02T21:16:59.269Z"
+        }
+      ]
+    },
+    {
+      "name": "A hard-loaded Check-in page refused the platform arrival and selected its box on that first action",
+      "passed": true,
+      "status": 503,
+      "code": "STATION_FORCED_OFFLINE",
+      "path": "/api/checkin/check-in-booked",
+      "noPriorTradingAction": true
+    },
+    {
+      "name": "The native dialog sent the acknowledgement; the box kept it while the platform remained null",
+      "passed": true,
+      "platform": {
+        "id": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+        "consentRecordedAt": null,
+        "status": "registered"
+      },
+      "boxConsentRecordedAt": "2026-11-02T21:16:59.372Z",
+      "queued": 1
+    },
+    {
+      "name": "Reconnect filed the original counter time and exactly one audit naming the box fact",
+      "passed": true,
+      "consentRecordedAt": "2026-11-02T21:16:59.372Z",
+      "sourceEventId": "01a19e1f-674c-7ad0-86ff-848a62478b6c",
+      "auditCount": 1,
+      "queued": 0
+    }
+  ],
+  "commands": [
+    {
+      "id": "01a19e1e-1270-750e-8f9c-cba83bcb8af0",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T21:15:35.604Z"
+    },
+    {
+      "id": "01a19e1f-2c1c-7f4d-ab9d-0e175cdaaffb",
+      "kind": "config_apply",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T21:16:50.019Z"
+    },
+    {
+      "id": "01a19e1f-4447-7ac6-867d-c00d73f78a60",
+      "kind": "go_offline",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T21:16:56.178Z"
+    },
+    {
+      "id": "01a19e1f-6de7-735c-8193-22a9c7f71180",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T21:17:06.629Z"
+    }
+  ],
+  "cleanup": [
+    {
+      "action": "Synthetic child released through the ordinary pickup API",
+      "releaseId": "15f78e56-0154-49f5-b720-2d290bef8e91",
+      "status": "out"
+    },
+    {
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/check-in-booked",
+      "status": 503,
+      "error": "STATION_FORCED_OFFLINE"
+    },
+    {
+      "path": "/api/box/v1/station/45492e2d-438c-4772-9276-edfbf384f4f1/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "path": "/api/box/v1/station/45492e2d-438c-4772-9276-edfbf384f4f1/intents",
+      "status": 200,
+      "type": "checkin.update",
+      "event": "check_in_now"
+    },
+    {
+      "path": "/api/box/v1/station/45492e2d-438c-4772-9276-edfbf384f4f1/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "path": "/api/box/v1/station/45492e2d-438c-4772-9276-edfbf384f4f1/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    }
+  ],
+  "browserErrors": [],
+  "fixturePreparation": {
+    "jobId": "job-dbkfquijnfac739ddd00",
+    "mode": "clear-fixture-consent",
+    "at": "2026-11-02T21:16:23.016Z",
+    "registration": {
+      "id": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+      "guardian_name": "ZZ TEST SCRUM-722 guardian",
+      "branch_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "station_id": "45492e2d-438c-4772-9276-edfbf384f4f1",
+      "consent_recorded_at": null,
+      "checkin_id": "a524230a-c593-402b-8450-e1dd174135af",
+      "child_name": "ZZ TEST SCRUM-722 child",
+      "status": "registered",
+      "sale_id": "5529d8f7-b4d9-4b3c-a55c-5b691316b545",
+      "band_id": null
+    },
+    "audits": []
+  },
+  "photoGate": {
+    "sha": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+    "passed": true,
+    "consentSelected": true,
+    "confirmationDisabled": true,
+    "at": "2026-11-02T21:16:41.367Z"
+  },
+  "before": {
+    "id": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+    "consentRecordedAt": null,
+    "status": "registered"
+  },
+  "targetChecks": [
+    {
+      "name": "Small checkbox selects once",
+      "selected": true,
+      "confirmationEnabled": true,
+      "at": "2026-11-02T21:16:57.818Z"
+    },
+    {
+      "name": "Small checkbox clears once",
+      "selected": false,
+      "confirmationEnabled": false,
+      "at": "2026-11-02T21:16:58.132Z"
+    },
+    {
+      "name": "Consent sentence selects once",
+      "selected": true,
+      "confirmationEnabled": true,
+      "at": "2026-11-02T21:16:58.367Z"
+    },
+    {
+      "name": "Consent sentence clears once",
+      "selected": false,
+      "confirmationEnabled": false,
+      "at": "2026-11-02T21:16:58.600Z"
+    },
+    {
+      "name": "Space selects once",
+      "selected": true,
+      "confirmationEnabled": true,
+      "at": "2026-11-02T21:16:58.817Z"
+    },
+    {
+      "name": "Space clears once",
+      "selected": false,
+      "confirmationEnabled": false,
+      "at": "2026-11-02T21:16:59.034Z"
+    },
+    {
+      "name": "Small checkbox acknowledges the actual arrival",
+      "selected": true,
+      "confirmationEnabled": true,
+      "at": "2026-11-02T21:16:59.269Z"
+    }
+  ],
+  "confirmPressedAt": "2026-11-02T21:16:59.345Z",
+  "freshPageRefusal": {
+    "status": 503,
+    "code": "STATION_FORCED_OFFLINE",
+    "path": "/api/checkin/check-in-booked",
+    "noPriorTradingAction": true
+  },
+  "acknowledgement": {
+    "acknowledged": true,
+    "at": "2026-11-02T21:16:59.372Z"
+  },
+  "offline": {
+    "platform": {
+      "id": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+      "consentRecordedAt": null,
+      "status": "registered"
+    },
+    "boxConsentRecordedAt": "2026-11-02T21:16:59.372Z",
+    "queued": 1
+  },
+  "reconnectedAt": "2026-11-02T21:17:00.615Z",
+  "after": {
+    "id": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+    "consentRecordedAt": "2026-11-02T21:16:59.372Z",
+    "status": "in_park"
+  },
+  "auditReadback": {
+    "jobId": "job-dbkfrlc9v7es73bv7tk0",
+    "mode": "read",
+    "at": "2026-11-02T21:17:52.393Z",
+    "registration": {
+      "id": "badbe496-f7a6-4533-839d-93195ccf4d5d",
+      "guardian_name": "ZZ TEST SCRUM-722 guardian",
+      "branch_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "station_id": "45492e2d-438c-4772-9276-edfbf384f4f1",
+      "consent_recorded_at": "2026-11-02T21:16:59.372Z",
+      "checkin_id": "a524230a-c593-402b-8450-e1dd174135af",
+      "child_name": "ZZ TEST SCRUM-722 child",
+      "status": "in_park",
+      "sale_id": "5529d8f7-b4d9-4b3c-a55c-5b691316b545",
+      "band_id": "01a19e1f-6746-7afb-a279-dd518bfbc9a1"
+    },
+    "audits": [
+      {
+        "id": "01a19e1f-7990-77e8-bbd1-63ea8a4ec765",
+        "source_event_id": "01a19e1f-674c-7ad0-86ff-848a62478b6c",
+        "before": {
+          "consentRecordedAt": null
+        },
+        "after": {
+          "boxId": "01a19d64-335b-7d9d-8d3b-b5b7eb59280c",
+          "event": "consent_at_check_in",
+          "offline": true,
+          "stationId": "45492e2d-438c-4772-9276-edfbf384f4f1",
+          "consentRecordedAt": "2026-11-02T21:16:59.372Z"
+        },
+        "type": "checkin.updated",
+        "box_id": "01a19d64-335b-7d9d-8d3b-b5b7eb59280c",
+        "station_id": "45492e2d-438c-4772-9276-edfbf384f4f1",
+        "fact_consent": {
+          "at": "2026-11-02T21:16:59.372Z",
+          "acknowledged": true
+        },
+        "occurred_at": "2026-11-02T21:17:00.618Z",
+        "received_at": "2026-11-02T21:17:05.282Z"
+      }
+    ]
+  },
+  "completedAt": "2026-11-02T21:18:15.958Z"
+}

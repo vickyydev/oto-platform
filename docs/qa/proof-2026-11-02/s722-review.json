@@ -7,5 +7,12 @@
   "after": { "failed": 0, "passed": 6 },
   "controls": ["text click changes once", "missing photo still blocks", "reopening resets acknowledgement", "existing consent is not replaced"],
   "productionFile": "apps/pos/src/components/dropoff/CheckInBookedModal.tsx",
-  "staging": "pending"
+  "staging": {
+    "source": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+    "result": "passed",
+    "completedAt": "2026-11-02T21:18:15.958Z",
+    "controlActions": 7,
+    "missingPhotoBlocked": true,
+    "receipt": "s722-staging-proof.json"
+  }
 }
