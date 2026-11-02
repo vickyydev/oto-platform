@@ -21,8 +21,14 @@ import { managerForStation, type StationRow } from './station-session';
 import { withTx } from './tx';
 import { authenticateDisplay, displaySession, type DisplayDeviceAuth } from './display';
 
+/** A long stream keeps the Console's record current without a write per snapshot. */
+const RECORD_GAP_MS = 5_000;
+
 /** Only snapshots leave this subscription, with the display/session projection.
  * Recheck before each delivery and while idle: revocation closes a quiet screen too.
+ * What this screen was last answered goes to the same record a poll keeps: the
+ * first delivery after a quiet spell at once, a burst at one write per gap, and
+ * anything still unwritten when the stream ends.
  */
 export function subscribeDisplayChannel(db: Db, auth: DisplayDeviceAuth, tokenHash: string,
   send: (message: StationChannelMessage) => void, close: () => void,
@@ -40,10 +46,34 @@ export function subscribeDisplayChannel(db: Db, auth: DisplayDeviceAuth, tokenHa
       throw new Error('Display target changed');
     }
   };
-  const deliver = (message: StationChannelMessage) => {
-    if (stopped || message.kind !== 'snapshot' || message.document.sequence < sequence) return;
+  const deliver = (message: StationChannelMessage): boolean => {
+    if (stopped || message.kind !== 'snapshot' || message.document.sequence < sequence) return false;
     sequence = message.document.sequence;
     send({ ...message, actionId: null, document: { ...message.document, lease: null } });
+    return true;
+  };
+  let recordedAt = Date.now();
+  let recordTimer: ReturnType<typeof setTimeout> | undefined;
+  let recording = false;
+  let unrecorded = false;
+  const record = async () => {
+    recordTimer = undefined;
+    recording = true;
+    unrecorded = false;
+    recordedAt = Date.now();
+    // The diagnostic read is the display's own: its failure never closes the stream.
+    try { await displaySession(db, auth, log); } catch (error) {
+      log?.warn({ event: 'display.snapshot_capture_failed', err: String(error) }, 'The last display response could not be recorded');
+    }
+    recording = false;
+    if (!unrecorded) return;
+    if (stopped) void record(); else armRecord();
+  };
+  const armRecord = () => {
+    unrecorded = true;
+    if (recording || recordTimer) return;
+    recordTimer = setTimeout(() => { void record(); }, Math.max(0, recordedAt + RECORD_GAP_MS - Date.now()));
+    recordTimer.unref?.();
   };
   // Subscribe before the initial read so a change during that read is not lost.
   enqueue(async () => {
@@ -52,11 +82,16 @@ export function subscribeDisplayChannel(db: Db, auth: DisplayDeviceAuth, tokenHa
     deliver({ kind: 'snapshot', view: 'customer', document: first.document, actionId: null, serverTime: new Date().toISOString() });
   });
   const detach = manager.subscribe(auth.station.id, 'customer', message => {
-    if (message.kind === 'snapshot') enqueue(async () => { await authorize(); deliver(message); });
+    if (message.kind === 'snapshot') enqueue(async () => { await authorize(); if (deliver(message)) armRecord(); });
   });
   const timer = setInterval(() => enqueue(async () => { await authorize(); if (!stopped) heartbeat(); }), 5_000);
   timer.unref?.();
-  return () => { stopped = true; clearInterval(timer); detach(); };
+  return () => {
+    stopped = true;
+    clearInterval(timer);
+    detach();
+    if (recordTimer) { clearTimeout(recordTimer); void record(); }
+  };
 }
 
 /**

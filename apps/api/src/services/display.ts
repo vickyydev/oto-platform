@@ -280,15 +280,34 @@ async function snapshotEpoch(db: Db, auth: DisplayDeviceAuth, log?: FastifyBaseL
 }
 
 /**
+ * Whether the record already says what this poll would write. A lease renewal
+ * moves only `updatedAt`, so that alone is not news to a screen or the Console.
+ */
+async function alreadyRecorded(db: Db, auth: DisplayDeviceAuth, epoch: SnapshotEpoch, projected: unknown): Promise<boolean> {
+  const [same] = await db.select({ id: displayResponseSnapshot.credentialId }).from(displayResponseSnapshot).where(and(
+    eq(displayResponseSnapshot.credentialId, auth.credentialId), eq(displayResponseSnapshot.stationId, auth.station.id),
+    eq(displayResponseSnapshot.boxId, auth.station.boxId!), eq(displayResponseSnapshot.journalEpoch, epoch.local ?? epoch.cloud),
+    eq(displayResponseSnapshot.responseKind, 'session'), eq(displayResponseSnapshot.statusCode, 200),
+    sql`${displayResponseSnapshot.document} - 'updatedAt' = ${JSON.stringify(projected)}::jsonb - 'updatedAt'`,
+  )).limit(1);
+  return same !== undefined;
+}
+
+/**
  * Serial response preparation, not proof of browser receipt. Station first,
  * then credential follows pairing's lock order; revoke locks only credential.
  * A refused credential, changed target/epoch, or absent document never replaces history.
+ * A poll that finds nothing new writes nothing, so `preparedAt` is when this
+ * content was first answered; the credential's `lastSeenAt` says the display is still calling.
  */
 async function recordDisplayResponse(db: Db, auth: DisplayDeviceAuth, expectedEpoch: SnapshotEpoch | null,
   document: StationSessionDocument | null, responseKind: 'session' | 'intent', statusCode: 200 | 403 | 409,
   log?: FastifyBaseLogger): Promise<void> {
   if (!expectedEpoch || !document || !auth.station.boxId) return;
   try {
+    const projected = projectDisplayDiagnosticDocument(document);
+    if (!projected) throw new Error('Display diagnostic projection is invalid');
+    if (responseKind === 'session' && await alreadyRecorded(db, auth, expectedEpoch, projected)) return;
     await db.transaction(async (tx) => {
       const [target] = await tx.select().from(station).where(and(
         eq(station.id, auth.station.id), eq(station.operatorId, auth.station.operatorId),
@@ -310,10 +329,8 @@ async function recordDisplayResponse(db: Db, auth: DisplayDeviceAuth, expectedEp
           isNull(box.archivedAt), isNull(branch.archivedAt), isNull(operator.archivedAt))).limit(1);
       if (!epoch || epoch.cloud !== expectedEpoch.cloud || epoch.local !== expectedEpoch.local
         || document.stationId !== target.id || document.boxId !== target.boxId) return;
-      // This locked projection and timestamp define the recording order even
-      // for language responses that deliberately keep the same sequence.
-      const projected = projectDisplayDiagnosticDocument(document);
-      if (!projected) throw new Error('Display diagnostic projection is invalid');
+      // This locked timestamp defines the recording order even for language
+      // responses that deliberately keep the same sequence.
       const recorded = { credentialId: credential.id, operatorId: target.operatorId, branchId: target.branchId,
         stationId: target.id, boxId: target.boxId!, journalEpoch: epoch.local ?? epoch.cloud,
         preparedAt: new Date(), responseKind, statusCode, document: projected };
