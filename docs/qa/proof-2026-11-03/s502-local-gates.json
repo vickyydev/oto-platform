@@ -1,0 +1,51 @@
+{
+  "unit": "SCRUM-502",
+  "checkedAt": "2026-11-02T21:50:52.695Z",
+  "testedSource": "03aff49ea957afb42ffcb6467d01b571c37ce140",
+  "rebasedSource": "0b6179a14c3146bff735f48dc5f3cb4233562566",
+  "productTreeIdenticalAfterRebase": true,
+  "api": {
+    "passed": 6139,
+    "filesPassed": 432,
+    "filesSkipped": 8,
+    "skipped": 401,
+    "todo": 4
+  },
+  "pos": {
+    "passed": 1660,
+    "files": 122
+  },
+  "db": {
+    "passed": 384,
+    "files": 55
+  },
+  "shared": {
+    "passed": 857,
+    "files": 57
+  },
+  "box": {
+    "passed": 843
+  },
+  "otherPackages": {
+    "booth": 38,
+    "assistant": 678,
+    "messaging": 79,
+    "apiTypes": 10,
+    "payments2c2p": 86,
+    "telemetry": 36,
+    "print": 283,
+    "inbox": 218,
+    "launcher": 88,
+    "adminScreens": 157,
+    "console": 588,
+    "consoleExistingTodo": 3
+  },
+  "typecheckTasks": 16,
+  "buildTasks": 5,
+  "browserJourneys": 7,
+  "fullLint": "passed",
+  "apiContract": "passed",
+  "actualBoxNativeRehearsal": "passed",
+  "otoApp": "Unchanged and path-gated; not newly covered by these local checks",
+  "staging": "Not run yet"
+}
