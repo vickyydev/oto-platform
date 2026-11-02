@@ -20,3 +20,5 @@ The local proof found a real wording defect: an accepted payment with a lost rep
 Independent read-only database job: job-dbkgt0d9fdbs73fll0lg. Receipts and screenshots are in [s502](./s502/). The opened images are `s502-staging-proof.png`, `s502-box-refused.png` and `s502-box-answer-lost.png`, also copied to the Jira attachment directory.
 
 This proves the required staging wording using the real local agent. It does not claim physical printer, Pi, iPad, private HTTPS certificate or power-cut acceptance. Unchanged OTO App checks were path-gated in this release. Keep the ticket at Testing until these inspected images are attached and the helper walk reads back Deployed.
+
+Jira read-back: **Deployed** at 2026-11-02T22:34:31.975Z. Evidence commit `f5e728cb8ca68e71d39e62b5f47ababd85052dbd`; attached images 12245, 12246, 12247.

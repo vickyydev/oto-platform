@@ -1,0 +1,20 @@
+{
+  "key": "SCRUM-502",
+  "at": "2026-11-02T22:34:15.361Z",
+  "statusBefore": "Testing",
+  "files": [
+    {
+      "id": "12245",
+      "name": "s502-staging-proof.png"
+    },
+    {
+      "id": "12246",
+      "name": "s502-box-refused.png"
+    },
+    {
+      "id": "12247",
+      "name": "s502-box-answer-lost.png"
+    }
+  ],
+  "commentPosted": true
+}
