@@ -1,0 +1,82 @@
+{
+  "unit": "SCRUM-673",
+  "startedAt": "2026-11-02T22:41:43.456Z",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "name": "ZZ TEST SCRUM-673 mvzucpi4",
+  "accountId": "ea83ecac-ee45-4bda-83f0-9a9f58b4ed57",
+  "employeeId": "93a1400b-ceac-4177-bf42-af7866476fa2",
+  "checks": [
+    {
+      "name": "Temporary administrator is a distinct signed-in account; role and password setup used normal authorization and no SMS",
+      "at": "2026-11-02T22:42:00.642Z"
+    }
+  ],
+  "deployments": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgtimc6qcc73fpsdu0",
+      "liveAt": "2026-11-02T22:33:15.853661Z"
+    },
+    {
+      "id": "srv-danng2p42hec73f38e3g",
+      "name": "oto-console-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gf0",
+      "liveAt": "2026-11-02T22:16:14.197736Z"
+    },
+    {
+      "id": "srv-danli3ajnfac7391jrk0",
+      "name": "oto-launcher-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gt0",
+      "liveAt": "2026-11-02T22:16:07.330408Z"
+    },
+    {
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "name": "oto-app-staging",
+      "sha": "629714f266253c4b6951b68237da7db13c8cf26e",
+      "deployId": "dep-dbjsjmk9v7es73b1lhpg",
+      "liveAt": "2026-11-01T23:27:20.626127Z"
+    }
+  ],
+  "outcome": "incomplete",
+  "resumedFrom": "C:/oto-lanes/codex-pos-path-20261102/docs/qa/proof-2026-11-03/s673/proof-mvzucpi4.json",
+  "provision": {
+    "jobId": "job-dbkh28dbedkc73f8539g",
+    "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+    "startedAt": "2026-11-02T22:39:28.422Z",
+    "status": "succeeded",
+    "result": {
+      "event": "s673_fixture",
+      "at": "2026-11-02T22:40:15.056Z",
+      "accountId": "ea83ecac-ee45-4bda-83f0-9a9f58b4ed57",
+      "employeeId": "93a1400b-ceac-4177-bf42-af7866476fa2",
+      "status": "invited",
+      "roles": 0,
+      "sms": false,
+      "passed": true
+    }
+  },
+  "actorAccountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+  "subjectAccountId": "01a0c9ae-5377-7b34-a9ab-22bf8086f5f7",
+  "dualControl": true,
+  "resumedInactiveFixture": true,
+  "roleAssignmentId": "01a19e6b-d8d5-7723-91ab-bd060e91a7dd",
+  "branchId": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+  "departmentId": "4cadbc29-48a4-4ccc-9153-390bd7713f37",
+  "clearPreview": {
+    "assignments": 0,
+    "breaks": 0,
+    "employees": 0
+  },
+  "failedStep": "open the real read-only window and isolated department",
+  "error": {
+    "name": "AssertionError",
+    "location": "    at api (file:///C:/oto-lanes/s673-proof.mjs:20:277)",
+    "message": "HTTP 403 POST /console/support/impersonations IMPERSONATION_SUBJECT_PRIVILEGED"
+  },
+  "accountDeactivationRequested": true,
+  "finishedAt": "2026-11-02T22:42:05.644Z"
+}

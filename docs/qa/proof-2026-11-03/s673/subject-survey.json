@@ -1,0 +1,12 @@
+{
+  "jobId": "job-dbkh4emgekts73cphb3g",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "startedAt": "2026-11-02T22:44:09.196Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s673_subject_survey",
+    "at": "2026-11-02T22:45:01.430Z",
+    "readOnly": true,
+    "eligibleSyntheticOrSeedManagers": []
+  }
+}

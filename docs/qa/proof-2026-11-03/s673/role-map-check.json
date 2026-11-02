@@ -1,0 +1,12 @@
+{
+  "jobId": "job-dbkh59utlv9c73a1jsvg",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "startedAt": "2026-11-02T22:45:58.209Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s673_role_map",
+    "at": "2026-11-02T22:46:44.156Z",
+    "readOnly": true,
+    "rows": []
+  }
+}
