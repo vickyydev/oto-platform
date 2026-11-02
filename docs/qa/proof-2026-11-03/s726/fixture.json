@@ -1,0 +1,35 @@
+{
+  "unit": "SCRUM-726",
+  "name": "ZZ TEST SCRUM-726 mvzv6zgu",
+  "slot": "zz-test-s726-mvzv6zgu",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "startedAt": "2026-11-02T23:02:52.686Z",
+  "stations": [
+    {
+      "id": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 1"
+    }
+  ],
+  "devices": [
+    {
+      "deviceId": "01a19e80-5bd0-764d-904a-c603e9b4bd5d",
+      "role": "receipt"
+    },
+    {
+      "deviceId": "01a19e80-5c21-7c62-9fa8-60c7c2645543",
+      "role": "kitchen"
+    },
+    {
+      "deviceId": "01a19e80-5c71-7748-b7bc-a4f5f0ce7e37",
+      "role": "kids_band"
+    }
+  ],
+  "priceSatang": 100,
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "operatorId": "01a0bbdc-8c41-7204-bd58-2b92bd7dda75",
+  "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+  "categoryId": "01a19e80-5b1a-7307-8f6d-0756f2d1d4bd",
+  "productId": "01a19e80-5b74-72ce-81be-9da630e6ba3e",
+  "productName": "ZZ TEST SCRUM-726 mvzv6zgu item",
+  "createdAt": "2026-11-02T23:02:53.878Z"
+}
