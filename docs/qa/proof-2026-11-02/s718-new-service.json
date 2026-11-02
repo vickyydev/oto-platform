@@ -1,0 +1,38 @@
+{
+  "id": "srv-dbk7qu8n74is73bm894g",
+  "name": "oto-pos-web-staging",
+  "source": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+  "ci": "41439428324",
+  "createdAt": "2026-11-02T12:09:32.073Z",
+  "ownerId": "tea-dakeu6p42hec73abs5g0",
+  "region": "singapore",
+  "plan": "starter",
+  "buildFilter": {
+    "paths": [
+      "apps/pos/**",
+      "packages/shared/**",
+      "packages/api-types/**",
+      "packages/config/**",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      ".npmrc"
+    ],
+    "ignoredPaths": []
+  },
+  "envNames": [
+    "NODE_VERSION",
+    "NODE_ENV",
+    "API_UPSTREAM",
+    "VITE_LAUNCHER_URL"
+  ],
+  "buildFilterReadBack": true,
+  "cache": {
+    "profile": "no-cache"
+  },
+  "url": "https://oto-pos-web-staging.onrender.com",
+  "environmentId": "evm-danh1brtqb8s73bt5pk0",
+  "autoDeployTrigger": "checksPass",
+  "actualPlan": "starter",
+  "grouped": true
+}

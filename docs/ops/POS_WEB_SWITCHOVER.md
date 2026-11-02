@@ -139,3 +139,24 @@ database rollback or a replay of a sale. Production has its own separate approva
 The exact new URL, service ID, live commits, resource measurements and final proof
 links are added below after staging deployment; until then this document does not
 claim a deployed service or passing timing.
+
+## Created staging service
+
+Verified on 2 November 2026. The service is live; timing acceptance is still pending.
+
+| Item | Read-back |
+| --- | --- |
+| New test address | https://oto-pos-web-staging.onrender.com |
+| Service ID | srv-dbk7qu8n74is73bm894g |
+| Live source | c2fdd28fdc9e944d058af62dec1347e5f2b7a56f |
+| Source CI | 41439428324, all six jobs passed |
+| Workspace / region / plan | API owner, Singapore, Starter, one instance |
+| Project environment | evm-danh1brtqb8s73bt5pk0 |
+| Deployment / edge cache | checksPass; no-cache |
+| Build filter | All paths in step 3 above were read back exactly |
+| Private network | Private DNS and API health 200 from the new service job job-dbk7sch42hec73et4n8g |
+| Existing API configuration | ALLOWED_ORIGINS only; 56 names before and after, all other values unchanged |
+
+No address has been switched on a park device. The manual service settings match
+the commented render.yaml block. The API same-commit deployment is
+dep-dbk7sns9v7es73bvie50; live-origin and performance acceptance follow it.

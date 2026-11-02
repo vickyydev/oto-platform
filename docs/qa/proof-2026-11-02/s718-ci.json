@@ -1,0 +1,50 @@
+{
+  "headSha": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/vickyydev/oto-platform/actions/runs/41439428324",
+  "jobs": [
+    {
+      "name": "oto-app",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-11-02T11:46:28Z",
+      "completedAt": "2026-11-02T11:47:07Z"
+    },
+    {
+      "name": "api-tests (3)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-11-02T11:46:28Z",
+      "completedAt": "2026-11-02T12:08:07Z"
+    },
+    {
+      "name": "api-tests (2)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-11-02T11:46:28Z",
+      "completedAt": "2026-11-02T12:08:50Z"
+    },
+    {
+      "name": "ci",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-11-02T11:46:33Z",
+      "completedAt": "2026-11-02T12:07:20Z"
+    },
+    {
+      "name": "pos-tests",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-11-02T11:46:33Z",
+      "completedAt": "2026-11-02T11:48:13Z"
+    },
+    {
+      "name": "api-tests (1)",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-11-02T11:46:28Z",
+      "completedAt": "2026-11-02T12:08:55Z"
+    }
+  ]
+}

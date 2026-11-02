@@ -1,0 +1,22 @@
+{
+  "unit": "SCRUM-718",
+  "at": "2026-11-02T12:13:18.242Z",
+  "serviceId": "srv-danh2ljtqb8s73bt9en0",
+  "envNamesTouched": [
+    "ALLOWED_ORIGINS"
+  ],
+  "beforeNameCount": 56,
+  "afterNameCount": 56,
+  "addedNames": [],
+  "allOtherValuesPreserved": true,
+  "allowedOriginCountBefore": 7,
+  "allowedOriginCountAfter": 8,
+  "liveCommitBefore": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+  "valueFingerprints": {
+    "ALLOWED_ORIGINS": "b6db501e2d486eef6840d5ac4e605e364b54e49665efcbc9f410d03e276cf069",
+    "HANDOFF_APP_ORIGINS": "2bd196df2ca68242e6eaa67b2c59d09302dd4a03dc5e39cac5a0278f9ac3fee5",
+    "TRUST_PROXY_ADDRS": "4df64939a3d25b97bb2c84e6f419d1fd28492a68a8c086cf1cb71bd51d1fd3dc"
+  },
+  "deployId": "dep-dbk7sns9v7es73bvie50",
+  "deployStatus": "build_in_progress"
+}

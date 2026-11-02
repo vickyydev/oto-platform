@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-02T12:12:34.466Z",
+  "serviceId": "srv-dbk7qu8n74is73bm894g",
+  "url": "https://oto-pos-web-staging.onrender.com",
+  "liveCommit": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+  "deployId": "dep-dbk7qv0n74is73bm8cmg",
+  "finishedAt": "2026-11-02T12:12:21.064195Z",
+  "environmentMatchesVerifiedPrivateAlias": true,
+  "forwardedHealthStatus": 200,
+  "jobId": "job-dbk7sch42hec73et4n8g",
+  "ownerId": "tea-dakeu6p42hec73abs5g0",
+  "jobStatus": "succeeded",
+  "result": {
+    "event": "s718-new-private-network",
+    "privateDns": true,
+    "healthStatus": 200
+  },
+  "verifiedAt": "2026-11-02T12:14:48.694Z"
+}
