@@ -58,7 +58,7 @@ describe('SCRUM-710 display recovery', () => {
     await vi.advanceTimersByTimeAsync(2_000);
     expect(mock.session).not.toHaveBeenCalled();
     listener.onState(false); listener.onFailure(new Error('drop'));
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(1_050);
     expect(mock.session).toHaveBeenCalled();
     expect(view.text()).not.toContain('Reconnecting');
     view.hook.unmount();
@@ -67,7 +67,9 @@ describe('SCRUM-710 display recovery', () => {
     const view = mount(); await settle();
     let reject: (failure: Error) => void = () => undefined;
     mock.session.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
-    await vi.advanceTimersByTimeAsync(200);
+    mock.session.mockClear();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(mock.session).toHaveBeenCalledOnce();
     listener.onSnapshot({ ...document, sequence: 2 }); listener.onState(true);
     reject(new Error('old poll failed')); await settle();
     await vi.advanceTimersByTimeAsync(20_000);

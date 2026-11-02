@@ -198,6 +198,8 @@ export function watchBridgeSnapshots(stationId: string, options: {
   onSnapshot: (document: StationSessionDocument) => void;
   onState: (streaming: boolean) => void;
   onFailure: (error: unknown) => void;
+  /** Every chunk read, heartbeats included: the last moment this connection was known to work. */
+  onActivity?: () => void;
 }): () => void {
   let stopped = false;
   let attempt = 0;
@@ -229,6 +231,7 @@ export function watchBridgeSnapshots(stationId: string, options: {
           const part = await reader.read();
           if (part.done) throw new Error('Display stream ended');
           arm(options.bearer ? 12_000 : 35_000);
+          options.onActivity?.();
           buffer += decoder.decode(part.value, { stream: true }).replace(/\r/g, '');
           if (buffer.length > 2_000_000) throw new Error('Display stream frame too large');
           let boundary: number;

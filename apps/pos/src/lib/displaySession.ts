@@ -365,6 +365,9 @@ export function readDisplayAnswer(document: StationSessionDocument, requestId: s
 
 interface ConnectedDisplay { id: string; name: string; connected: boolean }
 const POLL_MS = 1_500;
+/** A refused claim waits this long, doubling to the cap, unless the till itself changes. */
+const CLAIM_WAIT_FIRST_MS = 1_000;
+const CLAIM_WAIT_MAX_MS = 30_000;
 /**
  * THE PUBLISHER'S IDENTITY ON A STATION — the `holder` the lease is taken
  * under. The browser document keeps it through a paused or remounted till, and
@@ -486,9 +489,9 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
   const current = useRef({ state, onAnswer, active });
   current.current = { state, onAnswer, active };
   const publisher = useRef<DisplayPublisher | null>(null);
-  const wake = useRef<(() => void) | null>(null);
+  const wake = useRef<((ownChange?: boolean) => void) | null>(null);
   const presentationSignature = JSON.stringify({ key: state.key, presentation: state.presentation('') });
-  useEffect(() => { wake.current?.(); }, [presentationSignature]);
+  useEffect(() => { wake.current?.(true); }, [presentationSignature]);
   const [connected, setConnected] = useState<ConnectedDisplay[]>([]);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -536,17 +539,67 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
     };
     let running = false;
     let queued = false;
+    let queuedOwnChange = false;
     let immediate: ReturnType<typeof setTimeout> | undefined;
     let documentCache: StationSessionDocument | null = null;
+    /** Snapshots taken from the stream: a reply can tell whether one overtook it on the wire. */
+    let delivered = 0;
+    /** A lower number arrived on the stream: it may be late, or the box may have fallen. One read settles it. */
+    let askBox = false;
     let streaming = false;
+    let stopStream: (() => void) | null = null;
     let seenCache: ConnectedDisplay[] | 'unknown' = [];
     let watchedAt = -Infinity;
-    const adopt = (document: StationSessionDocument) => {
-      if (!documentCache || document.sequence >= documentCache.sequence) documentCache = document;
+    let claimRefusals = 0;
+    let claimWaitUntil = 0;
+    const adoptSnapshot = (document: StationSessionDocument) => {
+      if (documentCache && document.sequence < documentCache.sequence) { askBox = true; return; }
+      documentCache = document;
+      delivered += 1;
     };
-    const wakeNow = () => {
+    /**
+     * A reply nothing overtook is the box's own word, even with a lower number:
+     * a store restored from an earlier copy has fallen behind what this till
+     * last saw, and quoting the old number would be refused for good. That box
+     * has also lost what this till told it, so the presentation goes again.
+     */
+    const adoptReply = (document: StationSessionDocument, deliveredBefore: number) => {
+      if (documentCache && document.sequence < documentCache.sequence) {
+        if (delivered !== deliveredBefore) return;
+        channel.lastPublished = '';
+      }
+      documentCache = document;
+    };
+    const noteClaimFailure = (failure: unknown) => {
+      // A claim that never reached the box was not refused; the usual pace stands.
+      if (!(failure instanceof ApiError)) return;
+      claimWaitUntil = Date.now() + Math.min(CLAIM_WAIT_MAX_MS, CLAIM_WAIT_FIRST_MS * 2 ** claimRefusals);
+      claimRefusals += 1;
+    };
+    /** The stream carries nothing a till uses until a display is there to answer it. */
+    const followStream = (wanted: boolean) => {
+      if (!wanted) {
+        stopStream?.();
+        stopStream = null;
+        streaming = false;
+        return;
+      }
+      stopStream ??= watchBridgeSnapshots(stationId, {
+        onSnapshot: document => { adoptSnapshot(document); wakeNow(); },
+        onState: value => { streaming = value; },
+        onFailure: () => { /* The existing tick reads while the stream recovers. */ },
+      });
+    };
+    const wakeNow = (ownChange = false) => {
       if (paused()) return;
-      if (running) { queued = true; return; }
+      if (running) {
+        queued = true;
+        queuedOwnChange = queuedOwnChange || ownChange;
+        return;
+      }
+      // The till's own change asks again at once; nothing else cuts a wait short.
+      if (ownChange) claimWaitUntil = 0;
+      else if (Date.now() < claimWaitUntil) return;
       clearTimeout(immediate);
       immediate = setTimeout(() => { void tick(false); }, 50);
     };
@@ -563,16 +616,20 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
         }
         const seen = seenCache;
         if (paused()) return;
+        followStream(seen === 'unknown' || seen.length > 0);
         setConnected(seen === 'unknown' ? [] : seen);
         if (seen !== 'unknown' && !seen.length) return;
         // The lease, the document and the publish go to the BOX through the
         // station bridge (offline plan Round 3): the same session manager on a
         // virtual box, and the one a Pi serves on the counter's LAN.
         let document: StationSessionDocument;
+        const deliveredBefore = delivered;
         if (!channel.leaseId) {
           const acquisition = bridgeApi.lease(stationId, channel.holder);
           channel.claiming = acquisition.then((claimed) => claimed.lease.leaseId, () => undefined);
-          const claimed = await acquisition;
+          const claimed = await acquisition.catch((failure: unknown) => { noteClaimFailure(failure); throw failure; });
+          claimRefusals = 0;
+          claimWaitUntil = 0;
           channel.leaseId = claimed.lease.leaseId;
           channel.claiming = null;
           if (paused()) return;
@@ -584,13 +641,14 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           if (paused()) return;
           document = renewed.document;
           channel.renewedAt = Date.now();
-        } else if (documentCache && (!refresh || streaming)) {
+        } else if (documentCache && !askBox && (!refresh || streaming)) {
           document = documentCache;
         } else {
+          askBox = false;
           document = (await bridgeApi.session(stationId)).document;
           if (paused()) return;
         }
-        adopt(document);
+        adoptReply(document, deliveredBefore);
         document = documentCache!;
         const latest = current.current;
         const key = latest.state.key;
@@ -616,10 +674,11 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
         const payload = latest.state.presentation(channel.requestId);
         const signature = JSON.stringify(payload);
         if (signature !== channel.lastPublished) {
+          const deliveredBeforePublish = delivered;
           const published = await bridgeApi.publish(stationId, { type: 'session.publish_display', leaseId: channel.leaseId,
             lastSeenSequence: document.sequence, actionId: crypto.randomUUID(), payload });
           if (paused()) return;
-          adopt(published.document);
+          adoptReply(published.document, deliveredBeforePublish);
           channel.lastPublished = signature;
         }
         setError(null);
@@ -635,20 +694,22 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
       } finally {
         running = false;
         if (!paused()) {
-          timer = setTimeout(() => { void tick(); }, !streaming && (seenCache === 'unknown' || seenCache.length) ? 500 : POLL_MS);
-          if (queued) { queued = false; wakeNow(); }
+          const claimWait = claimWaitUntil - Date.now();
+          timer = setTimeout(() => { void tick(); }, claimWait > 0 ? claimWait
+            : !streaming && (seenCache === 'unknown' || seenCache.length) ? 500 : POLL_MS);
+          if (queued) {
+            const ownChange = queuedOwnChange;
+            queued = false;
+            queuedOwnChange = false;
+            wakeNow(ownChange);
+          }
         }
       }
     };
-    const stopStream = watchBridgeSnapshots(stationId, {
-      onSnapshot: document => { adopt(document); wakeNow(); },
-      onState: value => { streaming = value; },
-      onFailure: () => { /* The existing tick reads while the stream recovers. */ },
-    });
     void tick();
     return () => {
       stopped = true;
-      stopStream();
+      stopStream?.();
       if (wake.current === wakeNow) wake.current = null;
       clearTimeout(immediate);
       clearTimeout(timer);

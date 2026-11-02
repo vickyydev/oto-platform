@@ -10,8 +10,14 @@ import { ApiError } from '@/api/client';
  * station it reads the document through the station bridge with its paired
  * credential, so it keeps working while the box works without the platform.
  * Pairing itself still needs the platform. A disconnected display keeps its
- * last screen for fifteen seconds, then hides the total behind a paused notice.
+ * last screen for fifteen seconds from the last byte it heard, then hides the
+ * total behind a paused notice. Only a document it accepts lifts that notice.
  */
+const GRACE_MS = 15_000;
+/** The gap between polls when no stream is open; a stream replaces polling altogether. */
+const POLL_GAP_MS = 1_000;
+const PAIRING_POLL_GAP_MS = 2_000;
+
 function asDisplayError(failure: unknown): unknown {
   if (failure instanceof DisplayError) return failure;
   if (failure instanceof ApiError) return new DisplayError(failure.status, failure.code, failure.message);
@@ -52,10 +58,12 @@ export default function Display() {
   const [connection, setConnection] = useState<'connected' | 'reconnecting' | 'paused'>('connected');
   const grace = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const streaming = useRef(false);
-  const disconnect = useCallback(() => {
+  /** The last byte from the box on either path: a stream chunk or a poll reply. */
+  const lastHeard = useRef(Date.now());
+  const disconnect = useCallback((knownGoodAt = lastHeard.current) => {
     if (grace.current !== undefined) return;
     setConnection('reconnecting');
-    grace.current = setTimeout(() => setConnection('paused'), 15_000);
+    grace.current = setTimeout(() => setConnection('paused'), Math.max(0, knownGoodAt + GRACE_MS - Date.now()));
   }, []);
   const recovered = useCallback(() => {
     clearTimeout(grace.current);
@@ -78,6 +86,24 @@ export default function Display() {
   const bearerRef = useRef(readDisplayCredential() ?? newDisplayCredential());
   const sessionRef = useRef(session);
   sessionRef.current = session;
+  /** Counts accepted documents, so a read can tell whether one overtook it in flight. */
+  const accepted = useRef(0);
+  /** A lower number arrived on the stream: it may be late, or the box may have fallen. One read settles it. */
+  const askBox = useRef(false);
+  /**
+   * The one way a document reaches this screen, and the one thing that lifts a
+   * pause. A read that nothing overtook is the box's own word, so it is taken
+   * even with a lower number: a box restored from an earlier copy would
+   * otherwise leave this screen paused until its sequence caught up.
+   */
+  const adopt = useCallback((incoming: DisplaySession, freshRead = false) => {
+    if (!freshRead && newerDisplaySession(sessionRef.current, incoming) !== incoming) return false;
+    sessionRef.current = incoming;
+    accepted.current += 1;
+    setSession(incoming);
+    recovered();
+    return true;
+  }, [recovered]);
   const pending = useRef<StationIntent | null>(null);
   const inFlight = useRef<symbol | null>(null);
   const generation = useRef(0);
@@ -98,7 +124,7 @@ export default function Display() {
     const inactive = () => stopped || generation.current !== startedGeneration;
     const tick = async () => {
       try {
-        if (knownPaired && streaming.current) return;
+        if (knownPaired && streaming.current && !askBox.current) return;
         const bearer = bearerRef.current;
         setPersistent(rememberDisplayCredential(bearer));
         // Once paired, the protected read is the authority. Revocation must
@@ -109,16 +135,20 @@ export default function Display() {
         if (paired.status === 'paired') {
           const stationId = sessionRef.current?.station.id ?? paired.station?.id ?? null;
           let current: DisplaySession;
+          const acceptedBefore = accepted.current;
+          const asking = askBox.current;
+          askBox.current = false;
           try {
             current = await readThroughBox(stationId, bearer, controller.signal);
           } catch (failure) {
+            askBox.current = askBox.current || asking;
             if (!streaming.current && !(failure instanceof DisplayError && failure.status === 401)) disconnect();
             throw failure;
           }
           if (inactive()) return;
-          recovered();
+          lastHeard.current = Date.now();
+          adopt(current, accepted.current === acceptedBefore);
           knownPaired = true;
-          setSession(previous => newerDisplaySession(previous, current));
           setPairing(null);
           const answer = current.document.prompt?.answer as { actionId?: string } | undefined;
           const gesture = pending.current;
@@ -159,17 +189,18 @@ export default function Display() {
           if (failure.code !== 'DISPLAY_ALREADY_PAIRED') bearerRef.current = newDisplayCredential();
         } else if (!streaming.current) setError(failure instanceof Error ? failure.message : 'The display could not connect.');
       } finally {
-        if (!inactive()) timer = setTimeout(() => { void tick(); }, knownPaired ? 200 : 2_000);
+        if (!inactive()) timer = setTimeout(() => { void tick(); }, knownPaired ? POLL_GAP_MS : PAIRING_POLL_GAP_MS);
       }
     };
     void tick();
     return () => { stopped = true; generation.current += 1; controller.abort(); clearTimeout(timer); };
-  }, [restart, pairingMode, disconnect, recovered]);
+  }, [restart, pairingMode, disconnect, recovered, adopt]);
 
   const stationId = session?.station.id;
   useEffect(() => {
     if (!stationId) return;
-    const offline = () => { streaming.current = false; disconnect(); };
+    // The browser names the moment the line went down, so nothing is estimated from the last byte.
+    const offline = () => { streaming.current = false; disconnect(Date.now()); };
     window.addEventListener('offline', offline);
     const stop = watchBridgeSnapshots(stationId, {
       bearer: bearerRef.current,
@@ -177,9 +208,10 @@ export default function Display() {
         if (!value && streaming.current) disconnect();
         streaming.current = value;
       },
+      onActivity: () => { lastHeard.current = Date.now(); },
       onSnapshot: document => {
-        recovered();
-        setSession(previous => previous ? newerDisplaySession(previous, { ...previous, document }) : previous);
+        const held = sessionRef.current;
+        if (held && !adopt({ ...held, document })) askBox.current = true;
         const answer = document.prompt?.answer as { actionId?: string } | undefined;
         const gesture = pending.current;
         if (gesture && (answer?.actionId === gesture.actionId
@@ -200,7 +232,7 @@ export default function Display() {
       },
     });
     return () => { stop(); streaming.current = false; window.removeEventListener('offline', offline); };
-  }, [stationId, disconnect, recovered]);
+  }, [stationId, disconnect, recovered, adopt]);
   useEffect(() => () => clearTimeout(grace.current), []);
 
   const expirePairing = async () => {
@@ -267,7 +299,8 @@ export default function Display() {
       const result = await displayBridgeApi.intent(current.station.id, bearer, next)
         .catch((failure: unknown) => { throw asDisplayError(failure); });
       if (!active()) return;
-      setSession(previous => previous?.device.id === current.device.id ? newerDisplaySession(previous, { ...previous, document: result.document }) : previous);
+      const held = sessionRef.current;
+      if (held?.device.id === current.device.id) adopt({ ...held, document: result.document });
       pending.current = null;
       setError(null);
     } catch (failure) {
@@ -282,7 +315,7 @@ export default function Display() {
         if (intent.type !== 'display.set_language') setLanguageRetry(value => value + 1);
       }
     }
-  }, []);
+  }, [adopt]);
 
   const pairedDeviceId = session?.device.id;
   useEffect(() => {
