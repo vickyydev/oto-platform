@@ -14,7 +14,7 @@ the complete file passed unchanged once the shards finished. No timeout or
 assertion was relaxed. Detailed summaries and log fingerprints are in
 [local-release-checks.json](local-release-checks.json).
 
-The final full POS run passes all 1,652 tests, and all seven built native
+The first full POS run passes all 1,652 tests, and all seven built native
 browser journeys pass. Box: 843; Console: 588 with three existing TODOs;
 database: 384. Whole touched-package typechecks, generated API contracts,
 changed-file lint, POS/Console/agent/display builds, Bash syntax and the CI
@@ -58,3 +58,23 @@ duplicate input, data-only environment parsing and idempotent origin append.
 No real DNS token, certificate, Linux service or Pi installer was used.
 
 See [bench procedure, production key checklist and rollback](../../../ops/BOX_BRIDGE_BENCH.md).
+
+## Online local-display follow-up
+
+The initial source d0e32637fe851791594b35486ab9cee24ea59062 passed all six jobs
+in [CI 41510251539](https://github.com/vickyydev/oto-platform/actions/runs/41510251539).
+An extra native online check then found the local display lacked a box session.
+A normal successful platform unlock now starts one bounded local request using
+the existing shift token and entered password. Online access does not wait on
+the box, and no password is saved. Late replies cannot revive a session after
+lock, sign-out, station change or timeout. Local publication continues without
+a cloud connected-screen record. Setup uses the normal lock/unlock once after
+picking a newly configured station.
+
+Three late-reply cases and the one-minute empty-cloud-presence case reproduced
+red before correction. Full POS now passes 1,659 tests; all seven built native
+journeys, whole POS/Console types, touched lint and builds pass. The full real
+agent/browser rehearsal passed again, now also proving online unlock connects
+the display before the outage. Its exact local build and checks are retained in
+[local-followup-checks.json](local-followup-checks.json). Final source CI and
+staging proof follow; physical bench acceptance remains open.

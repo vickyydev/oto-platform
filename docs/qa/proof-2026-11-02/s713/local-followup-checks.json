@@ -1,0 +1,158 @@
+{
+  "unit": "SCRUM-713",
+  "at": "2026-11-02T19:59:40.592Z",
+  "scope": "Disposable local API/database, real Edge browser and real bundled local agent; not staging evidence",
+  "source": "63fe4efc391783059dc98e189eb32accba036632",
+  "version": "oto-box 0.1.0-20261102-63fe4efc built 2026-11-02T19:52:22.806Z",
+  "startedAt": "2026-11-02T19:53:25.835Z",
+  "finishedAt": "2026-11-02T19:56:00.353Z",
+  "outcome": "passed",
+  "checks": [
+    {
+      "name": "The published staff public key reaches the real agent bundle",
+      "kid": "58c8759d91cedd2d",
+      "at": "2026-11-02T19:53:31.561Z",
+      "passed": true
+    },
+    {
+      "name": "Configured bridge keeps the online sale on the platform",
+      "origin": "http://127.0.0.1:56330",
+      "saleId": "01a19dd3-0812-73ae-8dd0-944ac76018ed",
+      "at": "2026-11-02T19:53:36.191Z",
+      "passed": true
+    },
+    {
+      "name": "Configured bridge keeps the online sale on the platform",
+      "origin": "http://127.0.0.1:56329",
+      "saleId": "01a19dd3-1767-796b-90ef-d3d2e0ba734e",
+      "at": "2026-11-02T19:53:40.044Z",
+      "passed": true
+    },
+    {
+      "name": "Successful platform unlock also connects the configured local display with the existing token and password",
+      "at": "2026-11-02T19:54:33.853Z",
+      "passed": true
+    },
+    {
+      "name": "A shift token without a password cannot unlock the box",
+      "status": 400,
+      "at": "2026-11-02T19:54:36.962Z",
+      "passed": true
+    },
+    {
+      "name": "Native password unlock succeeds against the real box while API routes are cut",
+      "method": "offline_token",
+      "cacheAgeSeconds": 5,
+      "at": "2026-11-02T19:54:37.090Z",
+      "passed": true
+    },
+    {
+      "name": "A synthetic customer answer reaches the offline till through the local bridge",
+      "visibleMs": 133,
+      "at": "2026-11-02T19:54:37.675Z",
+      "passed": true
+    },
+    {
+      "name": "The offline till publishes the order to its local paired display",
+      "at": "2026-11-02T19:54:38.841Z",
+      "passed": true
+    },
+    {
+      "name": "A different page/agent build refuses to start and a matching reload recovers",
+      "at": "2026-11-02T19:54:56.827Z",
+      "passed": true
+    },
+    {
+      "name": "Cold-started display uses bundled assets and retained pairing with no external request",
+      "externalRequests": 0,
+      "at": "2026-11-02T19:54:56.829Z",
+      "passed": true
+    },
+    {
+      "name": "The unavailable QR tender is refused in the native till",
+      "code": "QR_DISABLED_FOR_STATION",
+      "message": "This counter is not set up to take QR payments",
+      "at": "2026-11-02T19:54:58.810Z",
+      "passed": true
+    },
+    {
+      "name": "Cash is sealed locally with a box receipt and queued for reconnect",
+      "receiptNumber": "Z713-000003",
+      "outboxDepth": 1,
+      "at": "2026-11-02T19:54:59.201Z",
+      "passed": true
+    },
+    {
+      "name": "Reconnect drains the queue and the platform returns the same finalised sale with zero quarantine",
+      "saleId": "01a19dd4-4b75-73bf-89c0-95818a4f17ff",
+      "quarantine": 0,
+      "at": "2026-11-02T19:55:00.909Z",
+      "passed": true
+    },
+    {
+      "name": "Exact ZZ TEST fixture archived, pairing revoked and staff signed out",
+      "at": "2026-11-02T19:55:59.833Z",
+      "passed": true
+    }
+  ],
+  "offlineSale": {
+    "id": "01a19dd4-4b75-73bf-89c0-95818a4f17ff",
+    "receiptNumber": "Z713-000003",
+    "grossSatang": 9000
+  },
+  "fixtureArchivedAt": "2026-11-02T19:55:59.833Z",
+  "disposableDatabaseRemoved": true,
+  "posPassed": 1659,
+  "browserJourneysPassed": 7,
+  "consoleFocusedPassed": 3,
+  "typechecks": [
+    "@oto/pos",
+    "@oto/console"
+  ],
+  "changedFileLint": "passed",
+  "builds": [
+    "POS",
+    "Console",
+    "agent/display"
+  ],
+  "initialSourceCi": {
+    "sha": "d0e32637fe851791594b35486ab9cee24ea59062",
+    "run": "41510251539",
+    "allSixJobs": "success"
+  },
+  "logs": [
+    {
+      "name": "s713-pos-online-final",
+      "sha256": "17ffdef0394eb62179bbe5b07a927f7d277b5119afb528b2a3a82fb3dfecc03c"
+    },
+    {
+      "name": "s713-types-online-final",
+      "sha256": "320783137ec53e9893dea3ab6a8fa3b7fdace06086eea12cf8e59277173246a8"
+    },
+    {
+      "name": "s713-build-online-final",
+      "sha256": "acb2df421b8958a043d128f196a423d413950fa42b7f902860c9f2bb285410d1"
+    },
+    {
+      "name": "s713-console-online-build",
+      "sha256": "18f2971964d09e2b2499c56370a202219c391196880c6650cca7081377b068a0"
+    },
+    {
+      "name": "s713-online-runner-build",
+      "sha256": "bd29904fd1e7b96e86587e8cae3542f36552b221a3ca82017d5ec785dc679dc7"
+    },
+    {
+      "name": "s713-local-rehearsal-8",
+      "sha256": "b28b81b88ed561287bd5f4d117513463de9a60ee456ed4c17d051d48bb9d9fea"
+    },
+    {
+      "name": "s713-e2e-online-final",
+      "sha256": "d0fd3b083df51328e04ca505d9de42bdd77bbaebc15a06a357d1ceca43f31863"
+    }
+  ],
+  "limitations": [
+    "Windows loopback, not a real iPad private HTTPS connection",
+    "No real certificate, DNS/router change or Pi installer run",
+    "No physical printer or power-cut acceptance"
+  ]
+}
