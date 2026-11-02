@@ -357,13 +357,14 @@ sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --pri
 
 Keep the quotes around the address. `--no-kiosk` is gone from this box's options from
 here on, and the box needs the desktop image (part C step 1; on Lite there is nothing to
-draw the page on). The installer's summary ends with a `Screen:` line: the address, the
-scale, and whether screen blanking is off. Then `sudo reboot` once. The monitor's own
+draw the page on). The installer's summary has a `Screen:` line: the address, the scale,
+and whether screen blanking is off. Then `sudo reboot` once. The monitor's own
 sleep or eco timer, if it has one, is switched off once in its own menu.
 
-**Pair it.** The screen shows *Set up this display* and a code. Console → Devices →
-**Pair a display**: enter the code, choose the counter's station. The screen follows
-that till from then on.
+**Pair it.** The screen shows *Set up this display* and a six-digit code. Console → Devices
+→ **Pair a display**: the counter's station, a display name, the code. A station takes one
+display, so if it has one already, revoke that under **Paired screens** first. The screen
+follows that till from then on.
 
 **What is kept.** A reboot, the 04:30 reboot, a power cut and a release update all come
 back paired with nobody touching anything: the pairing lives in the browser's profile,
@@ -378,8 +379,8 @@ wrong and will not recover by restarting:
 sudo systemctl stop oto-kiosk && rm -rf /home/oto/.config/oto-kiosk && sudo systemctl start oto-kiosk
 ```
 
-The screen then shows a new code. Pair it again, and revoke the old entry in Console →
-Devices. `sudo systemctl restart oto-kiosk` on its own loses nothing: try that first.
+The screen then shows a new code. Revoke the old entry under **Paired screens** and pair it
+again. `sudo systemctl restart oto-kiosk` on its own loses nothing: try that first.
 
 **The nickname.** Touch the nickname field and a keyboard opens under it: English letters,
 space, backspace, Done. The phone number has its keypad as it always had. `?keyboard=screen`
