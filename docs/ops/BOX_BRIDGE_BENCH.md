@@ -79,6 +79,13 @@ changed; installing a bridge does not change it.
    Pair online, wait for the pairing bundle to reach the box, and record the
    release shown by `oto-box status`. Keep Chromium site data across reboots.
 
+After setting or changing the bridge, pick the station again and use the normal
+lock/unlock once to authorise its local display. Online unlock keeps the platform
+as authority and sends the same shift token and entered password to the local
+box in a bounded background call. It never saves the password, delays online
+access or changes the trading lane. An unavailable box leaves online access
+working; a late response cannot restore a credential after lock or station change.
+
 ## Real iPad and Pi acceptance, still open
 
 - On the installed POS app on a real iPad, grant the browser's local-network

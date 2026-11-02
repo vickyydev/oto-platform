@@ -29,6 +29,7 @@ import { ApiError, NetworkError } from './client';
 
 let origin: string | null = null;
 let boxSession: string | null = null;
+let sessionRevision = 0;
 
 /**
  * SCRUM-503 — the refusals the BOX answered, so a note can name who said no.
@@ -49,7 +50,7 @@ export function answeredByBox(err: unknown): boolean {
  */
 export function setBridgeOrigin(value: string | null): void {
   const next = value ? value.replace(/\/$/, '') : null;
-  if (next !== origin) boxSession = null;
+  if (next !== origin) holdBoxSession(null);
   origin = next;
 }
 
@@ -57,7 +58,24 @@ export function hasBridgeOrigin(): boolean { return origin !== null; }
 
 /** The box session from the last unlock, held in memory only: a lock or a reload ends it. */
 export function holdBoxSession(value: string | null): void {
+  sessionRevision += 1;
   boxSession = value;
+}
+
+/** Prepare before platform authentication, invoke only after it succeeds. */
+export function prepareConfiguredBridgeUnlock(stationId: string, body: BridgeUnlockRequest): () => Promise<void> {
+  const revision = sessionRevision;
+  const target = origin;
+  return async () => {
+    // A lock or scope change can also overtake the platform's answer, before
+    // the local request has even started. It must not open that old session.
+    if (!target || target !== origin || revision !== sessionRevision || !body.token || !body.password) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2_000);
+    try { await bridgeApi.unlock(stationId, body, controller.signal); }
+    catch { /* Platform authentication already succeeded; an unavailable box must not lock it out. */ }
+    finally { clearTimeout(timer); }
+  };
 }
 
 let staffName: string | null = null;
@@ -138,11 +156,14 @@ export const bridgeApi = {
    * calls that follow, which is what a Pi needs; a virtual box also accepts
    * the platform cookie.
    */
-  unlock: async (stationId: string, body: BridgeUnlockRequest): Promise<BridgeUnlockResponse> => {
+  unlock: async (stationId: string, body: BridgeUnlockRequest, signal?: AbortSignal): Promise<BridgeUnlockResponse> => {
+    const revision = sessionRevision;
     const answer = await request<BridgeUnlockResponse>('POST', stationId, 'unlock', body, {
       bearer: null,
+      signal,
     });
-    holdBoxSession(answer.session);
+    // A lock, sign-out, station change or timeout can overtake this response.
+    if (revision === sessionRevision && !signal?.aborted) holdBoxSession(answer.session);
     return answer;
   },
   lock: async (stationId: string): Promise<void> => {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '@/api/client';
-import { bridgeApi, bridgeUrl, holdBoxSession, setBridgeOrigin } from '@/api/bridge';
+import { bridgeApi, bridgeUrl, holdBoxSession, setBridgeOrigin, prepareConfiguredBridgeUnlock } from '@/api/bridge';
 import { confirmVisitChildren, membersApi, visitsApi } from '@/api/platform';
 import { salesApi } from '@/api/sales';
 import * as React from 'react';
@@ -69,6 +69,65 @@ afterEach(() => {
 });
 
 describe('which lane a call takes', () => {
+  it.each(['lock', 'origin', 'abort'] as const)('HIGH: a late bridge unlock cannot restore access after %s; discard its credential', async change => {
+    setBridgeOrigin('https://counter.example.test');
+    let answer: (value: Response) => void = () => undefined;
+    const fetch = vi.fn(async (url: string, _init?: RequestInit) => url.endsWith('/unlock')
+      ? new Promise<Response>(resolve => { answer = resolve; }) : reply({ link: { lane: 'platform' } }));
+    vi.stubGlobal('fetch', fetch);
+    const controller = new AbortController();
+    const pending = bridgeApi.unlock(STATION, { token: 'test-token', password: 'test-password' }, controller.signal);
+    if (change === 'lock') await bridgeApi.lock(STATION);
+    if (change === 'origin') setBridgeOrigin('https://changed.example.test');
+    if (change === 'abort') controller.abort();
+    answer(reply({ session: 'late-test-session' }));
+    await pending;
+    await bridgeApi.status(STATION);
+    expect(fetch.mock.calls.at(-1)?.[1]).not.toEqual(expect.objectContaining({ headers: expect.objectContaining({ authorization: expect.any(String) }) }));
+  });
+
+  it('connects only a configured bridge with token AND password, without ambient credentials or a lane change', async () => {
+    const fetch = vi.fn(async () => reply({ session: 'test-session' }));
+    vi.stubGlobal('fetch', fetch);
+    const body = { token: 'test-token', password: 'test-password' };
+    await prepareConfiguredBridgeUnlock(STATION, body)();
+    expect(fetch).not.toHaveBeenCalled();
+    setBridgeOrigin('https://counter.example.test');
+    await prepareConfiguredBridgeUnlock(STATION, { ...body, token: '' })();
+    await prepareConfiguredBridgeUnlock(STATION, { ...body, password: '' })();
+    expect(fetch).not.toHaveBeenCalled();
+    await prepareConfiguredBridgeUnlock(STATION, body)();
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`https://counter.example.test/box/v1/station/${STATION}/unlock`, expect.objectContaining({ credentials: 'omit', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+    expect(currentLane()).toBe('platform');
+  });
+
+  it('bounds an unavailable local unlock and never retries or fails the platform unlock', async () => {
+    vi.useFakeTimers();
+    try {
+      setBridgeOrigin('https://counter.example.test');
+      const fetch = vi.fn(async (_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true });
+      }));
+      vi.stubGlobal('fetch', fetch);
+      const pending = prepareConfiguredBridgeUnlock(STATION, { token: 'test-token', password: 'test-password' })();
+      await vi.advanceTimersByTimeAsync(2_000);
+      await expect(pending).resolves.toBeUndefined();
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+      expect(currentLane()).toBe('platform');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('does not start a local unlock when a new lock overtakes platform authentication', async () => {
+    setBridgeOrigin('https://counter.example.test');
+    const fetch = vi.fn(async () => reply({ session: 'test-session' }));
+    vi.stubGlobal('fetch', fetch);
+    const connect = prepareConfiguredBridgeUnlock(STATION, { token: 'test-token', password: 'test-password' });
+    await bridgeApi.lock(STATION);
+    await connect();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('uses a configured bridge for the precise forwarder outage, never a platform refusal or an unconfigured box', async () => {
     const unavailable = new ApiError(502, 'UPSTREAM_UNAVAILABLE', 'API unavailable');
     const platform = vi.fn(async () => { throw unavailable; });

@@ -9,7 +9,7 @@ import {
   type StationSessionDocument, type StationSessionStage,
 } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
-import { bridgeApi, watchBridgeSnapshots } from '@/api/bridge';
+import { bridgeApi, hasBridgeOrigin, watchBridgeSnapshots } from '@/api/bridge';
 import { currentLane, isBoxLaneTrigger, noteLaneFailure } from './lane';
 import type { ContactChannel, Member, Sale } from '@/types';
 import { computeLineBreakdown, isAdultRulePriced, isTierPriced, unpricedCartLines } from './pricing';
@@ -521,13 +521,13 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
     const paused = () => stopped || channel.signingOut || !current.current.active || publisher.current !== channel;
     /**
      * Whether any display is watching, from the platform while it answers.
-     * On the box lane (offline plan OD-10) the platform cannot say, and the
-     * document is published to the box anyway: it is the box's document the
+     * For a local bridge or the box lane (offline plan OD-10), the platform
+     * cannot say. The document is published to the box anyway: it is the box's document the
      * display follows, publishing to it is local and cheap, and the till never
      * waits on a display either way.
      */
     const watching = async (): Promise<ConnectedDisplay[] | 'unknown'> => {
-      if (currentLane() === 'box') return 'unknown';
+      if (hasBridgeOrigin() || currentLane() === 'box') return 'unknown';
       try {
         const list = await api.get<{ displays: ConnectedDisplay[] }>(`${base}/displays`);
         return list.displays.filter(display => display.connected);

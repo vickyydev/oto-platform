@@ -16,7 +16,7 @@ import { staffThemeController, useCustomerTheme } from '@/lib/themePref';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { authApi, type PosImpersonation } from '@/api/platform';
 import { ApiError } from '@/api/client';
-import { bridgeApi, setBridgeStaffName } from '@/api/bridge';
+import { bridgeApi, setBridgeStaffName, prepareConfiguredBridgeUnlock } from '@/api/bridge';
 import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffToken';
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
 import { loadCatalogFromApi } from '@/api/catalogBridge';
@@ -383,6 +383,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     const held = readStaffToken();
     const token = staffTokenLive(held) ? (held?.token ?? null) : null;
     const station = laneStation();
+    const connectLocal = station && token ? prepareConfiguredBridgeUnlock(station, { token, password }) : null;
     const throughBox = async (stationId: string): Promise<void> => {
       const answer = await bridgeApi.unlock(stationId, {
         password,
@@ -395,6 +396,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     if (station && currentLane() === 'box') return throughBox(station);
     try {
       await authApi.unlock(password);
+      // The platform remains the online authority. Its successful unlock also
+      // supplies the existing password/token proof to a configured local box;
+      // this bounded call neither delays online access nor stores the password.
+      void connectLocal?.();
       setOfflineUnlock(null);
       setLocked(false);
       return;

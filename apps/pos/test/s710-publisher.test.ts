@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { StationSessionDocument } from '@oto/shared';
 vi.mock('react', () => import('./support/hooks'));
 const mock = vi.hoisted(() => ({ lease: vi.fn(), renew: vi.fn(), session: vi.fn(), publish: vi.fn(), release: vi.fn(), watch: vi.fn(), get: vi.fn() }));
-vi.mock('@/api/bridge', () => ({ bridgeApi: mock, watchBridgeSnapshots: mock.watch }));
+vi.mock('@/api/bridge', () => ({ bridgeApi: mock, watchBridgeSnapshots: mock.watch, hasBridgeOrigin: () => false }));
 vi.mock('@/api/client', async () => ({ ...await vi.importActual('@/api/client'), api: { get: mock.get } }));
 vi.mock('@/lib/lane', () => ({ currentLane: () => 'platform', isBoxLaneTrigger: () => false }));
 import { useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';

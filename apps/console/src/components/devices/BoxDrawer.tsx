@@ -286,7 +286,7 @@ export function BridgeAddress({ box, canUpdate, onChanged }: { box: BoxRow; canU
     </Field>
     {canUpdate && <Button variant="outline" size="sm" disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Save bridge address'}</Button>}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    {saved && <p role="status" className="text-xs text-muted-foreground">Saved. Pick the station again on its till to use this address.</p>}
+    {saved && <p role="status" className="text-xs text-muted-foreground">Saved. Pick the station again, then lock and unlock its till to connect the local display.</p>}
   </div>;
 }
 

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StationSessionDocument } from '@oto/shared';
 vi.mock('react', () => import('./support/hooks'));
-const mock = vi.hoisted(() => ({ lease: vi.fn(), renew: vi.fn(), session: vi.fn(), publish: vi.fn(), release: vi.fn(), watch: vi.fn(), get: vi.fn(), lane: { value: 'platform' } }));
-vi.mock('@/api/bridge', () => ({ bridgeApi: mock, watchBridgeSnapshots: mock.watch }));
+const mock = vi.hoisted(() => ({ lease: vi.fn(), renew: vi.fn(), session: vi.fn(), publish: vi.fn(), release: vi.fn(), watch: vi.fn(), get: vi.fn(), lane: { value: 'platform' }, local: { value: false } }));
+vi.mock('@/api/bridge', () => ({ bridgeApi: mock, watchBridgeSnapshots: mock.watch, hasBridgeOrigin: () => mock.local.value }));
 vi.mock('@/api/client', async () => ({ ...await vi.importActual('@/api/client'), api: { get: mock.get } }));
 vi.mock('@/lib/lane', () => ({ currentLane: () => mock.lane.value, isBoxLaneTrigger: () => false }));
 import { useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
@@ -30,6 +30,7 @@ const notReady = new ApiError(409, 'STATION_NOT_READY', 'This till is not ready 
 beforeEach(() => {
   vi.useFakeTimers(); vi.clearAllMocks();
   mock.lane.value = 'platform';
+  mock.local.value = false;
   leases = 0;
   box = { stationId: 'station', boxId: 'box', schemaVersion: 1, sequence: 100, stage: 'identify', language: 'en', lease: null, takeoverCount: 0, updatedAt: '2026-11-02T00:00:00Z' };
   mock.get.mockResolvedValue({ displays: [{ id: 'display', name: 'ZZ TEST', connected: true }] });
@@ -58,6 +59,20 @@ const mount = async () => {
 const lastPublish = () => mock.publish.mock.calls.at(-1)![1] as { lastSeenSequence: number; payload: { prompt: { nickname: string } } };
 
 describe('SCRUM-720 a box whose sequence fell', () => {
+  it('HIGH SCRUM-713: a local display keeps following online without a cloud presence record', async () => {
+    mock.local.value = true;
+    mock.get.mockResolvedValue({ displays: [] });
+    const hook = await mount();
+    expect(mock.publish).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(60_000);
+    hook.rerender(state('ZZ TEST local display after idle'));
+    await vi.advanceTimersByTimeAsync(100);
+    expect(lastPublish().payload.prompt.nickname).toBe('ZZ TEST local display after idle');
+    expect(mock.get).not.toHaveBeenCalled();
+    expect(mock.lane.value).toBe('platform');
+    hook.unmount();
+  });
+
   it('recovers with one claim and one publish, and does not loop until a reload', async () => {
     const hook = await mount();
     expect(box.sequence).toBe(102);
