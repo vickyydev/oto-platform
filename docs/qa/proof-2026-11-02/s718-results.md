@@ -1,16 +1,15 @@
 # SCRUM-718: POS forwarding path
 
-**Current acceptance: Testing.** The later f8c4d429 refresh missed the visible
-display limit at 540 ms. The earlier c2fdd28f results below are retained history;
-they do not override that miss. See [the refresh and trace](f8c4d429/README.md).
-A narrow item-quote scheduling correction is locally green and awaits its
-source CI, deployment and fresh proof.
+**Final staging measurements passed on `796a3724505ee9cd46f93584c975971ad50a3e4d`**,
+[CI 41452442131](https://github.com/vickyydev/oto-platform/actions/runs/41452442131). See [the final acceptance report](final/README.md)
+for all current numbers, live service commits and safety/cleanup evidence.
+Image attachment and the required Jira walk are recorded in the newest STATUS
+block. No park device or production address has switched.
 
-2 November 2026. Staging acceptance passed on source `c2fdd28fdc9e944d058af62dec1347e5f2b7a56f`,
-[CI 41439428324](https://github.com/vickyydev/oto-platform/actions/runs/41439428324), all six jobs green.
-The approved single Starter service is live beside the old site. No park device
-or production address has been switched. This report separates measured staging
-results, local controls and remaining physical-device limits.
+The sections below preserve the initial c2fdd28f proof and before-change baseline.
+The later [540 ms miss and trace](f8c4d429/README.md) remain part of the record;
+the final report explains the narrow item-quote scheduling fix and three fresh
+passing display runs.
 
 ## Before any source or service change
 

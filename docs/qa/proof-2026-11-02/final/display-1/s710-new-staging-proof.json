@@ -1,0 +1,1576 @@
+{
+  "unit": "SCRUM-710",
+  "source": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41452442131",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a19ba8-d8d5-76cc-923b-aca24002ab7f",
+    "boxName": "ZZ TEST SCRUM-718 path",
+    "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+    "stationName": "ZZ TEST SCRUM-718 path",
+    "createdAt": "2026-11-02T09:48:18.531Z"
+  },
+  "deployments": [
+    {
+      "service": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "id": "dep-dbk986bm8hqs738k1tgg",
+      "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+      "finishedAt": "2026-11-02T13:48:30.723553Z",
+      "runtimeTreeMatchesSource": true
+    },
+    {
+      "service": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "id": "dep-dbk986bm8hqs738k1shg",
+      "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+      "finishedAt": "2026-11-02T13:49:22.62076Z",
+      "runtimeTreeMatchesSource": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "10-second grace",
+      "at": "2026-11-02T13:51:07.408Z",
+      "elapsedMs": 10670,
+      "passed": true
+    },
+    {
+      "name": "20-second paused screen hides total",
+      "at": "2026-11-02T13:51:17.405Z",
+      "elapsedMs": 20667,
+      "passed": true
+    },
+    {
+      "name": "automatic recovery",
+      "at": "2026-11-02T13:51:18.896Z",
+      "passed": true
+    },
+    {
+      "name": "revoked credential returns display to pairing",
+      "at": "2026-11-02T13:51:24.380Z",
+      "passed": true
+    },
+    {
+      "name": "replacement unpaired code expired",
+      "at": "2026-11-02T13:51:25.825Z",
+      "passed": true
+    },
+    {
+      "name": "session cleanup",
+      "origin": "https://oto-console-staging.onrender.com",
+      "signedOut": 200,
+      "after": 401
+    },
+    {
+      "name": "session cleanup",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signedOut": 200,
+      "after": 401
+    },
+    {
+      "name": "session cleanup",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "signedOut": 200,
+      "after": 401
+    }
+  ],
+  "startedAt": "2026-11-02T13:50:28.575Z",
+  "pollingSource": "2513e1fb385190c38f494d81006cfc1e44302f79",
+  "network": [
+    {
+      "role": "till",
+      "path": "/api/branches",
+      "method": "GET",
+      "startedAt": 1793627442503,
+      "status": 200,
+      "headersAt": 1793627442630,
+      "finishedAt": 1793627442630
+    },
+    {
+      "role": "till",
+      "path": "/api/payment-methods",
+      "method": "GET",
+      "startedAt": 1793627442631,
+      "status": 200,
+      "headersAt": 1793627442712,
+      "finishedAt": 1793627442712
+    },
+    {
+      "role": "till",
+      "path": "/api/tiers",
+      "method": "GET",
+      "startedAt": 1793627442712,
+      "status": 200,
+      "headersAt": 1793627442783,
+      "finishedAt": 1793627442783
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+      "method": "GET",
+      "startedAt": 1793627442712,
+      "status": 200,
+      "headersAt": 1793627442801,
+      "finishedAt": 1793627442801
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/holidays",
+      "method": "GET",
+      "startedAt": 1793627442712,
+      "status": 200,
+      "headersAt": 1793627442851,
+      "finishedAt": 1793627442851
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/tax-config",
+      "method": "GET",
+      "startedAt": 1793627442712,
+      "status": 200,
+      "headersAt": 1793627442788,
+      "finishedAt": 1793627442788
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "method": "GET",
+      "startedAt": 1793627442712,
+      "status": 200,
+      "headersAt": 1793627442849,
+      "finishedAt": 1793627442849
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu",
+      "method": "GET",
+      "startedAt": 1793627442853,
+      "status": 200,
+      "headersAt": 1793627442943,
+      "finishedAt": 1793627442943
+    },
+    {
+      "role": "till",
+      "path": "/api/menu/discounts",
+      "method": "GET",
+      "startedAt": 1793627442854,
+      "status": 200,
+      "headersAt": 1793627442928,
+      "finishedAt": 1793627442928
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/sellable",
+      "method": "GET",
+      "startedAt": 1793627442946,
+      "status": 200,
+      "headersAt": 1793627443029,
+      "finishedAt": 1793627443029
+    },
+    {
+      "role": "till",
+      "path": "/api/me/stations",
+      "method": "GET",
+      "startedAt": 1793627443042,
+      "status": 200,
+      "headersAt": 1793627443117,
+      "finishedAt": 1793627443118
+    },
+    {
+      "role": "till",
+      "path": "/api/me",
+      "method": "GET",
+      "startedAt": 1793627444065,
+      "status": 200,
+      "headersAt": 1793627444143,
+      "finishedAt": 1793627444143
+    },
+    {
+      "role": "till",
+      "path": "/api/me/permissions",
+      "method": "GET",
+      "startedAt": 1793627444143,
+      "status": 200,
+      "headersAt": 1793627444219,
+      "finishedAt": 1793627444219
+    },
+    {
+      "role": "till",
+      "path": "/api/branches",
+      "method": "GET",
+      "startedAt": 1793627444220,
+      "status": 200,
+      "headersAt": 1793627444293,
+      "finishedAt": 1793627444293
+    },
+    {
+      "role": "till",
+      "path": "/api/payment-methods",
+      "method": "GET",
+      "startedAt": 1793627444293,
+      "status": 200,
+      "headersAt": 1793627444376,
+      "finishedAt": 1793627444376
+    },
+    {
+      "role": "till",
+      "path": "/api/tiers",
+      "method": "GET",
+      "startedAt": 1793627444377,
+      "status": 200,
+      "headersAt": 1793627444477,
+      "finishedAt": 1793627444477
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+      "method": "GET",
+      "startedAt": 1793627444377,
+      "status": 200,
+      "headersAt": 1793627444477,
+      "finishedAt": 1793627444477
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/holidays",
+      "method": "GET",
+      "startedAt": 1793627444377,
+      "status": 200,
+      "headersAt": 1793627444457,
+      "finishedAt": 1793627444457
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/tax-config",
+      "method": "GET",
+      "startedAt": 1793627444377,
+      "status": 200,
+      "headersAt": 1793627444462,
+      "finishedAt": 1793627444462
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "method": "GET",
+      "startedAt": 1793627444377,
+      "status": 200,
+      "headersAt": 1793627444462,
+      "finishedAt": 1793627444462
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu",
+      "method": "GET",
+      "startedAt": 1793627444478,
+      "status": 200,
+      "headersAt": 1793627444587,
+      "finishedAt": 1793627444588
+    },
+    {
+      "role": "till",
+      "path": "/api/menu/discounts",
+      "method": "GET",
+      "startedAt": 1793627444479,
+      "status": 200,
+      "headersAt": 1793627444570,
+      "finishedAt": 1793627444570
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/sellable",
+      "method": "GET",
+      "startedAt": 1793627444589,
+      "status": 200,
+      "headersAt": 1793627444670,
+      "finishedAt": 1793627444671
+    },
+    {
+      "role": "till",
+      "path": "/api/me/stations",
+      "method": "GET",
+      "startedAt": 1793627444673,
+      "status": 200,
+      "headersAt": 1793627444754,
+      "finishedAt": 1793627444754
+    },
+    {
+      "role": "till",
+      "path": "/api/me/session/station",
+      "method": "PUT",
+      "startedAt": 1793627444955,
+      "status": 200,
+      "headersAt": 1793627445040,
+      "finishedAt": 1793627445041
+    },
+    {
+      "role": "till",
+      "path": "/api/me",
+      "method": "GET",
+      "startedAt": 1793627445138,
+      "status": 200,
+      "headersAt": 1793627445216,
+      "finishedAt": 1793627445217
+    },
+    {
+      "role": "till",
+      "path": "/api/me/permissions",
+      "method": "GET",
+      "startedAt": 1793627445217,
+      "status": 200,
+      "headersAt": 1793627445364,
+      "finishedAt": 1793627445364
+    },
+    {
+      "role": "till",
+      "path": "/api/branches",
+      "method": "GET",
+      "startedAt": 1793627445365,
+      "status": 200,
+      "headersAt": 1793627445391,
+      "finishedAt": 1793627445392
+    },
+    {
+      "role": "till",
+      "path": "/api/payment-methods",
+      "method": "GET",
+      "startedAt": 1793627445396,
+      "status": 200,
+      "headersAt": 1793627445450,
+      "finishedAt": 1793627445450
+    },
+    {
+      "role": "till",
+      "path": "/api/tiers",
+      "method": "GET",
+      "startedAt": 1793627445450,
+      "status": 200,
+      "headersAt": 1793627445539,
+      "finishedAt": 1793627445539
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+      "method": "GET",
+      "startedAt": 1793627445450,
+      "status": 200,
+      "headersAt": 1793627445539,
+      "finishedAt": 1793627445539
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/holidays",
+      "method": "GET",
+      "startedAt": 1793627445451,
+      "status": 200,
+      "headersAt": 1793627445546,
+      "finishedAt": 1793627445546
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/tax-config",
+      "method": "GET",
+      "startedAt": 1793627445451,
+      "status": 200,
+      "headersAt": 1793627445543,
+      "finishedAt": 1793627445546
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "method": "GET",
+      "startedAt": 1793627445451,
+      "status": 200,
+      "headersAt": 1793627445530,
+      "finishedAt": 1793627445530
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu",
+      "method": "GET",
+      "startedAt": 1793627445546,
+      "status": 200,
+      "headersAt": 1793627445634,
+      "finishedAt": 1793627445682
+    },
+    {
+      "role": "till",
+      "path": "/api/menu/discounts",
+      "method": "GET",
+      "startedAt": 1793627445546,
+      "status": 200,
+      "headersAt": 1793627445634,
+      "finishedAt": 1793627445634
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/sellable",
+      "method": "GET",
+      "startedAt": 1793627445685,
+      "status": 200,
+      "headersAt": 1793627445765,
+      "finishedAt": 1793627445766
+    },
+    {
+      "role": "till",
+      "path": "/api/me/stations",
+      "method": "GET",
+      "startedAt": 1793627445771,
+      "status": 200,
+      "headersAt": 1793627445862,
+      "finishedAt": 1793627445862
+    },
+    {
+      "role": "till",
+      "path": "/api/me/session/station",
+      "method": "PUT",
+      "startedAt": 1793627445867,
+      "status": 200,
+      "headersAt": 1793627445964,
+      "finishedAt": 1793627445964
+    },
+    {
+      "role": "display",
+      "path": "/api/display/pairing",
+      "method": "GET",
+      "startedAt": 1793627445981,
+      "status": 200,
+      "headersAt": 1793627446151,
+      "finishedAt": 1793627446151
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627446007,
+      "status": 200,
+      "headersAt": 1793627446124,
+      "finishedAt": 1793627446154
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/printers",
+      "method": "GET",
+      "startedAt": 1793627446007,
+      "status": 200,
+      "headersAt": 1793627446124,
+      "finishedAt": 1793627446154
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "method": "GET",
+      "startedAt": 1793627446008,
+      "status": 200,
+      "headersAt": 1793627446124,
+      "finishedAt": 1793627446154
+    },
+    {
+      "role": "till",
+      "path": "/api/me/station/link",
+      "method": "GET",
+      "startedAt": 1793627446008,
+      "status": 200,
+      "headersAt": 1793627446260,
+      "finishedAt": 1793627446261
+    },
+    {
+      "role": "till",
+      "path": "/api/checkin/board",
+      "method": "GET",
+      "startedAt": 1793627446008,
+      "status": 200,
+      "headersAt": 1793627446261,
+      "finishedAt": 1793627446263
+    },
+    {
+      "role": "till",
+      "path": "/api/kiosk-desk",
+      "method": "GET",
+      "startedAt": 1793627446008,
+      "status": 200,
+      "headersAt": 1793627446123,
+      "finishedAt": 1793627446154
+    },
+    {
+      "role": "till",
+      "path": "/api/sales",
+      "method": "GET",
+      "startedAt": 1793627446009,
+      "status": 200,
+      "headersAt": 1793627446123,
+      "finishedAt": 1793627446154
+    },
+    {
+      "role": "till",
+      "path": "/api/events/passes",
+      "method": "GET",
+      "startedAt": 1793627446009,
+      "status": 200,
+      "headersAt": 1793627446261,
+      "finishedAt": 1793627446261
+    },
+    {
+      "role": "till",
+      "path": "/api/checkin/config",
+      "method": "GET",
+      "startedAt": 1793627446009,
+      "status": 200,
+      "headersAt": 1793627446261,
+      "finishedAt": 1793627446261
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627446010,
+      "status": 200,
+      "headersAt": 1793627446261,
+      "finishedAt": 1793627446263
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/channel",
+      "method": "GET",
+      "startedAt": 1793627446123,
+      "status": 200,
+      "headersAt": 1793627446295
+    },
+    {
+      "role": "display",
+      "path": "/api/display/pairing",
+      "method": "POST",
+      "startedAt": 1793627446154,
+      "status": 200,
+      "headersAt": 1793627446294,
+      "finishedAt": 1793627446294
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627447773,
+      "status": 200,
+      "headersAt": 1793627447850,
+      "finishedAt": 1793627447850
+    },
+    {
+      "role": "display",
+      "path": "/api/display/pairing",
+      "method": "GET",
+      "startedAt": 1793627448303,
+      "status": 200,
+      "headersAt": 1793627448369,
+      "finishedAt": 1793627448369
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627449354,
+      "status": 200,
+      "headersAt": 1793627449433,
+      "finishedAt": 1793627449433
+    },
+    {
+      "role": "display",
+      "path": "/api/display/pairing",
+      "method": "GET",
+      "startedAt": 1793627450376,
+      "status": 200,
+      "headersAt": 1793627450452,
+      "finishedAt": 1793627450452
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627450452,
+      "status": 200,
+      "headersAt": 1793627450548,
+      "finishedAt": 1793627450548
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/channel",
+      "method": "GET",
+      "startedAt": 1793627450611,
+      "status": 200,
+      "headersAt": 1793627450704
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627450936,
+      "status": 200,
+      "headersAt": 1793627451008,
+      "finishedAt": 1793627451008
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/channel",
+      "method": "GET",
+      "startedAt": 1793627451010,
+      "status": 200,
+      "headersAt": 1793627451103
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/lease",
+      "method": "POST",
+      "startedAt": 1793627451011,
+      "status": 200,
+      "headersAt": 1793627451117,
+      "finishedAt": 1793627451118
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/intents",
+      "method": "POST",
+      "startedAt": 1793627451118,
+      "status": 200,
+      "headersAt": 1793627451206,
+      "finishedAt": 1793627451206
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627451258,
+      "status": 200,
+      "headersAt": 1793627451337,
+      "finishedAt": 1793627451338
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/intents",
+      "method": "POST",
+      "startedAt": 1793627451830,
+      "status": 200,
+      "headersAt": 1793627451910,
+      "finishedAt": 1793627451911
+    },
+    {
+      "role": "till",
+      "path": "/api/members/lookup",
+      "method": "GET",
+      "startedAt": 1793627451956,
+      "status": 200,
+      "headersAt": 1793627452035,
+      "finishedAt": 1793627452036
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/intents",
+      "method": "POST",
+      "startedAt": 1793627452015,
+      "status": 200,
+      "headersAt": 1793627452112,
+      "finishedAt": 1793627452115
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/intents",
+      "method": "POST",
+      "startedAt": 1793627452174,
+      "status": 200,
+      "headersAt": 1793627452264,
+      "finishedAt": 1793627452264
+    },
+    {
+      "role": "till",
+      "path": "/api/me",
+      "method": "GET",
+      "startedAt": 1793627453635,
+      "status": 200,
+      "headersAt": 1793627453746,
+      "finishedAt": 1793627453746
+    },
+    {
+      "role": "till",
+      "path": "/api/me/permissions",
+      "method": "GET",
+      "startedAt": 1793627453746,
+      "status": 200,
+      "headersAt": 1793627453822,
+      "finishedAt": 1793627453823
+    },
+    {
+      "role": "till",
+      "path": "/api/branches",
+      "method": "GET",
+      "startedAt": 1793627453823,
+      "status": 200,
+      "headersAt": 1793627453901,
+      "finishedAt": 1793627453902
+    },
+    {
+      "role": "till",
+      "path": "/api/payment-methods",
+      "method": "GET",
+      "startedAt": 1793627453902,
+      "status": 200,
+      "headersAt": 1793627453991,
+      "finishedAt": 1793627453991
+    },
+    {
+      "role": "till",
+      "path": "/api/tiers",
+      "method": "GET",
+      "startedAt": 1793627453992,
+      "status": 200,
+      "headersAt": 1793627454072,
+      "finishedAt": 1793627454072
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+      "method": "GET",
+      "startedAt": 1793627453992,
+      "status": 200,
+      "headersAt": 1793627454079,
+      "finishedAt": 1793627454079
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/holidays",
+      "method": "GET",
+      "startedAt": 1793627453992,
+      "status": 200,
+      "headersAt": 1793627454078,
+      "finishedAt": 1793627454079
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/tax-config",
+      "method": "GET",
+      "startedAt": 1793627453992,
+      "status": 200,
+      "headersAt": 1793627454087,
+      "finishedAt": 1793627454087
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "method": "GET",
+      "startedAt": 1793627453992,
+      "status": 200,
+      "headersAt": 1793627454079,
+      "finishedAt": 1793627454079
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu",
+      "method": "GET",
+      "startedAt": 1793627454089,
+      "status": 200,
+      "headersAt": 1793627454177,
+      "finishedAt": 1793627454177
+    },
+    {
+      "role": "till",
+      "path": "/api/menu/discounts",
+      "method": "GET",
+      "startedAt": 1793627454089,
+      "status": 200,
+      "headersAt": 1793627454165,
+      "finishedAt": 1793627454165
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/sellable",
+      "method": "GET",
+      "startedAt": 1793627454178,
+      "status": 200,
+      "headersAt": 1793627454257,
+      "finishedAt": 1793627454257
+    },
+    {
+      "role": "till",
+      "path": "/api/me/stations",
+      "method": "GET",
+      "startedAt": 1793627454262,
+      "status": 200,
+      "headersAt": 1793627454342,
+      "finishedAt": 1793627454342
+    },
+    {
+      "role": "till",
+      "path": "/api/me/session/station",
+      "method": "PUT",
+      "startedAt": 1793627454343,
+      "status": 200,
+      "headersAt": 1793627454432,
+      "finishedAt": 1793627454432
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627454474,
+      "status": 200,
+      "headersAt": 1793627454581,
+      "finishedAt": 1793627454584
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/printers",
+      "method": "GET",
+      "startedAt": 1793627454474,
+      "status": 200,
+      "headersAt": 1793627454581,
+      "finishedAt": 1793627454584
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "method": "GET",
+      "startedAt": 1793627454474,
+      "status": 200,
+      "headersAt": 1793627454581,
+      "finishedAt": 1793627454583
+    },
+    {
+      "role": "till",
+      "path": "/api/me/station/link",
+      "method": "GET",
+      "startedAt": 1793627454474,
+      "status": 200,
+      "headersAt": 1793627454581,
+      "finishedAt": 1793627454584
+    },
+    {
+      "role": "till",
+      "path": "/api/ops/demo-reset",
+      "method": "GET",
+      "startedAt": 1793627454474,
+      "status": 200,
+      "headersAt": 1793627454581,
+      "finishedAt": 1793627454583
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627454474,
+      "status": 200,
+      "headersAt": 1793627454580,
+      "finishedAt": 1793627454582
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/channel",
+      "method": "GET",
+      "startedAt": 1793627454475,
+      "status": 200,
+      "headersAt": 1793627454581
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/channel",
+      "method": "GET",
+      "startedAt": 1793627454585,
+      "status": 200,
+      "headersAt": 1793627454681
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/lease",
+      "method": "POST",
+      "startedAt": 1793627454585,
+      "status": 200,
+      "headersAt": 1793627454682,
+      "finishedAt": 1793627454684
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/intents",
+      "method": "POST",
+      "startedAt": 1793627454685,
+      "status": 200,
+      "headersAt": 1793627454780,
+      "finishedAt": 1793627454784
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/intents",
+      "method": "POST",
+      "startedAt": 1793627454863,
+      "status": 200,
+      "headersAt": 1793627454947,
+      "finishedAt": 1793627454951
+    },
+    {
+      "role": "till",
+      "path": "/api/sales/quote",
+      "method": "POST",
+      "startedAt": 1793627455145,
+      "status": 200,
+      "headersAt": 1793627455238,
+      "finishedAt": 1793627455238
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/intents",
+      "method": "POST",
+      "startedAt": 1793627455306,
+      "status": 200,
+      "headersAt": 1793627455385,
+      "finishedAt": 1793627455385
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627456951,
+      "status": 200,
+      "headersAt": 1793627457024,
+      "finishedAt": 1793627457024
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627457601
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627458536,
+      "status": 200,
+      "headersAt": 1793627458615,
+      "finishedAt": 1793627458615
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627458613
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627459591,
+      "status": 200,
+      "headersAt": 1793627459680,
+      "finishedAt": 1793627459680
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627459622
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627460120,
+      "status": 200,
+      "headersAt": 1793627460195,
+      "finishedAt": 1793627460195
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627460633
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627461642
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627461698,
+      "status": 200,
+      "headersAt": 1793627461783,
+      "finishedAt": 1793627461783
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627462649
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627463299,
+      "status": 200,
+      "headersAt": 1793627463377,
+      "finishedAt": 1793627463377
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627463654
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627464660
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627464691,
+      "status": 200,
+      "headersAt": 1793627464775,
+      "finishedAt": 1793627464775
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627464893,
+      "status": 200,
+      "headersAt": 1793627464968,
+      "finishedAt": 1793627464968
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627465669
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627466473,
+      "status": 200,
+      "headersAt": 1793627466550,
+      "finishedAt": 1793627466550
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627466674
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627467688
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627468062,
+      "status": 200,
+      "headersAt": 1793627468132,
+      "finishedAt": 1793627468132
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627468695
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627469643,
+      "status": 200,
+      "headersAt": 1793627469715,
+      "finishedAt": 1793627469715
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627469704
+    },
+    {
+      "role": "till",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/lease/renew",
+      "method": "POST",
+      "startedAt": 1793627469715,
+      "status": 200,
+      "headersAt": 1793627469802,
+      "finishedAt": 1793627469802
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627469781,
+      "status": 200,
+      "headersAt": 1793627469861,
+      "finishedAt": 1793627469861
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627470717
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627471304,
+      "status": 200,
+      "headersAt": 1793627471390,
+      "finishedAt": 1793627471390
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627471722
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627472731
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627472898,
+      "status": 200,
+      "headersAt": 1793627472973,
+      "finishedAt": 1793627472973
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627473738
+    },
+    {
+      "role": "till",
+      "path": "/api/me/station/link",
+      "method": "GET",
+      "startedAt": 1793627474479,
+      "status": 200,
+      "headersAt": 1793627474559,
+      "finishedAt": 1793627474559
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627474479,
+      "status": 200,
+      "headersAt": 1793627474559,
+      "finishedAt": 1793627474559
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627474742
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627474865,
+      "status": 200,
+      "headersAt": 1793627474944,
+      "finishedAt": 1793627474944
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627475745
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627476065,
+      "status": 200,
+      "headersAt": 1793627476139,
+      "finishedAt": 1793627476139
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627476747
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627477642,
+      "status": 200,
+      "headersAt": 1793627477716,
+      "finishedAt": 1793627477717
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627477751,
+      "status": 200,
+      "headersAt": 1793627477836,
+      "finishedAt": 1793627477836
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627478838,
+      "status": 200,
+      "headersAt": 1793627478925,
+      "finishedAt": 1793627478925
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627479219,
+      "status": 200,
+      "headersAt": 1793627479294,
+      "finishedAt": 1793627479295
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627479940,
+      "status": 200,
+      "headersAt": 1793627480027,
+      "finishedAt": 1793627480027
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627479955,
+      "status": 200,
+      "headersAt": 1793627480037,
+      "finishedAt": 1793627480037
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627480801,
+      "status": 200,
+      "headersAt": 1793627480876,
+      "finishedAt": 1793627480876
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627481036,
+      "status": 200,
+      "headersAt": 1793627481114,
+      "finishedAt": 1793627481114
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627482121,
+      "status": 200,
+      "headersAt": 1793627482193,
+      "finishedAt": 1793627482193
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627482383,
+      "status": 200,
+      "headersAt": 1793627482453,
+      "finishedAt": 1793627482453
+    },
+    {
+      "role": "display",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/display/session",
+      "method": "GET",
+      "startedAt": 1793627483199,
+      "status": 401,
+      "headersAt": 1793627483270,
+      "finishedAt": 1793627483270
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627483960,
+      "status": 200,
+      "headersAt": 1793627484032,
+      "finishedAt": 1793627484032
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/printers",
+      "method": "GET",
+      "startedAt": 1793627484471,
+      "status": 200,
+      "headersAt": 1793627484549,
+      "finishedAt": 1793627484549
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627485045,
+      "status": 200,
+      "headersAt": 1793627485123,
+      "finishedAt": 1793627485123
+    },
+    {
+      "role": "display",
+      "path": "/api/display/pairing",
+      "method": "GET",
+      "startedAt": 1793627485275,
+      "status": 200,
+      "headersAt": 1793627485340,
+      "finishedAt": 1793627485340
+    },
+    {
+      "role": "display",
+      "path": "/api/display/pairing",
+      "method": "POST",
+      "startedAt": 1793627485341,
+      "status": 200,
+      "headersAt": 1793627485419,
+      "finishedAt": 1793627485419
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "method": "GET",
+      "startedAt": 1793627485543,
+      "status": 200,
+      "headersAt": 1793627485639,
+      "finishedAt": 1793627485639
+    },
+    {
+      "role": "display",
+      "path": "/api/display/pairing/expire",
+      "method": "POST",
+      "startedAt": 1793627485732,
+      "status": 200,
+      "headersAt": 1793627485801,
+      "finishedAt": 1793627485801
+    },
+    {
+      "role": "till",
+      "path": "/api/me",
+      "method": "GET",
+      "startedAt": 1793627486611,
+      "status": 200,
+      "headersAt": 1793627486684,
+      "finishedAt": 1793627486684
+    },
+    {
+      "role": "till",
+      "path": "/api/me/permissions",
+      "method": "GET",
+      "startedAt": 1793627486684,
+      "status": 200,
+      "headersAt": 1793627486758,
+      "finishedAt": 1793627486758
+    },
+    {
+      "role": "till",
+      "path": "/api/branches",
+      "method": "GET",
+      "startedAt": 1793627486758,
+      "status": 200,
+      "headersAt": 1793627486831,
+      "finishedAt": 1793627486831
+    },
+    {
+      "role": "till",
+      "path": "/api/payment-methods",
+      "method": "GET",
+      "startedAt": 1793627486832,
+      "status": 200,
+      "headersAt": 1793627486916,
+      "finishedAt": 1793627486917
+    },
+    {
+      "role": "till",
+      "path": "/api/tiers",
+      "method": "GET",
+      "startedAt": 1793627486919,
+      "status": 200,
+      "headersAt": 1793627487000,
+      "finishedAt": 1793627487000
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+      "method": "GET",
+      "startedAt": 1793627486919,
+      "status": 200,
+      "headersAt": 1793627487031,
+      "finishedAt": 1793627487031
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/holidays",
+      "method": "GET",
+      "startedAt": 1793627486920,
+      "status": 200,
+      "headersAt": 1793627487045,
+      "finishedAt": 1793627487046
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/tax-config",
+      "method": "GET",
+      "startedAt": 1793627486920,
+      "status": 200,
+      "headersAt": 1793627487046,
+      "finishedAt": 1793627487046
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "method": "GET",
+      "startedAt": 1793627486920,
+      "status": 200,
+      "headersAt": 1793627487033,
+      "finishedAt": 1793627487033
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu",
+      "method": "GET",
+      "startedAt": 1793627487047,
+      "status": 200,
+      "headersAt": 1793627487254,
+      "finishedAt": 1793627487256
+    },
+    {
+      "role": "till",
+      "path": "/api/menu/discounts",
+      "method": "GET",
+      "startedAt": 1793627487048,
+      "status": 200,
+      "headersAt": 1793627487161,
+      "finishedAt": 1793627487162
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/sellable",
+      "method": "GET",
+      "startedAt": 1793627487256,
+      "status": 200,
+      "headersAt": 1793627487357,
+      "finishedAt": 1793627487357
+    },
+    {
+      "role": "till",
+      "path": "/api/me/stations",
+      "method": "GET",
+      "startedAt": 1793627487362,
+      "status": 200,
+      "headersAt": 1793627487448,
+      "finishedAt": 1793627487448
+    },
+    {
+      "role": "till",
+      "path": "/api/me/session/station",
+      "method": "PUT",
+      "startedAt": 1793627487449,
+      "status": 200,
+      "headersAt": 1793627487536,
+      "finishedAt": 1793627487536
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "method": "GET",
+      "startedAt": 1793627487554,
+      "status": 200,
+      "headersAt": 1793627487641,
+      "finishedAt": 1793627487641
+    },
+    {
+      "role": "till",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/printers",
+      "method": "GET",
+      "startedAt": 1793627487554,
+      "status": 200,
+      "headersAt": 1793627487635,
+      "finishedAt": 1793627487635
+    },
+    {
+      "role": "till",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "method": "GET",
+      "startedAt": 1793627487555,
+      "status": 200,
+      "headersAt": 1793627487635,
+      "finishedAt": 1793627487635
+    },
+    {
+      "role": "till",
+      "path": "/api/me/station/link",
+      "method": "GET",
+      "startedAt": 1793627487555,
+      "status": 200,
+      "headersAt": 1793627487634,
+      "finishedAt": 1793627487635
+    },
+    {
+      "role": "till",
+      "path": "/api/analytics/summary",
+      "method": "GET",
+      "startedAt": 1793627487555,
+      "status": 200,
+      "headersAt": 1793627487641,
+      "finishedAt": 1793627487641
+    },
+    {
+      "role": "till",
+      "path": "/api/checkin/today",
+      "method": "GET",
+      "startedAt": 1793627487646,
+      "status": 200,
+      "headersAt": 1793627487716,
+      "finishedAt": 1793627487716
+    }
+  ],
+  "displayName": "ZZ TEST SCRUM-710 display 1793627430353",
+  "phoneToTill": {
+    "clickAt": 1793627451815,
+    "snapshotAt": 1793627451901,
+    "milliseconds": 86,
+    "transport": "stream",
+    "visibleMilliseconds": 298
+  },
+  "tillToDisplay": {
+    "clickAt": 1793627455073,
+    "snapshotAt": 1793627455384,
+    "milliseconds": 311,
+    "transport": "stream",
+    "visibleMilliseconds": 325
+  },
+  "revokedAt": "2026-11-02T13:51:23.715Z",
+  "displayId": "01a19c86-ebb1-74eb-9eef-20208fbf89c0",
+  "completedAt": "2026-11-02T13:51:25.825Z",
+  "cleanedAt": "2026-11-02T13:51:28.859Z",
+  "deploymentsStable": true
+}

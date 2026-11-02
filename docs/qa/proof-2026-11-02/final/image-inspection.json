@@ -1,0 +1,17 @@
+{
+  "inspectedAt": "2026-11-02T14:03:01.492389+00:00",
+  "source": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+  "images": [
+    {
+      "proof": "docs/qa/proof-2026-11-02/final/s718-staging-proof.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-718/s718-final-staging-proof.png",
+      "sha256": "e3f65a596eb3379faacca433ff409d6f1139fd55149a7e14a34b97f18d032276"
+    },
+    {
+      "proof": "docs/qa/proof-2026-11-02/final/s710-staging-proof.png",
+      "attachment": "docs/qa/jira-comments/attachments/SCRUM-710/s710-final-staging-proof.png",
+      "sha256": "0521b1b0ed4310820dc9bd01d4d394fff6d1d23cff346a9b62482ba3a1891120"
+    }
+  ],
+  "observed": "Both combined cards opened and checked: full live commits and post-deploy timestamps; timing tables match raw receipts; native cash screens and 10/20-second display states are legible; credential fields are masked; no benefit QR or pairing code is visible."
+}

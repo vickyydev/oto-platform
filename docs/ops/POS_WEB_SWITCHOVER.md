@@ -1,9 +1,10 @@
 # POS web service: staging proof and owner switch-over
 
-**Current hold:** the f8c4d429 refresh measured 540 ms to the visible display,
-over the 500 ms gate. Both tickets remain Testing pending the narrow quote
-scheduling fix and its fresh proof. Earlier passing measurements below remain
-historical evidence. The owner must not switch devices on this acceptance.
+**Final staging measurements passed:** source `796a3724505ee9cd46f93584c975971ad50a3e4d`,
+CI 41452442131. The final [acceptance report](../qa/proof-2026-11-02/final/README.md)
+contains the current live commits and proof. The earlier 540 ms miss is retained;
+the 50 ms item-quote schedule and three fresh display runs resolved it. Device
+switch-over remains the owner's separate step.
 
 SCRUM-718, 2 November 2026. **The owner approved one staging Starter web service
 beside the existing POS static site. No staff, iPad or Pi address is switched by
@@ -144,53 +145,47 @@ database rollback or a replay of a sale. Production has its own separate approva
 The verified service and results are recorded below. The owner checklist above
 is the next operation; this unit does not execute it.
 
-## Created staging service
+## Created staging service and final proof
 
-Verified on 2 November 2026. The service is live and staging timing/safety
-acceptance passed. No park device has switched addresses.
-
-| Item | Read-back |
+| Item | Verified value |
 | --- | --- |
 | New test address | https://oto-pos-web-staging.onrender.com |
 | Service ID | srv-dbk7qu8n74is73bm894g |
-| Live source | c2fdd28fdc9e944d058af62dec1347e5f2b7a56f |
-| Source CI | 41439428324, all six jobs passed |
+| POS live source | 796a3724505ee9cd46f93584c975971ad50a3e4d |
+| API live source | 796a3724505ee9cd46f93584c975971ad50a3e4d |
+| Source CI | 41452442131, all six jobs successful |
 | Workspace / region / plan | API owner, Singapore, Starter, one instance |
 | Project environment | evm-danh1brtqb8s73bt5pk0 |
-| Deployment / edge cache | checksPass; no-cache |
-| Build filter | All paths in step 3 above were read back exactly |
-| Private network | Private DNS and API health 200 from the new service job job-dbk7sch42hec73et4n8g |
-| Existing API configuration | ALLOWED_ORIGINS only; 56 names before and after, all other values unchanged |
+| Deploy / edge cache | checksPass; no-cache |
+| Build filter | Step 3 paths read back exactly; three relevant source builds, no documentation rebuild |
+| Private network | Private DNS and health 200 from service job job-dbk7sch42hec73et4n8g |
+| Existing API settings | Only ALLOWED_ORIGINS extended; 56 names preserved; SCRUM-717 later added BOX_AGENT_TEST_SLOT, bringing the count to 57 |
 
-No address has been switched on a park device. The manual service settings match
-the commented render.yaml block. The API same-commit deployment is
-dep-dbk7sns9v7es73bvie50, live at 12:16:46 UTC on the source above.
-Native sign-in confirmed the new origin is active.
+Only item-counter quote scheduling changed after the first proof, from 200 to
+50 ms. The current platform price is still required before displaying money;
+pending, stale reply, lock/commit and offline rules remain. The ticket-till
+debounce stays 200 ms. No protected display/bridge source changed.
 
-## Measured acceptance and stop point
+Final warm browser direct/old/new p50: 61.8/480.4/64.3 ms;
+p95: 64.8/795.8/82.8 ms. Added p50/p95:
+2.5/18.0 ms. Every first/warm curl/browser percentile
+comparison passed the 50 ms target; raw individual outliers remain visible.
+Native cash journey: old 9023 ms/39 calls; new
+3351 ms/39 calls; identical mutation counts and one finalise
+each. Three visible till-to-display runs: 325, 338, 301 ms; customer-to-till:
+298, 268, 257 ms. Each is below 500 ms without an added warm-up wait.
 
-Bangkok, 30 per path/tool/mode, 360 calls, all 200. Warm browser direct/old/new
-p50: 57.7/460.0/61.3 ms; p95: 62.4/518.1/65.4 ms. Matching-percentile added
-latency is 3.6/3.0 ms; all four tool/mode comparisons are below 50 ms. Individual
-internet outliers remain in the raw data; this is not an every-request maximum.
-New streams opened 30/30 in both tools; old streams 0/30 within three seconds.
-The native cash journey took 9.057 seconds old versus 3.327 seconds new, with
-39 calls and one finalise on each path. Visible display directions measured
-448 ms and 242 ms on source c2fdd28fdc9e944d058af62dec1347e5f2b7a56f,
-including SCRUM-720's polling changes.
+Caller-address, cookie/Origin, installed-shell/network-failure, scan and static
+controls pass. The 32-stream/559-read workload measured peak CPU
+0.0105/0.5 cores and memory
+141.6/512.0 MiB at 30-second resolution.
+No larger plan is supported by this measured workload. All test streams closed,
+pairings/leases were removed and sessions signed out. Seven exact synthetic cash
+audit receipts remain. There is no physical Pi/offline-unlock or saturation claim.
 
-The real caller address reaches the API without changing TRUST_PROXY_ADDRS.
-Forged values do not create new address buckets. Cookie/Origin controls, the
-installed offline shell, native scans, static caching and traversal checks pass.
-Under 32 streams plus 562 reads in 150 seconds, sampled peak memory was
-114.4 MiB of 512 MiB and CPU 0.0062 of 0.5 cores. No larger plan is justified
-by this measured workload. All 32 streams closed; test displays, leases and
-sessions were cleaned up. The three synthetic cash receipts remain as audit facts.
-
-Full methods, limits, raw receipts and inspected proof cards are in
-[the result report](../qa/proof-2026-11-02/s718-results.md).
-The proof is an isolated virtual setup, not a physical Pi/offline-unlock test.
-The current park device addresses, launcher handoff destination and old static
-site settings remain unchanged. Stop here; the owner chooses if and when to use
-the forward/rollback checklist. The new service need not be deleted or suspended
-to return a test browser to the old address.
+See [the final report](../qa/proof-2026-11-02/final/README.md) for timestamps,
+per-service commits, all p50/p95 values, limits and inspected evidence. The old
+static site, launcher destination and park-device addresses remain unchanged.
+Stop here: the owner chooses when to execute the forward/rollback checklist.
+Returning a test browser to the old address does not require deleting or
+suspending the new service.

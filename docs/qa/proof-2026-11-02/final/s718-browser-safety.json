@@ -1,0 +1,35 @@
+{
+  "unit": "SCRUM-718",
+  "startedAt": "2026-11-02T13:57:17.042Z",
+  "serviceId": "srv-dbk7qu8n74is73bm894g",
+  "origin": "https://oto-pos-web-staging.onrender.com",
+  "checks": [
+    {
+      "name": "installed worker controls the shell and caches no API",
+      "passed": true,
+      "shellEntries": 9
+    },
+    {
+      "name": "offline /today opens from the installed shell; API is a genuine network failure",
+      "passed": true
+    },
+    {
+      "name": "API resumes online",
+      "passed": true
+    },
+    {
+      "name": "the native till hears one synthetic scan on its EventSource",
+      "passed": true,
+      "transport": "stream",
+      "milliseconds": 90,
+      "outcome": "unhandled"
+    },
+    {
+      "name": "foreign Origin refused, no CORS, current login preserved",
+      "passed": true
+    }
+  ],
+  "signOutStatus": 200,
+  "afterSignOutStatus": 401,
+  "finishedAt": "2026-11-02T13:57:21.205Z"
+}

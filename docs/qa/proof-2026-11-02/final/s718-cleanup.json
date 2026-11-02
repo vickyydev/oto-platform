@@ -1,0 +1,78 @@
+{
+  "unit": "SCRUM-718",
+  "source": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+  "at": "2026-11-02T14:00:02.329Z",
+  "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+  "boxId": "01a19ba8-d8d5-76cc-923b-aca24002ab7f",
+  "checks": [
+    {
+      "name": "no remaining test lease",
+      "base": "/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "passed": true
+    },
+    {
+      "name": "no remaining test lease",
+      "base": "/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "passed": true
+    },
+    {
+      "name": "exact synthetic cash audit facts retained; no financial record deleted or replayed",
+      "passed": true
+    }
+  ],
+  "retainedSales": [
+    {
+      "id": "01a19bab-1ff3-7bfc-b4e3-451cc16bdf1a",
+      "status": "finalised",
+      "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "grossSatang": 9000,
+      "receiptNumber": "Z718-000001"
+    },
+    {
+      "id": "01a19c36-e3f7-75bc-9842-f4ae6e830524",
+      "status": "finalised",
+      "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "grossSatang": 9000,
+      "receiptNumber": "Z718-000002"
+    },
+    {
+      "id": "01a19c37-037b-79d4-b0d8-55f7a9fb9b3a",
+      "status": "finalised",
+      "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "grossSatang": 9000,
+      "receiptNumber": "Z718-000003"
+    },
+    {
+      "id": "01a19c57-1f7f-7b08-9496-aa6cbbf201ee",
+      "status": "finalised",
+      "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "grossSatang": 9000,
+      "receiptNumber": "Z718-000004"
+    },
+    {
+      "id": "01a19c57-40ec-763f-8d65-44e18249a261",
+      "status": "finalised",
+      "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "grossSatang": 9000,
+      "receiptNumber": "Z718-000005"
+    },
+    {
+      "id": "01a19c8c-a66f-72f3-a0dd-64d2a85a0877",
+      "status": "finalised",
+      "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "grossSatang": 9000,
+      "receiptNumber": "Z718-000006"
+    },
+    {
+      "id": "01a19c8c-cb32-7bb5-9c54-3ff6c1ff9a42",
+      "status": "finalised",
+      "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+      "grossSatang": 9000,
+      "receiptNumber": "Z718-000007"
+    }
+  ],
+  "activeDisplays": 0,
+  "signOutStatus": 200,
+  "afterSignOutStatus": 401,
+  "finishedAt": "2026-11-02T14:00:04.144Z"
+}

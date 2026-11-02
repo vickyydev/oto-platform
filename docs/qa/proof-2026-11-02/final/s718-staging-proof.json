@@ -1,0 +1,711 @@
+{
+  "unit": "SCRUM-718",
+  "source": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+  "forwarderSource": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+  "quoteSchedulingSource": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41452442131",
+  "ciJobs": [
+    {
+      "name": "api-tests (2)",
+      "conclusion": "success"
+    },
+    {
+      "name": "ci",
+      "conclusion": "success"
+    },
+    {
+      "name": "pos-tests",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (3)",
+      "conclusion": "success"
+    },
+    {
+      "name": "oto-app",
+      "conclusion": "success"
+    },
+    {
+      "name": "api-tests (1)",
+      "conclusion": "success"
+    }
+  ],
+  "collectedAt": "2026-11-02T14:01:20.321Z",
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "deployId": "dep-dbk986bm8hqs738k1tgg",
+      "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+      "finishedAt": "2026-11-02T13:48:30.723553Z",
+      "runtimeTreeMatchesSource": true
+    },
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbk986bm8hqs738k1shg",
+      "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+      "finishedAt": "2026-11-02T13:49:22.62076Z",
+      "runtimeTreeMatchesSource": true
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "deployId": "dep-dbk986jm8hqs738k1tkg",
+      "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+      "finishedAt": "2026-11-02T13:46:48.368302Z",
+      "runtimeTreeMatchesSource": true
+    }
+  ],
+  "newOrigin": "https://oto-pos-web-staging.onrender.com",
+  "latencyDefinition": "New-path p50 and p95 minus direct-API p50 and p95 in the same interleaved window, matching the pre-change local overhead calculation. This is a percentile comparison, not a maximum bound for every internet request.",
+  "latency": [
+    {
+      "tool": "curl",
+      "mode": "first",
+      "n": 30,
+      "directP50": 126.78900000000002,
+      "directP95": 204.503,
+      "oldP50": 559.387,
+      "oldP95": 628.4110000000001,
+      "newP50": 123.984,
+      "newP95": 190.43099999999998,
+      "addedP50": -2.805000000000021,
+      "addedP95": -14.072000000000003
+    },
+    {
+      "tool": "curl",
+      "mode": "warm",
+      "n": 30,
+      "directP50": 59.712,
+      "directP95": 69.476,
+      "oldP50": 482.736,
+      "oldP95": 541.231,
+      "newP50": 61.019,
+      "newP95": 73.025,
+      "addedP50": 1.306999999999995,
+      "addedP95": 3.5490000000000066
+    },
+    {
+      "tool": "browser",
+      "mode": "first",
+      "n": 30,
+      "directP50": 140.11419999999634,
+      "directP95": 187.72639999999956,
+      "oldP50": 567.0334000000003,
+      "oldP95": 907.2676000000065,
+      "newP50": 137.0240000000049,
+      "newP95": 212.8926000000065,
+      "addedP50": -3.090199999991455,
+      "addedP95": 25.16620000000694
+    },
+    {
+      "tool": "browser",
+      "mode": "warm",
+      "n": 30,
+      "directP50": 61.80000001192093,
+      "directP95": 64.80000001192093,
+      "oldP50": 480.39999997615814,
+      "oldP95": 795.7999999523163,
+      "newP50": 64.30000001192093,
+      "newP95": 82.80000001192093,
+      "addedP50": 2.5,
+      "addedP95": 18
+    }
+  ],
+  "pathWindow": {
+    "from": "2026-11-02T13:53:19.723Z",
+    "to": "2026-11-02T13:55:16.713Z"
+  },
+  "streamWindow": {
+    "from": "2026-11-02T13:55:17.270Z",
+    "to": "2026-11-02T13:56:53.077Z"
+  },
+  "streamOpening": [
+    {
+      "path": "direct-api",
+      "tool": "curl",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 153.631,
+      "p95Ms": 198.52100000000002
+    },
+    {
+      "path": "direct-api",
+      "tool": "browser",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 81.69999998807907,
+      "p95Ms": 94
+    },
+    {
+      "path": "old-pos",
+      "tool": "curl",
+      "n": 30,
+      "opened": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "path": "old-pos",
+      "tool": "browser",
+      "n": 30,
+      "opened": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "path": "new-pos",
+      "tool": "curl",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 155.842,
+      "p95Ms": 194.293
+    },
+    {
+      "path": "new-pos",
+      "tool": "browser",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 82.19999998807907,
+      "p95Ms": 99.30000001192093
+    }
+  ],
+  "journeys": {
+    "oldMs": 9023,
+    "newMs": 3351,
+    "oldCalls": 39,
+    "newCalls": 39,
+    "oldFinalise": 1,
+    "newFinalise": 1,
+    "oldWrites": {
+      "POST /api/auth/sign-in": 1,
+      "POST /api/box/v1/station/:id/intents": 1,
+      "POST /api/sales": 1,
+      "POST /api/sales/:id/finalise": 1,
+      "POST /api/sales/quote": 1,
+      "PUT /api/me/session/station": 1
+    },
+    "newWrites": {
+      "POST /api/auth/sign-in": 1,
+      "POST /api/box/v1/station/:id/intents": 1,
+      "POST /api/sales": 1,
+      "POST /api/sales/:id/finalise": 1,
+      "POST /api/sales/quote": 1,
+      "PUT /api/me/session/station": 1
+    },
+    "oldAllCalls": {
+      "GET /api/branches": 1,
+      "GET /api/branches/:id/holidays": 1,
+      "GET /api/branches/:id/menu": 1,
+      "GET /api/branches/:id/occupancy": 2,
+      "GET /api/branches/:id/pricing-mode": 3,
+      "GET /api/branches/:id/stock/sellable": 2,
+      "GET /api/branches/:id/tax-config": 1,
+      "GET /api/branches/:id/ticket-packages": 1,
+      "GET /api/checkin/board": 1,
+      "GET /api/checkin/config": 1,
+      "GET /api/events/passes": 1,
+      "GET /api/kiosk-desk": 1,
+      "GET /api/me": 1,
+      "GET /api/me/permissions": 1,
+      "GET /api/me/station/link": 2,
+      "GET /api/me/stations": 1,
+      "GET /api/menu/discounts": 1,
+      "GET /api/ops/demo-reset": 1,
+      "GET /api/payment-methods": 1,
+      "GET /api/sales": 1,
+      "GET /api/sales/:id": 1,
+      "GET /api/stations/:id/channel": 2,
+      "GET /api/stations/:id/displays": 3,
+      "GET /api/stations/:id/printers": 2,
+      "GET /api/tiers": 1,
+      "POST /api/auth/sign-in": 1,
+      "POST /api/box/v1/station/:id/intents": 1,
+      "POST /api/sales": 1,
+      "POST /api/sales/:id/finalise": 1,
+      "POST /api/sales/quote": 1,
+      "PUT /api/me/session/station": 1
+    },
+    "newAllCalls": {
+      "GET /api/branches": 1,
+      "GET /api/branches/:id/holidays": 1,
+      "GET /api/branches/:id/menu": 1,
+      "GET /api/branches/:id/occupancy": 2,
+      "GET /api/branches/:id/pricing-mode": 3,
+      "GET /api/branches/:id/stock/sellable": 2,
+      "GET /api/branches/:id/tax-config": 1,
+      "GET /api/branches/:id/ticket-packages": 1,
+      "GET /api/checkin/board": 1,
+      "GET /api/checkin/config": 1,
+      "GET /api/events/passes": 1,
+      "GET /api/kiosk-desk": 1,
+      "GET /api/me": 1,
+      "GET /api/me/permissions": 1,
+      "GET /api/me/station/link": 2,
+      "GET /api/me/stations": 1,
+      "GET /api/menu/discounts": 1,
+      "GET /api/ops/demo-reset": 1,
+      "GET /api/payment-methods": 1,
+      "GET /api/sales": 1,
+      "GET /api/sales/:id": 1,
+      "GET /api/stations/:id/channel": 2,
+      "GET /api/stations/:id/displays": 2,
+      "GET /api/stations/:id/printers": 2,
+      "GET /api/tiers": 1,
+      "POST /api/auth/sign-in": 1,
+      "POST /api/box/v1/station/:id/intents": 1,
+      "POST /api/sales": 1,
+      "POST /api/sales/:id/finalise": 1,
+      "POST /api/sales/quote": 1,
+      "PUT /api/me/session/station": 1
+    },
+    "firstPage": {
+      "old": {
+        "elapsedMs": 1724,
+        "domInteractiveMs": 94.90000003576279,
+        "loadEventEndMs": 771.3000000119209,
+        "assetCount": 3,
+        "assetTransferBytes": 697809,
+        "assetEncodedBytes": 745165
+      },
+      "new": {
+        "elapsedMs": 636,
+        "domInteractiveMs": 129.69999998807907,
+        "loadEventEndMs": 425.69999998807907,
+        "assetCount": 2,
+        "assetTransferBytes": 581284,
+        "assetEncodedBytes": 580684
+      }
+    },
+    "oldReceipt": "Z718-000006",
+    "newReceipt": "Z718-000007"
+  },
+  "displayRuns": [
+    {
+      "run": 1,
+      "source": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+      "pollingSource": "2513e1fb385190c38f494d81006cfc1e44302f79",
+      "startedAt": "2026-11-02T13:50:28.575Z",
+      "completedAt": "2026-11-02T13:51:25.825Z",
+      "deployments": [
+        {
+          "service": "oto-pos-web-staging",
+          "serviceId": "srv-dbk7qu8n74is73bm894g",
+          "id": "dep-dbk986bm8hqs738k1tgg",
+          "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+          "finishedAt": "2026-11-02T13:48:30.723553Z",
+          "runtimeTreeMatchesSource": true
+        },
+        {
+          "service": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbk986bm8hqs738k1shg",
+          "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+          "finishedAt": "2026-11-02T13:49:22.62076Z",
+          "runtimeTreeMatchesSource": true
+        }
+      ],
+      "tillToDisplay": {
+        "clickAt": 1793627455073,
+        "snapshotAt": 1793627455384,
+        "milliseconds": 311,
+        "transport": "stream",
+        "visibleMilliseconds": 325
+      },
+      "phoneToTill": {
+        "clickAt": 1793627451815,
+        "snapshotAt": 1793627451901,
+        "milliseconds": 86,
+        "transport": "stream",
+        "visibleMilliseconds": 298
+      },
+      "checks": [
+        {
+          "name": "10-second grace",
+          "at": "2026-11-02T13:51:07.408Z",
+          "elapsedMs": 10670,
+          "passed": true
+        },
+        {
+          "name": "20-second paused screen hides total",
+          "at": "2026-11-02T13:51:17.405Z",
+          "elapsedMs": 20667,
+          "passed": true
+        },
+        {
+          "name": "automatic recovery",
+          "at": "2026-11-02T13:51:18.896Z",
+          "passed": true
+        },
+        {
+          "name": "revoked credential returns display to pairing",
+          "at": "2026-11-02T13:51:24.380Z",
+          "passed": true
+        },
+        {
+          "name": "replacement unpaired code expired",
+          "at": "2026-11-02T13:51:25.825Z",
+          "passed": true
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-console-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-launcher-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-pos-web-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        }
+      ],
+      "deploymentsStable": true
+    },
+    {
+      "run": 2,
+      "source": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+      "pollingSource": "2513e1fb385190c38f494d81006cfc1e44302f79",
+      "startedAt": "2026-11-02T13:51:32.061Z",
+      "completedAt": "2026-11-02T13:52:21.005Z",
+      "deployments": [
+        {
+          "service": "oto-pos-web-staging",
+          "serviceId": "srv-dbk7qu8n74is73bm894g",
+          "id": "dep-dbk986bm8hqs738k1tgg",
+          "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+          "finishedAt": "2026-11-02T13:48:30.723553Z",
+          "runtimeTreeMatchesSource": true
+        },
+        {
+          "service": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbk986bm8hqs738k1shg",
+          "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+          "finishedAt": "2026-11-02T13:49:22.62076Z",
+          "runtimeTreeMatchesSource": true
+        }
+      ],
+      "tillToDisplay": {
+        "clickAt": 1793627511210,
+        "snapshotAt": 1793627511535,
+        "milliseconds": 325,
+        "transport": "stream",
+        "visibleMilliseconds": 338
+      },
+      "phoneToTill": {
+        "clickAt": 1793627508141,
+        "snapshotAt": 1793627508220,
+        "milliseconds": 79,
+        "transport": "stream",
+        "visibleMilliseconds": 268
+      },
+      "checks": [
+        {
+          "name": "10-second grace",
+          "at": "2026-11-02T13:52:03.553Z",
+          "elapsedMs": 10679,
+          "passed": true
+        },
+        {
+          "name": "20-second paused screen hides total",
+          "at": "2026-11-02T13:52:13.552Z",
+          "elapsedMs": 20678,
+          "passed": true
+        },
+        {
+          "name": "automatic recovery",
+          "at": "2026-11-02T13:52:15.046Z",
+          "passed": true
+        },
+        {
+          "name": "revoked credential returns display to pairing",
+          "at": "2026-11-02T13:52:20.071Z",
+          "passed": true
+        },
+        {
+          "name": "replacement unpaired code expired",
+          "at": "2026-11-02T13:52:21.005Z",
+          "passed": true
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-console-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-launcher-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-pos-web-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        }
+      ],
+      "deploymentsStable": true
+    },
+    {
+      "run": 3,
+      "source": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+      "pollingSource": "2513e1fb385190c38f494d81006cfc1e44302f79",
+      "startedAt": "2026-11-02T13:52:27.021Z",
+      "completedAt": "2026-11-02T13:53:15.199Z",
+      "deployments": [
+        {
+          "service": "oto-pos-web-staging",
+          "serviceId": "srv-dbk7qu8n74is73bm894g",
+          "id": "dep-dbk986bm8hqs738k1tgg",
+          "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+          "finishedAt": "2026-11-02T13:48:30.723553Z",
+          "runtimeTreeMatchesSource": true
+        },
+        {
+          "service": "oto-api-staging",
+          "serviceId": "srv-danh2ljtqb8s73bt9en0",
+          "id": "dep-dbk986bm8hqs738k1shg",
+          "sha": "796a3724505ee9cd46f93584c975971ad50a3e4d",
+          "finishedAt": "2026-11-02T13:49:22.62076Z",
+          "runtimeTreeMatchesSource": true
+        }
+      ],
+      "tillToDisplay": {
+        "clickAt": 1793627565055,
+        "snapshotAt": 1793627565342,
+        "milliseconds": 287,
+        "transport": "stream",
+        "visibleMilliseconds": 301
+      },
+      "phoneToTill": {
+        "clickAt": 1793627562046,
+        "snapshotAt": 1793627562125,
+        "milliseconds": 79,
+        "transport": "stream",
+        "visibleMilliseconds": 257
+      },
+      "checks": [
+        {
+          "name": "10-second grace",
+          "at": "2026-11-02T13:52:57.348Z",
+          "elapsedMs": 10657,
+          "passed": true
+        },
+        {
+          "name": "20-second paused screen hides total",
+          "at": "2026-11-02T13:53:07.354Z",
+          "elapsedMs": 20663,
+          "passed": true
+        },
+        {
+          "name": "automatic recovery",
+          "at": "2026-11-02T13:53:09.324Z",
+          "passed": true
+        },
+        {
+          "name": "revoked credential returns display to pairing",
+          "at": "2026-11-02T13:53:14.261Z",
+          "passed": true
+        },
+        {
+          "name": "replacement unpaired code expired",
+          "at": "2026-11-02T13:53:15.199Z",
+          "passed": true
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-console-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-launcher-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        },
+        {
+          "name": "session cleanup",
+          "origin": "https://oto-pos-web-staging.onrender.com",
+          "signedOut": 200,
+          "after": 401
+        }
+      ],
+      "deploymentsStable": true
+    }
+  ],
+  "capacity": {
+    "concurrency": 32,
+    "readCalls": 559,
+    "opened": 32,
+    "closed": 32,
+    "allOpenAt": "2026-11-02T13:57:31.090Z",
+    "loadEndedAt": "2026-11-02T14:00:01.311Z",
+    "measurements": {
+      "cpu": {
+        "unit": "cpu",
+        "samples": 6,
+        "max": 0.010460533,
+        "min": 0.0033711668
+      },
+      "cpu-limit": {
+        "unit": "cpu",
+        "samples": 6,
+        "max": 0.5,
+        "min": 0.5
+      },
+      "memory": {
+        "unit": "bytes",
+        "samples": 6,
+        "max": 148525060,
+        "min": 147177470
+      },
+      "memory-limit": {
+        "unit": "bytes",
+        "samples": 6,
+        "max": 536870900,
+        "min": 536870900
+      },
+      "cpuHeadroomPercent": 97.9078934,
+      "memoryHeadroomPercent": 72.33505112681652
+    }
+  },
+  "cleanup": {
+    "activeDisplays": 0,
+    "leaseChecks": [
+      {
+        "name": "no remaining test lease",
+        "base": "/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+        "passed": true
+      },
+      {
+        "name": "no remaining test lease",
+        "base": "/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+        "passed": true
+      }
+    ],
+    "retainedReceipts": [
+      "Z718-000001",
+      "Z718-000002",
+      "Z718-000003",
+      "Z718-000004",
+      "Z718-000005",
+      "Z718-000006",
+      "Z718-000007"
+    ],
+    "signOut": 200,
+    "afterSignOut": 401
+  },
+  "oldAvailability": {
+    "measuredSource": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+    "startedAt": "2026-11-02T11:17:59.400Z",
+    "finishedAt": "2026-11-02T12:18:42.490Z",
+    "samples": 466,
+    "failures": 0
+  },
+  "environment": {
+    "namesTouched": [
+      "ALLOWED_ORIGINS"
+    ],
+    "beforeNameCount": 56,
+    "afterNameCount": 56,
+    "allOtherValuesPreserved": true,
+    "currentNameCount": 57,
+    "additionalKeyOwnedByOtherLane": "BOX_AGENT_TEST_SLOT (SCRUM-717)",
+    "ownOriginAndOtherAuthSettingsUnchanged": true
+  },
+  "address": {
+    "measuredSource": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+    "realClientAddressConfirmed": true,
+    "forgedBuckets": 0,
+    "otherBuckets": 0,
+    "cookie": {
+      "hostOnly": true,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax",
+      "separateSetCookieCount": 1,
+      "names": [
+        "oto_session"
+      ]
+    },
+    "note": "Retained prior measured caller/cookie proof: those code paths and relevant environment fingerprints are unchanged. Native login, cookie attributes and installed-app checks were repeated on the final release."
+  },
+  "safetyChecks": [
+    {
+      "name": "installed worker controls the shell and caches no API",
+      "passed": true,
+      "shellEntries": 9
+    },
+    {
+      "name": "offline /today opens from the installed shell; API is a genuine network failure",
+      "passed": true
+    },
+    {
+      "name": "API resumes online",
+      "passed": true
+    },
+    {
+      "name": "the native till hears one synthetic scan on its EventSource",
+      "passed": true,
+      "transport": "stream",
+      "milliseconds": 90,
+      "outcome": "unhandled"
+    },
+    {
+      "name": "foreign Origin refused, no CORS, current login preserved",
+      "passed": true
+    },
+    {
+      "name": "missing hashed asset is 404, not the app shell",
+      "passed": true,
+      "status": 404
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/%2e%2e/%2e%2e/ZZ-TEST-private-probe",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/.ZZ-TEST-hidden-probe",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/assets/%5c..%5cZZ-TEST-private-probe",
+      "status": 400,
+      "passed": true
+    }
+  ],
+  "limits": [
+    "Bangkok measurements are this machine and these windows. Individual internet calls varied; raw samples retain all outliers.",
+    "Display timings are three independent native harness runs, not a statistical latency distribution or a physical-Pi test. No added stream warm-up wait.",
+    "CPU and memory are Render samples at 30-second resolution under 32 streams and 559 reads in 150 seconds, not a saturation test.",
+    "The park Pi and offline box unlock were not exercised. The unchanged lane decision and upstream-down behavior were pinned locally; the deployed installed shell and genuine browser network failure were verified. Staging lacks the box offline-sign-in key, as recorded by SCRUM-719.",
+    "OTO App-specific CI steps and migrations were path-skipped; the touched POS full tests, build and built till journeys ran.",
+    "No device switchover or production change."
+  ],
+  "unchangedControls": [
+    "forwarder",
+    "lane selection",
+    "scan channel",
+    "auth route/service/plugins"
+  ],
+  "newServiceDeployCount": 3,
+  "docsOnlyPushDidNotRebuild": true,
+  "buildFilterNote": "Three builds: initial forwarder, SCRUM-717 shared dependency change, and item-quote scheduling. Documentation-only landings added no deploy.",
+  "acceptancePassed": true
+}

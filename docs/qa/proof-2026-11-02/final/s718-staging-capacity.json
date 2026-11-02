@@ -1,0 +1,15 @@
+{
+  "unit": "SCRUM-718",
+  "serviceId": "srv-dbk7qu8n74is73bm894g",
+  "origin": "https://oto-pos-web-staging.onrender.com",
+  "startedAt": "2026-11-02T13:57:25.613Z",
+  "concurrency": 32,
+  "readCalls": 559,
+  "opened": 32,
+  "closed": 32,
+  "allOpenAt": "2026-11-02T13:57:31.090Z",
+  "loadEndedAt": "2026-11-02T14:00:01.311Z",
+  "signOutStatus": 200,
+  "afterSignOutStatus": 401,
+  "finishedAt": "2026-11-02T14:00:01.643Z"
+}
