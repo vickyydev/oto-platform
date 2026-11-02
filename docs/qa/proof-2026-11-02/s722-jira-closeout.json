@@ -1,0 +1,33 @@
+{
+  "unit": "SCRUM-722",
+  "at": "2026-11-02T21:27:41.395Z",
+  "before": {
+    "status": "Testing",
+    "summary": "Booked check-in consent checkbox does not stay selected when its small control is clicked"
+  },
+  "attached": {
+    "status": 200,
+    "files": [
+      {
+        "id": "12242",
+        "name": "s722-staging-proof.png"
+      },
+      {
+        "id": "12243",
+        "name": "s722-direct-checkbox.png"
+      },
+      {
+        "id": "12244",
+        "name": "s722-missing-photo.png"
+      }
+    ]
+  },
+  "commentStatus": 201,
+  "after": {
+    "status": "Deployed",
+    "summary": "Booked check-in consent checkbox does not stay selected when its small control is clicked"
+  },
+  "source": "8963cd2e71f2484f8e53174aa5d3c85671c611de",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41522382629",
+  "evidenceCommit": "943858c42cc885224f883368b8fc241e2bf7019c"
+}

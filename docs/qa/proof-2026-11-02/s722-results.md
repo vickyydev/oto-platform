@@ -118,5 +118,10 @@ The [proof receipt](s722-staging-proof.json),
 This proves the browser control and its existing virtual-box consent path on
 staging. No physical Pi, printer, park station, real person, real payment or
 SMS was used. The separate physical bench work remains outside this unit.
-Cleanup is complete. SCRUM-722 stays Testing until this inspected evidence
-is published and attached; final acceptance remains with the owner.
+Cleanup is complete. Evidence commit
+`943858c42cc885224f883368b8fc241e2bf7019c` is published. Jira readback at
+`2026-11-02T21:27:41.395Z` confirms **Deployed**, with the inspected proof
+card (12242), direct-checkbox capture (12243) and missing-photo capture
+(12244) attached and named in the plain comment. The
+[Jira closeout receipt](s722-jira-closeout.json) records that transition.
+Final acceptance remains with the owner; the ticket was not moved to Done.
