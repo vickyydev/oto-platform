@@ -312,6 +312,17 @@ export const BoxHeartbeatRequestSchema = z.object({
    * heartbeat this schema still accepts.
    */
   booth: BoothHeartbeatSchema.optional(),
+  /** SCRUM-712: absent on older/virtual agents; null is a reading we cannot make. */
+  storage: z.object({
+    freeBytes: z.number().int().nonnegative().nullable(),
+    totalBytes: z.number().int().nonnegative().nullable(),
+    readOnly: z.boolean().nullable(),
+    ioErrors: z.number().int().nonnegative(),
+    mirrorConfigured: z.boolean(),
+    mirrorAgeS: z.number().int().nonnegative().nullable(),
+    mirrorFreeBytes: z.number().int().nonnegative().nullable(),
+    mirrorErrors: z.number().int().nonnegative(),
+  }).optional(),
   /**
    * The offline copies this box is holding (SCRUM-323).
    *

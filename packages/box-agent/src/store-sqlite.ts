@@ -637,11 +637,11 @@ export function sqliteMessage(err: unknown): string {
   return text.split('\n')[0]!.slice(0, 300);
 }
 
-export function sqliteBoxDriver(db: SqliteDatabaseLike): BoxSqlDriver {
-  return driverFor(db, false);
+export function sqliteBoxDriver(db: SqliteDatabaseLike, onUnsentCommitted?: () => void): BoxSqlDriver {
+  return driverFor(db, false, onUnsentCommitted);
 }
 
-function driverFor(db: SqliteDatabaseLike, inTransaction: boolean): BoxSqlDriver {
+function driverFor(db: SqliteDatabaseLike, inTransaction: boolean, onUnsentCommitted?: () => void, pending = { unsent: false }): BoxSqlDriver {
   const driver: BoxSqlDriver = {
     dialect: 'sqlite',
     async query(sql, params = []) {
@@ -653,6 +653,10 @@ function driverFor(db: SqliteDatabaseLike, inTransaction: boolean): BoxSqlDriver
       // read rather than guessed.
       if (returnsRows(sql)) return statement.all(...bound) as SqlRow[];
       statement.run(...bound);
+      if (/^\s*insert into "?box_outbox\b/i.test(sql)) {
+        if (inTransaction) pending.unsent = true;
+        else queueMicrotask(() => { try { onUnsentCommitted?.(); } catch { /* mirror cannot fail a sale */ } });
+      }
       return [];
     },
     async transaction(fn) {
@@ -662,8 +666,10 @@ function driverFor(db: SqliteDatabaseLike, inTransaction: boolean): BoxSqlDriver
       // that upgraded mid-transaction.
       db.exec('begin immediate');
       try {
-        const value = await fn(driverFor(db, true));
+        const committed = { unsent: false };
+        const value = await fn(driverFor(db, true, onUnsentCommitted, committed));
         db.exec('commit');
+        if (committed.unsent) queueMicrotask(() => { try { onUnsentCommitted?.(); } catch { /* mirror cannot fail a sale */ } });
         return value;
       } catch (error) {
         try {

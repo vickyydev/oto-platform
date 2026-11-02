@@ -926,6 +926,7 @@ export async function recordHeartbeat(
      * and a Pi's store is on the Pi.
      */
     ...(input.cache ? { cache: input.cache } : {}),
+    ...(input.storage ? { storage: input.storage } : {}),
   }) as Record<string, unknown>;
 
   await withTx(db, ctx, 'box.heartbeat', async (tx) => {

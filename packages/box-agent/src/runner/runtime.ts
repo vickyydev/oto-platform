@@ -80,6 +80,9 @@ import {
 import { applyPrinterOverride } from './printer-override';
 import { piHardware } from './hardware';
 import { createBridgeServer, type BridgeServer } from './bridge-server';
+import { StoreMirror } from '../store-mirror';
+import { StorageHealth } from '../storage-health';
+import { holdStoreLock } from './store-lock';
 
 /** A failure the person running the box can act on, worded for them. */
 export class RunnerError extends Error {
@@ -567,6 +570,7 @@ function reportingCredentials(path: string): CredentialStore {
 // --- oto-box run ------------------------------------------------------------
 
 export interface RunnerOptions {
+  mirrorDirectory?: string | null;
   /** The box's home directory: credential, store, config copy, choices. */
   home: string;
   /** The api to talk to. Falls back to the one this box was claimed against. */
@@ -678,7 +682,17 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
       'the booth receipt printer is overridden by config.json',
     );
   }
-  const openDatabase = options.openDatabase ?? openNodeSqlite;
+  const mirror = new StoreMirror({
+    database: paths.database,
+    directory: options.mirrorDirectory,
+    onFailure: () => log.warn({ module: 'storage' }, 'the store mirror failed; the live store is unchanged; the next round is in one minute'),
+  });
+  const storage = new StorageHealth({ database: paths.database, mirrorDirectory: options.mirrorDirectory, mirror });
+  const underlyingOpen = options.openDatabase ?? openNodeSqlite;
+  const openDatabase: OpenDatabase = async (file, settings) => {
+    try { return storage.observe(await underlyingOpen(file, settings)); }
+    catch (error) { storage.recordError(error); throw error; }
+  };
 
   let selected = state.stationId;
   let pendingClaim: string | null = null;
@@ -914,6 +928,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
           ),
       log,
       hardware: options.hardware ?? piHardware(),
+      storage: () => storage.snapshot(),
       ...(store ? { store } : {}),
       configCache: fileConfigCache(paths),
       configTransform: (bundle) => {
@@ -1023,7 +1038,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
       return;
     }
     db = opened;
-    const current = buildAgent(new SqlBoxStore({ driver: sqliteBoxDriver(opened) }));
+    const current = buildAgent(new SqlBoxStore({ driver: sqliteBoxDriver(opened, () => mirror.acceptedUnsent()) }));
     agent = current;
     let registered: boolean;
     try {
@@ -1213,6 +1228,8 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
     }
   }
 
+  let releaseStore: (() => Promise<void>) | undefined;
+
   /** Everything this runner started, stopped, and the kiosk closed. */
   async function shutDown(): Promise<void> {
     stopped = true;
@@ -1221,6 +1238,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
     if (retryTimer) clearInterval(retryTimer);
     retryTimer = null;
     agent?.stop();
+    await mirror.stop();
     if (options.listen !== false) await kiosk.close();
     if (bridgeServer && options.listen !== false) await bridgeServer.close();
     try {
@@ -1229,9 +1247,12 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
       /* already closed */
     }
     db = null;
+    await releaseStore?.();
+    releaseStore = undefined;
   }
 
   try {
+    releaseStore = await holdStoreLock(paths.home);
     // A claim under way in a terminal is making the store and the credential
     // this box is about to open: wait for it, for a while — the television
     // says "Starting the box…" meanwhile — then open what is there.
@@ -1245,6 +1266,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
     const opened = await openStore();
     if (opened.ok) await runBox(opened.db);
     else await needService(opened.problem, opened.detail);
+    mirror.start();
   } catch (err) {
     // Not the store — that is NEEDS SERVICE, above — but something the box
     // cannot start without. The kiosk is closed with the rest, so the process
