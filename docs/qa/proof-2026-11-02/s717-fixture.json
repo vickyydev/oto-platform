@@ -10,7 +10,7 @@
   "stationId": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
   "receiptPrefix": "Z717",
   "preparedAt": "2026-11-02T12:11:07.296Z",
-  "agentEnabled": true,
+  "agentEnabled": false,
   "sessionCleanup": [
     {
       "origin": "https://oto-console-staging.onrender.com",
@@ -23,5 +23,8 @@
       "afterStatus": 401
     }
   ],
-  "agentEnabledAt": "2026-11-02T12:47:41.714Z"
+  "agentEnabledAt": "2026-11-02T12:47:41.714Z",
+  "archived": true,
+  "retiredAt": "2026-11-02T15:06:00.194Z",
+  "retirementReceipt": "s708-cleanup.json"
 }

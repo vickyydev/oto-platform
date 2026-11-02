@@ -159,3 +159,13 @@ claim or change that separate setup. The synthetic fixture and its dedicated
 agent remain for SCRUM-708; its 90-baht cash order is a staging test record,
 not money collected. No recovery, installer, display-lane or POS-server file
 was edited.
+
+## Fixture retirement after SCRUM-708
+
+The shared dedicated ZZ TEST box and till were archived after SCRUM-708's
+successful proof. Queue depth was zero and the lease was absent before
+retirement. Only `BOX_AGENT_TEST_SLOT` was removed, preserving all other 56 API
+environment values. The same-source API restart was live at
+2026-11-02T15:05:31.56138Z; health/readiness and independent post-restart fixture
+readback passed. The primary `virtual-1` box remains unarchived. Synthetic cash
+receipts are retained. See [s708-cleanup.json](s708-cleanup.json).

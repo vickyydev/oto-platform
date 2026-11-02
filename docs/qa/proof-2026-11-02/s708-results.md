@@ -48,18 +48,34 @@ job includes its tests, production build, built till and Console browser
 journeys. The unchanged OTO App job is path-gated; this is not a new full-app
 acceptance claim. Jira remains Testing pending inspected staging proof.
 
-## Staging proof plan and limits
+## Staging proof
 
-After green exact-source CI and API/POS deployment, use the retained dedicated
-ZZ TEST box and till from SCRUM-717. Create a new synthetic booked registration,
-guard its exact identity before clearing its fixture consent, then use the real
-Console offline switch and unchanged booked-arrival dialog. Compare the missing
-platform consent before reconnect with the counter timestamp and source-event
-audit afterward. Inspect and attach the evidence before Deployed.
+The native proof passed at **2026-11-02T15:00:53.219Z**, after API deployment
+`dep-dbk9ubavcj2c73frrc8g` went live at 14:37:01.972371Z. API, POS and Console
+all reported the exact source above. Receipts: [s708-staging-proof.json](s708-staging-proof.json)
+and [s708-fixture.json](s708-fixture.json). The [proof card](s708-staging-proof.png)
+and its native dialog/board screenshots were opened and inspected.
+
+| Step | Observed result |
+| --- | --- |
+| Before | New registration `a657ed65-d7a9-4539-bc02-4da688df399e` had null consent and a registered child. An exact-identity fixture guard cleared only this synthetic registration before check-in. |
+| Offline | Console Go offline succeeded on the dedicated test box. An unpaid native F&B quote entered the box lane; native Check-in navigation preserved it. The unchanged dialog sent `check_in_now` to the box with a positive acknowledgement. |
+| Held locally | Box consent was `2026-11-02T14:59:25.617Z`, one fact was queued, and the independent platform registration still had null consent and registered status. The native board showed the child in the park. |
+| Reconnect | The platform received exactly `2026-11-02T14:59:25.617Z`; the queue drained to zero. One consent audit, `01a19cc5-cbe7-74d5-9585-83c0daefacee`, names box fact `01a19cc5-bd26-7032-a3c7-e1ab38fff1d7`, with the correct box and station. |
+| End of journey | The synthetic child was released through the ordinary pickup API, its lease was released, and POS/Console/launcher sign-outs returned 200 followed by `/me` 401. |
+
+The native images show only the synthetic family and seeded administrator.
+The stored consent and pickup images are generated test cards, not photographs
+of a person. Synthetic cash receipts `Z717-000002` (the earlier online control)
+and `Z717-000003` (the offline proof) are retained for audit; both children are
+out. The unpaid F&B quote used to select the lane was never charged.
 
 No physical Pi, real person, real payment or SMS is part of this proof. The
-virtual mount uses the existing platform session; fresh offline staff unlock is
-outside this unit. Recovery, display and POS-server lane files are untouched.
+virtual mount uses the existing platform session; fresh offline staff unlock
+and physical printing are outside this unit. Recovery, display and POS-server
+lane files are untouched. The local tests establish power-loss/restart,
+existing-consent, duplicate and older-fact cases; those cases were not newly
+injected into staging.
 
 ## Staging attempts and separate follow-ups
 
@@ -83,7 +99,26 @@ and `s708-online-control.json`.
   `dynamicPermission`. The browser initially selects the platform lane. This
   is a test-routing follow-up, not evidence that consent replay failed.
 
-Both follow-ups are To Do and linked to SCRUM-708. The retry uses a new family,
-an existing guarded unpaid F&B quote to enter the box lane, and native SPA
-navigation to Check-in. It must inspect the box request and platform state on
-each side of reconnect; the switch alone does not establish offline proof.
+Both follow-ups are To Do and linked to SCRUM-708. The successful retry used a
+new family, an existing guarded unpaid F&B quote to enter the box lane, and
+native SPA navigation to Check-in. Its actual box request, queued fact and
+platform before/after values establish the offline path; the Console switch
+alone does not.
+
+## Cleanup and publication
+
+Independent cleanup readback at 2026-11-02T15:06:00.194Z confirms both synthetic
+children out. Before retirement the dedicated box was online with zero queued
+facts and no lease. Only its ZZ TEST station and box were archived; primary
+`virtual-1` remains unarchived. Only `BOX_AGENT_TEST_SLOT` was removed: all other
+56 environment values were compared and preserved. The same-source API restart
+`dep-dbkabnp42hec73f3o42g` went live at 15:05:31.56138Z; health and readiness
+returned 200, and the temporary option is absent. The final readback session
+also signed out 200 and then returned `/me` 401. Receipt:
+[s708-cleanup.json](s708-cleanup.json).
+
+The final PNG is copied under
+`docs/qa/jira-comments/attachments/SCRUM-708/s708-staging-proof.png` for attachment.
+The two inspected control-target images are retained under the SCRUM-722
+attachment directory. Jira remains Testing until this evidence is pushed and
+the proof is attached. Done remains the owner's acceptance.

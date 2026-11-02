@@ -1,0 +1,273 @@
+{
+  "unit": "SCRUM-708",
+  "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41459443462",
+  "deployments": [
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk9ubavcj2c73frrc8g",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:37:01.972371Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbk9ubivcj2c73frrdtg",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:34:16.74601Z"
+    },
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbk9ubivcj2c73frre1g",
+      "sha": "14e1432492f603e3b774d512aa797e5a57061595",
+      "finishedAt": "2026-11-02T14:34:12.20643Z"
+    }
+  ],
+  "startedAt": "2026-11-02T14:57:30.022Z",
+  "fixture": {
+    "registrationId": "a657ed65-d7a9-4539-bc02-4da688df399e",
+    "checkinId": "83ac7aa0-5a90-421b-813c-31f152c9ce4a",
+    "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be",
+    "stationId": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0"
+  },
+  "checks": [
+    {
+      "name": "Console forced only the dedicated ZZ TEST box offline; the platform registration has no consent",
+      "passed": true,
+      "before": {
+        "id": "a657ed65-d7a9-4539-bc02-4da688df399e",
+        "consentRecordedAt": null,
+        "status": "registered"
+      }
+    },
+    {
+      "name": "An unpaid native F&B quote entered the box lane after the Console test refusal",
+      "passed": true
+    },
+    {
+      "name": "The native dialog sent the acknowledgement; the box kept it while the platform remained null",
+      "passed": true,
+      "platform": {
+        "id": "a657ed65-d7a9-4539-bc02-4da688df399e",
+        "consentRecordedAt": null,
+        "status": "registered"
+      },
+      "boxConsentRecordedAt": "2026-11-02T14:59:25.617Z",
+      "queued": 1
+    },
+    {
+      "name": "Reconnect filed the original counter time and exactly one audit naming the box fact",
+      "passed": true,
+      "consentRecordedAt": "2026-11-02T14:59:25.617Z",
+      "sourceEventId": "01a19cc5-bd26-7032-a3c7-e1ab38fff1d7",
+      "auditCount": 1,
+      "queued": 0
+    }
+  ],
+  "commands": [
+    {
+      "id": "01a19cc4-45f1-743a-80fd-69505bb4e505",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:57:55.453Z"
+    },
+    {
+      "id": "01a19cc5-6c2e-774f-8118-b1fa2b4413b2",
+      "kind": "config_apply",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:59:10.800Z"
+    },
+    {
+      "id": "01a19cc5-82a6-709e-a7ea-35e3e755d39c",
+      "kind": "go_offline",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:59:16.219Z"
+    },
+    {
+      "id": "01a19cc5-c64d-75de-be72-ffda3e5a2472",
+      "kind": "go_online",
+      "state": "succeeded",
+      "completedAt": "2026-11-02T14:59:31.854Z"
+    }
+  ],
+  "cleanup": [
+    {
+      "action": "Synthetic child released through the ordinary pickup API",
+      "releaseId": "1c54f186-b9c7-4eda-b38f-ad1c95ee0270",
+      "status": "out"
+    },
+    {
+      "origin": "https://oto-pos-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/box/v1/station/6d049534-7b69-4fea-a6be-cfeaa69ac9a0/intents",
+      "status": 200,
+      "type": "cart.quote"
+    },
+    {
+      "path": "/api/box/v1/station/6d049534-7b69-4fea-a6be-cfeaa69ac9a0/intents",
+      "status": 200,
+      "type": "events.day"
+    },
+    {
+      "path": "/api/box/v1/station/6d049534-7b69-4fea-a6be-cfeaa69ac9a0/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "path": "/api/box/v1/station/6d049534-7b69-4fea-a6be-cfeaa69ac9a0/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "path": "/api/box/v1/station/6d049534-7b69-4fea-a6be-cfeaa69ac9a0/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "path": "/api/box/v1/station/6d049534-7b69-4fea-a6be-cfeaa69ac9a0/intents",
+      "status": 200,
+      "type": "checkin.update",
+      "event": "check_in_now"
+    },
+    {
+      "path": "/api/box/v1/station/6d049534-7b69-4fea-a6be-cfeaa69ac9a0/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "path": "/api/box/v1/station/6d049534-7b69-4fea-a6be-cfeaa69ac9a0/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    },
+    {
+      "path": "/api/checkin/board",
+      "status": 200
+    }
+  ],
+  "browserErrors": [],
+  "fixturePreparation": {
+    "jobId": "job-dbka9ukipgvc73e5072g",
+    "mode": "clear-fixture-consent",
+    "at": "2026-11-02T14:58:48.275Z",
+    "registration": {
+      "id": "a657ed65-d7a9-4539-bc02-4da688df399e",
+      "guardian_name": "ZZ TEST SCRUM-708 guardian",
+      "branch_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "station_id": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
+      "consent_recorded_at": null,
+      "checkin_id": "83ac7aa0-5a90-421b-813c-31f152c9ce4a",
+      "child_name": "ZZ TEST SCRUM-708 child",
+      "status": "registered",
+      "sale_id": "bd1fdd7d-8a73-413f-b790-c3b2cf834296",
+      "band_id": null
+    },
+    "audits": []
+  },
+  "before": {
+    "id": "a657ed65-d7a9-4539-bc02-4da688df399e",
+    "consentRecordedAt": null,
+    "status": "registered"
+  },
+  "dialogTargetCheck": {
+    "checkboxSelected": false,
+    "confirmEnabled": false,
+    "consentRowSelected": true
+  },
+  "confirmPressedAt": "2026-11-02T14:59:25.585Z",
+  "acknowledgement": {
+    "acknowledged": true,
+    "at": "2026-11-02T14:59:25.617Z"
+  },
+  "offline": {
+    "platform": {
+      "id": "a657ed65-d7a9-4539-bc02-4da688df399e",
+      "consentRecordedAt": null,
+      "status": "registered"
+    },
+    "boxConsentRecordedAt": "2026-11-02T14:59:25.617Z",
+    "queued": 1
+  },
+  "reconnectedAt": "2026-11-02T14:59:28.157Z",
+  "after": {
+    "id": "a657ed65-d7a9-4539-bc02-4da688df399e",
+    "consentRecordedAt": "2026-11-02T14:59:25.617Z",
+    "status": "in_park"
+  },
+  "auditReadback": {
+    "jobId": "job-dbkaalgae00c738a2lvg",
+    "mode": "read",
+    "at": "2026-11-02T15:00:23.903Z",
+    "registration": {
+      "id": "a657ed65-d7a9-4539-bc02-4da688df399e",
+      "guardian_name": "ZZ TEST SCRUM-708 guardian",
+      "branch_id": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+      "station_id": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
+      "consent_recorded_at": "2026-11-02T14:59:25.617Z",
+      "checkin_id": "83ac7aa0-5a90-421b-813c-31f152c9ce4a",
+      "child_name": "ZZ TEST SCRUM-708 child",
+      "status": "in_park",
+      "sale_id": "bd1fdd7d-8a73-413f-b790-c3b2cf834296",
+      "band_id": "01a19cc5-bd22-7e29-b2dc-5e98a4ace4ef"
+    },
+    "audits": [
+      {
+        "id": "01a19cc5-cbe7-74d5-9585-83c0daefacee",
+        "source_event_id": "01a19cc5-bd26-7032-a3c7-e1ab38fff1d7",
+        "before": {
+          "consentRecordedAt": null
+        },
+        "after": {
+          "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be",
+          "event": "consent_at_check_in",
+          "offline": true,
+          "stationId": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
+          "consentRecordedAt": "2026-11-02T14:59:25.617Z"
+        },
+        "type": "checkin.updated",
+        "box_id": "01a19c2b-9dec-7939-934a-17f45a6833be",
+        "station_id": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
+        "fact_consent": {
+          "at": "2026-11-02T14:59:25.617Z",
+          "acknowledged": true
+        },
+        "occurred_at": "2026-11-02T14:59:27.141Z",
+        "received_at": "2026-11-02T14:59:30.905Z"
+      }
+    ]
+  },
+  "completedAt": "2026-11-02T15:00:53.219Z"
+}
