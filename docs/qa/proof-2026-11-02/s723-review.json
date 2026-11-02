@@ -1,0 +1,27 @@
+{
+  "unit": "SCRUM-723",
+  "beforeFix": {
+    "findingsAsExpectedFailures": 2,
+    "passingControls": 4,
+    "ordinaryRun": {
+      "exitCode": 1,
+      "failed": 2,
+      "passed": 4,
+      "failures": [
+        "Fresh forced-offline arrival returned 200 instead of 503",
+        "Stored online answer returned 200 instead of 503"
+      ]
+    }
+  },
+  "afterFix": {
+    "focusedApiTests": 28,
+    "focusedPosTests": 20,
+    "typechecks": [
+      "api: zero diagnostics",
+      "pos: passed"
+    ],
+    "touchedLint": "passed",
+    "apiTypes": "matched"
+  },
+  "runtimeChange": "Add stationTrading to the existing booked-arrival route; retain its dynamic permission, body schema and transaction"
+}

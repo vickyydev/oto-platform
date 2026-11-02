@@ -436,7 +436,7 @@ async function boardRoutes(app: App): Promise<void> {
   app.post(
     '/check-in-booked',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, stationTrading: true },
       schema: {
         description:
           'Check in booked, already-paid children from the board: no payment and no sale — the band is minted on the ' +

@@ -187,6 +187,34 @@ describe('the gate on the box lane', () => {
 });
 
 describe('the board and the release on the box lane', () => {
+  it('a fresh platform board falls back on its first forced-offline booked arrival, without a prior trading action', async () => {
+    const calls: string[] = [];
+    const seen: Intent[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push(url);
+      if (url === `/api/checkin/board?branchId=${BRANCH}`) return reply({
+        families: [family()], counts: { registered: 1, in_park: 0, out: 0 }, unconfirmedFamilies: 0,
+        nannies: [], nannyRatioSoftMax: 3, prepaidFoodUnused: 'refund',
+      });
+      if (url === '/api/checkin/check-in-booked') return forcedOffline();
+      if (url === intentsUrl) {
+        const intent = JSON.parse(String(init?.body)) as Intent; seen.push(intent);
+        if (intent.type === 'checkin.board') return reply({ document: {}, result: { families: [family()] } });
+        return reply({ document: {}, result: { saleId: SALE, children: [stay({ status: 'in_park' })], bands: [], printJobs: [], notes: [] } });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+    expect(currentLane()).toBe('platform');
+    await boardApi.board(BRANCH);
+    expect(currentLane()).toBe('platform');
+    const answer = await boardApi.checkInBooked({ entries: [{ checkinId: STAY }], consentAcknowledged: true });
+    expect(currentLane()).toBe('box');
+    expect(answer.children[0]!.status).toBe('in_park');
+    expect(calls.slice(0, 2)).toEqual([`/api/checkin/board?branchId=${BRANCH}`, '/api/checkin/check-in-booked']);
+    expect(seen.map(intent => intent.type)).toEqual(['checkin.board', 'checkin.update']);
+    expect(seen[1]!.payload).toMatchObject({ event: 'check_in_now', saleId: SALE, consent: { acknowledged: true } });
+  });
+
   it('keeps the positive consent and counter time across fallback and each paid sale', async () => {
     vi.useFakeTimers();
     const at = '2026-11-02T10:00:00.000Z';
