@@ -134,7 +134,11 @@ const NOT_YET_CALLED = new Map<string, string>([
   // 2026-10-14, the walker's first run.
   [
     'GET /box/v1/station/{stationId}/channel',
-    "the till's box lane opens it at the box's own origin, not /api",
+    "apps/pos/src/api/bridge.ts watchBridgeSnapshots opens the staff stream through bridgeUrl; the walker does not resolve this fetch transport",
+  ],
+  [
+    'GET /box/v1/station/{stationId}/display/channel',
+    'apps/pos/src/api/bridge.ts watchBridgeSnapshots opens the paired bearer stream through bridgeUrl; covered by s710-stream.test.ts and the API/Pi display-channel tests',
   ],
   ['POST /settlements/batches/{batchId}/terminal-result', 'the box agent reports the terminal run'],
   ['POST /payments/attempts/{id}/result', 'the card terminal round trip, not a screen'],

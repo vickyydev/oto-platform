@@ -11,6 +11,16 @@ export type SupportedLang = (typeof SUPPORTED_LANGS)[number];
 type Entry = Record<SupportedLang, string>;
 
 export const messages: Record<string, Entry> = {
+  'display.reconnecting': {
+    en: 'Reconnecting',
+    th: 'Reconnecting', // Thai placeholder pending translation.
+    zh: 'Reconnecting', ru: 'Reconnecting', fr: 'Reconnecting',
+  },
+  'display.connectionPaused': {
+    en: 'Connection paused, your order is safe',
+    th: 'Connection paused, your order is safe', // Thai placeholder pending translation.
+    zh: 'Connection paused, your order is safe', ru: 'Connection paused, your order is safe', fr: 'Connection paused, your order is safe',
+  },
   'till.identify.membersSave': {
     en: 'Members save',
     zh: '会员享优惠',

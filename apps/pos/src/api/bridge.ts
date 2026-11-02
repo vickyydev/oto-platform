@@ -89,7 +89,7 @@ async function request<T>(
     res = await fetch(bridgeUrl(stationId, rest), {
       method,
       // The platform cookie on a virtual box; nothing ambient on a Pi.
-      credentials: origin ? 'omit' : 'same-origin',
+      credentials: origin || rest.startsWith('display/') ? 'omit' : 'same-origin',
       cache: 'no-store',
       headers: {
         ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
@@ -188,6 +188,75 @@ export const bridgeApi = {
   publish: (stationId: string, intent: StationIntent) =>
     request<{ document: StationSessionDocument }>('POST', stationId, 'intents', intent),
 };
+
+/** The scan channel's stream-first / bounded-open / polling fallback shape.
+ * Fetch carries the paired bearer in a header (EventSource cannot); credentials
+ * never enter a URL. The owner polls while onState(false), and retries are bounded.
+ */
+export function watchBridgeSnapshots(stationId: string, options: {
+  bearer?: string;
+  onSnapshot: (document: StationSessionDocument) => void;
+  onState: (streaming: boolean) => void;
+  onFailure: (error: unknown) => void;
+}): () => void {
+  let stopped = false;
+  let attempt = 0;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+  let controller: AbortController | undefined;
+  let deadline: ReturnType<typeof setTimeout> | undefined;
+  const connect = async () => {
+    controller = new AbortController();
+    const active = controller;
+    const arm = (ms: number) => {
+      clearTimeout(deadline);
+      deadline = setTimeout(() => active.abort(), ms);
+    };
+    arm(3_000);
+    try {
+      const bearer = options.bearer ?? boxSession;
+      const response = await fetch(bridgeUrl(stationId, options.bearer ? 'display/channel' : 'channel?view=staff'), {
+        credentials: options.bearer || origin ? 'omit' : 'same-origin', cache: 'no-store',
+        headers: { accept: 'text/event-stream', ...(bearer ? { authorization: `Bearer ${bearer}` } : {}) },
+        signal: active.signal,
+      });
+      if (!response.ok) throw new ApiError(response.status, 'CHANNEL_UNAVAILABLE', 'The display connection was interrupted.');
+      if (!response.headers.get('content-type')?.includes('text/event-stream') || !response.body) throw new Error('No display stream');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      try {
+        while (!stopped) {
+          const part = await reader.read();
+          if (part.done) throw new Error('Display stream ended');
+          arm(options.bearer ? 12_000 : 35_000);
+          buffer += decoder.decode(part.value, { stream: true }).replace(/\r/g, '');
+          if (buffer.length > 2_000_000) throw new Error('Display stream frame too large');
+          let boundary: number;
+          while ((boundary = buffer.indexOf('\n\n')) >= 0) {
+            const frame = buffer.slice(0, boundary);
+            buffer = buffer.slice(boundary + 2);
+            const data = frame.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n');
+            if (!data) continue;
+            const message = JSON.parse(data) as { kind?: string; document?: unknown };
+            if (message.kind !== 'snapshot') continue;
+            const document = StationSessionDocumentSchema.parse(message.document);
+            if (document.stationId !== stationId) throw new Error('Wrong display station');
+            if (stopped) return;
+            attempt = 0;
+            options.onSnapshot(document);
+            options.onState(true);
+          }
+        }
+      } finally { await reader.cancel().catch(() => undefined); }
+    } catch (error) {
+      if (!stopped) { options.onState(false); options.onFailure(error); }
+      if (error instanceof ApiError && error.status === 401) return;
+    } finally { clearTimeout(deadline); active.abort(); }
+    if (!stopped) retry = setTimeout(() => { void connect(); }, Math.min(15_000, 1_000 * 2 ** attempt++));
+  };
+  void connect();
+  return () => { stopped = true; clearTimeout(retry); clearTimeout(deadline); controller?.abort(); };
+}
 
 /**
  * THE CUSTOMER DISPLAY'S SIDE (OD-10): the paired credential, never the staff

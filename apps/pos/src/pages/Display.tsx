@@ -2,15 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Monitor } from 'lucide-react';
 import { DisplayPaymentSchema, DisplayTotalsSchema, readDisplayFnbCart, readDisplayMerchCart, type StationIntent } from '@oto/shared';
 import { displayApi, DisplayError, newDisplayCredential, newerDisplaySession, readDisplayCredential, rememberDisplayCredential, type DisplaySession } from '@/api/display';
-import { displayBridgeApi } from '@/api/bridge';
+import { displayBridgeApi, watchBridgeSnapshots } from '@/api/bridge';
 import { ApiError } from '@/api/client';
 
 /**
  * OD-10 (offline plan Round 3): the display follows its BOX. Once it knows its
  * station it reads the document through the station bridge with its paired
  * credential, so it keeps working while the box works without the platform.
- * Pairing itself still needs the platform, and a display that cannot reach its
- * box shows its welcome screen rather than a total that may no longer be true.
+ * Pairing itself still needs the platform. A disconnected display keeps its
+ * last screen for fifteen seconds, then hides the total behind a paused notice.
  */
 function asDisplayError(failure: unknown): unknown {
   if (failure instanceof DisplayError) return failure;
@@ -21,18 +21,21 @@ function asDisplayError(failure: unknown): unknown {
 
 async function readThroughBox(stationId: string | null, bearer: string, signal: AbortSignal): Promise<DisplaySession> {
   if (!stationId) return displayApi.session(bearer, signal);
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal.addEventListener('abort', abort, { once: true });
+  if (signal.aborted) abort();
+  const deadline = setTimeout(abort, 5_000);
   try {
-    return await displayBridgeApi.session(stationId, bearer, signal);
+    return await displayBridgeApi.session(stationId, bearer, controller.signal);
   } catch (failure) {
     throw asDisplayError(failure);
+  } finally {
+    clearTimeout(deadline);
+    signal.removeEventListener('abort', abort);
   }
 }
 
-/** The document with nothing on it for the visitor: the welcome screen, never a stale total. */
-function welcomeOnly(session: DisplaySession): DisplaySession {
-  return { ...session, document: { ...session.document, stage: 'welcome', step: null, cart: null,
-    member: null, totals: null, payment: null, prompt: null } };
-}
 import { CustomerDisplay } from '@/components/till/CustomerDisplay';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -45,7 +48,20 @@ import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
+  const [connection, setConnection] = useState<'connected' | 'reconnecting' | 'paused'>('connected');
+  const grace = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const streaming = useRef(false);
+  const disconnect = useCallback(() => {
+    if (grace.current !== undefined) return;
+    setConnection('reconnecting');
+    grace.current = setTimeout(() => setConnection('paused'), 15_000);
+  }, []);
+  const recovered = useCallback(() => {
+    clearTimeout(grace.current);
+    grace.current = undefined;
+    setConnection('connected');
+  }, []);
   const [session, setSession] = useState<DisplaySession | null>(null);
   const [pairing, setPairing] = useState<{ pairingCode: string; expiresAt: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +98,7 @@ export default function Display() {
     const inactive = () => stopped || generation.current !== startedGeneration;
     const tick = async () => {
       try {
+        if (knownPaired && streaming.current) return;
         const bearer = bearerRef.current;
         setPersistent(rememberDisplayCredential(bearer));
         // Once paired, the protected read is the authority. Revocation must
@@ -95,13 +112,11 @@ export default function Display() {
           try {
             current = await readThroughBox(stationId, bearer, controller.signal);
           } catch (failure) {
-            // Cannot reach the box: the welcome screen, not the last total (OD-10).
-            if (!(failure instanceof DisplayError && failure.status === 401)) {
-              setSession(previous => previous ? welcomeOnly(previous) : previous);
-            }
+            if (!streaming.current && !(failure instanceof DisplayError && failure.status === 401)) disconnect();
             throw failure;
           }
           if (inactive()) return;
+          recovered();
           knownPaired = true;
           setSession(previous => newerDisplaySession(previous, current));
           setPairing(null);
@@ -135,20 +150,58 @@ export default function Display() {
       } catch (failure) {
         if (inactive()) return;
         if (failure instanceof DisplayError && (failure.status === 401 || failure.code === 'DISPLAY_ALREADY_PAIRED')) {
+          recovered();
           setSession(null);
           setPairing(null);
           pending.current = null;
           hasCode = false;
           knownPaired = false;
           if (failure.code !== 'DISPLAY_ALREADY_PAIRED') bearerRef.current = newDisplayCredential();
-        } else setError(failure instanceof Error ? failure.message : 'The display could not connect.');
+        } else if (!streaming.current) setError(failure instanceof Error ? failure.message : 'The display could not connect.');
       } finally {
-        if (!inactive()) timer = setTimeout(() => { void tick(); }, 2_000);
+        if (!inactive()) timer = setTimeout(() => { void tick(); }, knownPaired ? 200 : 2_000);
       }
     };
     void tick();
     return () => { stopped = true; generation.current += 1; controller.abort(); clearTimeout(timer); };
-  }, [restart, pairingMode]);
+  }, [restart, pairingMode, disconnect, recovered]);
+
+  const stationId = session?.station.id;
+  useEffect(() => {
+    if (!stationId) return;
+    const offline = () => { streaming.current = false; disconnect(); };
+    window.addEventListener('offline', offline);
+    const stop = watchBridgeSnapshots(stationId, {
+      bearer: bearerRef.current,
+      onState: value => {
+        if (!value && streaming.current) disconnect();
+        streaming.current = value;
+      },
+      onSnapshot: document => {
+        recovered();
+        setSession(previous => previous ? newerDisplaySession(previous, { ...previous, document }) : previous);
+        const answer = document.prompt?.answer as { actionId?: string } | undefined;
+        const gesture = pending.current;
+        if (gesture && (answer?.actionId === gesture.actionId
+          || gesture.type === 'display.set_language' && document.language === gesture.payload.language)) {
+          pending.current = null;
+          setLanguageRetry(value => value + 1);
+        }
+        if (!pending.current) setError(null);
+      },
+      onFailure: failure => {
+        if (failure instanceof ApiError && failure.status === 401) {
+          recovered();
+          setSession(null);
+          setRestart(value => value + 1);
+        }
+        // A proxy may reject streaming while polling is healthy. Only a
+        // dropped live stream or a failed poll starts the connection grace.
+      },
+    });
+    return () => { stop(); streaming.current = false; window.removeEventListener('offline', offline); };
+  }, [stationId, disconnect, recovered]);
+  useEffect(() => () => clearTimeout(grace.current), []);
 
   const expirePairing = async () => {
     if (sessionRef.current || expiryOperation.current || pairingMint.current) return;
@@ -262,7 +315,8 @@ export default function Display() {
   const childReview = view?.childReview ?? null;
 
   return <div className="dark h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col" data-testid="separate-display">
-    {error && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
+    {session && connection === 'reconnecting' && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
+    {error && (!(session && connection !== 'connected') || pending.current) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
       <span>{error}</span>
       <Button size="sm" onClick={() => { if (pairingMode === 'expiry-error') { void expirePairing(); return; } const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>Retry</Button>
     </div>}
@@ -280,6 +334,8 @@ export default function Display() {
         <Button variant="outline" onClick={newPairing}>New code</Button>
       </> : pairingMode === 'expiry-error' ? <p>Pairing is paused until code expiry is confirmed.</p>
         : <Loader2 className="h-8 w-8 animate-spin" aria-label={pairingMode === 'expiring' ? 'Expiring code' : 'Connecting'} />}
+    </main> : connection === 'paused' ? <main className="flex-1 flex items-center justify-center p-8 text-center">
+      <h1 role="status" className="text-3xl font-bold">{t('display.connectionPaused')}</h1>
     </main> : fnb && document ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
       <div className="flex-1 min-h-0" data-testid="display-fnb">

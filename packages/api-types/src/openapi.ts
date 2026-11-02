@@ -37735,6 +37735,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/box/v1/station/{stationId}/display/channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Server-sent customer snapshots: the display/session document on connect and each change. Paired display credential only; revocation closes the stream. No staff or scan events. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    stationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/box/v1/station/{stationId}/display/session": {
         parameters: {
             query?: never;

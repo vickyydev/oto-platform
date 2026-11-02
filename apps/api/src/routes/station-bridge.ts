@@ -21,9 +21,9 @@ import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { displayDeviceOf, kioskDeviceOf } from '../plugins/credential';
 import { holdsGrantAt } from '../services/access-control';
-import { displayIntent, displaySession } from '../services/display';
+import { displayBearerHash, displayIntent, displaySession } from '../services/display';
 import { abandonKioskSession, kioskState, redeemAtKiosk, startKioskSession } from '../services/kiosk';
-import { bridgeForStation, platformCaller, unlockThroughBridge } from '../services/station-bridge';
+import { bridgeForStation, platformCaller, subscribeDisplayChannel, unlockThroughBridge } from '../services/station-bridge';
 import { loadStationRow, type StationRow } from '../services/station-session';
 import { actionIdOf, openChannel } from './stations';
 
@@ -353,6 +353,28 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
   );
 
   // --- The customer display, with its own credential (OD-10) ----------------
+
+  app.get(
+    '/box/v1/station/:stationId/display/channel',
+    {
+      config: { credential: 'display', displayScope: 'display:read' },
+      schema: {
+        description: 'Server-sent customer snapshots: the display/session document on connect and each change. Paired display credential only; revocation closes the stream. No staff or scan events.',
+        params: Params,
+      },
+    },
+    async (req, reply) => {
+      const device = displayDeviceOf(req);
+      if (device.station.id !== req.params.stationId) {
+        throw new AppError(403, 'DISPLAY_OTHER_STATION', 'This display is paired to another station');
+      }
+      const tokenHash = displayBearerHash(req.headers.authorization);
+      openChannel(req, reply, device.station.id, 'customer', send =>
+        subscribeDisplayChannel(app.db, device, tokenHash, send, () => reply.raw.end(),
+          () => { reply.raw.write(': heartbeat\n\n'); }, req.log));
+      return reply;
+    },
+  );
 
   app.get(
     '/box/v1/station/:stationId/display/session',

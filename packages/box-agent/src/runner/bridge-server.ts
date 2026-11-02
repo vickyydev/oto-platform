@@ -329,6 +329,39 @@ export function createBridgeServer(options: BridgeServerOptions): BridgeServer {
           });
           return send(res, 200, answer);
         }
+        case 'GET display/channel': {
+          const caller = await display(bridge, stationId, req);
+          return channel(req, res, write => {
+            let stopped = false;
+            let sequence = -1;
+            let queue = Promise.resolve();
+            const enqueue = (work: () => Promise<void>) => {
+              queue = queue.then(async () => { if (!stopped) await work(); })
+                .catch(() => { if (!stopped) res.end(); });
+            };
+            const deliver = (message: StationChannelMessage) => {
+              if (stopped || message.kind !== 'snapshot' || message.document.sequence < sequence) return;
+              sequence = message.document.sequence;
+              write({ ...message, actionId: null });
+            };
+            enqueue(async () => {
+              await display(bridge, stationId, req);
+              deliver(await bridge.session(stationId, caller, 'customer'));
+            });
+            const detach = bridge.subscribe(stationId, caller, 'customer', message => {
+              if (message.kind === 'snapshot') enqueue(async () => {
+                await display(bridge, stationId, req);
+                deliver(message);
+              });
+            });
+            const timer = setInterval(() => enqueue(async () => {
+              await display(bridge, stationId, req);
+              if (!stopped) res.write(': heartbeat\n\n');
+            }), 5_000);
+            timer.unref?.();
+            return () => { stopped = true; clearInterval(timer); detach(); };
+          });
+        }
         case 'GET display/session': {
           const caller = await display(bridge, stationId, req);
           const station = bridge.station(stationId);

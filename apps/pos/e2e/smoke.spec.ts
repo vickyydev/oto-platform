@@ -116,9 +116,14 @@ async function captureLocalCheck(page: Page, name: string): Promise<void> {
   }
 }
 
-async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
+async function pairedDisplay(browser: Browser, staff: Page, baseURL: string, streaming = false) {
   const context = await browser.newContext({ baseURL, viewport: { width: 1024, height: 768 } });
   const display = await context.newPage();
+  // These six journeys inspect poll replies and lost replies deliberately.
+  // Keep them on the supported fallback; the stream journey below exercises SSE.
+  if (!streaming) await display.route('**/display/channel', route => route.abort('failed'));
+  const opened = streaming ? display.waitForResponse(response => response.url().endsWith('/display/channel')
+    && response.status() === 200).catch(() => null) : null;
   const admin = await request.newContext({ baseURL });
   const publicationChecks: string[] = [];
   const observePublication = async (response: Response) => {
@@ -229,7 +234,8 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
     if (!published) throw new Error('The staff till did not publish its new display prompt');
     const payload = published.request().postDataJSON()?.payload;
     expect(payload?.stage === 'identify' && typeof payload.prompt?.requestId === 'string').toBe(true);
-    await displayPrompt(display, payload.prompt.requestId);
+    if (streaming) expect(await opened).not.toBeNull();
+    else await displayPrompt(display, payload.prompt.requestId);
     await expect(display.getByTestId('display-station')).toContainText(STATION_NAME, { timeout: 20_000 });
     await expect(display.getByRole('button', { name: 'Find my membership', exact: true })).toBeVisible({ timeout: 20_000 });
     await expect(staff.getByRole('button', { name: 'Find my membership', exact: true })).toHaveCount(0);
@@ -961,5 +967,39 @@ test('separate display guest shop uses captured sizes, lock retention, disconnec
     } finally {
       try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
     }
+  }
+});
+
+
+test('separate display streams till changes and customer answers, then holds and pauses on disconnect', async ({ page, browser, baseURL }) => {
+  test.setTimeout(120_000);
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL, true);
+  try {
+    const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
+    await typePhone(fixture.display, MEMBER_PHONE);
+    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    await lookup;
+    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Skip for now', exact: true }).click();
+    await page.getByRole('button', { name: 'F&B', exact: true }).click();
+    await expect(fixture.display.getByTestId('display-fnb').getByRole('heading', { name: 'Order here', exact: true })).toBeVisible();
+    await fixture.display.context().setOffline(true);
+    await expect(fixture.display.getByText('Reconnecting', { exact: true })).toBeVisible();
+    await fixture.display.waitForTimeout(10_000);
+    await expect(fixture.display.getByTestId('display-fnb')).toBeVisible();
+    await expect(fixture.display.getByText('Connection paused, your order is safe', { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(fixture.display.getByTestId('display-fnb')).toHaveCount(0);
+    await fixture.display.context().setOffline(false);
+    await expect(fixture.display.getByTestId('display-fnb')).toBeVisible({ timeout: 20_000 });
+    await fixture.revoke();
+    await expect(fixture.display.getByRole('heading', { name: 'Set up this display' })).toBeVisible({ timeout: 20_000 });
+    await fixture.releaseLease();
+    await signOut(page);
+  } finally {
+    await fixture.display.context().setOffline(false);
+    try { await fixture.releaseLease(); } finally { await fixture.cleanup(); await clearStaffPage(page); }
   }
 });

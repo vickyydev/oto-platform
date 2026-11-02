@@ -94214,6 +94214,27 @@
         }
       }
     },
+    "/box/v1/station/{stationId}/display/channel": {
+      "get": {
+        "description": "Server-sent customer snapshots: the display/session document on connect and each change. Paired display credential only; revocation closes the stream. No staff or scan events.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "stationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/box/v1/station/{stationId}/display/session": {
       "get": {
         "description": "The paired display's station document through its box, redacted by the box. A display paired to another station is refused.",

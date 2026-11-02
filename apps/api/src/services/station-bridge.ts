@@ -8,7 +8,7 @@ import {
   type StaffSigningKey,
 } from '@oto/box-agent';
 import { boxState, branch, session as sessionTable, station, type Db } from '@oto/db';
-import type { BridgeUnlockRequest, BridgeUnlockResponse, Permission } from '@oto/shared';
+import type { BridgeUnlockRequest, BridgeUnlockResponse, Permission, StationChannelMessage } from '@oto/shared';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Env } from '../env';
 import { boxStoreFor } from '../lib/box-store';
@@ -19,6 +19,45 @@ import { hasPermission, type EffectivePermission } from './permissions';
 import { sharedThrottle } from './staff-token';
 import { managerForStation, type StationRow } from './station-session';
 import { withTx } from './tx';
+import { authenticateDisplay, displaySession, type DisplayDeviceAuth } from './display';
+
+/** Only snapshots leave this subscription, with the display/session projection.
+ * Recheck before each delivery and while idle: revocation closes a quiet screen too.
+ */
+export function subscribeDisplayChannel(db: Db, auth: DisplayDeviceAuth, tokenHash: string,
+  send: (message: StationChannelMessage) => void, close: () => void,
+  heartbeat: () => void, log?: FastifyBaseLogger): () => void {
+  const { manager } = managerForStation(db, auth.station, log);
+  let stopped = false;
+  let sequence = -1;
+  let queue = Promise.resolve();
+  const enqueue = (work: () => Promise<void>) => {
+    queue = queue.then(async () => { if (!stopped) await work(); }).catch(() => { if (!stopped) close(); });
+  };
+  const authorize = async () => {
+    const current = await authenticateDisplay(db, tokenHash, 'display:read');
+    if (current.station.id !== auth.station.id || current.station.boxId !== auth.station.boxId) {
+      throw new Error('Display target changed');
+    }
+  };
+  const deliver = (message: StationChannelMessage) => {
+    if (stopped || message.kind !== 'snapshot' || message.document.sequence < sequence) return;
+    sequence = message.document.sequence;
+    send({ ...message, actionId: null, document: { ...message.document, lease: null } });
+  };
+  // Subscribe before the initial read so a change during that read is not lost.
+  enqueue(async () => {
+    await authorize();
+    const first = await displaySession(db, auth, log);
+    deliver({ kind: 'snapshot', view: 'customer', document: first.document, actionId: null, serverTime: new Date().toISOString() });
+  });
+  const detach = manager.subscribe(auth.station.id, 'customer', message => {
+    if (message.kind === 'snapshot') enqueue(async () => { await authorize(); deliver(message); });
+  });
+  const timer = setInterval(() => enqueue(async () => { await authorize(); if (!stopped) heartbeat(); }), 5_000);
+  timer.unref?.();
+  return () => { stopped = true; clearInterval(timer); detach(); };
+}
 
 /**
  * THE STATION BRIDGE, MOUNTED BY THE API FOR A VIRTUAL BOX (offline plan §2.2,

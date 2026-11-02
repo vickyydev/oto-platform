@@ -9,7 +9,7 @@ import {
   type StationSessionDocument, type StationSessionStage,
 } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
-import { bridgeApi } from '@/api/bridge';
+import { bridgeApi, watchBridgeSnapshots } from '@/api/bridge';
 import { currentLane, isBoxLaneTrigger, noteLaneFailure } from './lane';
 import type { ContactChannel, Member, Sale } from '@/types';
 import { computeLineBreakdown, isAdultRulePriced, isTierPriced, unpricedCartLines } from './pricing';
@@ -486,6 +486,9 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
   const current = useRef({ state, onAnswer, active });
   current.current = { state, onAnswer, active };
   const publisher = useRef<DisplayPublisher | null>(null);
+  const wake = useRef<(() => void) | null>(null);
+  const presentationSignature = JSON.stringify({ key: state.key, presentation: state.presentation('') });
+  useEffect(() => { wake.current?.(); }, [presentationSignature]);
   const [connected, setConnected] = useState<ConnectedDisplay[]>([]);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -531,10 +534,34 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
         return 'unknown';
       }
     };
-    const tick = async () => {
+    let running = false;
+    let queued = false;
+    let immediate: ReturnType<typeof setTimeout> | undefined;
+    let documentCache: StationSessionDocument | null = null;
+    let streaming = false;
+    let seenCache: ConnectedDisplay[] | 'unknown' = [];
+    let watchedAt = -Infinity;
+    const adopt = (document: StationSessionDocument) => {
+      if (!documentCache || document.sequence >= documentCache.sequence) documentCache = document;
+    };
+    const wakeNow = () => {
       if (paused()) return;
+      if (running) { queued = true; return; }
+      clearTimeout(immediate);
+      immediate = setTimeout(() => { void tick(false); }, 50);
+    };
+    wake.current = wakeNow;
+    const tick = async (refresh = true) => {
+      if (paused()) return;
+      if (running) { queued = true; return; }
+      running = true;
+      clearTimeout(timer);
       try {
-        const seen = await watching();
+        if (Date.now() - watchedAt >= POLL_MS) {
+          seenCache = await watching();
+          watchedAt = Date.now();
+        }
+        const seen = seenCache;
         if (paused()) return;
         setConnected(seen === 'unknown' ? [] : seen);
         if (seen !== 'unknown' && !seen.length) return;
@@ -557,10 +584,14 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           if (paused()) return;
           document = renewed.document;
           channel.renewedAt = Date.now();
+        } else if (documentCache && (!refresh || streaming)) {
+          document = documentCache;
         } else {
           document = (await bridgeApi.session(stationId)).document;
           if (paused()) return;
         }
+        adopt(document);
+        document = documentCache!;
         const latest = current.current;
         const key = latest.state.key;
         if (key !== channel.promptKey) {
@@ -585,9 +616,10 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
         const payload = latest.state.presentation(channel.requestId);
         const signature = JSON.stringify(payload);
         if (signature !== channel.lastPublished) {
-          await bridgeApi.publish(stationId, { type: 'session.publish_display', leaseId: channel.leaseId,
+          const published = await bridgeApi.publish(stationId, { type: 'session.publish_display', leaseId: channel.leaseId,
             lastSeenSequence: document.sequence, actionId: crypto.randomUUID(), payload });
           if (paused()) return;
+          adopt(published.document);
           channel.lastPublished = signature;
         }
         setError(null);
@@ -601,12 +633,24 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
         setConnected([]);
         setError(failure instanceof Error ? failure.message : 'The display could not connect.');
       } finally {
-        if (!paused()) timer = setTimeout(() => { void tick(); }, POLL_MS);
+        running = false;
+        if (!paused()) {
+          timer = setTimeout(() => { void tick(); }, !streaming && (seenCache === 'unknown' || seenCache.length) ? 500 : POLL_MS);
+          if (queued) { queued = false; wakeNow(); }
+        }
       }
     };
+    const stopStream = watchBridgeSnapshots(stationId, {
+      onSnapshot: document => { adopt(document); wakeNow(); },
+      onState: value => { streaming = value; },
+      onFailure: () => { /* The existing tick reads while the stream recovers. */ },
+    });
     void tick();
     return () => {
       stopped = true;
+      stopStream();
+      if (wake.current === wakeNow) wake.current = null;
+      clearTimeout(immediate);
       clearTimeout(timer);
     };
   }, [stationId, active]);
