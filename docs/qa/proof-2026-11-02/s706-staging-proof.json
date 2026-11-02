@@ -1,0 +1,169 @@
+{
+  "unit": "SCRUM-706",
+  "sha": "c18d9ab29151aa4e972c16b26fe3351c3aece65c",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41379324838",
+  "deployments": [
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbjvsmbbc2fs73dv7rlg",
+      "sha": "c18d9ab29151aa4e972c16b26fe3351c3aece65c",
+      "finishedAt": "2026-11-02T03:07:49.056925Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbjvsmbbc2fs73dv7rig",
+      "sha": "c18d9ab29151aa4e972c16b26fe3351c3aece65c",
+      "finishedAt": "2026-11-02T03:07:51.046154Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbjvsmbbc2fs73dv7qjg",
+      "sha": "c18d9ab29151aa4e972c16b26fe3351c3aece65c",
+      "finishedAt": "2026-11-02T03:10:23.550185Z"
+    }
+  ],
+  "surfaces": [
+    {
+      "name": "desktop",
+      "preflightRead": {
+        "receivedAt": "2026-11-02T03:11:07.140Z",
+        "sha256": "a92ce279e75c6c5a7fc49a6a85c29d88753468dca44dd9f184e9177760d70cde",
+        "signedAt": "2026-11-02T03:11:06.000Z",
+        "expiresAt": "2026-11-02T03:16:06.000Z",
+        "lifetimeSeconds": 300
+      },
+      "reads": [
+        {
+          "receivedAt": "2026-11-02T03:11:14.065Z",
+          "sha256": "76a8ddf87932e9ad9db1ed8c842ec66c74a267f757f84b0f9c15304cde990ba6",
+          "signedAt": "2026-11-02T03:11:13.000Z",
+          "expiresAt": "2026-11-02T03:16:13.000Z",
+          "lifetimeSeconds": 300
+        },
+        {
+          "receivedAt": "2026-11-02T03:11:14.541Z",
+          "sha256": "1c6577d233bbf3503d71fedca12ae4a864e619d3f2c9c540c0353056554788c7",
+          "signedAt": "2026-11-02T03:11:14.000Z",
+          "expiresAt": "2026-11-02T03:16:14.000Z",
+          "lifetimeSeconds": 300
+        },
+        {
+          "receivedAt": "2026-11-02T03:15:44.105Z",
+          "sha256": "e9e5f83e1711e68b199ff782912f30154463d282f1582f7fa4f1e48d0cfb71e2",
+          "signedAt": "2026-11-02T03:15:43.000Z",
+          "expiresAt": "2026-11-02T03:20:43.000Z",
+          "lifetimeSeconds": 300
+        },
+        {
+          "receivedAt": "2026-11-02T03:19:44.096Z",
+          "sha256": "2f7db3e3cb6271c4f066f78f7920f3987385a5a00727a9cbe7415c8d25265211",
+          "signedAt": "2026-11-02T03:19:43.000Z",
+          "expiresAt": "2026-11-02T03:24:43.000Z",
+          "lifetimeSeconds": 300
+        }
+      ],
+      "failuresInjected": 1,
+      "initialLoadedAt": "2026-11-02T03:11:14.843Z",
+      "checks": [
+        "One browser-only image request was aborted; the board fetched a fresh signed link and loaded the photo",
+        "After ten real minutes without reload, the photo is loaded using a current signature; every replacement arrived more than twenty seconds before expiry"
+      ],
+      "failureAt": "2026-11-02T03:11:14.065Z",
+      "renewalHeadroomSeconds": [
+        298.459,
+        29.895,
+        58.904
+      ],
+      "finishedAt": "2026-11-02T03:21:35.767Z",
+      "finalImage": {
+        "sha256": "2f7db3e3cb6271c4f066f78f7920f3987385a5a00727a9cbe7415c8d25265211",
+        "signedAt": "2026-11-02T03:19:43.000Z",
+        "expiresAt": "2026-11-02T03:24:43.000Z",
+        "lifetimeSeconds": 300,
+        "naturalWidth": 640
+      }
+    },
+    {
+      "name": "phone",
+      "preflightRead": {
+        "receivedAt": "2026-11-02T03:11:27.022Z",
+        "sha256": "01840f23f003a08f1699629e05cbd4133b7cdc775a02abb4469fbb14a533ae31",
+        "signedAt": "2026-11-02T03:11:26.000Z",
+        "expiresAt": "2026-11-02T03:16:26.000Z",
+        "lifetimeSeconds": 300
+      },
+      "reads": [
+        {
+          "receivedAt": "2026-11-02T03:11:34.552Z",
+          "sha256": "a6df7857f0a2e73d030f512f146ddb6c0b1e49c16286d28a6431ba769ccd12d5",
+          "signedAt": "2026-11-02T03:11:34.000Z",
+          "expiresAt": "2026-11-02T03:16:34.000Z",
+          "lifetimeSeconds": 300
+        },
+        {
+          "receivedAt": "2026-11-02T03:11:35.026Z",
+          "sha256": "a6df7857f0a2e73d030f512f146ddb6c0b1e49c16286d28a6431ba769ccd12d5",
+          "signedAt": "2026-11-02T03:11:34.000Z",
+          "expiresAt": "2026-11-02T03:16:34.000Z",
+          "lifetimeSeconds": 300
+        },
+        {
+          "receivedAt": "2026-11-02T03:16:04.206Z",
+          "sha256": "c75fa4310e6178a74cde369a5342c607156a2871f3427cd408bf15baddfb48ce",
+          "signedAt": "2026-11-02T03:16:03.000Z",
+          "expiresAt": "2026-11-02T03:21:03.000Z",
+          "lifetimeSeconds": 300
+        },
+        {
+          "receivedAt": "2026-11-02T03:20:04.271Z",
+          "sha256": "13a647f4a7b951685fee42a2f451a21b501f52c510a4226f7c355f6fddfbd1b3",
+          "signedAt": "2026-11-02T03:20:03.000Z",
+          "expiresAt": "2026-11-02T03:25:03.000Z",
+          "lifetimeSeconds": 300
+        }
+      ],
+      "failuresInjected": 1,
+      "initialLoadedAt": "2026-11-02T03:11:35.324Z",
+      "checks": [
+        "One browser-only image request was aborted; the board fetched a fresh signed link and loaded the photo",
+        "After ten real minutes without reload, the photo is loaded using a current signature; every replacement arrived more than twenty seconds before expiry"
+      ],
+      "failureAt": "2026-11-02T03:11:34.552Z",
+      "renewalHeadroomSeconds": [
+        29.794,
+        58.729
+      ],
+      "finishedAt": "2026-11-02T03:21:35.901Z",
+      "finalImage": {
+        "sha256": "13a647f4a7b951685fee42a2f451a21b501f52c510a4226f7c355f6fddfbd1b3",
+        "signedAt": "2026-11-02T03:20:03.000Z",
+        "expiresAt": "2026-11-02T03:25:03.000Z",
+        "lifetimeSeconds": 300,
+        "naturalWidth": 640
+      }
+    }
+  ],
+  "cleanup": [
+    {
+      "surface": "desktop",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "surface": "phone",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ],
+  "fixture": {
+    "stationId": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "childId": "01a111c0-63e6-7e46-9b28-8b53a8ab24c5",
+    "fileId": "01a111c5-b483-773a-8e8c-11395531900f",
+    "childName": "ZZ TEST Child 496",
+    "existing": true,
+    "image": "Existing synthetic green test image; no person is depicted"
+  },
+  "startedAt": "2026-11-02T03:11:35.433Z",
+  "completedAt": "2026-11-02T03:21:36.011Z",
+  "elapsedSeconds": 600.578
+}
