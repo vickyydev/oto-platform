@@ -1,0 +1,290 @@
+{
+  "unit": "SCRUM-502",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41532107227",
+  "version": "oto-box 0.1.0-20261102-7a00aa1c built 2026-11-02T21:51:28.209Z",
+  "startedAt": "2026-11-02T22:27:22.556Z",
+  "checks": [
+    {
+      "name": "Actual box refuses cash and the payment panel states that the unpaid order exists only on the till",
+      "saleId": "01a19e60-3a67-775a-a3d8-b42342bc8ebd",
+      "code": "RECEIPT_MARK_MISSING",
+      "at": "2026-11-02T22:27:49.331Z",
+      "passed": true
+    },
+    {
+      "name": "Refused sale has no platform row and the exact local receipt mark is restored",
+      "at": "2026-11-02T22:27:50.004Z",
+      "passed": true
+    },
+    {
+      "name": "A lost successful reply shows consistent uncertainty wording after exactly one cash POST",
+      "saleId": "01a19e60-4f84-7924-a369-792c13d0c782",
+      "receiptNumber": "Z502-000001",
+      "cashPosts": 1,
+      "at": "2026-11-02T22:27:54.761Z",
+      "passed": true
+    },
+    {
+      "name": "Reconnect returns the successful finalised sale, no refused sale and no quarantine",
+      "at": "2026-11-02T22:27:59.195Z",
+      "passed": true
+    },
+    {
+      "name": "Only the new ZZ TEST station and box are archived; bridge cleared and sessions signed out",
+      "at": "2026-11-02T22:28:02.582Z",
+      "passed": true
+    }
+  ],
+  "deployments": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "service": "oto-api-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgoqajnfac73c0qnvg",
+      "liveAt": "2026-11-02T22:22:56.169534Z"
+    },
+    {
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "name": "oto-pos-web-staging",
+      "service": "oto-pos-web-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81g6g",
+      "liveAt": "2026-11-02T22:17:49.887147Z"
+    },
+    {
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "name": "oto-pos-staging",
+      "service": "oto-pos-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gag",
+      "liveAt": "2026-11-02T22:16:14.264384Z"
+    },
+    {
+      "id": "srv-danng2p42hec73f38e3g",
+      "name": "oto-console-staging",
+      "service": "oto-console-staging",
+      "sha": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+      "deployId": "dep-dbkgmspsrm7s73b81gf0",
+      "liveAt": "2026-11-02T22:16:14.197736Z"
+    }
+  ],
+  "outcome": "passed",
+  "limitations": [
+    "Windows loopback, not a real iPad private HTTPS connection",
+    "No real certificate, DNS/router change or Pi installer run",
+    "No physical printer or power-cut acceptance"
+  ],
+  "local": {
+    "kioskOrigin": "http://127.0.0.1:50467",
+    "bridgeOrigin": "http://127.0.0.1:50468",
+    "home": "C:/oto-lanes/s502-agent-mvztxbuj"
+  },
+  "fixture": {
+    "boxId": "01a19e60-0acd-7922-8ea6-a090fc37bd3c",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "name": "ZZ TEST SCRUM-502 mvztxbuj",
+    "stationId": "01a19e60-0f9f-7c9f-b51a-76e0741975d4",
+    "printerId": "01a19e60-0de0-77fe-80ae-f4d78503f6f3"
+  },
+  "bridgeTrace": [
+    {
+      "at": "2026-11-02T22:27:45.031Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/channel",
+      "status": 401
+    },
+    {
+      "at": "2026-11-02T22:27:45.031Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 401,
+      "failure": "BOX_SESSION_REQUIRED"
+    },
+    {
+      "at": "2026-11-02T22:27:48.163Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/unlock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:48.189Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "at": "2026-11-02T22:27:48.190Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/channel",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:48.225Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:48.252Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "session.publish_display"
+    },
+    {
+      "at": "2026-11-02T22:27:48.255Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease/release",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:48.256Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/channel",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:48.259Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:48.264Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "session.publish_display"
+    },
+    {
+      "at": "2026-11-02T22:27:48.369Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "session.publish_display"
+    },
+    {
+      "at": "2026-11-02T22:27:48.642Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "cart.quote"
+    },
+    {
+      "at": "2026-11-02T22:27:48.706Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "session.publish_display"
+    },
+    {
+      "at": "2026-11-02T22:27:48.979Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "cart.quote"
+    },
+    {
+      "at": "2026-11-02T22:27:49.026Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "session.publish_display"
+    },
+    {
+      "at": "2026-11-02T22:27:49.243Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 409,
+      "type": "sale.finalise",
+      "failure": "RECEIPT_MARK_MISSING"
+    },
+    {
+      "at": "2026-11-02T22:27:49.330Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "session.publish_display"
+    },
+    {
+      "at": "2026-11-02T22:27:52.599Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/channel",
+      "status": 401
+    },
+    {
+      "at": "2026-11-02T22:27:52.599Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 401,
+      "failure": "BOX_SESSION_REQUIRED"
+    },
+    {
+      "at": "2026-11-02T22:27:53.483Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/unlock",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:53.502Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "checkin.board"
+    },
+    {
+      "at": "2026-11-02T22:27:53.504Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/channel",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:53.508Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 409,
+      "failure": "STATION_NO_LEASE"
+    },
+    {
+      "at": "2026-11-02T22:27:53.577Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/channel",
+      "status": 200
+    },
+    {
+      "at": "2026-11-02T22:27:53.581Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 409,
+      "failure": "STATION_NO_LEASE"
+    },
+    {
+      "at": "2026-11-02T22:27:53.661Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 409,
+      "failure": "STATION_NO_LEASE"
+    },
+    {
+      "at": "2026-11-02T22:27:54.037Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "cart.quote"
+    },
+    {
+      "at": "2026-11-02T22:27:54.105Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 409,
+      "failure": "STATION_NO_LEASE"
+    },
+    {
+      "at": "2026-11-02T22:27:54.383Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/intents",
+      "status": 200,
+      "type": "cart.quote"
+    },
+    {
+      "at": "2026-11-02T22:27:54.435Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 409,
+      "failure": "STATION_NO_LEASE"
+    },
+    {
+      "at": "2026-11-02T22:27:54.717Z",
+      "path": "/box/v1/station/01a19e60-0f9f-7c9f-b51a-76e0741975d4/lease",
+      "status": 409,
+      "failure": "STATION_NO_LEASE"
+    }
+  ],
+  "refusedSale": {
+    "id": "01a19e60-3a67-775a-a3d8-b42342bc8ebd",
+    "code": "RECEIPT_MARK_MISSING"
+  },
+  "offlineSale": {
+    "id": "01a19e60-4f84-7924-a369-792c13d0c782",
+    "receiptNumber": "Z502-000001",
+    "grossSatang": 9000
+  },
+  "cashPostCount": 1,
+  "tillSignedOutAt": "2026-11-02T22:27:59.386Z",
+  "adminSignedOutAt": "2026-11-02T22:28:02.582Z",
+  "cleanedAt": "2026-11-02T22:28:02.582Z",
+  "finishedAt": "2026-11-02T22:28:02.858Z",
+  "fixtureRetained": false
+}

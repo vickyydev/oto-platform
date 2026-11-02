@@ -1,0 +1,30 @@
+{
+  "unit": "SCRUM-502",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "jobId": "job-dbkgt0d9fdbs73fll0lg",
+  "startedAt": "2026-11-02T22:28:16.558Z",
+  "readOnly": true,
+  "status": "succeeded",
+  "result": {
+    "event": "s502_database_proof",
+    "at": "2026-11-02T22:29:03.571Z",
+    "readOnly": true,
+    "refusedSaleRows": 0,
+    "saleId": "01a19e60-4f84-7924-a369-792c13d0c782",
+    "saleRows": 1,
+    "receiptNumber": "Z502-000001",
+    "receiptRows": 1,
+    "paymentRows": 1,
+    "payment": {
+      "id": "01a19e60-5f0f-7076-99f6-59d5c34d5459",
+      "method": "cash",
+      "status": "approved",
+      "amount_satang": 9000
+    },
+    "syncAnomalies": 0,
+    "boxArchived": true,
+    "stationArchived": true,
+    "bridgeCleared": true,
+    "passed": true
+  }
+}
