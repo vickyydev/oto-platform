@@ -7,9 +7,10 @@
 //           node scripts/agent/jira.mjs walk SCRUM-494 Testing
 //           node scripts/agent/jira.mjs attach SCRUM-494 a.png b.png
 //           node scripts/agent/jira.mjs images SCRUM-494
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
-import { need } from './env.mjs';
+import { need, ROOT } from './env.mjs';
 
 const base = () => need('JIRA_BASE_URL').replace(/\/+$/, '');
 const auth = () =>
@@ -51,17 +52,67 @@ export const images = async (key) => {
   return (j?.fields?.attachment ?? []).filter((a) => /^image\//.test(a.mimeType));
 };
 
+const REPO_URL = 'https://github.com/vickyydev/oto-platform';
+
+/** Every commit on main that names the key, oldest first, without docs commits: [sha, subject]. */
+const commitsFor = (key) =>
+  execFileSync('git', ['log', 'origin/main', '--reverse', '--format=%H%x09%s', '-E', `--grep=${key}\\b`], { cwd: ROOT, encoding: 'utf8' })
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => l.split('\t'))
+    .filter(([sha]) => /^[0-9a-f]{40}$/.test(sha))
+    // docs(qa) evidence commits and docs(progress) checkpoints are not the fix.
+    .filter(([, subject]) => !/^docs\(/.test(subject));
+
+/**
+ * Add the commits that shipped a ticket as web links, and one comment naming
+ * them (owner's protocol, 2026-09-23). Links already on the ticket are skipped,
+ * and no comment is posted when nothing new was linked.
+ */
+export const linkCommits = async (key) => {
+  const commits = commitsFor(key);
+  if (commits.length === 0) return { linked: 0, note: 'no commit on main names this key' };
+  const existing = await jget(`/rest/api/3/issue/${key}/remotelink`);
+  const have = new Set((Array.isArray(existing) ? existing : []).map((l) => l.object?.url));
+  let linked = 0;
+  for (const [sha, subject] of commits) {
+    const url = `${REPO_URL}/commit/${sha}`;
+    if (have.has(url)) continue;
+    const r = await jpost(`/rest/api/3/issue/${key}/remotelink`, {
+      globalId: `github-commit-${sha}`,
+      relationship: 'shipped in',
+      object: { url, title: `${sha.slice(0, 7)} ${subject}`, summary: 'Commit on main', icon: { url16x16: 'https://github.com/favicon.ico', title: 'GitHub' } },
+    });
+    if (r.status < 300) linked += 1;
+  }
+  if (linked > 0) {
+    const body = `Commits on main that shipped this, linked on the ticket:\n${commits
+      .map(([sha, subject]) => `- ${sha.slice(0, 7)} — ${subject} (${REPO_URL}/commit/${sha})`)
+      .join('\n')}`;
+    await jpost(`/rest/api/2/issue/${key}/comment`, { body });
+  }
+  return { linked, total: commits.length };
+};
+
 /**
  * Walk one step at a time, re-reading after each hop; never backwards.
- * Refuses to reach Deployed while the issue has no screenshot attached.
+ * Refuses to reach Deployed while the issue has no screenshot attached, and
+ * links the commits that shipped the ticket when it gets there.
  */
 export const walkTo = async (key, target) => {
   if (target === 'Deployed' && (await images(key)).length === 0) {
     throw new Error(`${key}: no screenshot attached; Deployed needs one.`);
   }
+  let moved = false;
   for (let hop = 0; hop < 6; hop += 1) {
     const { status: cur } = await statusOf(key);
-    if (cur === target) return cur;
+    if (cur === target) {
+      if (moved && target === 'Deployed') {
+        const l = await linkCommits(key);
+        console.log(`${key}: commit links +${l.linked} of ${l.total ?? 0}${l.note ? ` (${l.note})` : ''}`);
+      }
+      return cur;
+    }
     const ci = ORDER.indexOf(cur);
     const ti = ORDER.indexOf(target);
     if (ci < 0 || ti < 0 || ci >= ti) return cur;
@@ -74,6 +125,7 @@ export const walkTo = async (key, target) => {
       return cur;
     }
     await jpost(`/rest/api/3/issue/${key}/transitions`, { transition: { id: step.id } });
+    moved = true;
   }
   return (await statusOf(key)).status;
 };

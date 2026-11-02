@@ -29,10 +29,10 @@
  *
  * Credentials come from the gitignored .env and are never printed.
  */
-import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { linkCommits } from './agent/jira.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 for (const line of readFileSync(join(ROOT, '.env'), 'utf8').split(/\r?\n/)) {
@@ -40,7 +40,6 @@ for (const line of readFileSync(join(ROOT, '.env'), 'utf8').split(/\r?\n/)) {
   if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
 }
 const BASE = process.env.JIRA_BASE_URL.replace(/\/+$/, '');
-const REPO_URL = 'https://github.com/vickyydev/oto-platform';
 const H = {
   authorization: 'Basic ' + Buffer.from(`${process.env.JIRA_EMAIL}:${process.env.JIRA_API_TOKEN}`).toString('base64'),
   'content-type': 'application/json',
@@ -51,48 +50,6 @@ const issue = async (key) =>
   (await (await fetch(`${BASE}/rest/api/3/issue/${key}?fields=status,attachment,summary`, { headers: H })).json()).fields;
 
 const imageCount = (fields) => (fields.attachment ?? []).filter((a) => /^image\//.test(a.mimeType ?? '')).length;
-
-/** Every commit on main that names the key, oldest first: [sha, subject]. */
-function commitsFor(key) {
-  const out = execSync(`git log origin/main --reverse --format=%H%x09%s --grep="${key}\\b" -E`, { cwd: ROOT, encoding: 'utf8' });
-  return out
-    .split('\n')
-    .filter(Boolean)
-    .map((l) => l.split('\t'))
-    .filter(([sha]) => /^[0-9a-f]{40}$/.test(sha))
-    // docs(qa) evidence commits and docs(progress) checkpoints are not the fix.
-    .filter(([, subject]) => !/^docs\(/.test(subject));
-}
-
-/** Add the commits as web links on the ticket and one comment naming them. */
-async function linkCommits(key) {
-  const commits = commitsFor(key);
-  if (commits.length === 0) return { linked: 0, note: 'no commit on main names this key' };
-  const existing = await (await fetch(`${BASE}/rest/api/3/issue/${key}/remotelink`, { headers: H })).json();
-  const have = new Set((Array.isArray(existing) ? existing : []).map((l) => l.object?.url));
-  let linked = 0;
-  for (const [sha, subject] of commits) {
-    const url = `${REPO_URL}/commit/${sha}`;
-    if (have.has(url)) continue;
-    const r = await fetch(`${BASE}/rest/api/3/issue/${key}/remotelink`, {
-      method: 'POST',
-      headers: H,
-      body: JSON.stringify({
-        globalId: `github-commit-${sha}`,
-        relationship: 'shipped in',
-        object: { url, title: `${sha.slice(0, 7)} ${subject}`, summary: 'Commit on main', icon: { url16x16: 'https://github.com/favicon.ico', title: 'GitHub' } },
-      }),
-    });
-    if (r.ok) linked += 1;
-  }
-  if (linked > 0) {
-    const body =
-      `Commits on main that shipped this, linked on the ticket:\n` +
-      commits.map(([sha, subject]) => `- ${sha.slice(0, 7)} — ${subject} (${REPO_URL}/commit/${sha})`).join('\n');
-    await fetch(`${BASE}/rest/api/2/issue/${key}/comment`, { method: 'POST', headers: H, body: JSON.stringify({ body }) });
-  }
-  return { linked, total: commits.length };
-}
 
 async function walkTo(key, target, force) {
   for (let hop = 0; hop < 6; hop += 1) {
