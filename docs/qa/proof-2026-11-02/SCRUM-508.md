@@ -9,3 +9,5 @@ The staging party was unpaid: no charge, payment, SMS or hardware action was cre
 The exact test event was archived at 2026-11-02T00:27:16.751Z; the event list no longer contains it. At 2026-11-02T00:30:42.460Z, a fresh signed-in check confirmed the summary returned to its original count **0**, with zero party takings and transactions. Every proof session was signed out successfully. The first capture attempts stopped before creating any event: the proof script needed the native station picker and the current session-context response. An idle lock during cleanup waiting was resolved by signing in again; no lock policy changed.
 
 The existing box-offline and stock banners in the screenshot were left intact. This proof certifies the party reporting correction, not hardware health.
+
+Jira readback confirms **Deployed**. The proof card is attached as **12201**; see the [attachment and status receipt](scrum-508-jira-receipt.json). Proof publication: `da6f1896bd5bce2ae3b3d36079b14d26944d470f`. The owner retains final acceptance.
