@@ -404,38 +404,91 @@ monitor. It is a line in the config file, no release needed.
 
 ## If the drive dies
 
-Keep `OTO_BOX_MIRROR_DIR` on a **second physical drive**, mounted and writable by
-`oto-box`. The service reads it alongside `OTO_BOX_HOME`. `oto-box status` says
-when no directory is configured. A checked SQLite mirror is made every minute,
-and after a new unsent record when the last mirror is over ten seconds old.
-`oto-box store mirror-now` makes one on demand. The directory holds
-`box.sqlite.mirror`, `.mirror.1` and `.mirror.2`; keep all three. A mirror is a
-recent snapshot, so records newer than that snapshot are not protected by it.
-If a record arrives within ten seconds of a mirror and no further record arrives,
-it waits for the next minute's mirror. This is not a ten-second maximum loss window.
-Health reports drive errors, low space and missing or old mirrors.
+**Setting it up.** A second physical drive, formatted ext4. `sudo blkid` gives its
+UUID; run the installer again with `--mirror-uuid <UUID>`. It is mounted at
+`/mnt/oto-mirror` and the copies go in `/mnt/oto-mirror/box`: `box.sqlite.mirror`,
+`.mirror.1` and `.mirror.2`. Keep all three. A missing drive never stops the box: it
+boots and sells, and Health says the copies have stopped. A directory on the store's
+own drive, which is what an unmounted drive leaves behind, is refused and reported.
+`oto-box store mirror-now` makes a copy on demand.
 
-1. Stop the box (`sudo systemctl stop oto-box`). Keep the failed drive for
-   recovery; do not format it. Install the current release on the replacement
-   drive as in part C and connect the separate mirror drive.
-2. In Console > Devices, open **the existing box** and issue a new claim code.
-   Re-register that same box with `oto-box claim` (part C), then stop the service
-   again. Do not create a different box: the mirrored records belong to the
-   original box identity. Keep the new credential and service configuration.
-3. With the service stopped, run as the service account, using its configured
-   home: `sudo -u oto-box oto-box store restore /path/to/box.sqlite.mirror --home /var/lib/oto-box`.
-   A damaged file is refused. Try `.mirror.1` or `.mirror.2` if necessary. The
-   command checks the copy, preserves the current store and its WAL/SHM beside
-   it as `box.sqlite.replaced-<time>` files, then prints the unsent record count.
-   It does not change the credential or `/etc/oto-box/config`.
-4. Start the service and inspect Health and Failures > Quarantine. Re-registering
-   onto a blank store advances the journal epoch: restored records from the old
-   epoch can need an administrator's review in Quarantine; the restore does not
-   rewrite or automatically approve them. Confirm their outcome before reopening
-   the counter. Keep the mirror and replaced files until that check is complete.
+**What a copy protects.** A checked copy is made about ten seconds after the last
+unsent record, and otherwise every minute, skipped when nothing has changed. So a dead
+drive can lose about the last ten seconds of unsent records, plus the time one copy
+takes. That holds only while copies are being made. If they keep failing, what can be
+lost is everything since the last good copy, however long ago that was: Health raises
+`box.mirror_stale` after two failed rounds, about three minutes after the drive drops
+out. Sales that reached the platform are safe either way.
 
-The local restore rehearsal checks file integrity and preserves unsent records.
-A physical drive swap and the park's recovery time still need a Pi visit.
+**The order matters.** Restore, claim, send what was restored, Reset the store, then
+sell. Claiming a blank drive first moves the box to a new journal, and every unsent
+record then comes back refused, to be recorded by hand.
+
+1. Keep the failed drive; do not format it. **Keep the till closed.** Install the
+   current release on the replacement drive as in part C, **without** `--mirror-uuid`,
+   and do not claim it. The mirror drive stays out of the blank box's way until step 7.
+   The installer starts the service, so stop it: `sudo systemctl stop oto-box`.
+2. Mount the mirror drive read-only, copy the newest file out, and restore it:
+
+   ```bash
+   sudo mkdir -p /mnt/oto-recover
+   sudo mount -o ro UUID=<the drive's UUID> /mnt/oto-recover
+   sudo install -o oto-box -g oto-box -m 0600 /mnt/oto-recover/box/box.sqlite.mirror /var/lib/oto-box/from-mirror.sqlite
+   sudo oto-box store restore /var/lib/oto-box/from-mirror.sqlite
+   ```
+
+   It prints which box the copy belongs to, how many unsent records it holds, and how
+   old it is. A damaged copy is refused: do the same with `.mirror.1`, then `.mirror.2`.
+   The restore holds new sales by itself, and keeps anything it replaced beside the
+   store as `box.sqlite.replaced-<time>`.
+3. Console > Devices, open **the existing box** the restore named, and issue a new
+   claim code. Do not create a different box: the records belong to this one. Run
+   `sudo oto-box claim`. A code for any other box is refused and is not used up.
+   If the credential survived (a damaged store on a working drive), skip this step.
+4. `sudo systemctl start oto-box`, with the internet up. Run `oto-box status` until the
+   outbox reads 0; it counts every record not yet accepted. Failures > Quarantine stays
+   empty. Health says the box is waiting for Reset the store, and a sale at the box is
+   refused meanwhile ("Booth not ready" at the booth). That is the hold. An online sale
+   at the till would not be held, which is why the till stays closed.
+5. Console > Devices > the box > **Reset the store**. It is refused, by the Console and
+   by the box, while anything is unsent. It gives the box a new journal and moves the
+   platform's receipt numbering on as well.
+6. Open the till. The next sale gets a new number.
+7. `sudo umount /mnt/oto-recover`, then run the installer again with
+   `--mirror-uuid <UUID>` so copies start again. Keep the failed drive, the
+   `.replaced-` files and `from-mirror.sqlite` until the day's records are checked.
+
+**Receipt numbers.** A restore moves every station's numbering forward by 10,000, so no
+number a guest may already hold is issued twice. That leaves a gap in the numbers, for
+example from T1-000044 to T1-010044, and the Console's receipt check lists it. It is
+expected, and no sale is missing from it because of the restore. If an accountant asks:
+note the date of the restore beside the gap. A card terminal's references for that day
+move on by 2,000 in the same way.
+
+**Print jobs.** A slip waiting in the copy may already have come out of the printer, so
+it is not printed again by itself. The restore says how many there were. Reprint from
+History the one a guest does not have.
+
+**If a step went out of order.** A box claimed before the restore: the restore refuses,
+and says the platform would refuse the records. `--accept-refused` goes ahead anyway;
+they then arrive in Failures > Quarantine, each paid one saying what to record by hand.
+A copy of another box is refused into a home that names a box; `--other-box` overrides.
+
+**If Health says the mirror drive holds sales this store does not have,** no copy is being
+made and those sales are still on the drive. Restore them. If you have accounted for them
+by other means, move the three files out of the directory and copies start again.
+
+**Bench checks, not yet proven on a real Pi** (the steps above were run on a test agent
+against staging, with both directories on one disk):
+
+- [ ] Boot with the mirror drive missing: the box boots with no long wait, sells, and
+      Health raises `box.mirror_stale`.
+- [ ] The drive arriving late, after the service started: does a copy start by itself, or
+      does it need `sudo systemctl restart oto-box`? Write down which.
+- [ ] The drive pulled while running: the service keeps selling, Health raises within
+      about three minutes, and the heartbeat keeps going.
+- [ ] A real drive swap, start to finish, timed, with a real second drive.
+- [ ] How long one copy of a real store takes on that drive.
 
 ## Resetting the game
 

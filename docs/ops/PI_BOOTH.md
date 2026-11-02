@@ -158,6 +158,8 @@ voucher ledger. The standard single-use promise is omitted in this mode.
   4. Console → Devices → the new box → **Add a device**: the receipt printer again, at the same address (section 5, step 1).
   5. Console → Devices → the booth's station → **Box**: the new box; **Receipt printer**: the printer from step 4 → **Save the station**. The booth keeps its wheel and today's staff, and the television shows the wheel within about two minutes. The damaged box stays in the list, offline.
 
+  **A box with a mirror drive** should not take these steps: restoring its copy keeps the unsent records and the box's identity (BOX_QUICKSTART.md, "If the drive dies"). `claim --force` will not set aside a restored store that is still waiting for Reset the store.
+
   **What is lost**: whatever the box had not yet sent to the cloud — in particular any voucher printed while it was offline. The records the box could read are in the `.salvage-` file; everything is still in the set-aside store. Those slips answer "Code not found — the booth may not have synced yet" at the counter until an engineer recovers them from those files, so **do not delete the `.salvage-` or `.replaced-` files**, and tell us.
 
 ## 8. Advice for a booth that stays up
