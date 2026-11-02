@@ -1,0 +1,67 @@
+{
+  "unit": "SCRUM-703",
+  "featureSha": "2bed7e8f26adf3fc5608458e553e1855590834b0",
+  "sha": "b874af5ec35a4e17a6ebeca081491283c771a5a9",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41362143827",
+  "deployments": [
+    {
+      "service": "oto-console-staging",
+      "id": "dep-dbjsngqjnfac738uo8og",
+      "sha": "8e6e30278114fa3bf138afd384ae35ea347d0836",
+      "finishedAt": "2026-11-01T23:32:09.626167Z"
+    },
+    {
+      "service": "oto-pos-staging",
+      "id": "dep-dbjt2qe7bikc738g1ej0",
+      "sha": "b874af5ec35a4e17a6ebeca081491283c771a5a9",
+      "finishedAt": "2026-11-01T23:55:58.01351Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbjt0fm7bikc738fqam0",
+      "sha": "e1fc02ee1d02eacc51bd42e630515e92eadc9632",
+      "finishedAt": "2026-11-01T23:53:46.704892Z"
+    }
+  ],
+  "startedAt": "2026-11-02T00:00:41.996Z",
+  "checks": [
+    {
+      "check": "Console saves an incomplete draft and shows the reason on its card and drawer",
+      "passed": true
+    },
+    {
+      "check": "The greyed till picker and direct selection refuse the draft",
+      "passed": true,
+      "httpStatus": 409
+    },
+    {
+      "check": "After saving the prefix, both screens show ready and the API permits selection and a lease",
+      "passed": true
+    },
+    {
+      "check": "An already selected till cannot claim a lease after its prefix is cleared; the fixture is restored ready",
+      "passed": true,
+      "httpStatus": 409
+    }
+  ],
+  "station": {
+    "id": "01a1998f-0cf3-70e3-890b-a7ff88c71bda",
+    "name": "ZZ TEST setup traps 20261102",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "boxRole": "virtual",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "completedAt": "2026-11-02T00:01:22.094Z",
+  "cleanup": [
+    {
+      "surface": "Console",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "surface": "POS",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ]
+}
