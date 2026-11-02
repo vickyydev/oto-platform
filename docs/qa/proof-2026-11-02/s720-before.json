@@ -1,0 +1,82 @@
+{
+  "unit": "SCRUM-720",
+  "label": "before",
+  "startedAt": "2026-11-02T10:01:06.827Z",
+  "stationId": "01a19afe-d88c-74d2-b7b9-7cdde25d43b8",
+  "boxId": "01a19afe-d33c-7ea1-b583-c525b9322da7",
+  "stationName": "ZZ TEST SCRUM-710 display",
+  "tillDeploy": "Oto POS Till",
+  "displayName": "ZZ TEST SCRUM-720 before 1793613695869",
+  "credentialId": "01a19bb5-0ec1-769c-a315-3cd0e66d31b9",
+  "displayFollowing": "2026-11-02T10:01:39.868Z",
+  "idle": {
+    "from": "2026-11-02T10:01:55.553Z",
+    "to": "2026-11-02T10:02:55.568Z",
+    "display": {
+      "total": 88,
+      "lines": {
+        "GET /api/box/v1/station/:id/display/session": 85,
+        "GET /api/box/v1/station/:id/display/channel": 3
+      }
+    },
+    "till": {
+      "total": 115,
+      "lines": {
+        "GET /api/branches/:id/occupancy": 11,
+        "GET /api/stations/:id/displays": 26,
+        "GET /api/stations/:id/scans": 30,
+        "GET /api/stations/:id/printers": 2,
+        "GET /api/me/station/link": 3,
+        "GET /api/kiosk-desk": 3,
+        "POST /api/box/v1/station/:id/lease/renew": 3,
+        "GET /api/box/v1/station/:id/session": 31,
+        "GET /api/box/v1/station/:id/channel": 4,
+        "GET /api/branches/:id/pricing-mode": 1,
+        "GET /api/checkin/board": 1
+      }
+    },
+    "recordPreparedAtStart": "2026-11-02T10:01:55.496Z",
+    "recordPreparedAtEnd": "2026-11-02T10:02:56.075Z",
+    "recordSequenceStart": 38,
+    "recordSequenceEnd": 38,
+    "displayRepliesWithDocument": 85
+  },
+  "phoneToTillMs": [
+    1413
+  ],
+  "tillToDisplayMs": [
+    1574,
+    1346,
+    1789,
+    1664
+  ],
+  "recordAfterChange": {
+    "preparedAt": "2026-11-02T10:03:17.269Z",
+    "sequence": 50
+  },
+  "directStreamStatus": 200,
+  "directStream": {
+    "snapshots": 2,
+    "lastSequence": 51,
+    "recordFollowedAfterMs": null
+  },
+  "silentGap": {
+    "totalVisibleWhileReconnecting": true,
+    "lastReplyBeforeHoldMs": -350,
+    "reconnectingAfterLastReplyMs": 5575,
+    "pausedAfterLastReplyMs": 20678,
+    "orderStillShownWhenPaused": false,
+    "recoveredAfterRestoreMs": 1334
+  },
+  "cleanup": {
+    "at": "2026-11-02T10:04:23.104Z",
+    "revoke": 200,
+    "revokedAt": "2026-11-02T10:04:21.408Z",
+    "activeDisplays": 0,
+    "tillSignOut": 200,
+    "consoleSignOut": 200
+  },
+  "revokedScreenBackToPairing": true,
+  "replacementCodeExpired": true,
+  "finishedAt": "2026-11-02T10:04:25.338Z"
+}

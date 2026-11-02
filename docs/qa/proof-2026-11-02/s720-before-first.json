@@ -1,0 +1,75 @@
+{
+  "unit": "SCRUM-720",
+  "label": "before",
+  "startedAt": "2026-11-02T09:48:45.195Z",
+  "stationId": "01a19afe-d88c-74d2-b7b9-7cdde25d43b8",
+  "boxId": "01a19afe-d33c-7ea1-b583-c525b9322da7",
+  "stationName": "ZZ TEST SCRUM-710 display",
+  "tillDeploy": "Oto POS Till",
+  "displayName": "ZZ TEST SCRUM-720 before 1793612950846",
+  "credentialId": "01a19ba9-b07b-7291-90b2-9d7bc24419a1",
+  "displayFollowing": "2026-11-02T09:49:16.551Z",
+  "idle": {
+    "from": "2026-11-02T09:49:32.209Z",
+    "to": "2026-11-02T09:50:32.217Z",
+    "display": {
+      "total": 87,
+      "lines": {
+        "GET /api/box/v1/station/:id/display/session": 84,
+        "GET /api/box/v1/station/:id/display/channel": 3
+      }
+    },
+    "till": {
+      "total": 126,
+      "lines": {
+        "GET /api/box/v1/station/:id/session": 45,
+        "GET /api/stations/:id/printers": 2,
+        "GET /api/stations/:id/displays": 24,
+        "GET /api/stations/:id/scans": 30,
+        "GET /api/branches/:id/occupancy": 11,
+        "GET /api/me/station/link": 3,
+        "GET /api/kiosk-desk": 3,
+        "POST /api/box/v1/station/:id/lease/renew": 3,
+        "GET /api/box/v1/station/:id/channel": 3,
+        "GET /api/branches/:id/pricing-mode": 1,
+        "GET /api/checkin/board": 1
+      }
+    },
+    "recordPreparedAtStart": "2026-11-02T09:49:32.353Z",
+    "recordPreparedAtEnd": "2026-11-02T09:50:32.358Z",
+    "recordSequenceStart": 22,
+    "recordSequenceEnd": 22,
+    "displayRepliesWithDocument": 84
+  },
+  "phoneToTillMs": [
+    1416
+  ],
+  "tillToDisplayMs": [
+    1088,
+    953,
+    934,
+    873
+  ],
+  "recordAfterChange": {
+    "preparedAt": "2026-11-02T09:50:52.994Z",
+    "sequence": 36
+  },
+  "silentGap": {
+    "reconnectingAfterLastReplyMs": 6383,
+    "totalVisibleWhileReconnecting": true,
+    "pausedAfterLastReplyMs": 21134,
+    "orderStillShownWhenPaused": false,
+    "recoveredAfterRestoreMs": 1329
+  },
+  "cleanup": {
+    "at": "2026-11-02T09:51:18.033Z",
+    "revoke": 200,
+    "revokedAt": "2026-11-02T09:51:16.359Z",
+    "activeDisplays": 0,
+    "tillSignOut": 200,
+    "consoleSignOut": 200
+  },
+  "revokedScreenBackToPairing": true,
+  "replacementCodeExpired": true,
+  "finishedAt": "2026-11-02T09:51:20.268Z"
+}
