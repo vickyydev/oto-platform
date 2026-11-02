@@ -1,26 +1,26 @@
 # SCRUM-717 — station rules on the box lane
 
-The final pre-push fetch found recovery follow-up `119e2c59`, whose
-[CI 41436309930](https://github.com/vickyydev/oto-platform/actions/runs/41436309930)
-is running. This lane has rebased onto it. All 838 box tests and the 25 API
-routing/recovery review cases pass again. The source landing waits for this
-main run, as required by the brief.
+The owner approved Q717-1 on 2 November: one dedicated staging test agent
+inside the existing API, preserving the primary virtual box and adding no
+paid service. The implementation is ready locally; source CI, deployment
+and the native offline proof remain pending.
 
-Latest checkpoint: this lane has rebased onto installer correction `f227d9bf`.
-The combined tree passes all 838 box tests and the full API battery: 6,068
-passed across three embedded-Postgres shards, with the existing 401 skips
-and four TODOs unchanged. Box/API typechecks, generated contracts and the
-workspace build pass. The earlier 857 shared tests and touched-file lint
-also passed; the rebase changes no shared or 717 product bytes.
+The current base includes SCRUM-718 at
+`c2fdd28fdc9e944d058af62dec1347e5f2b7a56f`, whose
+[CI 41439428324](https://github.com/vickyydev/oto-platform/actions/runs/41439428324)
+passed. It also includes the planner's complete recovery repair, including
+`119e2c59`; that source passed all six jobs in
+[CI 41436309930](https://github.com/vickyydev/oto-platform/actions/runs/41436309930).
 
-Recovery release [41430108569](https://github.com/vickyydev/oto-platform/actions/runs/41430108569)
-cleared storage, build and seven till browser journeys, then failed ShellCheck
-SC1087 at install.sh lines 505-506. The planner fixed those expansions.
-Its [new run 41432225603](https://github.com/vickyydev/oto-platform/actions/runs/41432225603)
-passed all six jobs, watched by full SHA
-`f227d9bfad0b1a15f0bc484e49f960abf73a746e`. SCRUM-717's source is landing
-after that green base; its own exact-SHA CI and staging proof remain required.
-Q717-1 remains the proof dependency, and SCRUM-708 remains unstarted.
+Before the staging-host addition, the combined local API battery passed
+6,068 tests across three embedded-Postgres shards, with the existing 401
+skips and four TODOs. All 838 box tests passed after the final recovery
+follow-up. Shared tests (857), package typechecks, touched-file lint,
+generated contracts and the workspace build passed. The new host has 13
+review pins plus 25 routing, lease and existing agent regressions; its API
+typecheck, lint and generated-contract check pass. A deliberate mutation
+removed the environment and late-start guards: four HIGH findings
+reproduced while nine controls passed, then the guarded source was restored.
 
 Earlier branch checkpoint, 2 November 2026:
 `a1d88200c3ea7451f90583fa8a94e96a495277ac`.
@@ -105,21 +105,29 @@ agent map. Creating a new box row alone does not start another agent. The
 POS's `setBridgeOrigin` also has no caller, so a local agent is not an existing
 way to perform this proof from the deployed POS.
 
-The question on SCRUM-717 is which staging host should run that additional
-test virtual box while preserving the existing box and station assignments.
-The recommended option is an explicitly enabled staging-only additional
-ZZ TEST agent inside the existing API, under its existing single-instance
-protection. This needs a small startup change beyond the routing unit;
-the owner has been asked whether to include it. It has not been implemented.
-No staging record, environment setting, existing virtual box, park Pi or
-station has been changed for this unit. No payment or SMS was attempted.
+The approved option is implemented in `apps/api/src/services/box.ts`.
+`BOX_AGENT_TEST_SLOT=zz-test-s717-20261102` opts in to one additional agent
+only with `DEPLOY_ENV=staging` and `OPS_TEST_CONTROLS=true`. Its existing row
+must be an enabled, unarchived virtual box named `ZZ TEST ...`, on the
+primary box's exact operator and branch. The primary slot is unchanged.
+Both agents use the existing single-instance lease; stopping it also
+invalidates a startup still awaiting registration. No new service, route,
+credential type or permission was added. Removing the option and restarting
+the API returns to the existing one-agent setup.
+
+The new fixture was prepared at `2026-11-02T12:11:07.296Z`:
+`ZZ TEST SCRUM-717 virtual box`, slot `zz-test-s717-20261102`, and
+`ZZ TEST SCRUM-717 till`, prefix `Z717`, manual card and QR none.
+Exact IDs and independently confirmed session sign-outs are in
+`s717-fixture.json`. The test agent has not yet been enabled. Existing box
+and station assignments remain unchanged; no payment or SMS was attempted.
 SCRUM-717 stays Testing until the specified proof is inspected and attached.
 SCRUM-708 has not started and waits for that Deployed state.
 
 ## Planned staging procedure — not yet executed
 
 1. Verify the green release SHA and the completed API deployment before
-   creating a new ZZ TEST virtual box and till. Preserve their exact IDs in
+   enabling the prepared ZZ TEST virtual box and till. Preserve their exact IDs in
    the proof receipt. Start the test agent only through the chosen host setup.
 2. Give that till its own receipt prefix, manual-card routing and QR none.
    Confirm its configuration/cache has arrived, then use Console's offline

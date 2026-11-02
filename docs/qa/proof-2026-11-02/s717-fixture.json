@@ -1,0 +1,26 @@
+{
+  "unit": "SCRUM-717",
+  "boxName": "ZZ TEST SCRUM-717 virtual box",
+  "stationName": "ZZ TEST SCRUM-717 till",
+  "slot": "zz-test-s717-20261102",
+  "createdAt": "2026-11-02T12:10:57.449Z",
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "primaryBoxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+  "boxId": "01a19c2b-9dec-7939-934a-17f45a6833be",
+  "stationId": "6d049534-7b69-4fea-a6be-cfeaa69ac9a0",
+  "receiptPrefix": "Z717",
+  "preparedAt": "2026-11-02T12:11:07.296Z",
+  "agentEnabled": false,
+  "sessionCleanup": [
+    {
+      "origin": "https://oto-console-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    },
+    {
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signOutStatus": 200,
+      "afterStatus": 401
+    }
+  ]
+}
