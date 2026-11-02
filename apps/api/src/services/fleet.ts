@@ -27,7 +27,8 @@ import {
   type StationKind,
 } from '@oto/db';
 import {
-  stationPrefixReadiness,
+  routedTerminalRoles,
+  supportedSellingTerminalProtocol,
   KIOSK_DEVICE_SCOPES,
   SIMULATOR_ACTIONS_WITH_SECRETS,
   SimulatorActionSchema,
@@ -52,6 +53,7 @@ import { mintStaffToken, staffTokenSettings, type MintedStaffToken } from './sta
 import { withTx, type Exec, type OpContext } from './tx';
 import type { Env } from '../env';
 import { lockActiveOrganisation } from './organisation-archive';
+import { readStationsSellingReadiness } from './payments/terminal';
 
 /**
  * The ordinary HTTP surface of the fleet (S2-04): the estate an administrator
@@ -581,6 +583,7 @@ export async function listPickableStations(
       kind: station.kind,
       accessScope: station.accessScope,
       codePrefix: station.codePrefix,
+      paymentRouting: station.paymentRouting,
       boxId: station.boxId,
       boxName: box.name,
       boxStatus: box.status,
@@ -598,8 +601,9 @@ export async function listPickableStations(
     )
     .orderBy(asc(station.name));
 
+  const readiness = await readStationsSellingReadiness(db, ctx.operatorId, rows);
   return rows.map((r) => ({
-    ...stationPrefixReadiness(r),
+    ...readiness.get(r.id)!,
     id: r.id,
     name: r.name,
     kind: r.kind,
@@ -820,7 +824,7 @@ export async function readStationReadiness(exec: Exec, operatorId: string, stati
     .where(and(eq(station.id, stationId), eq(station.operatorId, operatorId), isNull(station.archivedAt)))
     .limit(1);
   if (!row) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
-  return stationPrefixReadiness(row);
+  return (await readStationsSellingReadiness(exec, operatorId, [row])).get(row.id)!;
 }
 
 export async function assertStationReady(exec: Exec, operatorId: string, stationId: string): Promise<void> {
@@ -831,7 +835,7 @@ export async function assertStationReady(exec: Exec, operatorId: string, station
 // --- Assembling a station for the admin screens -----------------------------
 
 /**
- * Turn station rows into what both front ends read, in three queries however
+ * Turn station rows into what both front ends read, in a fixed query count however
  * many stations there are — the Devices page lists a whole branch.
  */
 async function stationViews(
@@ -841,6 +845,7 @@ async function stationViews(
 ): Promise<StationView[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
+  const readiness = await readStationsSellingReadiness(exec, rows[0]!.operatorId, rows);
 
   const boxIds = [...new Set(rows.map((r) => r.boxId).filter((v): v is string => v !== null))];
   const boxes = boxIds.length
@@ -902,7 +907,7 @@ async function stationViews(
   return rows.map((r) => {
     const b = r.boxId ? boxById.get(r.boxId) : undefined;
     return {
-      ...stationPrefixReadiness(r),
+      ...readiness.get(r.id)!,
       id: r.id,
       branchId: r.branchId,
       name: r.name,
@@ -993,6 +998,9 @@ async function validateStationWrite(
     operatorId: string;
     branchId: string;
     boxId: string | null;
+    kind: string;
+    paymentRouting: unknown;
+    terminalRolesToValidate?: string[];
     devices: Array<{ role: StationDeviceRole; deviceId: string }>;
     staffAccountIds: string[];
   },
@@ -1021,7 +1029,7 @@ async function validateStationWrite(
   if (input.devices.length > 0) {
     const ids = [...new Set(input.devices.map((d) => d.deviceId))];
     const rows = await db
-      .select({ id: device.id, kind: device.kind, boxId: device.boxId })
+      .select({ id: device.id, kind: device.kind, boxId: device.boxId, protocol: device.protocol })
       .from(device)
       .where(
         and(
@@ -1048,6 +1056,10 @@ async function validateStationWrite(
           `A ${row.kind.replace(/_/g, ' ')} cannot take the ${assignment.role.replace(/_/g, ' ')} job`,
           { deviceId: assignment.deviceId, role: assignment.role, kind: row.kind },
         );
+      }
+      if (input.kind === 'till' && (input.terminalRolesToValidate ?? routedTerminalRoles(input.paymentRouting)).includes(assignment.role)
+        && !supportedSellingTerminalProtocol(row.protocol)) {
+        throw new AppError(400, 'TERMINAL_PROTOCOL_UNSUPPORTED', 'The assigned terminal has no supported protocol');
       }
     }
   }
@@ -1216,6 +1228,8 @@ export async function createStation(
     operatorId: actor.operatorId,
     branchId,
     boxId: input.boxId,
+    kind: input.kind,
+    paymentRouting: input.paymentRouting,
     devices: input.devices,
     staffAccountIds: input.staffAccountIds,
   });
@@ -1296,11 +1310,21 @@ export async function updateStation(
   const [beforeView] = await stationViews(db, [before], { withStaff: true });
   const devices = patch.devices ?? beforeView!.devices.map((d) => ({ role: d.role, deviceId: d.deviceId }));
   const staffAccountIds = patch.staffAccountIds ?? beforeView!.staff.map((s) => s.accountId);
+  const paymentRouting = patch.paymentRouting === undefined ? before.paymentRouting : patch.paymentRouting;
+  // Existing incomplete drafts still save. Refuse a newly assigned device or
+  // newly routed tender, rather than blocking unrelated edits to an old draft.
+  const previousRoles = routedTerminalRoles(before.paymentRouting);
+  const terminalRolesToValidate = routedTerminalRoles(paymentRouting).filter(role =>
+    before.kind !== 'till' || !previousRoles.includes(role)
+    || devices.find(d => d.role === role)?.deviceId !== beforeView!.devices.find(d => d.role === role)?.deviceId);
 
   await validateStationWrite(db, {
     operatorId: actor.operatorId,
     branchId: before.branchId,
     boxId,
+    kind: patch.kind ?? before.kind,
+    paymentRouting,
+    terminalRolesToValidate,
     devices,
     staffAccountIds,
   });

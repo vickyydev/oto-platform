@@ -1,7 +1,7 @@
 import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { BOOTH_CODE_PREFIX_LENGTH, stationPrefixReadiness } from '@oto/shared';
+import { BOOTH_CODE_PREFIX_LENGTH, routedTerminalRoles, stationPrefixReadiness, stationSellingReadiness, supportedSellingTerminalProtocol } from '@oto/shared';
 import {
   fleetApi,
   mergeRouting,
@@ -195,7 +195,17 @@ export function StationDrawer({
       ? 'Required for a booth: the first two characters of every voucher code.'
       : null;
 
-  const selling = stationPrefixReadiness({ kind, codePrefix: codePrefix.trim().toUpperCase() || null });
+  const setup = { kind, boxId, codePrefix: codePrefix.trim().toUpperCase() || null, paymentRouting: routing };
+  const terminalAssignments = Object.entries(assignments).flatMap(([role, deviceId]) => {
+    const found = boxDevices.find(d => d.id === deviceId);
+    return found ? [{ ...found, role }] : [];
+  });
+  const selling = stationSellingReadiness(setup, terminalAssignments);
+  if (kind === 'till' && routedTerminalRoles(routing).length > 0 && boxList.state !== 'read') {
+    selling.ready = false;
+    selling.reasons = [...stationPrefixReadiness(setup).reasons,
+      boxList.state === 'unread' ? 'Reading terminal setup' : 'Terminal setup could not be checked; reload the box devices'];
+  }
   const canSave = name.trim().length > 0 && boxId.length > 0 && prefixMissing === null;
 
   return (
@@ -384,7 +394,10 @@ export function StationDrawer({
             {roles.map((role) => {
               const options = boxDevices
                 .filter((d) => roleAccepts(role, d.kind))
-                .map((d) => ({ value: d.id, label: `${d.label} — ${deviceKindWord(d.kind)}` }));
+                .map((d) => {
+                  const unusable = d.kind === 'terminal' && !supportedSellingTerminalProtocol(d.protocol);
+                  return { value: d.id, label: `${d.label} — ${unusable ? 'Unusable: no supported protocol' : deviceKindWord(d.kind)}`, disabled: unusable };
+                });
               return (
                 <Field key={role} label={deviceRoleWord(role)}>
                   <Select

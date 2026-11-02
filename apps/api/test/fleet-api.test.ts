@@ -608,6 +608,7 @@ describe('a station edit resolves its own branch (S2-04 review, finding 2)', () 
         name: 'Second Till',
         kind: 'till',
         codePrefix: 'S2',
+        paymentRouting: { card: 'manual', qr: 'none' },
         boxId: otherBoxId,
         capabilities: ['tickets'],
         accessScope: 'all_staff',

@@ -1,3 +1,47 @@
+import { PaymentRoutingSchema } from './payments';
+
+/** The box speaks these two dialects, including on its simulated transport. */
+export const SELLING_TERMINAL_PROTOCOLS = ['ghl_linkpos', 'digio_tlv'] as const;
+export function supportedSellingTerminalProtocol(protocol?: string | null): boolean {
+  return (SELLING_TERMINAL_PROTOCOLS as readonly string[]).includes(protocol ?? '');
+}
+
+export function routedTerminalRoles(paymentRouting: unknown): Array<'card_terminal' | 'qr_terminal'> {
+  const parsed = PaymentRoutingSchema.safeParse(paymentRouting ?? {});
+  const routing = parsed.success ? parsed.data : {};
+  const roles: Array<'card_terminal' | 'qr_terminal'> = [];
+  // Unconfigured cards already use the EDC in the tender service.
+  if (routing.card !== 'manual') roles.push('card_terminal');
+  if (routing.qr === 'qr_terminal') roles.push('qr_terminal');
+  return roles;
+}
+
+export interface SellingStationSetup {
+  kind: string;
+  codePrefix?: string | null;
+  boxId: string | null;
+  paymentRouting?: unknown;
+}
+export interface SellingTerminalAssignment {
+  role: string;
+  kind: string;
+  boxId: string | null;
+  protocol?: string | null;
+}
+
+/** Callers supply only active devices in this operator; the role and box must also match. */
+export function stationSellingReadiness(station: SellingStationSetup, assignments: SellingTerminalAssignment[]) {
+  const { reasons } = stationPrefixReadiness(station);
+  if (station.kind === 'till') {
+    for (const role of routedTerminalRoles(station.paymentRouting)) {
+      const terminal = assignments.find(d => d.role === role && d.kind === 'terminal' && station.boxId !== null && d.boxId === station.boxId);
+      if (!terminal) reasons.push(`${role === 'card_terminal' ? 'Card' : 'QR'} is routed to the terminal but no terminal is assigned`);
+      else if (!supportedSellingTerminalProtocol(terminal.protocol)) reasons.push('The assigned terminal has no supported protocol');
+    }
+  }
+  return { ready: reasons.length === 0, reasons: [...new Set(reasons)] };
+}
+
 /** Selling readiness is separate from whether an administrator may save a draft. */
 export function stationPrefixReadiness(station: { kind: string; codePrefix?: string | null }): {
   ready: boolean;

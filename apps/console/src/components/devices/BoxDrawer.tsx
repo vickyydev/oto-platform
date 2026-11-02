@@ -1,7 +1,7 @@
 import { useWorkingAuthority } from '@/lib/workingAuthority';
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, RefreshCw } from 'lucide-react';
-import { SETTINGS_SECTION_FOR_KIND, type EscposDotsPerLine } from '@oto/shared';
+import { SETTINGS_SECTION_FOR_KIND, supportedSellingTerminalProtocol, type EscposDotsPerLine } from '@oto/shared';
 import {
   boxVitals,
   clockLine,
@@ -555,6 +555,9 @@ function DeviceRowItem({
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         {device.model && <span>{device.model}</span>}
         {device.protocol && <span className="font-mono">{device.protocol}</span>}
+        {device.kind === 'terminal' && !supportedSellingTerminalProtocol(device.protocol) && (
+          <span className="text-destructive">Unusable: no supported protocol</span>
+        )}
         {device.address && <span className="font-mono break-all">{device.address}</span>}
         {device.terminalId && <span className="font-mono">TID {device.terminalId}</span>}
         {device.serialNumber && <span className="font-mono">SN {device.serialNumber}</span>}
@@ -857,9 +860,11 @@ function AddDeviceForm({
         <Field label="Model">
           <TextInput value={model} onChange={setModel} placeholder="Xprinter XP-80" />
         </Field>
-        <Field label="Protocol" hint="escpos, tspl2, ghl_linkpos, digio_tlv, hid.">
-          <TextInput value={protocol} onChange={setProtocol} placeholder="escpos" />
-        </Field>
+        {kind === 'terminal' ? <TerminalProtocolField value={protocol} onChange={setProtocol} transport={transport} /> : (
+          <Field label="Protocol" hint="escpos, tspl2, hid.">
+            <TextInput value={protocol} onChange={setProtocol} placeholder="escpos" />
+          </Field>
+        )}
         {printsEscpos(kind) && <PaperWidthField value={dotsPerLine} onChange={setDotsPerLine} />}
         {printsBands(kind) && <BandStockFields value={bandStock} onChange={setBandStock} />}
         {isScanner && <ScannerFields value={scanner} onChange={chooseScanner} />}
@@ -1035,9 +1040,11 @@ function EditDeviceForm({
         <Field label="Model">
           <TextInput value={model} onChange={setModel} />
         </Field>
-        <Field label="Protocol">
-          <TextInput value={protocol} onChange={setProtocol} />
-        </Field>
+        {isTerminal ? <TerminalProtocolField value={protocol} onChange={setProtocol} transport={device.transport} /> : (
+          <Field label="Protocol">
+            <TextInput value={protocol} onChange={setProtocol} />
+          </Field>
+        )}
         {printsEscpos(device.kind) && (
           <PaperWidthField value={dotsPerLine} onChange={setDotsPerLine} />
         )}
@@ -1993,5 +2000,23 @@ function Heartbeats({ boxId, timezone }: { boxId: string; timezone?: string | nu
         </ul>
       )}
     </section>
+  );
+}
+
+/** Simulated is a transport; both simulated dialects use the same protocol values. */
+export function TerminalProtocolField({ value, onChange, transport }: {
+  value: string; onChange: (value: string) => void; transport: string;
+}) {
+  const supported = supportedSellingTerminalProtocol(value);
+  return (
+    <Field label="Protocol" hint={supported
+      ? transport === 'simulated' ? 'Simulated terminal; this device does not contact a real payment terminal.' : 'Choose the protocol supported by this terminal.'
+      : 'Unusable: no supported protocol. Choose one before assigning a routed tender.'}>
+      <Select value={supported ? value : ''} onChange={onChange} placeholder="Not set ? unusable"
+        options={[
+          { value: 'ghl_linkpos', label: transport === 'simulated' ? 'Simulated GHL LinkPOS' : 'GHL LinkPOS' },
+          { value: 'digio_tlv', label: transport === 'simulated' ? 'Simulated Digio TLV' : 'Digio TLV' },
+        ]} />
+    </Field>
   );
 }

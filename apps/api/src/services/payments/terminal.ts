@@ -12,6 +12,8 @@ import {
 } from '@oto/db';
 import {
   PaymentRoutingSchema,
+  stationSellingReadiness,
+  type SellingStationSetup,
   newId,
   projectAttemptPayload,
   type PaymentAttemptStatus,
@@ -44,6 +46,18 @@ import {
   tenderMethodOf,
 } from './attempt';
 import type { Exec, OpContext, Tx } from '../tx';
+
+/** Batch the same current, operator-scoped terminal facts for the lists and selling gate. */
+export async function readStationsSellingReadiness(
+  db: Exec, operatorId: string, rows: Array<SellingStationSetup & { id: string }>,
+) {
+  const assignments = rows.length ? await db.select({
+    stationId: stationDevice.stationId, role: stationDevice.role,
+    kind: device.kind, boxId: device.boxId, protocol: device.protocol,
+  }).from(stationDevice).innerJoin(device, eq(device.id, stationDevice.deviceId))
+    .where(and(inArray(stationDevice.stationId, rows.map(r => r.id)), eq(device.operatorId, operatorId), isNull(device.archivedAt))) : [];
+  return new Map(rows.map(row => [row.id, stationSellingReadiness(row, assignments.filter(a => a.stationId === row.id))]));
+}
 
 /**
  * THE CARD TENDER, IN THE CLOUD (S2-10a, SCRUM-206, Slice C2).
