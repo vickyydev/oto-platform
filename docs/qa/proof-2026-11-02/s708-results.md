@@ -31,7 +31,14 @@ run overlapped three API shards and timed out at the unchanged
 `s221-r4-closing-audit.test.ts:125` source scan (1,635 passed); its unchanged full
 rerun passed without raising the timeout or changing any assertion.
 
-Full API regressions and release CI are pending. No staging acceptance is claimed.
+Full API regressions passed: 6,091 tests across all three shards, with the
+existing 401 skips and four TODOs unchanged (427 passing files, eight skipped).
+All 16 workspace typecheck tasks and five production builds passed. The rebase
+onto `54271076` changed only other-lane documentation; product bytes match the
+completed run. Main source `796a3724505ee9cd46f93584c975971ad50a3e4d` passed
+CI [41452442131](https://github.com/vickyydev/oto-platform/actions/runs/41452442131).
+
+This unit's release CI and staging acceptance are pending.
 
 ## Staging proof plan and limits
 
