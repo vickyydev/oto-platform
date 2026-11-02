@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# The booth television: Chromium, full screen, on the booth box's own page.
+# The booth television: Chromium, full screen, on the booth box's own page —
+# or on another address, when OTO_KIOSK_URL says so (the counter's customer
+# display, SCRUM-711).
 # Run by oto-kiosk.service as the desktop user; systemd starts it again
 # whenever Chromium exits or dies.
 set -u
@@ -20,6 +22,27 @@ case "$ROTATE" in
 esac
 # The page reads the turn from the address (#cw, #ccw, #off) and remembers it.
 URL="${BASE}#${ROTATE}"
+# Set OTO_KIOSK_URL and the screen opens that address instead: the display page
+# is the platform's, not the box's. "off" is a screen with nothing to turn, so
+# nothing goes on that address. Same file, same restart.
+KIOSK_URL="$(sed -n 's/^OTO_KIOSK_URL=//p' /etc/oto-box/config 2>/dev/null | tail -n 1 | tr -d '[:space:]')"
+if [ -n "$KIOSK_URL" ]; then
+  URL="$KIOSK_URL"
+  [ "$ROTATE" = off ] || URL="${KIOSK_URL}#${ROTATE}"
+fi
+# How large the page is drawn, for a screen whose pixels are small: 1 asks for
+# nothing, the booth's way. Chromium's flag, so the page simply sees a smaller
+# window (1920 x 1080 at 1.6 is 1200 x 675).
+SCALE="$(sed -n 's/^OTO_KIOSK_SCALE=//p' /etc/oto-box/config 2>/dev/null | tail -n 1 | tr -d '[:space:]')"
+SCALE_FLAG=()
+case "$SCALE" in
+  ''|1|1.0) ;;
+  *[!0-9.]*) echo "OTO_KIOSK_SCALE is not a number ($SCALE); drawing at 1" >&2 ;;
+  *) SCALE_FLAG=("--force-device-scale-factor=${SCALE}") ;;
+esac
+# Kept for good, and never cleared here: whatever the page remembers lives in
+# it, and on the counter that is the display's pairing, which has to come back
+# by itself after a reboot or a release update.
 PROFILE="${HOME}/.config/oto-kiosk"
 RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
@@ -56,10 +79,21 @@ fi
 # booth and not "this site can't be reached". Any answer will do, a 503 too:
 # a box that is still starting, or that needs service, serves the page that
 # says so. It opens anyway after that: the page keeps asking on its own.
-for _ in $(seq 1 60); do
-  curl -sS --max-time 2 -o /dev/null "${BASE}kiosk/health" && break
-  sleep 1
-done
+#
+# A page that is not the box's: its health says nothing about that, so the wait
+# is on the page itself, which at boot means the Wi-Fi. A minute or so at most;
+# it opens anyway after that.
+if [ -z "$KIOSK_URL" ]; then
+  for _ in $(seq 1 60); do
+    curl -sS --max-time 2 -o /dev/null "${BASE}kiosk/health" && break
+    sleep 1
+  done
+else
+  for _ in $(seq 1 30); do
+    curl -sS --max-time 2 -o /dev/null "$KIOSK_URL" && break
+    sleep 1
+  done
+fi
 
 # The screen never blanks. (raspi-config's setting covers Wayland; this is X11.)
 if [ -n "${DISPLAY:-}" ] && command -v xset >/dev/null; then
@@ -79,6 +113,8 @@ fi
 BROWSER="$(command -v chromium-browser || command -v chromium)"
 [ -n "$BROWSER" ] || { echo "no Chromium installed" >&2; exit 1; }
 
+# Chromium's cache goes in RAM, on every box: it rewrites this all day, it is
+# worth nothing after a reboot, and the drive lasts longer without it.
 exec "$BROWSER" \
   --kiosk \
   --noerrdialogs \
@@ -92,5 +128,8 @@ exec "$BROWSER" \
   --overscroll-history-navigation=0 \
   --disable-pinch \
   --ozone-platform="${OZONE:-x11}" \
+  "${SCALE_FLAG[@]}" \
+  --disk-cache-dir=/dev/shm/oto-kiosk-cache \
+  --disk-cache-size=67108864 \
   --user-data-dir="${PROFILE}" \
   "$URL"

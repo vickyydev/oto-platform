@@ -1,4 +1,5 @@
-# The booth television: Chromium in kiosk mode on http://127.0.0.1:8780/, as
+# The booth television: Chromium in kiosk mode on http://127.0.0.1:8780/ (or on
+# OTO_KIOSK_URL from /etc/oto-box/config, the counter's customer display), as
 # the desktop user (@USER@), restarted whenever Chromium exits or dies.
 # Installed by scripts/pi/install.sh, which fills in @USER@ and @UID@.
 [Unit]

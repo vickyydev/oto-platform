@@ -21,8 +21,19 @@
 #   --ssh-keys-only       turn SSH password log-in off (only if a key is installed;
 #                         without this it stays on, and the installer says so)
 #   --no-kiosk            the box without the television (a headless test)
-#   --rotate cw|ccw       which way the page turns a television hung portrait:
-#                         cw (the default) or ccw if the picture is upside down
+#   --rotate cw|ccw|off   which way the page turns a television hung portrait:
+#                         cw (the default) or ccw if the picture is upside down;
+#                         off for a screen that stands the way it is made (the
+#                         counter's customer display)
+#   --kiosk-url URL       what the screen opens instead of the box's own page, e.g.
+#                         "https://oto-pos-staging.onrender.com/display?keyboard=screen"
+#                         for the counter's customer display (BOX_QUICKSTART.md
+#                         part I). Default: the box's own page. An update keeps
+#                         the address the box has; --kiosk-url "" goes back to
+#                         the box's own page
+#   --kiosk-scale N       how large the screen draws the page: Chromium's device
+#                         scale factor, 1 by default (the booth); the counter's
+#                         customer display uses 1.6
 #   --printer-direct      the receipt printer plugs by network cable straight into
 #                         the Pi's Ethernet socket, no router between them: gives
 #                         eth0 a fixed address for it (192.168.192.10), runs a
@@ -68,6 +79,10 @@ SSH_KEYS_ONLY=0
 WITH_KIOSK=1
 API_GIVEN=0
 ROTATE=""
+KIOSK_URL=""
+KIOSK_URL_GIVEN=0
+KIOSK_SCALE=""
+BLANKING_NOTE=""
 PRINTER_DIRECT=0
 PRINTER_IFACE="eth0"
 PRINTER_LINK_ADDR="192.168.192.10/24"
@@ -93,7 +108,9 @@ while [ $# -gt 0 ]; do
     --no-daily-reboot) DAILY_REBOOT=""; shift ;;
     --ssh-keys-only) SSH_KEYS_ONLY=1; shift ;;
     --no-kiosk) WITH_KIOSK=0; shift ;;
-    --rotate) ROTATE="${2:?--rotate needs cw or ccw}"; shift 2 ;;
+    --rotate) ROTATE="${2:?--rotate needs cw, ccw or off}"; shift 2 ;;
+    --kiosk-url) KIOSK_URL="${2?--kiosk-url needs a URL}"; KIOSK_URL_GIVEN=1; shift 2 ;;
+    --kiosk-scale) KIOSK_SCALE="${2:?--kiosk-scale needs a number}"; shift 2 ;;
     --printer-direct) PRINTER_DIRECT=1; shift ;;
     --tailscale-authkey) TS_AUTHKEY="${2:?--tailscale-authkey needs a key}"; shift 2 ;;
     --tailscale-hostname) TS_HOSTNAME="${2:?--tailscale-hostname needs a name}"; shift 2 ;;
@@ -127,9 +144,20 @@ if [ "$DAILY_REBOOT" != "" ] && ! printf '%s' "$DAILY_REBOOT" | grep -Eq '^([01]
   die "--daily-reboot wants HH:MM, got $DAILY_REBOOT"
 fi
 case "$ROTATE" in
-  ""|cw|ccw) ;;
-  *) die "--rotate wants cw or ccw, got $ROTATE" ;;
+  ""|cw|ccw|off) ;;
+  *) die "--rotate wants cw, ccw or off, got $ROTATE" ;;
 esac
+if [ -n "$KIOSK_URL" ]; then
+  [ "$WITH_KIOSK" -eq 1 ] || die "--kiosk-url names what the screen opens, and --no-kiosk says there is no screen: pass one of them"
+  # /etc/oto-box/config is read by bash (the oto-box command) and by systemd, so
+  # the address holds only what means nothing to either: no spaces, & or quotes.
+  printf '%s' "$KIOSK_URL" | grep -Eq '^https?://[A-Za-z0-9._:/?#=%+,@-]+$' \
+    || die "--kiosk-url wants an http(s) address with no spaces, & or quotes in it, got $KIOSK_URL"
+fi
+if [ -n "$KIOSK_SCALE" ]; then
+  { printf '%s' "$KIOSK_SCALE" | grep -Eq '^[0-9]+(\.[0-9]+)?$' && printf '%s' "$KIOSK_SCALE" | grep -q '[1-9]'; } \
+    || die "--kiosk-scale wants a number such as 1.6, got $KIOSK_SCALE"
+fi
 if [ -n "$TS_AUTHKEY" ]; then
   # The key itself is never part of a message: only its shape is checked.
   case "$TS_AUTHKEY" in
@@ -530,23 +558,35 @@ OTO_BOX_HOME=/var/lib/oto-box
 OTO_BOX_PORT=8780
 OTO_BOX_PAGE=/opt/oto-box/current/booth
 # The television: which way the page turns the picture of a television hung
-# portrait — cw, or ccw when the picture is upside down. Then
+# portrait — cw, or ccw when the picture is upside down; off for a screen that
+# stands the way it is made. Then
 #   sudo systemctl restart oto-kiosk
 OTO_KIOSK_ROTATE=${ROTATE:-cw}
+# What the screen opens: empty for the box's own page, or an address (the
+# counter's customer display). How large it draws the page: Chromium's device
+# scale factor. Each followed by the same restart.
+OTO_KIOSK_URL=$KIOSK_URL
+OTO_KIOSK_SCALE=${KIOSK_SCALE:-1}
 EOF
 else
   if [ "$API_GIVEN" -eq 1 ]; then
     sed -i "s|^OTO_BOX_API=.*|OTO_BOX_API=$API_URL|" /etc/oto-box/config
   fi
-  if [ -n "$ROTATE" ]; then
-    if grep -q '^OTO_KIOSK_ROTATE=' /etc/oto-box/config; then
-      sed -i "s|^OTO_KIOSK_ROTATE=.*|OTO_KIOSK_ROTATE=$ROTATE|" /etc/oto-box/config
+  # Only what this run names: an update keeps the screen the box has.
+  config_set() {
+    if grep -q "^$1=" /etc/oto-box/config; then
+      sed -i "s|^$1=.*|$1=$2|" /etc/oto-box/config
     else
-      printf 'OTO_KIOSK_ROTATE=%s\n' "$ROTATE" >>/etc/oto-box/config
+      printf '%s=%s\n' "$1" "$2" >>/etc/oto-box/config
     fi
-  fi
+  }
+  [ -z "$ROTATE" ] || config_set OTO_KIOSK_ROTATE "$ROTATE"
+  [ "$KIOSK_URL_GIVEN" -eq 0 ] || config_set OTO_KIOSK_URL "$KIOSK_URL"
+  [ -z "$KIOSK_SCALE" ] || config_set OTO_KIOSK_SCALE "$KIOSK_SCALE"
 fi
 chmod 0644 /etc/oto-box/config
+# What the screen opens from here on, whichever run set it.
+KIOSK_URL_NOW="$(sed -n 's/^OTO_KIOSK_URL=//p' /etc/oto-box/config | tail -n 1)"
 
 # The command, run as the service user so the files it writes are the box's.
 install -d -m 0755 /usr/local/lib/oto-box
@@ -604,9 +644,16 @@ if [ "$WITH_KIOSK" -eq 1 ]; then
   if command -v raspi-config >/dev/null; then
     # Desktop, logged in automatically; and the screen never blanks.
     raspi-config nonint do_boot_behaviour B4 || warn "could not set desktop autologin"
-    raspi-config nonint do_blanking 1 || warn "could not switch screen blanking off"
+    # The Wayland desktop's setting; X11 is the kiosk script's (xset).
+    if raspi-config nonint do_blanking 1; then
+      BLANKING_NOTE="off (raspi-config, the Wayland desktop's setting, from the next boot; the kiosk script covers X11)"
+    else
+      warn "could not switch screen blanking off"
+      BLANKING_NOTE="NOT switched off: raspi-config refused (the warning above). Run: sudo raspi-config nonint do_blanking 1"
+    fi
   else
     warn "raspi-config not found: set desktop autologin and switch screen blanking off by hand"
+    BLANKING_NOTE="NOT switched off: raspi-config is not on this system; switch it off by hand"
   fi
 fi
 
@@ -685,22 +732,38 @@ if [ -n "$TS_SELF" ]; then
   TS_NOTE="joined as $TS_SELF ($(ts_ip)). The next release, from the laptop: scripts/agent/push-release.sh $TS_SELF <release>.tgz -- <this box's options, without the key>"
 fi
 
+# A screen on an address of its own: it does not show the box's set-up page or
+# the booth, and it pairs with the platform instead. Without one, the lines are
+# as they have always been.
+CLAIM_WHERE='Type it on the television ("Set up this box"), or here:'
+FIRST_BOOT_STEP="  5. First install: reboot once (sudo reboot). The desktop logs in by itself and
+     the television opens the booth; every boot after that does the same."
+SCREEN_LINE=""
+if [ "$WITH_KIOSK" -eq 1 ] && [ -n "$KIOSK_URL_NOW" ]; then
+  CLAIM_WHERE="The screen is showing another page, not the box's set-up, so here:"
+  FIRST_BOOT_STEP="  5. First install: reboot once (sudo reboot). The desktop logs in by itself and
+     the screen opens its page; every boot after that does the same. It shows a
+     pairing code: Console -> Devices -> Pair a display, enter the code, choose
+     the station. The pairing is kept across reboots and updates."
+  SCREEN_LINE="Screen: opens $KIOSK_URL_NOW, scale $(sed -n 's/^OTO_KIOSK_SCALE=//p' /etc/oto-box/config | tail -n 1), turn $(sed -n 's/^OTO_KIOSK_ROTATE=//p' /etc/oto-box/config | tail -n 1). Screen blanking: $BLANKING_NOTE. The monitor's own sleep timer is set in its own menu.
+"
+fi
+
 cat <<EOF
 
 Installed: oto-box $RELEASE, talking to $(grep '^OTO_BOX_API=' /etc/oto-box/config | cut -d= -f2-)
 
 Next:
   1. In the Console: Devices -> Add a box. Copy the claim code (valid for a short time).
-  2. Type it on the television ("Set up this box"), or here:
+  2. $CLAIM_WHERE
        sudo oto-box claim          (it asks for the code, so the code stays out of the shell history)
 $PRINTER_STEP
   4. Check:   oto-box status     journalctl -u oto-box -f     (the box row in Console -> Devices)
-  5. First install: reboot once (sudo reboot). The desktop logs in by itself and
-     the television opens the booth; every boot after that does the same.
+$FIRST_BOOT_STEP
 
 SSH: $SSH_NOTE
 Tailscale: $TS_NOTE
 Printer: $PRINTER_NOTE
 Scanner: $SCANNER_NOTE
-The credential is /var/lib/oto-box/credential.json (owner-only). Never copy it to another machine.
+${SCREEN_LINE}The credential is /var/lib/oto-box/credential.json (owner-only). Never copy it to another machine.
 EOF
