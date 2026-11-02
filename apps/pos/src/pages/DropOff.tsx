@@ -1,3 +1,4 @@
+import { useBoardPhotos } from '@/hooks/useBoardPhotos';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent, EventAttendee, AuthorizedPickupSource } from '@/types';
@@ -26,7 +27,6 @@ import {
   boardChildToCheckIn,
   checkinApi,
   editsToPatch,
-  photoUrlOf,
   requirePlatformBranchId,
   TILL_NOT_LINKED,
   type ApiBoard,
@@ -452,7 +452,7 @@ export default function DropOff() {
   }, [branchId]);
   const [board, setBoard] = useState<ApiBoard | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const { photos, handlePhotoError } = useBoardPhotos(board);
 
   const loadBoard = useCallback(async () => {
     if (!platformBranchId) {
@@ -476,23 +476,6 @@ export default function DropOff() {
     const id = window.setInterval(() => void loadBoard(), 30_000);
     return () => window.clearInterval(id);
   }, [loadBoard]);
-
-  // The consent photos, each asked for once (every read is access-logged, R-94).
-  useEffect(() => {
-    if (!board) return;
-    const wanted = new Set<string>();
-    for (const f of board.families) {
-      for (const c of f.children) {
-        const fileId = c.photoFileId ?? f.photoFileId;
-        if (fileId && !photos[fileId]) wanted.add(fileId);
-      }
-    }
-    for (const fileId of wanted) {
-      void photoUrlOf(fileId).then((url) => {
-        if (url) setPhotos((p) => (p[fileId] ? p : { ...p, [fileId]: url }));
-      });
-    }
-  }, [board, photos]);
 
   const all = useMemo<CheckIn[]>(
     () =>
@@ -1052,7 +1035,7 @@ export default function DropOff() {
                 </div>
               ) : (
                 <ScrollArea className="flex-1 -mx-1 px-1">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-2" onErrorCapture={handlePhotoError}>
                     {visibleFamilies.map((family) => (
                       <FamilyCheckInCard
                         key={family[0].registrationId}

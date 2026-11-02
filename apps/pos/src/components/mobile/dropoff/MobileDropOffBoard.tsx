@@ -1,3 +1,4 @@
+import { useBoardPhotos } from '@/hooks/useBoardPhotos';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EVENT_CHECKIN_REFUSALS, newId, type ReleaseView } from '@oto/shared';
 import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent } from '@/types';
@@ -17,7 +18,6 @@ import {
   boardChildToCheckIn,
   checkinApi,
   editsToPatch,
-  photoUrlOf,
   requirePlatformBranchId,
   TILL_NOT_LINKED,
   type ApiBoard,
@@ -176,7 +176,7 @@ export function MobileDropOffBoard() {
   }, [branch.id]);
   const [board, setBoard] = useState<ApiBoard | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const { photos, handlePhotoError } = useBoardPhotos(board);
 
   const loadBoard = useCallback(async () => {
     if (!platformBranchId) {
@@ -200,23 +200,6 @@ export function MobileDropOffBoard() {
     const id = window.setInterval(() => void loadBoard(), 30_000);
     return () => window.clearInterval(id);
   }, [loadBoard]);
-
-  // The consent photos, each asked for once (every read is access-logged, R-94).
-  useEffect(() => {
-    if (!board) return;
-    const wanted = new Set<string>();
-    for (const f of board.families) {
-      for (const c of f.children) {
-        const fileId = c.photoFileId ?? f.photoFileId;
-        if (fileId && !photos[fileId]) wanted.add(fileId);
-      }
-    }
-    for (const fileId of wanted) {
-      void photoUrlOf(fileId).then((url) => {
-        if (url) setPhotos((p) => (p[fileId] ? p : { ...p, [fileId]: url }));
-      });
-    }
-  }, [board, photos]);
 
   const all = useMemo<CheckIn[]>(
     () =>
@@ -956,7 +939,7 @@ export function MobileDropOffBoard() {
             </div>
           ) : (
             <ScrollArea className="flex-1 mt-2 min-h-0">
-              <div className="px-4 pb-4 space-y-2">
+              <div className="px-4 pb-4 space-y-2" onErrorCapture={handlePhotoError}>
                 {visibleFamilies.map((family) => (
                   <MobileChildCard
                     key={family[0].registrationId}

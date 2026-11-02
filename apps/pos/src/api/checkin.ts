@@ -575,28 +575,56 @@ export function nannyChoicesFor(
   });
 }
 
-// --- Photos: a presigned read per file, once per page --------------------------------
+// --- Photos: share reads only while the signed link is still usable -----------------
 
-const photoUrls = new Map<string, Promise<string | null>>();
+interface PhotoRead {
+  promise: Promise<string | null>;
+  url: string | null;
+  refreshAt: number;
+}
+const photoUrls = new Map<string, PhotoRead>();
+
+/** MinIO/R2's signature carries its signing time and lifetime, not a client-side TTL. */
+function photoRefreshAt(url: string): number {
+  try {
+    const query = new URL(url).searchParams;
+    const date = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(query.get('X-Amz-Date') ?? '');
+    const seconds = Number(query.get('X-Amz-Expires'));
+    if (!date || !Number.isFinite(seconds) || seconds <= 0) return 0;
+    const signedAt = Date.UTC(+date[1], +date[2] - 1, +date[3], +date[4], +date[5], +date[6]);
+    return signedAt + seconds * 1000 - 30_000;
+  } catch {
+    // An answer without a readable expiry may be used now, but never kept indefinitely.
+    return 0;
+  }
+}
+
+/** A late failure from an old image must not discard a newer or in-flight read. */
+export function forgetPhotoUrl(fileId: string, failedUrl: string): void {
+  if (photoUrls.get(fileId)?.url === failedUrl) photoUrls.delete(fileId);
+}
 
 /**
  * The consent photo's short-lived URL. Every read is access-logged on the
- * platform (R-94), so each file is asked for once per page and remembered,
- * rather than on every ten-second redraw of the board.
+ * platform (R-94). Share concurrent reads and redraws, then renew shortly
+ * before the signature expires through that same permission-checked endpoint.
  */
 export function photoUrlOf(fileId: string): Promise<string | null> {
-  let found = photoUrls.get(fileId);
-  if (!found) {
-    found = api
-      .get<{ url: string }>(`/files/${fileId}/url`)
-      .then((r) => r.url)
-      .catch(() => {
-        photoUrls.delete(fileId);
-        return null;
-      });
-    photoUrls.set(fileId, found);
-  }
-  return found;
+  const found = photoUrls.get(fileId);
+  if (found && Date.now() < found.refreshAt) return found.promise;
+  const next: PhotoRead = { promise: Promise.resolve(null), url: null, refreshAt: Infinity };
+  next.promise = api.get<{ url: string }>(`/files/${fileId}/url`)
+    .then(({ url }) => {
+      next.url = url;
+      next.refreshAt = photoRefreshAt(url);
+      return url;
+    })
+    .catch(() => {
+      if (photoUrls.get(fileId) === next) photoUrls.delete(fileId);
+      return null;
+    });
+  photoUrls.set(fileId, next);
+  return next.promise;
 }
 
 /**
