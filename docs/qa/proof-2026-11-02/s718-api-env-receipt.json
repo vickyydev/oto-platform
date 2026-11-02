@@ -18,5 +18,9 @@
     "TRUST_PROXY_ADDRS": "4df64939a3d25b97bb2c84e6f419d1fd28492a68a8c086cf1cb71bd51d1fd3dc"
   },
   "deployId": "dep-dbk7sns9v7es73bvie50",
-  "deployStatus": "build_in_progress"
+  "deployStatus": "build_in_progress",
+  "liveVerifiedAt": "2026-11-02T12:39:59.417Z",
+  "liveCommitAfter": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+  "liveDeployId": "dep-dbk7sns9v7es73bvie50",
+  "nativeSignInOnNewOriginPassed": true
 }

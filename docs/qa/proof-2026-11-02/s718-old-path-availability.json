@@ -1,0 +1,3271 @@
+{
+  "unit": "SCRUM-718",
+  "startedAt": "2026-11-02T11:17:59.400Z",
+  "intervalSeconds": 15,
+  "samples": [
+    {
+      "at": "2026-11-02T11:17:59.401Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 489
+    },
+    {
+      "at": "2026-11-02T11:17:59.890Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 914
+    },
+    {
+      "at": "2026-11-02T11:18:15.807Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 103
+    },
+    {
+      "at": "2026-11-02T11:18:15.910Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T11:18:31.378Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T11:18:31.469Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T11:18:46.958Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 105
+    },
+    {
+      "at": "2026-11-02T11:18:47.063Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 450
+    },
+    {
+      "at": "2026-11-02T11:19:02.530Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 131
+    },
+    {
+      "at": "2026-11-02T11:19:02.661Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 491
+    },
+    {
+      "at": "2026-11-02T11:19:18.167Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:19:18.262Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 464
+    },
+    {
+      "at": "2026-11-02T11:19:33.740Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 139
+    },
+    {
+      "at": "2026-11-02T11:19:33.879Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 540
+    },
+    {
+      "at": "2026-11-02T11:19:49.423Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 97
+    },
+    {
+      "at": "2026-11-02T11:19:49.520Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 468
+    },
+    {
+      "at": "2026-11-02T11:20:05.004Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:20:05.099Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 452
+    },
+    {
+      "at": "2026-11-02T11:20:20.568Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 107
+    },
+    {
+      "at": "2026-11-02T11:20:20.675Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T11:20:36.152Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 131
+    },
+    {
+      "at": "2026-11-02T11:20:36.283Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 466
+    },
+    {
+      "at": "2026-11-02T11:20:51.753Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 113
+    },
+    {
+      "at": "2026-11-02T11:20:51.866Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T11:21:07.353Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 111
+    },
+    {
+      "at": "2026-11-02T11:21:07.464Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 480
+    },
+    {
+      "at": "2026-11-02T11:21:22.958Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 112
+    },
+    {
+      "at": "2026-11-02T11:21:23.070Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 480
+    },
+    {
+      "at": "2026-11-02T11:21:38.551Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 116
+    },
+    {
+      "at": "2026-11-02T11:21:38.667Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 487
+    },
+    {
+      "at": "2026-11-02T11:21:54.155Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 322
+    },
+    {
+      "at": "2026-11-02T11:21:54.477Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 525
+    },
+    {
+      "at": "2026-11-02T11:22:10.018Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T11:22:10.109Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 466
+    },
+    {
+      "at": "2026-11-02T11:22:25.589Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:22:25.682Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 970
+    },
+    {
+      "at": "2026-11-02T11:22:41.665Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 129
+    },
+    {
+      "at": "2026-11-02T11:22:41.794Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T11:22:57.278Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:22:57.373Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 478
+    },
+    {
+      "at": "2026-11-02T11:23:12.853Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 402
+    },
+    {
+      "at": "2026-11-02T11:23:13.255Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 473
+    },
+    {
+      "at": "2026-11-02T11:23:28.733Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T11:23:28.835Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 458
+    },
+    {
+      "at": "2026-11-02T11:23:44.298Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 100
+    },
+    {
+      "at": "2026-11-02T11:23:44.398Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 464
+    },
+    {
+      "at": "2026-11-02T11:23:59.878Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T11:23:59.972Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T11:24:15.463Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 130
+    },
+    {
+      "at": "2026-11-02T11:24:15.593Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 529
+    },
+    {
+      "at": "2026-11-02T11:24:31.136Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 99
+    },
+    {
+      "at": "2026-11-02T11:24:31.235Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 824
+    },
+    {
+      "at": "2026-11-02T11:24:47.061Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:24:47.157Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 482
+    },
+    {
+      "at": "2026-11-02T11:25:02.647Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:25:02.742Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 480
+    },
+    {
+      "at": "2026-11-02T11:25:18.223Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:25:18.319Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 552
+    },
+    {
+      "at": "2026-11-02T11:25:33.879Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:25:33.972Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 477
+    },
+    {
+      "at": "2026-11-02T11:25:49.458Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:25:49.554Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 509
+    },
+    {
+      "at": "2026-11-02T11:26:05.068Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:26:05.163Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 457
+    },
+    {
+      "at": "2026-11-02T11:26:20.635Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 109
+    },
+    {
+      "at": "2026-11-02T11:26:20.744Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 453
+    },
+    {
+      "at": "2026-11-02T11:26:36.210Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T11:26:36.308Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 458
+    },
+    {
+      "at": "2026-11-02T11:26:51.777Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T11:26:51.879Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T11:27:07.363Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 97
+    },
+    {
+      "at": "2026-11-02T11:27:07.460Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 457
+    },
+    {
+      "at": "2026-11-02T11:27:22.929Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 101
+    },
+    {
+      "at": "2026-11-02T11:27:23.030Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 455
+    },
+    {
+      "at": "2026-11-02T11:27:38.494Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 105
+    },
+    {
+      "at": "2026-11-02T11:27:38.599Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 466
+    },
+    {
+      "at": "2026-11-02T11:27:54.071Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:27:54.167Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 451
+    },
+    {
+      "at": "2026-11-02T11:28:09.621Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:28:09.716Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 456
+    },
+    {
+      "at": "2026-11-02T11:28:25.183Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 407
+    },
+    {
+      "at": "2026-11-02T11:28:25.590Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T11:28:41.060Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:28:41.153Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T11:28:56.617Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 86
+    },
+    {
+      "at": "2026-11-02T11:28:56.703Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 451
+    },
+    {
+      "at": "2026-11-02T11:29:12.157Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 103
+    },
+    {
+      "at": "2026-11-02T11:29:12.260Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 468
+    },
+    {
+      "at": "2026-11-02T11:29:27.742Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 146
+    },
+    {
+      "at": "2026-11-02T11:29:27.888Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 482
+    },
+    {
+      "at": "2026-11-02T11:29:43.371Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 105
+    },
+    {
+      "at": "2026-11-02T11:29:43.476Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T11:29:58.958Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 104
+    },
+    {
+      "at": "2026-11-02T11:29:59.062Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 463
+    },
+    {
+      "at": "2026-11-02T11:30:14.531Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T11:30:14.623Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 450
+    },
+    {
+      "at": "2026-11-02T11:30:30.083Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T11:30:30.185Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 464
+    },
+    {
+      "at": "2026-11-02T11:30:45.664Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 182
+    },
+    {
+      "at": "2026-11-02T11:30:45.846Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 485
+    },
+    {
+      "at": "2026-11-02T11:31:01.335Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 109
+    },
+    {
+      "at": "2026-11-02T11:31:01.444Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 460
+    },
+    {
+      "at": "2026-11-02T11:31:16.905Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:31:16.998Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 477
+    },
+    {
+      "at": "2026-11-02T11:31:32.477Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 97
+    },
+    {
+      "at": "2026-11-02T11:31:32.574Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 456
+    },
+    {
+      "at": "2026-11-02T11:31:48.046Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:31:48.142Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T11:32:03.629Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:32:03.724Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 491
+    },
+    {
+      "at": "2026-11-02T11:32:19.227Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 107
+    },
+    {
+      "at": "2026-11-02T11:32:19.334Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T11:32:34.816Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:32:34.911Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T11:32:50.384Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T11:32:50.482Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T11:33:05.955Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 109
+    },
+    {
+      "at": "2026-11-02T11:33:06.064Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 453
+    },
+    {
+      "at": "2026-11-02T11:33:21.526Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 97
+    },
+    {
+      "at": "2026-11-02T11:33:21.623Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 462
+    },
+    {
+      "at": "2026-11-02T11:33:37.097Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 402
+    },
+    {
+      "at": "2026-11-02T11:33:37.499Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 464
+    },
+    {
+      "at": "2026-11-02T11:33:52.978Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 141
+    },
+    {
+      "at": "2026-11-02T11:33:53.119Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 456
+    },
+    {
+      "at": "2026-11-02T11:34:08.591Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 89
+    },
+    {
+      "at": "2026-11-02T11:34:08.680Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 462
+    },
+    {
+      "at": "2026-11-02T11:34:24.153Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T11:34:24.251Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 457
+    },
+    {
+      "at": "2026-11-02T11:34:39.719Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 144
+    },
+    {
+      "at": "2026-11-02T11:34:39.863Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 850
+    },
+    {
+      "at": "2026-11-02T11:34:55.717Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 123
+    },
+    {
+      "at": "2026-11-02T11:34:55.840Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T11:35:11.302Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T11:35:11.404Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T11:35:26.868Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T11:35:26.966Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 488
+    },
+    {
+      "at": "2026-11-02T11:35:42.464Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 136
+    },
+    {
+      "at": "2026-11-02T11:35:42.600Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 807
+    },
+    {
+      "at": "2026-11-02T11:35:58.419Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:35:58.514Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 490
+    },
+    {
+      "at": "2026-11-02T11:36:14.015Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T11:36:14.107Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 496
+    },
+    {
+      "at": "2026-11-02T11:36:29.607Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 90
+    },
+    {
+      "at": "2026-11-02T11:36:29.697Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 494
+    },
+    {
+      "at": "2026-11-02T11:36:45.195Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 107
+    },
+    {
+      "at": "2026-11-02T11:36:45.302Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 497
+    },
+    {
+      "at": "2026-11-02T11:37:00.816Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T11:37:00.910Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 514
+    },
+    {
+      "at": "2026-11-02T11:37:16.431Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 89
+    },
+    {
+      "at": "2026-11-02T11:37:16.520Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 492
+    },
+    {
+      "at": "2026-11-02T11:37:32.018Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 109
+    },
+    {
+      "at": "2026-11-02T11:37:32.127Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 478
+    },
+    {
+      "at": "2026-11-02T11:37:47.606Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 107
+    },
+    {
+      "at": "2026-11-02T11:37:47.713Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 492
+    },
+    {
+      "at": "2026-11-02T11:38:03.208Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T11:38:03.299Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 559
+    },
+    {
+      "at": "2026-11-02T11:38:18.869Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 99
+    },
+    {
+      "at": "2026-11-02T11:38:18.968Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 499
+    },
+    {
+      "at": "2026-11-02T11:38:34.481Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T11:38:34.572Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 478
+    },
+    {
+      "at": "2026-11-02T11:38:50.062Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 468
+    },
+    {
+      "at": "2026-11-02T11:38:50.530Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T11:39:06.019Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 108
+    },
+    {
+      "at": "2026-11-02T11:39:06.127Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 508
+    },
+    {
+      "at": "2026-11-02T11:39:21.642Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 134
+    },
+    {
+      "at": "2026-11-02T11:39:21.777Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 468
+    },
+    {
+      "at": "2026-11-02T11:39:37.261Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:39:37.354Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 463
+    },
+    {
+      "at": "2026-11-02T11:39:52.828Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 144
+    },
+    {
+      "at": "2026-11-02T11:39:52.972Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 460
+    },
+    {
+      "at": "2026-11-02T11:40:08.447Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 90
+    },
+    {
+      "at": "2026-11-02T11:40:08.537Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 472
+    },
+    {
+      "at": "2026-11-02T11:40:24.011Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 106
+    },
+    {
+      "at": "2026-11-02T11:40:24.117Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T11:40:39.591Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 88
+    },
+    {
+      "at": "2026-11-02T11:40:39.679Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 494
+    },
+    {
+      "at": "2026-11-02T11:40:55.180Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 105
+    },
+    {
+      "at": "2026-11-02T11:40:55.285Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T11:41:10.772Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 136
+    },
+    {
+      "at": "2026-11-02T11:41:10.908Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 456
+    },
+    {
+      "at": "2026-11-02T11:41:26.374Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 97
+    },
+    {
+      "at": "2026-11-02T11:41:26.471Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 467
+    },
+    {
+      "at": "2026-11-02T11:41:41.944Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T11:41:42.035Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 462
+    },
+    {
+      "at": "2026-11-02T11:41:57.499Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 109
+    },
+    {
+      "at": "2026-11-02T11:41:57.608Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 455
+    },
+    {
+      "at": "2026-11-02T11:42:13.074Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:42:13.170Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 463
+    },
+    {
+      "at": "2026-11-02T11:42:28.644Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 104
+    },
+    {
+      "at": "2026-11-02T11:42:28.748Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 484
+    },
+    {
+      "at": "2026-11-02T11:42:44.245Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T11:42:44.343Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T11:42:59.821Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 103
+    },
+    {
+      "at": "2026-11-02T11:42:59.924Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T11:43:15.409Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:43:15.504Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 473
+    },
+    {
+      "at": "2026-11-02T11:43:30.985Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 171
+    },
+    {
+      "at": "2026-11-02T11:43:31.156Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 478
+    },
+    {
+      "at": "2026-11-02T11:43:46.651Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:43:46.744Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 477
+    },
+    {
+      "at": "2026-11-02T11:44:02.225Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 400
+    },
+    {
+      "at": "2026-11-02T11:44:02.625Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 459
+    },
+    {
+      "at": "2026-11-02T11:44:18.100Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 130
+    },
+    {
+      "at": "2026-11-02T11:44:18.230Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 482
+    },
+    {
+      "at": "2026-11-02T11:44:33.716Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 174
+    },
+    {
+      "at": "2026-11-02T11:44:33.890Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T11:44:49.362Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:44:49.455Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 479
+    },
+    {
+      "at": "2026-11-02T11:45:04.939Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:45:05.035Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 472
+    },
+    {
+      "at": "2026-11-02T11:45:20.518Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:45:20.611Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 486
+    },
+    {
+      "at": "2026-11-02T11:45:36.106Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:45:36.202Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T11:45:51.687Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 171
+    },
+    {
+      "at": "2026-11-02T11:45:51.858Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 847
+    },
+    {
+      "at": "2026-11-02T11:46:07.715Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 449
+    },
+    {
+      "at": "2026-11-02T11:46:08.164Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 457
+    },
+    {
+      "at": "2026-11-02T11:46:23.636Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 177
+    },
+    {
+      "at": "2026-11-02T11:46:23.813Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 466
+    },
+    {
+      "at": "2026-11-02T11:46:39.286Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 101
+    },
+    {
+      "at": "2026-11-02T11:46:39.387Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 460
+    },
+    {
+      "at": "2026-11-02T11:46:54.849Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 99
+    },
+    {
+      "at": "2026-11-02T11:46:54.948Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 451
+    },
+    {
+      "at": "2026-11-02T11:47:10.408Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 109
+    },
+    {
+      "at": "2026-11-02T11:47:10.517Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T11:47:26.004Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 101
+    },
+    {
+      "at": "2026-11-02T11:47:26.105Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 459
+    },
+    {
+      "at": "2026-11-02T11:47:41.572Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 131
+    },
+    {
+      "at": "2026-11-02T11:47:41.703Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 454
+    },
+    {
+      "at": "2026-11-02T11:47:57.163Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 106
+    },
+    {
+      "at": "2026-11-02T11:47:57.269Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 558
+    },
+    {
+      "at": "2026-11-02T11:48:12.834Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T11:48:12.936Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 864
+    },
+    {
+      "at": "2026-11-02T11:48:28.816Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T11:48:28.918Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 462
+    },
+    {
+      "at": "2026-11-02T11:48:44.391Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:48:44.484Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 481
+    },
+    {
+      "at": "2026-11-02T11:48:59.980Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 117
+    },
+    {
+      "at": "2026-11-02T11:49:00.097Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 468
+    },
+    {
+      "at": "2026-11-02T11:49:15.566Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:49:15.659Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 453
+    },
+    {
+      "at": "2026-11-02T11:49:31.124Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:49:31.219Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T11:49:46.692Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:49:46.787Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 453
+    },
+    {
+      "at": "2026-11-02T11:50:02.245Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 143
+    },
+    {
+      "at": "2026-11-02T11:50:02.388Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 460
+    },
+    {
+      "at": "2026-11-02T11:50:17.853Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T11:50:17.945Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 451
+    },
+    {
+      "at": "2026-11-02T11:50:33.408Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T11:50:33.500Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T11:50:48.984Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T11:50:49.078Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T11:51:04.551Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 130
+    },
+    {
+      "at": "2026-11-02T11:51:04.681Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T11:51:20.156Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 568
+    },
+    {
+      "at": "2026-11-02T11:51:20.724Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 463
+    },
+    {
+      "at": "2026-11-02T11:51:36.202Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 109
+    },
+    {
+      "at": "2026-11-02T11:51:36.311Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 485
+    },
+    {
+      "at": "2026-11-02T11:51:51.811Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T11:51:51.909Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 1017
+    },
+    {
+      "at": "2026-11-02T11:52:07.936Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:52:08.029Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T11:52:23.512Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:52:23.605Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 807
+    },
+    {
+      "at": "2026-11-02T11:52:39.422Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 104
+    },
+    {
+      "at": "2026-11-02T11:52:39.526Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 456
+    },
+    {
+      "at": "2026-11-02T11:52:54.998Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T11:52:55.092Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 878
+    },
+    {
+      "at": "2026-11-02T11:53:10.982Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 107
+    },
+    {
+      "at": "2026-11-02T11:53:11.089Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 458
+    },
+    {
+      "at": "2026-11-02T11:53:26.559Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 126
+    },
+    {
+      "at": "2026-11-02T11:53:26.685Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T11:53:42.148Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 101
+    },
+    {
+      "at": "2026-11-02T11:53:42.249Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 482
+    },
+    {
+      "at": "2026-11-02T11:53:57.743Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 89
+    },
+    {
+      "at": "2026-11-02T11:53:57.832Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 485
+    },
+    {
+      "at": "2026-11-02T11:54:13.333Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 89
+    },
+    {
+      "at": "2026-11-02T11:54:13.422Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 464
+    },
+    {
+      "at": "2026-11-02T11:54:28.892Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T11:54:28.994Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T11:54:44.479Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T11:54:44.570Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 452
+    },
+    {
+      "at": "2026-11-02T11:55:00.038Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:55:00.133Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T11:55:15.613Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 162
+    },
+    {
+      "at": "2026-11-02T11:55:15.775Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 477
+    },
+    {
+      "at": "2026-11-02T11:55:31.265Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 120
+    },
+    {
+      "at": "2026-11-02T11:55:31.385Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 851
+    },
+    {
+      "at": "2026-11-02T11:55:47.240Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:55:47.333Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 512
+    },
+    {
+      "at": "2026-11-02T11:56:02.859Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T11:56:02.957Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 459
+    },
+    {
+      "at": "2026-11-02T11:56:18.420Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:56:18.515Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 464
+    },
+    {
+      "at": "2026-11-02T11:56:33.980Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 463
+    },
+    {
+      "at": "2026-11-02T11:56:34.443Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 490
+    },
+    {
+      "at": "2026-11-02T11:56:49.949Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T11:56:50.045Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 458
+    },
+    {
+      "at": "2026-11-02T11:57:05.518Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:57:05.611Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 465
+    },
+    {
+      "at": "2026-11-02T11:57:21.079Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T11:57:21.171Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 847
+    },
+    {
+      "at": "2026-11-02T11:57:37.025Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T11:57:37.119Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 450
+    },
+    {
+      "at": "2026-11-02T11:57:52.582Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T11:57:52.674Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 456
+    },
+    {
+      "at": "2026-11-02T11:58:08.144Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T11:58:08.239Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 450
+    },
+    {
+      "at": "2026-11-02T11:58:23.696Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T11:58:23.798Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 462
+    },
+    {
+      "at": "2026-11-02T11:58:39.266Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:58:39.359Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T11:58:54.850Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T11:58:54.943Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 468
+    },
+    {
+      "at": "2026-11-02T11:59:10.420Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 97
+    },
+    {
+      "at": "2026-11-02T11:59:10.517Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T11:59:26.000Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 107
+    },
+    {
+      "at": "2026-11-02T11:59:26.107Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T11:59:41.588Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 99
+    },
+    {
+      "at": "2026-11-02T11:59:41.687Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 452
+    },
+    {
+      "at": "2026-11-02T11:59:57.154Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T11:59:57.252Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 504
+    },
+    {
+      "at": "2026-11-02T12:00:12.764Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T12:00:12.855Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 454
+    },
+    {
+      "at": "2026-11-02T12:00:28.320Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T12:00:28.411Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 454
+    },
+    {
+      "at": "2026-11-02T12:00:43.882Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 152
+    },
+    {
+      "at": "2026-11-02T12:00:44.034Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 463
+    },
+    {
+      "at": "2026-11-02T12:00:59.500Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 97
+    },
+    {
+      "at": "2026-11-02T12:00:59.597Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 478
+    },
+    {
+      "at": "2026-11-02T12:01:15.079Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 99
+    },
+    {
+      "at": "2026-11-02T12:01:15.178Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 467
+    },
+    {
+      "at": "2026-11-02T12:01:30.655Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T12:01:30.749Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 479
+    },
+    {
+      "at": "2026-11-02T12:01:46.240Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 383
+    },
+    {
+      "at": "2026-11-02T12:01:46.623Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 462
+    },
+    {
+      "at": "2026-11-02T12:02:02.090Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T12:02:02.185Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 484
+    },
+    {
+      "at": "2026-11-02T12:02:17.684Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 118
+    },
+    {
+      "at": "2026-11-02T12:02:17.802Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 464
+    },
+    {
+      "at": "2026-11-02T12:02:33.277Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 109
+    },
+    {
+      "at": "2026-11-02T12:02:33.386Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T12:02:48.869Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 100
+    },
+    {
+      "at": "2026-11-02T12:02:48.969Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 474
+    },
+    {
+      "at": "2026-11-02T12:03:04.451Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T12:03:04.545Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 510
+    },
+    {
+      "at": "2026-11-02T12:03:20.069Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 141
+    },
+    {
+      "at": "2026-11-02T12:03:20.210Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T12:03:35.688Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 155
+    },
+    {
+      "at": "2026-11-02T12:03:35.843Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 457
+    },
+    {
+      "at": "2026-11-02T12:03:51.303Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 100
+    },
+    {
+      "at": "2026-11-02T12:03:51.403Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 799
+    },
+    {
+      "at": "2026-11-02T12:04:07.212Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T12:04:07.304Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 494
+    },
+    {
+      "at": "2026-11-02T12:04:22.811Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T12:04:22.907Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 454
+    },
+    {
+      "at": "2026-11-02T12:04:38.365Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 103
+    },
+    {
+      "at": "2026-11-02T12:04:38.468Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 473
+    },
+    {
+      "at": "2026-11-02T12:04:53.949Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T12:04:54.047Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 462
+    },
+    {
+      "at": "2026-11-02T12:05:09.519Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 108
+    },
+    {
+      "at": "2026-11-02T12:05:09.627Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T12:05:25.106Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 112
+    },
+    {
+      "at": "2026-11-02T12:05:25.218Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T12:05:40.701Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 121
+    },
+    {
+      "at": "2026-11-02T12:05:40.822Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T12:05:56.296Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T12:05:56.389Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 460
+    },
+    {
+      "at": "2026-11-02T12:06:11.860Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 90
+    },
+    {
+      "at": "2026-11-02T12:06:11.950Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 466
+    },
+    {
+      "at": "2026-11-02T12:06:27.423Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 106
+    },
+    {
+      "at": "2026-11-02T12:06:27.529Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 457
+    },
+    {
+      "at": "2026-11-02T12:06:42.995Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T12:06:43.090Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 452
+    },
+    {
+      "at": "2026-11-02T12:06:58.552Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 398
+    },
+    {
+      "at": "2026-11-02T12:06:58.950Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T12:07:14.436Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T12:07:14.530Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 473
+    },
+    {
+      "at": "2026-11-02T12:07:30.015Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 122
+    },
+    {
+      "at": "2026-11-02T12:07:30.137Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 449
+    },
+    {
+      "at": "2026-11-02T12:07:45.591Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T12:07:45.687Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 457
+    },
+    {
+      "at": "2026-11-02T12:08:01.147Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 101
+    },
+    {
+      "at": "2026-11-02T12:08:01.248Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 531
+    },
+    {
+      "at": "2026-11-02T12:08:16.783Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 89
+    },
+    {
+      "at": "2026-11-02T12:08:16.872Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 452
+    },
+    {
+      "at": "2026-11-02T12:08:32.328Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T12:08:32.421Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 452
+    },
+    {
+      "at": "2026-11-02T12:08:47.882Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 96
+    },
+    {
+      "at": "2026-11-02T12:08:47.978Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 473
+    },
+    {
+      "at": "2026-11-02T12:09:03.456Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 130
+    },
+    {
+      "at": "2026-11-02T12:09:03.586Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 487
+    },
+    {
+      "at": "2026-11-02T12:09:19.087Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 91
+    },
+    {
+      "at": "2026-11-02T12:09:19.178Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 459
+    },
+    {
+      "at": "2026-11-02T12:09:34.649Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T12:09:34.751Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 780
+    },
+    {
+      "at": "2026-11-02T12:09:50.533Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T12:09:50.628Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T12:10:06.108Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 90
+    },
+    {
+      "at": "2026-11-02T12:10:06.198Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 807
+    },
+    {
+      "at": "2026-11-02T12:10:22.020Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 387
+    },
+    {
+      "at": "2026-11-02T12:10:22.407Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 500
+    },
+    {
+      "at": "2026-11-02T12:10:37.918Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 135
+    },
+    {
+      "at": "2026-11-02T12:10:38.053Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 794
+    },
+    {
+      "at": "2026-11-02T12:10:53.863Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 126
+    },
+    {
+      "at": "2026-11-02T12:10:53.989Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 504
+    },
+    {
+      "at": "2026-11-02T12:11:09.506Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 98
+    },
+    {
+      "at": "2026-11-02T12:11:09.604Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 470
+    },
+    {
+      "at": "2026-11-02T12:11:25.090Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T12:11:25.185Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 463
+    },
+    {
+      "at": "2026-11-02T12:11:40.660Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 101
+    },
+    {
+      "at": "2026-11-02T12:11:40.761Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 456
+    },
+    {
+      "at": "2026-11-02T12:11:56.227Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 103
+    },
+    {
+      "at": "2026-11-02T12:11:56.330Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 466
+    },
+    {
+      "at": "2026-11-02T12:12:11.802Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 101
+    },
+    {
+      "at": "2026-11-02T12:12:11.903Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 456
+    },
+    {
+      "at": "2026-11-02T12:12:27.365Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T12:12:27.459Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 455
+    },
+    {
+      "at": "2026-11-02T12:12:42.919Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 93
+    },
+    {
+      "at": "2026-11-02T12:12:43.013Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 468
+    },
+    {
+      "at": "2026-11-02T12:12:58.492Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 99
+    },
+    {
+      "at": "2026-11-02T12:12:58.591Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T12:13:14.083Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 124
+    },
+    {
+      "at": "2026-11-02T12:13:14.207Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 466
+    },
+    {
+      "at": "2026-11-02T12:13:29.677Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 126
+    },
+    {
+      "at": "2026-11-02T12:13:29.803Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 474
+    },
+    {
+      "at": "2026-11-02T12:13:45.286Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 95
+    },
+    {
+      "at": "2026-11-02T12:13:45.381Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 458
+    },
+    {
+      "at": "2026-11-02T12:14:00.844Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T12:14:00.936Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 473
+    },
+    {
+      "at": "2026-11-02T12:14:16.412Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 94
+    },
+    {
+      "at": "2026-11-02T12:14:16.506Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 467
+    },
+    {
+      "at": "2026-11-02T12:14:31.983Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 135
+    },
+    {
+      "at": "2026-11-02T12:14:32.118Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 806
+    },
+    {
+      "at": "2026-11-02T12:14:47.928Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T12:14:48.020Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T12:15:03.493Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 100
+    },
+    {
+      "at": "2026-11-02T12:15:03.593Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 476
+    },
+    {
+      "at": "2026-11-02T12:15:19.071Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 106
+    },
+    {
+      "at": "2026-11-02T12:15:19.177Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 475
+    },
+    {
+      "at": "2026-11-02T12:15:34.662Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 397
+    },
+    {
+      "at": "2026-11-02T12:15:35.059Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 461
+    },
+    {
+      "at": "2026-11-02T12:15:50.522Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 118
+    },
+    {
+      "at": "2026-11-02T12:15:50.640Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 488
+    },
+    {
+      "at": "2026-11-02T12:16:06.129Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 110
+    },
+    {
+      "at": "2026-11-02T12:16:06.239Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 587
+    },
+    {
+      "at": "2026-11-02T12:16:21.831Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 107
+    },
+    {
+      "at": "2026-11-02T12:16:21.938Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 481
+    },
+    {
+      "at": "2026-11-02T12:16:37.429Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 99
+    },
+    {
+      "at": "2026-11-02T12:16:37.528Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T12:16:53.016Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 107
+    },
+    {
+      "at": "2026-11-02T12:16:53.123Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 489
+    },
+    {
+      "at": "2026-11-02T12:17:08.614Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 102
+    },
+    {
+      "at": "2026-11-02T12:17:08.716Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 468
+    },
+    {
+      "at": "2026-11-02T12:17:24.189Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 113
+    },
+    {
+      "at": "2026-11-02T12:17:24.302Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 485
+    },
+    {
+      "at": "2026-11-02T12:17:39.790Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 92
+    },
+    {
+      "at": "2026-11-02T12:17:39.882Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 471
+    },
+    {
+      "at": "2026-11-02T12:17:55.363Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 97
+    },
+    {
+      "at": "2026-11-02T12:17:55.460Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 806
+    },
+    {
+      "at": "2026-11-02T12:18:11.282Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 146
+    },
+    {
+      "at": "2026-11-02T12:18:11.428Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 469
+    },
+    {
+      "at": "2026-11-02T12:18:26.909Z",
+      "path": "/",
+      "status": 200,
+      "failed": false,
+      "ms": 111
+    },
+    {
+      "at": "2026-11-02T12:18:27.020Z",
+      "path": "/api/health",
+      "status": 200,
+      "failed": false,
+      "ms": 460
+    }
+  ],
+  "updatedAt": "2026-11-02T12:18:27.480Z",
+  "finishedAt": "2026-11-02T12:18:42.490Z"
+}

@@ -1,0 +1,344 @@
+{
+  "unit": "SCRUM-718",
+  "serviceId": "srv-dbk7qu8n74is73bm894g",
+  "collectedAt": "2026-11-02T12:36:50.173Z",
+  "window": {
+    "startTime": "2026-11-02T12:30:57.746Z",
+    "endTime": "2026-11-02T12:38:28.142Z",
+    "allOpenAt": "2026-11-02T12:32:57.746Z",
+    "loadEndedAt": "2026-11-02T12:35:27.970Z"
+  },
+  "resolutionSeconds": 30,
+  "series": {
+    "cpu": [
+      {
+        "labels": [],
+        "unit": "cpu",
+        "values": [
+          {
+            "timestamp": "2026-11-02T12:30:57.746Z",
+            "value": 0.0009112
+          },
+          {
+            "timestamp": "2026-11-02T12:31:27.746Z",
+            "value": 0.003928967
+          },
+          {
+            "timestamp": "2026-11-02T12:31:57.746Z",
+            "value": 0.0002256
+          },
+          {
+            "timestamp": "2026-11-02T12:32:27.746Z",
+            "value": 0.00018013333
+          },
+          {
+            "timestamp": "2026-11-02T12:32:57.746Z",
+            "value": 0.00026063333
+          },
+          {
+            "timestamp": "2026-11-02T12:33:27.746Z",
+            "value": 0.00026316667
+          },
+          {
+            "timestamp": "2026-11-02T12:33:57.746Z",
+            "value": 0.0050442335
+          },
+          {
+            "timestamp": "2026-11-02T12:34:27.746Z",
+            "value": 0.0052892333
+          },
+          {
+            "timestamp": "2026-11-02T12:34:57.746Z",
+            "value": 0.0061988668
+          },
+          {
+            "timestamp": "2026-11-02T12:35:27.746Z",
+            "value": 0.0052836332
+          },
+          {
+            "timestamp": "2026-11-02T12:35:57.746Z",
+            "value": 0.005429433
+          },
+          {
+            "timestamp": "2026-11-02T12:36:27.746Z",
+            "value": 0.0031652
+          },
+          {
+            "timestamp": "2026-11-02T12:36:57.746Z",
+            "value": 0.00028336668
+          },
+          {
+            "timestamp": "2026-11-02T12:37:27.746Z",
+            "value": 0.00019926667
+          }
+        ]
+      }
+    ],
+    "cpu-limit": [
+      {
+        "labels": [
+          {
+            "field": "instance",
+            "value": "srv-dbk7qu8n74is73bm894g-xdz6w"
+          },
+          {
+            "field": "service",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "resource",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          }
+        ],
+        "unit": "cpu",
+        "values": [
+          {
+            "timestamp": "2026-11-02T12:30:57.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:31:27.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:31:57.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:32:27.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:32:57.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:33:27.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:33:57.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:34:27.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:34:57.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:35:27.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:35:57.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:36:27.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:36:57.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:37:27.746Z",
+            "value": 0.5
+          },
+          {
+            "timestamp": "2026-11-02T12:37:57.746Z",
+            "value": 0.5
+          }
+        ]
+      }
+    ],
+    "memory": [
+      {
+        "labels": [
+          {
+            "field": "instance",
+            "value": "srv-dbk7qu8n74is73bm894g-xdz6w"
+          },
+          {
+            "field": "service",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "resource",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          }
+        ],
+        "unit": "bytes",
+        "values": [
+          {
+            "timestamp": "2026-11-02T12:30:57.746Z",
+            "value": 116539390
+          },
+          {
+            "timestamp": "2026-11-02T12:31:27.746Z",
+            "value": 116547580
+          },
+          {
+            "timestamp": "2026-11-02T12:31:57.746Z",
+            "value": 116535300
+          },
+          {
+            "timestamp": "2026-11-02T12:32:27.746Z",
+            "value": 116531200
+          },
+          {
+            "timestamp": "2026-11-02T12:32:57.746Z",
+            "value": 116789250
+          },
+          {
+            "timestamp": "2026-11-02T12:33:27.746Z",
+            "value": 117448700
+          },
+          {
+            "timestamp": "2026-11-02T12:33:57.746Z",
+            "value": 117395460
+          },
+          {
+            "timestamp": "2026-11-02T12:34:27.746Z",
+            "value": 119988220
+          },
+          {
+            "timestamp": "2026-11-02T12:34:57.746Z",
+            "value": 119635970
+          },
+          {
+            "timestamp": "2026-11-02T12:35:27.746Z",
+            "value": 117608450
+          },
+          {
+            "timestamp": "2026-11-02T12:35:57.746Z",
+            "value": 117264380
+          },
+          {
+            "timestamp": "2026-11-02T12:36:27.746Z",
+            "value": 116998140
+          },
+          {
+            "timestamp": "2026-11-02T12:36:57.746Z",
+            "value": 116989950
+          }
+        ]
+      }
+    ],
+    "memory-limit": [
+      {
+        "labels": [
+          {
+            "field": "instance",
+            "value": "srv-dbk7qu8n74is73bm894g-xdz6w"
+          },
+          {
+            "field": "service",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "resource",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          }
+        ],
+        "unit": "bytes",
+        "values": [
+          {
+            "timestamp": "2026-11-02T12:30:57.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:31:27.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:31:57.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:32:27.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:32:57.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:33:27.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:33:57.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:34:27.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:34:57.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:35:27.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:35:57.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:36:27.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:36:57.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:37:27.746Z",
+            "value": 536870900
+          },
+          {
+            "timestamp": "2026-11-02T12:37:57.746Z",
+            "value": 536870900
+          }
+        ]
+      }
+    ]
+  },
+  "summary": {
+    "cpu": {
+      "unit": "cpu",
+      "samples": 6,
+      "max": 0.0061988668,
+      "min": 0.00026063333
+    },
+    "cpu-limit": {
+      "unit": "cpu",
+      "samples": 6,
+      "max": 0.5,
+      "min": 0.5
+    },
+    "memory": {
+      "unit": "bytes",
+      "samples": 6,
+      "max": 119988220,
+      "min": 116789250
+    },
+    "memory-limit": {
+      "unit": "bytes",
+      "samples": 6,
+      "max": 536870900,
+      "min": 536870900
+    },
+    "cpuHeadroomPercent": 98.76022664,
+    "memoryHeadroomPercent": 77.65045190566298
+  },
+  "notes": [
+    "Render active-connections is a database/cache metric, not available for a web service; no staging upstream connection count is claimed. Local repeated-disconnect tests count upstream connections directly."
+  ]
+}

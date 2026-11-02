@@ -1,0 +1,445 @@
+{
+  "unit": "SCRUM-718",
+  "origin": "https://oto-pos-web-staging.onrender.com",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a19ba8-d8d5-76cc-923b-aca24002ab7f",
+    "boxName": "ZZ TEST SCRUM-718 path",
+    "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+    "stationName": "ZZ TEST SCRUM-718 path",
+    "createdAt": "2026-11-02T09:48:18.531Z"
+  },
+  "startedAt": "2026-11-02T12:23:28.892Z",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "at": 1793622210479,
+      "phase": "first page",
+      "status": 401,
+      "headersMs": 60,
+      "totalMs": 61
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "at": 1793622211450,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 84,
+      "totalMs": 85
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "at": 1793622211535,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 71,
+      "totalMs": 71
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/permissions",
+      "at": 1793622211606,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 102,
+      "totalMs": 102
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "at": 1793622211709,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 69,
+      "totalMs": 69
+    },
+    {
+      "method": "GET",
+      "path": "/api/payment-methods",
+      "at": 1793622211778,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 75,
+      "totalMs": 75
+    },
+    {
+      "method": "GET",
+      "path": "/api/tiers",
+      "at": 1793622211854,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 72,
+      "totalMs": 72
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/ticket-packages",
+      "at": 1793622211854,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 121,
+      "totalMs": 121
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/holidays",
+      "at": 1793622211854,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 111,
+      "totalMs": 111
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/tax-config",
+      "at": 1793622211854,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 111,
+      "totalMs": 111
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "at": 1793622211854,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 133,
+      "totalMs": 133
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/menu",
+      "at": 1793622211988,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 80,
+      "totalMs": 80
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu/discounts",
+      "at": 1793622211988,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 74,
+      "totalMs": 74
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/sellable",
+      "at": 1793622212070,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 73,
+      "totalMs": 73
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/stations",
+      "at": 1793622212146,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 71,
+      "totalMs": 71
+    },
+    {
+      "method": "PUT",
+      "path": "/api/me/session/station",
+      "at": 1793622212373,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 76,
+      "totalMs": 77
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 71,
+      "totalMs": 71
+    },
+    {
+      "method": "GET",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/printers",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 69,
+      "totalMs": 69
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 128,
+      "totalMs": 128
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 71,
+      "totalMs": 71
+    },
+    {
+      "method": "GET",
+      "path": "/api/checkin/board",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 137,
+      "totalMs": 137
+    },
+    {
+      "method": "GET",
+      "path": "/api/kiosk-desk",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 71,
+      "totalMs": 71
+    },
+    {
+      "method": "GET",
+      "path": "/api/sales",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 69,
+      "totalMs": 69
+    },
+    {
+      "method": "GET",
+      "path": "/api/events/passes",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 134,
+      "totalMs": 134
+    },
+    {
+      "method": "GET",
+      "path": "/api/checkin/config",
+      "at": 1793622212477,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 141,
+      "totalMs": 141
+    },
+    {
+      "method": "GET",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "at": 1793622212478,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 132,
+      "totalMs": 133
+    },
+    {
+      "method": "GET",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/channel",
+      "at": 1793622212501,
+      "phase": "sign in and select station",
+      "status": 200,
+      "headersMs": 122,
+      "failed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/occupancy",
+      "at": 1793622212684,
+      "phase": "open menu and add item",
+      "status": 200,
+      "headersMs": 99,
+      "totalMs": 99
+    },
+    {
+      "method": "GET",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/printers",
+      "at": 1793622212684,
+      "phase": "open menu and add item",
+      "status": 200,
+      "headersMs": 80,
+      "totalMs": 80
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/pricing-mode",
+      "at": 1793622212685,
+      "phase": "open menu and add item",
+      "status": 200,
+      "headersMs": 79,
+      "totalMs": 79
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/station/link",
+      "at": 1793622212685,
+      "phase": "open menu and add item",
+      "status": 200,
+      "headersMs": 79,
+      "totalMs": 79
+    },
+    {
+      "method": "GET",
+      "path": "/api/ops/demo-reset",
+      "at": 1793622212685,
+      "phase": "open menu and add item",
+      "status": 200,
+      "headersMs": 79,
+      "totalMs": 79
+    },
+    {
+      "method": "GET",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/displays",
+      "at": 1793622212685,
+      "phase": "open menu and add item",
+      "status": 200,
+      "headersMs": 88,
+      "totalMs": 88
+    },
+    {
+      "method": "GET",
+      "path": "/api/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610/channel",
+      "at": 1793622212686,
+      "phase": "open menu and add item",
+      "status": 200,
+      "headersMs": 87
+    },
+    {
+      "method": "POST",
+      "path": "/api/sales/quote",
+      "at": 1793622213320,
+      "phase": "cash sale",
+      "status": 200,
+      "headersMs": 84,
+      "totalMs": 84
+    },
+    {
+      "method": "POST",
+      "path": "/api/sales",
+      "at": 1793622213506,
+      "phase": "cash sale",
+      "status": 200,
+      "headersMs": 102,
+      "totalMs": 102
+    },
+    {
+      "method": "POST",
+      "path": "/api/sales/01a19c37-037b-79d4-b0d8-55f7a9fb9b3a/finalise",
+      "at": 1793622213768,
+      "phase": "cash sale",
+      "status": 200,
+      "headersMs": 147,
+      "totalMs": 148
+    },
+    {
+      "method": "POST",
+      "path": "/api/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610/intents",
+      "at": 1793622213916,
+      "phase": "cash sale"
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches/01a0bbdc-8c42-7753-b7e3-5ae19fb66d33/stock/sellable",
+      "at": 1793622213916,
+      "phase": "cash sale"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sales/01a19c37-037b-79d4-b0d8-55f7a9fb9b3a",
+      "at": 1793622213916,
+      "phase": "cash sale"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me",
+      "at": 1793622214056,
+      "phase": "cleanup",
+      "status": 200,
+      "headersMs": 80,
+      "totalMs": 80
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/permissions",
+      "at": 1793622214136,
+      "phase": "cleanup",
+      "status": 200,
+      "headersMs": 74,
+      "totalMs": 74
+    },
+    {
+      "method": "GET",
+      "path": "/api/branches",
+      "at": 1793622214211,
+      "phase": "cleanup"
+    }
+  ],
+  "steps": [
+    {
+      "name": "sign in and select station",
+      "ms": 1899
+    },
+    {
+      "name": "open menu and add item",
+      "ms": 490
+    },
+    {
+      "name": "cash sale",
+      "ms": 788
+    }
+  ],
+  "outcome": "passed",
+  "deployments": [
+    {
+      "service": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "sha": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+      "deployId": "dep-dbk7sns9v7es73bvie50",
+      "finishedAt": "2026-11-02T12:16:46.029843Z"
+    },
+    {
+      "service": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "sha": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+      "deployId": "dep-dbk7qv0n74is73bm8cmg",
+      "finishedAt": "2026-11-02T12:12:21.064195Z"
+    }
+  ],
+  "firstPageMs": 533,
+  "firstPageResources": {
+    "domInteractiveMs": 130.60000002384186,
+    "loadEventEndMs": 417.39999997615814,
+    "assetCount": 2,
+    "assetTransferBytes": 581251,
+    "assetEncodedBytes": 580651
+  },
+  "cookieFlags": {
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax",
+    "hostOnly": true
+  },
+  "sale": {
+    "id": "01a19c37-037b-79d4-b0d8-55f7a9fb9b3a",
+    "status": "finalised",
+    "grossSatang": 9000
+  },
+  "journeyMs": 3327,
+  "journeyCallCount": 39,
+  "finaliseCallCount": 1,
+  "signOutStatus": 200,
+  "afterSignOutStatus": 401,
+  "finishedAt": "2026-11-02T12:23:34.280Z"
+}

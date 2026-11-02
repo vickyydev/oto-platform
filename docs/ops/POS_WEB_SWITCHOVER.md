@@ -136,13 +136,13 @@ display secrets or a cart between origins. Keep the old service and settings unt
 the owner accepts the switch. A rollback is an address/sign-in operation, never a
 database rollback or a replay of a sale. Production has its own separate approval.
 
-The exact new URL, service ID, live commits, resource measurements and final proof
-links are added below after staging deployment; until then this document does not
-claim a deployed service or passing timing.
+The verified service and results are recorded below. The owner checklist above
+is the next operation; this unit does not execute it.
 
 ## Created staging service
 
-Verified on 2 November 2026. The service is live; timing acceptance is still pending.
+Verified on 2 November 2026. The service is live and staging timing/safety
+acceptance passed. No park device has switched addresses.
 
 | Item | Read-back |
 | --- | --- |
@@ -159,4 +159,33 @@ Verified on 2 November 2026. The service is live; timing acceptance is still pen
 
 No address has been switched on a park device. The manual service settings match
 the commented render.yaml block. The API same-commit deployment is
-dep-dbk7sns9v7es73bvie50; live-origin and performance acceptance follow it.
+dep-dbk7sns9v7es73bvie50, live at 12:16:46 UTC on the source above.
+Native sign-in confirmed the new origin is active.
+
+## Measured acceptance and stop point
+
+Bangkok, 30 per path/tool/mode, 360 calls, all 200. Warm browser direct/old/new
+p50: 57.7/460.0/61.3 ms; p95: 62.4/518.1/65.4 ms. Matching-percentile added
+latency is 3.6/3.0 ms; all four tool/mode comparisons are below 50 ms. Individual
+internet outliers remain in the raw data; this is not an every-request maximum.
+New streams opened 30/30 in both tools; old streams 0/30 within three seconds.
+The native cash journey took 9.057 seconds old versus 3.327 seconds new, with
+39 calls and one finalise on each path. Visible display directions measured
+448 ms and 242 ms on source c2fdd28fdc9e944d058af62dec1347e5f2b7a56f,
+including SCRUM-720's polling changes.
+
+The real caller address reaches the API without changing TRUST_PROXY_ADDRS.
+Forged values do not create new address buckets. Cookie/Origin controls, the
+installed offline shell, native scans, static caching and traversal checks pass.
+Under 32 streams plus 562 reads in 150 seconds, sampled peak memory was
+114.4 MiB of 512 MiB and CPU 0.0062 of 0.5 cores. No larger plan is justified
+by this measured workload. All 32 streams closed; test displays, leases and
+sessions were cleaned up. The three synthetic cash receipts remain as audit facts.
+
+Full methods, limits, raw receipts and inspected proof cards are in
+[the result report](../qa/proof-2026-11-02/s718-results.md).
+The proof is an isolated virtual setup, not a physical Pi/offline-unlock test.
+The current park device addresses, launcher handoff destination and old static
+site settings remain unchanged. Stop here; the owner chooses if and when to use
+the forward/rollback checklist. The new service need not be deleted or suspended
+to return a test browser to the old address.

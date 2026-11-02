@@ -1,0 +1,308 @@
+{
+  "unit": "SCRUM-718",
+  "source": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41439428324",
+  "collectedAt": "2026-11-02T12:39:59.417Z",
+  "deployments": [
+    {
+      "name": "oto-pos-web-staging",
+      "serviceId": "srv-dbk7qu8n74is73bm894g",
+      "deployId": "dep-dbk7qv0n74is73bm8cmg",
+      "sha": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+      "finishedAt": "2026-11-02T12:12:21.064195Z"
+    },
+    {
+      "name": "oto-api-staging",
+      "serviceId": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbk7sns9v7es73bvie50",
+      "sha": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+      "finishedAt": "2026-11-02T12:16:46.029843Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "serviceId": "srv-danh2mf40ujc73bu80j0",
+      "deployId": "dep-dbk7qmrm8hqs738hvbo0",
+      "sha": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+      "finishedAt": "2026-11-02T12:09:52.050901Z"
+    }
+  ],
+  "newOrigin": "https://oto-pos-web-staging.onrender.com",
+  "sourceUnchangedSinceCi": true,
+  "latencyDefinition": "New-path p50 and p95 minus direct-API p50 and p95 in the same interleaved window, matching the local overhead calculation. This is a percentile comparison, not a maximum bound for every internet request.",
+  "latency": [
+    {
+      "tool": "curl",
+      "mode": "first",
+      "n": 30,
+      "directP50": 126.837,
+      "directP95": 232.233,
+      "oldP50": 542.2289999999999,
+      "oldP95": 938.83,
+      "newP50": 128.864,
+      "newP95": 203.183,
+      "addedP50": 2.027000000000001,
+      "addedP95": -29.05000000000001
+    },
+    {
+      "tool": "curl",
+      "mode": "warm",
+      "n": 30,
+      "directP50": 56.904,
+      "directP95": 100.856,
+      "oldP50": 466.837,
+      "oldP95": 766.026,
+      "newP50": 59.427,
+      "newP95": 67.815,
+      "addedP50": 2.522999999999996,
+      "addedP95": -33.041
+    },
+    {
+      "tool": "browser",
+      "mode": "first",
+      "n": 30,
+      "directP50": 118.69449999999779,
+      "directP95": 143.10109999999986,
+      "oldP50": 532.6937000000034,
+      "oldP95": 625.8763000000035,
+      "newP50": 123.38439999999537,
+      "newP95": 141.13140000000567,
+      "addedP50": 4.689899999997579,
+      "addedP95": -1.9696999999941909
+    },
+    {
+      "tool": "browser",
+      "mode": "warm",
+      "n": 30,
+      "directP50": 57.69999998807907,
+      "directP95": 62.39999997615814,
+      "oldP50": 460,
+      "oldP95": 518.0999999642372,
+      "newP50": 61.30000001192093,
+      "newP95": 65.40000003576279,
+      "addedP50": 3.600000023841858,
+      "addedP95": 3.0000000596046448
+    }
+  ],
+  "streamOpening": [
+    {
+      "path": "direct-api",
+      "tool": "curl",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 147.88899999999998,
+      "p95Ms": 190.363
+    },
+    {
+      "path": "direct-api",
+      "tool": "browser",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 76.5,
+      "p95Ms": 130.89999997615814
+    },
+    {
+      "path": "old-pos",
+      "tool": "curl",
+      "n": 30,
+      "opened": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "path": "old-pos",
+      "tool": "browser",
+      "n": 30,
+      "opened": 0,
+      "p50Ms": null,
+      "p95Ms": null
+    },
+    {
+      "path": "new-pos",
+      "tool": "curl",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 151.477,
+      "p95Ms": 201.375
+    },
+    {
+      "path": "new-pos",
+      "tool": "browser",
+      "n": 30,
+      "opened": 30,
+      "p50Ms": 80.59999996423721,
+      "p95Ms": 130.5999999642372
+    }
+  ],
+  "journeys": {
+    "oldMs": 9057,
+    "newMs": 3327,
+    "oldCalls": 39,
+    "newCalls": 39,
+    "oldFinalise": 1,
+    "newFinalise": 1
+  },
+  "display": {
+    "source": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+    "pollingSource": "2513e1fb385190c38f494d81006cfc1e44302f79",
+    "tillToDisplay": {
+      "clickAt": 1793622272528,
+      "snapshotAt": 1793622272959,
+      "milliseconds": 431,
+      "transport": "stream",
+      "visibleMilliseconds": 448
+    },
+    "phoneToTill": {
+      "clickAt": 1793622269727,
+      "snapshotAt": 1793622269811,
+      "milliseconds": 84,
+      "transport": "stream",
+      "visibleMilliseconds": 242
+    }
+  },
+  "capacity": {
+    "concurrency": 32,
+    "readCalls": 562,
+    "opened": 32,
+    "closed": 32,
+    "allOpenAt": "2026-11-02T12:32:57.746Z",
+    "loadEndedAt": "2026-11-02T12:35:27.970Z",
+    "measurements": {
+      "cpu": {
+        "unit": "cpu",
+        "samples": 6,
+        "max": 0.0061988668,
+        "min": 0.00026063333
+      },
+      "cpu-limit": {
+        "unit": "cpu",
+        "samples": 6,
+        "max": 0.5,
+        "min": 0.5
+      },
+      "memory": {
+        "unit": "bytes",
+        "samples": 6,
+        "max": 119988220,
+        "min": 116789250
+      },
+      "memory-limit": {
+        "unit": "bytes",
+        "samples": 6,
+        "max": 536870900,
+        "min": 536870900
+      },
+      "cpuHeadroomPercent": 98.76022664,
+      "memoryHeadroomPercent": 77.65045190566298
+    }
+  },
+  "cleanup": {
+    "activeDisplays": 0,
+    "leaseChecks": [
+      {
+        "name": "no remaining test lease",
+        "base": "/box/v1/station/01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+        "passed": true
+      },
+      {
+        "name": "no remaining test lease",
+        "base": "/stations/01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+        "passed": true
+      }
+    ],
+    "retainedReceipts": [
+      "Z718-000001",
+      "Z718-000002",
+      "Z718-000003"
+    ],
+    "signOut": 200,
+    "afterSignOut": 401
+  },
+  "oldAvailability": {
+    "startedAt": "2026-11-02T11:17:59.400Z",
+    "finishedAt": "2026-11-02T12:18:42.490Z",
+    "samples": 466,
+    "failures": 0
+  },
+  "environment": {
+    "namesTouched": [
+      "ALLOWED_ORIGINS"
+    ],
+    "beforeNameCount": 56,
+    "afterNameCount": 56,
+    "allOtherValuesPreserved": true
+  },
+  "address": {
+    "realClientAddressConfirmed": true,
+    "forgedBuckets": 0,
+    "otherBuckets": 0,
+    "cookie": {
+      "hostOnly": true,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax",
+      "separateSetCookieCount": 1,
+      "names": [
+        "oto_session"
+      ]
+    }
+  },
+  "safetyChecks": [
+    {
+      "name": "installed worker controls the shell and caches no API",
+      "passed": true,
+      "shellEntries": 9
+    },
+    {
+      "name": "offline /today opens from the installed shell; API is a genuine network failure",
+      "passed": true
+    },
+    {
+      "name": "API resumes online",
+      "passed": true
+    },
+    {
+      "name": "the native till hears one synthetic scan on its EventSource",
+      "passed": true,
+      "transport": "stream",
+      "milliseconds": 81,
+      "outcome": "unhandled"
+    },
+    {
+      "name": "foreign Origin refused, no CORS, current login preserved",
+      "passed": true
+    },
+    {
+      "name": "missing hashed asset is 404, not the app shell",
+      "passed": true,
+      "status": 404
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/%2e%2e/%2e%2e/ZZ-TEST-private-probe",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/.ZZ-TEST-hidden-probe",
+      "status": 400,
+      "passed": true
+    },
+    {
+      "name": "raw path refusal",
+      "path": "/assets/%5c..%5cZZ-TEST-private-probe",
+      "status": 400,
+      "passed": true
+    }
+  ],
+  "limits": [
+    "Bangkok measurements are this machine and this window; individual internet calls varied. Raw samples include all outliers.",
+    "The display timings are the two native harness actions, not a statistical display latency distribution.",
+    "CPU and memory are Render samples at 30-second resolution, under 32 streams and 562 reads in 150 seconds; not a saturation test.",
+    "The real park Pi and an offline box unlock were not exercised. The unchanged lane decision and upstream-down behavior were pinned locally; the deployed installed shell and genuine browser network failure were verified. Staging lacks the box offline-sign-in key, as recorded by SCRUM-719.",
+    "No device switchover or production change."
+  ],
+  "newServiceDeployCount": 1,
+  "docsOnlyPushDidNotRebuild": true,
+  "acceptancePassed": true
+}

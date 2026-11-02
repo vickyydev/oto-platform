@@ -1,0 +1,37 @@
+{
+  "unit": "SCRUM-718",
+  "origin": "https://oto-pos-web-staging.onrender.com",
+  "startedAt": "2026-11-02T12:30:20.829Z",
+  "statuses": [
+    401,
+    401
+  ],
+  "edgeClientFingerprint": "434f6b58c50de5e131bcf32a4efde24ef831a3985c1518ebd54901b8606c28e1",
+  "sessionCookie": {
+    "hostOnly": true,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax",
+    "separateSetCookieCount": 1,
+    "names": [
+      "oto_session"
+    ]
+  },
+  "probeStartedAt": "2026-11-02T12:30:21.124Z",
+  "probeEndedAt": "2026-11-02T12:30:21.289Z",
+  "jobId": "job-dbk84nm7bikc739evi7g",
+  "apiServiceId": "srv-danh2ljtqb8s73bt9en0",
+  "ownerId": "tea-dakeu6p42hec73abs5g0",
+  "jobStatus": "succeeded",
+  "result": {
+    "event": "s718-forwarded-address",
+    "expectedClientBucket": [
+      {
+        "failures": 2
+      }
+    ],
+    "forgedBucketCount": 0,
+    "otherBucketCount": 0
+  },
+  "verifiedAt": "2026-11-02T12:32:22.856Z"
+}

@@ -1,0 +1,95 @@
+{
+  "unit": "SCRUM-710",
+  "source": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+  "ci": "https://github.com/vickyydev/oto-platform/actions/runs/41439428324",
+  "fixture": {
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "boxId": "01a19ba8-d8d5-76cc-923b-aca24002ab7f",
+    "boxName": "ZZ TEST SCRUM-718 path",
+    "stationId": "01a19ba8-e19a-75c6-9f28-0bc5d6937610",
+    "stationName": "ZZ TEST SCRUM-718 path",
+    "createdAt": "2026-11-02T09:48:18.531Z"
+  },
+  "deployments": [
+    {
+      "service": "oto-pos-web-staging",
+      "id": "dep-dbk7qv0n74is73bm8cmg",
+      "sha": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+      "finishedAt": "2026-11-02T12:12:21.064195Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "id": "dep-dbk7sns9v7es73bvie50",
+      "sha": "c2fdd28fdc9e944d058af62dec1347e5f2b7a56f",
+      "finishedAt": "2026-11-02T12:16:46.029843Z"
+    }
+  ],
+  "checks": [
+    {
+      "name": "10-second grace",
+      "at": "2026-11-02T12:24:44.908Z",
+      "elapsedMs": 10641,
+      "passed": true
+    },
+    {
+      "name": "20-second paused screen hides total",
+      "at": "2026-11-02T12:24:54.906Z",
+      "elapsedMs": 20639,
+      "passed": true
+    },
+    {
+      "name": "automatic recovery",
+      "at": "2026-11-02T12:24:56.878Z",
+      "passed": true
+    },
+    {
+      "name": "revoked credential returns display to pairing",
+      "at": "2026-11-02T12:25:01.676Z",
+      "passed": true
+    },
+    {
+      "name": "replacement unpaired code expired",
+      "at": "2026-11-02T12:25:02.614Z",
+      "passed": true
+    },
+    {
+      "name": "session cleanup",
+      "origin": "https://oto-console-staging.onrender.com",
+      "signedOut": 200,
+      "after": 401
+    },
+    {
+      "name": "session cleanup",
+      "origin": "https://oto-launcher-staging.onrender.com",
+      "signedOut": 200,
+      "after": 401
+    },
+    {
+      "name": "session cleanup",
+      "origin": "https://oto-pos-web-staging.onrender.com",
+      "signedOut": 200,
+      "after": 401
+    }
+  ],
+  "startedAt": "2026-11-02T12:24:14.586Z",
+  "pollingSource": "2513e1fb385190c38f494d81006cfc1e44302f79",
+  "displayName": "ZZ TEST SCRUM-710 display 1793622256095",
+  "phoneToTill": {
+    "clickAt": 1793622269727,
+    "snapshotAt": 1793622269811,
+    "milliseconds": 84,
+    "transport": "stream",
+    "visibleMilliseconds": 242
+  },
+  "tillToDisplay": {
+    "clickAt": 1793622272528,
+    "snapshotAt": 1793622272959,
+    "milliseconds": 431,
+    "transport": "stream",
+    "visibleMilliseconds": 448
+  },
+  "revokedAt": "2026-11-02T12:25:01.034Z",
+  "displayId": "01a19c37-d971-756f-b53e-f4565998d897",
+  "completedAt": "2026-11-02T12:25:02.614Z",
+  "cleanedAt": "2026-11-02T12:25:05.267Z"
+}
