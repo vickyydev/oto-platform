@@ -324,6 +324,10 @@ export class CheckinDesk {
         photoOf.set(`registration:${row.entityId}`, record.photoId);
         if (!base.photoFileId) base.photoFileId = record.photoId;
       }
+      // A booked arrival can acknowledge consent against an older cached
+      // registration. Keep that durable update without replacing consent
+      // already present in a refreshed platform copy.
+      if (!base.consentRecordedAt && record.consentRecordedAt) base.consentRecordedAt = record.consentRecordedAt;
       families.set(row.entityId, base);
     }
     for (const row of await this.overlay('checkin', store)) {
@@ -1436,6 +1440,9 @@ export class CheckinDesk {
       const checked = this.nannyCheck(view, id, s.child.id, now);
       nannyOf.set(s.child.id, { id, name: checked.name });
     }
+    if (stays.some((s) => !s.family.consentRecordedAt) && !body.consent) {
+      throw new DeskRefusal(409, 'CONSENT_REQUIRED', "The guardian's consent isn't on file — tick the consent before checking them in.");
+    }
     const queue = this.host.sales();
     if (!queue) {
       throw new DeskRefusal(
@@ -1475,6 +1482,19 @@ export class CheckinDesk {
         staffName: body.staffName ?? null,
         bands: plans,
         write: async (tx, minted) => {
+          const consentOverlays = new Map<string, Omit<OverlayWrite, 'eventId'>>();
+          if (body.consent) {
+            for (const s of stays) {
+              if (s.family.consentRecordedAt || consentOverlays.has(s.family.registrationId)) continue;
+              const held = await tx.readOverlay(this.host.boxId, 'registration', s.family.registrationId);
+              // Another arrival on this box may already have recorded it.
+              if (held?.record.consentRecordedAt) continue;
+              consentOverlays.set(s.family.registrationId, {
+                kind: 'registration', entityId: s.family.registrationId, memberId: s.family.memberId, phone: null,
+                record: { ...s.family, ...held?.record, consentRecordedAt: body.consent.at },
+              });
+            }
+          }
           const writes = stays.map((s, i) => {
             const band = minted[i]!;
             const plan = plans[i]!;
@@ -1501,6 +1521,7 @@ export class CheckinDesk {
               bookedMinutes: bookedMinutes ?? null,
               nannyId: nanny?.id ?? null,
               service: s.service,
+              ...(body.consent ? { consent: body.consent } : {}),
               band: {
                 id: band.id,
                 code: band.code,
@@ -1510,9 +1531,12 @@ export class CheckinDesk {
                 childId: s.child.childId,
               },
             };
+            const consentOverlay = consentOverlays.get(s.family.registrationId);
+            consentOverlays.delete(s.family.registrationId);
             return {
               fact: { type: CHECKIN_FACTS.updated, payload: fact as unknown as Record<string, unknown> },
               overlay: [
+                ...(consentOverlay ? [consentOverlay] : []),
                 {
                   kind: 'checkin' as const,
                   entityId: s.child.id,

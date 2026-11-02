@@ -7,10 +7,12 @@ import { test } from 'node:test';
 
 import {
   BOX_CHECKIN_REFUSALS,
+  BridgeCheckinUpdateSchema,
   CHECKIN_FACTS,
   DEFAULT_DROP_OFF_PRICING,
   DEFAULT_SUPERVISION_POLICY,
   OFFLINE_PHOTO_POLICY,
+  OfflineCheckinUpdatedSchema,
   childPhotosEnabled,
   prepaidPaidMismatchRefusal,
   verifyBandCode,
@@ -422,6 +424,59 @@ test('a double power cut inside "Check in now" leaves nothing half-landed; the t
   } finally {
     box.close();
   }
+});
+
+test('SCRUM-708: missing consent is refused; acknowledgement, band and fact survive together, including a restart', async () => {
+  const box = await openCheckinBox();
+  try {
+    const { checkinId, saleId, registrationId } = await registeredAndPaid(box);
+    const store = box.harness.store;
+    const held = (await store.readOverlay(BOX_ID, 'registration', registrationId))!;
+    const photoId = uuidv7();
+    await store.putOverlay(BOX_ID, { ...held, record: { ...held.record, consentRecordedAt: null, photoId } });
+    const cached = (await ask(box, 'checkin.board', {})).families[0];
+    const bundle = (await store.readBundle(BOX_ID, 'checkin'))!;
+    const item = checkinItem();
+    await store.writeBundle(BOX_ID, { ...bundle, payload: { items: [{ ...item, families: [cached] }] } });
+    const press = { event: 'check_in_now', saleId, entries: [{ checkinId }] };
+    const refused = await refusal(ask(box, 'checkin.update', press));
+    assert.equal(refused.code, 'CONSENT_REQUIRED');
+    assert.equal(refused.message, "The guardian's consent isn't on file — tick the consent before checking them in.");
+    assert.equal((await facts(box)).filter(e => e.type === CHECKIN_FACTS.updated).length, 0);
+
+    const consent = { acknowledged: true, at: new Date(Date.now() - 120_000).toISOString() };
+    for (const invalid of [{ acknowledged: false, at: consent.at }, { acknowledged: true }, { acknowledged: true, at: 'tomorrow' }]) {
+      assert.equal(BridgeCheckinUpdateSchema.safeParse({ ...press, consent: invalid }).success, false);
+    }
+    const atomic = store.atomically.bind(store);
+    store.atomically = (async (fn: (tx: BoxStore) => Promise<unknown>) => atomic(async tx => {
+      await fn(tx);
+      throw new Error('s708 power cut before commit');
+    })) as BoxStore['atomically'];
+    try {
+      await assert.rejects(ask(box, 'checkin.update', { ...press, consent }), /s708 power cut/);
+      assert.equal((await store.readOverlay(BOX_ID, 'registration', registrationId))!.record.consentRecordedAt, null);
+      assert.equal((await facts(box)).filter(e => e.type === CHECKIN_FACTS.updated).length, 0);
+    } finally { store.atomically = atomic; }
+    const checked = await ask(box, 'checkin.update', { ...press, consent });
+    assert.equal(checked.bands.length, 1);
+    const fact = (await facts(box)).find(e => e.type === CHECKIN_FACTS.updated)!;
+    assert.deepEqual(fact.payload.consent, consent);
+    assert.equal(OfflineCheckinUpdatedSchema.safeParse(fact.payload).success, true);
+    const { consent: _consent, ...legacy } = fact.payload;
+    assert.equal(OfflineCheckinUpdatedSchema.safeParse(legacy).success, true);
+    assert.equal((await store.readOverlay(BOX_ID, 'registration', registrationId))!.record.photoId, photoId);
+    await box.restart();
+    let board = await ask(box, 'checkin.board', {});
+    assert.equal(board.families[0].consentRecordedAt, consent.at);
+    assert.equal(board.families[0].children[0].bandId, checked.bands[0].id);
+    await ask(box, 'checkin.update', { ...press, consent: { acknowledged: true, at: new Date().toISOString() } });
+    assert.equal((await facts(box)).filter(e => e.type === CHECKIN_FACTS.updated).length, 1);
+    const existingAt = new Date(Date.now() - 600_000).toISOString();
+    await store.writeBundle(BOX_ID, { ...bundle, payload: { items: [{ ...item, families: [{ ...cached, consentRecordedAt: existingAt }] }] } });
+    board = await ask(box, 'checkin.board', {});
+    assert.equal(board.families[0].consentRecordedAt, existingAt, 'a refreshed platform consent wins over the local overlay');
+  } finally { box.close(); }
 });
 
 test('the board on the box: a nanny must be on shift, edits are recorded, a release names its photo — and survives a restart', async () => {

@@ -1,0 +1,27 @@
+{
+  "completedAt": "2026-11-02T13:37:15.948Z",
+  "restored": true,
+  "success": true,
+  "mutations": [
+    {
+      "mutation": "HIGH: replay invents the reconnect time",
+      "outcome": "Expected finding reproduced; all other pins passed",
+      "at": "2026-11-02T13:36:30.480Z"
+    },
+    {
+      "mutation": "HIGH: replay overwrites existing consent",
+      "outcome": "Expected finding reproduced; all other pins passed",
+      "at": "2026-11-02T13:36:44.381Z"
+    },
+    {
+      "mutation": "HIGH: replay invents consent on older facts",
+      "outcome": "Expected finding reproduced; all other pins passed",
+      "at": "2026-11-02T13:36:59.265Z"
+    },
+    {
+      "mutation": "HIGH: the box admits missing consent",
+      "outcome": "Expected finding reproduced; all other pins passed",
+      "at": "2026-11-02T13:37:15.379Z"
+    }
+  ]
+}

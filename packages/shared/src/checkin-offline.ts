@@ -27,6 +27,9 @@ const Uuid = z.string().uuid();
 const IsoDateTime = z.string().datetime({ offset: true });
 const OfflineFresh = z.boolean().optional();
 
+/** A positive acknowledgement at the counter, before any reconnect or replay. */
+const CheckinConsentSchema = z.object({ acknowledged: z.literal(true), at: IsoDateTime }).strict();
+
 // --- The intents a till sends its box ----------------------------------------------
 
 /**
@@ -197,6 +200,8 @@ export const OfflineCheckinUpdatedSchema = z.object({
    * it = the stay's own service.
    */
   service: z.enum(SUPERVISION_REQUIREMENTS).nullish(),
+  /** Absent on older facts; replay keeps their existing behaviour. */
+  consent: CheckinConsentSchema.optional(),
   band: OfflineCheckinBandSchema.nullish(),
   fields: z
     .object({
@@ -283,6 +288,7 @@ export const BridgeCheckinUpdateSchema = z.discriminatedUnion('event', [
     .object({
       event: z.literal('check_in_now'),
       saleId: Uuid,
+      consent: CheckinConsentSchema.optional(),
       /**
        * `service` is the Drop-Off / Nanny switch the paid cart line carried
        * (the platform's `CheckInNowSchema` entry); absent = the stay keeps

@@ -578,6 +578,22 @@ async function applyCheckinUpdated(
     const service = payload.service ?? stay.service;
     const nannyId = service === 'nanny' ? (payload.nannyId ?? stay.nannyId) : null;
     if (nannyId) await nannyAtBranch(tx, stay.branchId, nannyId);
+    if (payload.consent) {
+      const reg = await registrationOf(tx, scope, stay.registrationId);
+      const consentAt = new Date(payload.consent.at);
+      // The conditional update also protects a consent recorded online while
+      // this fact was travelling. Older facts have no acknowledgement to apply.
+      const recorded = await tx.update(registration)
+        .set({ consentRecordedAt: consentAt, updatedAt: event.occurredAt })
+        .where(and(eq(registration.id, reg.id), eq(registration.operatorId, scope.auth.operatorId),
+          eq(registration.branchId, scope.auth.branchId), isNull(registration.consentRecordedAt)))
+        .returning({ id: registration.id });
+      if (recorded.length > 0) await audit.record(tx, {
+        ...base, action: 'registration.update', entityType: 'registration', entityId: reg.id,
+        before: { consentRecordedAt: null },
+        after: { consentRecordedAt: consentAt.toISOString(), event: 'consent_at_check_in', ...extra },
+      });
+    }
     await tx
       .update(checkin)
       .set({

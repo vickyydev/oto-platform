@@ -115,6 +115,7 @@ afterEach(() => {
   setLaneStation(null);
   setBridgeStaffName(null);
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe('the gate on the box lane', () => {
@@ -186,6 +187,25 @@ describe('the gate on the box lane', () => {
 });
 
 describe('the board and the release on the box lane', () => {
+  it('keeps the positive consent and counter time across fallback and each paid sale', async () => {
+    vi.useFakeTimers();
+    const at = '2026-11-02T10:00:00.000Z';
+    vi.setSystemTime(new Date(at));
+    const secondStay = '018f0000-0000-7000-8000-00000000c002';
+    const secondSale = '018f0000-0000-7000-8000-00000000b002';
+    const seen = stubFetch((intent) => {
+      vi.setSystemTime(new Date('2026-11-02T10:05:00.000Z'));
+      if (intent.type === 'checkin.board') return reply({ document: {}, result: { families: [
+        family({ consentRecordedAt: null, children: [stay(), stay({ id: secondStay, saleId: secondSale })] }),
+      ] } });
+      return reply({ document: {}, result: { saleId: intent.payload.saleId, children: [], bands: [], printJobs: [], notes: [] } });
+    });
+    await boardApi.checkInBooked({ entries: [{ checkinId: STAY }, { checkinId: secondStay }], consentAcknowledged: true });
+    const writes = seen.filter(item => item.type === 'checkin.update');
+    expect(writes.map(item => item.payload.saleId)).toEqual([SALE, secondSale]);
+    expect(writes.map(item => item.payload.consent)).toEqual([{ acknowledged: true, at }, { acknowledged: true, at }]);
+  });
+
   it('reads the board from the box, edits there, and checks a booked child in on the sale they paid on', async () => {
     const seen = stubFetch((intent) => {
       if (intent.type === 'checkin.board') {
@@ -216,6 +236,7 @@ describe('the board and the release on the box lane', () => {
     const booked = await boardApi.checkInBooked({ entries: [{ checkinId: STAY }] });
     expect(booked.saleIds).toEqual([SALE]);
     expect(seen.at(-1)!.payload).toMatchObject({ event: 'check_in_now', saleId: SALE, entries: [{ checkinId: STAY }] });
+    expect(seen.at(-1)!.payload).not.toHaveProperty('consent');
   });
 
   it('the release modal: its context, the pickup list, a photo kept on the box and the release, all through the box', async () => {

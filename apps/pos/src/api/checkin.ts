@@ -773,8 +773,11 @@ assignNanny: (checkinId: string, nannyId: string) =>
           nannyId,
         }),
     ),
-checkInBooked: (body: { entries: { checkinId: string; nannyId?: string | null }[]; consentAcknowledged?: boolean }) =>
-    viaLane(
+checkInBooked: (body: { entries: { checkinId: string; nannyId?: string | null }[]; consentAcknowledged?: boolean }) => {
+    // Keep the counter's acknowledgement time across a failed platform call
+    // and all per-sale box requests; replay must not supply a later time.
+    const consent = body.consentAcknowledged ? { acknowledged: true as const, at: new Date().toISOString() } : undefined;
+    return viaLane(
       () =>
         api.post<{
           saleIds: string[];
@@ -801,6 +804,7 @@ checkInBooked: (body: { entries: { checkinId: string; nannyId?: string | null }[
             event: 'check_in_now',
             saleId,
             entries,
+            ...(consent ? { consent } : {}),
             staffName: bridgeStaffName(),
           });
           out.saleIds.push(saleId);
@@ -811,7 +815,8 @@ checkInBooked: (body: { entries: { checkinId: string; nannyId?: string | null }[
         }
         return out;
       },
-    ),
+    );
+  },
 contactTest: (registrationId: string) =>
     viaLane(
       () => api.post<ApiContact>(`/checkin/registrations/${registrationId}/contact-test`, {}, { idempotencyKey: idemKey() }),
