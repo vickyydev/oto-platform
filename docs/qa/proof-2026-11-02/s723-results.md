@@ -1,4 +1,4 @@
-# SCRUM-723 ? a fresh booked-arrival page honors forced offline
+# SCRUM-723 - a fresh booked-arrival page honors forced offline
 
 The booked-arrival route now opts into the existing station offline guard.
 The guard returns `503 STATION_FORCED_OFFLINE` before a platform mutation or
@@ -21,7 +21,7 @@ board and existing offline-switch files; 20 POS tests across fresh-page fallback
 and the lane arbiter. Whole API and POS typechecks, touched-file eslint and
 generated API contract checks passed. Review receipt: [s723-review.json](s723-review.json).
 
-Exact-source CI and staging proof remain pending. The proof
+Exact-source CI passed; staging proof remains pending. The proof
 will use a new ZZ TEST virtual box and till on the current staging POS origin,
 hard-load Check-in after Console Go offline, observe the refused platform call
 and accepted box intent, then compare platform state before and after reconnect.
@@ -32,7 +32,9 @@ separate small-control correction follows 723 Deployed.
 
 Published source: `de29ebf481f179431a1ff8166ed86ddfcd5077a9`.
 Exact-source [CI 41500821248](https://github.com/vickyydev/oto-platform/actions/runs/41500821248)
-is running. Jira is Testing; staging proof remains pending.
+passed all six jobs. The unchanged OTO App remains path-gated; this is not a
+claim of full app coverage. [CI receipt](s723-ci.json). Jira is Testing;
+automatic deployments and staging proof remain pending.
 
 Rebased onto `07f4393b`, including the completed forwarder and staging-link
 changes, with all progress blocks preserved. All 16 workspace typecheck tasks
