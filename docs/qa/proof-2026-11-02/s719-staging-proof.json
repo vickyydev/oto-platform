@@ -1,0 +1,216 @@
+{
+  "unit": "SCRUM-719",
+  "sha": "119e2c592ca169026345096902f176556a682530",
+  "ciRun": "https://github.com/vickyydev/oto-platform/actions/runs/41436309930",
+  "deployments": [
+    {
+      "service": "oto-console-staging",
+      "sha": "119e2c592ca169026345096902f176556a682530",
+      "finishedAt": "2026-11-02T11:45:53.880565Z"
+    },
+    {
+      "service": "oto-api-staging",
+      "sha": "119e2c592ca169026345096902f176556a682530",
+      "finishedAt": "2026-11-02T11:48:33.419643Z"
+    }
+  ],
+  "version": "oto-box 0.1.0-20261102-119e2c59 built 2026-11-02T11:45:28.605Z",
+  "startedAt": "2026-11-02T12:02:11.600Z",
+  "checks": [
+    {
+      "check": "With the link up, a sale on the box reaches the platform",
+      "note": "ZEF8-000001, journal epoch 1",
+      "passed": true,
+      "at": "2026-11-02T12:02:37.440Z"
+    },
+    {
+      "check": "With the link down, the last sale of a rush is in a checked copy about ten seconds later, with no later sale to push it",
+      "note": "10009 ms from that sale to its copy, on a store of 270336 bytes",
+      "passed": true,
+      "at": "2026-11-02T12:02:48.374Z"
+    },
+    {
+      "check": "The drive dies: its whole home is deleted, credential included",
+      "note": "ZEF8-000002 and ZEF8-000003 are unsent and in the copy. ZEF8-000004 was sold after the copy, so a guest holds a number no record of which survives",
+      "passed": true,
+      "at": "2026-11-02T12:02:49.742Z"
+    },
+    {
+      "check": "A blank store ran over three minutes with the mirror drive attached and changed nothing",
+      "note": "unsent in the three copies: 2/2/2 before, 2/2/2 after 190 s, each byte for byte the same with its time unchanged. Status: the copies hold 2 unsent record(s) this store does not have, and are being left in place: restore them before claiming or selling. A claim is refused before any code is used",
+      "passed": true,
+      "at": "2026-11-02T12:06:00.204Z"
+    },
+    {
+      "check": "Restore, then claim the same box: the platform keeps the journal the records were sealed under",
+      "note": "epoch 1 before and after; restore took 138 ms",
+      "passed": true,
+      "at": "2026-11-02T12:06:03.419Z"
+    },
+    {
+      "check": "During the hold, a new sale is refused, by name, and nothing of it is recorded",
+      "note": "JournalEpochAwaitedError: This box's store is new and the platform has not given it a journal epoch, so nothing can be recorded; reset the store in Console → Devices → the box",
+      "passed": true,
+      "at": "2026-11-02T12:06:13.844Z"
+    },
+    {
+      "check": "The restored sales are on the platform under the numbers guests hold, none refused or lost",
+      "note": "ZEF8-000002 and ZEF8-000003 finalised. Quarantine for this box: 0. Anomalies of a dropped or doubled fact: 0",
+      "passed": true,
+      "at": "2026-11-02T12:06:16.717Z"
+    },
+    {
+      "check": "Health says the box is waiting for Reset the store",
+      "note": "on the real staging Health page",
+      "passed": true,
+      "at": "2026-11-02T12:06:32.848Z"
+    },
+    {
+      "check": "Reset the store, with nothing unsent, gives the box a new journal and ends the hold",
+      "note": "epoch 1 to 2",
+      "passed": true,
+      "at": "2026-11-02T12:07:11.482Z"
+    },
+    {
+      "check": "The next sale gets a new number, past the one a guest may hold, and reaches the platform",
+      "note": "ZEF8-010004. A guest may hold ZEF8-000004. Platform's list for this till: ZEF8-000001, ZEF8-000002, ZEF8-000003, ZEF8-010004",
+      "passed": true,
+      "at": "2026-11-02T12:07:22.323Z"
+    },
+    {
+      "check": "Copies start again on the restored store, and two idle rounds write no copy",
+      "note": "same file through 2 idle rounds on a 270336-byte store; its time moved. Open alerts on this box now: box.storage_low. box.storage_low, if listed, is this PC's real disk reading: 91% full, under the ten percent line",
+      "passed": true,
+      "at": "2026-11-02T12:10:29.870Z"
+    },
+    {
+      "check": "The ZZ TEST box and till are taken out of service and archived, and read back so",
+      "note": "none left live under that name, from this or any earlier attempt",
+      "passed": true,
+      "at": "2026-11-02T12:10:38.868Z"
+    }
+  ],
+  "simulation": "The bundled agent ran on this Windows machine, with both \"drives\" as folders on one disk under the test-only allowance. The drive died by deleting the folder. Staging has no staff-token key, so no till can unlock on a box there: each sale was handed to the same sale queue the till bridge calls, from a small helper with no network, built from the same source. A local rehearsal of this same code, against a local copy of the platform with a shift token, drove the real till bridge over HTTP and got 409 JOURNAL_AWAITING_EPOCH during the hold. Sales are recorded cash on a ZZ TEST till; no money moved, no SMS was sent and no member is named. A real Pi with a real second drive stays a bench check.",
+  "box": {
+    "id": "01a19c23-a08b-72fa-889b-df3075f23a51",
+    "name": "ZZ TEST recovery box",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "slot": "zz-recovery-1793620942025",
+    "role": "counter"
+  },
+  "station": {
+    "id": "01a19c23-a25d-715d-b9c2-831abd2778c8",
+    "name": "ZZ TEST recovery till",
+    "prefix": "ZEF8"
+  },
+  "online": {
+    "number": "ZEF8-000001",
+    "epoch": 1
+  },
+  "window": {
+    "saleToCopyMs": 10009
+  },
+  "sold": {
+    "unsent": [
+      "ZEF8-000002",
+      "ZEF8-000003"
+    ],
+    "guestHoldsLost": "ZEF8-000004"
+  },
+  "blank": {
+    "ranForMs": 190448,
+    "copies": [
+      {
+        "file": "box.sqlite.mirror",
+        "unsent": 2,
+        "sha256": "ea0addf991c7d8a98308f2d0f5dbeca8641e934274d996117acff8770a532acc"
+      },
+      {
+        "file": "box.sqlite.mirror.1",
+        "unsent": 2,
+        "sha256": "ea0addf991c7d8a98308f2d0f5dbeca8641e934274d996117acff8770a532acc"
+      },
+      {
+        "file": "box.sqlite.mirror.2",
+        "unsent": 2,
+        "sha256": "ea0addf991c7d8a98308f2d0f5dbeca8641e934274d996117acff8770a532acc"
+      }
+    ],
+    "status": [
+      "the copies hold 2 unsent record(s) this store does not have, and are being left in place: restore them before claiming or selling"
+    ],
+    "claimRefused": "Claim code (Console → Devices → Add a box): The copies on the mirror drive hold 2 unsent record(s) this store does not have, and claiming now would strand them. Nothing was done, and the claim code was not used. Restore them first: \"oto-box store restore C:\\oto-lanes\\s719-proof-ef8d7bde\\second-drive\\box\\box.sqlite.mirror\" (BOX_QUICKSTART.md, \"If the drive dies\")."
+  },
+  "restore": {
+    "stdout": "Previous store kept: <path>\nPrevious store kept: <path>\nPrevious store kept: <path>\nRestored: 2 unsent record(s) waiting to reach the cloud. Credential and service configuration unchanged.\nThis copy is of box 01a19c23-a08b-72fa-889b-df3075f23a51, last changed 2026-11-02T12:02:38.287Z. Anything sold after that is not in it.\nReceipt numbers moved on by 10000 on 1 series, so no number is used twice. The gap in the numbers is expected.\nNew sales are held. Next: if this box has no credential, issue a claim code for that same box in Console → Devices and run \"oto-box claim\". Start the service, watch \"oto-box status\" until the outbox reads 0, then press Reset the store in Console → Devices. Then sell.\n",
+    "elapsedMs": 138
+  },
+  "hold": {
+    "refused": "JournalEpochAwaitedError",
+    "message": "This box's store is new and the platform has not given it a journal epoch, so nothing can be recorded; reset the store in Console → Devices → the box"
+  },
+  "platform": {
+    "restored": [
+      {
+        "number": "ZEF8-000002",
+        "status": "finalised",
+        "grossSatang": 89000
+      },
+      {
+        "number": "ZEF8-000003",
+        "status": "finalised",
+        "grossSatang": 89000
+      }
+    ],
+    "lostTailOnPlatform": false,
+    "quarantine": 0,
+    "droppedOrDoubled": 0,
+    "afterReset": {
+      "next": "ZEF8-010004",
+      "status": "finalised",
+      "onStation": [
+        "ZEF8-000001",
+        "ZEF8-000002",
+        "ZEF8-000003",
+        "ZEF8-010004"
+      ],
+      "gapFrom": "ZEF8-000004"
+    }
+  },
+  "resetRefusals": [
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED",
+    "BOX_OUTBOX_UNSYNCED"
+  ],
+  "idle": {
+    "inode": "16607023626508536",
+    "bytes": 270336,
+    "roundsWithoutWriting": 2
+  },
+  "stationArchive": 200,
+  "archived": {
+    "id": "01a19c23-a08b-72fa-889b-df3075f23a51",
+    "archived": true,
+    "status": "disabled",
+    "at": "2026-11-02T12:10:37.862Z"
+  },
+  "completedAt": "2026-11-02T12:10:38.868Z",
+  "session": {
+    "signOut": 200,
+    "after": 401
+  }
+}
