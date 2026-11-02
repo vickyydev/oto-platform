@@ -1,5 +1,11 @@
 # SCRUM-717 — station rules on the box lane
 
+The final pre-push fetch found recovery follow-up `119e2c59`, whose
+[CI 41436309930](https://github.com/vickyydev/oto-platform/actions/runs/41436309930)
+is running. This lane has rebased onto it. All 838 box tests and the 25 API
+routing/recovery review cases pass again. The source landing waits for this
+main run, as required by the brief.
+
 Latest checkpoint: this lane has rebased onto installer correction `f227d9bf`.
 The combined tree passes all 838 box tests and the full API battery: 6,068
 passed across three embedded-Postgres shards, with the existing 401 skips
@@ -109,3 +115,23 @@ No staging record, environment setting, existing virtual box, park Pi or
 station has been changed for this unit. No payment or SMS was attempted.
 SCRUM-717 stays Testing until the specified proof is inspected and attached.
 SCRUM-708 has not started and waits for that Deployed state.
+
+## Planned staging procedure — not yet executed
+
+1. Verify the green release SHA and the completed API deployment before
+   creating a new ZZ TEST virtual box and till. Preserve their exact IDs in
+   the proof receipt. Start the test agent only through the chosen host setup.
+2. Give that till its own receipt prefix, manual-card routing and QR none.
+   Confirm its configuration/cache has arrived, then use Console's offline
+   switch. Capture the actual box-bridge refusal and the POS sentence for QR.
+3. Reconnect the test box, release the test lease, remove the test till's
+   prefix, wait for the new readiness to reach its cache, and force it offline
+   again. Capture the not-ready lease response and its sentence on screen.
+4. Restore the test prefix, refresh the cache and force offline again. Sell
+   one guest cash order with a ZZ TEST note; record its box-bridge result,
+   receipt and queued fact without using real customer data or a real tender.
+5. Reconnect and verify the one test sale reaches the platform once. Release
+   the test lease and sign out both sessions. Record the exact fixture state
+   and any remaining synthetic sale; do not call an unexecuted cleanup done.
+6. Inspect the native captures, publish the timestamped receipt and evidence,
+   attach the image to SCRUM-717, and only then move it to Deployed.
