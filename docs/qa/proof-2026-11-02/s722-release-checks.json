@@ -61,5 +61,5 @@
     "testedSource": "c195b4de60d78d86b703e7fafbd2acab4e27db1d",
     "result": "matched"
   },
-  "release": "SCRUM-713 proof and cleanup window closed; rebased product tree matches the tested source. Landing for full-SHA CI and native staging proof."
+  "release": "Source 8963cd2e71f2484f8e53174aa5d3c85671c611de passed all six jobs in CI 41522382629. Native staging proof and fixture retirement are pending."
 }

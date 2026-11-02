@@ -48,8 +48,15 @@ window closed on 2 November at 20:46 UTC. Its signing key remains and our
 dedicated test-agent option is preserved. The consent fix was rebased again;
 the product tree is identical to the combined source tested above.
 
-This source is landing for full-SHA CI and staging proof. No SCRUM-722
-staging family or setting has been changed.
+Source `8963cd2e71f2484f8e53174aa5d3c85671c611de` passed all six jobs in
+[CI 41522382629](https://github.com/vickyydev/oto-platform/actions/runs/41522382629).
+The full-SHA watcher exited successfully. CI independently passed all 6,137
+API and 1,659 POS cases, including the six actual consent browser cases.
+The unchanged OTO App remains path-gated; its skipped checks were not run.
+The exact job outcomes and test summaries are in `s722-ci.json`.
+
+Automatic staging deployments are finishing; native proof is pending.
+No SCRUM-722 staging family or setting has been changed.
 The native proof will use a new ZZ TEST family on the retained SCRUM-723
 dedicated box/till, then retire only that fixture and its test-agent option
 while preserving the neighboring lane's settings and source.
