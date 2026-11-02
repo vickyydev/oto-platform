@@ -1697,6 +1697,8 @@ export async function purgeOldBoxHeartbeats(db: Db, retentionDays?: number): Pro
 // --- The virtual box --------------------------------------------------------
 
 let runningVirtualBox: BoxAgent | null = null;
+let runningTestVirtualBox: BoxAgent | null = null;
+let virtualBoxGeneration = 0;
 
 /**
  * Every box agent running inside THIS process, by box id.
@@ -1788,6 +1790,21 @@ export interface VirtualBoxOptions {
   port: number;
 }
 
+/** The optional rehearsal box belongs to the primary box's exact park and branch. */
+async function provisionTestVirtualBox(db: Db, primaryBoxId: string, slot: string): Promise<string | null> {
+  return db.transaction(async tx => {
+    const [primary] = await tx.select({ operatorId: box.operatorId, branchId: box.branchId })
+      .from(box).where(eq(box.id, primaryBoxId)).limit(1).for('share');
+    if (!primary) return null;
+    const [row] = await tx.select({ id: box.id, name: box.name, role: box.role, status: box.status })
+      .from(box).where(and(eq(box.operatorId, primary.operatorId), eq(box.branchId, primary.branchId),
+        eq(box.slot, slot), isNull(box.archivedAt))).limit(1).for('update');
+    if (!row || row.id === primaryBoxId || row.role !== 'virtual' || row.status === 'disabled'
+      || !row.name.startsWith('ZZ TEST ')) return null;
+    return (await issueClaimCode(tx, row.id, { ttlSeconds: 300 })).code;
+  });
+}
+
 /**
  * Start the in-process box, if this process carries the `edge` role.
  *
@@ -1811,20 +1828,46 @@ export interface VirtualBoxOptions {
  * claim code, and the second would win.
  */
 export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent | null> {
-  const { db, env, log, port } = opts;
+  const { db, env, log } = opts;
   if (!processRoles(env).includes('edge')) {
     log.info('virtual box not started — PROCESS_ROLES does not name edge');
     return null;
   }
+  const generation = ++virtualBoxGeneration;
+  const agent = await startHostedVirtualBox(opts,
+    async () => (await provisionVirtualBox(db, log))?.claimCode ?? null, `virtual-${env.DEPLOY_ENV}`, generation);
+  runningVirtualBox = agent;
+  const testSlot = process.env.BOX_AGENT_TEST_SLOT?.trim();
+  if (testSlot) {
+    // Both start inside index.ts's existing lease and stop before it is released.
+    // This option never repoints the primary slot and is unavailable on production.
+    if (!env.OPS_TEST_CONTROLS || env.DEPLOY_ENV !== 'staging'
+      || !/^zz-test-[a-z0-9-]{1,80}$/.test(testSlot) || testSlot === boxSettings().agentSlot) {
+      log.warn('test virtual box not started — a dedicated staging test slot and test controls are required');
+    } else if (agent?.state.boxId) {
+      const primaryBoxId = agent.state.boxId;
+      runningTestVirtualBox = await startHostedVirtualBox(opts,
+        () => provisionTestVirtualBox(db, primaryBoxId, testSlot), `virtual-${env.DEPLOY_ENV}-test`, generation);
+      if (!runningTestVirtualBox && generation === virtualBoxGeneration) {
+        log.warn('test virtual box not started — no eligible ZZ TEST virtual box in the primary branch');
+      }
+    }
+  }
+  return generation === virtualBoxGeneration ? agent : null;
+}
+
+async function startHostedVirtualBox(opts: VirtualBoxOptions,
+  claimCode: () => Promise<string | null>, hostname: string, generation: number): Promise<BoxAgent | null> {
+  const { db, log, port } = opts;
   const settings = boxSettings();
   const apiBaseUrl = settings.agentApiUrl ?? `http://127.0.0.1:${port}`;
   const agent = createBoxAgent({
     apiBaseUrl,
     credentials: memoryCredentialStore(),
-    hostname: `virtual-${env.DEPLOY_ENV}`,
+    hostname,
     log: log.child({ module: 'virtual-box' }),
     heartbeatIntervalMs: settings.heartbeatIntervalS * 1000,
-    claimCode: async () => (await provisionVirtualBox(db, log))?.claimCode ?? null,
+    claimCode,
     /**
      * With a store this stops being a reporter and becomes the system of
      * action (S2-05): a durable outbox, station session documents, and an
@@ -1859,9 +1902,13 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
     // A virtual box that cannot start is a demo that cannot be shown; it is
     // not a reason for the api in front of a branch to fall over.
     log.error({ err }, 'virtual box failed to start');
+    agent.stop();
     return null;
   }
-  runningVirtualBox = agent;
+  if (!agent.state.boxId || generation !== virtualBoxGeneration) {
+    agent.stop();
+    return null;
+  }
   attachInProcessBox(agent);
   // The shop's barcodes (S2-09b) on the box's OWN scanner, so a code the box
   // reads itself — its scanner, or the Console's simulator, which reaches it as
@@ -1875,6 +1922,11 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
 
 /** Stop the in-process box on shutdown. */
 export function stopVirtualBox(): void {
+  // A start still awaiting the network must not reattach after the lease was lost.
+  virtualBoxGeneration += 1;
+  runningTestVirtualBox?.stop();
+  if (runningTestVirtualBox) detachInProcessBox(runningTestVirtualBox);
+  runningTestVirtualBox = null;
   runningVirtualBox?.stop();
   if (runningVirtualBox) detachInProcessBox(runningVirtualBox);
   runningVirtualBox = null;
