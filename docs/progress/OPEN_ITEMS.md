@@ -184,7 +184,7 @@ evidence (the sweep's full evidence lives in the tickets' comments).
 | 3 | SCRUM-288 | High | Align platform and app access lifecycle. The existing deactivation case remains; 13 October staging also confirmed supported unlink 200 clears the platform stamp while an active app session remains 200. Exact temporary-user/session cleanup then returned 401. Include both cases in this existing item. |
 | 4 | SCRUM-512 | High | New from the sweep: no screen can end a lost device's staff shift token, though the api routes exist. Small Console screen. |
 | 5 | SCRUM-373 + SCRUM-375 | High | **Together.** Station promo codes are invisible to the till's own panel, so code-discounted orders misstate VAT and sales in till reports; 375 is the twin-hook merge in the same plumbing. |
-| 6 | SCRUM-508 | High | The owner's Today screen reads zero parties while the party tab trades (count hard-coded zero in the rollup). Needs the analytics plan Q3 answer first — ask with the fix. |
+| 6 | SCRUM-508 | High | Testing: party count and same-day takings now read the event/party-tab source in daily and hourly rollups (8417b720). The 2 November brief explicitly preserves Q3 default timing; a rule change is not part of this repair. All six CI jobs passed (41364323533); the inspected staging count proof and exact test-party cleanup are verified. Proof publication and Jira attachment precede Deployed. |
 | 7 | SCRUM-467 | High | The booth loses the red button after a while. Both candidate fixes are cheap (pin installer versions; reclaim visibility/focus) and can be built now. The booth is the owner's first priority. |
 | 8 | SCRUM-390 | Medium | A late terminal progress report can overwrite references on a paid sale. |
 | 9 | SCRUM-416 | Medium | A declined remainder after wallet credit was spent leaves a part-paid sale holding its voucher — the till CAN reach this, unlike the audit's assumption. |
@@ -225,7 +225,7 @@ evidence (the sweep's full evidence lives in the tickets' comments).
 | 34 | SCRUM-274 | Medium | The OTO App's naive timestamps (210 columns, 44 with timezone). Needs the which-zone-were-legacy-rows-written-in decision first; one migration per table after. |
 | 35 | SCRUM-277 | Medium | The delete-or-build list for uncalled endpoints (the security half became SCRUM-512; the tax-override tier is an owner call). |
 | 36 | SCRUM-419 | Low | Pi operations smalls; pull "keep the running booth when a second is added" and "stranded facts on re-claim" forward if a second booth or Pi swap is imminent. |
-| 37 | SCRUM-369 | Medium | Half-stale but open: the till's unit and browser-measurement suites run in CI since 8 Oct, but the Playwright journeys (sign-in, sale ledger, voucher, offline) run nowhere — copy the Console's e2e harness. |
+| 37 | SCRUM-369 | Medium | Deployed: all six till browser journeys now run in CI (53c9f49c; green 41360677250). Deliberately broken sign-in failed 41351229348 and was reverted. Inspected ci-red-green-proof.png is attached to the ticket (12199). |
 | 38 | SCRUM-339 | Low | The till opens TWO visits for one family (membership check + supervision gate) and bands/slips now read them — merge the opens. 340 closed (the board reads the platform). |
 | 39 | SCRUM-368 | Low | The silent no-op is closed and platform support exists; what remains is lifting the stations' blanket refusal of free-item codes so that support is reached. A small feature now, not a defect. |
 
@@ -270,7 +270,7 @@ as-built behaviour wins until answered):
 - **Events** — its plan's Q1–Q14 (incl. Q12 cancelled events on the
   booking site).
 - **Analytics** — its plan section 9, questions 1–17; Q3 (party-money
-  timing) now blocks SCRUM-508.
+  timing) remains an owner rule choice. The 2 November SCRUM-508 brief authorizes the source repair while preserving the existing same-day default.
 
 ## 4. Concerns and loopholes (keep these visible)
 
@@ -315,7 +315,7 @@ as-built behaviour wins until answered):
 - **Do 272+293 before any new screens** — every new hand-typed shape
   raises the cost of the generator switch.
 - **Ask the section-3 rulings now**, in one owner sitting: most fixes
-  behind them are small, and SCRUM-508's fix is blocked on Q3.
+  behind them are small. SCRUM-508 preserves Q3's default under the 2 November brief.
 - **Confirm SCRUM-276 on real data first** (any active advance with a
   calculated payroll run?) — it decides whether a correction job is
   needed beside the fix.

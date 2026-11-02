@@ -1,0 +1,90 @@
+{
+  "ticket": "SCRUM-508",
+  "source": "8417b72005ff7df668df66dbc81cf6b4315ab506",
+  "deployments": {
+    "oto-api-staging": {
+      "id": "dep-dbjtcrfavr4c73cg9550",
+      "sha": "8417b72005ff7df668df66dbc81cf6b4315ab506",
+      "finishedAt": "2026-11-02T00:20:28.938834Z",
+      "status": "live"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbjtcrfavr4c73cg94j0",
+      "sha": "8417b72005ff7df668df66dbc81cf6b4315ab506",
+      "finishedAt": "2026-11-02T00:17:38.868956Z",
+      "status": "live"
+    },
+    "posPerformanceMatchesSource": true,
+    "ci": {
+      "conclusion": "success",
+      "databaseId": 41364323533,
+      "status": "completed",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/41364323533"
+    }
+  },
+  "date": "2026-11-02",
+  "coreBranch": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "appBranch": "540f6e5e-e94b-4ce9-a79a-5947e841e1fb",
+  "station": "Till 2 (test)",
+  "identity": {
+    "name": "Khun Anan (Owner)",
+    "branch": "Oto Play Park, Central Floresta",
+    "station": "Till 2 (test)"
+  },
+  "event": {
+    "id": "0f8fcc30-c32f-4c09-954a-17105e0d4024",
+    "title": "ZZ TEST SCRUM-508 Performance 2026-11-02T00:24:10.884Z"
+  },
+  "createdAt": "2026-11-02T00:24:11.085Z",
+  "baseline": {
+    "partiesCount": 0,
+    "partiesSatang": 0,
+    "txnCount": 0,
+    "computedAt": "2026-11-01T22:04:10.483Z"
+  },
+  "localRegression": {
+    "passed": 79,
+    "preFixFailures": 3
+  },
+  "stagingPaymentsCreated": 0,
+  "captureAt": "2026-11-02T00:26:25.951Z",
+  "captureDeployments": {
+    "oto-api-staging": {
+      "id": "dep-dbjtcrfavr4c73cg9550",
+      "sha": "8417b72005ff7df668df66dbc81cf6b4315ab506",
+      "finishedAt": "2026-11-02T00:20:28.938834Z",
+      "status": "live"
+    },
+    "oto-pos-staging": {
+      "id": "dep-dbjtcrfavr4c73cg94j0",
+      "sha": "8417b72005ff7df668df66dbc81cf6b4315ab506",
+      "finishedAt": "2026-11-02T00:17:38.868956Z",
+      "status": "live"
+    },
+    "posPerformanceMatchesSource": true,
+    "ci": {
+      "conclusion": "success",
+      "databaseId": 41364323533,
+      "status": "completed",
+      "url": "https://github.com/vickyydev/oto-platform/actions/runs/41364323533"
+    }
+  },
+  "after": {
+    "partiesCount": 1,
+    "partiesSatang": 0,
+    "txnCount": 0,
+    "computedAt": "2026-11-02T00:25:22.919Z"
+  },
+  "cleanup": {
+    "archivedAt": "2026-11-02T00:27:16.751Z",
+    "archived": true,
+    "absentFromPartyList": true,
+    "summary": {
+      "partiesCount": 0,
+      "partiesSatang": 0,
+      "txnCount": 0,
+      "computedAt": "2026-11-02T00:30:22.937Z",
+      "verifiedAt": "2026-11-02T00:30:42.460Z"
+    }
+  }
+}
