@@ -17,6 +17,9 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**3 November 2026, SCRUM-728 COLD-RESUME ONLINE CONTEXT RESTORED; NATIVE SMOKE PASSES:** A further regression first reproduced the missing authoritative permissions after online unlock of a cold prepared page. That successful unlock now completes bounded lane recovery and hydrates the platform account, permissions, catalogue and normal remembered-station selection before resuming; no browser-saved grant becomes authority. The real-browser harness now observes the application's own station re-pick instead of doing that pick itself. All 49 auth/lane tests pass. Seven complete native smoke journeys passed on the preceding 3ed841c6 build; repeat after this final auth change. The API source remains unchanged from the running full three-shard gate at 8306bca8. Full workspace tests and the rebuilt end-to-end rehearsal remain in progress, with every failed rehearsal retained. No main/staging action: SCRUM-730 still holds its window.**
+
+
 **3 November 2026, SCRUM-728 UNBOXED RELOAD PINS PASS; LOCAL PROOF AND RELEASE GATES CONTINUE:** Added explicit remembered-station regressions for STATION_HAS_NO_BOX and STATION_NOT_READY: both 409 refusals clear the remembered station, retain the fleet picker and its setup explanation, and never activate the box lane. The complete lane file passes 35 tests. All 16 workspace typechecks, whole lint (zero errors/eight existing warnings), generated contracts and rebuilt apps/display/agent pass; the final recovery source is 3ed841c6, with its clean real-browser rehearsal in progress. Three API shards and the complete workspace test battery continue; native smoke also runs. The production prerequisite remains a read-only unboxed-station census; no production station is changed by this unit. 730 retains the staging/source/proof slot. No 728 main push, staging fixture, API restart or setting change.**
 
 
