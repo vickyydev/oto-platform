@@ -1,0 +1,19 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {job} from './s728-release-render-job.mjs';
+assert.equal(process.env.S728_WINDOW_RELEASED,'true');
+const proof=JSON.parse(readFileSync(process.argv[2],'utf8'));
+assert.equal(proof.mode,'staging');assert.equal(proof.outcome,'passed');assert.ok(proof.cleanedAt);
+const spec={boxId:proof.fixture.boxId,stationId:proof.fixture.stationId,name:proof.fixture.name};
+assert.ok(spec.name.startsWith('ZZ TEST SCRUM-728 '));
+const program=`(async()=>{
+const assert=require('node:assert/strict'),{Client}=require('pg');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();
+try{await c.query('BEGIN READ ONLY');await c.query("SET LOCAL statement_timeout='15s'");
+const box=(await c.query('SELECT name,archived_at IS NOT NULL archived FROM core.box WHERE id=$1',[s.boxId])).rows;assert.equal(box.length,1);assert.equal(box[0].name,s.name);assert.ok(box[0].archived);
+const prints=(await c.query('SELECT id,kind,status,attempts,error_code FROM edge.print_job WHERE box_id=$1 ORDER BY id',[s.boxId])).rows;
+const counts=(await c.query("SELECT (SELECT count(*)::int FROM edge.print_job WHERE box_id=$1 AND status IN ('queued','failed')) pending_prints,(SELECT count(*)::int FROM edge.box_print_job WHERE box_id=$1) box_print_queue,(SELECT count(*)::int FROM edge.box_command WHERE box_id=$1 AND state IN ('queued','running')) pending_commands,(SELECT count(*)::int FROM edge.station_session WHERE station_id=$2) station_leases",[s.boxId,s.stationId])).rows[0];
+await c.query('ROLLBACK');console.log(JSON.stringify({event:'s728_queue_read',at:new Date().toISOString(),readOnly:true,prints,counts,passed:Object.values(counts).every(n=>n===0)}));
+}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'s728_queue_read_error',name:e.name,code:e.code??'ASSERTION'}));process.exitCode=1;});`;
+const receipt=await job(program,'s728_queue_read',proof.source);
+writeFileSync('C:/oto-lanes/codex-box-outage-release-20261104/docs/qa/proof-2026-11-02/s728/queue-cleanup.json',JSON.stringify(receipt,null,2)+'\n');
+console.log(JSON.stringify(receipt.result));assert.equal(receipt.result.passed,true);
