@@ -603,6 +603,7 @@ describe('route guards (S2-01b)', () => {
       'GET /box/v1/station/:stationId/channel [session]',
       'GET /box/v1/station/:stationId/display/channel [display]',
       'GET /box/v1/station/:stationId/display/session [display]',
+      'GET /box/v1/station/:stationId/displays [session]',
       // S2-20 K2 — the kiosk's own screen: which kiosk it is, polled.
       'GET /box/v1/station/:stationId/kiosk/state [kiosk]',
       'GET /box/v1/station/:stationId/members/lookup [session]',
