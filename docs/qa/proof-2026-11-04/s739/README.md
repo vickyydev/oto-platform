@@ -2,6 +2,35 @@
 
 Local work in progress. No source landing or staging acceptance is claimed.
 
+4 November, 05:13 Bangkok: complete local gates are now green. The three
+API shards passed all 447 files: 6,224 passed, 401 inherited skips and four
+existing TODOs unchanged. Final POS passed 1,776 tests and eleven browser
+journeys. The latest main Console harness passed typecheck, eslint and all
+357 browser cases on the combined source. Complete workspace type, lint,
+contract, test, tool and build checks also passed. Raw receipts and log
+fingerprints are in `complete-local-gates/` and `gate-checkpoint-0449/`.
+
+Branch run 41723536314 on d1404fb0613418e81d6a03a4f6811af295c0a46e
+passed five jobs but failed API shard 1 while starting the existing consent
+browser harness. Its complete six-case file passed unchanged on an isolated
+checkout of that exact SHA. The failed shard is being rerun once; CI is not
+yet green. The original failure is retained. No timeout, retry or assertion
+was changed. The current rebase adds only main's documentation; application,
+package, test and build bytes match the previously checked abb18abf source.
+
+The final six-case staging-fixture rehearsal used only dedicated one-baht
+products and a ticket package with no credit or gate access. Independent
+reads confirm six finished sales, six payments and one confirmation and
+finalisation audit each. Cleanup archived the exact fixtures, revoked the
+two unscanned synthetic bands and retired their six alerts and inactive
+working document with audit. All own session and queue counts are zero.
+`staging-rehearsal/` retains the receipt and three opened images; guarded
+staging helper snapshots are in `prepared-staging-harness/`.
+
+SCRUM-732 is still Testing and holds the proof/API slot. No SCRUM-739
+runtime source is on main and no staging fixture or setting has changed.
+The older checkpoints below describe the work at their recorded times.
+
 4 November, 04:35 Bangkok: six native local cases now pass on the built POS:
 ticket, food and shop at 1440px desktop and 390px phone width. Each simulator
 late payment stays held until the shared review is answered, requires both
