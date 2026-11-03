@@ -1,11 +1,9 @@
 # OTO Platform — Render blueprint (S2-01c, extended by S2-02 and S2-17a)
 #
-# This file declares the staging environment: the api web service, the two
-# static sites in front of it — the POS and the suite launcher — the lifted
-# OTO App, and the managed Postgres they all share. It is the whole
-# deployment, in one file, in the repository — which is the trade
-# DEPLOYMENT_TOPOLOGY.md accepts for having many small deployables instead of
-# one server.
+# This file documents the staging services and their shared managed Postgres.
+# The Render dashboard/API is authoritative; no blueprint is linked. Some
+# services, including the POS web forwarder and Radar, are documented below
+# as manually created services. Read live settings before an approved change.
 #
 # How to apply it: Render dashboard → New → Blueprint → point it at this repo.
 # Render creates everything below and prompts for each value marked
@@ -361,7 +359,9 @@ services:
         #   https://oto-launcher-staging.onrender.com,
         #   https://oto-console-staging.onrender.com,
         #   https://oto-app-staging.onrender.com,
-        #   https://oto-booth-staging.onrender.com
+        #   https://oto-booth-staging.onrender.com,
+        #   https://oto-radar-staging.onrender.com,
+        #   https://oto-inbox-staging.onrender.com
         #
         # The booth stays on this list for its /booth/* writes (pair, spin,
         # print, reprint): the static site rewrites them to this api, and
@@ -424,9 +424,11 @@ services:
         # The booth is not listed since SCRUM-694: the Lucky Wheel takes no
         # sign-on, and a booth hand-off is refused (410 HANDOFF_APP_RETIRED)
         # whether or not a `booth=` entry is here. An entry left over on the
-        # dashboard is harmless; drop it when the variable is next edited.
+        # dashboard is harmless. The six live mappings below were read on
+        # 3 November 2026; retaining booth here documents that legacy entry,
+        # not an active sign-on. Remove it only in a guarded settings change.
         value: >-
-          pos=https://oto-pos-web-staging.onrender.com,console=https://oto-console-staging.onrender.com,oto_app=https://oto-app-staging.onrender.com
+          pos=https://oto-pos-web-staging.onrender.com,console=https://oto-console-staging.onrender.com,oto_app=https://oto-app-staging.onrender.com,radar=https://oto-radar-staging.onrender.com,booth=https://oto-booth-staging.onrender.com,inbox=https://oto-inbox-staging.onrender.com
       - key: HANDOFF_TOKEN_TTL_S
         # The seconds a browser needs to carry a token from one origin to the
         # next, not minutes: long enough for a redirect, short enough that a

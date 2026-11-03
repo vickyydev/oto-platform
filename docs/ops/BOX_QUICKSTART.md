@@ -259,7 +259,7 @@ In Git Bash (Windows) or a Mac terminal, from the repository folder:
 scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --no-kiosk --printer-direct
 
 # the counter box with its customer display (part I; printer on the Pi's own cable)
-scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
+scripts/agent/push-release.sh oto-till ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct --kiosk-url "http://127.0.0.1:8780/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
 
 # the booth box (television; printer on the Pi's own cable)
 scripts/agent/push-release.sh oto-booth ~/Downloads/oto-box-0.1.0-20261102-abc1234.tgz -- --printer-direct
@@ -345,7 +345,13 @@ while the cradle is on the iPad.
 
 The Edatec 15.6-inch touch monitor stands at the counter, landscape, facing the family.
 The counter box drives it and the iPad stays the till: the box opens the POS's display
-page in Chromium, full screen, on that monitor. The addresses below are staging's.
+page from its own installed display bundle in Chromium, full screen, on that monitor.
+The API address below is staging's; the display address is local to the box.
+Prepare its trusted HTTPS bridge and the till's zone settings using
+[the bridge bench checklist](BOX_BRIDGE_BENCH.md) before saving an address.
+A saved bridge stops the till publishing to a web-address display. Switch and
+pair the local display at the same idle-counter step, re-pick the station and
+lock/unlock once; confirm both directions before serving a family.
 
 **Cables**, power last:
 
@@ -358,7 +364,7 @@ page in Chromium, full screen, on that monitor. The addresses below are staging'
 runs the same thing from the laptop):
 
 ```
-sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct --kiosk-url "https://oto-pos-web-staging.onrender.com/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
+sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com --printer-direct --kiosk-url "http://127.0.0.1:8780/display?keyboard=screen" --kiosk-scale 1.25 --rotate off
 ```
 
 Keep the quotes around the address. `--no-kiosk` is gone from this box's options from
@@ -376,7 +382,10 @@ follows that till from then on.
 back paired with nobody touching anything: the pairing lives in the browser's profile,
 `/home/oto/.config/oto-kiosk`, and nothing clears it. The address, the scale and the turn
 stay in `/etc/oto-box/config`. Chromium's cache is in RAM to spare the drive, so it starts
-empty on every boot; that costs one page load and nothing else.
+empty on every boot; the local bundle serves that page without internet.
+Temporary agent-startup failures retry automatically. A genuine build mismatch
+shows Reload; update the agent and display together. Pairing initially needs
+API access and the paired credential must finish syncing to the box.
 
 **The one step that loses the pairing** is a fresh profile, for a browser that has gone
 wrong and will not recover by restarting:
