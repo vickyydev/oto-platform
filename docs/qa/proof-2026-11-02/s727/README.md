@@ -4,8 +4,9 @@
 
 Release source: `4e515c61217770396da4dd86119cc0666cdc1d29`.
 [CI 41659700598](https://github.com/vickyydev/oto-platform/actions/runs/41659700598)
-is running. Jira is Testing. The matching clean agent is built; no staging
-fixture or temporary setting has been created yet.
+passed all six jobs. Jira is Testing. The matching clean agent is built; no staging
+fixture or temporary setting has been created yet. Exact-source Render builds
+are running; the [CI receipt](ci.json) records every job and step outcome.
 
 ## Current review candidate
 

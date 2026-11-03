@@ -1,0 +1,34 @@
+{
+  "unit": "SCRUM-727",
+  "at": "2026-11-03T15:24:36.600Z",
+  "phase": "initial",
+  "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+  "ciRun": "41659700598",
+  "ready": false,
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "deployId": "dep-dbkvp8bbc2fs738e8hu0",
+      "status": "build_in_progress",
+      "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+      "finishedAt": null
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "deployId": "dep-dbkvp8bbc2fs738e8itg",
+      "status": "build_in_progress",
+      "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+      "finishedAt": null
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "srv-danng2p42hec73f38e3g",
+      "deployId": "dep-dbkvp8bbc2fs738e8j1g",
+      "status": "build_in_progress",
+      "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+      "finishedAt": null
+    }
+  ]
+}
