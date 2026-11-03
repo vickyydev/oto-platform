@@ -1,5 +1,5 @@
 import type { AddOn, PaymentMethod, PricingOverride, TaxConfig, TicketType, TierDef } from '@/types';
-import { hydrateFromApi, updateDropOffPricing } from '@/store/catalogStore';
+import { getActiveBranch, getCatalogSnapshot, hydrateFromApi, setActiveBranch, updateDropOffPricing, type CatalogState } from '@/store/catalogStore';
 import { setBranchDayStart, setBranchRateMode, setBranchTimezone } from '@/lib/pricingMode';
 import { apiBranchToBranch, apiPackageToTicketType, holidayToPricingOverride } from './mappers';
 import { branchesApi, catalogApi, type ApiBranch, type ApiPaymentMethod, type PublicAddOn } from './platform';
@@ -8,6 +8,31 @@ import { loadSellableStock } from './stock';
 import { isMissingRoute } from './client';
 
 let _apiBranches: ApiBranch[] = [];
+
+/** Display data only: the box still quotes prices and authorizes every write. */
+export interface PreparedCatalog {
+  branch: ApiBranch;
+  catalog: Omit<CatalogState, 'branches'>;
+}
+
+export function prepareCatalog(branchSlug: string): PreparedCatalog | null {
+  const branch = _apiBranches.find(row => row.code === branchSlug);
+  if (!branch || getActiveBranch().id !== branchSlug) return null;
+  const { branches: _branches, ...catalog } = getCatalogSnapshot();
+  return { branch, catalog };
+}
+
+export function restorePreparedCatalog(saved: PreparedCatalog): void {
+  const { pricingOverrides, paymentMethods, dropOffPricing, ...catalog } = saved.catalog;
+  _apiBranches = [saved.branch];
+  hydrateFromApi({ branches: [apiBranchToBranch(saved.branch)],
+    perBranch: { [saved.branch.code]: catalog }, pricingOverrides, paymentMethods });
+  updateDropOffPricing(dropOffPricing);
+  setActiveBranch(saved.branch.code);
+  setBranchTimezone(saved.branch.timezone);
+  setBranchDayStart(saved.branch.businessDayStart);
+  setBranchRateMode(null);
+}
 
 export function apiBranchIdForSlug(slug: string): string | null {
   return _apiBranches.find((b) => b.code === slug)?.id ?? null;

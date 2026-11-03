@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { BOX_LANE_PAYMENT_REFUSAL, BOX_LANE_UNREACHABLE, type BridgeLane } from '@oto/shared';
-import { ApiError, NetworkError } from '@/api/client';
+import { api, ApiError, NetworkError } from '@/api/client';
 import { bridgeApi, hasBridgeOrigin } from '@/api/bridge';
 
 /**
@@ -28,6 +28,8 @@ import { bridgeApi, hasBridgeOrigin } from '@/api/bridge';
 let stationId: string | null = null;
 let lane: BridgeLane = 'platform';
 let probe: ReturnType<typeof setInterval> | null = null;
+let recovery: Promise<BridgeLane> | null = null;
+let platformLocked = false;
 const listeners = new Set<() => void>();
 
 /** How often a till on the box lane asks its box whether the link is back. */
@@ -63,6 +65,7 @@ export function setLaneStation(id: string | null): void {
   stationId = id;
   stopProbe();
   lane = 'platform';
+  platformLocked = false;
   emit();
 }
 
@@ -73,6 +76,10 @@ export function laneStation(): string | null {
 export function currentLane(): BridgeLane {
   return lane;
 }
+
+/** The API returned, but its original session still needs the password. */
+export function platformNeedsUnlock(): boolean { return platformLocked; }
+export function platformUnlocked(): void { platformLocked = false; }
 
 /** Whether a failure means "go to the box" rather than "the platform said no". */
 export function isBoxLaneTrigger(err: unknown): boolean {
@@ -93,14 +100,36 @@ export function noteLaneFailure(err: unknown): void {
  * the box can reach the platform AND the Console's switch is off.
  */
 export async function refreshLane(): Promise<BridgeLane> {
+  if (recovery) return recovery;
+  recovery = recoverLane().finally(() => { recovery = null; });
+  return recovery;
+}
+
+async function recoverLane(): Promise<BridgeLane> {
   const id = stationId;
   if (!id) return lane;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3_000);
   try {
-    const status = await bridgeApi.status(id);
+    const status = await bridgeApi.status(id, controller.signal);
+    if (stationId !== id) return lane;
+    if (status.link.lane === 'platform' && lane === 'box') {
+      // The box and this browser can have different routes to the API. Its
+      // heartbeat alone cannot move a browser with a broken forwarder back.
+      const me = await api.get<{ sessionLocked: boolean }>('/me', { signal: controller.signal });
+      if (stationId !== id) return lane;
+      if (me.sessionLocked) {
+        if (!platformLocked) window.dispatchEvent(new CustomEvent('oto:session-locked'));
+        platformLocked = true;
+        return lane;
+      }
+      if (me.sessionLocked !== false) return lane;
+      platformLocked = false;
+    }
     if (stationId === id) setLane(status.link.lane);
   } catch {
     // The box did not answer either: stay where we are. The next call decides.
-  }
+  } finally { clearTimeout(timeout); }
   return lane;
 }
 
