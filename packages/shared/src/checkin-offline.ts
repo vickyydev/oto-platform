@@ -452,6 +452,12 @@ export interface BridgeCheckinChild {
   bandId: string | null;
   visitId: string | null;
   photoFileId: string | null;
+  /**
+   * SCRUM-730 — the online booking that paid for this child, on a copy built
+   * since it was answered. With no sale yet the booking waits to be redeemed,
+   * which needs the link: the box never takes this child on a sale.
+   */
+  paidOnline?: { bookingId: string; reference: string } | null;
 }
 
 /** One person on a pickup list, as the box keeps it. */

@@ -84,6 +84,7 @@ import {
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
+import { paidOnlineRefusal, paidOnlineStaysOf } from './booking-supervision';
 import {
   attemptView,
   attemptsForSale,
@@ -3252,6 +3253,20 @@ export async function supervisionOf(
   return { kids, adults, unaccompanied: true, registrationIds: [], evidence: 'none' };
 }
 
+/** SCRUM-730 — refused before anything is priced or written: no line may stand under a stay paid for online. */
+async function refusePaidOnlineStays(tx: Tx, operatorId: string, lines: readonly { id: string }[]): Promise<void> {
+  if (lines.length === 0) return;
+  const stays = await tx
+    .select({ id: checkin.id, registrationId: checkin.registrationId, childName: checkin.childName })
+    .from(checkin)
+    .where(and(inArray(checkin.id, lines.map((line) => line.id)), eq(checkin.operatorId, operatorId)));
+  const paid = await paidOnlineStaysOf(tx, operatorId, stays);
+  for (const s of stays) {
+    const hit = paid.get(s.id);
+    if (hit) throw paidOnlineRefusal(s.childName, hit);
+  }
+}
+
 /** The refusal, in the counter's words. */
 function kidsWithoutRegistration(verdict: SupervisionVerdict, namedRegistrationId: string | null): never {
   throw errors.conflict(
@@ -3332,6 +3347,13 @@ export async function commitSale(
       // S2-21 round 3 — the benefit it was applied with, read back: a retry claims nothing.
       benefit: await saleBenefitOf(tx, already.id),
     };
+  }
+
+  // SCRUM-730 — a child paid for online is on no till's sale but their own
+  // booking's redemption. A box's replay is not asked: its money was taken with
+  // nobody to ask, and the box refuses the check-in before it gets this far.
+  if (!input.bookingId && options.printing !== 'skip') {
+    await refusePaidOnlineStays(tx, actor.operatorId, input.lines ?? []);
   }
 
   const [st] = await tx.select().from(station).where(eq(station.id, input.stationId)).limit(1);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CHECKIN_FACTS, DEFAULT_DROP_OFF_PRICING, DEFAULT_SUPERVISION_POLICY } from '@oto/shared';
+import { BRIDGE_CHECKIN_INTENTS, CHECKIN_FACTS, DEFAULT_DROP_OFF_PRICING, DEFAULT_SUPERVISION_POLICY } from '@oto/shared';
 import { createBoxAgent, type BoxAgent } from '../src/agent';
 import { memoryCredentialStore } from '../src/credentials';
 import { uuidv7 } from '../src/signing';
@@ -281,6 +281,83 @@ test('s494-checkin box: an entry without a service keeps the stay’s own; an un
     assert.equal(now.children[0].service, 'drop_off');
     const [fact] = await updatedFacts(box);
     assert.equal(fact!.service, 'drop_off');
+  } finally {
+    box.close();
+  }
+});
+
+test('s730 — a child an online booking paid for is on no sale at the box, until the redemption files them', async () => {
+  const box = await openBox();
+  try {
+    const checkinId = uuidv7();
+    const saleId = uuidv7();
+    const family = (child: Record<string, unknown>) => ({
+      registrationId: uuidv7(),
+      branchId: BRANCH_ID,
+      memberId: null,
+      guardianName: 'Khun Mali',
+      guardianPhone: '+66812345678',
+      contactChannel: 'whatsapp',
+      consentRecordedAt: new Date().toISOString(),
+      source: 'booking',
+      photoFileId: null,
+      createdAt: new Date().toISOString(),
+      contact: null,
+      tab: 'registered',
+      guardians: [],
+      children: [
+        {
+          id: checkinId,
+          childId: null,
+          childName: 'Ploy',
+          childAgeYears: 6,
+          dateOfBirth: null,
+          allergies: null,
+          foodRestrictions: null,
+          mayOrderFood: false,
+          foodProvision: null,
+          service: 'drop_off',
+          status: 'registered',
+          scheduledFor: null,
+          bookedMinutes: 60,
+          nannyId: null,
+          nannyName: null,
+          checkedInAt: null,
+          checkedOutAt: null,
+          saleId: null,
+          bandId: null,
+          visitId: null,
+          photoFileId: null,
+          paidOnline: { bookingId: uuidv7(), reference: 'OTO-AB12-3456' },
+          ...child,
+        },
+      ],
+    });
+    const copy = (fam: ReturnType<typeof family>) =>
+      box.harness.store.writeBundle(BOX_ID, {
+        scope: 'checkin',
+        schemaVersion: 1,
+        cursorSeq: 0,
+        payload: { items: [{ ...checkinItem(), families: [fam] }] },
+        appliedAt: new Date().toISOString(),
+      });
+    await copy(family({}));
+
+    // The till reads who is waiting through the box: the flag reaches its load path.
+    const waiting = await ask(box, BRIDGE_CHECKIN_INTENTS.awaiting, {});
+    assert.equal(waiting.registrations[0].children[0].paidOnline.reference, 'OTO-AB12-3456');
+
+    for (const event of ['check_in_now', 'leave_as_booked']) {
+      const refused = await refusal(ask(box, 'checkin.update', { event, saleId, entries: [{ checkinId }] }));
+      assert.equal(refused.code, 'CHECKIN_PAID_ONLINE');
+      assert.match(refused.message, /OTO-AB12-3456/);
+    }
+    assert.deepEqual(await updatedFacts(box), []);
+
+    // Filed on the redemption's sale, the child goes on as any booked child does.
+    await copy(family({ saleId, scheduledFor: new Date().toISOString() }));
+    const left = await ask(box, 'checkin.update', { event: 'leave_as_booked', saleId, entries: [{ checkinId }] });
+    assert.equal(left.saleId, saleId);
   } finally {
     box.close();
   }

@@ -49,6 +49,7 @@ import {
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
+import { paidOnlineRefusal, paidOnlineStaysOf, type PaidOnlineBooking } from './booking-supervision';
 import { BandKeyMissingError, mintSaleBands } from './bands';
 import { idInUse } from './client-id';
 import { mirrorNotice } from './inbox/mirror';
@@ -213,6 +214,13 @@ export interface CheckinView {
   bandId: string | null;
   visitId: string | null;
   photoFileId: string | null;
+  /**
+   * SCRUM-730 — the online booking that paid for this child. Answered on the
+   * board and the waiting list, the two reads a counter decides from: with
+   * `saleId` still null the booking waits to be redeemed, and either way the
+   * child is never a line to charge.
+   */
+  paidOnline?: PaidOnlineBooking | null;
 }
 
 export interface RegistrationView {
@@ -314,7 +322,11 @@ export async function registrationsAwaitingCheckIn(
     .orderBy(desc(registration.createdAt), desc(registration.id));
   const out: RegistrationView[] = [];
   for (const row of rows) out.push(await registrationViewOf(db, row));
-  return out;
+  const paidOnline = await paidOnlineStaysOf(db, operatorId, out.flatMap((r) => r.children));
+  return out.map((r) => ({
+    ...r,
+    children: r.children.map((c) => ({ ...c, paidOnline: paidOnline.get(c.id) ?? null })),
+  }));
 }
 
 // --- Registration ---------------------------------------------------------------
@@ -812,6 +824,9 @@ async function loadChoice(
     .where(and(inArray(checkin.id, ids), eq(checkin.operatorId, actor.operatorId)))
     .for('update');
   if (stays.length !== ids.length) throw errors.notFound('No such check-in');
+  // SCRUM-730 — only their own booking's redemption sale may carry a child paid
+  // for online. A stay already on a sale keeps the refusals below.
+  const paidOnline = await paidOnlineStaysOf(tx, actor.operatorId, stays.filter((s) => !s.saleId));
   const lines = await tx
     .select()
     .from(saleLine)
@@ -829,6 +844,8 @@ async function loadChoice(
     if (s.saleId && s.saleId !== saleRow.id) {
       throw errors.conflict('CHECKIN_OTHER_SALE', `${s.childName} was paid for on another sale.`);
     }
+    const paid = paidOnline.get(s.id);
+    if (paid && saleRow.bookingId !== paid.bookingId) throw paidOnlineRefusal(s.childName, paid);
     if (!lineOf.has(s.id)) {
       throw errors.conflict('CHECKIN_NOT_ON_SALE', `${s.childName} is not on this sale — add their drop-off line and take the payment again.`);
     }
@@ -1183,8 +1200,13 @@ export interface BoardFilter {
   due?: boolean;
 }
 
-function boardChildOf(row: CheckinRow, nannyName: string | null): BoardChild {
-  return { ...checkinViewOf(row), nannyName, checkedOutAt: row.checkedOutAt?.toISOString() ?? null };
+function boardChildOf(row: CheckinRow, nannyName: string | null, paidOnline?: PaidOnlineBooking | null): BoardChild {
+  return {
+    ...checkinViewOf(row),
+    nannyName,
+    checkedOutAt: row.checkedOutAt?.toISOString() ?? null,
+    ...(paidOnline !== undefined ? { paidOnline } : {}),
+  };
 }
 
 function tabOfStay(status: CheckinRow['status']): BoardTab {
@@ -1334,9 +1356,12 @@ export async function boardOf(db: Exec, operatorId: string, branchId: string, no
   }
   const counts: Record<BoardTab, number> = { registered: 0, in_park: 0, out: 0 };
   for (const s of stays) counts[tabOfStay(s.status)] += 1;
+  const paidOnline = await paidOnlineStaysOf(db, operatorId, stays.filter((s) => s.status === 'registered'));
 
   const families: BoardFamily[] = regs.map((r) => {
-    const children = (byReg.get(r.id) ?? []).map((s) => boardChildOf(s, s.nannyId ? (names.get(s.nannyId) ?? null) : null));
+    const children = (byReg.get(r.id) ?? []).map((s) =>
+      boardChildOf(s, s.nannyId ? (names.get(s.nannyId) ?? null) : null, paidOnline.get(s.id) ?? null),
+    );
     return {
       registrationId: r.id,
       branchId: r.branchId,
@@ -1870,6 +1895,7 @@ export async function checkInBooked(
   if (stays.length !== ids.length) throw errors.notFound('No such check-in');
   if (new Set(stays.map((s) => s.branchId)).size !== 1) throw errors.badRequest('These children were registered at different parks.');
   const nannyOf = new Map(input.entries.map((e) => [e.checkinId, e.nannyId ?? null]));
+  const paidOnline = await paidOnlineStaysOf(tx, actor.operatorId, stays.filter((s) => !s.saleId));
 
   // --- Validate all before committing any ---
   for (const s of stays) {
@@ -1877,6 +1903,16 @@ export async function checkInBooked(
       throw errors.conflict(
         'CHECKIN_NOT_REGISTERED',
         `${s.childName} is already ${s.status === 'in_park' ? 'checked in' : 'checked out'}.`,
+      );
+    }
+    // SCRUM-730 — booked and paid: the sale the band is minted on is the
+    // redemption's, so the counter is sent there and never told it is unpaid.
+    const paid = paidOnline.get(s.id);
+    if (paid) {
+      throw errors.conflict(
+        'CHECKIN_BOOKING_NOT_REDEEMED',
+        `${s.childName} is booked and paid online. Redeem booking ${paid.reference} at the till first, then check them in here. No payment is taken.`,
+        { ...paid },
       );
     }
     if (!s.scheduledFor || !s.saleId) {

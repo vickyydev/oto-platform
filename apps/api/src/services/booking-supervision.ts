@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
-import { branch, checkin, product, registration, type FoodProvisionRow } from '@oto/db';
+import { booking, branch, checkin, product, registration, type FoodProvisionRow } from '@oto/db';
 import {
   BookingSupervisionInputSchema,
   BookingSupervisionSnapshotSchema,
@@ -14,6 +14,71 @@ import { errors } from '../lib/errors';
 import { audit } from './audit';
 import type { BookingRow } from './booking-payment';
 import type { Exec, Tx } from './tx';
+
+/**
+ * SCRUM-730 — THE ONLINE BOOKING THAT PAID FOR A STAY.
+ *
+ * The approved design never takes a payment for a child booked and paid online
+ * (`mockApi.ts:1147-1153`; `checkInFamilyBooked`, 5104-5119). Here that child
+ * waits on the board with no sale of their own until the booking is redeemed,
+ * and only a nanny child has a booked time, so neither field can tell them from
+ * a walk-up. The booking can: each paid line names its stay (`supervision.
+ * checkinId`, written by `registerPaidBookingChildren`). The registration alone
+ * cannot, because a sibling added at the door joins it and is still charged.
+ *
+ * Paid or redeemed only: a booking the gateway never confirmed has no stays.
+ */
+export interface PaidOnlineBooking {
+  bookingId: string;
+  reference: string;
+}
+
+/** Which of these stays a paid online booking bought, by stay id. */
+export async function paidOnlineStaysOf(
+  db: Exec,
+  operatorId: string,
+  stays: readonly { id: string; registrationId: string }[],
+): Promise<Map<string, PaidOnlineBooking>> {
+  const out = new Map<string, PaidOnlineBooking>();
+  if (stays.length === 0) return out;
+  // Nearly every family on a board came to the desk: the payload is read only
+  // for a registration the booking site made.
+  const fromBookings = await db
+    .select({ id: registration.id })
+    .from(registration)
+    .where(and(
+      eq(registration.operatorId, operatorId),
+      eq(registration.source, 'booking'),
+      inArray(registration.id, [...new Set(stays.map((s) => s.registrationId))]),
+    ));
+  if (fromBookings.length === 0) return out;
+  const rows = await db
+    .select({ id: booking.id, reference: booking.reference, payload: booking.payload })
+    .from(booking)
+    .where(and(
+      eq(booking.operatorId, operatorId),
+      inArray(booking.status, ['paid', 'redeemed']),
+      inArray(sql`${booking.payload} ->> 'registrationId'`, fromBookings.map((r) => r.id)),
+    ));
+  const wanted = new Set(stays.map((s) => s.id));
+  for (const row of rows) {
+    const lines = (row.payload as { lines?: Array<{ supervision?: { checkinId?: unknown } }> } | null)?.lines ?? [];
+    for (const line of lines) {
+      const stayId = line.supervision?.checkinId;
+      if (typeof stayId === 'string' && wanted.has(stayId)) out.set(stayId, { bookingId: row.id, reference: row.reference });
+    }
+  }
+  return out;
+}
+
+/** The refusal for any charge against a stay an online booking already paid for. */
+export function paidOnlineRefusal(childName: string, paid: PaidOnlineBooking) {
+  return errors.conflict(
+    'CHECKIN_PAID_ONLINE',
+    `${childName} is already paid for online on booking ${paid.reference}, so there is nothing to charge. Redeem the booking if that has not been done, then check them in from the Drop-Off board. Nothing was saved.`,
+    { ...paid },
+  );
+}
 
 /** Resolve children and food from the branch catalogue, never from browser prices. */
 export async function quoteBookingChild(

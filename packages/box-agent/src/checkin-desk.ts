@@ -218,6 +218,21 @@ function rec(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
+/**
+ * SCRUM-730 — a child an online booking paid for, not yet on its redemption
+ * sale, is on no sale here: the box cannot redeem a supervised booking
+ * (`BOOKING_NEEDS_INTERNET`), and the platform's `loadChoice` refuses the same.
+ */
+function refusePaidOnline(child: BridgeCheckinChild): void {
+  if (!child.paidOnline || child.saleId) return;
+  throw new DeskRefusal(
+    409,
+    'CHECKIN_PAID_ONLINE',
+    `${child.childName} is already paid for online on booking ${child.paidOnline.reference}, so there is nothing to charge. Reconnect at reception to redeem the booking and check them in. Nothing was saved.`,
+    { ...child.paidOnline },
+  );
+}
+
 function tabOf(children: readonly { status: string }[]): BridgeCheckinFamily['tab'] {
   if (children.some((c) => c.status === 'in_park')) return 'in_park';
   if (children.some((c) => c.status === 'registered')) return 'registered';
@@ -1421,6 +1436,7 @@ export class CheckinDesk {
       if (s.child.saleId && s.child.saleId !== body.saleId) {
         throw new DeskRefusal(409, 'CHECKIN_OTHER_SALE', `${s.child.childName} was paid for on another sale.`);
       }
+      refusePaidOnline(s.child);
       if (deferred.onBox && !deferred.bands.some((b) => b.cartLineId === s.child.id)) {
         throw new DeskRefusal(
           409,
@@ -1605,6 +1621,7 @@ export class CheckinDesk {
       if (found.child.saleId && found.child.saleId !== body.saleId) {
         throw new DeskRefusal(409, 'CHECKIN_OTHER_SALE', `${found.child.childName} was paid for on another sale.`);
       }
+      refusePaidOnline(found.child);
       return found;
     });
     if (stays.every((s) => s.child.saleId === body.saleId && s.child.scheduledFor)) {
