@@ -20,7 +20,7 @@ import type { ApiResponse } from '@oto/api-types';
 // puts the party tab on the platform (`api/parties.ts`).
 
 import { useEffect, useRef, useState } from 'react';
-import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassOpenAnswer, type EventPassOpenBody, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
+import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassOpenBody, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
 import type { NewEventAttendeeInput } from '@/mockApi';
 import type { EventAttendee, EventAttendeeCheckin, OtoEvent, PartyBooking, PartyExtraCharge, PartyPayment } from '@/types';
 import { branchTradingDate, resolveRateToday, serverTradingDate } from '@/lib/pricingMode';
@@ -393,13 +393,13 @@ export const eventsApi = {
     }),
   /** SCRUM-732 — a pass for a QR or a card: rung up, the child held for the money. */
   openPass: (eventId: string, body: EventPassOpenBody) =>
-    api.post<EventPassOpenAnswer>(`/events/${encodeURIComponent(eventId)}/passes/open`, body, {
+    api.post<ApiResponse<'/events/{id}/passes/open', 'post'>>(`/events/${encodeURIComponent(eventId)}/passes/open`, body, {
       idempotencyKey: `event-pass-open:${body.attendeeId}`,
       ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
     }),
   /** SCRUM-732 — what a pass opened for a QR or a card came to, once its tender answered. */
   readPass: (eventId: string, attendeeId: string, branchId: string) =>
-    api.get<EventAttendeeWriteAnswer>(
+    api.get<ApiResponse<'/events/{id}/passes/{attendeeId}', 'get'>>(
       `/events/${encodeURIComponent(eventId)}/passes/${encodeURIComponent(attendeeId)}?branchId=${encodeURIComponent(branchId)}`,
     ),
   /** S2-20 E2 — the branch's walk-up prices (camp day, event day, party guest), in satang. */

@@ -18,6 +18,7 @@
 // first sent and kept for a retry of that press, so a press that went through
 // twice is one charge, one payment or one edit.
 
+import type { ApiResponse } from '@oto/api-types';
 import type { EventDetailAnswer, PartyEditFields, PartyTenderBody, PartyWriteAnswer } from '@oto/shared';
 import type { PartyEditPatch } from '@/components/parties/PartyEditForm';
 import type { PartyBooking, PartyPaymentMethod } from '@/types';
@@ -51,7 +52,7 @@ export const partiesApi = {
     }),
   /** SCRUM-732 — a QR or a card against the balance, routed by the station. */
   startTender: (partyId: string, body: PartyTenderBody) =>
-    api.post<PaymentStartResult>(`/parties/${encodeURIComponent(partyId)}/payments/tender`, body, {
+    api.post<ApiResponse<'/parties/{id}/payments/tender', 'post'>>(`/parties/${encodeURIComponent(partyId)}/payments/tender`, body, {
       idempotencyKey: `party-tender:${body.paymentId}`,
       ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
     }),
