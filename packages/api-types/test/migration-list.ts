@@ -66,7 +66,7 @@ export const HAND_TYPED: Record<string, number> = {
   'apps/pos/src/api/occupancy.ts': 1,
   'apps/pos/src/api/parties.ts': 4,
   'apps/pos/src/api/payments.ts': 5,
-  'apps/pos/src/api/platform.ts': 45,
+  'apps/pos/src/api/platform.ts': 44,
   'apps/pos/src/api/release.ts': 9,
   'apps/pos/src/api/sales.ts': 8,
   'apps/pos/src/api/settlements.ts': 2,

@@ -123,6 +123,7 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
  * caller fails until its line is removed, so the list stays the truth.
  */
 const NOT_YET_CALLED = new Map<string, string>([
+  ['POST /auth/unlock-offline', '2026-11-03 SCRUM-728: deprecated compatibility route for older virtual tills; the current till authenticates its box directly, and removal waits for verified retirement of older clients'],
   // 2026-10-25, SCRUM-637: one Overview read composes the native services; these bounded routes have no separate browser caller.
   ['GET /aggregates/members', 'Overview v2 composes this native service in GET /overview; the bounded period route has no separate browser caller'],
   ['GET /aggregates/bookings', 'Overview v2 composes this native service in GET /overview; the bounded period route has no separate browser caller'],
