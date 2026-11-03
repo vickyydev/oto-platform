@@ -1,0 +1,22 @@
+{
+  "key": "SCRUM-743",
+  "source": "e978578f71a219f4f0cee64c423d39fc81fece17",
+  "evidenceCommit": "cad15034b3b84ce31b68f53f284750ecc40bd4e5",
+  "statusBefore": "Testing",
+  "startedAt": "2026-11-03T22:21:53.564Z",
+  "attachments": [
+    {
+      "id": "12392",
+      "name": "s743-route-proof.png"
+    },
+    {
+      "id": "12393",
+      "name": "s743-staging-console.png"
+    }
+  ],
+  "commentId": "13346",
+  "inlineImagesVerified": true,
+  "verifiedAt": "2026-11-03T22:21:58.169Z",
+  "statusAfter": "Deployed",
+  "statusReadAt": "2026-11-03T22:22:38.353Z"
+}
