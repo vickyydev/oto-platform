@@ -43,6 +43,9 @@
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
 //   npx tsx tests/checklist-copies.check.ts
+// The database server runs in UTC, as CI's and every deployed one does. The
+// harness reads its timestamps as UTC, so a server started in Bangkok time dates
+// a checklist made after 17:00 tomorrow and the run creator makes no run for it.
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
