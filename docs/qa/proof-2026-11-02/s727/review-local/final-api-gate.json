@@ -1,0 +1,3180 @@
+{
+  "testedSource": "0f400710d05b0c86fa8bae27301615b7ecd80613",
+  "landingCandidateParent": "d780f5a0ad52ec5decc18165ae69c0eeed3a01e6",
+  "runtimeAndTestsIdentical": true,
+  "isolation": "Three isolated embedded PostgreSQL servers; serial files inside each shard; no test filtering",
+  "shards": [
+    {
+      "shard": 1,
+      "exitCode": 0,
+      "startTime": 1793714983813,
+      "reportSha256": "c3defb28b1b4279d649283a27498e2cd70a3a20c50b6cd5f0d4ff39a7a99e9be",
+      "counts": {
+        "numTotalTests": 2237,
+        "numPassedTests": 2131,
+        "numFailedTests": 0,
+        "numPendingTests": 106,
+        "numTodoTests": 0
+      },
+      "files": [
+        {
+          "file": "test/access-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/aggregates-domain.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17
+          }
+        },
+        {
+          "file": "test/analytics-r2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/app-identities.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22
+          }
+        },
+        {
+          "file": "test/arrival-r1-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/arrival-r1-gate3.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/assistant-feedback.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/assistant-registry.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/assistant-settings-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 53
+          }
+        },
+        {
+          "file": "test/audit-read.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/auth-enumeration.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/auth.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/benefits-r4.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 25
+          }
+        },
+        {
+          "file": "test/booth-admin.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 30
+          }
+        },
+        {
+          "file": "test/booth-pairing.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/booth-voucher-slip.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/box-api.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/box-cache-survives.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/box-clock.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/box-epoch-regressed-resend.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 1
+          }
+        },
+        {
+          "file": "test/branch-scoping.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17
+          }
+        },
+        {
+          "file": "test/bridge-convergence.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/catalog.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/checkin-board.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/console-analytics-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17
+          }
+        },
+        {
+          "file": "test/console-analytics-sources-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/console-branch-scope.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 27
+          }
+        },
+        {
+          "file": "test/console-configuration-entries.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/console-drift-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/console-otoapp.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 34
+          }
+        },
+        {
+          "file": "test/eod-r2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/eod-r3-settlement.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/events-e2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 34
+          }
+        },
+        {
+          "file": "test/events-e3-offline.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/events-e5.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/handoff-department.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/health-evidence.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/inbox-ai-coherence.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/inbox-ai-examples-import.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/inbox-ai-golden.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 30
+          }
+        },
+        {
+          "file": "test/inbox-i1b-demo.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/inbox-send-media.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/integration-controls.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/integration-expiry.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/integration-read-availability.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/member-tier-revoke.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/members-children-archive.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/members-fields.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/members-register.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/menu-sheet.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/menu-tax-seam.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/nanny-duty.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/occupancy-gate-attacks.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/occupancy-gate-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/offline-wallet-gate-r4.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 1
+          }
+        },
+        {
+          "file": "test/operator-switch-audit-context-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/operator-switch-handoff-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 25
+          }
+        },
+        {
+          "file": "test/ops-api.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 34
+          }
+        },
+        {
+          "file": "test/oto-app-branch-mapping.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/payments-2c2p.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 45
+          }
+        },
+        {
+          "file": "test/payments-cash.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/permissions.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/platform-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/print-preview-samples.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/public.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/release-r92-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/routes-guarded.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/s216-demofix-review-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 11
+          }
+        },
+        {
+          "file": "test/s216-demofix-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/s216-r3-fix.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s216-r3-review-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/s216-r45-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/s217b-r1-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22,
+            "skipped": 20
+          }
+        },
+        {
+          "file": "test/s217b-r3-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 23,
+            "skipped": 21
+          }
+        },
+        {
+          "file": "test/s217b-r4b.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 32,
+            "skipped": 4
+          }
+        },
+        {
+          "file": "test/s217b-r6.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 34,
+            "skipped": 2
+          }
+        },
+        {
+          "file": "test/s217b-r7-access-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 17,
+            "passed": 1
+          }
+        },
+        {
+          "file": "test/s217b-r7-finance-access-cross-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 8
+          }
+        },
+        {
+          "file": "test/s217b-r7-finance-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s217b-r8-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/s217c-employee-history-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 1,
+            "skipped": 27
+          }
+        },
+        {
+          "file": "test/s217c-fix-preview-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 7
+          }
+        },
+        {
+          "file": "test/s217c-sop-navigation-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s220-e1-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/s220-e2-review-2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/s220-e3-review-2-offline.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 19
+          }
+        },
+        {
+          "file": "test/s220-e3-review-3-offline.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 29
+          }
+        },
+        {
+          "file": "test/s220-e3-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 23
+          }
+        },
+        {
+          "file": "test/s220-e4-review-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s220-e4-review-silentzero.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s220-e4-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/s220-e5-acceptance.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/s220-e5-review-2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/s220-e5-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22
+          }
+        },
+        {
+          "file": "test/s221-r3-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 34
+          }
+        },
+        {
+          "file": "test/s221-r4-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/s494-final-gate-offline-registration.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s494-food-gate-r2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/s494-food.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s498-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/s502-review-prepaid-index.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s503-demo-controls.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s506-revocation-lag.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/s518-import-preview-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/s609-admin-navigation-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s611-accounts-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s613-app-access-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s617-login-users-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s620-organisation-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/s621-catalogue-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s622-menu-contracts.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s622-menu-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s623-money-contracts.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s627-pos-admin-redirect-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/s629-role-mapping-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/s631-department-seam-view.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s631-department-source.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/s633-account-lifecycle-serialization-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s633-account-reactivation-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/s637-digest-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 19
+          }
+        },
+        {
+          "file": "test/s638-pricing-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/s722-consent-control-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s723-forced-offline-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s726-channel-close-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/sale-supervision-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/sale-tier.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 25
+          }
+        },
+        {
+          "file": "test/sales.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 68
+          }
+        },
+        {
+          "file": "test/scanning-product.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/scanning-staff-token.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/scrum-606-guard-targets.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/scrum-607-reach.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 11
+          }
+        },
+        {
+          "file": "test/session-branch-station.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/staff-scope.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/station-scans.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/stock-r1-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/stock-r2-gate-final.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/stock-r2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 28
+          }
+        },
+        {
+          "file": "test/stock-r3-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/stock-r4.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 19
+          }
+        },
+        {
+          "file": "test/sync-api.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 57
+          }
+        },
+        {
+          "file": "test/voucher-definitions.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/vouchers-r5-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/wallet-gate-r1.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/wallet-gate-r2-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/wallet-gate-r2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/wallet-r3-lots.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/wallet.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/watchdog-fallback-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        }
+      ]
+    },
+    {
+      "shard": 2,
+      "exitCode": 0,
+      "startTime": 1793714983810,
+      "reportSha256": "faefa13a702e1e95bae5b2ad99fc9a28a006972310bc22380757df257d76963d",
+      "counts": {
+        "numTotalTests": 2300,
+        "numPassedTests": 2123,
+        "numFailedTests": 0,
+        "numPendingTests": 174,
+        "numTodoTests": 3
+      },
+      "files": [
+        {
+          "file": "test/archived-tenancy.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/arrival-r1-gate2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/assistant-golden.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 41
+          }
+        },
+        {
+          "file": "test/assistant-otoapp.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 47
+          }
+        },
+        {
+          "file": "test/audit-response-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/auth-codes.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/benefits-r1.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22
+          }
+        },
+        {
+          "file": "test/benefits-r2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/booking-supervised.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/bookings-redeem.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 37
+          }
+        },
+        {
+          "file": "test/booth-duty.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/booth-health.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/box-agent.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 11
+          }
+        },
+        {
+          "file": "test/checkin-board-gate-r2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/checkin-board-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/console-money.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/console-staff.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 25
+          }
+        },
+        {
+          "file": "test/demo-reset.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/departments.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/eod-r1-gate-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/eod-r1.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/eod-r2-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/events-e1.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22
+          }
+        },
+        {
+          "file": "test/events-e4.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 31
+          }
+        },
+        {
+          "file": "test/health-integrations-response-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/health-read-availability-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/inbox-ai-cancel.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/inbox-ai-replay.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/inbox-ai-rethink.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/inbox-ai-rules-prompt.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/inbox-ai-rules.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/inbox-ai-teach.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/inbox-mirror.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/inbox-read.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 44
+          }
+        },
+        {
+          "file": "test/latent-gaps.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 11
+          }
+        },
+        {
+          "file": "test/leaks-and-trail.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/members-visits.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 32
+          }
+        },
+        {
+          "file": "test/menu-api.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 48
+          }
+        },
+        {
+          "file": "test/occupancy-freshness.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/occupancy-gate-final.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/occupancy.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/offline-booking-redeem.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/offline-checkin-gate-r4.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/offline-checkin.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/offline-selling.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/offline-wallet-gate-r4-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/operator-switch-idempotency-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/operator-switch-lifecycle-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/operator-switch-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 29
+          }
+        },
+        {
+          "file": "test/ops-jobs.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/otoapp-directory.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/overview.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/payments-qr-cancel.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/print-api.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 29
+          }
+        },
+        {
+          "file": "test/print-restart.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/print-test-target.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/printing-box.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/promo-codes.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 39
+          }
+        },
+        {
+          "file": "test/roles-console.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/route-scope-target.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/route-write-conformance.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/s216-demo-day.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/s216-r5-booth.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s216-r6-legacy.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/s216-r6-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s217b-r1.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 30,
+            "skipped": 1
+          }
+        },
+        {
+          "file": "test/s217b-r2-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 30,
+            "skipped": 3
+          }
+        },
+        {
+          "file": "test/s217b-r2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 31,
+            "skipped": 2
+          }
+        },
+        {
+          "file": "test/s217b-r4a-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 25,
+            "skipped": 12
+          }
+        },
+        {
+          "file": "test/s217b-r4a.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26,
+            "skipped": 2
+          }
+        },
+        {
+          "file": "test/s217b-r5.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17,
+            "skipped": 1
+          }
+        },
+        {
+          "file": "test/s217b-r6-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14,
+            "skipped": 51
+          }
+        },
+        {
+          "file": "test/s217b-r7-access-cross-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 15
+          }
+        },
+        {
+          "file": "test/s217b-r7-readers-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 4
+          }
+        },
+        {
+          "file": "test/s217b-scheduling-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 32
+          }
+        },
+        {
+          "file": "test/s217c-presence-recovery-ui.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/s217c-sop-history-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 1,
+            "skipped": 15
+          }
+        },
+        {
+          "file": "test/s220-e3-review-2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/s220-e3-review-offline.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/s220-k2-kiosk-surface.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/s220-k2-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/s221-r2-review-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/s221-r4-closing-audit.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 33,
+            "todo": 3
+          }
+        },
+        {
+          "file": "test/s494-checkin-sync.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/s494-checkin.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s494-gate-offline.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 1
+          }
+        },
+        {
+          "file": "test/s494-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/s494-money.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/s495-review-partial-refund.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s496-review-booking.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s498-offline-food.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/s502-payment-uncertainty-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/s502-review-demo.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/s502-review-offline-switch.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/s516-attendance-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s520-attendance-evidence-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/s539-suite-sign-in.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s548-qa-reports-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 36
+          }
+        },
+        {
+          "file": "test/s610-overview-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s614-employees-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s615-departments-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s620-organisation-routes.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/s621-catalogue-contracts.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s624-care-print-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s626-routing-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 27
+          }
+        },
+        {
+          "file": "test/s629-handoff-role.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s630-salary-permission-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/s631-department-mirror-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/s631-seed-replay-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/s633-missing-route-navigation-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/s634-staff-summary-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s637-decisions-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17
+          }
+        },
+        {
+          "file": "test/s637-registration-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/s644-alert-mute-routing.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/s644-audit-filters-export.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/s680-tax-reference-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/s682-ops-contracts-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/s703-station-readiness-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/s704-terminal-readiness-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/s713-offline-last-mile-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/s715-readiness-lease-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 25
+          }
+        },
+        {
+          "file": "test/s718-pos-web-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s720-display-record.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s727-box-unlock-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/safeguards.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/sales-fnb.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 32
+          }
+        },
+        {
+          "file": "test/sales-ledger-schema.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 19
+          }
+        },
+        {
+          "file": "test/sales-reach.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/security.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22
+          }
+        },
+        {
+          "file": "test/station-session-api.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 53
+          }
+        },
+        {
+          "file": "test/stock-fix-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/stock-fix.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/stock-fix2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/stock-fix3-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/stock-r1-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/stock-r2-gate-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/stock-r4-gate-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/stock-r4-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/suite-controls-integration.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/sync-keyring.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/sync-ledger.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 33
+          }
+        },
+        {
+          "file": "test/telemetry.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/transactions.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/twilio-verify-auth.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/vouchers-r5-promotions.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22
+          }
+        },
+        {
+          "file": "test/vouchers.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 108
+          }
+        },
+        {
+          "file": "test/wallet-r3-figures.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/wallet-spend.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        }
+      ]
+    },
+    {
+      "shard": 3,
+      "exitCode": 0,
+      "startTime": 1793714983809,
+      "reportSha256": "3e8485302ec881d997d70d5394e7190be412bb22a65a0b5a654360d54a7c0ea6",
+      "counts": {
+        "numTotalTests": 2028,
+        "numPassedTests": 1906,
+        "numFailedTests": 0,
+        "numPendingTests": 121,
+        "numTodoTests": 1
+      },
+      "files": [
+        {
+          "file": "test/access-restore.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/accounts-console.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/accounts-operators-tx.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/aggregates-ai.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/aggregates-members.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/analytics-parties-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/analytics-r1.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/archive-races.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/assistant-asks.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/assistant-engine.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 59
+          }
+        },
+        {
+          "file": "test/auth-handoff-files-tx.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/benefits-r3.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/booking-checkout.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 28
+          }
+        },
+        {
+          "file": "test/boot-guard.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22
+          }
+        },
+        {
+          "file": "test/booth-api.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/booth-attribution.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/booth-duty-refute.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/booth-setup-publish.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/booth-sync.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/box-epoch-adopt-race.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 1
+          }
+        },
+        {
+          "file": "test/box-epoch-regressed-note.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/box-epoch-regressed-sale.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/box-scanner.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/branch-clone.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/catalog-payment-methods.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/checkin.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/console-configuration-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/employees.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/eod-r1-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/events-e3.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 31
+          }
+        },
+        {
+          "file": "test/events-e5-audit.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/files.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3,
+            "skipped": 2
+          }
+        },
+        {
+          "file": "test/fixture-tenancy.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/fleet-api.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 70
+          }
+        },
+        {
+          "file": "test/g17-round0-review-2.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/g17-round0-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 28,
+            "skipped": 4
+          }
+        },
+        {
+          "file": "test/gate-sync.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/handoff.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 23
+          }
+        },
+        {
+          "file": "test/id-conformance.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/inbox-actions.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 47
+          }
+        },
+        {
+          "file": "test/inbox-ai-engine.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 48
+          }
+        },
+        {
+          "file": "test/inbox-ai-examples-import-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/inbox-ai-kb.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/inbox-ai-playbook.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 54
+          }
+        },
+        {
+          "file": "test/inbox-ingest.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/inbox-privacy.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/inbox-reply.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 21
+          }
+        },
+        {
+          "file": "test/kiosk-k1.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/me-preferences.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/money-fields.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/offline-capability.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 22,
+            "todo": 1
+          }
+        },
+        {
+          "file": "test/offline-stock.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/offline-wallet-gate-r4-final.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/offline-wallet.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/operator-switch-request-race-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/operator-switch-route-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 26
+          }
+        },
+        {
+          "file": "test/operator-switch-seat-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/operator-switch-session-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 39
+          }
+        },
+        {
+          "file": "test/oto-app-branch-seam.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/otoapp-events-seam.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/payments-redaction.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/payments-terminal.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 34
+          }
+        },
+        {
+          "file": "test/platform-sync.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/rate-limit-public.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/receipt-hwm.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/release-r3-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/release.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/s216-r3-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/s216-r3-summary.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/s216-r4-reports.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/s216-r6-sweep.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/s216-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/s217b-r1-review-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7,
+            "skipped": 10
+          }
+        },
+        {
+          "file": "test/s217b-r3.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 32,
+            "skipped": 9
+          }
+        },
+        {
+          "file": "test/s217b-r4b-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18,
+            "skipped": 11
+          }
+        },
+        {
+          "file": "test/s217b-r5-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10,
+            "skipped": 20
+          }
+        },
+        {
+          "file": "test/s217b-r7-finance-cross-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2,
+            "skipped": 2
+          }
+        },
+        {
+          "file": "test/s217b-r7-finance.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4,
+            "skipped": 3
+          }
+        },
+        {
+          "file": "test/s217b-r7-payroll-cross-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 25
+          }
+        },
+        {
+          "file": "test/s217b-r7b-documents-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s217b-r8-finance-cross-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/s217c-camp-sms-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 23
+          }
+        },
+        {
+          "file": "test/s217c-presence-delivery-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "skipped": 12,
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s220-e2-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 27
+          }
+        },
+        {
+          "file": "test/s220-e4-review-readday.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s220-e5-hazards.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/s220-k1-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 20
+          }
+        },
+        {
+          "file": "test/s221-r1-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/s221-r2-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 24
+          }
+        },
+        {
+          "file": "test/s221-r3-review-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17
+          }
+        },
+        {
+          "file": "test/s221-r4-acceptance.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/s494-food-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s494-money-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s495-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s496-review-stock.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s504-review-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/s504-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/s612-roles-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s616-access-review-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/s619-admin-screen-lift-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s623-money-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s625-reports-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/s629-employee-role.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s629-role-mapping.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17
+          }
+        },
+        {
+          "file": "test/s632-administration-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s633-lifecycle-identity-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/s633-lifecycle-link-concurrency-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 1
+          }
+        },
+        {
+          "file": "test/s633-provisioning-boundary-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s636-aggregates-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 60
+          }
+        },
+        {
+          "file": "test/s637-overview-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/s654-console-theme-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/s684-nullable-response-contract-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/s697-tier-proof-other.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s706-photo-renewal-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/s708-consent-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s710-display-channel-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 2
+          }
+        },
+        {
+          "file": "test/s712-storage-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/s717-box-routing-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/s717-virtual-host-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/s719-recovery-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 16
+          }
+        },
+        {
+          "file": "test/s720-display-channel-rate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/s725-staging-links-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 14
+          }
+        },
+        {
+          "file": "test/sales-printing-box-seam.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 6
+          }
+        },
+        {
+          "file": "test/sales-printing.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17
+          }
+        },
+        {
+          "file": "test/sms.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 44
+          }
+        },
+        {
+          "file": "test/station-scans-poll.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 10
+          }
+        },
+        {
+          "file": "test/stock-fix2-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 1
+          }
+        },
+        {
+          "file": "test/stock-r1.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 18
+          }
+        },
+        {
+          "file": "test/stock-r2-gate.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 7
+          }
+        },
+        {
+          "file": "test/stock-r3.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/stock-r4-closing.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 11
+          }
+        },
+        {
+          "file": "test/stock-r4-gate-facts.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/suite-control-approvals-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 15
+          }
+        },
+        {
+          "file": "test/suite-controls-review.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/supervised-band-print.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 3
+          }
+        },
+        {
+          "file": "test/support-tools.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 17
+          }
+        },
+        {
+          "file": "test/sync-sales.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 36
+          }
+        },
+        {
+          "file": "test/throttle-keys.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 12
+          }
+        },
+        {
+          "file": "test/trust-proxy.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 13
+          }
+        },
+        {
+          "file": "test/virtual-box-lease.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/wallet-gate-r1-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/wallet-gate-r3-final.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 4
+          }
+        },
+        {
+          "file": "test/wallet-gate-r3-recheck.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 8
+          }
+        },
+        {
+          "file": "test/wallet-gate-r3.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 5
+          }
+        },
+        {
+          "file": "test/wallet-r3.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        },
+        {
+          "file": "test/wallet-r5-closing-audit.test.ts",
+          "status": "passed",
+          "counts": {
+            "passed": 9
+          }
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "numTotalTests": 6565,
+    "numPassedTests": 6160,
+    "numFailedTests": 0,
+    "numPendingTests": 401,
+    "numTodoTests": 4
+  },
+  "fileCount": 442
+}

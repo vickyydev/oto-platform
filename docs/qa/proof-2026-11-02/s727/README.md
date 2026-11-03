@@ -2,21 +2,19 @@
 
 ## Current review candidate
 
-The independent-review fixes are backed up at `0f400710`; the complete gates are
-running. [New local review evidence](review-local/README.md) records the rebuilt
-real-agent/browser proof and independent fixture cleanup. The earlier green
-results below predate those fixes and do not establish current release readiness.
+The complete review gates pass on `0f400710`, with the rebased candidate on
+`lane/codex-box-unlock-review-20261103-r2` product-identical.
+[Final API counts](review-local/final-api-gate.json) and
+[all completion receipts](review-local/completed-checks.json) bind the results
+to their source and complete logs. The earlier Windows cleanup failure is
+retained; the complete unchanged workspace rerun passed.
 
-## 3 November independent review follow-up
-
-Current work is on `lane/codex-box-unlock-review-20261103-r1`. The earlier complete
-gates below cover the pre-review candidate only. The manager-end reason and
-freshness fixes now pass the 16-case real API/local HTTP review after four
-failures were reproduced. The expanded complete suite is running; do not infer
-release readiness from the historical green receipts. Q727-1 and Q727-2 remain
-open in the offline plan. No main or staging action has occurred. SCRUM-728 was
-started locally under updated direction and is checkpointed at `afbefec2` on
-`lane/codex-box-outage-20261103-r2` while these fixes take priority.
+The [local real-agent rehearsal](review-local/README.md) and independent
+cleanup passed. Staging proof is still pending. 726 has released the window
+to 727. Q727-1 and Q727-2 remain open and unbuilt. 728 remains backed up at
+`afbefec2` and resumes after 727 is Deployed with an opened image shown inline
+in its Jira comment. The prepared proof and restoration helpers are archived
+under `staging-harness/`; those files are not deployment evidence.
 
 ## Earlier candidate evidence
 

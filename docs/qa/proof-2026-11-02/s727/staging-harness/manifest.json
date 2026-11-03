@@ -1,0 +1,54 @@
+{
+  "purpose": "Prepared staging proof and exact restoration helpers; not a staging result",
+  "at": "2026-11-03T15:01:33.830Z",
+  "files": [
+    {
+      "name": "s727-landing-browser-proof.mjs",
+      "sourceSha256": "4e3da445620776e4df9c8c159a91f7be0c4f796c4e0f27fc51a2d50f65470bf6",
+      "archiveSha256": "313d3b5d460a8ce900b8661ca087188b77d76c165469f9cc5fc2b85b7adf6fb9",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s727-landing-staging-settings.mjs",
+      "sourceSha256": "6e430863cc355a686873c98894af6dd914a143ed22cd6585aa20dd7e608047ea",
+      "archiveSha256": "761f549fb24d1fc3e524ed687e5572963489fb05f40caf121d123a83b2a6bf6b",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s727-landing-database-proof.mjs",
+      "sourceSha256": "addfdc74381483b0f3d27fb5b70fca6aa619eb5131441a14de93f721bd6578c8",
+      "archiveSha256": "5964153d6d97b6f778523e85b2ccc54a63546486c2dcf74a19593d473115c2f7",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s727-database-check-program.mjs",
+      "sourceSha256": "3239a854b0e6748b8bdfadc060b4f9403b1f05f29acc7ba75edda8cecafeceb9",
+      "archiveSha256": "c05d4de399de8bb6efbf3cb69d5e0a447c813ea81297bb4430ad7b1086c4a17f",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s727-proof-account.mjs",
+      "sourceSha256": "b5c4ae70e7ae39ba0abc8e6e0f5977c6d7126cd2d371749a1fdd66c31b41d168",
+      "archiveSha256": "b553a7629d916d03df47469bacd49d5f90ed3719ba4e4b2696946d445091e84e",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s727-deploy-read.mjs",
+      "sourceSha256": "1506bb5af21580d47d6d166bbd4e96112c9b7d4e1dd14a911b518a234dfbb100",
+      "archiveSha256": "dd9aca0ec9e72400f90426191d7e91ffa9c97d858ed92a696fe0ce2956e26554",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "qa-render-job.mjs",
+      "sourceSha256": "c765b9758669fd63f37ad3f64d61014ff8f6b3720291a85994e5930d073c533d",
+      "archiveSha256": "c765b9758669fd63f37ad3f64d61014ff8f6b3720291a85994e5930d073c533d",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s719-agent-control.mjs",
+      "sourceSha256": "ef64e1defa05caf68a01180c6431c2a7bef118c1b7bc489197ae7e359fc67d00",
+      "archiveSha256": "ef64e1defa05caf68a01180c6431c2a7bef118c1b7bc489197ae7e359fc67d00",
+      "normalization": "LF with one final newline"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
-  "source": "0f400710d05b0c86fa8bae27301615b7ecd80613",
-  "docsCheckpoint": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
-  "sameProductSource": true,
-  "apiAndWorkspaceFullGates": "running, not counted as completed",
+  "testedSource": "0f400710d05b0c86fa8bae27301615b7ecd80613",
+  "landingCandidateParent": "d780f5a0ad52ec5decc18165ae69c0eeed3a01e6",
+  "runtimeAndTestsIdentical": true,
+  "at": "2026-11-03T15:01:33.816Z",
   "gates": [
     {
       "key": "types",
@@ -47,16 +47,116 @@
       "exitCode": 0,
       "signal": null,
       "logSha256": "0705851f55e60932dd5fb59e664fa4a898646da230e2c44b05688146167420fd"
+    },
+    {
+      "key": "tools",
+      "sha": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+      "start": "2026-11-03T14:35:29.462Z",
+      "end": "2026-11-03T14:35:32.609Z",
+      "command": "node scripts/check-no-mock-members.mjs; node --test scripts/inbox/whatsapp-history.test.mjs; node apps/oto-app/server/lib/telemetry/check-sync.mjs; for f in scripts/pi/*.sh; do bash -n \"$f\"; done; /c/oto-lanes/s713-shellcheck/shellcheck.exe --severity=error scripts/pi/*.sh",
+      "log": "C:/oto-lanes/s727-resume-v4-tools.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "00584b12a00ac91b2c481c479aebbd2af92e10eb99f4bc58134bfbe63e090aed"
+    },
+    {
+      "key": "workspace",
+      "sha": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+      "start": "2026-11-03T14:38:07.168Z",
+      "end": "2026-11-03T14:59:44.048Z",
+      "command": "pnpm exec turbo run test --filter=\"!@oto/api\" --concurrency=1",
+      "log": "C:/oto-lanes/s727-resume-v4-workspace.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "daa46d67df518ed716855a6f02af39e634db23639ca954143fc26dd994f4b657"
+    },
+    {
+      "key": "api1",
+      "sha": "0f400710d05b0c86fa8bae27301615b7ecd80613",
+      "start": "2026-11-03T14:09:21.542Z",
+      "end": "2026-11-03T15:00:07.097Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s727-review-api-gate.mts --shard=1/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s727-resume-api1.json",
+      "log": "C:/oto-lanes/s727-resume-v2-api1.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "d59af9b189199d260d12659aefe5aebbc922c0734e21ede6d2b9ae7348a625bb"
+    },
+    {
+      "key": "api2",
+      "sha": "0f400710d05b0c86fa8bae27301615b7ecd80613",
+      "start": "2026-11-03T14:09:21.543Z",
+      "end": "2026-11-03T15:00:17.775Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s727-review-api-gate.mts --shard=2/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s727-resume-api2.json",
+      "log": "C:/oto-lanes/s727-resume-v2-api2.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "588cbe2498651871344b842a1952e4a2c70a5304014f458037f170ca1ea4fef7"
+    },
+    {
+      "key": "api3",
+      "sha": "0f400710d05b0c86fa8bae27301615b7ecd80613",
+      "start": "2026-11-03T14:09:21.553Z",
+      "end": "2026-11-03T15:00:20.940Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s727-review-api-gate.mts --shard=3/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s727-resume-api3.json",
+      "log": "C:/oto-lanes/s727-resume-v2-api3.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "7c6e84ef498d48a7230a02eb49a2524997cc37e4b29938742d1f493818d60769"
     }
   ],
+  "workspace": {
+    "successfulTasks": 15,
+    "totalTasks": 15,
+    "summaries": [
+      "@oto/shared:test:  Test Files  58 passed (58)",
+      "@oto/shared:test:       Tests  886 passed (886)",
+      "@oto/print:test:  Test Files  12 passed (12)",
+      "@oto/print:test:       Tests  283 passed (283)",
+      "@oto/messaging:test:  Test Files  6 passed (6)",
+      "@oto/messaging:test:       Tests  79 passed (79)",
+      "@oto/telemetry:test:  Test Files  4 passed (4)",
+      "@oto/telemetry:test:       Tests  36 passed (36)",
+      "@oto/api-types:test:  Test Files  1 passed (1)",
+      "@oto/api-types:test:       Tests  10 passed (10)",
+      "@oto/assistant:test:  Test Files  17 passed (17)",
+      "@oto/assistant:test:       Tests  678 passed (678)",
+      "@oto/db:test:  Test Files  55 passed (55)",
+      "@oto/db:test:       Tests  384 passed (384)",
+      "@oto/booth:test: # tests 38",
+      "@oto/booth:test: # pass 38",
+      "@oto/booth:test: # fail 0",
+      "@oto/booth:test: # skipped 0",
+      "@oto/booth:test: # todo 0",
+      "@oto/payments-2c2p:test:  Test Files  6 passed (6)",
+      "@oto/payments-2c2p:test:       Tests  86 passed (86)",
+      "@oto/box-agent:test: # tests 879",
+      "@oto/box-agent:test: # pass 879",
+      "@oto/box-agent:test: # fail 0",
+      "@oto/box-agent:test: # skipped 0",
+      "@oto/box-agent:test: # todo 0",
+      "@oto/admin-screens:test:  Test Files  17 passed (17)",
+      "@oto/admin-screens:test:       Tests  157 passed (157)",
+      "@oto/pos:test:  Test Files  124 passed (124)",
+      "@oto/pos:test:       Tests  1675 passed (1675)",
+      "@oto/inbox:test:  Test Files  11 passed (11)",
+      "@oto/inbox:test:       Tests  218 passed (218)",
+      "@oto/launcher:test:  Test Files  7 passed (7)",
+      "@oto/launcher:test:       Tests  88 passed (88)",
+      "@oto/console:test:  Test Files  60 passed (60)",
+      "@oto/console:test:       Tests  589 passed | 3 todo (592)",
+      " Tasks:    15 successful, 15 total",
+      "Cached:    7 cached, 15 total"
+    ]
+  },
   "typecheck": {
-    "tasks": 16,
-    "diagnostics": 0,
-    "cache": "16 valid source-matched Turbo results"
+    "successfulTasks": 16,
+    "apiDiagnostics": 0
   },
   "lint": {
     "errors": 0,
     "existingWarnings": 8
   },
-  "shell": "both changed scripts pass bash -n and ShellCheck severity=error"
+  "contracts": "match",
+  "browserSmokeJourneys": 7,
+  "earlierFailure": "initial-workspace-stop.json: Windows EBUSY during stopped database directory removal; complete unchanged rerun passed"
 }
