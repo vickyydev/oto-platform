@@ -15,12 +15,13 @@ import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
 import { staffThemeController, useCustomerTheme } from '@/lib/themePref';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { authApi, type PosImpersonation } from '@/api/platform';
-import { ApiError } from '@/api/client';
-import { bridgeApi, setBridgeStaffName, prepareConfiguredBridgeUnlock } from '@/api/bridge';
+import { ApiError, NetworkError } from '@/api/client';
+import { bridgeApi, holdBoxSession, setBridgeStaffName, prepareConfiguredBridgeUnlock } from '@/api/bridge';
 import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffToken';
-import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
-import { loadCatalogFromApi } from '@/api/catalogBridge';
+import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, platformNeedsUnlock, platformUnlocked, refreshLane } from '@/lib/lane';
+import { loadCatalogFromApi, restorePreparedCatalog } from '@/api/catalogBridge';
 import { takeTicketDisplayLeaseForSignOut } from '@/lib/displaySession';
+import { forgetOfflinePreparation, prepareOfflineOperator, readOfflinePreparation, type OfflinePreparation } from './offlinePreparation';
 
 /**
  * Operator session — the "operator" (prototype term for the signed-in STAFF
@@ -90,6 +91,8 @@ interface OperatorContextValue {
    * so a reload inside a valid session doesn't flash the lock screen.
    */
   sessionResolved: boolean;
+  /** A prepared device resumed locked during an outage; the box must still authenticate it. */
+  offlinePreparation: OfflinePreparation | null;
 }
 
 const OperatorContext = createContext<OperatorContextValue | null>(null);
@@ -200,6 +203,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const [handoffError, setHandoffError] = useState<string | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [viewAs, setViewAs] = useState<PosImpersonation | null>(null);
+  const [offlinePreparation, setOfflinePreparation] = useState<OfflinePreparation | null>(null);
 
   const [, setCustomerTheme] = useCustomerTheme();
   const { setLang } = useLanguage();
@@ -232,6 +236,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setMustChangePassword(false);
     setViewAs(null);
     setOfflineUnlock(null);
+    setOfflinePreparation(null);
+    forgetOfflinePreparation();
     // The next person's theme arrives with their sign-in; nothing is written
     // to this one's account after the shift ends.
     staffThemeController.release();
@@ -309,13 +315,17 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     const op = toOperator(me, isManager);
     // Hydrate branches + wired catalog collections from the API before the
     // till renders, so pricing/packages come from the database.
+    let catalogReady = true;
     await loadCatalogFromApi(me.branch?.code).catch(() => {
+      catalogReady = false;
       // Catalog load failing must not block the lock screen → surfaced by panels.
     });
     setHeld(new Set(permissions.map((p) => p.permission)));
     setMustChangePassword(me.account.mustChangePassword);
     setViewAs(me.impersonation ?? null);
     setOfflineUnlock(null);
+    setOfflinePreparation(null);
+    prepareOfflineOperator(op, catalogReady && !me.account.mustChangePassword && !me.impersonation);
     setOperator(op);
     applyThemePrefs(op.id, me);
     return { operator: op, sessionLocked: me.sessionLocked };
@@ -391,16 +401,24 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         ...(token ? { token } : {}),
         ...(operator?.id ? { accountId: operator.id } : {}),
       });
+      if (answer.accountId !== operator?.id) {
+        holdBoxSession(null);
+        throw new Error('That unlock belongs to another operator. Sign in again.');
+      }
+      if (answer.permissions) setHeld(new Set(answer.permissions));
+      setMustChangePassword(answer.mustChangePassword);
       setOfflineUnlock({ method: answer.method, cacheAgeSeconds: answer.cacheAgeSeconds });
       setLocked(false);
     };
-    if (station && currentLane() === 'box') return throughBox(station);
+    if (station && currentLane() === 'box' && !platformNeedsUnlock()) return throughBox(station);
     try {
       await authApi.unlock(password);
+      platformUnlocked();
       // The platform remains the online authority. Its successful unlock also
       // supplies the existing password/token proof to a configured local box;
       // this bounded call neither delays online access nor stores the password.
       void connectLocal?.();
+      if (currentLane() === 'box') void refreshLane();
       setOfflineUnlock(null);
       setLocked(false);
       return;
@@ -456,10 +474,25 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         // A reload inside a locked session comes back locked.
         setLocked(sessionLocked);
-      } catch {
+      } catch (error) {
         // Not signed in. When a refused hand-off is the reason, the lock
         // screen says so rather than leaving the operator to guess.
-        if (!cancelled && refusal) setHandoffError(refusal);
+        if (cancelled) return;
+        if (refusal) setHandoffError(refusal);
+        else if (error instanceof NetworkError || (error instanceof ApiError
+          && error.status === 502 && error.code === 'UPSTREAM_UNAVAILABLE')) {
+          const saved = readOfflinePreparation();
+          if (saved) {
+            restorePreparedCatalog(saved.catalog);
+            setOfflinePreparation(saved);
+            setHeld(new Set());
+            setLocked(true);
+            setOperator(saved.operator);
+          }
+        } else {
+          // An authoritative refusal cannot be turned into an offline session.
+          forgetOfflinePreparation();
+        }
       } finally {
         if (!cancelled) setSessionResolved(true);
       }
@@ -496,6 +529,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     const onUnauthorized = () => {
       clearTimers();
       setOfflineUnlock(null);
+      setOfflinePreparation(null);
+      forgetOfflinePreparation();
       setWarningActive(false);
       setLocked(false);
       setOperator(null);
@@ -535,6 +570,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         secondsLeft,
         stayActive,
         sessionResolved,
+        offlinePreparation,
       }}
     >
       {children}

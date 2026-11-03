@@ -997,6 +997,7 @@ export class StationBridge {
   private readonly options: Required<StationBridgeOptions>;
   private readonly log: AgentLog;
   private readonly held = new Map<string, HeldSession>();
+  private readonly displaySeen = new Map<string, number>();
   /**
    * Named crash points inside a box redemption (S2-12 round 5), called in
    * order. A test throws from one to prove a restart there recovers to exactly
@@ -1354,6 +1355,7 @@ export class StationBridge {
         cachedAt: result.cachedAt,
         cacheAgeSeconds: ageOf(result.cachedAt, now),
         mustChangePassword: result.mustChangePassword,
+        permissions: [...permissions],
       },
     };
   }
@@ -1431,6 +1433,7 @@ export class StationBridge {
     for (const raw of displays) {
       const display = rec(raw);
       if (display && display.credentialHash === hash && typeof display.id === 'string') {
+        this.displaySeen.set(`${stationId}:${hash}`, this.host.now().getTime());
         return { kind: 'display', credentialId: display.id };
       }
     }
@@ -1438,6 +1441,20 @@ export class StationBridge {
   }
 
   // --- the document -------------------------------------------------------------------
+
+  /** The same ten-second presence window as the platform's display list. */
+  async connectedDisplays(stationId: string) {
+    this.station(stationId);
+    const cutoff = this.host.now().getTime() - 10_000;
+    for (const [key, seen] of this.displaySeen) if (seen < cutoff) this.displaySeen.delete(key);
+    const entry = itemsOf(await this.bundle('station_config')).map(rec).find(row => row?.id === stationId);
+    const displays = Array.isArray(entry?.displays) ? entry.displays : [];
+    return { displays: displays.map(rec).filter((row): row is Record<string, unknown> =>
+      !!row && typeof row.id === 'string' && typeof row.credentialHash === 'string').map(row => ({
+      id: row.id as string, name: typeof row.name === 'string' ? row.name : 'Customer display',
+      connected: (this.displaySeen.get(`${stationId}:${row.credentialHash as string}`) ?? -Infinity) >= cutoff,
+    })) };
+  }
 
   /**
    * The document for one screen. A display is handed the customer view
