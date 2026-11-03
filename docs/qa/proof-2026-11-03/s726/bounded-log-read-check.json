@@ -1,0 +1,8 @@
+{
+  "at": "2026-11-03T06:31:37.072Z",
+  "sampleAt": "2026-11-03T06:31:32.716Z",
+  "ageSeconds": 4.356,
+  "maximumAgeSeconds": 45,
+  "queryLookbackSeconds": 90,
+  "maximumRecords": 2
+}

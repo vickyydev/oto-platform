@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-03T06:24:37.031Z",
+  "reads": [
+    {
+      "limit": 20,
+      "status": 200,
+      "bytes": 1010459,
+      "rows": 20,
+      "ms": 2359.3175,
+      "error": null
+    },
+    {
+      "limit": 2,
+      "status": 200,
+      "bytes": 101007,
+      "rows": 2,
+      "ms": 1153.7401,
+      "error": null
+    }
+  ]
+}

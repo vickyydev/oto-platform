@@ -246,7 +246,8 @@
     "01a19f4d-57ed-75ec-ba47-ab1518330e9b",
     "01a19f4d-5ea6-7325-99b6-33141f43a3d3",
     "01a19f4d-6467-7eba-8e2c-d12706f54368",
-    "01a1a002-24a2-732f-8e5b-9708a1a4ce4c"
+    "01a1a002-24a2-732f-8e5b-9708a1a4ce4c",
+    "01a1a00c-450d-712a-9ba2-ee2c466d2a22"
   ],
   "voidedDrafts": [
     {
@@ -746,6 +747,27 @@
       "kind": "native",
       "stationId": "01a19e88-2a5d-7685-989b-22601c493045",
       "recordedAt": "2026-11-03T06:04:21.516Z"
+    },
+    {
+      "id": "01a1a00b-6b1d-780e-ba6e-086d1e909c4d",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T06:14:25.243Z"
+    },
+    {
+      "id": "01a1a00c-3d01-76b6-8b88-6552269387c1",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "recordedAt": "2026-11-03T06:15:20.003Z"
+    },
+    {
+      "id": "01a1a00c-50da-724f-bda1-aa9f94e74da1",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e88-2a5d-7685-989b-22601c493045",
+      "recordedAt": "2026-11-03T06:15:25.058Z"
     }
   ],
   "sources": {
@@ -2178,20 +2200,34 @@
       "pickupPhotoId": "783f7310-2cd2-4f64-91a3-57f758210d20",
       "releasedAt": "2026-11-03T03:01:27.427Z",
       "releaseId": "f531f6a8-5330-4bb4-aac6-cd7f6d967ca2"
+    },
+    {
+      "registrationId": "07951877-77ba-45e4-865a-3ca670ead962",
+      "checkinId": "2c590ceb-3762-41fa-80e0-2ea6cd1826b2",
+      "saleId": "9cd65f84-0e4a-4771-87b0-6eac6440b4cf",
+      "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 5",
+      "photoId": "936dfdb7-980e-4786-be59-5541cc927bed",
+      "grossSatang": 111500,
+      "receiptNumber": "Z72601-000032",
+      "bandId": "01a1a001-b874-7467-a2d2-acdda69bf0db",
+      "inPark": false,
+      "pickupPhotoId": "841270ce-1e9c-43ae-9eae-14c05cba61f9",
+      "releasedAt": "2026-11-03T06:04:48.798Z",
+      "releaseId": "0eee97cd-bb70-4ec0-bea8-ecf525ba0490"
     }
   ],
   "family": {
-    "registrationId": "07951877-77ba-45e4-865a-3ca670ead962",
-    "checkinId": "2c590ceb-3762-41fa-80e0-2ea6cd1826b2",
-    "saleId": "9cd65f84-0e4a-4771-87b0-6eac6440b4cf",
-    "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 5",
-    "photoId": "936dfdb7-980e-4786-be59-5541cc927bed",
+    "registrationId": "cc22c188-940a-415b-9c97-9aa472f4ff0a",
+    "checkinId": "a8fe3d4a-da46-40c9-b354-27e6cc92d3da",
+    "saleId": "0446ada2-8d0d-4c06-b995-b349c2ff589b",
+    "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 6",
+    "photoId": "40bb634e-43b5-44ce-961e-9c19cd7bf8da",
     "grossSatang": 111500,
-    "receiptNumber": "Z72601-000032",
-    "bandId": "01a1a001-b874-7467-a2d2-acdda69bf0db",
+    "receiptNumber": "Z72601-000033",
+    "bandId": "01a1a00b-b135-7746-9c4c-64bbb2ae6e3d",
     "inPark": false,
-    "pickupPhotoId": "841270ce-1e9c-43ae-9eae-14c05cba61f9",
-    "releasedAt": "2026-11-03T06:04:48.798Z",
-    "releaseId": "0eee97cd-bb70-4ec0-bea8-ecf525ba0490"
+    "pickupPhotoId": "24d973e8-358c-49d9-8492-f5808208bed0",
+    "releasedAt": "2026-11-03T06:21:17.645Z",
+    "releaseId": "2b32ee84-c06c-41c5-86b5-0d3c5b660035"
   }
 }

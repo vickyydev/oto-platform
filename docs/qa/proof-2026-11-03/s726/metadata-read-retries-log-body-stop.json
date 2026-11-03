@@ -1,0 +1,18 @@
+[
+  {
+    "at": "2026-11-03T06:14:38.185Z",
+    "path": "/logs",
+    "readOnly": true,
+    "attempt": 1,
+    "status": null,
+    "errorCode": "TimeoutError"
+  },
+  {
+    "at": "2026-11-03T06:21:16.349Z",
+    "path": "/logs",
+    "readOnly": true,
+    "attempt": 1,
+    "status": 200,
+    "errorCode": null
+  }
+]
