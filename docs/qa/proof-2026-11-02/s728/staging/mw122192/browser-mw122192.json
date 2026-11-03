@@ -1,0 +1,391 @@
+{
+  "unit": "SCRUM-728",
+  "mode": "staging",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "version": "oto-box 0.1.0-20261103-00f414ba built 2026-11-03T18:24:14.356Z",
+  "startedAt": "2026-11-03T19:02:45.210Z",
+  "checks": [
+    {
+      "name": "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+      "at": "2026-11-03T19:03:59.265Z",
+      "passed": true
+    },
+    {
+      "name": "API save refuses unrelated DNS names and every tested IP literal",
+      "at": "2026-11-03T19:04:03.075Z",
+      "passed": true
+    },
+    {
+      "name": "Console warns before saving that a web-hosted display must move to the box",
+      "at": "2026-11-03T19:04:06.269Z",
+      "passed": true
+    },
+    {
+      "name": "One configured policy and the existing public signing key reach the real agent",
+      "at": "2026-11-03T19:04:07.995Z",
+      "passed": true
+    }
+  ],
+  "outcome": "incomplete",
+  "limitations": [
+    "Windows local agent and test-only localhost zone; no real box address",
+    "No physical Pi, private HTTPS, certificate, printer or power-cut acceptance",
+    "One ZZ TEST cash sale; no electronic payment or SMS"
+  ],
+  "local": {
+    "bridgeOrigin": "http://zz-test-s728.localhost:62994",
+    "home": "C:/oto-lanes/s728-agent-mw122192"
+  },
+  "staff": {
+    "accountId": "759010af-b7b2-426b-a64f-82c00f3d98d7",
+    "employeeId": "ce2e53c3-24e9-43cd-aee6-e89ada053aa3",
+    "name": "ZZ TEST SCRUM-728 mw122192 staff",
+    "provision": {
+      "jobId": "job-dbl2vn2jnfac73ab04h0",
+      "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+      "startedAt": "2026-11-03T19:02:51.893Z",
+      "status": "succeeded",
+      "result": {
+        "event": "s728_fixture_account",
+        "at": "2026-11-03T19:03:44.077Z",
+        "accountId": "759010af-b7b2-426b-a64f-82c00f3d98d7",
+        "employeeId": "ce2e53c3-24e9-43cd-aee6-e89ada053aa3",
+        "status": "invited",
+        "roles": 0,
+        "sms": false,
+        "passed": true
+      }
+    },
+    "grantId": "01a1a2cb-f8fc-7008-b9a9-62def62ec83d"
+  },
+  "fixture": {
+    "name": "ZZ TEST SCRUM-728 mw122192",
+    "boxId": "01a1a2cb-fe65-751f-9ebf-698aba639cb6",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+    "printerId": "01a1a2cc-02a3-7b1c-8f33-993d0500ec68",
+    "stationId": "01a1a2cc-0473-7e93-9697-64bad8f06202",
+    "shiftId": "01a1a2cc-28f9-7edf-9a2b-7706709e7e9f",
+    "displayId": "01a1a2cd-1f83-7912-8ad1-f16b550ceeb2"
+  },
+  "lockTrace": [
+    {
+      "at": "2026-11-03T19:04:08.878Z",
+      "path": "/api/me",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:10.583Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:12.083Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:13.590Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:15.094Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:16.601Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:18.107Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:19.613Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:21.119Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:22.625Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:24.132Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:25.600Z",
+      "event": "keyboard-activity"
+    },
+    {
+      "at": "2026-11-03T19:04:25.639Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:27.144Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:28.649Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:30.154Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:31.659Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:33.164Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:34.671Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:36.176Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:37.681Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:39.184Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:40.597Z",
+      "event": "keyboard-activity"
+    },
+    {
+      "at": "2026-11-03T19:04:40.688Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:42.193Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:43.697Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:45.202Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:46.705Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:48.210Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:49.715Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:51.219Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:52.723Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:54.227Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:55.599Z",
+      "event": "keyboard-activity"
+    },
+    {
+      "at": "2026-11-03T19:04:55.737Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:57.236Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:04:58.741Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:00.245Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:01.748Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:03.254Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:04.757Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:06.261Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:07.766Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:09.271Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:10.599Z",
+      "event": "keyboard-activity"
+    },
+    {
+      "at": "2026-11-03T19:05:10.775Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:12.280Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:13.787Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:15.291Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:16.795Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:18.300Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:19.804Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:21.309Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:22.813Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:24.318Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:25.599Z",
+      "event": "keyboard-activity"
+    },
+    {
+      "at": "2026-11-03T19:05:25.824Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:27.329Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:28.835Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:30.341Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:31.846Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:33.352Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:34.857Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    },
+    {
+      "at": "2026-11-03T19:05:36.363Z",
+      "path": "/box/v1/station/01a1a2cc-0473-7e93-9697-64bad8f06202/displays",
+      "status": 401
+    }
+  ],
+  "signingKey": {
+    "kid": "ddc53eda85cb9a78",
+    "publicFingerprint": "ddc53eda85cb9a7892aa764a4c8b1dd2e537db16a8c8f6abd448b6a458315866"
+  }
+}

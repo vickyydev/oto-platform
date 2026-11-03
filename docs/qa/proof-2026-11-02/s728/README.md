@@ -15,7 +15,9 @@ API, POS web and Console are live and healthy on that SHA. The temporary
 localhost proof zone, explicit loopback permission and password-only test
 policy are recorded in [settings-enable.json](settings-enable.json); all
 unrelated setting fingerprints match the baseline. Same-source API/POS
-deployments are applying them. No proof fixture exists yet.
+deployments are applying them. The native staging proof is running with the dedicated ZZ TEST fixture
+`mw122192`. Its before-save warning and saved test-zone images were opened.
+Complete behavior, cash reconciliation and cleanup remain required.
 
 ## Behavior and review
 
