@@ -1,0 +1,39 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
+import { resolve, basename, join } from 'node:path';
+import { createHash } from 'node:crypto';
+const [input, target] = process.argv.slice(2);
+const sourceRoot = resolve('C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging');
+const from = resolve(input ?? '');
+assert.ok(from.startsWith(sourceRoot + '\\'));
+assert.equal(resolve(target ?? ''), resolve('C:/oto-lanes/codex-qr-review-notes-20261104'));
+const r = JSON.parse(readFileSync(join(from, 'result.json'), 'utf8'));
+const sha = 'dde3887aa3162d6b6c006c4135ad2ef20e163b6c';
+assert.equal(r.unit, 'SCRUM-739'); assert.equal(r.mode, 'staging'); assert.equal(r.source, sha);
+assert.equal(r.ci.headSha, sha); assert.equal(r.ci.conclusion, 'success');
+assert.equal(r.deployments.length, 7);
+assert.equal(r.deployments.filter(d => d.name !== 'oto-app-staging').length, 6);
+assert.ok(r.deployments.filter(d => d.name !== 'oto-app-staging').every(d => d.source === sha));
+const app = r.deployments.find(d => d.name === 'oto-app-staging');
+assert.equal(app.unchangedBuildContextTree, '296ea6228e56ad3c2860997750e2acd21f2cf41e');
+assert.equal(r.failures.length, 0); assert.equal(r.cases.length, 6); assert.equal(r.retirement.errors.length, 0); assert.equal(r.retirement.signedOut, true);
+assert.equal(new Set(r.cases.map(c => c.saleId)).size, 6); assert.equal(new Set(r.cases.map(c => c.attemptId)).size, 6);
+assert.equal(new Set(r.cases.map(c => `${c.kind}/${c.mobile}`)).size, 6);
+for (const c of r.cases) {
+ assert.equal(c.simulator.webhookOutcome, 'late_paid'); assert.equal(c.held.saleStatus, 'tendering'); assert.equal(c.held.receiptNumber, null); assert.equal(c.held.attemptStatus, 'awaiting_staff_confirmation');
+ assert.equal(c.readback.status, 'finalised'); assert.equal(c.readback.attempts.length, 1); assert.equal(c.readback.attempts[0].status, 'approved'); assert.equal(c.readback.attempts[0].amountSatang, 100);
+ if (c.kind === 'shop' && c.mobile) assert.equal(c.staffLockPreservedAttempt, true);
+}
+for (const proof of [r.independent, r.alertCleanup, r.cleanup]) { assert.equal(proof.source, sha); assert.equal(proof.status, 'succeeded'); assert.equal(proof.result.passed, true); }
+assert.equal(r.cleanup.result.sales.length, 6); assert.equal(r.cleanup.result.payments.length, 6); assert.equal(r.cleanup.result.audits.length, 12);
+assert.equal(r.cleanup.result.walletEntries, 0); assert.equal(r.cleanup.result.bands.length, 2); assert.ok(r.cleanup.result.bands.every(b => b.status === 'revoked'));
+assert.ok(Object.values(r.cleanup.result.counts).every(n => n === 0));
+assert.equal(r.beforeSettings.length, 57); assert.deepEqual(r.afterSettings, r.beforeSettings);
+const dest = join(target, 'docs/qa/proof-2026-11-04/s739/staging', basename(from)); mkdirSync(dest, { recursive: true });
+for (const file of readdirSync(from)) { assert.ok(file.endsWith('.png') || file === 'result.json'); copyFileSync(join(from, file), join(dest, file)); }
+const selected = ['food-desktop-02-held','food-desktop-03-review-locked','food-desktop-04-review-ready','food-desktop-05-completed','food-phone-04-review-ready','shop-desktop-04-review-ready','shop-phone-02b-staff-locked','shop-phone-04-review-ready','shop-phone-05-completed','tickets-desktop-04-review-ready','tickets-phone-04-review-ready','tickets-phone-05-completed'];
+const attachments = join(target, 'docs/qa/jira-comments/attachments/SCRUM-739'); mkdirSync(attachments, { recursive: true });
+const images = selected.map(name => { const file = 's739-' + name + '.png'; copyFileSync(join(from, name + '.png'), join(attachments, file)); return { file, path: join(attachments, file), sha256: createHash('sha256').update(readFileSync(join(attachments, file))).digest('hex') }; });
+const receipt = { source: sha, ci: r.ci, stagedAt: new Date().toISOString(), run: basename(from), proofDirectory: dest, images, imagesOpened: false, jiraPublished: false, sales: r.cases.map(c => ({ kind: c.kind, phone: c.mobile, saleId: c.saleId, paymentId: c.attemptId, receipt: c.readback.receiptNumber })), independentJob: r.independent.jobId, cleanupJob: r.alertCleanup.jobId, cleanupReadJob: r.cleanup.jobId, cleanupPassed: true, physicalPrinting: 'unproven' };
+writeFileSync(join(target, 'docs/qa/proof-2026-11-04/s739/staging-proof.json'), JSON.stringify(receipt, null, 2) + '\n');
+console.log(JSON.stringify({ source: sha, output: dest, attachmentCount: images.length, cleanupPassed: true, imagesNeedOpening: true }, null, 2));

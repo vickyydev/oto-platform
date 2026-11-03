@@ -1,0 +1,11 @@
+{
+  "at": "2026-11-03T22:59:33.451Z",
+  "service": "oto-app-staging",
+  "serviceId": "srv-danppvjtqb8s73cnvua0",
+  "liveCommit": "773fd25f5436bf07f663af183761481b3197a3ef",
+  "requestedCommit": "dde3887aa3162d6b6c006c4135ad2ef20e163b6c",
+  "verifiedBuildContext": true,
+  "buildContextTree": "296ea6228e56ad3c2860997750e2acd21f2cf41e",
+  "unchanged": true,
+  "serviceChangeRequested": false
+}

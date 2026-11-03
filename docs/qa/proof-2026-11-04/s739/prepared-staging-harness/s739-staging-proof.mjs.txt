@@ -26,8 +26,17 @@ async function live() {
     const service = services.find(s => s.name === name); assert.ok(service);
     const d = (await render('GET', '/services/' + service.id + '/deploys?limit=1'))[0]?.deploy;
     assert.equal(d?.status, 'live', 'Deployment is not ready: ' + name);
-    assert.equal(d.commit.id, sha, 'Live source differs: ' + name);
-    rows.push({ name, serviceId: service.id, deployId: d.id, source: d.commit.id });
+    let unchangedBuildContextTree;
+    if (name === 'oto-app-staging') {
+      // This independent app is path-filtered. Verify its entire actual build
+      // context is identical instead of restarting an unrelated service.
+      assert.equal(service.rootDir, 'apps/oto-app');
+      const tree = commit => execFileSync('git', ['rev-parse', commit + ':apps/oto-app'], { cwd: root, encoding: 'utf8' }).trim();
+      unchangedBuildContextTree = tree(sha);
+      assert.equal(tree(d.commit.id), unchangedBuildContextTree);
+    } else assert.equal(d.commit.id, sha, 'Live source differs: ' + name);
+    rows.push({ name, serviceId: service.id, deployId: d.id, source: d.commit.id,
+      ...(unchangedBuildContextTree ? { unchangedBuildContextTree } : {}) });
   }
   return rows;
 }
