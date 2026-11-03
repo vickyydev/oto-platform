@@ -45,6 +45,18 @@ Each check was run against a till changed on purpose, then the change was taken 
 | The phone board fires both hand-overs and the till loads a paid child | The spec fails at "No items yet", behind the dialog |
 | The picker treats a paid child as chargeable | Three of the picker's render tests fail in `apps/pos/test/s730-paid-online-board.test.ts` |
 
+## Staging before the change
+
+Captured 3 November 2026, 16:00 to 16:02 UTC, on staging's live source `4e515c61217770396da4dd86119cc0666cdc1d29`, before this landed. ZZ TEST records only, on the dedicated till `ZZ TEST SCRUM-730 till` on Virtual box 1 (simulated devices). PAYMENTS_SIMULATOR read back as on. The fixture is recorded in [staging-fixture.json](./s730/staging-fixture.json).
+
+| Step | What a person sees |
+|---|---|
+| [The guest's page](./s730/staging-before-00b-simulated-hosted-page.png) | The booking site's card route reaches the simulated hosted page for booking OTO-06IT-O26H, ฿915. No real money moves |
+| [The guest's confirmation](./s730/staging-before-00c-booking-paid.png) | "You're booked", ฿915 paid, one supervised child |
+| [The board](./s730/staging-before-01-board.png) | The family's card offers Check in. Nothing on the child's row says the family paid |
+| [Check in pressed](./s730/staging-before-02-check-in-loads-a-line-to-charge.png) | The till holds the child as a line to charge: "Drop-off service", "Choose length", the tier step, and Pay |
+| [Cancel pressed](./s730/staging-before-03-cancelled-no-payment.png) | Back on an empty till. No payment taken, and the booking still reads paid |
+
 ## Staging proof
 
 Before landing, while staging still runs the earlier source:

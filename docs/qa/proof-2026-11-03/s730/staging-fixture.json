@@ -1,0 +1,30 @@
+{
+  "unit": "SCRUM-730",
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+  "boxName": "Virtual box 1",
+  "stationId": "01a1a223-7f7c-7956-aecd-cd783e61b189",
+  "stationName": "ZZ TEST SCRUM-730 till",
+  "createdAt": "2026-11-03T15:59:57.193Z",
+  "before": {
+    "bookingId": "01a1a224-4492-7d43-9eed-48925a9966fd",
+    "reference": "OTO-06IT-O26H",
+    "parent": "ZZ TEST SCRUM-730 Mali",
+    "child": "ZZ TEST SCRUM-730 Ploy",
+    "phone": "+66897301001",
+    "visitDate": "2026-11-03",
+    "orderTextOnOldCode": "Current Order | TOURIST | ZZ TEST SCRUM-730 Ploy | EDITING | \u2014 | Choose length | Drop-off service | Configure | Apply | Redeem | Issue a voucher\u2026 | Add manual discount | Subtotal | \u2014 | Total | \u2014 | Priced on this till. A drop-off child has no play length chosen yet. | Cancel | Pay \u2014",
+    "capturedAt": "2026-11-03T16:02:13.050Z",
+    "liveSource": "4e515c61217770396da4dd86119cc0666cdc1d29",
+    "bookingStatusAfterCancel": "paid",
+    "totalSatang": 91500,
+    "paidBy": "simulated hosted page, no real money",
+    "registrationId": "01a1a224-4948-7671-a2fa-2624758e6c16",
+    "tillPressed": "Check in, then Cancel; no payment taken"
+  },
+  "paymentRouting": {
+    "qr": "none",
+    "card": "manual"
+  },
+  "devicesAreSimulated": true
+}
