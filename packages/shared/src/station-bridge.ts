@@ -284,7 +284,7 @@ export const OfflineVisitChildrenAddedSchema = z.object({
   operationId: Uuid,
   visitId: Uuid,
   memberId: Uuid,
-  childIds: z.array(Uuid).min(1).max(20),
+  childIds: z.array(Uuid).min(1),
   offlineFresh: OfflineFresh,
 });
 
