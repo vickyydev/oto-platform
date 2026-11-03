@@ -1,0 +1,137 @@
+{
+  "mode": "local",
+  "cases": [
+    {
+      "kind": "food",
+      "mobile": false,
+      "saleId": "01a1a353-5399-7ccc-8523-9691e0fd3d72",
+      "attemptId": "01a1a353-5523-76c0-84d7-e360f916bfc8",
+      "readback": {
+        "saleId": "01a1a353-5399-7ccc-8523-9691e0fd3d72",
+        "status": "finalised",
+        "receiptNumber": "Z39-000001",
+        "attempts": [
+          {
+            "id": "01a1a353-5523-76c0-84d7-e360f916bfc8",
+            "status": "approved",
+            "amountSatang": 9000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "shop",
+      "mobile": false,
+      "saleId": "01a1a353-6461-7a91-8a86-d2e127d185f7",
+      "attemptId": "01a1a353-650b-70c9-ac89-6cf1ebc70115",
+      "readback": {
+        "saleId": "01a1a353-6461-7a91-8a86-d2e127d185f7",
+        "status": "finalised",
+        "receiptNumber": "Z39-000002",
+        "attempts": [
+          {
+            "id": "01a1a353-650b-70c9-ac89-6cf1ebc70115",
+            "status": "approved",
+            "amountSatang": 12000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "tickets",
+      "mobile": false,
+      "saleId": "01a1a353-7a30-74ab-804b-a4f213fc8acf",
+      "attemptId": "01a1a353-7aee-70f3-935a-15f7c283a637",
+      "readback": {
+        "saleId": "01a1a353-7a30-74ab-804b-a4f213fc8acf",
+        "status": "finalised",
+        "receiptNumber": "Z39-000003",
+        "attempts": [
+          {
+            "id": "01a1a353-7aee-70f3-935a-15f7c283a637",
+            "status": "approved",
+            "amountSatang": 35000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "food",
+      "mobile": true,
+      "saleId": "01a1a353-90a9-7a07-af2a-1d7d5ea1d51d",
+      "attemptId": "01a1a353-9106-7be1-839e-5f6138084983",
+      "readback": {
+        "saleId": "01a1a353-90a9-7a07-af2a-1d7d5ea1d51d",
+        "status": "finalised",
+        "receiptNumber": "Z39-000004",
+        "attempts": [
+          {
+            "id": "01a1a353-9106-7be1-839e-5f6138084983",
+            "status": "approved",
+            "amountSatang": 9000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "shop",
+      "mobile": true,
+      "saleId": "01a1a353-9efd-7c6a-b044-de3429f3ab88",
+      "attemptId": "01a1a353-9f99-7742-b609-647d780b6f6e",
+      "staffLockPreservedAttempt": true,
+      "readback": {
+        "saleId": "01a1a353-9efd-7c6a-b044-de3429f3ab88",
+        "status": "finalised",
+        "receiptNumber": "Z39-000005",
+        "attempts": [
+          {
+            "id": "01a1a353-9f99-7742-b609-647d780b6f6e",
+            "status": "approved",
+            "amountSatang": 12000
+          }
+        ]
+      }
+    }
+  ],
+  "images": [
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-desktop-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-desktop-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-desktop-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-desktop-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-desktop-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-desktop-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/tickets-desktop-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/tickets-desktop-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/tickets-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/tickets-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/tickets-desktop-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-phone-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-phone-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-phone-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-phone-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/food-phone-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-phone-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-phone-02-held.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-phone-02b-staff-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-phone-03-review-locked.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-phone-04-review-ready.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/shop-phone-05-completed.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/tickets-phone-01-payment.png",
+    "C:/oto-lanes/s739-native-local/mw17dn99/failure-tickets-phone-review.png"
+  ],
+  "failures": [
+    {
+      "phase": "tickets-phone review",
+      "type": "Error",
+      "message": "expect(locator).toBeDisabled() failed"
+    }
+  ],
+  "fixture": {
+    "boxId": "01a1a353-4bfc-7197-ba73-e54b9928f13f",
+    "stationId": "01a1a353-4c19-7c6f-ace7-5fc4bf4b11b2"
+  }
+}

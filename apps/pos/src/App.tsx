@@ -78,6 +78,7 @@ function AuthGate() {
   // SCRUM-371 — the phone's ticket till keeps its sale through a lock too: the
   // shell stays mounted under the lock screen with its till drawing nothing.
   const phoneTicketTill = isMobile && location === "/";
+  const phoneMerchStation = isMobile && location === '/merch-station';
   // Until the resume (and any launcher hand-off) has answered, the till knows
   // nothing: showing the sign-in form here would prompt an operator who has
   // just signed in next door, and flash it on every reload.
@@ -88,10 +89,10 @@ function AuthGate() {
       </div>
     );
   }
-  // Ticket and desktop F&B stations, and the phone's ticket till, retain their
+  // Desktop selling stations and the phone's ticket till and shop retain their
   // visitor through a same-session lock. Its hooks pause while locked and its
   // staff subtree renders nothing.
-  if (!operator || (locked && (!(retainedStation || phoneTicketTill) || mustChangePassword || !stationResolved
+  if (!operator || (locked && (!(retainedStation || phoneTicketTill || phoneMerchStation) || mustChangePassword || !stationResolved
     || (fleetAvailable && !station)))) return <LockScreen />;
   // A temporary password opens the door and nothing else: the API refuses the
   // station list and everything behind it until it is replaced (SCRUM-235).

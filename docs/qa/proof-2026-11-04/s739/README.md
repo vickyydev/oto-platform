@@ -2,6 +2,33 @@
 
 Local work in progress. No source landing or staging acceptance is claimed.
 
+4 November, 04:35 Bangkok: six native local cases now pass on the built POS:
+ticket, food and shop at 1440px desktop and 390px phone width. Each simulator
+late payment stays held until the shared review is answered, requires both
+the note and checkbox, and reads back as one finalised sale with one approved
+payment. `local-native/result.json` records the six distinct sale/attempt IDs,
+receipts and tested source-file fingerprints. The isolated database was
+dropped after the run. These are local simulator results, not staging proof.
+
+The phone shell had no Shop route. It now mounts the existing shop screen,
+stacks its products and existing cart, and leaves the shared payment panel
+intact. Its staff lock pauses controls and retains the original attempt; the
+native proof locks, unlocks and confirms that same payment. The old desktop
+layout remains the same. No setting or business-rule change is required.
+
+Opened images: all six `*-04-review-ready.png` files in `local-native/`.
+Other frames and helper snapshots are retained there for review. A previous
+phone-ticket probe matched the collection button and its QR redisplay button
+together; its failed receipt remains beside the passing full rerun. The
+corrected selector checks the collection button inside the payment step.
+Initial route-component typing was corrected before the passing typecheck;
+the final component uses the same mobile breakpoint as the application.
+
+The phone follow-up passes 128 focused POS tests, typecheck, lint and build.
+Complete types, lint, contracts, tools and builds passed on frozen 2cc09fb0;
+its API, workspace and Console acceptance runs continue. Backend bytes are
+unchanged in the phone follow-up. Full final-source checks remain required.
+
 The ticket till, F&B and shop now offer SCRUM-732's shared review for a
 gateway QR awaiting staff confirmation. The existing panel asks staff to
 check the bank slip and gateway report, enter a note, then answer Money taken
@@ -13,7 +40,7 @@ Five frontend checks failed before the fix and passed after it. Additional
 pins cover concurrent presses, a denied answer, staff locking and resuming
 the original attempt. The terminal route and box PAX QR are unchanged.
 
-## Checks so far
+## Initial focused checks
 
 - POS: 113 passing tests across the complete sale-writer and 732 files.
 - API: 91 passing tests across the new five-case review, QR cancellation,
@@ -22,7 +49,8 @@ the original attempt. The terminal route and box PAX QR are unchanged.
   food and shop sales. A capture-only account is refused; No money leaves
   the sale unpaid. Cancellation and void cannot escape the held attempt.
 - POS and API typechecks, touched-file ESLint and POS build passed.
-- Native desktop/phone proof and complete release gates remain outstanding.
+- At that checkpoint native desktop/phone proof and complete release gates
+  were outstanding; the newer result above supersedes it.
 
 Raw test receipts in `local-gates/` preserve both the intentional red run and
 initial fixture failures. Those setup corrections supplied a valid manual
