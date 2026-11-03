@@ -23,8 +23,11 @@ tasks passing: box 877, POS 1,673, database 384, shared 883 and Console 588
 passed; lint has zero errors and eight existing warnings; generated contracts
 match. All five application builds, display and runner builds pass. All seven
 native till smoke journeys pass. Bash syntax and ShellCheck's error gate pass.
-The complete final API suite is running in three isolated shards. Its earlier
-failed run is [retained](../../proof-2026-11-03/s727/initial-api-gate.json).
+The [complete final API suite](final-api-gate.json) passed in three isolated
+shards: 6,153 tests, zero failures, 401 existing skips and four TODOs across
+442 files (434 passed, eight skipped). All three processes exited zero.
+The [source comparison](source-equivalence.json) confirms that the tested and
+backed-up runtime code and tests are identical. Its earlier failed run is [retained](../../proof-2026-11-03/s727/initial-api-gate.json).
 The earlier timing failures passed in complete serial workspace reruns with
 unchanged assertions and deadlines.
 
@@ -55,7 +58,7 @@ caches remain outside Git; their agents are stopped and local databases are
 retired. The [initial cleanup receipt](../../proof-2026-11-03/s727/local-cache-cleanup.json)
 records the rejected action. No deletion was retried through another method.
 
-Next: finish the full API gate, rebase and check main CI after 726 releases its
+Next: rebase and check main CI after 726 releases its
 window, push source and walk Testing, watch exact-SHA CI, then prove staging
 with the dedicated test-zone local agent. Clear the fixture, restore temporary
 settings with signing-key and unrelated-setting preservation, inspect/attach

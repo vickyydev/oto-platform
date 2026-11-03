@@ -174,5 +174,19 @@
     "bashSyntax": "passed",
     "shellcheckErrorGate": "passed"
   },
-  "finalApiGate": "running in three isolated shards"
+  "finalApiGate": {
+    "outcome": "passed",
+    "exitCodes": [
+      0,
+      0,
+      0
+    ],
+    "passed": 6153,
+    "failed": 0,
+    "existingSkipped": 401,
+    "todo": 4,
+    "filesPassed": 434,
+    "filesSkipped": 8,
+    "receipt": "final-api-gate.json"
+  }
 }

@@ -1,0 +1,21 @@
+{
+  "testedSource": "2a714b783d703925ae9b715af9fbd4f426f01dea",
+  "backedUpSource": "8e99e33e6561a04f8b5c6da5dabae805ba538bb6",
+  "branch": "lane/codex-box-unlock-20261103",
+  "runtimeAndTestFilesIdentical": true,
+  "changedFiles": [
+    "docs/handover/CLOUD_HANDOVER.md",
+    "docs/handover/CODEX_HANDOVER.md",
+    "docs/progress/STATUS.md",
+    "docs/qa/proof-2026-11-02/s727/README.md",
+    "docs/qa/proof-2026-11-02/s727/local-gates.json",
+    "docs/qa/proof-2026-11-02/s727/local/browser.json",
+    "docs/qa/proof-2026-11-02/s727/local/s727-configured-test-zone.png",
+    "docs/qa/proof-2026-11-02/s727/local/s727-ended-shift-refused.png",
+    "docs/qa/proof-2026-11-02/s727/local/s727-fresh-sign-in-desktop.png",
+    "docs/qa/proof-2026-11-02/s727/local/s727-fresh-sign-in-mobile.png",
+    "docs/qa/proof-2026-11-03/s726/soak-wifi-retry-30-minute-checkpoint.json",
+    "docs/qa/proof-2026-11-03/s727/README.md"
+  ],
+  "reason": "Rebase over documentation only before the first branch backup; no runtime or test source changed during the API run."
+}
