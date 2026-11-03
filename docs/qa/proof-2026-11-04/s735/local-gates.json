@@ -1,0 +1,28 @@
+{
+  "recordedAt": "2026-11-03T21:30:30.503Z",
+  "source": "468b89f5533e4561755c9949c2d8e5671c932e24",
+  "receipts": [
+    {
+      "file": "typecheck.log",
+      "exitCode": 0,
+      "rawSha256": "9d742a17e0f66e2bfd13741cc86f724f1d3072cad8fa8d20e1a4cb73c0ca07d5"
+    },
+    {
+      "file": "eslint.log",
+      "exitCode": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "pos-full.log",
+      "exitCode": 0,
+      "rawSha256": "5fc466ff941ab0ce6bcf33a678cf7deba92c6f0c7b09d73e8f233be0a969c688"
+    },
+    {
+      "file": "build.log",
+      "exitCode": 0,
+      "rawSha256": "f072cab498f4cc898de715749581b530362b408a2e85b06cdafda2ef7ab4c640"
+    }
+  ],
+  "staging": "not run",
+  "mainSourceLanding": false
+}

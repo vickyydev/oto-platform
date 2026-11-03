@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-11-03T21:25:35.066Z",
+  "receipts": [
+    {
+      "stage": "before",
+      "exitCode": 1,
+      "sha256": "dad7ffe89f6be51c8680050157cf74f23adc8291b90c13b2b928c485be2179bd"
+    },
+    {
+      "stage": "after",
+      "exitCode": 0,
+      "sha256": "d9204d4afd8f6ad68b3e387142d388a7ede5e2f232e72b975eacc65b1f8b8b42"
+    }
+  ],
+  "staging": "not run"
+}

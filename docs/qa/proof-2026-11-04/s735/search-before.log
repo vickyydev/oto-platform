@@ -1,0 +1,101 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-menu-code-20261104/apps/pos
+
+ ❯ test/s735-menu-code-review.test.ts (7 tests | 5 failed) 54ms
+   × SCRUM-735: the actual menu adapter and search retain dish codes > retains numeric codes, including leading zeroes, through the menu adapter 21ms
+     → expected { id: 'numeric', …(3) } to match object { code: '00127' }
+(6 matching properties omitted from actual)
+   × SCRUM-735: the actual menu adapter and search retain dish codes > finds the numeric-code dish for "00127" although its name has no number 19ms
+     → expected [] to deeply equal [ 'numeric' ]
+   × SCRUM-735: the actual menu adapter and search retain dish codes > finds the numeric-code dish for "127" although its name has no number 3ms
+     → expected [] to deeply equal [ 'numeric' ]
+   × SCRUM-735: the actual menu adapter and search retain dish codes > finds the numeric-code dish for " 00127 " although its name has no number 3ms
+     → expected [] to deeply equal [ 'numeric' ]
+   × SCRUM-735: the actual menu adapter and search retain dish codes > finds existing word codes case-insensitively without reseeding 1ms
+     → expected [] to deeply equal [ 'word' ]
+   ✓ SCRUM-735: the actual menu adapter and search retain dish codes > keeps case-insensitive name search, including an item with no code 3ms
+   ✓ SCRUM-735: the actual menu adapter and search retain dish codes > keeps an unmatched query empty and restores the category when cleared 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/s735-menu-code-review.test.ts > SCRUM-735: the actual menu adapter and search retain dish codes > retains numeric codes, including leading zeroes, through the menu adapter
+AssertionError: expected { id: 'numeric', …(3) } to match object { code: '00127' }
+(6 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "code": "00127",
++   "category": "food",
++   "id": "numeric",
++   "name": "ZZ TEST Rice",
++   "price": {
++     "weekday": 1,
++     "weekend": 1,
++   },
+  }
+
+ ❯ test/s735-menu-code-review.test.ts:58:52
+     56|   // Prescribed fix: retain it as an optional string; do not coerce di…
+     57|   it('retains numeric codes, including leading zeroes, through the men…
+     58|     expect(apiProductToMenuItem(products[0]!, [])).toMatchObject({ cod…
+       |                                                    ^
+     59|   });
+     60|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  test/s735-menu-code-review.test.ts > SCRUM-735: the actual menu adapter and search retain dish codes > finds the numeric-code dish for "00127" although its name has no number
+ FAIL  test/s735-menu-code-review.test.ts > SCRUM-735: the actual menu adapter and search retain dish codes > finds the numeric-code dish for "127" although its name has no number
+ FAIL  test/s735-menu-code-review.test.ts > SCRUM-735: the actual menu adapter and search retain dish codes > finds the numeric-code dish for " 00127 " although its name has no number
+AssertionError: expected [] to deeply equal [ 'numeric' ]
+
+- Expected
++ Received
+
+- [
+-   "numeric",
+- ]
++ []
+
+ ❯ test/s735-menu-code-review.test.ts:64:67
+     62|   // Prescribed fix: match the existing code as well, without changing…
+     63|   it.each(['00127', '127', ' 00127 '])('finds the numeric-code dish fo…
+     64|     const view = grid(); view.search(query); expect(view.shown()).toEq…
+       |                                                                   ^
+     65|   });
+     66|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  test/s735-menu-code-review.test.ts > SCRUM-735: the actual menu adapter and search retain dish codes > finds existing word codes case-insensitively without reseeding
+AssertionError: expected [] to deeply equal [ 'word' ]
+
+- Expected
++ Received
+
+- [
+-   "word",
+- ]
++ []
+
+ ❯ test/s735-menu-code-review.test.ts:68:76
+     66|
+     67|   it('finds existing word codes case-insensitively without reseeding',…
+     68|     const view = grid(); view.search(' fb-nuggets '); expect(view.show…
+       |                                                                            ^
+     69|   });
+     70|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 2 passed (7)
+   Start at  04:23:03
+   Duration  3.94s (transform 1.49s, setup 0ms, collect 2.85s, tests 54ms, environment 0ms, prepare 406ms)
+
+undefined
+C:\oto-lanes\codex-menu-code-20261104\apps\pos:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: vitest run test/s735-menu-code-review.test.ts

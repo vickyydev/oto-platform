@@ -1,0 +1,275 @@
+
+> @oto/pos@0.1.0 test C:\oto-lanes\codex-menu-code-20261104\apps\pos
+> vitest run
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-menu-code-20261104/apps/pos
+
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > never retries POST when the upstream connection resets after the write
+{"event":"pos_upstream_failure","method":"POST","path":"/sale","code":"ECONNRESET","reusedSocket":false}
+
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > never retries PUT when the upstream connection resets after the write
+{"event":"pos_upstream_failure","method":"PUT","path":"/sale","code":"ECONNRESET","reusedSocket":false}
+
+ ✓ test/s686-phone-display.test.ts (16 tests) 90ms
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > never retries PATCH when the upstream connection resets after the write
+{"event":"pos_upstream_failure","method":"PATCH","path":"/sale","code":"ECONNRESET","reusedSocket":false}
+
+ ✓ test/s220-k2-kiosk.test.ts (17 tests) 108ms
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > never retries DELETE when the upstream connection resets after the write
+{"event":"pos_upstream_failure","method":"DELETE","path":"/sale","code":"ECONNRESET","reusedSocket":false}
+
+ ✓ test/box-lane-selling.test.ts (14 tests) 99ms
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > retries one bodyless GET on a stale reused socket, keeping warm sockets reusable
+{"event":"pos_upstream_failure","method":"GET","path":"/read","code":"ECONNRESET","reusedSocket":true}
+
+ ✓ test/scan-channel.test.ts (64 tests) 303ms
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > does not retry a fresh socket failure or loop on the retry
+{"event":"pos_upstream_failure","method":"GET","path":"/fresh","code":"ECONNRESET","reusedSocket":false}
+
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > does not retry a fresh socket failure or loop on the retry
+{"event":"pos_upstream_failure","method":"GET","path":"/stale","code":"ECONNRESET","reusedSocket":true}
+
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > does not retry a fresh socket failure or loop on the retry
+{"event":"pos_upstream_failure","method":"GET","path":"/stale","code":"ECONNRESET","reusedSocket":false}
+
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > returns a 502 API envelope when upstream is down while its own health still works
+{"event":"pos_upstream_failure","method":"GET","path":"/health","code":"ECONNREFUSED","reusedSocket":false}
+
+ ✓ test/till-voucher.test.ts (42 tests) 143ms
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > keeps the real client/lane distinction between a 502 answer and a lost network
+{"event":"pos_upstream_failure","method":"GET","path":"/health","code":"ECONNREFUSED","reusedSocket":false}
+
+stderr | test/pos-web-server.test.ts > the POS HTTP forwarder (SCRUM-718) > an interrupted upload cancels upstream without crashing the server or replaying bytes
+{"event":"pos_upstream_failure","method":"GET","path":"/channel","code":"ECONNRESET","reusedSocket":false}
+
+ ✓ test/cart-quote.test.ts (31 tests) 116ms
+ ✓ test/s220-e4-parties.test.ts (11 tests) 63ms
+ ✓ test/s220-e2-events.test.ts (13 tests) 64ms
+ ✓ test/till-resume.test.ts (18 tests) 84ms
+ ✓ test/benefits-engine-parity.test.ts (27 tests) 1548ms
+   ✓ the platform engine gives the prototype’s four amounts > over a seeded sweep of carts, profiles and usage  1252ms
+ ✓ test/sale-writer.test.ts (72 tests) 315ms
+ ✓ test/pos-web-server.test.ts (40 tests) 2578ms
+   ✓ the POS HTTP forwarder (SCRUM-718) > cancels upstream before headers and across 100 stream connects/disconnects without keeping sockets  1115ms
+ ✓ test/lane.test.ts (35 tests) 247ms
+ ✓ test/promo-codes.test.ts (23 tests) 48ms
+ ✓ test/one-calculator-parity.test.ts (181 tests) 195ms
+ ✓ test/s494-phone-till.test.ts (13 tests) 115ms
+ ✓ test/s220-e2-review-screens.test.ts (18 tests) 161ms
+ ✓ test/s220-k2-review-flow.test.ts (20 tests) 68ms
+ ✓ test/s720-publisher.test.ts (14 tests) 84ms
+ ✓ test/checkin-box-lane.test.ts (7 tests) 28ms
+ ✓ test/wallet-staging-stage.test.ts (11 tests) 70ms
+ ✓ test/s220-k2-review-screens.test.ts (13 tests) 1886ms
+   ✓ attack 3 — nothing staff-only on /kiosk > no kiosk screen draws staff chrome, in any language  354ms
+   ✓ attack 6 — reuse: the redeem dialog’s own parts, no private copies > the kiosk and the dialog import the one set of parts, and nobody keeps a copy  1035ms
+ ✓ test/s502-review-counter-surfaces.test.ts (14 tests) 123ms
+ ✓ test/stock-fix.test.ts (9 tests) 73ms
+ ✓ test/wallet-staging-surfaces.test.ts (23 tests) 189ms
+ ✓ test/wallet-display-r2.test.ts (9 tests) 99ms
+ ✓ test/wallet-r3-view.test.ts (15 tests) 25ms
+ ✓ test/eod-r2-hook.test.ts (10 tests) 110ms
+ ✓ test/s716-board-photo-pacing.test.ts (17 tests) 45ms
+ ✓ test/f443-review.test.ts (11 tests) 79ms
+ ✓ test/scrum-732-routed-tenders.test.ts (37 tests) 322ms
+ ✓ test/s495-credit-remainder.test.ts (12 tests) 191ms
+ ✓ test/sale-detail-label.test.ts (53 tests) 114ms
+ ✓ test/qr-cancel-stage.test.ts (8 tests) 23ms
+ ✓ test/s220-e3-events.test.ts (12 tests) 20ms
+ ✓ test/wallet-staging-gate.test.ts (2 tests) 14ms
+ ✓ test/admin-login-users-link-runtime.test.ts (10 tests) 1495ms
+   ✓ the one-release POS Admin redirect lifecycle > invalidates old replies on every render-updated actor, authority, lock, park and address boundary  678ms
+ ✓ test/s216-r3-performance-hook.test.ts (9 tests) 53ms
+ ✓ test/s494-phone-till-gate.test.ts (16 tests) 26ms
+ ✓ test/wallet-staging-gate-recheck.test.ts (4 tests) 23ms
+ ✓ test/s730-paid-online-board.test.ts (23 tests) 127ms
+ ✓ test/wallet-gate-r2.test.ts (4 tests) 45ms
+ ✓ test/eod-r2.test.ts (11 tests) 170ms
+ ✓ test/s494-checkin-mobile.test.ts (12 tests) 39ms
+ ✓ test/stock-r2.test.ts (19 tests) 144ms
+ ✓ test/template-editor.test.ts (23 tests) 142ms
+ ✓ test/s220-e4-review.test.ts (6 tests) 52ms
+ ✓ test/s220-e3-review-screens.test.ts (8 tests) 737ms
+   ✓ the E1 and E2 gates are gone exactly where E3 builds the action > E2's interim words and constant are gone from the whole app  721ms
+ ✓ test/s216-r4-reports.test.ts (9 tests) 250ms
+ ✓ test/s221-r1-review-parity.test.ts (39 tests) 8531ms
+   ✓ SCRUM-218 review — engine vs the prototype’s applyStaffBenefits > a satang-precision sweep: every difference is a TIE or a CLAMP on the discount stage alone  8387ms
+ ✓ test/s728-auth-resume.test.ts (9 tests) 536ms
+ ✓ test/wallet-r3-stage.test.ts (7 tests) 273ms
+ ✓ test/release-api.test.ts (11 tests) 35ms
+ ✓ test/s220-e1-review.test.ts (13 tests) 339ms
+ ✓ test/checkin-r1-gate.test.ts (5 tests) 28ms
+ ✓ test/s221-r3-checkout.test.ts (9 tests) 3159ms
+   ✓ the grep: no benefit function from mockApi in apps/pos > finds the imports it is looking for, and none of them is a benefit  1368ms
+   ✓ the grep: no benefit function from mockApi in apps/pos > names every benefit function the mock still defines, so a rename cannot slip past  1662ms
+ ✓ test/stock-r4-box-refusals.test.ts (14 tests) 55ms
+ ✓ test/s216-r3-review.test.ts (7 tests) 83ms
+ ✓ test/s216-r3-performance.test.ts (7 tests) 228ms
+ ✓ test/stock-r1.test.ts (7 tests) 17ms
+ ✓ test/eod-r1.test.ts (4 tests) 117ms
+ ✓ test/wallet-spend-stage.test.ts (5 tests) 28ms
+ ✓ test/s494-food.test.ts (11 tests) 46ms
+ ✓ test/checkin-r4-photos-off-gate.test.ts (6 tests) 26ms
+ ✓ test/s221-r4-closing-audit.test.ts (7 tests) 1953ms
+   ✓ no benefit screen is left on a mock path > outside the mock itself, nothing in the app reaches the mock’s benefit state  1824ms
+ ✓ test/s711-screen-keyboard.test.ts (12 tests) 141ms
+ ✓ test/s503-counter-surfaces.test.ts (6 tests) 151ms
+ ✓ test/scrum-484-sale-success-smalls.test.ts (10 tests) 210ms
+ ✓ test/s221-r1-review-admin.test.ts (9 tests) 91ms
+ ✓ test/book-visit-date.test.ts (11 tests) 55ms
+ ✓ test/s216-r3-freshness-fix.test.ts (6 tests) 154ms
+ ✓ test/booking-redeem-box-lane.test.ts (3 tests) 14ms
+ ✓ test/s720-display.test.ts (10 tests) 116ms
+ ✓ test/events-mapping.test.ts (6 tests) 25ms
+ ✓ test/checkin-board-mapping.test.ts (7 tests) 10ms
+ ✓ test/scrum-690-configure-step-footer.test.ts (3 tests) 16ms
+ ✓ test/booking-arrival.test.ts (10 tests) 71ms
+ ✓ test/stock-fix2.test.ts (6 tests) 62ms
+ ✓ test/s221-r2-benefit-qr.test.ts (4 tests) 17ms
+ ✓ test/vouchers-r5-surfaces.test.ts (8 tests) 29ms
+ ✓ test/s220-e4-review-press.test.ts (22 tests) 4891ms
+   ✓ the plain path — what is collected is what is recorded and what the guest is thanked for > iPad: an answer lost before the platform heard it — the retry is the same request under the same key, one payment  304ms
+   ✓ two tills on one party, and a lost answer — the till must not record other money than it collected > iPad: a recorded payment whose answer was lost is answered again on the retry, never taken twice  318ms
+   ✓ two tills on one party, and a lost answer — the till must not record other money than it collected > what the fix is made of: the refused press is not sent again; back on the bill as it now reads, the next collect is its own request  461ms
+   ✓ RE-REVIEW: a platform fault and a request still running are "Payment not confirmed" on both screens, and one press is one payment > iPad, in-flight: "Payment not confirmed", still on collect; the same press again is one payment of ฿9,000  323ms
+   ✓ RE-REVIEW: a platform fault and a request still running are "Payment not confirmed" on both screens, and one press is one payment > phone, in-flight: "Payment not confirmed", still on collect; the same press again is one payment of ฿9,000  324ms
+ ✓ test/s502-sale-panel-lane.test.ts (9 tests) 70ms
+ ✓ test/s697-tier-proof-other.test.ts (7 tests) 13ms
+ ✓ test/wallet-spend-surfaces.test.ts (7 tests) 49ms
+ ✓ test/s220-e4-review-charge.test.ts (21 tests) 5623ms
+   ✓ a party F&B charge, pressed as staff press it > iPad: one order, one charge on the tab, the modal closes  328ms
+   ✓ FINDING: a charge whose answer was lost, then the open order changed — the tab must not carry the first items twice > iPad: each item the guest ordered is on the tab once  351ms
+   ✓ FINDING: a charge whose answer was lost, then the open order changed — the tab must not carry the first items twice > iPad: what the fix is made of, press by press  429ms
+   ✓ FINDING: a charge whose answer was lost, then the open order changed — the tab must not carry the first items twice > iPad, extra tickets: a lost answer, then a line added — each ticket on the tab once  392ms
+   ✓ the held order — a definite no gives it back; a press that sends nothing keeps it held > iPad: held, then no connection — nothing is sent and the order stays held; back online, the same request  381ms
+   ✓ the held order — a definite no gives it back; a press that sends nothing keeps it held > phone: held after a lost answer — no going back, the note says why, and Checkout sends the same request  318ms
+   ✓ RE-REVIEW FINDING (fixed): the order is held from its press, not only from the lost answer > what the fix is made of, press by press (iPad F&B): a drink tapped while Pad Thai is on its way is refused; the lost answer holds the order sent; the press again is the same request  311ms
+   ✓ RE-REVIEW FINDING (fixed): the order is held from its press, not only from the lost answer > PINNED, iPad extra tickets: an adult added while the charge is on its way, the answer lost, the press again: the first ticket order is on the tab once  335ms
+   ✓ RE-REVIEW: the charge racing its own retry, the platform still running the first when the second arrives > iPad F&B: timed out, pressed again while the platform still runs it (IDEMPOTENCY_IN_FLIGHT): still held and not confirmed; then the stored answer, one charge  309ms
+   ✓ RE-REVIEW: the charge racing its own retry, the platform still running the first when the second arrives > iPad extra tickets, a platform fault: "Charge not confirmed", held; the press again is the same request, one charge  376ms
+ ✓ test/wallet-gate-r2-recheck.test.ts (1 test) 21ms
+ ✓ test/occupancy-seam.test.ts (8 tests) 42ms
+ ✓ test/s728-offline-preparation.test.ts (13 tests) 78ms
+ ✓ test/scrum-443-branch-chip.test.ts (3 tests) 22ms
+ ✓ test/s706-board-photos-hook.test.ts (5 tests) 17ms
+ ✓ test/s504-review-wording.test.ts (6 tests) 921ms
+ ✓ test/s494-checkin-gate.test.ts (7 tests) 20ms
+ ✓ test/s494-money.test.ts (5 tests) 10ms
+ ✓ test/cart-ids.test.ts (5 tests) 42ms
+ ✓ test/s735-menu-code-review.test.ts (7 tests) 29ms
+ ✓ test/scrum-653-staff-theme.test.ts (7 tests) 53ms
+ ✓ test/s706-photo-renewal-review.test.ts (7 tests) 14ms
+ ✓ test/impersonation-banner.test.ts (4 tests) 21ms
+ ✓ test/template-leave-prompt.test.ts (3 tests) 6ms
+ ✓ test/merch-panel-stock.test.ts (1 test) 14ms
+ ✓ test/benefits-admin-api.test.ts (5 tests) 8ms
+ ✓ test/s710-publisher.test.ts (3 tests) 21ms
+ ✓ test/booking-redeem-scan.test.ts (6 tests) 15ms
+ ✓ test/s221-r3-review-words.test.ts (5 tests) 28ms
+ ✓ test/s710-display.test.ts (5 tests) 98ms
+ ✓ test/staff-token-admin.test.ts (4 tests) 6ms
+ ✓ test/eod-r1-hook.test.ts (3 tests) 48ms
+ ✓ test/admin-lift-host.test.ts (3 tests) 11ms
+ ✓ test/checkin-r1-roster.test.ts (4 tests) 9ms
+ ✓ test/f443-review-recheck.test.ts (8 tests) 2091ms
+   ✓ 3 — only the two F&B stations draw the success screen > no other screen renders FnbConfirmation  2009ms
+ ✓ test/s728-display-boot.test.ts (3 tests) 23ms
+ ✓ test/admin-login-users-link-markup.test.ts (3 tests) 38ms
+ ✓ test/s217b-r2-staff-source.test.ts (4 tests) 18ms
+ ✓ test/s216-r6-sweep.test.ts (3 tests) 18ms
+ ✓ test/s698-staff-english.test.ts (4 tests) 6ms
+ ✓ test/s728-bridge-recovery.test.ts (3 tests) 24ms
+ ✓ test/s720-grace.test.ts (2 tests) 52ms
+ ✓ test/s727-auth-lifecycle.test.ts (2 tests) 137ms
+ ✓ test/arrival-r1-gate2.test.ts (2 tests) 35ms
+ ✓ test/wallet-seam.test.ts (3 tests) 7ms
+ ✓ test/offline-sign-in-banner.test.ts (5 tests) 16ms
+ ✓ test/stock-r4-sale-panel.test.ts (3 tests) 30ms
+ ✓ test/s710-stream.test.ts (2 tests) 25ms
+ ✓ test/s728-lane-recovery.test.ts (3 tests) 21ms
+ ✓ test/s703-station-picker.test.ts (2 tests) 34ms
+ ✓ test/s494-money-claim.test.ts (2 tests) 10ms
+ ✓ test/display-holder.test.ts (6 tests) 11268ms
+   ✓ the display publisher’s holder through a reload > a reloaded page leases as the same holder, so the lease and the display carry on  3764ms
+   ✓ the display publisher’s holder through a reload > a closed tab reopened on the same counter finds the holder the browser kept  3751ms
+   ✓ the display publisher’s holder through a reload > a station of its own keeps its own holder; another station mints another  1307ms
+   ✓ the display publisher’s holder through a reload > sign-out hands over the lease and forgets the holder, so the next shift on this browser is a new one  2134ms
+   ✓ the display publisher’s holder through a reload > a sign-out with no publisher on screen still forgets every station’s holder  307ms
+ ✓ test/s494-money-gate.test.ts (2 tests) 1465ms
+ ✓ test/s216-r3-review-recheck.test.ts (3 tests) 10596ms
+   ✓ re-check — a bare time on the freshness line always means earlier today > three days of clocks and updates, day start 05:00: bare only for today's own updates, else the day is named  6241ms
+   ✓ re-check — a bare time on the freshness line always means earlier today > three days of clocks and updates, day start 00:00: bare only for today's own updates, else the day is named  4306ms
+ ✓ test/s220-e4-review-window.test.ts (67 tests) 37537ms
+   ✓ iPad F&B — the in-flight window, attacked > M1 at the press > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  586ms
+   ✓ iPad F&B — the in-flight window, attacked > M1 at the press > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  660ms
+   ✓ iPad F&B — the in-flight window, attacked > M1 at the press > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  507ms
+   ✓ iPad F&B — the in-flight window, attacked > M1 at the press > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  618ms
+   ✓ iPad F&B — the in-flight window, attacked > M1 at the press > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  803ms
+   ✓ iPad F&B — the in-flight window, attacked > M2 at the platform > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  438ms
+   ✓ iPad F&B — the in-flight window, attacked > M2 at the platform > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  440ms
+   ✓ iPad F&B — the in-flight window, attacked > M2 at the platform > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  480ms
+   ✓ iPad F&B — the in-flight window, attacked > M2 at the platform > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  442ms
+   ✓ iPad F&B — the in-flight window, attacked > M2 at the platform > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  627ms
+   ✓ iPad F&B — the in-flight window, attacked > M3 the answer on its way back > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  354ms
+   ✓ iPad F&B — the in-flight window, attacked > M3 the answer on its way back > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  521ms
+   ✓ iPad F&B — the in-flight window, attacked > M3 the answer on its way back > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  501ms
+   ✓ iPad F&B — the in-flight window, attacked > M3 the answer on its way back > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  554ms
+   ✓ iPad F&B — the in-flight window, attacked > M3 the answer on its way back > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  724ms
+   ✓ iPad F&B — the in-flight window, attacked > M4 as the host takes it > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  354ms
+   ✓ iPad F&B — the in-flight window, attacked > M4 as the host takes it > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  484ms
+   ✓ iPad F&B — the in-flight window, attacked > M4 as the host takes it > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  533ms
+   ✓ iPad F&B — the in-flight window, attacked > M4 as the host takes it > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  520ms
+   ✓ iPad F&B — the in-flight window, attacked > M4 as the host takes it > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  631ms
+   ✓ phone F&B — the in-flight window, attacked > M1 at the press > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  371ms
+   ✓ phone F&B — the in-flight window, attacked > M1 at the press > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  515ms
+   ✓ phone F&B — the in-flight window, attacked > M1 at the press > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  542ms
+   ✓ phone F&B — the in-flight window, attacked > M1 at the press > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  525ms
+   ✓ phone F&B — the in-flight window, attacked > M1 at the press > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  593ms
+   ✓ phone F&B — the in-flight window, attacked > M2 at the platform > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  391ms
+   ✓ phone F&B — the in-flight window, attacked > M2 at the platform > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  542ms
+   ✓ phone F&B — the in-flight window, attacked > M2 at the platform > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  490ms
+   ✓ phone F&B — the in-flight window, attacked > M2 at the platform > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  515ms
+   ✓ phone F&B — the in-flight window, attacked > M2 at the platform > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  597ms
+   ✓ phone F&B — the in-flight window, attacked > M3 the answer on its way back > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  411ms
+   ✓ phone F&B — the in-flight window, attacked > M3 the answer on its way back > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  513ms
+   ✓ phone F&B — the in-flight window, attacked > M3 the answer on its way back > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  553ms
+   ✓ phone F&B — the in-flight window, attacked > M3 the answer on its way back > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  479ms
+   ✓ phone F&B — the in-flight window, attacked > M3 the answer on its way back > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  511ms
+   ✓ phone F&B — the in-flight window, attacked > M4 as the host takes it > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  305ms
+   ✓ phone F&B — the in-flight window, attacked > M4 as the host takes it > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  480ms
+   ✓ phone F&B — the in-flight window, attacked > M4 as the host takes it > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  400ms
+   ✓ phone F&B — the in-flight window, attacked > M4 as the host takes it > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  490ms
+   ✓ phone F&B — the in-flight window, attacked > M4 as the host takes it > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  686ms
+   ✓ iPad tickets — the in-flight window, attacked > M1 at the press > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  619ms
+   ✓ iPad tickets — the in-flight window, attacked > M1 at the press > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  781ms
+   ✓ iPad tickets — the in-flight window, attacked > M1 at the press > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  763ms
+   ✓ iPad tickets — the in-flight window, attacked > M1 at the press > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  774ms
+   ✓ iPad tickets — the in-flight window, attacked > M1 at the press > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  834ms
+   ✓ iPad tickets — the in-flight window, attacked > M2 at the platform > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  580ms
+   ✓ iPad tickets — the in-flight window, attacked > M2 at the platform > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  667ms
+   ✓ iPad tickets — the in-flight window, attacked > M2 at the platform > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  594ms
+   ✓ iPad tickets — the in-flight window, attacked > M2 at the platform > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  756ms
+   ✓ iPad tickets — the in-flight window, attacked > M2 at the platform > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  892ms
+   ✓ iPad tickets — the in-flight window, attacked > M3 the answer on its way back > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  557ms
+   ✓ iPad tickets — the in-flight window, attacked > M3 the answer on its way back > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  732ms
+   ✓ iPad tickets — the in-flight window, attacked > M3 the answer on its way back > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  797ms
+   ✓ iPad tickets — the in-flight window, attacked > M3 the answer on its way back > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  685ms
+   ✓ iPad tickets — the in-flight window, attacked > M3 the answer on its way back > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  763ms
+   ✓ iPad tickets — the in-flight window, attacked > M4 as the host takes it > (a) a confirm: one charge of the order sent, to the satang; the screen closes; nothing tapped meanwhile dropped unsaid  600ms
+   ✓ iPad tickets — the in-flight window, attacked > M4 as the host takes it > (b) a definite refusal: nothing charged; the order given back as it was sent; changed, it is a charge of its own  704ms
+   ✓ iPad tickets — the in-flight window, attacked > M4 as the host takes it > (c) an answer lost after the charge was written: held as sent; the press again is the same request; one charge  692ms
+   ✓ iPad tickets — the in-flight window, attacked > M4 as the host takes it > (d) a 503 with nothing written: held as sent; the press again is the same request; one charge  684ms
+   ✓ iPad tickets — the in-flight window, attacked > M4 as the host takes it > (e) IDEMPOTENCY_IN_FLIGHT, the first still running: held as sent through both; the stored answer; one charge  763ms
+   ✓ a sheet or modal opened before the press, used while the charge is on its way and after its answer was lost > phone F&B: a line edit saved from the sheet opened before the press, and a discount applied from its modal, are refused; one charge of the order sent  340ms
+   ✓ a sheet or modal opened before the press, used while the charge is on its way and after its answer was lost > iPad tickets: a discount applied from its modal opened before the press is refused; one charge of the order sent  533ms
+   ✓ held, then no connection: nothing is sent and the order stays held — on the phone and the ticket modal too > iPad tickets  473ms
+   ✓ a held ticket order is the order of its first press, whatever the rate mode does > the answer lost, the platform then answers weekend for today; the press again is the same request — the tickets are on the tab once  333ms
+   ✓ a held ticket order is the order of its first press, whatever the rate mode does > the answer lost, the rate mode moves, no connection: the press sends nothing and the order stays held  381ms
+ ✓ test/scrum-505-header-widths.test.ts (27 tests) 54489ms
+ ✓ test/scrum-505-review-sweep.test.ts (75 tests) 62818ms
+
+ Test Files  132 passed (132)
+      Tests  1778 passed (1778)
+   Start at  04:25:02
+   Duration  80.07s (transform 70.61s, setup 0ms, collect 482.07s, tests 222.71s, environment 49ms, prepare 53.31s)
