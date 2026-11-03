@@ -1,0 +1,28 @@
+Run 41714895181; job 126192216219; source 2e129142fbe1a7b474f39cc166f39d1951b6979f
+
+2026-11-03T20:48:09.4123348Z  FAIL  test/seam-walker.test.ts > every front-end call reaches a route the api describes (SCRUM-293) > does not let hand-typed response types regrow (migration-list.ts)
+2026-11-03T20:48:09.4125878Z AssertionError: expected [ …(2) ] to deeply equal []
+2026-11-03T20:48:09.4126451Z
+2026-11-03T20:48:09.4126708Z - Expected
+2026-11-03T20:48:09.4127193Z + Received
+2026-11-03T20:48:09.4127442Z
+2026-11-03T20:48:09.4127632Z - []
+2026-11-03T20:48:09.4128129Z + [
+2026-11-03T20:48:09.4129568Z +   "apps/pos/src/api/events.ts: 9 hand-typed, 7 allowed — type the new call from @oto/api-types",
+2026-11-03T20:48:09.4131559Z +   "apps/pos/src/api/parties.ts: 5 hand-typed, 4 allowed — type the new call from @oto/api-types",
+2026-11-03T20:48:09.4132567Z + ]
+2026-11-03T20:48:09.4132789Z
+2026-11-03T20:48:09.4133338Z  ❯ test/seam-walker.test.ts:328:19
+2026-11-03T20:48:09.4134304Z     326|           : `${file}: ${now} hand-typed, list says ${listed} — lower i…
+2026-11-03T20:48:09.4135057Z     327|       });
+2026-11-03T20:48:09.4135982Z     328|     expect(moved).toEqual([]);
+2026-11-03T20:48:09.4151984Z        |                   ^
+2026-11-03T20:48:09.4198071Z     329|   });
+2026-11-03T20:48:09.4294585Z     330| });
+2026-11-03T20:48:09.4441589Z
+2026-11-03T20:48:09.4510040Z ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+2026-11-03T20:48:09.4611730Z
+2026-11-03T20:48:09.4663636Z
+2026-11-03T20:48:09.4732942Z  Test Files  1 failed (1)
+2026-11-03T20:48:09.4843157Z       Tests  1 failed | 9 passed (10)
+2026-11-03T20:48:09.4858404Z    Start at  20:47:23

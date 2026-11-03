@@ -1,0 +1,53 @@
+
+> @oto/api-types@0.1.0 test C:\oto-lanes\codex-console-routes-20261104\packages\api-types
+> vitest run
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-console-routes-20261104/packages/api-types
+
+ ❯ test/seam-walker.test.ts (10 tests | 1 failed) 32ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > finds what it is meant to check 1ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reads every call path, or names it in DYNAMIC 1ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reads lifted DELETE bodies, file downloads and native download addresses 0ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > keeps the typed POS forwarding adapter to its declared transport methods 0ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > reaches a route that answers the call’s method 7ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > writes only query parameters the route reads 3ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > sends only body fields the route reads 1ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > names, in a generated type, the route the call reaches 3ms
+   ✓ every front-end call reaches a route the api describes (SCRUM-293) > leaves no route without a caller, a machine caller or a NOT_YET_CALLED reason 6ms
+   × every front-end call reaches a route the api describes (SCRUM-293) > does not let hand-typed response types regrow (migration-list.ts) 9ms
+     → expected [ …(2) ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/seam-walker.test.ts > every front-end call reaches a route the api describes (SCRUM-293) > does not let hand-typed response types regrow (migration-list.ts)
+AssertionError: expected [ …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "apps/pos/src/api/events.ts: 9 hand-typed, 7 allowed — type the new call from @oto/api-types",
++   "apps/pos/src/api/parties.ts: 5 hand-typed, 4 allowed — type the new call from @oto/api-types",
++ ]
+
+ ❯ test/seam-walker.test.ts:328:19
+    326|           : `${file}: ${now} hand-typed, list says ${listed} — lower i…
+    327|       });
+    328|     expect(moved).toEqual([]);
+       |                   ^
+    329|   });
+    330| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+   Start at  04:08:38
+   Duration  3.91s (transform 553ms, setup 0ms, collect 3.38s, tests 32ms, environment 0ms, prepare 202ms)
+
+C:\oto-lanes\codex-console-routes-20261104\packages\api-types:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @oto/api-types@0.1.0 test: `vitest run`
+Exit status 1
