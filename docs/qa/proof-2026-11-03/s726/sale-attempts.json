@@ -1,13 +1,22 @@
 [
   {
-    "id": "01a19eb5-6ea6-7e0a-82fe-5f52e41ad271",
+    "id": "01a19f07-da8a-7bb1-bce7-38f12567b7eb",
     "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
-    "at": "2026-11-03T00:00:53.184Z",
-    "phase": "browser_diagnostic",
+    "at": "2026-11-03T01:30:54.855Z",
+    "phase": "mixed_smoke",
     "grossSatang": 100,
     "native": true,
     "postCount": 1,
     "finalised": true,
-    "receiptNumber": "Z72601-000002"
+    "receiptNumber": "Z72601-000003"
+  },
+  {
+    "id": "95ff25d8-3615-44b2-bdd6-fed4860a53e1",
+    "stationId": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+    "at": "2026-11-03T01:31:01.252Z",
+    "phase": "mixed_smoke",
+    "grossSatang": 100,
+    "finalised": true,
+    "receiptNumber": "Z72602-000001"
   }
 ]

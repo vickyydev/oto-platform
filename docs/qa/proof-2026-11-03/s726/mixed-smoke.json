@@ -1,0 +1,195 @@
+{
+  "startedAt": "2026-11-03T01:30:23.890Z",
+  "sources": {
+    "srv-danh2ljtqb8s73bt9en0": "5069944660dfd43571d39f097aa90a77b1092c36",
+    "srv-dbk7qu8n74is73bm894g": "5069944660dfd43571d39f097aa90a77b1092c36"
+  },
+  "concurrentTillPairs": 1,
+  "outcome": "passed",
+  "database": {
+    "at": "2026-11-03T01:31:08.300Z",
+    "sampleAt": "2026-11-03T01:31:05.951Z",
+    "attempts": 2,
+    "sales": 2,
+    "cashAttempts": 2,
+    "allBoxSales": 5,
+    "knownUnpaidVoids": 1,
+    "unexpectedBoxSales": 0,
+    "passed": true
+  },
+  "finishedAt": "2026-11-03T01:31:08.300Z",
+  "afterClose": {
+    "stations": 0,
+    "connections": 0,
+    "perStation": {}
+  },
+  "clientStreams": {
+    "nativeOpen": 0,
+    "scriptedOpen": 0,
+    "nativeOpened": 5,
+    "nativeClosed": 5,
+    "scriptedOpened": 3,
+    "scriptedClosed": 3
+  },
+  "attempts": [
+    {
+      "id": "01a19f07-da8a-7bb1-bce7-38f12567b7eb",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T01:30:54.855Z",
+      "phase": "mixed_smoke",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000003"
+    },
+    {
+      "id": "95ff25d8-3615-44b2-bdd6-fed4860a53e1",
+      "stationId": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+      "at": "2026-11-03T01:31:01.252Z",
+      "phase": "mixed_smoke",
+      "grossSatang": 100,
+      "finalised": true,
+      "receiptNumber": "Z72602-000001"
+    }
+  ],
+  "displayUpdates": [
+    {
+      "phase": "mixed_smoke",
+      "at": "2026-11-03T01:30:54.087Z",
+      "native": true,
+      "stage": "order",
+      "ms": 357.4447
+    },
+    {
+      "phase": "mixed_smoke",
+      "at": "2026-11-03T01:31:01.533Z",
+      "native": false,
+      "stage": "order",
+      "ms": 87.08139999999548,
+      "sequence": 2
+    },
+    {
+      "phase": "mixed_smoke",
+      "at": "2026-11-03T01:31:01.915Z",
+      "native": false,
+      "stage": "complete",
+      "ms": 94.7757999999958,
+      "sequence": 3
+    },
+    {
+      "phase": "mixed_smoke",
+      "at": "2026-11-03T01:31:02.031Z",
+      "native": false,
+      "stage": "idle",
+      "ms": 116.7352000000028,
+      "sequence": 4
+    }
+  ],
+  "traffic": {
+    "phase": "mixed_smoke",
+    "calls": 27,
+    "errors": 0,
+    "p50": 88.27790000000095,
+    "p95": 176.84199999999691,
+    "routes": {
+      "GET /ops/demo-reset": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 75.05059999999503,
+        "p95": 75.05059999999503
+      },
+      "GET /stations/:id/channel [stream open]": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 83.75979999999981,
+        "p95": 83.75979999999981
+      },
+      "GET /stations/:id/displays": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 84.50009999999747,
+        "p95": 84.50009999999747
+      },
+      "GET /branches/:id/occupancy": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 85.26630000000296,
+        "p95": 85.26630000000296
+      },
+      "GET /me/station/link": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 85.13330000000133,
+        "p95": 85.13330000000133
+      },
+      "GET /stations/:id/printers": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 88.27790000000095,
+        "p95": 88.27790000000095
+      },
+      "GET /branches/:id/pricing-mode": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 89.9852000000028,
+        "p95": 89.9852000000028
+      },
+      "POST /box/v1/station/:id/lease/release": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 95.68050000000221,
+        "p95": 95.68050000000221
+      },
+      "GET /box/v1/station/:id/channel [stream open]": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 82.18120000000636,
+        "p95": 82.18120000000636
+      },
+      "POST /box/v1/station/:id/lease": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 86.82779999999912,
+        "p95": 86.82779999999912
+      },
+      "POST /sales/quote": {
+        "calls": 2,
+        "errors": 0,
+        "p50": 89.37859999999637,
+        "p95": 193.1574000000037
+      },
+      "POST /box/v1/station/:id/intents": {
+        "calls": 9,
+        "errors": 0,
+        "p50": 86.99900000000343,
+        "p95": 103.15510000000359
+      },
+      "POST /sales": {
+        "calls": 2,
+        "errors": 0,
+        "p50": 109.9181000000026,
+        "p95": 111.18849999999657
+      },
+      "POST /sales/:id/finalise": {
+        "calls": 2,
+        "errors": 0,
+        "p50": 148.73029999999562,
+        "p95": 176.84199999999691
+      },
+      "GET /branches/:id/stock/sellable": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 76.88460000000487,
+        "p95": 76.88460000000487
+      },
+      "GET /sales/:id": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 103.57819999999629,
+        "p95": 103.57819999999629
+      }
+    }
+  },
+  "stop": null
+}

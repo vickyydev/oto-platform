@@ -2,12 +2,16 @@
   "unit": "SCRUM-726",
   "name": "ZZ TEST SCRUM-726 mvzv6zgu",
   "slot": "zz-test-s726-mvzv6zgu",
-  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
   "startedAt": "2026-11-02T23:02:52.686Z",
   "stations": [
     {
       "id": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
       "name": "ZZ TEST SCRUM-726 mvzv6zgu till 1"
+    },
+    {
+      "id": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+      "name": "ZZ TEST SCRUM-726 mvzv6zgu till 2"
     }
   ],
   "devices": [
@@ -41,7 +45,11 @@
   "displayIds": [
     "01a19e94-738b-724a-b235-7f90cd25cd90",
     "01a19e97-a6a8-7530-9f46-12632a43eb31",
-    "01a19ea5-0822-7f6f-b95a-7956498f801b"
+    "01a19ea5-0822-7f6f-b95a-7956498f801b",
+    "01a19f07-c22e-7f86-85e4-1383f59c5e37",
+    "01a19f07-f930-7a3a-9338-52f83d40d68a",
+    "01a19f0f-8467-720f-b8ad-9805752014c8",
+    "01a19f12-ca28-73ba-910e-95e012688f8f"
   ],
   "family": {
     "registrationId": "10a75e20-51f2-4a1c-b194-0aceea83f9ed",
@@ -79,6 +87,93 @@
       "kind": "native",
       "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
       "recordedAt": "2026-11-03T00:00:52.330Z"
+    },
+    {
+      "id": "01a19f06-2df6-7572-9acc-6cd483f65221",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T01:29:03.696Z"
+    },
+    {
+      "id": "01a19f06-3a1c-7d1e-9f35-a05fc5a4fa73",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e88-2a5d-7685-989b-22601c493045",
+      "recordedAt": "2026-11-03T01:29:07.808Z"
+    },
+    {
+      "id": "01a19f07-6746-709f-b022-50d584d569db",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T01:30:23.890Z"
+    },
+    {
+      "id": "01a19f07-bb02-7c7a-8dc6-ffba2a5dc072",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "recordedAt": "2026-11-03T01:30:46.346Z"
+    },
+    {
+      "id": "01a19f07-f677-76cc-a7ab-43b971961270",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "script",
+      "stationId": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+      "recordedAt": "2026-11-03T01:31:00.626Z"
+    },
+    {
+      "id": "01a19f08-fd2a-799c-b244-a9cf6836f8b3",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T01:32:07.806Z"
+    },
+    {
+      "id": "01a19f0c-46cc-7869-82d4-5b24ee160a2a",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "recordedAt": "2026-11-03T01:35:44.314Z"
+    },
+    {
+      "id": "01a19f12-c31a-750f-a004-3c6100652c82",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "recordedAt": "2026-11-03T01:42:50.509Z"
+    },
+    {
+      "id": "01a19f16-10f4-774c-bbbc-97d14134fe19",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e88-2a5d-7685-989b-22601c493045",
+      "recordedAt": "2026-11-03T01:46:27.096Z"
+    },
+    {
+      "id": "01a19f19-5acb-7263-9c1e-58646a872ea6",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "recordedAt": "2026-11-03T01:50:03.087Z"
+    }
+  ],
+  "sources": {
+    "srv-danh2ljtqb8s73bt9en0": "5069944660dfd43571d39f097aa90a77b1092c36",
+    "srv-dbk7qu8n74is73bm894g": "5069944660dfd43571d39f097aa90a77b1092c36"
+  },
+  "historicalAttempts": [
+    {
+      "id": "01a19eb5-6ea6-7e0a-82fe-5f52e41ad271",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T00:00:53.184Z",
+      "phase": "browser_diagnostic",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000002"
     }
   ]
 }

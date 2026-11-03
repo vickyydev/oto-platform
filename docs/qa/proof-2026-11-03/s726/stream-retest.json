@@ -1,0 +1,318 @@
+{
+  "startedAt": "2026-11-03T01:28:59.660Z",
+  "sources": {
+    "srv-danh2ljtqb8s73bt9en0": "5069944660dfd43571d39f097aa90a77b1092c36",
+    "srv-dbk7qu8n74is73bm894g": "5069944660dfd43571d39f097aa90a77b1092c36"
+  },
+  "navigationCycles": [
+    {
+      "at": "2026-11-03T01:29:12.594Z",
+      "cycle": 1,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:16.456Z",
+      "cycle": 2,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:20.233Z",
+      "cycle": 3,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:24.033Z",
+      "cycle": 4,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:27.808Z",
+      "cycle": 5,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:31.599Z",
+      "cycle": 6,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:35.394Z",
+      "cycle": 7,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:39.760Z",
+      "cycle": 8,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:43.566Z",
+      "cycle": 9,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    },
+    {
+      "at": "2026-11-03T01:29:47.889Z",
+      "cycle": 10,
+      "server": {
+        "stations": 0,
+        "connections": 0,
+        "perStation": {}
+      }
+    }
+  ],
+  "abortCycles": [
+    {
+      "cycle": 1,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 2,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 3,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 4,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 5,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 6,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 7,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 8,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 9,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 10,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 11,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 12,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 13,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 14,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 15,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 16,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 17,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 18,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 19,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 20,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 21,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 22,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 23,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 24,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 25,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 26,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 27,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 28,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 29,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 30,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 31,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 32,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 33,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 34,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 35,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 36,
+      "delayMs": 100,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 37,
+      "delayMs": 1,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 38,
+      "delayMs": 10,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 39,
+      "delayMs": 30,
+      "name": "AbortError"
+    },
+    {
+      "cycle": 40,
+      "delayMs": 100,
+      "name": "AbortError"
+    }
+  ],
+  "outcome": "passed",
+  "before": {
+    "stations": 0,
+    "connections": 0,
+    "perStation": {}
+  },
+  "after": {
+    "stations": 0,
+    "connections": 0,
+    "perStation": {}
+  },
+  "native": {
+    "opened": 16,
+    "closed": 16,
+    "open": 0
+  },
+  "finishedAt": "2026-11-03T01:30:11.371Z"
+}

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "01a19eb5-6ea6-7e0a-82fe-5f52e41ad271",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T00:00:53.184Z",
+    "phase": "browser_diagnostic",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000002"
+  }
+]

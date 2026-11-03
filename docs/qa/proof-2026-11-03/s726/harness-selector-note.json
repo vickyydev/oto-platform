@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-03T01:56:30.731Z",
+  "changes": [
+    "Match the exact station label inside its picker button, so till 1 cannot also match till 10 when a higher ramp is closed and the one-till soak starts.",
+    "Retire the browser debug entries belonging to the old document when a real main-frame navigation commits. Chromium did not emit a closing event for one old board-navigation request, while the independent server counter correctly read zero. The server count remains the stop guard and reporting authority."
+  ],
+  "timing": "After the idle process finishes, before any busy ramp",
+  "productCodeChanged": false
+}

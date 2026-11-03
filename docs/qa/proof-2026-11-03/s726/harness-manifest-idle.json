@@ -1,0 +1,64 @@
+{
+  "at": "2026-11-03T01:28:52.795Z",
+  "node": "v22.17.1",
+  "files": [
+    {
+      "path": "C:/oto-lanes/s726-browser.mjs",
+      "sha256": "4cc4b33364e13091fb5e513d612ee6718319c1844b35f08719edd83df4d90df9"
+    },
+    {
+      "path": "C:/oto-lanes/s726-traffic.mjs",
+      "sha256": "f79ec092b7c8decdec2a975ae89b3292d4d2e6bdc394ae04c7427ca0a3509893"
+    },
+    {
+      "path": "C:/oto-lanes/s726-phase.mjs",
+      "sha256": "3ae3f8e158bfedfc897b68b746a0eeffdb158de2bb3303293061792f6f2c6efa"
+    },
+    {
+      "path": "C:/oto-lanes/s726-load.mjs",
+      "sha256": "42d19d1fcc4e3d4ea53aaa9d529a890977f1d8aa7ea0a85a119be995da71c180"
+    },
+    {
+      "path": "C:/oto-lanes/s726-idle.mjs",
+      "sha256": "3bc7200f243cc80f73f3647a67470fb8ebc1c57114634e98536afb41d2303afb"
+    },
+    {
+      "path": "C:/oto-lanes/s726-monitor.mjs",
+      "sha256": "a53fa2108f75e2e07965d839ebcd5925f7c1ebc2be6c90027cf1ad063c557c37"
+    },
+    {
+      "path": "C:/oto-lanes/s726-remote-monitor.mjs",
+      "sha256": "f9be5edfc44371bc16de55803c2e05395d3f9b458aa2619a771e803b4f51c585"
+    },
+    {
+      "path": "C:/oto-lanes/s726-family.mjs",
+      "sha256": "aafd7a5555446972c23eb7c4f4d72236eb1f25335aeb0f35549fe35515593f73"
+    },
+    {
+      "path": "C:/oto-lanes/s726-stream-retest.mjs",
+      "sha256": "a5a40fbf98d49a087a108e8ef728ee966f558cee84bf71da215dac5a310de0f7"
+    },
+    {
+      "path": "C:/oto-lanes/s726-mixed-smoke.mjs",
+      "sha256": "8f1e963a6751fe31ccf95ffdca0940493d9ee229174ee3d9d8b6ce694b598b87"
+    },
+    {
+      "path": "C:/oto-lanes/s726-cleanup.mjs",
+      "sha256": "08df4fe961dfdc7ba97327281bd775979930f0e0965fdf4c57bbf0f8558d0c2a"
+    },
+    {
+      "path": "C:/oto-lanes/s726-db-cleanup.mjs",
+      "sha256": "d2cfee46cea0736cffc461abb6d6b2ed57a63e5204295665dbe1fa4722d4209d"
+    },
+    {
+      "path": "C:/oto-lanes/s726-env.mjs",
+      "sha256": "3d002eb9c29c15474b12f6f3c40d52fd8ac0cc9f1bc3d513865abc767166a240"
+    }
+  ],
+  "notes": [
+    "Private machine harness files; credentials are loaded into memory from the existing environment helper.",
+    "Product service commits are recorded separately in repaired-sources.json.",
+    "Native Edge uses the real deployed application. Additional tills use its measured read profile, real API quotes, cash and three live streams per pair.",
+    "No POST, PATCH or DELETE is retried by the harness. Known earlier receipts and unpaid voids remain in the independent database reconciliation."
+  ]
+}
