@@ -375,8 +375,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
    * to the box it is standing on, through the station bridge
    * (`POST /box/v1/station/:id/unlock`), which verifies the shift token and
    * the password against the copy it took while it still had the internet.
-   * A till already on the box lane goes to the box first. The cloud's
-   * `/auth/unlock-offline` is asked only by a till with no station to reach.
+   * A till already on the box lane goes to the box first. Without a prepared
+   * station, an outage cannot be recovered by calling another cloud route.
    *
    * The order matters and is not interchangeable. Asking the box first would
    * mean an account deactivated this morning could still unlock a till that
@@ -423,15 +423,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       setLocked(false);
       return;
     } catch (err) {
-      if (!isBoxLaneTrigger(err)) throw err;
+      if (!isBoxLaneTrigger(err) || !station) throw err;
       noteLaneFailure(err);
     }
-    if (station) return throughBox(station);
-    const answer = await authApi.unlockOffline(token, password);
-    // What the banner says afterwards: this unlock was allowed by a copy of
-    // the staff list of a known age, not by the platform.
-    setOfflineUnlock({ method: answer.authMethod, cacheAgeSeconds: answer.cacheAgeSeconds });
-    setLocked(false);
+    return throughBox(station!);
   }, [operator?.id]);
 
   // (Re)arm the inactivity countdown. Called on login and on every interaction.
