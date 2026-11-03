@@ -71,6 +71,7 @@ import {
   OfflineMemberTierChangedSchema,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
+  OfflineVisitChildrenAddedSchema,
   SYNC_EVENT_SCHEMA_VERSION,
   SyncEventEnvelopeSchema,
   businessDate,
@@ -93,6 +94,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
+import { addVisitChildren } from './visit-children';
 import { readStationsSellingReadiness } from './payments/terminal';
 /**
  * The redemption a booking travels with (SCRUM-304). `services/bookings.ts`
@@ -1601,13 +1603,6 @@ const HANDLERS: Record<string, EventHandler> = {
     async apply(tx, scope, event, payload: z.infer<typeof OfflineMemberTierChangedSchema>) {
       const operatorId = scope.auth.operatorId;
       const memberId = await survivingMemberId(tx, operatorId, payload.memberId);
-      const [existing] = await tx
-        .select({ id: memberTierVerification.id })
-        .from(memberTierVerification)
-        .where(eq(memberTierVerification.id, payload.verificationId))
-        .limit(1);
-      if (existing) return { entityType: 'member_tier_verification', entityId: existing.id };
-
       const [m] = await tx
         .select()
         .from(member)
@@ -1616,6 +1611,16 @@ const HANDLERS: Record<string, EventHandler> = {
         .limit(1);
       if (!m) {
         throw new RefuseEvent('apply_failed', 'SYNC_MEMBER_ABSENT', 'No such member here yet');
+      }
+      // Read after locking the member: an online commit racing this replay wins once.
+      const [existing] = await tx.select().from(memberTierVerification)
+        .where(eq(memberTierVerification.id, payload.verificationId)).limit(1);
+      if (existing) {
+        if (existing.memberId !== m.id ||
+            (existing.evidenceType === TIER_REVOKED_EVIDENCE_TYPE) !== (payload.direction === 'downgrade')) {
+          throw new RefuseEvent('poison', 'ID_IN_USE', 'That verification id already names another record');
+        }
+        return { entityType: 'member_tier_verification', entityId: existing.id };
       }
       const actorAccountId = event.envelope.actorAccountId ?? null;
 
@@ -1884,6 +1889,32 @@ const HANDLERS: Record<string, EventHandler> = {
           },
         ],
       };
+    },
+  },
+
+  'visit.children_added': {
+    schema: OfflineVisitChildrenAddedSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof OfflineVisitChildrenAddedSchema>) {
+      const memberId = await survivingMemberId(tx, scope.auth.operatorId, payload.memberId);
+      try {
+        const answer = await addVisitChildren(tx, {
+          ...payload,
+          memberId,
+          operatorId: scope.auth.operatorId,
+          branchId: scope.auth.branchId,
+          now: event.occurredAt,
+          actor: { actorAccountId: event.envelope.actorAccountId ?? null,
+            actionId: event.envelope.actionId ?? null, sourceEventId: event.envelope.eventId },
+          auditAfter: { boxId: scope.auth.boxId, ...freshMark(payload) },
+        });
+        const [m] = await tx.select().from(member).where(eq(member.id, memberId)).limit(1);
+        return { entityType: 'visit', entityId: answer.id,
+          changes: m ? [{ scope: 'members' as const, entityType: 'member', entityId: m.id, payload: memberChange(m) }] : [] };
+      } catch (err) {
+        if (err instanceof AppError) throw new RefuseEvent(
+          err.code === 'ID_IN_USE' ? 'poison' : 'apply_failed', err.code, err.message);
+        throw err;
+      }
     },
   },
 
