@@ -10,6 +10,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FixActivityFeed, formatFixDateTime, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
 import { FixCommentComposer } from "@/components/fix-comment-composer";
 import { FixReportDelete } from "@/components/fix-report-delete";
+import { useFixReportUnavailable } from "@/lib/fix-report-unavailable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -22,7 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useBranchContext } from "@/hooks/use-branch-context";
 import { useAuth } from "@/lib/auth";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ApiError, apiRequest, queryClient } from "@/lib/queryClient";
 import { FIX_MEDIA_ACCEPT, FIX_MEDIA_TYPES, MAX_FIX_MEDIA, MAX_FIX_MEDIA_SIZE, getMediaThumbUrl, isVideoUrl } from "@/lib/media";
 import type { Location } from "@shared/schema";
 import { 
@@ -130,17 +131,21 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
   const { user } = useAuth();
   const [viewingMedia, setViewingMedia] = useState<string | null>(null);
 
-  const { data: detail, isLoading, isError } = useQuery<ReportDetail>({
+  const detailRead = useQuery<ReportDetail>({
     queryKey: ['/api/fix-reports', reportId, 'details'],
     queryFn: async () => {
       const res = await fetch(`/api/fix-reports/${reportId}/details`, { credentials: 'include' });
-      if (!res.ok) throw new Error("Failed to load report details");
+      if (!res.ok) throw new ApiError("Failed to load report details", res.status);
       return res.json();
     },
     enabled: !!reportId && open,
+    // SCRUM-641: read again on every opening, so a report deleted since it was last opened says so.
+    staleTime: 0,
   });
+  const { data: detail, isLoading } = detailRead;
+  const unavailable = useFixReportUnavailable(detailRead);
 
-  const report = detail?.report;
+  const report = unavailable ? undefined : detail?.report;
   const comments = detail?.comments || [];
   const assignedDepartment = detail?.assignedDepartment;
   const departmentMembers = detail?.departmentMembers || [];
@@ -171,7 +176,7 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
           </div>
         </div>
 
-        {isError ? (
+        {unavailable ? (
           <p className="p-6 text-sm text-center text-muted-foreground" data-testid="text-report-unavailable">
             This report is not available.
           </p>
@@ -258,7 +263,7 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
         )}
 
         {/* Comment input */}
-        {!isError && reportId && (
+        {!unavailable && reportId && (
           <FixCommentComposer
             key={reportId}
             reportId={reportId}

@@ -18,6 +18,7 @@ import {
   MAX_FIX_MEDIA,
   MAX_FIX_MEDIA_SIZE,
 } from "@/lib/media";
+import { recheckFixReportIfRefused } from "@/lib/fix-report-unavailable";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type SelectedFile = { file: File; url: string };
@@ -109,6 +110,7 @@ export function FixCommentComposer({ reportId, placeholder, inputTestId, sendTes
     },
     onError: (error: Error) => {
       toast({ title: "Failed to add update", description: error.message, variant: "destructive" });
+      recheckFixReportIfRefused(reportId, error);
     },
   });
 

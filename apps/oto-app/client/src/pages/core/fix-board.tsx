@@ -57,6 +57,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FixActivityFeed, formatFixDateTime, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
 import { FixCommentComposer } from "@/components/fix-comment-composer";
 import { FixReportDelete } from "@/components/fix-report-delete";
+import { recheckFixReportIfRefused, useFixReportUnavailable } from "@/lib/fix-report-unavailable";
 import { getMediaThumbUrl, isVideoUrl } from "@/lib/media";
 
 interface FixReport {
@@ -542,11 +543,19 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
   const completionCameraRef = useRef<HTMLInputElement>(null);
   const completionGalleryRef = useRef<HTMLInputElement>(null);
   
-  const { data: detailsResponse, isLoading: loadingDetails } = useQuery<{ report: FixReport; reporter?: { id: string; name: string | null }; comments: FixComment[]; location?: { id: string; name: string } }>({
+  const detailsRead = useQuery<{ report: FixReport; reporter?: { id: string; name: string | null }; comments: FixComment[]; location?: { id: string; name: string } }>({
     queryKey: ['/api/fix-reports', report?.id, 'details'],
     enabled: !!report?.id && open,
+    // SCRUM-641: read again on every opening, so a report deleted since it was last opened says so.
+    staleTime: 0,
   });
-  
+  const { data: detailsResponse, isLoading: loadingDetails } = detailsRead;
+  const detailsUnavailable = useFixReportUnavailable(detailsRead);
+  // A report no longer available has nothing left to complete.
+  useEffect(() => {
+    if (detailsUnavailable) setCompletionSheetOpen(false);
+  }, [detailsUnavailable]);
+
   const reportDetails = detailsResponse?.report;
   const comments = detailsResponse?.comments || [];
   
@@ -559,8 +568,9 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
       queryClient.invalidateQueries({ queryKey: ['/api/fix-reports', report?.id, 'details'] });
       onUpdate();
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({ title: "Failed to update status", variant: "destructive" });
+      recheckFixReportIfRefused(report?.id, error);
     },
   });
   
@@ -574,8 +584,9 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
       queryClient.invalidateQueries({ queryKey: ['/api/fix-reports', report?.id, 'details'] });
       onUpdate();
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({ title: "Failed to update schedule", variant: "destructive" });
+      recheckFixReportIfRefused(report?.id, error);
     },
   });
   
@@ -799,37 +810,47 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
                 <h2 className="text-lg font-semibold leading-tight truncate" data-testid="text-fix-title">
                   {details.title || "Fix Report"}
                 </h2>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 flex-wrap">
-                  {locationText && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5" />
-                      {locationText}
-                    </span>
-                  )}
-                  {tagText && (
-                    <Badge variant="outline" className="text-xs font-normal">
-                      {tagText}
-                    </Badge>
-                  )}
-                </div>
+                {!detailsUnavailable && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 flex-wrap">
+                    {locationText && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {locationText}
+                      </span>
+                    )}
+                    {tagText && (
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {tagText}
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
-              <StatusPill 
-                status={details.status}
-                scheduledAt={details.scheduledAt}
-                onStatusChange={handleStatusChange}
-                onSchedule={handleSchedule}
-              />
+              {!detailsUnavailable && (
+                <StatusPill 
+                  status={details.status}
+                  scheduledAt={details.scheduledAt}
+                  onStatusChange={handleStatusChange}
+                  onSchedule={handleSchedule}
+                />
+              )}
             </div>
-            <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1" data-testid="text-fix-reported-by">
-              <User className="w-3 h-3 shrink-0" />
-              <span>
-                {reportedByName ? `Reported by ${reportedByName} · ` : "Reported "}
-                {formatFixDateTime(details.createdAt)}
-              </span>
-            </p>
+            {!detailsUnavailable && (
+              <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1" data-testid="text-fix-reported-by">
+                <User className="w-3 h-3 shrink-0" />
+                <span>
+                  {reportedByName ? `Reported by ${reportedByName} · ` : "Reported "}
+                  {formatFixDateTime(details.createdAt)}
+                </span>
+              </p>
+            )}
           </div>
           
-          {loadingDetails ? (
+          {detailsUnavailable ? (
+            <p className="p-6 text-sm text-center text-muted-foreground" data-testid="text-report-unavailable">
+              This report is not available.
+            </p>
+          ) : loadingDetails ? (
             <div className="flex justify-center py-12">
               <LoadingSpinner />
             </div>
@@ -899,13 +920,15 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
             </div>
           )}
           
-          <FixCommentComposer
-            key={report.id}
-            reportId={report.id}
-            placeholder="Add update or photo..."
-            inputTestId="input-activity-comment"
-            sendTestId="button-send-update"
-          />
+          {!detailsUnavailable && (
+            <FixCommentComposer
+              key={report.id}
+              reportId={report.id}
+              placeholder="Add update or photo..."
+              inputTestId="input-activity-comment"
+              sendTestId="button-send-update"
+            />
+          )}
         </DialogContent>
       </Dialog>
       
