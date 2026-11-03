@@ -809,6 +809,8 @@ export interface ModifierGroup {
 export interface MenuItem {
   id: string;
   name: string;
+  /** Catalogue product code, kept as text so dish numbers retain leading zeroes. */
+  code?: string;
   category: string; // a MenuCategoryDef.id (widened from the old fixed union)
   price: WeekdayWeekendPrice;
   cost?: number; // optional cost-to-park (COGS) for the base item; omitted = not tracked
