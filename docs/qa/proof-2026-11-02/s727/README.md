@@ -1,5 +1,12 @@
 # SCRUM-727 release evidence
 
+## Source landed; staging proof pending
+
+Release source: `4e515c61217770396da4dd86119cc0666cdc1d29`.
+[CI 41659700598](https://github.com/vickyydev/oto-platform/actions/runs/41659700598)
+is running. Jira is Testing. The matching clean agent is built; no staging
+fixture or temporary setting has been created yet.
+
 ## Current review candidate
 
 The complete review gates pass on `0f400710`, with the rebased candidate on

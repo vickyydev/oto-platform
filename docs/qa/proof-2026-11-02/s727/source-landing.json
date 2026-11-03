@@ -1,0 +1,15 @@
+{
+  "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+  "at": "2026-11-03T15:04:07.618Z",
+  "ciRun": "41659700598",
+  "ciStatus": "in_progress",
+  "jiraStatus": "Testing",
+  "lane": "lane/codex-box-unlock-review-20261103-r2",
+  "proofWorktree": "C:/oto-lanes/codex-727-review-proof-20261103",
+  "agent": {
+    "version": "oto-box 0.1.0-20261103-4e515c61 built 2026-11-03T15:02:53.448Z",
+    "buildExitCode": 0,
+    "bundleSha256": "3acdbefdbbe164be6cac58aeb1320df79b286f22f59901fa0b409b801497a955"
+  },
+  "stagingProof": "not started"
+}
