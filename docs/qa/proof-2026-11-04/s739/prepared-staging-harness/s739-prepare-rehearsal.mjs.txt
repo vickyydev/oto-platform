@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
+let s = readFileSync('C:/oto-lanes/s739-staging-proof.mjs', 'utf8');
+const begin = s.indexOf("import assert from 'node:assert/strict';");
+const end = s.indexOf('const require = createRequire');
+assert.ok(begin >= 0 && end > begin);
+s = s.slice(0, begin) + `import assert from 'node:assert/strict';
+import { verifyDatabase, retireAlerts } from './s739-staging-read.mjs';
+const root = 'C:/oto-lanes/codex-qr-review-phone-20261104';
+if (process.env.S739_MODE !== 'local' || new URL(process.env.S739_POS).hostname !== '127.0.0.1') throw Error('Local rehearsal only');
+const ci = null, deployments = [], beforeSettings = [];
+const live = async () => [], settings = async () => [];
+const need = key => process.env[key === 'STAGING_ADMIN_PHONE' ? 'S739_PHONE' : 'S739_PASSWORD'];
+async function retireTestAlerts(result) {
+  const load = createRequire(root + '/apps/api/package.json'); load('tsx/cjs');
+  const { Client } = load('pg'), { drizzle } = load('drizzle-orm/node-postgres');
+  const { audit } = load(root + '/apps/api/src/services/audit.ts');
+  const { resolveAlert } = load(root + '/apps/api/src/services/ops.ts');
+  const { newId } = load('@oto/shared');
+  const c = new Client({ connectionString: process.env.S739_PROOF_DB_URL });
+  await c.connect();
+  try { return await retireAlerts(c, { fixture: result.fixture, identity: result.identity, cases: result.cases }, { drizzle, audit, resolveAlert, newId }); }
+  finally { await c.end(); }
+}
+async function independentRead(result, mode) {
+  const { Client } = createRequire(root + '/apps/api/package.json')('pg');
+  const c = new Client({ connectionString: process.env.S739_PROOF_DB_URL });
+  await c.connect();
+  try { return await verifyDatabase(c, { fixture: result.fixture, identity: result.identity, cases: result.cases, mode }); }
+  finally { await c.end(); }
+}
+` + s.slice(end);
+s = s.replace("const POS = 'https://oto-pos-web-staging.onrender.com';", 'const POS = process.env.S739_POS;')
+  .replace("const out = root + '/docs/qa/proof-2026-11-04/s739/staging/' + stamp;", "const out = 'C:/oto-lanes/s739-staging-rehearsal/' + stamp;")
+  .replace("mode: 'staging'", "mode: 'local staging-fixture rehearsal'")
+  .replace("  assert.equal(branchId, '01a0bbdc-8c42-7753-b7e3-5ae19fb66d33');", '');
+writeFileSync('C:/oto-lanes/s739-staging-rehearsal.mjs', s);
+let r = readFileSync('C:/oto-lanes/s739-phone-local-run.mts', 'utf8');
+r = r.replace('s739-phone-browser-proof.mjs', 's739-staging-rehearsal.mjs')
+  .replace("S739_MODE: 'local',", "S739_MODE: 'local', S739_PROOF_DB_URL: ctx.app.env.DATABASE_URL,");
+writeFileSync('C:/oto-lanes/s739-staging-rehearsal-run.mts', r);
+console.log('Prepared disposable staging-fixture rehearsal only.');

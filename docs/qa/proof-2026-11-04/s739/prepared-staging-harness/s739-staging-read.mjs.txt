@@ -1,0 +1,139 @@
+import assert from 'node:assert/strict';
+import { job } from './s728-release-render-job.mjs';
+
+// The same read-only verification is rehearsed against the disposable local DB.
+export async function verifyDatabase(c, spec) {
+  const assert = (await import('node:assert/strict')).default;
+  const { fixture: f, identity, cases, mode } = spec;
+  assert.ok(f.name.startsWith('ZZ TEST SCRUM-739 '));
+  assert.equal(cases.length, 6);
+  await c.query('BEGIN READ ONLY');
+  try {
+    const station = (await c.query('SELECT id,name,box_id,archived_at FROM core.station WHERE id=$1', [f.stationId])).rows[0];
+    assert.equal(station.name, f.name); assert.equal(station.box_id, f.boxId);
+    const box = (await c.query('SELECT id,name,status,archived_at,bridge_origin IS NULL no_address,secret_hash IS NULL no_secret,claim_code_hash IS NULL no_claim FROM core.box WHERE id=$1', [f.boxId])).rows[0];
+    assert.equal(box.name, f.name); assert.equal(box.no_address, true);
+    const sales = (await c.query('SELECT id,status,receipt_number,gross_satang::int gross,member_id,visit_id FROM pos.sale WHERE station_id=$1 ORDER BY id', [f.stationId])).rows;
+    assert.equal(sales.length, 6); assert.equal(new Set(sales.map(s => s.receipt_number)).size, 6);
+    const payments = (await c.query('SELECT id,sale_id,status,provider,device_id,amount_satang::int amount,staff_confirmed_by FROM pos.payment_attempt WHERE station_id=$1 ORDER BY id', [f.stationId])).rows;
+    assert.equal(payments.length, 6);
+    const audits = [];
+    for (const expected of cases) {
+      const sale = sales.find(s => s.id === expected.saleId); assert.ok(sale);
+      assert.equal(sale.status, 'finalised'); assert.equal(sale.receipt_number, expected.readback.receiptNumber);
+      assert.equal(sale.member_id, null); assert.equal(sale.visit_id, null);
+      const attempts = payments.filter(p => p.sale_id === sale.id); assert.equal(attempts.length, 1);
+      const p = attempts[0]; assert.equal(p.id, expected.attemptId); assert.equal(p.status, 'approved');
+      assert.equal(p.device_id, null); assert.equal(p.amount, sale.gross); assert.equal(p.staff_confirmed_by, identity.actorId);
+      assert.ok(['simulator', '2c2p'].includes(p.provider));
+      assert.equal(sale.gross, 100);
+      const rows = (await c.query("SELECT action,entity_id,actor_account_id FROM core.audit_log WHERE (entity_id=$1 AND action='payment.attempt.confirm') OR (entity_id=$2 AND action='sale.finalise') ORDER BY action", [p.id, sale.id])).rows;
+      assert.equal(rows.length, 2); assert.equal(rows.filter(r => r.action === 'payment.attempt.confirm').length, 1);
+      assert.equal(rows.filter(r => r.action === 'sale.finalise').length, 1);
+      assert.ok(rows.every(r => r.actor_account_id === identity.actorId)); audits.push(...rows);
+    }
+    const products = (await c.query('SELECT id,name,active,archived_at FROM pos.product WHERE id=ANY($1::uuid[]) ORDER BY id', [f.products.map(p => p.id)])).rows;
+    assert.equal(products.length, 2); for (const p of products) assert.equal(p.name, f.products.find(x => x.id === p.id).name);
+    const categories = (await c.query('SELECT id,name,archived_at FROM pos.product_category WHERE id=ANY($1::uuid[]) ORDER BY id', [f.categories.map(p => p.id)])).rows;
+    assert.equal(categories.length, 2); for (const p of categories) assert.equal(p.name, f.categories.find(x => x.id === p.id).name);
+    const alerts = (await c.query('SELECT id,key,status,resolved_at FROM core.alert WHERE key=ANY($1::text[]) ORDER BY key', [cases.map(x => 'payments.late_payment:' + x.attemptId)])).rows;
+    assert.equal(alerts.length, 6);
+    const pkg = (await c.query('SELECT id,name,active,archived_at,gate_access,credit_rule FROM pos.ticket_package WHERE id=$1', [f.ticketPackage.id])).rows[0];
+    assert.equal(pkg.name, f.ticketPackage.name); assert.equal(pkg.gate_access, false); assert.equal(pkg.credit_rule.appliesTo, 'none');
+    const saleIds = cases.map(x => x.saleId);
+    assert.equal((await c.query('SELECT count(*)::int n FROM pos.wallet_entry WHERE sale_id=ANY($1::uuid[])', [saleIds])).rows[0].n, 0);
+    const bands = (await c.query('SELECT id,sale_id,kind,status,gate_access,member_id,child_id FROM pos.band WHERE sale_id=ANY($1::uuid[]) ORDER BY sale_id', [saleIds])).rows;
+    assert.equal(bands.length, 2); assert.ok(bands.every(b => cases.some(x => x.kind === 'tickets' && x.saleId === b.sale_id) && b.kind === 'adult' && !b.gate_access && !b.member_id && !b.child_id));
+    const counts = (await c.query("SELECT (SELECT count(*)::int FROM core.session WHERE station_id=$1 AND revoked_at IS NULL AND expires_at>now()) active_sessions,(SELECT count(*)::int FROM edge.station_session WHERE station_id=$1 AND lease_expires_at>now()) active_leases,(SELECT count(*)::int FROM edge.station_session WHERE station_id=$1) working_rows,(SELECT count(*)::int FROM edge.print_job WHERE box_id=$2 AND status IN ('queued','failed')) pending_prints,(SELECT count(*)::int FROM edge.box_print_job WHERE box_id=$2) box_print_queue,(SELECT count(*)::int FROM edge.box_command WHERE box_id=$2 AND state IN ('queued','running')) pending_commands,(SELECT count(*)::int FROM core.station_device WHERE station_id=$1) devices", [f.stationId, f.boxId])).rows[0];
+    assert.equal(counts.devices, 0);
+    if (mode === 'cleanup') {
+      assert.ok(station.archived_at); assert.ok(box.archived_at && box.no_secret && box.no_claim); assert.equal(box.status, 'disabled');
+      assert.ok(products.every(p => p.archived_at && !p.active)); assert.ok(categories.every(p => p.archived_at));
+      for (const [key, count] of Object.entries(counts)) assert.equal(count, 0, key);
+      assert.ok(alerts.every(a => a.status === 'resolved' && a.resolved_at));
+      assert.ok(pkg.archived_at && !pkg.active); assert.ok(bands.every(b => b.status === 'revoked'));
+      const bandEvents = (await c.query("SELECT band_id FROM pos.band_event WHERE band_id=ANY($1::uuid[]) AND kind='revoked'", [bands.map(b => b.id)])).rows;
+      assert.equal(bandEvents.length, 2); assert.equal(new Set(bandEvents.map(b => b.band_id)).size, 2);
+      const cleanupAudits = (await c.query("SELECT action,entity_id,origin,\"after\" FROM core.audit_log WHERE (action='qa.payment_alert.retire' AND entity_id=ANY($1::text[])) OR (action='qa.station_session.retire' AND entity_id=$2) ORDER BY action,entity_id", [alerts.map(a => a.id), f.stationId])).rows;
+      assert.equal(cleanupAudits.filter(a => a.action === 'qa.payment_alert.retire').length, 6);
+      assert.ok(cleanupAudits.every(a => a.origin === 'job'));
+      const workingRetirement = cleanupAudits.filter(a => a.action === 'qa.station_session.retire');
+      assert.equal(workingRetirement.length, 1); assert.equal(workingRetirement[0].after.workingRows, 0); assert.equal(workingRetirement[0].after.salesRetained, 6);
+    }
+    return { passed: true, readOnly: true, at: new Date().toISOString(), station, box, sales, payments, audits, products, categories, ticketPackage: pkg, bands, walletEntries: 0, alerts, counts };
+  } finally { await c.query('ROLLBACK'); }
+}
+
+export async function retireAlerts(c, spec, helpers) {
+  const assert = (await import('node:assert/strict')).default;
+  assert.ok(spec.fixture.name.startsWith('ZZ TEST SCRUM-739 ')); assert.equal(spec.cases.length, 6);
+  await c.query('BEGIN');
+  try {
+    const station = (await c.query('SELECT id,operator_id,branch_id,name,archived_at,box_id FROM core.station WHERE id=$1 FOR UPDATE', [spec.fixture.stationId])).rows[0];
+    assert.equal(station.name, spec.fixture.name); assert.equal(station.box_id, spec.fixture.boxId); assert.ok(station.archived_at);
+    const db = helpers.drizzle(c), retired = [];
+    for (const test of spec.cases) {
+      const payment = (await c.query('SELECT p.id,p.operator_id,p.branch_id,p.sale_id,p.status,p.staff_confirmed_by,s.status sale_status FROM pos.payment_attempt p JOIN pos.sale s ON s.id=p.sale_id WHERE p.id=$1 AND p.station_id=$2 AND p.sale_id=$3 FOR UPDATE', [test.attemptId, station.id, test.saleId])).rows[0];
+      assert.ok(payment); assert.equal(payment.status, 'approved'); assert.equal(payment.sale_status, 'finalised');
+      assert.equal(payment.staff_confirmed_by, spec.identity.actorId); assert.equal(payment.operator_id, station.operator_id);
+      const key = 'payments.late_payment:' + test.attemptId;
+      const rows = (await c.query('SELECT id,status,operator_id,branch_id FROM core.alert WHERE key=$1 FOR UPDATE', [key])).rows;
+      assert.equal(rows.length, 1); const a = rows[0]; assert.equal(a.operator_id, station.operator_id); assert.equal(a.branch_id, station.branch_id);
+      const resolved = await helpers.resolveAlert(db, key, 'ZZ TEST SCRUM-739 simulator proof retired after the reviewed payment; preserve its financial history');
+      if (resolved) {
+        assert.equal(resolved.id, a.id);
+        await helpers.audit.record(db, { actorAccountId: spec.identity.actorId, operatorId: station.operator_id, branchId: station.branch_id,
+          action: 'qa.payment_alert.retire', entityType: 'alert', entityId: a.id, sourceApp: 'console', origin: 'job',
+          reason: 'SCRUM-739: retire only this reviewed simulator payment alert after archiving its ZZ TEST till',
+          before: { status: a.status, attemptId: test.attemptId }, after: { status: 'resolved', saleRetained: true } });
+      }
+      retired.push({ alertId: a.id, attemptId: test.attemptId, changed: Boolean(resolved) });
+    }
+    const ticketSales = spec.cases.filter(x => x.kind === 'tickets').map(x => x.saleId); assert.equal(ticketSales.length, 2);
+    const bands = (await c.query('SELECT id,sale_id,status,kind,gate_access,member_id,child_id FROM pos.band WHERE sale_id=ANY($1::uuid[]) FOR UPDATE', [ticketSales])).rows;
+    assert.equal(bands.length, 2);
+    assert.equal((await c.query('SELECT count(*)::int n FROM pos.wallet_entry WHERE sale_id=ANY($1::uuid[])', [ticketSales])).rows[0].n, 0);
+    for (const band of bands) {
+      assert.equal(band.kind, 'adult'); assert.equal(band.gate_access, false); assert.equal(band.member_id, null); assert.equal(band.child_id, null);
+      if (band.status === 'revoked') continue;
+      assert.equal(band.status, 'active');
+      assert.equal((await c.query("SELECT count(*)::int n FROM pos.band_event WHERE band_id=$1 AND kind IN ('scanned','entry','exit')", [band.id])).rows[0].n, 0);
+      await c.query("UPDATE pos.band SET status='revoked',updated_at=now() WHERE id=$1", [band.id]);
+      await c.query("INSERT INTO pos.band_event (id,band_id,kind,station_id,box_id,detail) VALUES ($1,$2,'revoked',$3,$4,$5::jsonb)", [helpers.newId(), band.id, station.id, spec.fixture.boxId, JSON.stringify({ reason: 'ZZ TEST SCRUM-739 simulator proof retired; no physical band issued', accountId: spec.identity.actorId })]);
+      await helpers.audit.record(db, { actorAccountId: spec.identity.actorId, operatorId: station.operator_id, branchId: station.branch_id,
+        action: 'qa.band.retire', entityType: 'band', entityId: band.id, sourceApp: 'console', origin: 'job',
+        reason: 'SCRUM-739: revoke only the unscanned synthetic band from this ZZ TEST ticket sale', before: { status: 'active' }, after: { status: 'revoked', saleRetained: true } });
+    }
+    const box = (await c.query('SELECT id,name,status,archived_at,secret_hash IS NULL no_secret,claim_code_hash IS NULL no_claim FROM core.box WHERE id=$1 FOR UPDATE', [spec.fixture.boxId])).rows[0];
+    assert.equal(box.name, spec.fixture.name); assert.equal(box.status, 'disabled'); assert.ok(box.archived_at && box.no_secret && box.no_claim);
+    const working = (await c.query('SELECT station_id,box_id,stage,sequence::text,lease_id IS NOT NULL AND lease_expires_at>now() live_lease,member IS NULL no_member,payment IS NULL no_payment FROM edge.station_session WHERE station_id=$1 FOR UPDATE', [station.id])).rows;
+    assert.ok(working.length <= 1);
+    if (working.length) {
+      const row = working[0]; assert.equal(row.box_id, box.id); assert.ok(!row.live_lease && row.no_member && row.no_payment, 'Only an inactive test document with no member or payment may be removed');
+      const sales = (await c.query('SELECT id,status FROM pos.sale WHERE station_id=$1', [station.id])).rows;
+      assert.equal(sales.length, 6); assert.ok(sales.every(s => s.status === 'finalised' && spec.cases.some(t => t.saleId === s.id)));
+      assert.equal((await c.query('DELETE FROM edge.station_session WHERE station_id=$1 AND box_id=$2', [station.id, box.id])).rowCount, 1);
+      await helpers.audit.record(db, { actorAccountId: spec.identity.actorId, operatorId: station.operator_id, branchId: station.branch_id,
+        action: 'qa.station_session.retire', entityType: 'station', entityId: station.id, sourceApp: 'console', origin: 'job',
+        reason: 'SCRUM-739: retire only the inactive working document of the archived ZZ TEST till; retain all six finalised sales',
+        before: { workingRows: 1, stage: row.stage, sequence: row.sequence, liveLease: false }, after: { workingRows: 0, salesRetained: 6 } });
+    }
+    await c.query('COMMIT'); return { passed: true, retired, revokedBandIds: bands.map(b => b.id), walletEntries: 0, removedWorkingRows: working.length, financialHistoryRetained: true };
+  } catch (e) { await c.query('ROLLBACK'); throw e; }
+}
+
+export async function retireTestAlerts(result) {
+  assert.equal(result.unit, 'SCRUM-739'); assert.equal(result.failures.length, 0);
+  const spec = { fixture: result.fixture, identity: result.identity, cases: result.cases };
+  const event = 's739_alert_cleanup';
+  const program = `(async()=>{require('tsx/cjs');const {Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts'),{resolveAlert}=require('./src/services/ops.ts'),{newId}=require('@oto/shared'),c=new Client({connectionString:process.env.DATABASE_URL,options:'-c statement_timeout=15000'});await c.connect();try{const result=await (${retireAlerts.toString()})(c,${JSON.stringify(spec)},{drizzle,audit,resolveAlert,newId});console.log(JSON.stringify({event:${JSON.stringify(event)},...result}));}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:${JSON.stringify(event + '_error')},name:e.name,code:e.code??'ASSERTION'}));process.exitCode=1;});`;
+  return job(program, event, result.source);
+}
+
+export async function independentRead(result, mode) {
+  assert.equal(result.unit, 'SCRUM-739'); assert.ok(['proof', 'cleanup'].includes(mode));
+  const spec = { fixture: result.fixture, identity: result.identity, cases: result.cases, mode };
+  const event = 's739_' + mode + '_read';
+  const program = `(async()=>{const {Client}=require('pg'),c=new Client({connectionString:process.env.DATABASE_URL,options:'-c default_transaction_read_only=on -c statement_timeout=15000'});await c.connect();try{const result=await (${verifyDatabase.toString()})(c,${JSON.stringify(spec)});console.log(JSON.stringify({event:${JSON.stringify(event)},...result}));}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:${JSON.stringify(event + '_error')},name:e.name,code:e.code??'ASSERTION',message:e.code?'Read-only query failed':e.message}));process.exitCode=1;});`;
+  return job(program, event, result.source);
+}

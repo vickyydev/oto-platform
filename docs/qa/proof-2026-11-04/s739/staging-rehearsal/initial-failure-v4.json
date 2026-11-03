@@ -1,0 +1,571 @@
+{
+  "unit": "SCRUM-739",
+  "mode": "local staging-fixture rehearsal",
+  "name": "ZZ TEST SCRUM-739 mw1878jl",
+  "ci": null,
+  "deployments": [],
+  "beforeSettings": [],
+  "source": "d1404fb0613418e81d6a03a4f6811af295c0a46e",
+  "sourceFiles": {
+    "apps/pos/src/App.tsx": "40c15d560980e97efd09aceff8c61699a0c23918441d4cbf07a8e46d7c94f0ea",
+    "apps/pos/src/components/mobile/MobileShell.tsx": "464689c46ae2f83fda48c0da3aaef5aad46d375b792c76757eb7c32140c40bd0",
+    "apps/pos/src/pages/MerchStation.tsx": "1e3d737e4b2d09c52653c61bd603c84bc9068182b6d28bcb520921eefc28b1a6",
+    "apps/pos/src/lib/usePaymentStage.ts": "1865fd0cbeeb2fb1ee41e9a5b9e6518af4a6ce3f4d74fa5884bf0127705a762a",
+    "apps/pos/dist/public/index.html": "0d50b4db9a983c6431a1feabc5db375f6722ebfb5257380ff37f4f2180724cb5"
+  },
+  "cases": [
+    {
+      "kind": "food",
+      "mobile": false,
+      "saleId": "01a1a368-66eb-76e5-b26e-11d4129a3d3e",
+      "attemptId": "01a1a368-68a1-7786-b055-acdf2591fb1b",
+      "simulator": {
+        "event": "late_paid",
+        "gatewayState": "late_paid",
+        "webhookOutcome": "late_paid"
+      },
+      "held": {
+        "saleStatus": "tendering",
+        "receiptNumber": null,
+        "attemptStatus": "awaiting_staff_confirmation"
+      },
+      "readback": {
+        "saleId": "01a1a368-66eb-76e5-b26e-11d4129a3d3e",
+        "status": "finalised",
+        "receiptNumber": "Z30-000001",
+        "attempts": [
+          {
+            "id": "01a1a368-68a1-7786-b055-acdf2591fb1b",
+            "status": "approved",
+            "amountSatang": 100
+          }
+        ]
+      }
+    },
+    {
+      "kind": "shop",
+      "mobile": false,
+      "saleId": "01a1a368-786d-7bd2-95f9-91ad4379d319",
+      "attemptId": "01a1a368-7951-7605-b3f5-a3072d0a3f9c",
+      "simulator": {
+        "event": "late_paid",
+        "gatewayState": "late_paid",
+        "webhookOutcome": "late_paid"
+      },
+      "held": {
+        "saleStatus": "tendering",
+        "receiptNumber": null,
+        "attemptStatus": "awaiting_staff_confirmation"
+      },
+      "readback": {
+        "saleId": "01a1a368-786d-7bd2-95f9-91ad4379d319",
+        "status": "finalised",
+        "receiptNumber": "Z30-000002",
+        "attempts": [
+          {
+            "id": "01a1a368-7951-7605-b3f5-a3072d0a3f9c",
+            "status": "approved",
+            "amountSatang": 100
+          }
+        ]
+      }
+    },
+    {
+      "kind": "tickets",
+      "mobile": false,
+      "saleId": "01a1a368-9105-77e3-b990-34105c4677dd",
+      "attemptId": "01a1a368-91ca-7162-876e-274b4ac3dc58",
+      "simulator": {
+        "event": "late_paid",
+        "gatewayState": "late_paid",
+        "webhookOutcome": "late_paid"
+      },
+      "held": {
+        "saleStatus": "tendering",
+        "receiptNumber": null,
+        "attemptStatus": "awaiting_staff_confirmation"
+      },
+      "readback": {
+        "saleId": "01a1a368-9105-77e3-b990-34105c4677dd",
+        "status": "finalised",
+        "receiptNumber": "Z30-000003",
+        "attempts": [
+          {
+            "id": "01a1a368-91ca-7162-876e-274b4ac3dc58",
+            "status": "approved",
+            "amountSatang": 35000
+          }
+        ]
+      }
+    },
+    {
+      "kind": "food",
+      "mobile": true,
+      "saleId": "01a1a368-a57c-730e-889b-fb16f7337f73",
+      "attemptId": "01a1a368-a5bd-75cf-8071-07de90cc7bc0",
+      "simulator": {
+        "event": "late_paid",
+        "gatewayState": "late_paid",
+        "webhookOutcome": "late_paid"
+      },
+      "held": {
+        "saleStatus": "tendering",
+        "receiptNumber": null,
+        "attemptStatus": "awaiting_staff_confirmation"
+      },
+      "readback": {
+        "saleId": "01a1a368-a57c-730e-889b-fb16f7337f73",
+        "status": "finalised",
+        "receiptNumber": "Z30-000004",
+        "attempts": [
+          {
+            "id": "01a1a368-a5bd-75cf-8071-07de90cc7bc0",
+            "status": "approved",
+            "amountSatang": 100
+          }
+        ]
+      }
+    },
+    {
+      "kind": "shop",
+      "mobile": true,
+      "saleId": "01a1a368-b268-79ad-8e47-c66652f6be00",
+      "attemptId": "01a1a368-b2e4-7675-b85b-1711ca2b0b46",
+      "simulator": {
+        "event": "late_paid",
+        "gatewayState": "late_paid",
+        "webhookOutcome": "late_paid"
+      },
+      "held": {
+        "saleStatus": "tendering",
+        "receiptNumber": null,
+        "attemptStatus": "awaiting_staff_confirmation"
+      },
+      "staffLockPreservedAttempt": true,
+      "readback": {
+        "saleId": "01a1a368-b268-79ad-8e47-c66652f6be00",
+        "status": "finalised",
+        "receiptNumber": "Z30-000005",
+        "attempts": [
+          {
+            "id": "01a1a368-b2e4-7675-b85b-1711ca2b0b46",
+            "status": "approved",
+            "amountSatang": 100
+          }
+        ]
+      }
+    },
+    {
+      "kind": "tickets",
+      "mobile": true,
+      "saleId": "01a1a368-c638-7066-bc04-b4b6d3b75091",
+      "attemptId": "01a1a368-c6b3-799a-bdf0-6d0f8bbac9bb",
+      "simulator": {
+        "event": "late_paid",
+        "gatewayState": "late_paid",
+        "webhookOutcome": "late_paid"
+      },
+      "held": {
+        "saleStatus": "tendering",
+        "receiptNumber": null,
+        "attemptStatus": "awaiting_staff_confirmation"
+      },
+      "readback": {
+        "saleId": "01a1a368-c638-7066-bc04-b4b6d3b75091",
+        "status": "finalised",
+        "receiptNumber": "Z30-000006",
+        "attempts": [
+          {
+            "id": "01a1a368-c6b3-799a-bdf0-6d0f8bbac9bb",
+            "status": "approved",
+            "amountSatang": 35000
+          }
+        ]
+      }
+    }
+  ],
+  "images": [
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-desktop-01-payment.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-desktop-02-held.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-desktop-05-completed.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-desktop-01-payment.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-desktop-02-held.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-desktop-05-completed.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-desktop-01-payment.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-desktop-02-held.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-desktop-05-completed.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-phone-01-payment.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-phone-02-held.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-phone-03-review-locked.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-phone-04-review-ready.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/food-phone-05-completed.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-phone-01-payment.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-phone-02-held.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-phone-02b-staff-locked.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-phone-03-review-locked.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-phone-04-review-ready.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/shop-phone-05-completed.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-phone-01-payment.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-phone-02-held.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-phone-03-review-locked.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-phone-04-review-ready.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw1878jl/tickets-phone-05-completed.png"
+  ],
+  "failures": [],
+  "identity": {
+    "branchId": "01a1a368-4169-7e6f-af72-79acafb7b096",
+    "actorId": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+  },
+  "fixture": {
+    "name": "ZZ TEST SCRUM-739 mw1878jl",
+    "products": [
+      {
+        "id": "01a1a368-5faf-732e-b8d6-01a887df5b25",
+        "name": "ZZ TEST SCRUM-739 mw1878jl food",
+        "kind": "menu"
+      },
+      {
+        "id": "01a1a368-5fe2-75c3-8129-e1db71cc8587",
+        "name": "ZZ TEST SCRUM-739 mw1878jl shop",
+        "kind": "merch"
+      }
+    ],
+    "categories": [
+      {
+        "id": "01a1a368-5f9a-70ba-96ee-4c6df908e99d",
+        "name": "ZZ TEST SCRUM-739 mw1878jl cat menu"
+      },
+      {
+        "id": "01a1a368-5fce-75c7-97b5-a6bc9d2b4272",
+        "name": "ZZ TEST SCRUM-739 mw1878jl cat merch"
+      }
+    ],
+    "boxId": "01a1a368-5ed5-7d6e-8eb5-78274819ac68",
+    "stationId": "01a1a368-5ffa-7699-a806-ab83cf9df701",
+    "codePrefix": "Z30"
+  },
+  "independent": {
+    "passed": true,
+    "readOnly": true,
+    "at": "2026-11-03T21:55:18.137Z",
+    "station": {
+      "id": "01a1a368-5ffa-7699-a806-ab83cf9df701",
+      "name": "ZZ TEST SCRUM-739 mw1878jl",
+      "box_id": "01a1a368-5ed5-7d6e-8eb5-78274819ac68",
+      "archived_at": null
+    },
+    "box": {
+      "id": "01a1a368-5ed5-7d6e-8eb5-78274819ac68",
+      "name": "ZZ TEST SCRUM-739 mw1878jl",
+      "status": "unclaimed",
+      "archived_at": null,
+      "no_address": true,
+      "no_secret": true,
+      "no_claim": false
+    },
+    "sales": [
+      {
+        "id": "01a1a368-66eb-76e5-b26e-11d4129a3d3e",
+        "status": "finalised",
+        "receipt_number": "Z30-000001",
+        "gross": 100,
+        "member_id": null,
+        "visit_id": null
+      },
+      {
+        "id": "01a1a368-786d-7bd2-95f9-91ad4379d319",
+        "status": "finalised",
+        "receipt_number": "Z30-000002",
+        "gross": 100,
+        "member_id": null,
+        "visit_id": null
+      },
+      {
+        "id": "01a1a368-9105-77e3-b990-34105c4677dd",
+        "status": "finalised",
+        "receipt_number": "Z30-000003",
+        "gross": 35000,
+        "member_id": null,
+        "visit_id": null
+      },
+      {
+        "id": "01a1a368-a57c-730e-889b-fb16f7337f73",
+        "status": "finalised",
+        "receipt_number": "Z30-000004",
+        "gross": 100,
+        "member_id": null,
+        "visit_id": null
+      },
+      {
+        "id": "01a1a368-b268-79ad-8e47-c66652f6be00",
+        "status": "finalised",
+        "receipt_number": "Z30-000005",
+        "gross": 100,
+        "member_id": null,
+        "visit_id": null
+      },
+      {
+        "id": "01a1a368-c638-7066-bc04-b4b6d3b75091",
+        "status": "finalised",
+        "receipt_number": "Z30-000006",
+        "gross": 35000,
+        "member_id": null,
+        "visit_id": null
+      }
+    ],
+    "payments": [
+      {
+        "id": "01a1a368-68a1-7786-b055-acdf2591fb1b",
+        "sale_id": "01a1a368-66eb-76e5-b26e-11d4129a3d3e",
+        "status": "approved",
+        "provider": "simulator",
+        "device_id": null,
+        "amount": 100,
+        "staff_confirmed_by": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "id": "01a1a368-7951-7605-b3f5-a3072d0a3f9c",
+        "sale_id": "01a1a368-786d-7bd2-95f9-91ad4379d319",
+        "status": "approved",
+        "provider": "simulator",
+        "device_id": null,
+        "amount": 100,
+        "staff_confirmed_by": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "id": "01a1a368-91ca-7162-876e-274b4ac3dc58",
+        "sale_id": "01a1a368-9105-77e3-b990-34105c4677dd",
+        "status": "approved",
+        "provider": "simulator",
+        "device_id": null,
+        "amount": 35000,
+        "staff_confirmed_by": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "id": "01a1a368-a5bd-75cf-8071-07de90cc7bc0",
+        "sale_id": "01a1a368-a57c-730e-889b-fb16f7337f73",
+        "status": "approved",
+        "provider": "simulator",
+        "device_id": null,
+        "amount": 100,
+        "staff_confirmed_by": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "id": "01a1a368-b2e4-7675-b85b-1711ca2b0b46",
+        "sale_id": "01a1a368-b268-79ad-8e47-c66652f6be00",
+        "status": "approved",
+        "provider": "simulator",
+        "device_id": null,
+        "amount": 100,
+        "staff_confirmed_by": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "id": "01a1a368-c6b3-799a-bdf0-6d0f8bbac9bb",
+        "sale_id": "01a1a368-c638-7066-bc04-b4b6d3b75091",
+        "status": "approved",
+        "provider": "simulator",
+        "device_id": null,
+        "amount": 35000,
+        "staff_confirmed_by": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      }
+    ],
+    "audits": [
+      {
+        "action": "payment.attempt.confirm",
+        "entity_id": "01a1a368-68a1-7786-b055-acdf2591fb1b",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "sale.finalise",
+        "entity_id": "01a1a368-66eb-76e5-b26e-11d4129a3d3e",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "payment.attempt.confirm",
+        "entity_id": "01a1a368-7951-7605-b3f5-a3072d0a3f9c",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "sale.finalise",
+        "entity_id": "01a1a368-786d-7bd2-95f9-91ad4379d319",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "payment.attempt.confirm",
+        "entity_id": "01a1a368-91ca-7162-876e-274b4ac3dc58",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "sale.finalise",
+        "entity_id": "01a1a368-9105-77e3-b990-34105c4677dd",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "payment.attempt.confirm",
+        "entity_id": "01a1a368-a5bd-75cf-8071-07de90cc7bc0",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "sale.finalise",
+        "entity_id": "01a1a368-a57c-730e-889b-fb16f7337f73",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "payment.attempt.confirm",
+        "entity_id": "01a1a368-b2e4-7675-b85b-1711ca2b0b46",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "sale.finalise",
+        "entity_id": "01a1a368-b268-79ad-8e47-c66652f6be00",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "payment.attempt.confirm",
+        "entity_id": "01a1a368-c6b3-799a-bdf0-6d0f8bbac9bb",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      },
+      {
+        "action": "sale.finalise",
+        "entity_id": "01a1a368-c638-7066-bc04-b4b6d3b75091",
+        "actor_account_id": "01a1a368-41ae-71d1-94cb-07c0d27b20a8"
+      }
+    ],
+    "products": [
+      {
+        "id": "01a1a368-5faf-732e-b8d6-01a887df5b25",
+        "name": "ZZ TEST SCRUM-739 mw1878jl food",
+        "active": true,
+        "archived_at": null
+      },
+      {
+        "id": "01a1a368-5fe2-75c3-8129-e1db71cc8587",
+        "name": "ZZ TEST SCRUM-739 mw1878jl shop",
+        "active": true,
+        "archived_at": null
+      }
+    ],
+    "categories": [
+      {
+        "id": "01a1a368-5f9a-70ba-96ee-4c6df908e99d",
+        "name": "ZZ TEST SCRUM-739 mw1878jl cat menu",
+        "archived_at": null
+      },
+      {
+        "id": "01a1a368-5fce-75c7-97b5-a6bc9d2b4272",
+        "name": "ZZ TEST SCRUM-739 mw1878jl cat merch",
+        "archived_at": null
+      }
+    ],
+    "alerts": [
+      {
+        "id": "01a1a368-690c-70f1-b1cd-038ee8186199",
+        "key": "payments.late_payment:01a1a368-68a1-7786-b055-acdf2591fb1b",
+        "status": "open",
+        "resolved_at": null
+      },
+      {
+        "id": "01a1a368-79cf-7786-92e5-912af75eb61a",
+        "key": "payments.late_payment:01a1a368-7951-7605-b3f5-a3072d0a3f9c",
+        "status": "open",
+        "resolved_at": null
+      },
+      {
+        "id": "01a1a368-91fa-724b-92b1-f554f7af3897",
+        "key": "payments.late_payment:01a1a368-91ca-7162-876e-274b4ac3dc58",
+        "status": "open",
+        "resolved_at": null
+      },
+      {
+        "id": "01a1a368-a65e-7168-89ed-42d27aa6bdfd",
+        "key": "payments.late_payment:01a1a368-a5bd-75cf-8071-07de90cc7bc0",
+        "status": "open",
+        "resolved_at": null
+      },
+      {
+        "id": "01a1a368-b31f-780c-a626-0e5d8ac592f8",
+        "key": "payments.late_payment:01a1a368-b2e4-7675-b85b-1711ca2b0b46",
+        "status": "open",
+        "resolved_at": null
+      },
+      {
+        "id": "01a1a368-c76c-7971-a569-1f86bb4b60e4",
+        "key": "payments.late_payment:01a1a368-c6b3-799a-bdf0-6d0f8bbac9bb",
+        "status": "open",
+        "resolved_at": null
+      }
+    ],
+    "counts": {
+      "active_sessions": 1,
+      "active_leases": 0,
+      "working_rows": 1,
+      "pending_prints": 0,
+      "box_print_queue": 0,
+      "pending_commands": 0,
+      "devices": 0
+    }
+  },
+  "retirement": {
+    "steps": [
+      "own station archived",
+      "own box disabled",
+      "own box archived and credentials cleared",
+      "own product archived: 01a1a368-5faf-732e-b8d6-01a887df5b25",
+      "own product archived: 01a1a368-5fe2-75c3-8129-e1db71cc8587",
+      "own category archived: 01a1a368-5f9a-70ba-96ee-4c6df908e99d",
+      "own category archived: 01a1a368-5fce-75c7-97b5-a6bc9d2b4272",
+      "own POS session signed out"
+    ],
+    "errors": [
+      {
+        "label": "independent cleanup",
+        "type": "AssertionError",
+        "message": "Readback failed; retain the job receipt"
+      }
+    ],
+    "signedOut": true
+  },
+  "alertCleanup": {
+    "passed": true,
+    "retired": [
+      {
+        "alertId": "01a1a368-690c-70f1-b1cd-038ee8186199",
+        "attemptId": "01a1a368-68a1-7786-b055-acdf2591fb1b",
+        "changed": true
+      },
+      {
+        "alertId": "01a1a368-79cf-7786-92e5-912af75eb61a",
+        "attemptId": "01a1a368-7951-7605-b3f5-a3072d0a3f9c",
+        "changed": true
+      },
+      {
+        "alertId": "01a1a368-91fa-724b-92b1-f554f7af3897",
+        "attemptId": "01a1a368-91ca-7162-876e-274b4ac3dc58",
+        "changed": true
+      },
+      {
+        "alertId": "01a1a368-a65e-7168-89ed-42d27aa6bdfd",
+        "attemptId": "01a1a368-a5bd-75cf-8071-07de90cc7bc0",
+        "changed": true
+      },
+      {
+        "alertId": "01a1a368-b31f-780c-a626-0e5d8ac592f8",
+        "attemptId": "01a1a368-b2e4-7675-b85b-1711ca2b0b46",
+        "changed": true
+      },
+      {
+        "alertId": "01a1a368-c76c-7971-a569-1f86bb4b60e4",
+        "attemptId": "01a1a368-c6b3-799a-bdf0-6d0f8bbac9bb",
+        "changed": true
+      }
+    ],
+    "financialHistoryRetained": true
+  },
+  "afterSettings": []
+}

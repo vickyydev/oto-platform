@@ -1,0 +1,236 @@
+import { createRequire } from 'node:module';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { randomUUID, createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import assert from 'node:assert/strict';
+import { verifyDatabase, retireAlerts } from './s739-staging-read.mjs';
+const root = 'C:/oto-lanes/codex-qr-review-phone-20261104';
+if (process.env.S739_MODE !== 'local' || new URL(process.env.S739_POS).hostname !== '127.0.0.1') throw Error('Local rehearsal only');
+const ci = null, deployments = [], beforeSettings = [];
+const live = async () => [], settings = async () => [];
+const need = key => process.env[key === 'STAGING_ADMIN_PHONE' ? 'S739_PHONE' : 'S739_PASSWORD'];
+async function retireTestAlerts(result) {
+  const load = createRequire(root + '/apps/api/package.json'); load('tsx/cjs');
+  const { Client } = load('pg'), { drizzle } = load('drizzle-orm/node-postgres');
+  const { audit } = load(root + '/apps/api/src/services/audit.ts');
+  const { resolveAlert } = load(root + '/apps/api/src/services/ops.ts');
+  const { newId } = load('@oto/shared');
+  const c = new Client({ connectionString: process.env.S739_PROOF_DB_URL });
+  await c.connect();
+  try { return await retireAlerts(c, { fixture: result.fixture, identity: result.identity, cases: result.cases }, { drizzle, audit, resolveAlert, newId }); }
+  finally { await c.end(); }
+}
+async function independentRead(result, mode) {
+  const { Client } = createRequire(root + '/apps/api/package.json')('pg');
+  const c = new Client({ connectionString: process.env.S739_PROOF_DB_URL });
+  await c.connect();
+  try { return await verifyDatabase(c, { fixture: result.fixture, identity: result.identity, cases: result.cases, mode }); }
+  finally { await c.end(); }
+}
+const require = createRequire(root + '/apps/pos/package.json');
+const { chromium, expect } = require('@playwright/test');
+const POS = process.env.S739_POS;
+const stamp = Date.now().toString(36);
+const out = 'C:/oto-lanes/s739-staging-rehearsal/' + stamp;
+mkdirSync(out, { recursive: true });
+const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const page = await ctx.newPage();
+page.setDefaultTimeout(20000);
+const result = { unit: 'SCRUM-739', mode: 'local staging-fixture rehearsal', name: 'ZZ TEST SCRUM-739 ' + stamp, ci, deployments, beforeSettings, source: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
+  sourceFiles: Object.fromEntries(['apps/pos/src/App.tsx', 'apps/pos/src/components/mobile/MobileShell.tsx',
+    'apps/pos/src/pages/MerchStation.tsx', 'apps/pos/src/lib/usePaymentStage.ts', 'apps/pos/dist/public/index.html']
+    .map(p => [p, createHash('sha256').update(readFileSync(root + '/' + p)).digest('hex')])),
+  cases: [], images: [], failures: [] };
+const save = () => writeFileSync(out + '/result.json', JSON.stringify(result, null, 2));
+save();
+const api = async (method, path, data) => {
+  const action = randomUUID();
+  const r = await ctx.request.fetch(POS + '/api' + path, { method, ...(data ? { data } : {}), headers: { 'idempotency-key': action, 'x-oto-action-id': action } });
+  const b = await r.json();
+  if (!r.ok()) throw Error(`${method} ${path.split('?')[0]}: ${r.status()} ${b.error?.code ?? ''}`);
+  return b;
+};
+const shot = async name => { const path = out + '/' + name + '.png'; await page.screenshot({ path, fullPage: true, animations: 'disabled',
+  mask: [page.locator('input[type=password]'), page.locator('[data-testid="display-pairing-code"]')] }); result.images.push(path); };
+let phase = 'sign in';
+try {
+  await page.goto(POS);
+  await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible();
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(need('STAGING_ADMIN_PHONE').replace(/^\+66/, '0'));
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_ADMIN_PASSWORD'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Which station are you on?' })).toBeVisible();
+  const me = await api('GET', '/me');
+  const branchId = me.operatorContext.branchId;
+
+  result.identity = { branchId, actorId: me.account.id };
+  result.fixture = { name: result.name, products: [], categories: [] }; save();
+  phase = 'fixture';
+  const createdBox = await api('POST', `/branches/${branchId}/boxes`, { name: 'ZZ TEST SCRUM-739 ' + stamp, slot: 'zz-test-s739-' + stamp, role: 'counter' });
+  const boxId = createdBox.box.id;
+  result.fixture.boxId = boxId; save();
+  const stations = (await api('GET', '/branches/' + branchId + '/stations?includeArchived=true')).stations;
+  const used = new Set(stations.map(s => s.codePrefix));
+  const prefix = Array.from('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', c => 'Z3' + c).find(c => !used.has(c)); assert.ok(prefix);
+  for (const kind of ['menu', 'merch']) {
+    const name = result.name + (kind === 'menu' ? ' food' : ' shop');
+    const categoryName = result.name + ' cat ' + kind;
+    const category = await api('POST', '/menu/categories', { name: categoryName, taxableCategory: kind === 'menu' ? 'fnb' : 'merch', defaultPrepStation: 'none' });
+    result.fixture.categories.push({ id: category.id, name: categoryName }); save();
+    const product = await api('POST', '/branches/' + branchId + '/menu/products', { name, kind, categoryId: category.id, priceSatang: 100, priceWeekendSatang: 100, stockLinks: [], active: true });
+    result.fixture.products.push({ id: product.id, name, kind }); save();
+  }
+  const packageName = result.name + ' ticket';
+  const pkg = await api('POST', '/branches/' + branchId + '/ticket-packages', { name: packageName, durationLabel: 'ZZ TEST 1 Hour', hours: 1,
+    prices: { tourist: { weekday: 100, weekend: 100 } }, adultRules: { tourist: { kind: 'same_as_kid' } },
+    freebies: [], creditRule: { appliesTo: 'none', basis: 'fixed', value: 0 }, gateAccess: false, active: true });
+  result.fixture.ticketPackage = { id: pkg.id, name: packageName }; save();
+  const created = await api('POST', `/branches/${branchId}/stations`, { name: 'ZZ TEST SCRUM-739 ' + stamp,
+    kind: 'till', boxId, codePrefix: prefix, paymentRouting: { card: 'manual', qr: 'gateway' }, accessScope: 'all_staff', capabilities: [], devices: [] });
+  const stationId = created.station.id;
+  result.fixture.stationId = stationId; result.fixture.codePrefix = prefix; save();
+  await page.reload();
+  await page.getByRole('button', { name: new RegExp('ZZ TEST SCRUM-739 ' + stamp) }).click();
+  await expect(page.getByText('Membership Check', { exact: true })).toBeVisible();
+  for (const [kind, mobile] of [['food', false], ['shop', false], ['tickets', false], ['food', true], ['shop', true], ['tickets', true]]) {
+  const label = kind + (mobile ? '-phone' : '-desktop');
+  const current = { kind, mobile };
+  await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
+  await page.goto(POS + (kind === 'food' ? '/order-station' : kind === 'shop' ? '/merch-station' : '/'));
+  phase = label + ' cart';
+  if (kind === 'tickets') {
+    if (!mobile) await page.getByRole('button', { name: /Skip.*walk-in/ }).click();
+    await page.getByRole('heading', { name: 'Tourist', exact: true }).click();
+    await page.getByRole('heading', { name: result.fixture.ticketPackage.name, exact: true }).click();
+    await page.getByRole('button', { name: 'Remove one Kids', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    if (mobile) await page.getByRole('button', { name: 'Customer is ready', exact: true }).click();
+    await page.getByPlaceholder('e.g. Mama, John').fill('ZZ TEST SCRUM-739 ' + label);
+    await page.getByRole('button', { name: 'Done', exact: true }).last().click();
+    if (mobile) await page.getByRole('button', { name: /^Pay/ }).click();
+  } else {
+  await page.getByRole('button', { name: /No wristband.*continue as guest/ }).click();
+  if (kind === 'food') {
+  const productName = result.fixture.products.find(p => p.kind === 'menu').name;
+  await page.getByPlaceholder('Search dish…').fill(productName);
+  await page.getByRole('button', { name: new RegExp(productName) }).click();
+  // The dedicated item has no modifier groups, so its tile adds it directly.
+  if (mobile) {
+    await page.getByRole('button', { name: 'Open cart', exact: true }).click();
+    await page.getByRole('button', { name: /^Checkout/ }).click();
+  } else await page.getByRole('button', { name: /^Charge ฿/ }).click();
+  const pickup = page.getByRole('dialog', { name: 'Pick-up Code' });
+  await pickup.getByRole('button', { name: '7', exact: true }).click();
+  await pickup.getByRole('button', { name: '9', exact: true }).click();
+  await pickup.getByRole('button', { name: /^Continue to Payment/ }).click(); await expect(pickup).toBeHidden();
+  if (mobile) {
+    await page.getByRole('button', { name: 'Customer is ready', exact: true }).click();
+    await page.getByRole('button', { name: 'Customer confirmed — return phone to staff', exact: true }).click();
+  }
+  } else {
+    await page.getByRole('button', { name: new RegExp(result.fixture.products.find(p => p.kind === 'merch').name) }).click();
+    await page.getByRole('button', { name: /^Charge ฿/ }).click();
+  }
+  }
+  phase = label + ' QR choice';
+  await shot(label + '-01-payment');
+  await page.getByText('PromptPay', { exact: true }).first().click();
+  const opened = page.waitForResponse(r => r.url().endsWith('/api/payments/attempts') && r.request().method() === 'POST').catch(() => null);
+  await page.getByRole('button', { name: 'Show payment QR' }).click();
+  const shown = await (await opened).json();
+  if (shown.route !== 'gateway' || !shown.attempt?.id) throw Error('Gateway attempt not opened');
+  current.saleId = shown.attempt.saleId; current.attemptId = shown.attempt.id;
+  result.currentCase = current; save();
+  if (mobile && kind !== 'shop') {
+    await page.getByRole('button', { name: 'Customer is ready', exact: true }).click();
+    await page.getByRole('button', { name: 'Done — return phone to staff', exact: true }).click();
+  }
+  const late = await api('POST', '/webhooks/2c2p/simulator', { attemptId: current.attemptId, event: 'late_paid' });
+  if (late.webhookOutcome !== 'late_paid') throw Error('Simulator did not report late payment');
+  current.simulator = { event: late.event, gatewayState: late.gatewayState, webhookOutcome: late.webhookOutcome }; save();
+  const held = await api('GET', '/sales/' + current.saleId);
+  if (held.sale.status !== 'tendering' || held.sale.receiptNumber) throw Error('Sale released before review');
+  assert.equal(held.attempts.length, 1); assert.equal(held.attempts[0].status, 'awaiting_staff_confirmation');
+  current.held = { saleStatus: held.sale.status, receiptNumber: held.sale.receiptNumber, attemptStatus: held.attempts[0].status }; save();
+  phase = label + ' review';
+  await expect(page.getByTestId('payment-cancel-qr')).toHaveCount(0);
+  // The phone ticket screen also has a separate button for showing the same
+  // QR to the guest. Check the submit inside the payment step, not that door.
+  await expect(page.getByTestId('payment-stage').locator('..')
+    .getByRole('button', { name: 'Show payment QR', exact: true })).toBeDisabled();
+  await shot(label + '-02-held');
+  if (mobile && kind === 'shop') {
+    await page.getByLabel('Lock screen').click();
+    await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
+    await expect(page.getByTestId('payment-stage')).toHaveCount(0);
+    await shot(label + '-02b-staff-locked');
+    await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_ADMIN_PASSWORD'));
+    await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Review the QR payment', exact: true })).toBeVisible();
+    const resumed = await api('GET', '/sales/' + current.saleId);
+    if (resumed.attempts.length !== 1 || resumed.attempts[0].id !== current.attemptId) throw Error('Shop lock replaced the attempt');
+    current.staffLockPreservedAttempt = true;
+  }
+  await page.getByRole('button', { name: 'Review the QR payment' }).click();
+  const dialog = page.getByRole('alertdialog');
+  await expect(dialog).toHaveCSS('opacity', '1');
+  await expect(dialog.getByRole('button', { name: 'Money taken', exact: true })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'No money taken', exact: true })).toBeDisabled();
+  await shot(label + '-03-review-locked');
+  await dialog.locator('#payment-confirm-note').fill('ZZ TEST checked simulator bank slip and gateway report');
+  await expect(dialog.getByRole('button', { name: 'Money taken', exact: true })).toBeDisabled();
+  await dialog.getByRole('checkbox').check();
+  await shot(label + '-04-review-ready');
+  const confirmed = page.waitForResponse(r => r.url().endsWith(`/api/payments/attempts/${current.attemptId}/confirm`) && r.request().method() === 'POST').catch(() => null);
+  await dialog.getByRole('button', { name: 'Money taken', exact: true }).click();
+  if ((await confirmed).status() !== 200) throw Error('Review refused');
+  await expect.poll(async () => (await api('GET', '/sales/' + current.saleId)).sale.status).toBe('finalised');
+  const readback = await api('GET', '/sales/' + current.saleId);
+  current.readback = { saleId: readback.sale.id, status: readback.sale.status, receiptNumber: readback.sale.receiptNumber,
+    attempts: readback.attempts.map(a => ({ id: a.id, status: a.status, amountSatang: a.amountSatang })) };
+  if (readback.attempts.length !== 1 || readback.attempts[0].status !== 'approved') throw Error('Payment count differs');
+  await expect(page.getByTestId('payment-stage')).toHaveCount(0);
+  await shot(label + '-05-completed');
+  result.cases.push(current); delete result.currentCase; save();
+  console.log(label + ': held, reviewed, finished and read back once');
+  }
+  assert.equal(result.cases.length, 6);
+  result.independent = await independentRead(result, 'proof'); save();
+  assert.deepEqual(await live(), deployments);
+  assert.deepEqual(await settings(), beforeSettings);
+} catch (e) {
+  result.failures.push({ phase, type: e.name, message: String(e.message).split('\n')[0].slice(0, 250) });
+  await shot('failure-' + phase.replaceAll(' ', '-')).catch(() => {});
+  process.exitCode = 1;
+} finally {
+  result.retirement = { steps: [], errors: [] }; save();
+  async function retire(label, method, path, data) {
+    try { await api(method, path, data); result.retirement.steps.push(label); }
+    catch (e) { result.retirement.errors.push({ label, type: e.name, message: String(e.message).slice(0, 160) }); process.exitCode = 1; }
+    save();
+  }
+  const f = result.fixture;
+  if (f?.stationId) await retire('own station archived', 'DELETE', '/stations/' + f.stationId);
+  if (f?.boxId) {
+    await retire('own box disabled', 'PATCH', '/boxes/' + f.boxId, { status: 'disabled' });
+    await retire('own box archived and credentials cleared', 'DELETE', '/boxes/' + f.boxId);
+  }
+  for (const p of f?.products ?? []) await retire('own product archived: ' + p.id, 'DELETE', '/branches/' + result.identity.branchId + '/menu/products/' + p.id);
+  for (const c of f?.categories ?? []) await retire('own category archived: ' + c.id, 'DELETE', '/menu/categories/' + c.id);
+  if (f?.ticketPackage) await retire('own ticket package archived', 'DELETE', '/branches/' + result.identity.branchId + '/ticket-packages/' + f.ticketPackage.id);
+  await retire('own POS session signed out', 'POST', '/auth/sign-out', {});
+  result.retirement.signedOut = (await ctx.request.get(POS + '/api/me')).status() === 401;
+  if (!result.retirement.signedOut) process.exitCode = 1;
+  save();
+  if (result.cases.length === 6 && result.retirement.errors.length === 0) {
+    try { result.alertCleanup = await retireTestAlerts(result); save(); result.cleanup = await independentRead(result, 'cleanup'); }
+    catch (e) { result.retirement.errors.push({ label: 'independent cleanup', type: e.name, message: 'Readback failed; retain the job receipt' }); process.exitCode = 1; }
+  }
+  try { result.afterSettings = await settings(); assert.deepEqual(result.afterSettings, beforeSettings); }
+  catch { result.retirement.errors.push({ label: 'unchanged API settings', message: 'Readback differs; review without writing settings' }); process.exitCode = 1; }
+  await browser.close();
+  writeFileSync(out + '/result.json', JSON.stringify(result, null, 2));
+  console.log(JSON.stringify({ out, phase, cases: result.cases, failures: result.failures }));
+}

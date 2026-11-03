@@ -1,0 +1,15 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-qr-review-ci-repro-20261104/apps/api
+
+ ✓ test/s722-consent-control-review.test.ts (6 tests) 19652ms
+   ✓ SCRUM-722: each consent target changes the acknowledgement once > HIGH pin: the small checkbox toggles once and submits only acknowledged consent  15662ms
+   ✓ SCRUM-722: each consent target changes the acknowledgement once > MEDIUM pin: Space toggles the single labelled control once  352ms
+   ✓ SCRUM-722: each consent target changes the acknowledgement once > clicking the consent sentence changes the acknowledgement once in either direction  527ms
+   ✓ SCRUM-722: each consent target changes the acknowledgement once > acknowledgement cannot bypass a missing photo  742ms
+   ✓ SCRUM-722: each consent target changes the acknowledgement once > closing and reopening asks for a fresh acknowledgement  830ms
+   ✓ SCRUM-722: each consent target changes the acknowledgement once > existing consent is not asked for again or replaced by a new acknowledgement  663ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  05:06:01
+   Duration  21.02s (transform 54ms, setup 0ms, collect 960ms, tests 19.65s, environment 0ms, prepare 200ms)

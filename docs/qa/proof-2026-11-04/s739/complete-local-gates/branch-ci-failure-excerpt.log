@@ -1,0 +1,25 @@
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.2963873Z ⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.2964481Z
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.2982520Z  FAIL  test/s722-consent-control-review.test.ts [ test/s722-consent-control-review.test.ts ]
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3012238Z Error: Hook timed out in 90000ms.
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3013486Z If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3014295Z  ❯ test/s722-consent-control-review.test.ts:16:1
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3026719Z      14| const enabled = (value: boolean) => expect.poll(() => confirm().isEnab…
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3027409Z
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3052313Z      15|
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3053415Z  Test Files  1 failed | 146 passed | 2 skipped (149)
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3054840Z      16| beforeAll(async () => { harness = await startConsentHarness(); }, 90_0…
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3080619Z       Tests  2129 passed | 112 skipped (2241)
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3082445Z        | ^
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3083025Z    Start at  21:41:39
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3105692Z      17| beforeEach(async () => { await harness.open(); }, 40_000);
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3107677Z    Duration  1254.98s (transform 8.39s, setup 0ms, collect 238.29s, tests 984.76s, environment 33ms, prepare 10.75s)
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3110030Z      18| afterAll(async () => { await harness?.close(); });
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3110958Z
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3111273Z
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3111882Z ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3112382Z
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3116132Z
+api-tests (1)	Api tests (shard 1 of 3)	2026-11-03T22:02:34.3148342Z ##[error]Error: Hook timed out in 90000ms.
+api-tests (1)	Api tests (shard 1 of 3)	If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".
+api-tests (1)	Api tests (shard 1 of 3)	 ❯ test/s722-consent-control-review.test.ts:16:1

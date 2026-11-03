@@ -1,0 +1,74 @@
+{
+  "unit": "SCRUM-739",
+  "mode": "local staging-fixture rehearsal",
+  "name": "ZZ TEST SCRUM-739 mw17xiny",
+  "ci": null,
+  "deployments": [],
+  "beforeSettings": [],
+  "source": "d1404fb0613418e81d6a03a4f6811af295c0a46e",
+  "sourceFiles": {
+    "apps/pos/src/App.tsx": "40c15d560980e97efd09aceff8c61699a0c23918441d4cbf07a8e46d7c94f0ea",
+    "apps/pos/src/components/mobile/MobileShell.tsx": "464689c46ae2f83fda48c0da3aaef5aad46d375b792c76757eb7c32140c40bd0",
+    "apps/pos/src/pages/MerchStation.tsx": "1e3d737e4b2d09c52653c61bd603c84bc9068182b6d28bcb520921eefc28b1a6",
+    "apps/pos/src/lib/usePaymentStage.ts": "1865fd0cbeeb2fb1ee41e9a5b9e6518af4a6ce3f4d74fa5884bf0127705a762a",
+    "apps/pos/dist/public/index.html": "0d50b4db9a983c6431a1feabc5db375f6722ebfb5257380ff37f4f2180724cb5"
+  },
+  "cases": [],
+  "images": [
+    "C:/oto-lanes/s739-staging-rehearsal/mw17xiny/failure-food-desktop-cart.png"
+  ],
+  "failures": [
+    {
+      "phase": "food-desktop cart",
+      "type": "TimeoutError",
+      "message": "locator.fill: Timeout 20000ms exceeded."
+    }
+  ],
+  "identity": {
+    "branchId": "01a1a361-5cd5-76ee-bc9b-0584cda56a4e",
+    "actorId": "01a1a361-5d07-7aa8-8ce1-9ecf0937dab5"
+  },
+  "fixture": {
+    "name": "ZZ TEST SCRUM-739 mw17xiny",
+    "products": [
+      {
+        "id": "01a1a361-719f-7636-84d3-b8b1f5303d61",
+        "name": "ZZ TEST SCRUM-739 mw17xiny food",
+        "kind": "menu"
+      },
+      {
+        "id": "01a1a361-71ca-7b9b-8f26-df495ca68c4a",
+        "name": "ZZ TEST SCRUM-739 mw17xiny shop",
+        "kind": "merch"
+      }
+    ],
+    "categories": [
+      {
+        "id": "01a1a361-7189-76bd-a582-40f5fec8b00b",
+        "name": "ZZ TEST SCRUM-739 mw17xiny food"
+      },
+      {
+        "id": "01a1a361-71b9-7340-93a5-dccc00875b15",
+        "name": "ZZ TEST SCRUM-739 mw17xiny shop"
+      }
+    ],
+    "boxId": "01a1a361-7160-791a-b0ea-e048ca2045ae",
+    "stationId": "01a1a361-71df-7cc1-a224-caf9c6acd2aa",
+    "codePrefix": "Z30"
+  },
+  "retirement": {
+    "steps": [
+      "own station archived",
+      "own box disabled",
+      "own box archived and credentials cleared",
+      "own product archived: 01a1a361-719f-7636-84d3-b8b1f5303d61",
+      "own product archived: 01a1a361-71ca-7b9b-8f26-df495ca68c4a",
+      "own category archived: 01a1a361-7189-76bd-a582-40f5fec8b00b",
+      "own category archived: 01a1a361-71b9-7340-93a5-dccc00875b15",
+      "own POS session signed out"
+    ],
+    "errors": [],
+    "signedOut": true
+  },
+  "afterSettings": []
+}

@@ -1,0 +1,103 @@
+{
+  "unit": "SCRUM-739",
+  "mode": "local staging-fixture rehearsal",
+  "name": "ZZ TEST SCRUM-739 mw17zfzz",
+  "ci": null,
+  "deployments": [],
+  "beforeSettings": [],
+  "source": "d1404fb0613418e81d6a03a4f6811af295c0a46e",
+  "sourceFiles": {
+    "apps/pos/src/App.tsx": "40c15d560980e97efd09aceff8c61699a0c23918441d4cbf07a8e46d7c94f0ea",
+    "apps/pos/src/components/mobile/MobileShell.tsx": "464689c46ae2f83fda48c0da3aaef5aad46d375b792c76757eb7c32140c40bd0",
+    "apps/pos/src/pages/MerchStation.tsx": "1e3d737e4b2d09c52653c61bd603c84bc9068182b6d28bcb520921eefc28b1a6",
+    "apps/pos/src/lib/usePaymentStage.ts": "1865fd0cbeeb2fb1ee41e9a5b9e6518af4a6ce3f4d74fa5884bf0127705a762a",
+    "apps/pos/dist/public/index.html": "0d50b4db9a983c6431a1feabc5db375f6722ebfb5257380ff37f4f2180724cb5"
+  },
+  "cases": [
+    {
+      "kind": "food",
+      "mobile": false,
+      "saleId": "01a1a362-d5b9-7615-a54f-53330e125286",
+      "attemptId": "01a1a362-d745-71d6-b70d-270accd3a081",
+      "held": {
+        "saleStatus": "tendering",
+        "receiptNumber": null,
+        "attemptStatus": "awaiting_staff_confirmation"
+      },
+      "readback": {
+        "saleId": "01a1a362-d5b9-7615-a54f-53330e125286",
+        "status": "finalised",
+        "receiptNumber": "Z30-000001",
+        "attempts": [
+          {
+            "id": "01a1a362-d745-71d6-b70d-270accd3a081",
+            "status": "approved",
+            "amountSatang": 100
+          }
+        ]
+      }
+    }
+  ],
+  "images": [
+    "C:/oto-lanes/s739-staging-rehearsal/mw17zfzz/food-desktop-01-payment.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw17zfzz/food-desktop-02-held.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw17zfzz/food-desktop-03-review-locked.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw17zfzz/food-desktop-04-review-ready.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw17zfzz/food-desktop-05-completed.png",
+    "C:/oto-lanes/s739-staging-rehearsal/mw17zfzz/failure-shop-desktop-cart.png"
+  ],
+  "failures": [
+    {
+      "phase": "shop-desktop cart",
+      "type": "Error",
+      "message": "locator.click: Error: strict mode violation: getByRole('button', { name: /ZZ TEST SCRUM-739 mw17zfzz shop/ }) resolved to 2 elements:"
+    }
+  ],
+  "identity": {
+    "branchId": "01a1a362-bd3d-7d81-9498-95058bfa7071",
+    "actorId": "01a1a362-bd68-7d81-a161-4c1e6ff3162a"
+  },
+  "fixture": {
+    "name": "ZZ TEST SCRUM-739 mw17zfzz",
+    "products": [
+      {
+        "id": "01a1a362-d0a8-7442-8ada-14e9eb913718",
+        "name": "ZZ TEST SCRUM-739 mw17zfzz food",
+        "kind": "menu"
+      },
+      {
+        "id": "01a1a362-d0d7-7d5d-94b3-13ec030c8196",
+        "name": "ZZ TEST SCRUM-739 mw17zfzz shop",
+        "kind": "merch"
+      }
+    ],
+    "categories": [
+      {
+        "id": "01a1a362-d094-7f1c-bd9e-381e4457c866",
+        "name": "ZZ TEST SCRUM-739 mw17zfzz food"
+      },
+      {
+        "id": "01a1a362-d0c5-74c9-a4c7-3b863001b938",
+        "name": "ZZ TEST SCRUM-739 mw17zfzz shop"
+      }
+    ],
+    "boxId": "01a1a362-d06a-7cfb-b87b-49b4cc51c7c6",
+    "stationId": "01a1a362-d0ed-782e-bca1-8940f4f55058",
+    "codePrefix": "Z30"
+  },
+  "retirement": {
+    "steps": [
+      "own station archived",
+      "own box disabled",
+      "own box archived and credentials cleared",
+      "own product archived: 01a1a362-d0a8-7442-8ada-14e9eb913718",
+      "own product archived: 01a1a362-d0d7-7d5d-94b3-13ec030c8196",
+      "own category archived: 01a1a362-d094-7f1c-bd9e-381e4457c866",
+      "own category archived: 01a1a362-d0c5-74c9-a4c7-3b863001b938",
+      "own POS session signed out"
+    ],
+    "errors": [],
+    "signedOut": true
+  },
+  "afterSettings": []
+}
