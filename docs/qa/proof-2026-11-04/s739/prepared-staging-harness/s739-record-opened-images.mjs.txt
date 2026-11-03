@@ -1,0 +1,8 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+const root = 'C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/';
+const names = ['food-desktop-02-held','food-desktop-03-review-locked','food-desktop-04-review-ready','food-desktop-05-completed','food-phone-04-review-ready','shop-desktop-04-review-ready','shop-phone-02b-staff-locked','shop-phone-04-review-ready','shop-phone-05-completed','tickets-desktop-04-review-ready','tickets-phone-04-review-ready','tickets-phone-05-completed'];
+// Each listed file was opened through view_image in this turn before recording.
+const images = names.map(name => ({ file: name + '.png', path: root + name + '.png', sha256: createHash('sha256').update(readFileSync(root + name + '.png')).digest('hex'), opened: true }));
+writeFileSync('C:/oto-lanes/s739-opened-staging-images.json', JSON.stringify({ at: new Date().toISOString(), source: 'dde3887aa3162d6b6c006c4135ad2ef20e163b6c', images, observations: ['The late-payment hold offers the shared review.', 'Empty note/unchecked acknowledgement leaves both answers disabled.', 'All six desktop and phone review dialogs show the same bank/gateway instructions and answer controls.', 'The phone shop hides staff controls under its lock and resumes the same attempt.', 'Receipts Z30-000001, Z30-000005 and Z30-000006 are visible in the selected completion frames.', 'Physical printing is unproven: no printer was assigned, and the visible warnings are retained.', 'Only the password field is masked; there is no benefit QR in these selected images.'] }, null, 2) + '\n');
+console.log('Recorded 12 opened staging images and their fingerprints.');

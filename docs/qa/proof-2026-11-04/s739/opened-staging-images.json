@@ -1,0 +1,87 @@
+{
+  "at": "2026-11-03T23:05:26.353Z",
+  "source": "dde3887aa3162d6b6c006c4135ad2ef20e163b6c",
+  "images": [
+    {
+      "file": "food-desktop-02-held.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/food-desktop-02-held.png",
+      "sha256": "abdb7e2ef653a2b67eb234a423d3bc4aed953c69d54d2734b3a9915d8a91cc08",
+      "opened": true
+    },
+    {
+      "file": "food-desktop-03-review-locked.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/food-desktop-03-review-locked.png",
+      "sha256": "fa13bb3a5a7a211d020142ca5e387fe0c136331cae0735d9704dd94acc9dfb39",
+      "opened": true
+    },
+    {
+      "file": "food-desktop-04-review-ready.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/food-desktop-04-review-ready.png",
+      "sha256": "448e61d916ca1a5b531724edb20104f71e8a01e4c48fe107783e0d17ab28d07a",
+      "opened": true
+    },
+    {
+      "file": "food-desktop-05-completed.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/food-desktop-05-completed.png",
+      "sha256": "2f8f6d49530cd23f1274d1330a142290b07e3d576c09652362438c5c8d1b75c9",
+      "opened": true
+    },
+    {
+      "file": "food-phone-04-review-ready.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/food-phone-04-review-ready.png",
+      "sha256": "802f70545dea0416b391d4b93c6758fc1395996d4d468c90a0c5b1d7498f8885",
+      "opened": true
+    },
+    {
+      "file": "shop-desktop-04-review-ready.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/shop-desktop-04-review-ready.png",
+      "sha256": "a8907b0370b6de190f4f40640250dd1c5fc6de6667f63448335b6b46da90fec8",
+      "opened": true
+    },
+    {
+      "file": "shop-phone-02b-staff-locked.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/shop-phone-02b-staff-locked.png",
+      "sha256": "b577eb06d580cafe508a8b26fb1ba6bba07035011da3dc291132fdb80dcc065f",
+      "opened": true
+    },
+    {
+      "file": "shop-phone-04-review-ready.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/shop-phone-04-review-ready.png",
+      "sha256": "1df30c51fe845e870a00103e9f856e48ce4c418c357ed341ff6c9c61ce54b2c3",
+      "opened": true
+    },
+    {
+      "file": "shop-phone-05-completed.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/shop-phone-05-completed.png",
+      "sha256": "d3bd15889b959a7df14d0f4fc1ae9c3846121da84702797b1514613e4fa8f769",
+      "opened": true
+    },
+    {
+      "file": "tickets-desktop-04-review-ready.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/tickets-desktop-04-review-ready.png",
+      "sha256": "6c4261664852db7a95fa73309ea4af0adac8007f6e205e6a90013d2a7649f7e5",
+      "opened": true
+    },
+    {
+      "file": "tickets-phone-04-review-ready.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/tickets-phone-04-review-ready.png",
+      "sha256": "95bc820745833b5e354283b80067cc2c9189c21867b8322b6eb84c21fbb941fd",
+      "opened": true
+    },
+    {
+      "file": "tickets-phone-05-completed.png",
+      "path": "C:/oto-lanes/codex-qr-review-phone-20261104/docs/qa/proof-2026-11-04/s739/staging/mw1amatj/tickets-phone-05-completed.png",
+      "sha256": "eff656dea363f50753332767d94852e31fb63e2010bfced4422f38ea6e738e50",
+      "opened": true
+    }
+  ],
+  "observations": [
+    "The late-payment hold offers the shared review.",
+    "Empty note/unchecked acknowledgement leaves both answers disabled.",
+    "All six desktop and phone review dialogs show the same bank/gateway instructions and answer controls.",
+    "The phone shop hides staff controls under its lock and resumes the same attempt.",
+    "Receipts Z30-000001, Z30-000005 and Z30-000006 are visible in the selected completion frames.",
+    "Physical printing is unproven: no printer was assigned, and the visible warnings are retained.",
+    "Only the password field is masked; there is no benefit QR in these selected images."
+  ]
+}

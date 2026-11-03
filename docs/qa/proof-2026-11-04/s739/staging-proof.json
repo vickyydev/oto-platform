@@ -1,0 +1,126 @@
+{
+  "source": "dde3887aa3162d6b6c006c4135ad2ef20e163b6c",
+  "ci": {
+    "conclusion": "success",
+    "databaseId": 41731884131,
+    "headSha": "dde3887aa3162d6b6c006c4135ad2ef20e163b6c",
+    "status": "completed"
+  },
+  "stagedAt": "2026-11-03T23:07:12.349Z",
+  "run": "mw1amatj",
+  "proofDirectory": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\proof-2026-11-04\\s739\\staging\\mw1amatj",
+  "images": [
+    {
+      "file": "s739-food-desktop-02-held.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-food-desktop-02-held.png",
+      "sha256": "abdb7e2ef653a2b67eb234a423d3bc4aed953c69d54d2734b3a9915d8a91cc08"
+    },
+    {
+      "file": "s739-food-desktop-03-review-locked.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-food-desktop-03-review-locked.png",
+      "sha256": "fa13bb3a5a7a211d020142ca5e387fe0c136331cae0735d9704dd94acc9dfb39"
+    },
+    {
+      "file": "s739-food-desktop-04-review-ready.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-food-desktop-04-review-ready.png",
+      "sha256": "448e61d916ca1a5b531724edb20104f71e8a01e4c48fe107783e0d17ab28d07a"
+    },
+    {
+      "file": "s739-food-desktop-05-completed.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-food-desktop-05-completed.png",
+      "sha256": "2f8f6d49530cd23f1274d1330a142290b07e3d576c09652362438c5c8d1b75c9"
+    },
+    {
+      "file": "s739-food-phone-04-review-ready.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-food-phone-04-review-ready.png",
+      "sha256": "802f70545dea0416b391d4b93c6758fc1395996d4d468c90a0c5b1d7498f8885"
+    },
+    {
+      "file": "s739-shop-desktop-04-review-ready.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-shop-desktop-04-review-ready.png",
+      "sha256": "a8907b0370b6de190f4f40640250dd1c5fc6de6667f63448335b6b46da90fec8"
+    },
+    {
+      "file": "s739-shop-phone-02b-staff-locked.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-shop-phone-02b-staff-locked.png",
+      "sha256": "b577eb06d580cafe508a8b26fb1ba6bba07035011da3dc291132fdb80dcc065f"
+    },
+    {
+      "file": "s739-shop-phone-04-review-ready.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-shop-phone-04-review-ready.png",
+      "sha256": "1df30c51fe845e870a00103e9f856e48ce4c418c357ed341ff6c9c61ce54b2c3"
+    },
+    {
+      "file": "s739-shop-phone-05-completed.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-shop-phone-05-completed.png",
+      "sha256": "d3bd15889b959a7df14d0f4fc1ae9c3846121da84702797b1514613e4fa8f769"
+    },
+    {
+      "file": "s739-tickets-desktop-04-review-ready.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-tickets-desktop-04-review-ready.png",
+      "sha256": "6c4261664852db7a95fa73309ea4af0adac8007f6e205e6a90013d2a7649f7e5"
+    },
+    {
+      "file": "s739-tickets-phone-04-review-ready.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-tickets-phone-04-review-ready.png",
+      "sha256": "95bc820745833b5e354283b80067cc2c9189c21867b8322b6eb84c21fbb941fd"
+    },
+    {
+      "file": "s739-tickets-phone-05-completed.png",
+      "path": "C:\\oto-lanes\\codex-qr-review-notes-20261104\\docs\\qa\\jira-comments\\attachments\\SCRUM-739\\s739-tickets-phone-05-completed.png",
+      "sha256": "eff656dea363f50753332767d94852e31fb63e2010bfced4422f38ea6e738e50"
+    }
+  ],
+  "imagesOpened": true,
+  "jiraPublished": false,
+  "sales": [
+    {
+      "kind": "food",
+      "phone": false,
+      "saleId": "01a1a3a6-6644-78b5-afc7-caf22494ad02",
+      "paymentId": "01a1a3a6-6bbd-740b-be40-d034a2b99141",
+      "receipt": "Z30-000001"
+    },
+    {
+      "kind": "shop",
+      "phone": false,
+      "saleId": "01a1a3a6-7765-7ce0-a856-2516c5c22ecf",
+      "paymentId": "01a1a3a6-7c1a-713a-aaa7-61d818a39655",
+      "receipt": "Z30-000002"
+    },
+    {
+      "kind": "tickets",
+      "phone": false,
+      "saleId": "01a1a3a6-8edb-7a61-8d9b-a84d1b4066ef",
+      "paymentId": "01a1a3a6-93a2-7b97-ba41-4ca942ea9bca",
+      "receipt": "Z30-000003"
+    },
+    {
+      "kind": "food",
+      "phone": true,
+      "saleId": "01a1a3a6-a575-7c90-9f7c-fef3bf87b410",
+      "paymentId": "01a1a3a6-aa29-7242-b85a-67eb476e59e2",
+      "receipt": "Z30-000004"
+    },
+    {
+      "kind": "shop",
+      "phone": true,
+      "saleId": "01a1a3a6-b76d-7751-bd06-1cb55ce84ac2",
+      "paymentId": "01a1a3a6-bc26-7167-bead-8567fc651e51",
+      "receipt": "Z30-000005"
+    },
+    {
+      "kind": "tickets",
+      "phone": true,
+      "saleId": "01a1a3a6-cf68-794d-ad5d-12701766dbe2",
+      "paymentId": "01a1a3a6-d49c-7e28-b08e-664621c8ba1e",
+      "receipt": "Z30-000006"
+    }
+  ],
+  "independentJob": "job-dbl6gaijnfac73eqcdr0",
+  "cleanupJob": "job-dbl6gtjm8hqs73cfhg5g",
+  "cleanupReadJob": "job-dbl6heqjnfac73eqgck0",
+  "cleanupPassed": true,
+  "physicalPrinting": "unproven",
+  "openedAt": "2026-11-03T23:05:26.353Z"
+}

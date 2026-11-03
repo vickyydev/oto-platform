@@ -1,108 +1,100 @@
 # SCRUM-739: review an ordinary sale's held gateway QR
 
-4 November, 05:34 Bangkok: local release checks and branch CI are complete.
-Run 41723536314 passed all six jobs on exact source d1404fb0 after one
-failed-shard retry. The original startup failure and complete-file local
-pass remain recorded; no test guard changed. Rebased 2ab9ae0a contains the
-latest main documents with application, test and build files identical to
-checked abb18abf. SCRUM-732 reads Deployed and released its slot; 739 claimed
-it at c2e2f4a0 and retains it for this landing and staging proof.
+Staging proof and cleanup passed on 4 November 2026, 06:02:27-06:06:24
+Bangkok. Jira image publication is pending; the ticket remains Testing.
 
-Main CI and staging acceptance still must be verified on the landing SHA.
-The checkpoints below retain their original observations.
+Source and live platform commit: `dde3887aa3162d6b6c006c4135ad2ef20e163b6c`.
+[Main CI 41731884131](https://github.com/vickyydev/oto-platform/actions/runs/41731884131)
+passed on its first attempt. API, POS web, old POS, Console, launcher and
+booth were live on this exact commit before and after the proof. OTO App
+remained at 773fd25f: its complete actual build context is byte-identical at
+both commits. Its main job was path-skipped; the earlier full branch run
+checked it. See [live receipt](live-before-proof.json),
+[unchanged app receipt](unchanged-oto-app.json), and [main CI](main-ci.json).
 
-4 November, 05:13 Bangkok: complete local gates are now green. The three
-API shards passed all 447 files: 6,224 passed, 401 inherited skips and four
-existing TODOs unchanged. Final POS passed 1,776 tests and eleven browser
-journeys. The latest main Console harness passed typecheck, eslint and all
-357 browser cases on the combined source. Complete workspace type, lint,
-contract, test, tool and build checks also passed. Raw receipts and log
-fingerprints are in `complete-local-gates/` and `gate-checkpoint-0449/`.
+The till now reuses SCRUM-732's bank-slip/gateway review for an ordinary
+gateway QR awaiting a person. The existing Shop is reachable on a phone.
+The old sale-writer pin that deliberately hid this button was changed on
+purpose. Expiry holds, the confirmation permission and the box PAX route
+remain guarded. No API runtime, schema, setting or displaySession changed.
 
-Branch run 41723536314 on d1404fb0613418e81d6a03a4f6811af295c0a46e
-passed five jobs but failed API shard 1 while starting the existing consent
-browser harness. Its complete six-case file passed unchanged on an isolated
-checkout of that exact SHA. The failed shard is being rerun once; CI is not
-yet green. The original failure is retained. No timeout, retry or assertion
-was changed. The current rebase adds only main's documentation; application,
-package, test and build bytes match the previously checked abb18abf source.
+## Staging result
 
-The final six-case staging-fixture rehearsal used only dedicated one-baht
-products and a ticket package with no credit or gate access. Independent
-reads confirm six finished sales, six payments and one confirmation and
-finalisation audit each. Cleanup archived the exact fixtures, revoked the
-two unscanned synthetic bands and retired their six alerts and inactive
-working document with audit. All own session and queue counts are zero.
-`staging-rehearsal/` retains the receipt and three opened images; guarded
-staging helper snapshots are in `prepared-staging-harness/`.
+The simulator reported a payment after the QR closed. Every sale stayed
+tendering with no receipt while awaiting staff confirmation. Both answers
+stayed disabled without the note and acknowledgement. Money taken then
+finished the sale exactly once. The phone Shop also survived a staff lock
+with the same attempt. Independent database reads before and after cleanup
+found one approved payment, one answer audit and one finalisation audit each.
 
-SCRUM-732 is still Testing and holds the proof/API slot. No SCRUM-739
-runtime source is on main and no staging fixture or setting has changed.
-The older checkpoints below describe the work at their recorded times.
+| Sale | Width | Receipt | Finished sales | Payments |
+|---|---|---|---:|---:|
+| food | 1440px desktop | Z30-000001 | 1 | 1 |
+| shop | 1440px desktop | Z30-000002 | 1 | 1 |
+| tickets | 1440px desktop | Z30-000003 | 1 | 1 |
+| food | 390px phone | Z30-000004 | 1 | 1 |
+| shop | 390px phone | Z30-000005 | 1 | 1 |
+| tickets | 390px phone | Z30-000006 | 1 | 1 |
 
-4 November, 04:35 Bangkok: six native local cases now pass on the built POS:
-ticket, food and shop at 1440px desktop and 390px phone width. Each simulator
-late payment stays held until the shared review is answered, requires both
-the note and checkbox, and reads back as one finalised sale with one approved
-payment. `local-native/result.json` records the six distinct sale/attempt IDs,
-receipts and tested source-file fingerprints. The isolated database was
-dropped after the run. These are local simulator results, not staging proof.
+Every test sale was one baht, using only dedicated ZZ TEST products and a
+no-credit/no-gate ticket package. No real bank payment, SMS, person or park
+device was involved. No real box address was saved. The 57 API setting
+fingerprints and all deployment identities were unchanged.
 
-The phone shell had no Shop route. It now mounts the existing shop screen,
-stacks its products and existing cart, and leaves the shared payment panel
-intact. Its staff lock pauses controls and retains the original attempt; the
-native proof locks, unlocks and confirms that same payment. The old desktop
-layout remains the same. No setting or business-rule change is required.
+## Cleanup
 
-Opened images: all six `*-04-review-ready.png` files in `local-native/`.
-Other frames and helper snapshots are retained there for review. A previous
-phone-ticket probe matched the collection button and its QR redisplay button
-together; its failed receipt remains beside the passing full rerun. The
-corrected selector checks the collection button inside the payment step.
-Initial route-component typing was corrected before the passing typecheck;
-the final component uses the same mobile breakpoint as the application.
+The exact box, till, two products, two categories and ticket package are
+archived. Both unused synthetic bands are revoked. Six synthetic payment
+alerts and one inactive working document were retired with audit entries.
+No wallet credit was created. All seven queue/session counts are zero,
+sign-out reads 401, and all six financial records remain readable.
 
-The phone follow-up passes 128 focused POS tests, typecheck, lint and build.
-Complete types, lint, contracts, tools and builds passed on frozen 2cc09fb0;
-its API, workspace and Console acceptance runs continue. Backend bytes are
-unchanged in the phone follow-up. Full final-source checks remain required.
+Independent proof job: `job-dbl6gaijnfac73eqcdr0`.
+Retirement job: `job-dbl6gtjm8hqs73cfhg5g`.
+Independent cleanup read: `job-dbl6heqjnfac73eqgck0`.
+The [complete result](staging/mw1amatj/result.json) retains the exact
+identities, audits, unchanged settings and cleanup receipt. The existing
+confirmation does not automatically resolve its Health alert; this proof
+retired only its own synthetic alerts and adds no production rule.
 
-The ticket till, F&B and shop now offer SCRUM-732's shared review for a
-gateway QR awaiting staff confirmation. The existing panel asks staff to
-check the bank slip and gateway report, enter a note, then answer Money taken
-or No money. The platform still requires `pos:payment:confirm`.
+## Opened images
 
-The old `sale-writer.test.ts` pin intentionally forbade this button. It was
-deliberately changed to allow the review while preserving the expiry hold.
-Five frontend checks failed before the fix and passed after it. Additional
-pins cover concurrent presses, a denied answer, staff locking and resuming
-the original attempt. The terminal route and box PAX QR are unchanged.
+All twelve images below were opened through view_image. Their repository
+copies match the inspected source bytes; see
+[inspection fingerprints](opened-staging-images.json) and
+[publication manifest](staging-proof.json). Password input alone is masked.
 
-## Initial focused checks
+- [s739-food-desktop-02-held.png](../../jira-comments/attachments/SCRUM-739/s739-food-desktop-02-held.png)
+- [s739-food-desktop-03-review-locked.png](../../jira-comments/attachments/SCRUM-739/s739-food-desktop-03-review-locked.png)
+- [s739-food-desktop-04-review-ready.png](../../jira-comments/attachments/SCRUM-739/s739-food-desktop-04-review-ready.png)
+- [s739-food-desktop-05-completed.png](../../jira-comments/attachments/SCRUM-739/s739-food-desktop-05-completed.png)
+- [s739-food-phone-04-review-ready.png](../../jira-comments/attachments/SCRUM-739/s739-food-phone-04-review-ready.png)
+- [s739-shop-desktop-04-review-ready.png](../../jira-comments/attachments/SCRUM-739/s739-shop-desktop-04-review-ready.png)
+- [s739-shop-phone-02b-staff-locked.png](../../jira-comments/attachments/SCRUM-739/s739-shop-phone-02b-staff-locked.png)
+- [s739-shop-phone-04-review-ready.png](../../jira-comments/attachments/SCRUM-739/s739-shop-phone-04-review-ready.png)
+- [s739-shop-phone-05-completed.png](../../jira-comments/attachments/SCRUM-739/s739-shop-phone-05-completed.png)
+- [s739-tickets-desktop-04-review-ready.png](../../jira-comments/attachments/SCRUM-739/s739-tickets-desktop-04-review-ready.png)
+- [s739-tickets-phone-04-review-ready.png](../../jira-comments/attachments/SCRUM-739/s739-tickets-phone-04-review-ready.png)
+- [s739-tickets-phone-05-completed.png](../../jira-comments/attachments/SCRUM-739/s739-tickets-phone-05-completed.png)
 
-- POS: 113 passing tests across the complete sale-writer and 732 files.
-- API: 91 passing tests across the new five-case review, QR cancellation,
-  terminal and gateway files. Real routes and independent database reads
-  confirm one payment, one final receipt and one answer audit for ticket,
-  food and shop sales. A capture-only account is refused; No money leaves
-  the sale unpaid. Cancellation and void cannot escape the held attempt.
-- POS and API typechecks, touched-file ESLint and POS build passed.
-- At that checkpoint native desktop/phone proof and complete release gates
-  were outstanding; the newer result above supersedes it.
+## Validation and limits
 
-Raw test receipts in `local-gates/` preserve both the intentional red run and
-initial fixture failures. Those setup corrections supplied a valid manual
-card route, a three-character gateway invoice prefix and the required food
-pickup code. No product guard or assertion was removed to pass them.
+Complete local gates passed: 447 API files / 6,224 tests, with 401 inherited
+skips and four existing TODOs unchanged; 1,776 POS tests; eleven till browser
+journeys; 357 Console cases; workspace tests, types, lint, contracts, tools
+and builds. API typecheck emitted no diagnostics. Evidence is in
+[complete-local-gates](complete-local-gates/receipts.json) and
+[the earlier gate receipt](gate-checkpoint-0449/receipts.json).
 
-Main run 41714895181 failed in SCRUM-732's source. That lane supplied the
-typed API-call and offline receipt-clock corrections; replacement main run
-41720268210 is still running at this checkpoint. SCRUM-732 remains Testing
-and holds the source/API/proof slot. SCRUM-739 stays In Progress until its
-own source is on main, and cannot land before 732 Deployed and a released
-slot is claimed in STATUS.
+Branch CI 41723536314 initially timed out starting the existing consent
+browser harness. That complete six-case file passed unchanged on an isolated
+checkout of the exact SHA, and its one permitted failed-shard rerun passed.
+The original failure is retained. No timeout, retry or assertion changed.
+Main CI then passed first time. No-money and permission-refusal paths are
+automated-test evidence; these staging screenshots show Money taken.
 
-`ticket-mapping-before.json` retains the descriptions as read before aligning
-the reversed 738/739 summaries with the owner's assignment and 732 comment
-13321. Issue histories were preserved. Separate-display work remains with
-738's lane; `displaySession.ts` is untouched.
+Physical printing, real bank payments and a separate customer-display
+device remain unproven by this unit. The visible no-printer warnings are
+retained. Local precursor runs and their initial harness failures remain in
+local-native, staging-rehearsal and local-gates; they are not staging proof.
+The final staging helpers are backed up in prepared-staging-harness.
