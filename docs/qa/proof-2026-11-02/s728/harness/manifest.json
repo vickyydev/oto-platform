@@ -1,7 +1,55 @@
 {
-  "at": "2026-11-03T17:27:22.409Z",
+  "at": "2026-11-03T17:43:40.984Z",
   "purpose": "Exact local validation and prepared staging helpers; snapshots are evidence, not automatic release approval",
   "files": [
+    {
+      "name": "s728-release-browser-proof.mjs",
+      "sourceSha256": "69b09d64485068c86056eaa994d3910af3c475152884ba3dc3abd69417295613",
+      "archiveSha256": "097b807f96c37041cd931b57f853df6670a269a1a877287710257d799f7ebfc9",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-release-proof-account.mjs",
+      "sourceSha256": "1e2da810b8f857491a623f1edfb91b38f2b401fe3de5a68e907b57a7fb2bfbe5",
+      "archiveSha256": "f28e7fbb35d009624da4f6bf1f0085ec38d3c41fd1c2404656178eb4c36ac1d4",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-release-staging-settings.mjs",
+      "sourceSha256": "50d264e9d7642126b2b63a8895dda843ab5cc1d95da792799b941840021cdea0",
+      "archiveSha256": "d2cdd2733f0502dd516bb4c8510cf8e494f1b238fab75c78a003de04613f5930",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-release-deploy-read.mjs",
+      "sourceSha256": "704f594a367a9d1488f5d02d74d93abc396ea7c63042ffc472fffd754092914a",
+      "archiveSha256": "a6bd85604de9c8699678c390bf50987a905b8e233de5ce45dd4f62af9480b8f9",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-release-database-proof.mjs",
+      "sourceSha256": "612da65eae2cbca455ad43e0e5293d9c4f2c53f710377650c6fae2d06ba2eca1",
+      "archiveSha256": "e5f44010ab13c97e33c9e1a7422440f912594e86109ea380c4338d3867d850ed",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-release-unboxed-census.mjs",
+      "sourceSha256": "06a6aff99457b6cb05a4a81b7988dc1184b26ebf484a0b5408d0be7f057d4d76",
+      "archiveSha256": "06a6aff99457b6cb05a4a81b7988dc1184b26ebf484a0b5408d0be7f057d4d76",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-release-gates.mjs",
+      "sourceSha256": "a8f9e519c514bd64b57794e204a9cfecb732ce1b1251fbee1c811143c301837e",
+      "archiveSha256": "a647bb29a965a217add4867ba32a1663169a9035f24e573dbd91dfee1a26feec",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-frozen-completion-gates.mjs",
+      "sourceSha256": "fdc59c5cf6f59017d7ec998a0a95ed2c3706d6eed6bce472aba8be940974749e",
+      "archiveSha256": "fdc59c5cf6f59017d7ec998a0a95ed2c3706d6eed6bce472aba8be940974749e",
+      "normalization": "LF with one final newline"
+    },
     {
       "name": "s728-final-browser-proof.mjs",
       "sourceSha256": "759cf1091f602a5aa4eeea497ac326485b7bf3ca80efb3c08c31de0888120bcb",

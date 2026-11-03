@@ -1,12 +1,13 @@
 # SCRUM-728 release evidence
 
-## In Progress: local validation, staging held
+## In Progress: branch CI passed, final local shard running
 
-The source is backed up on `lane/codex-box-outage-20261103-r7` at
-`35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2`. SCRUM-727 is Deployed with
-[its separate evidence](../s727/README.md). SCRUM-730 still owns the source,
-API and staging-proof window. No SCRUM-728 source has landed on main and
-no staging fixture, restart or setting change has occurred.
+The release checkout is `lane/codex-box-outage-20261104-r8`, rebased onto
+main `d5116e7c306f0c487857375c048d4d029b3d78ce`. SCRUM-727 is Deployed with
+[its separate evidence](../s727/README.md). SCRUM-730 released the window at
+00:30 Bangkok on 4 November; the 00:36 STATUS checkpoint reserves the next
+source, API, proof and cleanup slot for SCRUM-728. No SCRUM-728 source has
+landed on main and no staging fixture, restart or setting change has occurred.
 
 ## Behavior and review
 
@@ -62,7 +63,13 @@ The other 14 non-API workspace tasks pass. Console end-to-end passes all
 retain the runs. The [completed original API run](local-gates/api-complete-run-before-inventory-correction.json)
 covers 444 files: 6,173 passes, the one corrected inventory failure, 401 existing
 skips and four TODOs. Shards 2 and 3 exited zero. The entire failed shard is
-being repeated, and corrected full-SHA branch CI remains in progress.
+being repeated on frozen source `682dfdc43475e9ddb03df2dd2268826cde1bb4f2`.
+[Full branch CI](branch-ci.json) for
+`35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2` passed all six jobs, including
+all three API shards, the complete POS set, OTO App checks and Console
+end-to-end. The release branch has identical product and test files; only
+notes and evidence differ. Rebased typechecks, lint and contracts also pass
+on `edf18cb491560eaa918b4106fb2dd75df90fa397`, with the whole output read.
 The initial failures are retained, not counted as green runs:
 
 - The first full API run found the old ID inventory still classified tier
@@ -87,6 +94,10 @@ The initial failures are retained, not counted as green runs:
   display-holder tests, the mock-benefit source scan and browser-close cleanup.
   The whole POS suite then passed with one worker, without changing assertions
   or deadlines; all 14 other workspace tasks also pass.
+- An API shard rerun was deliberately stopped after a rebase briefly changed
+  its checkout. Its nonzero exit is retained as an interrupted run, not a
+  test result. The replacement runs in a frozen worktree; all release edits
+  and rebases now use a separate checkout.
 
 Native browser rehearsals exposed and pinned two actual recovery faults:
 unlock could choose the old lane before probing, and cold-page online recovery
@@ -99,8 +110,8 @@ run above supersedes them; staging acceptance remains required.
 
 ## Release conditions and limits
 
-Wait for SCRUM-730's explicit STATUS release. Then rebase, run the required
-gates, inspect main CI, push the lane and main, and watch the exact full SHA.
+The explicit STATUS release and reservation are recorded. Finish the frozen
+local API shard, rebase, inspect main CI, push the lane and main, and watch the exact full SHA.
 Only after the exact API, POS web and Console deployments are live: take the
 read-only staging census, apply the isolated test zone, and prove the native
 flows with one new ZZ TEST box, local agent, dedicated staff and cash only.

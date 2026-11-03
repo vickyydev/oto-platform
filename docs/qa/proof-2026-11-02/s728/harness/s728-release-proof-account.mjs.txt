@@ -1,0 +1,16 @@
+﻿import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+const root='C:/oto-lanes/codex-box-outage-release-20261104';
+export async function provision(spec,mode,sha){
+ assert.ok(spec.name.startsWith('ZZ TEST SCRUM-728 '));
+ for(const id of [spec.accountId,spec.employeeId,spec.operatorId,spec.actorId])assert.match(id,/^[a-f0-9-]{36}$/);
+ const program=`(async()=>{require('tsx/cjs');const assert=require('node:assert/strict'),{Client}=require('pg'),{drizzle}=require('drizzle-orm/node-postgres'),{audit}=require('./src/services/audit.ts');const s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{assert.ok(s.name.startsWith('ZZ TEST SCRUM-728 '));await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");const a=(await c.query("SELECT a.id FROM core.account a JOIN core.role_assignment ra ON ra.account_id=a.id JOIN core.role r ON r.id=ra.role_id WHERE a.id=$1 AND a.operator_id=$2 AND a.status='active' AND r.name='platform_admin' AND r.operator_id IS NULL AND ra.scope_type='operator' AND ra.scope_id IS NULL",[s.actorId,s.operatorId])).rows;assert.equal(a.length,1);assert.equal((await c.query('SELECT id FROM core.account WHERE phone=$1 OR id=$2',[s.phone,s.accountId])).rowCount,0);await c.query('INSERT INTO core.employee (id,operator_id,name,phone) VALUES ($1,$2,$3,$4)',[s.employeeId,s.operatorId,s.name,s.phone]);await c.query("INSERT INTO core.account (id,operator_id,employee_id,phone,status) VALUES ($1,$2,$3,$4,'invited')",[s.accountId,s.operatorId,s.employeeId,s.phone]);await audit.record(drizzle(c),{actorAccountId:s.actorId,operatorId:s.operatorId,action:'qa.account.create',entityType:'account',entityId:s.accountId,sourceApp:'console',origin:'job',reason:'SCRUM-728 dedicated shift subject; no SMS',after:{employeeId:s.employeeId,name:s.name,status:'invited',roles:[]}});await c.query('COMMIT');console.log(JSON.stringify({event:'s728_fixture_account',at:new Date().toISOString(),accountId:s.accountId,employeeId:s.employeeId,status:'invited',roles:0,sms:false,passed:true}));}catch(e){await c.query('ROLLBACK');throw e;}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'s728_fixture_account_error',name:e.name,code:e.code??'ASSERTION'}));process.exitCode=1;});`;
+ if(mode==='local'){
+  const url=process.env.S728_TEST_DATABASE_URL; assert.equal(new URL(url).hostname,'localhost');
+  const env=Object.fromEntries(['PATH','Path','SystemRoot','TEMP','TMP','LOCALAPPDATA','USERPROFILE'].filter(k=>process.env[k]).map(k=>[k,process.env[k]]));
+  const r=spawnSync(process.execPath,['-e',program],{cwd:root+'/apps/api',env:{...env,DATABASE_URL:url},windowsHide:true,encoding:'utf8'});
+  assert.equal(r.status,0,'Local test-account provisioning failed'); const result=JSON.parse(r.stdout.trim());assert.ok(result.passed);return{source:sha,local:true,result};
+ }
+ assert.equal(mode,'staging');assert.equal(process.env.S728_WINDOW_RELEASED,'true');
+ const {job}=await import('./qa-render-job.mjs');return job(program,'s728_fixture_account',sha);
+}
