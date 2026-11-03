@@ -187,6 +187,12 @@ beforeAll(async () => {
   expect(await agent.ensureRegistered()).toBe(true);
   await agent.syncConfig();
   await agent.syncCache();
+  // A box that has been online has measured its clock on a heartbeat, so its
+  // facts are trusted and the platform files each sale at the time the box
+  // printed. Without one they go up untrusted and are filed at the time they
+  // arrive (sync's `replayScope`), so the platform's receipt read a minute
+  // later than the box's whenever the minute turned before the replay.
+  expect(await agent.heartbeat(), 'the box could not measure its clock').toBeTruthy();
   attachInProcessBox(agent);
 }, 180_000);
 
@@ -280,6 +286,9 @@ describe('a forced-offline virtual station sells, prints from the box queue, and
     // Same snapshot in, same document out: the receipt and every band the box
     // printed are what the platform would print from its own rows today.
     const platform = await salePrintSnapshotOf(ctx.db, (await saleRow(cashSale.id))!);
+    // Filed at the very time the box printed, to the millisecond: not at the
+    // time the replay arrived, which only matched while the minute held.
+    expect(platform.at).toBe(logged!.snapshot!.at);
     const fromPlatform = saleReceiptDocument(platform);
     const fromBox = saleReceiptDocument(logged!.snapshot!);
     // One CI run (37660215395, 00:58 Bangkok) saw these differ and the
