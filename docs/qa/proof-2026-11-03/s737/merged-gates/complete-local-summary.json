@@ -1,0 +1,80 @@
+{
+  "source": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+  "recordedAt": "2026-11-03T19:21:56.391Z",
+  "api": {
+    "files": 445,
+    "passed": 6181,
+    "skipped": 401,
+    "todo": 4,
+    "failed": 0
+  },
+  "workspace": {
+    "receipt": {
+      "key": "final",
+      "sha": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+      "start": "2026-11-03T18:34:08.495Z",
+      "end": "2026-11-03T18:40:11.990Z",
+      "command": "pnpm typecheck --concurrency=1\npnpm lint\npnpm api-types:check\npnpm --filter @oto/pos exec vitest run --maxWorkers=2\npnpm exec turbo run test --filter=\"!@oto/api\" --filter=\"!@oto/pos\" --concurrency=1\npnpm build --concurrency=1\npnpm --filter @oto/pos build:display\npnpm --filter @oto/box-agent build:runner\nnode scripts/check-no-mock-members.mjs\nnode --test scripts/inbox/whatsapp-history.test.mjs\nnode apps/oto-app/server/lib/telemetry/check-sync.mjs",
+      "log": "C:/oto-lanes/s737-release-final-merged.log",
+      "exitCode": 0,
+      "signal": null
+    },
+    "sha256": "773ff4c786e4fe3f6960e13bafd6082d379bc2baac27458ae55006f25c230fbe",
+    "types": 16,
+    "apiTypeDiagnostics": 0,
+    "lintErrors": 0,
+    "existingLintWarnings": 8,
+    "posPassed": 1734,
+    "posFiles": 130,
+    "otherTestTasks": 14,
+    "appBuilds": 5
+  },
+  "browser": {
+    "initialReceipt": {
+      "key": "browser",
+      "sha": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+      "start": "2026-11-03T18:41:54.853Z",
+      "end": "2026-11-03T18:55:47.644Z",
+      "command": "POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e\nPAYMENTS_SIMULATOR=on POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts\npnpm --filter @oto/api exec tsx C:/oto-lanes/s737-release-console-gate.mts",
+      "log": "C:/oto-lanes/s737-release-browser-merged.log",
+      "exitCode": 1,
+      "signal": null
+    },
+    "initialLogSha256": "060f456ce3925bf0ba4d4be5c76c52fed79b2783e3f06b1d848f3b6cf99cdc74",
+    "tillSmokePassed": 7,
+    "paidBookingPassed": 4,
+    "initialConsolePassed": 356,
+    "initialConsoleFailed": 1,
+    "completeConsoleRepeat": {
+      "key": "console",
+      "sha": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+      "start": "2026-11-03T19:03:09.236Z",
+      "end": "2026-11-03T19:12:38.782Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-release-console-gate.mts",
+      "log": "C:/oto-lanes/s737-release-console-merged-repeat.log",
+      "exitCode": 0,
+      "signal": null
+    },
+    "repeatLogSha256": "3aec840ba5b060ffaf2bfcf9e6cd80d3cc1c933c7b5febf4a16b6808b6659940",
+    "finalConsolePassed": 357,
+    "unresolvedIntermittentCheck": "SCRUM-743"
+  },
+  "unchangedAreas": {
+    "paths": [
+      "scripts/pi",
+      "apps/oto-app",
+      "packages/telemetry"
+    ],
+    "previousTestedSource": "e186b0ad5ddf9006f13e3ac1f8a0ab8e5fbb5173",
+    "previousProofPath": "docs/qa/proof-2026-11-03/s737/local-gates/",
+    "otoAppInheritedDiagnostics": 418,
+    "otoAppFiles": 54,
+    "piToolsAndVendoredRedactorPassed": true
+  },
+  "branchCi": {
+    "id": 41700223785,
+    "sha": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+    "state": "running at this checkpoint"
+  },
+  "stagingProof": false
+}

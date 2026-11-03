@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import {execFileSync,spawn} from 'node:child_process';
+import {openSync,closeSync,writeFileSync} from 'node:fs';
+const root='C:/oto-lanes/codex-first-print-release-20261104',id='41700223785',sha='4757ed1c7bf9ba85acb3ac8a008f36fc35987da8',base='C:/oto-lanes/s737-merged-branch-ci';
+const read=()=>JSON.parse(execFileSync('gh',['run','view',id,'--json','headSha,status,conclusion,url,jobs'],{cwd:root,encoding:'utf8'}));assert.equal(read().headSha,sha);
+const startedAt=new Date().toISOString(),fd=openSync(base+'.log','wx'),child=spawn('gh',['run','watch',id,'--interval','30','--exit-status'],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});
+console.log(JSON.stringify({id,sha,startedAt,log:base+'.log'}));
+child.once('exit',code=>{closeSync(fd);const run=read();assert.equal(run.headSha,sha);writeFileSync(base+'.json',JSON.stringify(run,null,2)+'\n');const receipt={id,sha,startedAt,finishedAt:new Date().toISOString(),exitCode:code,conclusion:run.conclusion};writeFileSync(base+'-exit.json',JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));process.exitCode=code??1;});

@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync,existsSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
+const root='C:/oto-lanes/codex-first-print-release-20261104',sha='4757ed1c7bf9ba85acb3ac8a008f36fc35987da8',hash=b=>createHash('sha256').update(b).digest('hex');
+assert.equal(execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha);assert.equal(execFileSync('git',['status','--porcelain','--untracked-files=no'],{cwd:root,encoding:'utf8'}).trim(),'');
+const paths=[1,2,3].map(n=>`C:/oto-lanes/s737-release-api${n}-merged-exit.json`);if(paths.some(p=>!existsSync(p))){console.log(JSON.stringify({waiting:paths.filter(p=>!existsSync(p))}));process.exit(0);}
+const parts=paths.map((p,i)=>{const receipt=JSON.parse(readFileSync(p,'utf8')),raw=readFileSync(`C:/oto-lanes/s737-release-api${i+1}.json`),report=JSON.parse(raw);assert.equal(receipt.sha,sha);assert.equal(receipt.exitCode,0);assert.equal(report.success,true);assert.equal(report.numFailedTests,0);return {shard:i+1,receipt,files:report.testResults.map(r=>r.name.replaceAll('\\','/').split('/apps/api/')[1]),passed:report.numPassedTests,skipped:report.numPendingTests,todo:report.numTodoTests,failed:report.numFailedTests,rawReportSha256:hash(raw),rawLogSha256:hash(readFileSync(receipt.log))};});
+const expected=execFileSync('git',['ls-files','apps/api/test'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(p=>p.endsWith('.test.ts')).map(p=>p.replace('apps/api/','')).sort(),actual=parts.flatMap(p=>p.files).sort();assert.deepEqual(actual,expected);assert.equal(actual.length,new Set(actual).size);
+const result={source:sha,recordedAt:new Date().toISOString(),parts,totals:{files:actual.length,passed:parts.reduce((n,p)=>n+p.passed,0),skipped:parts.reduce((n,p)=>n+p.skipped,0),todo:parts.reduce((n,p)=>n+p.todo,0),failed:0}};assert.equal(result.totals.skipped,401);assert.equal(result.totals.todo,4);writeFileSync('C:/oto-lanes/s737-complete-merged-api.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify({source:sha,complete:true,totals:result.totals}));
