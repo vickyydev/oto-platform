@@ -5,7 +5,7 @@ const mock = vi.hoisted(() => ({ lease: vi.fn(), renew: vi.fn(), session: vi.fn(
 vi.mock('@/api/bridge', () => ({ bridgeApi: mock, watchBridgeSnapshots: mock.watch, hasBridgeOrigin: () => mock.local.value }));
 vi.mock('@/api/client', async () => ({ ...await vi.importActual('@/api/client'), api: { get: mock.get } }));
 vi.mock('@/lib/lane', () => ({ currentLane: () => mock.lane.value, isBoxLaneTrigger: () => false }));
-import { useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
+import { takeTicketDisplayLeaseForSignOut, useTicketDisplay, type StationDisplayState, type TicketDisplayState } from '@/lib/displaySession';
 import { ApiError, NetworkError } from '@/api/client';
 import { renderHook } from './support/hooks';
 import { settle } from './support/fixtures';
@@ -58,6 +58,136 @@ const mount = async () => {
   return hook;
 };
 const lastPublish = () => mock.publish.mock.calls.at(-1)![1] as { lastSeenSequence: number; payload: { prompt: { nickname: string } } };
+
+const tender = (subject = 'event_pass'): StationDisplayState => ({ key: `tender:${subject}`, supported: true,
+  presentation: () => ({ stage: 'payment', step: null, cart: { kind: 'tender', supported: true, subject, method: 'qr' },
+    member: null, totals: null, prompt: null,
+    payment: { saleId: null, amountSatang: 12000, qrPayload: 'ZZ TEST code', qrImageUrl: null, expiresAt: null, status: 'pending', offline: false, online: true } }) });
+
+describe('SCRUM-738 tender handoff keeps one publisher and lease', () => {
+  it('HIGH: restores the latest till screen with the same lease after the tender ends', async () => {
+    const hook = await mount();
+    const release = hook.result.current.handover(tender());
+    await vi.advanceTimersByTimeAsync(100);
+    expect(box.cart?.kind).toBe('tender');
+    expect(box.prompt).toBeNull();
+    hook.rerender(state('ZZ TEST latest visitor'));
+    await vi.advanceTimersByTimeAsync(100);
+    expect(box.cart?.kind).toBe('tender');
+    release();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(box.stage).toBe('identify');
+    expect(box.prompt?.nickname).toBe('ZZ TEST latest visitor');
+    expect(box.payment).toBeNull();
+    expect(mock.lease).toHaveBeenCalledOnce();
+    expect(mock.release).not.toHaveBeenCalled();
+    hook.unmount();
+    expect(mock.release).toHaveBeenCalledWith('station', 'lease-1');
+  });
+
+  it('HIGH: an old cleanup cannot end a newer tender', async () => {
+    const hook = await mount();
+    const older = hook.result.current.handover(tender());
+    const newer = hook.result.current.handover(tender('party_balance'));
+    older();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(box.cart?.subject).toBe('party_balance');
+    newer();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(box.stage).toBe('identify');
+    hook.unmount();
+  });
+
+  it('HIGH: an old visitor answer is not consumed during the tender or after restoration', async () => {
+    const answer = vi.fn();
+    const hook = renderHook(() => useTicketDisplay('station', state(), answer));
+    await settle();
+    const prior = box.prompt!;
+    const release = hook.result.current.handover(tender());
+    stream.onSnapshot({ ...box, prompt: { ...prior, answer: { type: 'skip_identify', actionId: 'late-answer' } } });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(answer).not.toHaveBeenCalled();
+    release();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(answer).not.toHaveBeenCalled();
+    expect(box.prompt?.requestId).not.toBe(prior.requestId);
+    hook.unmount();
+  });
+
+  it('HIGH: sign-out during a tender hands over the existing lease and stops all later publication', async () => {
+    const hook = await mount();
+    const release = hook.result.current.handover(tender());
+    await vi.advanceTimersByTimeAsync(100);
+    await expect(takeTicketDisplayLeaseForSignOut()).resolves.toBe('lease-1');
+    const count = mock.publish.mock.calls.length;
+    release();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(mock.publish).toHaveBeenCalledTimes(count);
+    expect(mock.renew).not.toHaveBeenCalled();
+    hook.unmount();
+    expect(mock.release).not.toHaveBeenCalled(); // The authenticated sign-out owns that release.
+  });
+
+  it('HIGH: sign-out also captures a claim already on the wire, before its tender could publish', async () => {
+    let finish!: () => void;
+    mock.lease.mockImplementation(() => new Promise(resolve => { finish = () => { void claim().then(resolve); }; }));
+    const hook = await mount();
+    hook.result.current.handover(tender());
+    const signingOut = takeTicketDisplayLeaseForSignOut();
+    finish();
+    await expect(signingOut).resolves.toBe('lease-1');
+    await vi.advanceTimersByTimeAsync(100);
+    expect(mock.publish).not.toHaveBeenCalled();
+    hook.unmount();
+    expect(mock.release).not.toHaveBeenCalled();
+  });
+
+  it('HIGH: a staff lock pauses a tender and unlock publishes its latest state', async () => {
+    const hook = renderHook((active: boolean) => useTicketDisplay('station', state(), vi.fn(), active), true as boolean);
+    await settle();
+    hook.rerender(false);
+    hook.result.current.handover(tender('party_balance'));
+    const count = mock.publish.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(mock.publish).toHaveBeenCalledTimes(count);
+    hook.rerender(true);
+    await settle();
+    expect(box.cart?.subject).toBe('party_balance');
+    expect(mock.lease).toHaveBeenCalledOnce();
+    hook.unmount();
+  });
+
+  it('MEDIUM: a paused ticket quote cannot freeze an independent pass tender', async () => {
+    const value: TicketDisplayState = { ...state(), step: 8, quoteRefreshing: true };
+    const hook = renderHook((input: TicketDisplayState) => useTicketDisplay('station', input, vi.fn()), value);
+    await settle();
+    expect(mock.publish).not.toHaveBeenCalled();
+    const release = hook.result.current.handover(tender());
+    await settle();
+    expect(box.cart?.kind).toBe('tender');
+    release();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(box.stage).toBe('welcome');
+    expect(box.payment).toBeNull();
+    expect(box.prompt).toBeNull();
+    hook.rerender({ ...state(), nickname: 'ZZ TEST refreshed' });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(box.prompt?.nickname).toBe('ZZ TEST refreshed');
+    hook.unmount();
+  });
+
+  it('HIGH: a callback retained by another station cannot take over the new station', async () => {
+    const hook = renderHook((stationId: string) => useTicketDisplay(stationId, state(), vi.fn()), 'station' as string);
+    await settle();
+    const old = hook.result.current.handover;
+    hook.rerender('station-other');
+    await settle();
+    old(tender());
+    await vi.advanceTimersByTimeAsync(100);
+    expect(box.cart?.kind).not.toBe('tender');
+    hook.unmount();
+  });
+});
 
 describe('SCRUM-720 a box whose sequence fell', () => {
   it('HIGH SCRUM-713: a local display keeps following online without a cloud presence record', async () => {

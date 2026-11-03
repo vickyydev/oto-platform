@@ -23,6 +23,7 @@ export * from './display-child-review';
 export * from './display-consent';
 export * from './display-fnb';
 export * from './display-merch';
+export * from './display-tender';
 export * from './sync';
 export * from './print';
 export * from './staff-token';
