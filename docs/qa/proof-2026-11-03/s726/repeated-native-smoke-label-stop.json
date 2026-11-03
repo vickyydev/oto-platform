@@ -1,0 +1,35 @@
+{
+  "startedAt": "2026-11-03T02:09:33.451Z",
+  "sources": {
+    "srv-danh2ljtqb8s73bt9en0": "5069944660dfd43571d39f097aa90a77b1092c36",
+    "srv-dbk7qu8n74is73bm894g": "5069944660dfd43571d39f097aa90a77b1092c36"
+  },
+  "outcome": "stopped",
+  "steps": [],
+  "before": {
+    "at": "2026-11-03T02:09:50.407Z",
+    "sampleAt": "2026-11-03T02:09:40.132Z",
+    "attempts": 7,
+    "sales": 7,
+    "cashAttempts": 7,
+    "allBoxSales": 8,
+    "knownUnpaidVoids": 1,
+    "unexpectedBoxSales": 0,
+    "passed": true
+  },
+  "error": {
+    "name": "AssertionError",
+    "message": "Metric resource label missing or unexpected"
+  },
+  "afterClose": {
+    "stations": 0,
+    "connections": 0,
+    "perStation": {}
+  },
+  "nativeOpen": 0,
+  "nativeOpened": 0,
+  "nativeClosed": 0,
+  "attempts": [],
+  "displaySamples": [],
+  "stop": null
+}

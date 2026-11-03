@@ -1,0 +1,238 @@
+[
+  {
+    "metric": "cpu",
+    "status": 200,
+    "rateHeaders": {
+      "ratelimit-limit": "30",
+      "ratelimit-remaining": "29",
+      "ratelimit-reset": "36"
+    },
+    "series": [
+      {
+        "labels": [
+          {
+            "field": "resource",
+            "value": "dpg-dangso3m8hqs73b9ir80-a"
+          }
+        ],
+        "samples": 4
+      },
+      {
+        "labels": [
+          {
+            "field": "service",
+            "value": "srv-danh2ljtqb8s73bt9en0"
+          },
+          {
+            "field": "resource",
+            "value": "srv-danh2ljtqb8s73bt9en0"
+          },
+          {
+            "field": "instance",
+            "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
+          }
+        ],
+        "samples": 4
+      },
+      {
+        "labels": [
+          {
+            "field": "instance",
+            "value": "srv-dbk7qu8n74is73bm894g-crp9t"
+          },
+          {
+            "field": "service",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "resource",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          }
+        ],
+        "samples": 4
+      }
+    ]
+  },
+  {
+    "metric": "cpu-limit",
+    "status": 200,
+    "rateHeaders": {
+      "ratelimit-limit": "30",
+      "ratelimit-remaining": "28",
+      "ratelimit-reset": "35"
+    },
+    "series": [
+      {
+        "labels": [
+          {
+            "field": "resource",
+            "value": "dpg-dangso3m8hqs73b9ir80-a"
+          }
+        ],
+        "samples": 4
+      },
+      {
+        "labels": [
+          {
+            "field": "service",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "resource",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "instance",
+            "value": "srv-dbk7qu8n74is73bm894g-crp9t"
+          }
+        ],
+        "samples": 4
+      },
+      {
+        "labels": [
+          {
+            "field": "service",
+            "value": "srv-danh2ljtqb8s73bt9en0"
+          },
+          {
+            "field": "resource",
+            "value": "srv-danh2ljtqb8s73bt9en0"
+          },
+          {
+            "field": "instance",
+            "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
+          }
+        ],
+        "samples": 4
+      }
+    ]
+  },
+  {
+    "metric": "memory",
+    "status": 200,
+    "rateHeaders": {
+      "ratelimit-limit": "30",
+      "ratelimit-remaining": "27",
+      "ratelimit-reset": "35"
+    },
+    "series": [
+      {
+        "labels": [
+          {
+            "field": "instance",
+            "value": "srv-dbk7qu8n74is73bm894g-crp9t"
+          },
+          {
+            "field": "service",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "resource",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          }
+        ],
+        "samples": 4
+      },
+      {
+        "labels": [
+          {
+            "field": "service",
+            "value": "srv-danh2ljtqb8s73bt9en0"
+          },
+          {
+            "field": "resource",
+            "value": "srv-danh2ljtqb8s73bt9en0"
+          },
+          {
+            "field": "instance",
+            "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
+          }
+        ],
+        "samples": 4
+      },
+      {
+        "labels": [
+          {
+            "field": "resource",
+            "value": "dpg-dangso3m8hqs73b9ir80-a"
+          }
+        ],
+        "samples": 4
+      }
+    ]
+  },
+  {
+    "metric": "memory-limit",
+    "status": 200,
+    "rateHeaders": {
+      "ratelimit-limit": "30",
+      "ratelimit-remaining": "26",
+      "ratelimit-reset": "34"
+    },
+    "series": [
+      {
+        "labels": [
+          {
+            "field": "resource",
+            "value": "dpg-dangso3m8hqs73b9ir80-a"
+          }
+        ],
+        "samples": 4
+      },
+      {
+        "labels": [
+          {
+            "field": "service",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "resource",
+            "value": "srv-dbk7qu8n74is73bm894g"
+          },
+          {
+            "field": "instance",
+            "value": "srv-dbk7qu8n74is73bm894g-crp9t"
+          }
+        ],
+        "samples": 4
+      },
+      {
+        "labels": [
+          {
+            "field": "instance",
+            "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
+          },
+          {
+            "field": "service",
+            "value": "srv-danh2ljtqb8s73bt9en0"
+          },
+          {
+            "field": "resource",
+            "value": "srv-danh2ljtqb8s73bt9en0"
+          }
+        ],
+        "samples": 4
+      }
+    ]
+  },
+  {
+    "metric": "active-connections",
+    "status": 200,
+    "rateHeaders": {
+      "ratelimit-limit": "30",
+      "ratelimit-remaining": "25",
+      "ratelimit-reset": "34"
+    },
+    "series": [
+      {
+        "labels": [
+          {
+            "field": "resource",
+            "value": "dpg-dangso3m8hqs73b9ir80-a"
+          }
+        ],
+        "samples": 4
+      }
+    ]
+  }
+]

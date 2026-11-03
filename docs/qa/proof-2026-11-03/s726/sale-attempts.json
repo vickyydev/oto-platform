@@ -1,1 +1,35 @@
-[]
+[
+  {
+    "id": "01a19f30-9cf3-704d-aef0-a9f3428fc251",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T02:15:25.946Z",
+    "phase": "native_repeat",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000007"
+  },
+  {
+    "id": "01a19f30-c067-7775-9ea8-737b46919cae",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T02:15:35.126Z",
+    "phase": "native_repeat",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000008"
+  },
+  {
+    "id": "01a19f30-e3c9-7a2a-a3f0-280e430703bb",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T02:15:44.183Z",
+    "phase": "native_repeat",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000009"
+  }
+]

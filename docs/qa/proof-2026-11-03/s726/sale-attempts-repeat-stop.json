@@ -1,0 +1,13 @@
+[
+  {
+    "id": "01a19f25-5135-7102-95b4-e3bd28c7c6c6",
+    "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+    "at": "2026-11-03T02:03:05.657Z",
+    "phase": "ramp_1",
+    "grossSatang": 100,
+    "native": true,
+    "postCount": 1,
+    "finalised": true,
+    "receiptNumber": "Z72601-000006"
+  }
+]
