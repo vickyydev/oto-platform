@@ -224,11 +224,11 @@ addChild: (memberId: string, body: Record<string, unknown>, id: string = newReco
   },
 updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
     api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
-verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
+verifyTier: (memberId: string, body: { verificationId: string; toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
     api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
           idempotencyKey: idemKey(),
         }),
-revokeTierVerification: (memberId: string, body: { reason: string }) =>
+revokeTierVerification: (memberId: string, body: { verificationId: string; reason: string }) =>
     api.delete<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
           idempotencyKey: idemKey(),
         }),
@@ -271,30 +271,34 @@ updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: 
       () => cloudMembersApi.updateChild(childId, patch, idempotencyKey, signal),
       (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, ...patch }),
     ),
-verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
-    viaLane(
+verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) => {
+    const verificationId = newRecordId();
+    return viaLane(
       () =>
-        cloudMembersApi.verifyTier(memberId, body),
+        cloudMembersApi.verifyTier(memberId, { ...body, verificationId }),
       (stationId) =>
         onBox<{ member: ApiMember }>(stationId, 'member.tier_change', {
           direction: 'upgrade',
           memberId,
-          verificationId: newRecordId(),
+          verificationId,
           ...body,
         }),
-    ),
-revokeTierVerification: (memberId: string, body: { reason: string }) =>
-    viaLane(
+    );
+  },
+revokeTierVerification: (memberId: string, body: { reason: string }) => {
+    const verificationId = newRecordId();
+    return viaLane(
       () =>
-        cloudMembersApi.revokeTierVerification(memberId, body),
+        cloudMembersApi.revokeTierVerification(memberId, { ...body, verificationId }),
       (stationId) =>
         onBox<{ member: ApiMember }>(stationId, 'member.tier_change', {
           direction: 'downgrade',
           memberId,
-          verificationId: newRecordId(),
+          verificationId,
           reason: body.reason,
         }),
-    ),
+    );
+  },
 };
 
 export const visitsApi = {
@@ -321,25 +325,26 @@ export const visitsApi = {
    * today, so the membership check and the supervision gate share ONE visit.
    * Answers with that visit's id.
    *
-   * The box has no "add to a visit" step, so on the box lane the children get
-   * a visit of their own (the earlier behaviour) and its id is returned; the
-   * caller carries on with whichever id comes back.
+   * The same action and visit ids survive a lost online answer and box replay.
    */
-  addChildren: (visitId: string, body: { memberId: string; childIds: string[] }) =>
-    viaLane(
+  addChildren: (visitId: string, body: { memberId: string; childIds: string[] }) => {
+    const operationId = newRecordId();
+    return viaLane(
       () =>
         api.post<ApiResponse<'/visits/{id}/children', 'post'>>(
           `/visits/${visitId}/children`,
-          { childIds: body.childIds },
+          { operationId, childIds: body.childIds },
           { idempotencyKey: idemKey() },
         ),
       (stationId) =>
-        onBox<{ id: string; visitDate: string; status: string }>(stationId, 'visit.create', {
-          visitId: newRecordId(),
+        onBox<{ id: string; visitDate: string; status: string }>(stationId, 'visit.children_add', {
+          operationId,
+          visitId,
           memberId: body.memberId,
           childIds: body.childIds,
         }),
-    ),
+    );
+  },
 };
 
 /**

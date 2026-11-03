@@ -237,7 +237,7 @@ describe('which lane a call takes', () => {
     );
     // With an open visit: the children join it, and its id comes back.
     expect(await confirmVisitChildren('open-visit', { memberId: 'm-1', childIds: ['c-1', 'c-2'] })).toBe('open-visit');
-    expect(calls[0]).toEqual({ url: '/api/visits/open-visit/children', body: { childIds: ['c-1', 'c-2'] } });
+    expect(calls[0]).toEqual({ url: '/api/visits/open-visit/children', body: { operationId: expect.any(String), childIds: ['c-1', 'c-2'] } });
     // Nobody to add: the open visit stands and nothing is sent.
     expect(await confirmVisitChildren('open-visit', { memberId: 'm-1', childIds: [] })).toBe('open-visit');
     expect(calls).toHaveLength(1);
@@ -245,6 +245,32 @@ describe('which lane a call takes', () => {
     const opened = await confirmVisitChildren(null, { memberId: 'm-1', childIds: ['c-1'] });
     expect(calls[1]!.url).toBe('/api/visits');
     expect(opened).toBe(calls[1]!.body.id);
+  });
+
+  it.each(['children', 'grant', 'revoke'] as const)('SCRUM-728: a lost 502 answer preserves the %s action identity on the box', async kind => {
+    setBridgeOrigin('https://counter.example.test');
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+      calls.push({ url, body });
+      if (url.startsWith('/api/')) return reply({ error: { code: 'UPSTREAM_UNAVAILABLE', message: 'API did not answer' } }, 502);
+      return reply({ document: {}, result: { id: 'original-visit', member: { id: 'member' } } });
+    }));
+    if (kind === 'children') {
+      expect((await visitsApi.addChildren('original-visit', { memberId: 'member', childIds: ['child'] })).id).toBe('original-visit');
+      expect(calls[1]!.body).toMatchObject({ type: 'visit.children_add', payload: {
+        operationId: calls[0]!.body.operationId, visitId: 'original-visit', memberId: 'member', childIds: ['child'],
+      } });
+    } else {
+      if (kind === 'grant') await membersApi.verifyTier('member', { toTier: 'expat', evidenceType: 'Passport' });
+      else await membersApi.revokeTierVerification('member', { reason: 'ZZ TEST reason' });
+      expect(calls[1]!.body).toMatchObject({ type: 'member.tier_change', payload: {
+        verificationId: calls[0]!.body.verificationId, memberId: 'member', direction: kind === 'grant' ? 'upgrade' : 'downgrade',
+      } });
+    }
+    const id = calls[0]!.body[kind === 'children' ? 'operationId' : 'verificationId'];
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(calls).toHaveLength(2);
   });
 
   it('prices a cart on the box in the platform’s quote shape', async () => {
