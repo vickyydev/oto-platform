@@ -3,7 +3,7 @@ import type { S3Client } from "@aws-sdk/client-s3";
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { db } from "../db";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "../auth";
 import { requireManager } from "../auth-middleware";
@@ -450,21 +450,29 @@ router.get("/url", requireAuth, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "s3Key query parameter required" });
     }
 
-    const attachment = await db
+    // A copied checklist's media shares the original's stored object, one row per
+    // checklist (SCRUM-659): the file opens for anyone who can reach any of them.
+    const attachments = await db
       .select()
       .from(checklistAttachments)
-      .where(and(eq(checklistAttachments.s3Key, s3Key), eq(checklistAttachments.tenantId, tenantId)))
-      .limit(1);
+      .where(and(eq(checklistAttachments.s3Key, s3Key), eq(checklistAttachments.tenantId, tenantId)));
+    let attachment: (typeof attachments)[number] | undefined;
+    for (const candidate of attachments) {
+      if (await canAccessAttachment(req, candidate, tenantId)) {
+        attachment = candidate;
+        break;
+      }
+    }
 
-    if (!attachment.length || !await canAccessAttachment(req, attachment[0], tenantId)) {
+    if (!attachment) {
       return res.status(404).json({ error: "Attachment not found" });
     }
-    let linkedTemplateId = attachment[0].checklistTemplateId;
-    if (!linkedTemplateId && attachment[0].checklistTemplateItemId) {
+    let linkedTemplateId = attachment.checklistTemplateId;
+    if (!linkedTemplateId && attachment.checklistTemplateItemId) {
       const [item] = await db.select({ templateId: checklistTemplateItems.templateId })
         .from(checklistTemplateItems)
         .where(and(
-          eq(checklistTemplateItems.id, attachment[0].checklistTemplateItemId),
+          eq(checklistTemplateItems.id, attachment.checklistTemplateItemId),
           eq(checklistTemplateItems.tenantId, tenantId),
         ))
         .limit(1);
@@ -602,18 +610,33 @@ router.delete("/:id", requireAuth, requireManager, async (req: Request, res: Res
 
     const s3Key = attachment[0].s3Key;
 
-    try {
-      const s3Client = getS3Client();
-      const bucket = getS3Bucket();
+    // A copied checklist's media shares the stored object (SCRUM-659): removing
+    // it from one checklist leaves it on the other, so the object goes only with
+    // the last row that names it.
+    const otherUses = await db
+      .select({ id: checklistAttachments.id })
+      .from(checklistAttachments)
+      .where(and(
+        eq(checklistAttachments.s3Key, s3Key),
+        eq(checklistAttachments.tenantId, tenantId),
+        ne(checklistAttachments.id, id),
+      ))
+      .limit(1);
 
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-      });
+    if (otherUses.length === 0) {
+      try {
+        const s3Client = getS3Client();
+        const bucket = getS3Bucket();
 
-      await s3Client.send(deleteCommand);
-    } catch (s3Error) {
-      console.error("[ChecklistMedia] S3 delete error (continuing):", s3Error);
+        const deleteCommand = new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: s3Key,
+        });
+
+        await s3Client.send(deleteCommand);
+      } catch (s3Error) {
+        console.error("[ChecklistMedia] S3 delete error (continuing):", s3Error);
+      }
     }
 
     await db.delete(checklistAttachments).where(and(

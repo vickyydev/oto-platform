@@ -198,6 +198,7 @@ import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
 import { resolveSelfEmployeeId } from "./core/selfEmployee";
 import { requestedChecklistAssignees, setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
+import { canReachChecklistTemplate, checklistCopyBranchRefusal, checklistCopyRequest, createChecklistCopies, createPreparedChecklistTemplates, loadChecklistCopySource, planBranchCopies, prepareChecklistTemplates, type PreparedChecklistTemplates } from "./core/checklistCopies";
 
 async function requireAuthOrKiosk(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -21221,118 +21222,36 @@ OTO Company Limited`,
     try {
       const user = req.user as UserWithBranchAccess;
       const tenantId = await resolveTenantId(user.tenantId);
-      const { 
-        name, description, branchId, branchIds, departmentId, recurrence, scheduledTime, 
-        items, assignedRoleId, assignedDepartmentId,
-        locationId, requiresPhotoEvidence, referenceMediaUrls, weeklyDays, monthlyDay,
-        // Checker-specific fields
-        checklistType, checkerRounds, scheduleTime1, scheduleTime2, scheduleTime3, scheduleTime4, scheduleTime5, allowedCheckerRoles
-      } = req.body;
-      
-      if (!name) {
-        return res.status(400).json({ message: "Name is required" });
-      }
-      // The employees it names: `assignedEmployeeIds`, or the older single
-      // `assignedEmployeeId` (SCRUM-658).
-      const assignedEmployeeIds = requestedChecklistAssignees(req.body) ?? [];
-      
-      // Handle branchIds array (new multi-select) or legacy branchId
-      const selectedBranchIds: string[] = branchIds && branchIds.length > 0 ? branchIds : (branchId ? [branchId] : []);
-      
-      // Validate branch access for non-admins
-      let effectiveBranchId: string | null = selectedBranchIds.length > 0 ? selectedBranchIds[0] : null;
-      if (!user.hasAllBranchesAccess) {
-        // Non-admins cannot create global (null branchId) templates
-        if (!effectiveBranchId) {
-          // Default to user's first accessible branch
-          if (user.allowedBranchIds.length === 0) {
-            return res.status(403).json({ message: "No branch access configured" });
-          }
-          effectiveBranchId = user.allowedBranchIds[0];
-        } else {
-          // Verify access to all specified branches
-          for (const bid of selectedBranchIds) {
-            if (!canUserAccessBranch(user, bid)) {
-              return res.status(403).json({ message: "Access denied to create templates for one or more branches" });
-            }
-          }
+
+      // "Save as a new checklist" in the editor (SCRUM-659): the create path
+      // below, with what the request leaves out taken from the original.
+      let copySource: any = null;
+      let body = req.body;
+      if (req.body?.copiedFromTemplateId !== undefined) {
+        const loaded = await loadChecklistCopySource(user, tenantId, req.body.copiedFromTemplateId);
+        if ("refusal" in loaded) return res.status(loaded.refusal.status).json({ message: loaded.refusal.message });
+        copySource = loaded.source;
+        body = checklistCopyRequest(copySource, req.body);
+        if (!Array.isArray(body.branchIds) || body.branchIds.some((id: unknown) => typeof id !== "string")) {
+          return res.status(400).json({ message: "branchIds must be a list of branches" });
         }
       }
-      
-      const isChecker = checklistType === 'checker';
-      const itemWithInvalidEvidenceFlags = Array.isArray(items)
-        ? items.find((item: any) =>
-            (item.requiresPhoto !== undefined && typeof item.requiresPhoto !== "boolean")
-            || (item.cameraEnabled !== undefined && typeof item.cameraEnabled !== "boolean")
-            || (item.galleryEnabled !== undefined && typeof item.galleryEnabled !== "boolean")
-          )
-        : null;
-      if (itemWithInvalidEvidenceFlags) {
-        return res.status(400).json({ message: "Checklist item photo settings must be true or false" });
-      }
-      const sanitizedItems = Array.isArray(items)
-        ? items.map((item: any) => {
-            const galleryEnabled = item.galleryEnabled ?? false;
-            const configuredCameraEnabled = item.cameraEnabled ?? true;
-            return {
-              ...item,
-              requiresPhoto: item.requiresPhoto === true || requiresPhotoEvidence === true,
-              cameraEnabled: requiresPhotoEvidence === true
-                && configuredCameraEnabled === false
-                && galleryEnabled === false
-                ? true
-                : configuredCameraEnabled,
-              galleryEnabled,
-              linkedToFix: isChecker ? false : item.linkedToFix === true,
-            };
-          })
-        : [];
 
-      const invalidPhotoItem = sanitizedItems.find((item: any) =>
-        item.requiresPhoto === true && item.cameraEnabled === false
-        && item.galleryEnabled === false
-      );
-      if (invalidPhotoItem) {
-        return res.status(400).json({ message: `"${invalidPhotoItem.title || "Checklist item"}" requires a photo, so enable Camera or Gallery` });
+      const preparation = prepareChecklistTemplates(user, body);
+      if ("refusal" in preparation) {
+        return res.status(preparation.refusal.status).json({ message: preparation.refusal.message });
       }
-      
-      // Multi-branch support: Create a template for each selected branch
-      // For non-admins, ensure at least one branch is used (no global templates)
-      const branchesToCreate = selectedBranchIds.length > 0 
-        ? selectedBranchIds 
-        : (effectiveBranchId ? [effectiveBranchId] : [null]);
-      const createdTemplates: any[] = [];
-      
-      for (const branchIdToUse of branchesToCreate) {
-        const template = await storage.createChecklistTemplate({
-          tenantId,
-          name,
-          description: description || null,
-          branchId: branchIdToUse,
-          departmentId: departmentId || null,
-          checklistType: checklistType || 'operational',
-          recurrence: recurrence || 'once',
-          scheduledTime: scheduledTime || null,
-          checkerRounds: checkerRounds || null,
-          scheduleTime1: scheduleTime1 || null,
-          scheduleTime2: scheduleTime2 || null,
-          scheduleTime3: scheduleTime3 || null,
-          scheduleTime4: scheduleTime4 || null,
-          scheduleTime5: scheduleTime5 || null,
-          assignedEmployeeId: assignedEmployeeIds[0] ?? null,
-          assignedEmployeeIds,
-          assignedRoleId: assignedRoleId || null,
-          assignedDepartmentId: assignedDepartmentId || null,
-          allowedCheckerRoles: allowedCheckerRoles || [],
-          locationId: locationId || null,
-          referenceMediaUrls: referenceMediaUrls || [],
-          weeklyDays: weeklyDays || [],
-          monthlyDay: monthlyDay || null,
-          createdBy: req.user!.id,
-        }, sanitizedItems);
-        createdTemplates.push(template);
+      const { prepared } = preparation;
+      if (copySource) {
+        const refusal = await checklistCopyBranchRefusal(tenantId, prepared.selectedBranchIds);
+        if (refusal) return res.status(refusal.status).json({ message: refusal.message });
       }
-      
+
+      const createdTemplates = copySource
+        ? await createChecklistCopies(tenantId, req.user!.id, copySource, prepared)
+        : await createPreparedChecklistTemplates(tenantId, req.user!.id, prepared);
+      const selectedBranchIds = prepared.selectedBranchIds;
+
       // Return first template with all branchIds for display (backwards compatible)
       const firstTemplate = createdTemplates[0];
       res.status(201).json({ 
@@ -21341,7 +21260,8 @@ OTO Company Limited`,
         createdCount: createdTemplates.length,
         message: createdTemplates.length > 1 
           ? `Created ${createdTemplates.length} templates (one per branch)` 
-          : undefined
+          : undefined,
+        ...(copySource ? { copiedFromTemplateId: copySource.id } : {}),
       });
     } catch (error) {
       next(error);
@@ -21359,8 +21279,9 @@ OTO Company Limited`,
         return res.status(404).json({ message: "Checklist template not found" });
       }
       
-      // Verify branch access
-      if (template.branchId && !canUserAccessBranch(user, template.branchId)) {
+      // Verify branch access: any of its branches, so a manager at the second
+      // branch of a shared checklist can open it and split off a copy (SCRUM-659).
+      if (!canReachChecklistTemplate(user, template)) {
         return res.status(403).json({ message: "Access denied to this checklist" });
       }
       
@@ -21392,7 +21313,13 @@ OTO Company Limited`,
               assignedRoleId, assignedDepartmentId, locationId,
               requiresPhotoEvidence, referenceMediaUrls, isActive, weeklyDays, monthlyDay,
               // Checker-specific fields
-              checklistType, checkerRounds, scheduleTime1, scheduleTime2, scheduleTime3, scheduleTime4, scheduleTime5, allowedCheckerRoles } = req.body;
+              checklistType, checkerRounds, scheduleTime1, scheduleTime2, scheduleTime3, scheduleTime4, scheduleTime5, allowedCheckerRoles,
+              // What to do with a branch this edit adds (SCRUM-659). A caller
+              // that names no choice, or "share", widens this checklist as before.
+              branchCopyChoice } = req.body;
+      if (branchCopyChoice !== undefined && branchCopyChoice !== "copy" && branchCopyChoice !== "share") {
+        return res.status(400).json({ message: "branchCopyChoice must be copy or share" });
+      }
 
       const itemWithInvalidEvidenceFlags = Array.isArray(items)
         ? items.find((item: any) =>
@@ -21436,12 +21363,43 @@ OTO Company Limited`,
         return res.status(400).json({ message: `"${invalidPhotoItem.title || "Checklist item"}" requires a photo, so enable Camera or Gallery` });
       }
       
+      // "Make a separate copy for this branch" (SCRUM-659): one independent
+      // checklist per added branch through the create path's checks, all of
+      // them passed before this edit writes anything. The original keeps its
+      // own branches and takes the rest of the edit as a plain save does.
+      let branchCopyPlan: { originalBranchIds: string[] | null } | null = null;
+      let preparedCopies: PreparedChecklistTemplates | null = null;
+      if (branchCopyChoice === "copy") {
+        const plan = planBranchCopies(existingTemplate, req.body);
+        if ("refusal" in plan) return res.status(plan.refusal.status).json({ message: plan.refusal.message });
+        branchCopyPlan = plan;
+        if (plan.addedBranchIds.length > 0) {
+          const preparation = prepareChecklistTemplates(
+            user,
+            checklistCopyRequest(existingTemplate, { ...req.body, branchId: undefined, branchIds: plan.addedBranchIds }),
+          );
+          if ("refusal" in preparation) {
+            return res.status(preparation.refusal.status).json({ message: preparation.refusal.message });
+          }
+          const refusal = await checklistCopyBranchRefusal(tenantId, plan.addedBranchIds);
+          if (refusal) return res.status(refusal.status).json({ message: refusal.message });
+          preparedCopies = preparation.prepared;
+        }
+      }
+
       // Update the template
       const updateData: any = { updatedAt: new Date() };
       if (name !== undefined) updateData.name = name;
       if (description !== undefined) updateData.description = description;
-      if (branchId !== undefined) updateData.branchId = branchId;
-      if (branchIds !== undefined) updateData.branchIds = branchIds;
+      if (branchCopyPlan) {
+        if (branchCopyPlan.originalBranchIds) {
+          updateData.branchId = branchCopyPlan.originalBranchIds[0];
+          updateData.branchIds = branchCopyPlan.originalBranchIds;
+        }
+      } else {
+        if (branchId !== undefined) updateData.branchId = branchId;
+        if (branchIds !== undefined) updateData.branchIds = branchIds;
+      }
       if (recurrence !== undefined) updateData.recurrence = recurrence;
       if (scheduledTime !== undefined) updateData.scheduledTime = scheduledTime;
       // The employees it names (SCRUM-658): the column keeps the first.
@@ -21612,8 +21570,18 @@ OTO Company Limited`,
         propagatedCount++;
       }
       
+      const createdCopies = preparedCopies
+        ? await createChecklistCopies(tenantId, req.user!.id, existingTemplate, preparedCopies)
+        : [];
+
       const updatedTemplate = await storage.getChecklistTemplateWithItems(id, tenantId);
-      res.json({ ...updatedTemplate, propagatedRunCount: propagatedCount });
+      res.json({
+        ...updatedTemplate,
+        propagatedRunCount: propagatedCount,
+        ...(branchCopyChoice === "copy"
+          ? { createdCopies: createdCopies.map((copy) => ({ id: copy.id, branchId: copy.branchId })) }
+          : {}),
+      });
     } catch (error) {
       next(error);
     }
