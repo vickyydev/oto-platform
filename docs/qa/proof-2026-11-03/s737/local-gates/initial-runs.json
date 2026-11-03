@@ -1,0 +1,123 @@
+[
+  {
+    "key": "workspace",
+    "sha": "26edfb25781c54b566f00a9cf1ea12bcde52f7a0",
+    "start": "2026-11-03T16:29:42.543Z",
+    "end": "2026-11-03T16:33:38.692Z",
+    "command": "pnpm typecheck\npnpm lint\npnpm api-types:check\npnpm exec turbo run test --filter=\"!@oto/api\" --concurrency=1\npnpm build\npnpm --filter @oto/pos build:display\npnpm --filter @oto/box-agent build:runner",
+    "log": "C:/oto-lanes/s737-workspace.log",
+    "exitCode": 2,
+    "signal": null,
+    "logSha256": "87e9cfab9918f101802a63967ca59488a8468c935fbd4aef01a4519d0b22bf50"
+  },
+  {
+    "key": "workspace",
+    "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+    "start": "2026-11-03T16:35:22.467Z",
+    "end": "2026-11-03T17:09:17.252Z",
+    "command": "pnpm typecheck --concurrency=1\npnpm lint\npnpm api-types:check\npnpm exec turbo run test --filter=\"!@oto/api\" --concurrency=1\npnpm build --concurrency=1\npnpm --filter @oto/pos build:display\npnpm --filter @oto/box-agent build:runner",
+    "log": "C:/oto-lanes/s737-workspace-v2.log",
+    "exitCode": 1,
+    "signal": null,
+    "logSha256": "ee203a8f1f657e38c2e064574e302e33c0f046cd8578b98309b5333e90d846da"
+  },
+  {
+    "key": "finish",
+    "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+    "start": "2026-11-03T17:10:55.635Z",
+    "end": "2026-11-03T17:14:36.337Z",
+    "command": "pnpm --filter @oto/pos exec vitest run --maxWorkers=2\npnpm exec turbo run test --filter=\"!@oto/api\" --filter=\"!@oto/pos\" --concurrency=1\npnpm build --concurrency=1\npnpm --filter @oto/pos build:display\npnpm --filter @oto/box-agent build:runner",
+    "log": "C:/oto-lanes/s737-finish.log",
+    "exitCode": 0,
+    "signal": null,
+    "logSha256": "9faf6c56a810fd242762f38dce8124f8f0dc0238ad9c71c7799f13731c1e6cff"
+  },
+  {
+    "key": "tools",
+    "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+    "start": "2026-11-03T16:53:15.807Z",
+    "end": "2026-11-03T16:53:21.806Z",
+    "command": "node scripts/check-no-mock-members.mjs\nnode --test scripts/inbox/whatsapp-history.test.mjs\nnode apps/oto-app/server/lib/telemetry/check-sync.mjs\nfor f in scripts/pi/*.sh; do bash -n \"$f\"; done\n/c/oto-lanes/s713-shellcheck/shellcheck.exe --severity=error scripts/pi/*.sh",
+    "log": "C:/oto-lanes/s737-tools.log",
+    "exitCode": 0,
+    "signal": null,
+    "logSha256": "55bfb8d623cc49f17e05cb009e94dedf4dac2a5682cbcd8638b8c6a745b95bc1"
+  },
+  {
+    "key": "smoke",
+    "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+    "start": "2026-11-03T17:14:59.333Z",
+    "end": "2026-11-03T17:19:29.972Z",
+    "command": "POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e\nPAYMENTS_SIMULATOR=on POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts\nCONSOLE_E2E_BROWSER=msedge CONSOLE_E2E_BUILT=1 pnpm --filter @oto/console e2e",
+    "log": "C:/oto-lanes/s737-smoke.log",
+    "exitCode": 1,
+    "signal": null,
+    "logSha256": "2265e772017fdeaaab903ec3f871d83e02f358f0b31158322c1321ae6d056cb4"
+  },
+  {
+    "key": "console",
+    "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+    "start": "2026-11-03T17:25:14.274Z",
+    "end": "2026-11-03T17:32:18.548Z",
+    "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-console-gate.mts",
+    "log": "C:/oto-lanes/s737-console.log",
+    "exitCode": 0,
+    "signal": null,
+    "logSha256": "c89bda5c9d7b52b03bd4dfe0199db169f0b680d5e493268f782d33d8256ee534"
+  },
+  {
+    "key": "api1",
+    "sha": "26edfb25781c54b566f00a9cf1ea12bcde52f7a0",
+    "start": "2026-11-03T16:29:42.473Z",
+    "end": "2026-11-03T17:24:38.348Z",
+    "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts --shard=1/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s737-api1.json",
+    "log": "C:/oto-lanes/s737-api1.log",
+    "exitCode": 1,
+    "signal": null,
+    "logSha256": "ce69f213640dd7f571e112a6ce5900f573b055eefe832a4e341fe18d3f446eea"
+  },
+  {
+    "key": "api2",
+    "sha": "26edfb25781c54b566f00a9cf1ea12bcde52f7a0",
+    "start": "2026-11-03T16:29:42.499Z",
+    "end": "2026-11-03T17:24:37.012Z",
+    "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts --shard=2/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s737-api2.json",
+    "log": "C:/oto-lanes/s737-api2.log",
+    "exitCode": 0,
+    "signal": null,
+    "logSha256": "7d436e5310a4d4aa2572ce72a6b8671e74089f07ee7c22ebd861288e3c2f5f14"
+  },
+  {
+    "key": "api3",
+    "sha": "26edfb25781c54b566f00a9cf1ea12bcde52f7a0",
+    "start": "2026-11-03T16:29:42.499Z",
+    "end": "2026-11-03T17:25:36.557Z",
+    "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts --shard=3/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s737-api3.json",
+    "log": "C:/oto-lanes/s737-api3.log",
+    "exitCode": 1,
+    "signal": null,
+    "logSha256": "fbc11672e2e8af26274e8e09a2733e97baa7eb98626cfd7461ae7c116f5f7855"
+  },
+  {
+    "key": "review",
+    "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+    "start": "2026-11-03T17:25:04.135Z",
+    "end": "2026-11-03T17:26:51.580Z",
+    "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts test/s737-first-sale-print-review.test.ts\npnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/test/s737-first-sale-print-review.test.ts",
+    "log": "C:/oto-lanes/s737-review.log",
+    "exitCode": 2,
+    "signal": null,
+    "logSha256": "ab80daf20aa4c20aadf046d3e1190a68d38e5839b469405c177efc6652068fa6"
+  },
+  {
+    "key": "review",
+    "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+    "start": "2026-11-03T17:29:52.250Z",
+    "end": "2026-11-03T17:31:49.291Z",
+    "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts test/s737-first-sale-print-review.test.ts\npnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/test/s737-first-sale-print-review.test.ts",
+    "log": "C:/oto-lanes/s737-review-v2.log",
+    "exitCode": 0,
+    "signal": null,
+    "logSha256": "0adfa0809165a127bd9a022ff59e2d651da3f06835f8365c57301fc760dbb32f"
+  }
+]
