@@ -1,0 +1,29 @@
+{
+  "jobId": "job-dbki8rm7bikc73aah1cg",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "startedAt": "2026-11-03T00:01:49.138Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s726_session_census",
+    "at": "2026-11-03T00:02:33.659Z",
+    "readOnly": true,
+    "rows": [
+      {
+        "id": "01a19eab-5085-787b-83c8-cdf19a5c9c32",
+        "account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "station_id": null,
+        "created_at": "2026-11-02T23:49:49.830Z",
+        "last_seen_at": "2026-11-02T23:49:49.830Z",
+        "locked_at": null
+      },
+      {
+        "id": "01a19eab-5684-7206-988a-4ab432faed7f",
+        "account_id": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+        "station_id": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+        "created_at": "2026-11-02T23:49:51.365Z",
+        "last_seen_at": "2026-11-02T23:49:51.365Z",
+        "locked_at": null
+      }
+    ]
+  }
+}

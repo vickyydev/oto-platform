@@ -1,0 +1,7 @@
+{
+  "at": "2026-11-03T00:04:01.881Z",
+  "jobId": "job-dbkhdhnb9u1s73bemes0",
+  "statusBefore": "running",
+  "statusAfter": "canceled",
+  "reason": "Own idle/ramp monitor stopped while the early-close fix is gated; fresh bounded monitor will start on the deployed source"
+}

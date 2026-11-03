@@ -64,5 +64,21 @@
       "reason": "ZZ TEST incomplete harness selection",
       "voidedAt": "2026-11-02T23:53:33.407Z"
     }
+  ],
+  "testSessions": [
+    {
+      "id": "01a19eb5-6580-74cd-b485-c7a1af760004",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T00:00:49.556Z"
+    },
+    {
+      "id": "01a19eb5-6c43-7a24-92a1-1b6e0d79dd12",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "recordedAt": "2026-11-03T00:00:52.330Z"
+    }
   ]
 }

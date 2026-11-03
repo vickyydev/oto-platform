@@ -1,0 +1,17 @@
+{
+  "jobId": "job-dbki9q56e07s73a6vp50",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "startedAt": "2026-11-03T00:03:51.648Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s726_orphan_sessions",
+    "at": "2026-11-03T00:04:43.486Z",
+    "sessionsEnded": 2,
+    "sessionIds": [
+      "01a19eab-5085-787b-83c8-cdf19a5c9c32",
+      "01a19eab-5684-7206-988a-4ab432faed7f"
+    ],
+    "normalSignOutService": true,
+    "passed": true
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "at": "2026-11-03T00:57:05.475Z",
+  "sourceCommit": "ba1b2fb4562dc4910b6b0472b890573dfa1a7a94",
+  "gatesUnpiped": true,
+  "shell": "Git Bash; set -eo pipefail; stdout/stderr redirected to complete local logs",
+  "api": [
+    " Test Files  433 passed | 8 skipped (441)",
+    "      Tests  6141 passed | 401 skipped | 4 todo (6546)"
+  ],
+  "workspace": [
+    "@oto/telemetry:test:  Test Files  4 passed (4)",
+    "@oto/telemetry:test:       Tests  36 passed (36)",
+    "@oto/messaging:test:  Test Files  6 passed (6)",
+    "@oto/messaging:test:       Tests  79 passed (79)",
+    "@oto/shared:test:  Test Files  57 passed (57)",
+    "@oto/shared:test:       Tests  857 passed (857)",
+    "@oto/booth:test: # tests 38",
+    "@oto/booth:test: # pass 38",
+    "@oto/booth:test: # fail 0",
+    "@oto/assistant:test:  Test Files  17 passed (17)",
+    "@oto/assistant:test:       Tests  678 passed (678)",
+    "@oto/box-agent:test: # tests 843",
+    "@oto/box-agent:test: # pass 843",
+    "@oto/box-agent:test: # fail 0",
+    "@oto/api-types:test:  Test Files  1 passed (1)",
+    "@oto/api-types:test:       Tests  10 passed (10)",
+    "@oto/payments-2c2p:test:  Test Files  6 passed (6)",
+    "@oto/payments-2c2p:test:       Tests  86 passed (86)",
+    "@oto/pos:test:  Test Files  122 passed (122)",
+    "@oto/pos:test:       Tests  1660 passed (1660)",
+    "@oto/admin-screens:test:  Test Files  17 passed (17)",
+    "@oto/admin-screens:test:       Tests  157 passed (157)",
+    "@oto/inbox:test:  Test Files  11 passed (11)",
+    "@oto/inbox:test:       Tests  218 passed (218)",
+    "@oto/launcher:test:  Test Files  7 passed (7)",
+    "@oto/launcher:test:       Tests  88 passed (88)",
+    "@oto/console:test:  Test Files  60 passed (60)",
+    "@oto/console:test:       Tests  588 passed | 3 todo (591)",
+    "@oto/db:test:  Test Files  55 passed (55)",
+    "@oto/db:test:       Tests  384 passed (384)",
+    " Tasks:    14 successful, 14 total"
+  ],
+  "print": [
+    "@oto/print:test:  Test Files  12 passed (12)",
+    "@oto/print:test:       Tests  283 passed (283)",
+    " Tasks:    1 successful, 1 total"
+  ],
+  "typecheck": [
+    " Tasks:    16 successful, 16 total"
+  ],
+  "lint": [
+    "✖ 8 problems (0 errors, 8 warnings)"
+  ],
+  "build": [
+    " Tasks:    5 successful, 5 total"
+  ],
+  "browserJourneys": 7,
+  "generatedTypesMatch": true,
+  "mockMemberGuardPassed": true,
+  "redactionSyncPassed": true,
+  "historyToolTests": 20,
+  "review": {
+    "cases": 2,
+    "observedBeforeFix": "Regular assertion failed: attach callback ran once after socket close",
+    "afterFix": "Both real-socket cases pass; normal stream header and cleanup pin retained"
+  },
+  "logFingerprints": {
+    "api-full": "15cfcb853e1c9fc90120bc11c378f24b00ae3d4c27f01a898e9050cc16732d2b",
+    "workspace-tests": "e3e98de6b1964b34c8a2c7050388ba65ad37d7e02d59fc326ec1d4daff0097ef",
+    "print": "d5b95f351be2905a94db7f706accd18e781f8ec29e972ce835600a17bbd7965d",
+    "typecheck": "9ea9c3b290a94d3709d7e79d3c73f7f0535c3a9aca59fa3110d5bc1da2ba6228",
+    "lint": "42c3c7472d25e97757e99880277d058b6ba33acdf3938bae6ec97bb03f321430",
+    "build": "2ea1bf1823b37d552f69619bd0991681c7774db026360152561e9c73a28f8ce4",
+    "api-types": "d805eeb9fbf6827e407c3664001017ab7fdf3df07acad1cdba33bce8f9931215",
+    "no-mock": "573c4057ebb6cbde7a6a7912fe86aef1786cd5c1ed86531ed83627e55da76c4c",
+    "redaction": "560c63eab003a54e749e348543867b549eb974136549fcdddfd659f2ba7ac79e",
+    "history-tool": "a8d2a30fe6e4ff9db365a6a600b6c9f6706661801accdf8dc728b7593ac2746f",
+    "e2e": "419e85b80eccb6b26c95986e00cb21b3721b58f763d92f454f9f1b19d410ea70"
+  },
+  "sourceFingerprints": {
+    "apps/api/src/routes/stations.ts": "09e91dcc643c5f600222008a2fd859d2580ff23c1bb3a445057468baec42fc71",
+    "apps/api/test/s726-channel-close-review.test.ts": "398a39e67623a8f5fc13646460a2679dc8a2851e4a50bab3a139b48732000c1c"
+  }
+}

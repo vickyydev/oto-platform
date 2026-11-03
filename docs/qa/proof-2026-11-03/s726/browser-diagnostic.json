@@ -1,0 +1,125 @@
+{
+  "startedAt": "2026-11-03T00:00:49.557Z",
+  "source": "7a00aa1ce44af50622d3cde0bd5e84f80607c2a6",
+  "cashCompleted": true,
+  "database": {
+    "at": "2026-11-03T00:01:05.457Z",
+    "sampleAt": "2026-11-03T00:00:59.406Z",
+    "attempts": 1,
+    "sales": 1,
+    "cashAttempts": 1,
+    "allBoxSales": 3,
+    "knownUnpaidVoids": 1,
+    "unexpectedBoxSales": 0,
+    "passed": true
+  },
+  "attempts": [
+    {
+      "id": "01a19eb5-6ea6-7e0a-82fe-5f52e41ad271",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T00:00:53.184Z",
+      "phase": "browser_diagnostic",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000002"
+    }
+  ],
+  "traffic": {
+    "phase": "browser_diagnostic",
+    "calls": 13,
+    "errors": 0,
+    "p50": 82.57610000000022,
+    "p95": 154.22119999999995,
+    "routes": {
+      "GET /branches/:id/pricing-mode": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 66.10139999999956,
+        "p95": 66.10139999999956
+      },
+      "GET /ops/demo-reset": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 68.04279999999926,
+        "p95": 68.04279999999926
+      },
+      "GET /stations/:id/printers": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 76.26519999999982,
+        "p95": 76.26519999999982
+      },
+      "GET /stations/:id/channel [stream open]": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 76.22400000000016,
+        "p95": 76.22400000000016
+      },
+      "GET /stations/:id/displays": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 77.91680000000088,
+        "p95": 77.91680000000088
+      },
+      "GET /branches/:id/occupancy": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 78.82830000000104,
+        "p95": 78.82830000000104
+      },
+      "GET /me/station/link": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 84.54079999999885,
+        "p95": 84.54079999999885
+      },
+      "POST /sales/quote": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 95.76739999999882,
+        "p95": 95.76739999999882
+      },
+      "POST /sales": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 108.35339999999997,
+        "p95": 108.35339999999997
+      },
+      "POST /sales/:id/finalise": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 154.22119999999995,
+        "p95": 154.22119999999995
+      },
+      "GET /branches/:id/stock/sellable": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 82.57610000000022,
+        "p95": 82.57610000000022
+      },
+      "POST /box/v1/station/:id/intents": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 91.63160000000062,
+        "p95": 91.63160000000062
+      },
+      "GET /sales/:id": {
+        "calls": 1,
+        "errors": 0,
+        "p50": 97.64359999999942,
+        "p95": 97.64359999999942
+      }
+    }
+  },
+  "ready": {
+    "stations": 2,
+    "connections": 2,
+    "perStation": {
+      "01a19e88-2a5d-7685-989b-22601c493045": 1,
+      "01a19e80-5cc2-78d4-93a7-b0e563dc8519": 1
+    }
+  },
+  "finishedAt": "2026-11-03T00:01:25.631Z"
+}
