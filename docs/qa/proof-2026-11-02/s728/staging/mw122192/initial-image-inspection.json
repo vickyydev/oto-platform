@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-03T19:05:36.437Z",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "images": [
+    {
+      "name": "s728-before-save-display-warning.png",
+      "sha256": "e2ee2527ae3ab3ca54886ae1c07e5e0ec4fdd386d7a30ca92e1fd4cf5002f615",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-configured-test-zone.png",
+      "sha256": "55b8469428bcaf43bd0e7804263e44035c07822605df3c9ad7195293bedd6eb2",
+      "openedAndInspected": true
+    }
+  ],
+  "finding": "Native before-save warning is visible on the ZZ TEST drawer; the second image shows the saved localhost address. Proof remains in progress."
+}
