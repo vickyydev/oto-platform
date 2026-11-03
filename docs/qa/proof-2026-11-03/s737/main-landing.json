@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-03T19:36:23.358Z",
+  "source": "773fd25f5436bf07f663af183761481b3197a3ef",
+  "branch": "lane/codex-first-print-20261104-r5",
+  "mainCi": {
+    "conclusion": "",
+    "headSha": "773fd25f5436bf07f663af183761481b3197a3ef",
+    "status": "in_progress",
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/41704476807"
+  },
+  "branchCi": {
+    "id": 41700223785,
+    "source": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+    "conclusion": "success",
+    "productAndTestsIdentical": true
+  },
+  "tickets": {
+    "SCRUM-737": "Testing",
+    "SCRUM-742": "Testing"
+  },
+  "stagingProof": false
+}

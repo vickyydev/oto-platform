@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';
+import {execFileSync,spawn} from 'node:child_process';
+import {openSync,closeSync,writeFileSync} from 'node:fs';
+const root='C:/oto-lanes/codex-first-print-release-20261104',sha='773fd25f5436bf07f663af183761481b3197a3ef',base='C:/oto-lanes/s737-main-ci';assert.equal(execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha);
+const startedAt=new Date().toISOString(),fd=openSync(base+'.log','wx'),child=spawn('C:/Program Files/Git/bin/bash.exe',['-c','set -eo pipefail\nsh scripts/agent/watch-ci.sh '+sha+' 45'],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});console.log(JSON.stringify({sha,startedAt,log:base+'.log'}));
+child.once('exit',code=>{closeSync(fd);const receipt={sha,startedAt,finishedAt:new Date().toISOString(),exitCode:code};writeFileSync(base+'-exit.json',JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));process.exitCode=code??1;});
