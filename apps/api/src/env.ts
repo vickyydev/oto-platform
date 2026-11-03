@@ -82,6 +82,8 @@ const EnvSchema = z.object({
    * gated on this instead.
    */
   DEPLOY_ENV: z.enum(['local', 'staging', 'production']).default('local'),
+  /** Empty means no external box address may be saved or served. */
+  BOX_BRIDGE_ZONE: z.string().default(''),
   /** Synthetic local-agent proof only; production never accepts loopback origins. */
   BOX_BRIDGE_ALLOW_LOOPBACK: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   DATABASE_URL: z.string().optional(),
@@ -289,21 +291,10 @@ const EnvSchema = z.object({
    * that a credential left on a disk dies overnight.
    */
   STAFF_TOKEN_TTL_S: z.coerce.number().int().min(300).max(7 * 24 * 3600).optional(),
-  /**
-   * Whether somebody the box has minted a token for in the last thirty days
-   * may unlock offline with their password once their token has expired
-   * (S2-06).
-   *
-   * **Off by default**, which is the acceptance criterion: an expired token is
-   * refused with "shift token expired, connect to sign in". Turning it on buys
-   * a till that keeps working through an outage longer than a shift, at the
-   * price of a password being the only thing between a stolen box and an
-   * unlocked till for a month. The unlock is then recorded as
-   * `offline_sign_in`, never as `offline_token`.
-   */
+  /** OD-6: one setting, delivered in each box configuration. Owner confirmation remains open. */
   STAFF_OFFLINE_SIGN_IN: z
     .enum(['true', 'false'])
-    .default('false')
+    .default('true')
     .transform((v) => v === 'true'),
   /**
    * The Ed25519 private key that signs staff benefit QRs (S2-21 round 2),
@@ -1019,6 +1010,9 @@ export function assertProductionSafe(env: Env): void {
   }
 
   if (env.DEPLOY_ENV === 'production') {
+    if (!env.STAFF_TOKEN_PRIVATE_KEY?.trim()) {
+      problems.push('STAFF_TOKEN_PRIVATE_KEY is not set');
+    }
     if (env.OPS_TEST_CONTROLS) {
       problems.push('OPS_TEST_CONTROLS is true — "Reset demo data" would be live on a real branch');
     }

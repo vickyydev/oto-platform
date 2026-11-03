@@ -151,7 +151,7 @@ export async function boxRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = boxAuth(req);
-      return recordHeartbeat(app.db, auth, req.body, boxCtx(req, auth));
+      return recordHeartbeat(app.db, auth, req.body, boxCtx(req, auth), app.env);
     },
   );
 
@@ -166,7 +166,7 @@ export async function boxRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const auth = boxAuth(req);
-      const bundle = await configBundle(app.db, auth);
+      const bundle = await configBundle(app.db, auth, app.env);
       const etag = `"${bundle.configVersion}"`;
       reply.header('etag', etag);
       /**

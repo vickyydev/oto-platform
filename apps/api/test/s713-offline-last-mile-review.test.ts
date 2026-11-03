@@ -4,7 +4,7 @@ import { box, station } from '@oto/db';
 import { boxBridgeOrigin } from '../src/lib/box-bridge-origin';
 import { ADMIN, RECEPTION, boxBySlot, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
-const ordinary = { DEPLOY_ENV: 'staging' as const, BOX_BRIDGE_ALLOW_LOOPBACK: false };
+const ordinary = { DEPLOY_ENV: 'staging' as const, BOX_BRIDGE_ALLOW_LOOPBACK: false, BOX_BRIDGE_ZONE: 'example.test' };
 
 describe('SCRUM-713 origin boundary: HIGH pins', () => {
   it('PIN HIGH: a trailing DNS dot must not bypass the loopback test gate; normalize the hostname before classifying it', () => {
@@ -26,11 +26,11 @@ describe('SCRUM-713 origin boundary: HIGH pins', () => {
     expect(() => boxBridgeOrigin(origin, ordinary)).toThrow();
   });
   it('HIGH: permits loopback only with the explicit flag outside production', () => {
-    for (const origin of ['http://127.0.0.1:8471', 'http://localhost:8471', 'http://[::1]:8471']) {
-      expect(boxBridgeOrigin(origin, { ...ordinary, BOX_BRIDGE_ALLOW_LOOPBACK: true })).toBe(origin);
-      expect(() => boxBridgeOrigin(origin, { DEPLOY_ENV: 'production', BOX_BRIDGE_ALLOW_LOOPBACK: true })).toThrow();
+    for (const origin of ['http://counter.example.test.localhost:8471']) {
+      expect(boxBridgeOrigin(origin, { ...ordinary, BOX_BRIDGE_ALLOW_LOOPBACK: true, BOX_BRIDGE_ZONE: 'example.test.localhost' })).toBe(origin);
+      expect(() => boxBridgeOrigin(origin, { ...ordinary, DEPLOY_ENV: 'production', BOX_BRIDGE_ALLOW_LOOPBACK: true, BOX_BRIDGE_ZONE: 'example.test.localhost' })).toThrow();
     }
-    expect(() => boxBridgeOrigin('http://192.168.1.20', { ...ordinary, BOX_BRIDGE_ALLOW_LOOPBACK: true })).toThrow();
+    expect(() => boxBridgeOrigin('http://192.168.1.20', { ...ordinary, BOX_BRIDGE_ALLOW_LOOPBACK: true, BOX_BRIDGE_ZONE: 'example.test.localhost' })).toThrow();
   });
 });
 
@@ -41,7 +41,7 @@ describe('SCRUM-713 fleet writes and station contract', () => {
   let branchId: string;
   let virtualId: string;
   beforeAll(async () => {
-    ctx = await createTestContext({ env: { BOX_BRIDGE_ALLOW_LOOPBACK: 'true' } });
+    ctx = await createTestContext({ env: { BOX_BRIDGE_ALLOW_LOOPBACK: 'true', BOX_BRIDGE_ZONE: 'example.test' } });
     admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
     reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
     const seeded = await boxBySlot(ctx.db, 'virtual-1');
@@ -63,17 +63,17 @@ describe('SCRUM-713 fleet writes and station contract', () => {
   });
 
   it('records a configured origin, exposes it on the station, and permits clearing it', async () => {
-    const created = await ctx.app.inject({ method: 'POST', url: `/branches/${branchId}/boxes`, headers: { cookie: admin }, payload: { name: 'ZZ TEST bridge', slot: 'zz-test-713', role: 'counter', bridgeOrigin: 'http://127.0.0.1:8471' } });
+    const created = await ctx.app.inject({ method: 'POST', url: `/branches/${branchId}/boxes`, headers: { cookie: admin }, payload: { name: 'ZZ TEST bridge', slot: 'zz-test-713', role: 'counter', bridgeOrigin: 'https://counter.example.test:8471' } });
     expect(created.statusCode).toBe(200);
     const id = created.json().box.id as string;
     const made = await ctx.app.inject({ method: 'POST', url: `/branches/${branchId}/stations`, headers: { cookie: admin }, payload: { name: 'ZZ TEST bridge till', kind: 'till', boxId: id, codePrefix: 'Z713' } });
     expect(made.statusCode).toBe(200);
-    expect(made.json().station.bridgeOrigin).toBe('http://127.0.0.1:8471');
+    expect(made.json().station.bridgeOrigin).toBe('https://counter.example.test:8471');
     const denied = await ctx.app.inject({ method: 'PATCH', url: `/boxes/${id}`, headers: { cookie: reception }, payload: { bridgeOrigin: 'https://wrong.example.test' } });
     expect(denied.statusCode).toBe(403);
     const invalid = await ctx.app.inject({ method: 'PATCH', url: `/boxes/${id}`, headers: { cookie: admin }, payload: { bridgeOrigin: 'https://counter.example.test/path' } });
     expect(invalid.statusCode).toBe(400);
-    expect((await ctx.db.select().from(box).where(eq(box.id, id)))[0]!.bridgeOrigin).toBe('http://127.0.0.1:8471');
+    expect((await ctx.db.select().from(box).where(eq(box.id, id)))[0]!.bridgeOrigin).toBe('https://counter.example.test:8471');
     const cleared = await ctx.app.inject({ method: 'PATCH', url: `/boxes/${id}`, headers: { cookie: admin }, payload: { bridgeOrigin: null } });
     expect(cleared.statusCode).toBe(200);
     const stationId = made.json().station.id as string;
