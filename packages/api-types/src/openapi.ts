@@ -2931,6 +2931,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/branches/{id}/gate-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One band's gate journal at this park, newest first: every entry, exit, refusal, timeout and alarm at this park's gate stations, at most 50. The band is named by its full or short code in `band`; the answer names it by its short code and never its signed code. A passage whose box clock was not trusted is placed at the moment the cloud took it (`clockTrusted` false), as the occupancy count places it. Reads only. A code that names no band of this operator answers an empty journal. */
+        get: {
+            parameters: {
+                query: {
+                    band: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            events: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                bandId: string;
+                                bandShortCode: string | null;
+                                bandKind: string;
+                                /** @enum {string} */
+                                kind: "entry" | "exit" | "denied" | "timeout" | "alarm";
+                                /** Format: date-time */
+                                at: string;
+                                clockTrusted: boolean;
+                                /** Format: uuid */
+                                stationId: string;
+                                stationName: string;
+                                direction: string | null;
+                                side: string | null;
+                                reason: string | null;
+                                alarm: string | null;
+                                exitWithoutEntry: boolean;
+                                revoked: boolean;
+                                offline: boolean;
+                            }[];
+                            limit: number;
+                            truncated: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/lookup": {
         parameters: {
             query?: never;
@@ -15158,6 +15224,121 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vouchers/by-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What one voucher code is, from no till: its type and value, the park that issued it, its status as the ledger reads it, and where and on which sale it was redeemed; or the fixed-code type that prints it. Empty when no voucher of this operator at a park the caller reads carries it. The last four characters and never the whole code; no staff member. Reads only: unlike `GET /vouchers/lookup` it stands at no till, so a wrong code counts against no till and no person and locks nothing. Needs admin:booth:read at the issuing park. */
+        get: {
+            parameters: {
+                query: {
+                    code: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            vouchers: ({
+                                /** @enum {string} */
+                                record: "voucher";
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                branchId: string;
+                                branchName: string;
+                                /** Format: date-time */
+                                issuedAt: string;
+                                businessDate: string;
+                                type: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    code: string;
+                                    nameEn: string;
+                                    nameTh: string | null;
+                                    kind: string;
+                                };
+                                prize: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    nameEn: string;
+                                } | null;
+                                value: {
+                                    /** @enum {string} */
+                                    kind: "money" | "percent" | "item" | "ticket" | "gift";
+                                    text: string;
+                                    redeemedSatang: number | null;
+                                };
+                                place: {
+                                    /** @enum {string} */
+                                    kind: "booth" | "counter" | "import";
+                                    /** Format: uuid */
+                                    stationId: string | null;
+                                    name: string;
+                                };
+                                codeLast4: string;
+                                source: string;
+                                /** @enum {string} */
+                                status: "issued" | "printed" | "held" | "redeemed" | "expired" | "void";
+                                printCount: number;
+                                /** Format: date-time */
+                                expiresAt: string | null;
+                                redeemed: {
+                                    /** Format: date-time */
+                                    at: string;
+                                    branchName: string | null;
+                                    stationName: string | null;
+                                    /** Format: uuid */
+                                    saleId: string | null;
+                                    receiptNumber: string | null;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                record: "voucher_type";
+                                /** Format: uuid */
+                                id: string;
+                                type: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    code: string;
+                                    nameEn: string;
+                                    nameTh: string | null;
+                                    kind: string;
+                                };
+                                value: {
+                                    /** @enum {string} */
+                                    kind: "money" | "percent" | "item" | "ticket" | "gift";
+                                    text: string;
+                                    redeemedSatang: number | null;
+                                };
+                                codeLast4: string;
+                                /** @enum {string} */
+                                state: "on" | "off" | "archived";
+                            })[];
+                        };
+                    };
                 };
             };
         };

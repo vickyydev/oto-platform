@@ -172,7 +172,7 @@ async function tradingDayStart(exec: Exec, clock: BranchClock, date: string): Pr
 }
 
 /** Lower-case, hyphenated: what the ledger's `event_id` and a box's envelope carry. */
-const UUID_SHAPE = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+export const GATE_DETAIL_UUID_SHAPE = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
 /**
  * The count at one instant: for every band, its latest passage among those
@@ -222,7 +222,7 @@ export async function countAt(
       join core.station s on s.id = be.station_id
       left join edge.sync_event se
         on se.event_id = case
-          when be.detail->>'sourceEventId' ~* ${UUID_SHAPE} then (be.detail->>'sourceEventId')::uuid
+          when be.detail->>'sourceEventId' ~* ${GATE_DETAIL_UUID_SHAPE} then (be.detail->>'sourceEventId')::uuid
         end
       where s.branch_id = ${branchId}
         and be.kind in ('entry', 'exit')

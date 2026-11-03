@@ -6,6 +6,7 @@ import { audit } from './audit';
 import { maskPersonal } from './audit-mask';
 import { branchReach } from './access-control';
 import { callPlatform, type GetRouteTemplate, type PlatformResponse } from './assistant/call-platform';
+import { GATE_EVENTS_LIMIT } from './gate-events';
 import type { EffectivePermission } from './permissions';
 import { withTx, type OpContext } from './tx';
 
@@ -214,8 +215,11 @@ export async function supportLookup(app: FastifyInstance, input: SupportLookupIn
       sections.push(section({ key: 'pos.sales', app: 'pos', kind, label: 'Sales and payments', ...sales, permission: 'pos:sale:read' }));
       const wallet = outcomeOf(await get(caller, `/wallets/lookup?key=${enc}`, 'GET /wallets/lookup'), walletRows);
       sections.push(section({ key: 'pos.wallet', app: 'pos', kind, label: 'Wallet', ...wallet, permission: 'pos:wallet:read' }));
-      sections.push(notBuilt('pos.gate_events', 'pos', kind, 'Gate events',
-        'No reader lists one band’s gate entries and exits yet; its sale and wallet are shown above.'));
+      const gate = await perBranch(caller, branches, id => `/branches/${id}/gate-events?band=${enc}`, 'GET /branches/:id/gate-events',
+        body => listAt(body, 'events'));
+      sections.push(section({ key: 'pos.gate_events', app: 'pos', kind, label: 'Gate events', ...gate, permission: 'pos:checkin:read',
+        note: [gate.note, gate.rows.length >= GATE_EVENTS_LIMIT ? `Showing the newest ${GATE_EVENTS_LIMIT} at each park.` : null]
+          .filter(Boolean).join(' ') || null }));
     } else if (kind === 'receipt') {
       const sales = outcomeOf(await get(caller, `/sales/lookup?receipt=${enc}`, 'GET /sales/lookup'), body => listAt(body, 'sales'));
       sections.push(section({ key: 'pos.sales', app: 'pos', kind, label: 'Sales and payments', ...sales, permission: 'pos:sale:read' }));
@@ -226,8 +230,9 @@ export async function supportLookup(app: FastifyInstance, input: SupportLookupIn
     } else if (kind === 'voucher') {
       const wallet = outcomeOf(await get(caller, `/wallets/lookup?key=${enc}`, 'GET /wallets/lookup'), walletRows);
       sections.push(section({ key: 'pos.wallet', app: 'pos', kind, label: 'Wallet voucher', ...wallet, permission: 'pos:wallet:read' }));
-      sections.push(notBuilt('pos.promo_voucher', 'pos', kind, 'Promotion voucher',
-        'The only voucher-code reader records every miss against the till and can lock it out, so the support lookup does not call it.'));
+      // Never `GET /vouchers/lookup`: that one counts a wrong code against a till and can lock it.
+      const promo = outcomeOf(await get(caller, `/vouchers/by-code?code=${enc}`, 'GET /vouchers/by-code'), body => listAt(body, 'vouchers'));
+      sections.push(section({ key: 'pos.promo_voucher', app: 'pos', kind, label: 'Promotion voucher', ...promo, permission: 'admin:booth:read' }));
     } else if (kind === 'account') {
       const sessions = outcomeOf(await get(caller, `/accounts/${q}/sessions`, 'GET /accounts/:id/sessions'), body => listAt(body, 'sessions'));
       sections.push(section({ key: 'platform.account_sessions', app: 'platform', kind, label: 'Account sessions', ...sessions,

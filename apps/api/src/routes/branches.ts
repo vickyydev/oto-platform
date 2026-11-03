@@ -12,11 +12,25 @@ import {
   syncBranchRenameToApp,
   syncNewBranchToApp,
 } from '../services/oto-app-branches';
+import { loadBranchForOperator } from '../services/fleet';
+import { gateEventsForBand, GATE_EVENTS_LIMIT } from '../services/gate-events';
 import { liveOccupancy } from '../services/occupancy';
 import { createMissingTemplates } from '../services/print';
 import { opCtx, withTx } from '../services/tx';
-import { LiveOccupancyViewSchema } from '@oto/shared';
+import { GATE_EVENT_KINDS, LiveOccupancyViewSchema } from '@oto/shared';
 import { assertArchiveAllowed, lockActiveOrganisation, lockBranchForArchive } from '../services/organisation-archive';
+
+/** SCRUM-674 — one band's gate journal at one park. */
+const GateEventsSchema = z.object({
+  events: z.array(z.object({
+    id: z.string().uuid(), bandId: z.string().uuid(), bandShortCode: z.string().nullable(), bandKind: z.string(),
+    kind: z.enum(GATE_EVENT_KINDS), at: z.string().datetime(), clockTrusted: z.boolean(),
+    stationId: z.string().uuid(), stationName: z.string(), direction: z.string().nullable(), side: z.string().nullable(),
+    reason: z.string().nullable(), alarm: z.string().nullable(), exitWithoutEntry: z.boolean(), revoked: z.boolean(), offline: z.boolean(),
+  }).strict()),
+  limit: z.number().int().positive(),
+  truncated: z.boolean(),
+}).strict();
 
 const HoursClockSchema = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'HH:MM');
 const HoursDaySchema = z.object({ open: HoursClockSchema, close: HoursClockSchema }).strict().nullable().optional();
@@ -368,6 +382,37 @@ export async function branchRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       return liveOccupancy(app.db, { operatorId: auth.operatorId, branchId: req.params.id });
+    },
+  );
+
+  app.get(
+    '/:id/gate-events',
+    {
+      /**
+       * SCRUM-674 — the same permission as the count these passages make: who
+       * came through this park's gate is the floor's question. A read that
+       * counts nothing, so it is not `stationTrading`.
+       */
+      config: { permission: 'pos:checkin:read', target: { branchId: 'params.id' } },
+      schema: {
+        description:
+          `One band's gate journal at this park, newest first: every entry, exit, refusal, timeout and alarm at this park's gate stations, at most ${GATE_EVENTS_LIMIT}. ` +
+          'The band is named by its full or short code in `band`; the answer names it by its short code and never its signed code. A passage whose box clock was not trusted is placed at the moment the cloud took it (`clockTrusted` false), as the occupancy count places it. Reads only. A code that names no band of this operator answers an empty journal.',
+        params: z.object({ id: z.string().uuid() }),
+        querystring: z.object({ band: z.string().trim().min(1).max(80) }).strict(),
+        response: { 200: GateEventsSchema },
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      reply.header('cache-control', 'private, no-store');
+      // The guard asked at this id; a grant at operator scope says yes to any id, so it is loaded inside the operator.
+      const br = await loadBranchForOperator(app.db, auth.operatorId, req.params.id);
+      // A read-only transaction: Postgres itself refuses this path anything but a read.
+      return app.db.transaction(
+        (tx) => gateEventsForBand(tx, { operatorId: auth.operatorId, branchId: br.id, key: req.query.band }),
+        { accessMode: 'read only' },
+      );
     },
   );
 }

@@ -158,11 +158,11 @@ describe('SCRUM-648 cross-app lookup', () => {
     expect(JSON.stringify(row)).not.toContain('1111111');
   });
 
-  it('labels unbuilt readers as not_built for a band, and searches a receipt through the sales reader', async () => {
+  it('answers every section for a band, and searches a receipt through the sales reader', async () => {
     const band = await call(admin, 'GET', '/console/support/lookup?q=T1-7KMQ4X&kind=band');
     expect(band.status, band.raw).toBe(200);
     expect(band.body.sections.map((sec: { key: string; status: string }) => [sec.key, sec.status])).toEqual([
-      ['pos.sales', 'empty'], ['pos.wallet', 'empty'], ['pos.gate_events', 'not_built'],
+      ['pos.sales', 'empty'], ['pos.wallet', 'empty'], ['pos.gate_events', 'empty'],
     ]);
     const receipt = await call(admin, 'GET', '/console/support/lookup?q=ZZ648-000001&kind=receipt');
     expect(receipt.status, receipt.raw).toBe(200);

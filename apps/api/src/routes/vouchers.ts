@@ -10,6 +10,8 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
+import { PermissionDeniedError } from '../plugins/session';
+import { branchReach } from '../services/access-control';
 import { loadBranchForOperator } from '../services/fleet';
 import { hasPermission } from '../services/permissions';
 import { opCtx, withTx } from '../services/tx';
@@ -27,6 +29,7 @@ import {
   VOUCHER_LEDGER_STATUSES,
   listVoucherLedger,
   voucherLedgerCsv,
+  vouchersByCode,
 } from '../services/voucher-ledger';
 import {
   holdVoucher,
@@ -68,6 +71,13 @@ import {
  * scoped to the branch in the query, which is loaded inside the caller's
  * operator before anything is read. What each column means is in
  * `services/voucher-ledger.ts`.
+ *
+ * AND THE SUPPORT LOOKUP'S (SCRUM-674):
+ *
+ *   GET    /vouchers/by-code?code=       what one code is, from no till, counting nothing.
+ *
+ * The same permission, over the parks the caller holds it at. It exists because
+ * `GET /vouchers/lookup` counts a wrong code against the till and the person.
  */
 
 const SaleParams = z.object({ id: z.string().uuid() });
@@ -179,6 +189,33 @@ const LedgerResponse = z.object({
     }),
   ),
 });
+const VoucherTypeSummarySchema = z.object({
+  id: z.string().uuid(), code: z.string(), nameEn: z.string(), nameTh: z.string().nullable(), kind: z.string(),
+}).strict();
+const VoucherValueSchema = z.object({
+  kind: z.enum(['money', 'percent', 'item', 'ticket', 'gift']), text: z.string(), redeemedSatang: z.number().int().nullable(),
+}).strict();
+/** SCRUM-674 — one code as the support lookup reads it: no whole code, no person. */
+const VoucherByCodeSchema = z.object({
+  vouchers: z.array(z.discriminatedUnion('record', [
+    z.object({
+      record: z.literal('voucher'), id: z.string().uuid(), branchId: z.string().uuid(), branchName: z.string(),
+      issuedAt: z.string().datetime(), businessDate: z.string(), type: VoucherTypeSummarySchema,
+      prize: z.object({ id: z.string().uuid(), nameEn: z.string() }).strict().nullable(), value: VoucherValueSchema,
+      place: z.object({ kind: z.enum(['booth', 'counter', 'import']), stationId: z.string().uuid().nullable(), name: z.string() }).strict(),
+      codeLast4: z.string(), source: z.string(), status: z.enum(VOUCHER_LEDGER_STATUSES), printCount: z.number().int(),
+      expiresAt: z.string().datetime().nullable(),
+      redeemed: z.object({
+        at: z.string().datetime(), branchName: z.string().nullable(), stationName: z.string().nullable(),
+        saleId: z.string().uuid().nullable(), receiptNumber: z.string().nullable(),
+      }).strict().nullable(),
+    }).strict(),
+    z.object({
+      record: z.literal('voucher_type'), id: z.string().uuid(), type: VoucherTypeSummarySchema, value: VoucherValueSchema,
+      codeLast4: z.string(), state: z.enum(['on', 'off', 'archived']),
+    }).strict(),
+  ])),
+}).strict();
 const ReleaseParams = z.object({ id: z.string().uuid(), voucherId: z.string().uuid() });
 /** What a scanner or a person types. Normalised and checked by the service, never trusted. */
 const Code = z.string().min(1).max(64);
@@ -233,6 +270,27 @@ export async function voucherRoutes(app: App): Promise<void> {
         .header('content-disposition', `attachment; filename="${filename}"`)
         .header('cache-control', 'no-store')
         .send(csv);
+    },
+  );
+
+  app.get(
+    '/vouchers/by-code',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'What one voucher code is, from no till: its type and value, the park that issued it, its status as the ledger reads it, and where and on which sale it was redeemed; or the fixed-code type that prints it. Empty when no voucher of this operator at a park the caller reads carries it. The last four characters and never the whole code; no staff member. Reads only: unlike `GET /vouchers/lookup` it stands at no till, so a wrong code counts against no till and no person and locks nothing. Needs admin:booth:read at the issuing park.',
+        querystring: z.object({ code: Code }).strict(),
+        response: { 200: VoucherByCodeSchema },
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      reply.header('cache-control', 'private, no-store');
+      const reach = branchReach(await req.effectivePermissions(), 'admin:booth:read', auth.operatorId);
+      if (reach.kind === 'branches' && reach.branchIds.length === 0) throw new PermissionDeniedError('admin:booth:read');
+      // A read-only transaction: Postgres itself refuses this path anything but a read.
+      return app.db.transaction((tx) => vouchersByCode(tx, auth.operatorId, req.query.code, reach), { accessMode: 'read only' });
     },
   );
 

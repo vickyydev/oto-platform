@@ -1,5 +1,5 @@
-import { sql, type SQL } from 'drizzle-orm';
-import type { branch, Db } from '@oto/db';
+import { and, eq, sql, type SQL } from 'drizzle-orm';
+import { voucherDefinition, type branch, type Db } from '@oto/db';
 import {
   addDaysToIsoDate,
   boothStaffCode,
@@ -8,8 +8,11 @@ import {
   parseDayStart,
 } from '@oto/shared';
 import { AppError } from '../lib/errors';
+import type { BranchReach } from './access-control';
 import type { BoothStationRow } from './booth';
 import { SPIN_LABEL_JOINS, SPIN_STAFF_LABEL, SPIN_UNATTRIBUTED } from './booth-attribution';
+import type { Exec } from './tx';
+import { classifyVoucherCode } from './vouchers';
 
 export const VOUCHER_LEDGER_STATUSES = [
   'issued',
@@ -673,4 +676,110 @@ export async function listBoothSpins(
       clockSuspect: r.clock_suspect,
     })),
   };
+}
+
+// --- One code, for the support lookup (SCRUM-674) ------------------------------
+
+export const VOUCHERS_BY_CODE_LIMIT = 5;
+
+export interface VoucherSupportRow {
+  record: 'voucher';
+  id: string;
+  branchId: string;
+  branchName: string;
+  issuedAt: string;
+  businessDate: string;
+  type: VoucherLedgerRow['type'];
+  prize: VoucherLedgerRow['prize'];
+  value: VoucherValue;
+  place: VoucherLedgerRow['place'];
+  codeLast4: string;
+  source: string;
+  status: VoucherLedgerStatus;
+  printCount: number;
+  expiresAt: string | null;
+  redeemed: Omit<NonNullable<VoucherLedgerRow['redeemed']>, 'by'> | null;
+}
+
+/** A fixed-code type's shared code: what a till would redeem it as, before any voucher of it exists. */
+export interface VoucherTypeSupportRow {
+  record: 'voucher_type';
+  id: string;
+  type: VoucherLedgerRow['type'];
+  value: VoucherValue;
+  codeLast4: string;
+  state: 'on' | 'off' | 'archived';
+}
+
+interface RawSupportRow extends RawLedgerRow {
+  branch_id: string;
+  branch_name: string;
+}
+
+/**
+ * SCRUM-674 — WHAT ONE VOUCHER CODE IS, for the Console's support lookup.
+ *
+ * `GET /vouchers/lookup` cannot answer this. It is the first half of a
+ * redemption: it stands at a till, and a wrong code counts against that till
+ * and against the person, and can lock both (`findForRedemption`,
+ * `recordVoucherMiss`). A person searching from the Console stands at no till
+ * and redeems nothing, so a miss here is simply an empty answer. THIS READS AND
+ * WRITES NOTHING ELSE: no throttle row, no miss row, no advisory lock, no alert.
+ *
+ * WHOSE. The code is looked up inside the operator, and a voucher is answered
+ * only when the caller holds the reader at the park that issued it, which is
+ * how the ledger scopes the same row (`GET /vouchers`). One out of reach reads
+ * exactly as one that does not exist. A fixed-code type belongs to the whole
+ * operator and is listed as `GET /voucher-definitions` lists it.
+ *
+ * WHAT. A ledger row's facts, its last four characters and never the whole code
+ * (a bearer credential) and no person: the issuing and redeeming staff stay on
+ * the ledger, which answers a different question.
+ */
+export async function vouchersByCode(
+  db: Exec,
+  operatorId: string,
+  rawCode: string,
+  reach: BranchReach,
+): Promise<{ vouchers: (VoucherSupportRow | VoucherTypeSupportRow)[] }> {
+  const out: (VoucherSupportRow | VoucherTypeSupportRow)[] = [];
+  const code = classifyVoucherCode(rawCode);
+  // Decided from the string, as at a till: no row is read for a code that cannot be a voucher.
+  if (code.kind !== 'invalid' && (reach.kind === 'operator' || reach.branchIds.length > 0)) {
+    const inReach = reach.kind === 'operator' ? sql`` : sql`and v.branch_id = any(${sql.param(reach.branchIds)}::uuid[])`;
+    const { rows } = await db.execute<RawSupportRow>(sql`
+      select ${ROW_COLUMNS}, ${STATUS} as status, v.branch_id, ib.name as branch_name,
+        coalesce(s.business_date, ((v.issued_at at time zone ib.timezone) - ib.business_day_start::interval)::date)::text as business_date
+      ${LEDGER_FROM}
+      join core.branch ib on ib.id = v.branch_id
+      where v.operator_id = ${operatorId}::uuid and v.code = ${code.code} ${inReach}
+      order by v.issued_at desc, v.id desc
+      limit ${VOUCHERS_BY_CODE_LIMIT}`);
+    for (const raw of rows) {
+      const row = rowOf(raw);
+      // An allowlist, so a person added to the ledger's row does not arrive here on its own.
+      out.push({
+        record: 'voucher', id: row.id, branchId: raw.branch_id, branchName: raw.branch_name, issuedAt: row.issuedAt,
+        businessDate: row.businessDate, type: row.type, prize: row.prize, value: row.value, place: row.place,
+        codeLast4: row.codeLast4, source: row.source, status: row.status, printCount: row.printCount, expiresAt: row.expiresAt,
+        redeemed: row.redeemed && { at: row.redeemed.at, branchName: row.redeemed.branchName, stationName: row.redeemed.stationName,
+          saleId: row.redeemed.saleId, receiptNumber: row.redeemed.receiptNumber },
+      });
+    }
+  }
+  const fixed = rawCode.trim().toUpperCase();
+  if (/^[0-9A-Z-]{4,32}$/.test(fixed)) {
+    const types = await db.select().from(voucherDefinition).where(and(eq(voucherDefinition.operatorId, operatorId),
+      eq(voucherDefinition.codeMode, 'fixed'), eq(voucherDefinition.fixedCode, fixed))).limit(VOUCHERS_BY_CODE_LIMIT);
+    for (const def of types) {
+      out.push({
+        record: 'voucher_type', id: def.id,
+        type: { id: def.id, code: def.code, nameEn: def.nameEn, nameTh: def.nameTh, kind: def.kind },
+        value: valueOf(def, { product: null, package: null, prize: null }, null),
+        codeLast4: fixed.slice(-4),
+        state: def.archivedAt ? 'archived' : def.active ? 'on' : 'off',
+      });
+    }
+  }
+  return { vouchers: out };
 }

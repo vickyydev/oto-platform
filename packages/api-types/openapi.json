@@ -5561,6 +5561,151 @@
         }
       }
     },
+    "/branches/{id}/gate-events": {
+      "get": {
+        "description": "One band's gate journal at this park, newest first: every entry, exit, refusal, timeout and alarm at this park's gate stations, at most 50. The band is named by its full or short code in `band`; the answer names it by its short code and never its signed code. A passage whose box clock was not trusted is placed at the moment the cloud took it (`clockTrusted` false), as the occupancy count places it. Reads only. A code that names no band of this operator answers an empty journal.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "band",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "bandId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "bandShortCode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "bandKind": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "entry",
+                              "exit",
+                              "denied",
+                              "timeout",
+                              "alarm"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "clockTrusted": {
+                            "type": "boolean"
+                          },
+                          "stationId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "stationName": {
+                            "type": "string"
+                          },
+                          "direction": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "side": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reason": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "alarm": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "exitWithoutEntry": {
+                            "type": "boolean"
+                          },
+                          "revoked": {
+                            "type": "boolean"
+                          },
+                          "offline": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "bandId",
+                          "bandShortCode",
+                          "bandKind",
+                          "kind",
+                          "at",
+                          "clockTrusted",
+                          "stationId",
+                          "stationName",
+                          "direction",
+                          "side",
+                          "reason",
+                          "alarm",
+                          "exitWithoutEntry",
+                          "revoked",
+                          "offline"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "exclusiveMinimum": true,
+                      "minimum": 0
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "events",
+                    "limit",
+                    "truncated"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/members/lookup": {
       "get": {
         "description": "Look up a member by phone, with children and tier verification",
@@ -32280,6 +32425,352 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/vouchers/by-code": {
+      "get": {
+        "description": "What one voucher code is, from no till: its type and value, the park that issued it, its status as the ledger reads it, and where and on which sale it was redeemed; or the fixed-code type that prints it. Empty when no voucher of this operator at a park the caller reads carries it. The last four characters and never the whole code; no staff member. Reads only: unlike `GET /vouchers/lookup` it stands at no till, so a wrong code counts against no till and no person and locks nothing. Needs admin:booth:read at the issuing park.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "in": "query",
+            "name": "code",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "vouchers": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "record": {
+                                "type": "string",
+                                "enum": [
+                                  "voucher"
+                                ]
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "branchName": {
+                                "type": "string"
+                              },
+                              "issuedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "businessDate": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "nameEn": {
+                                    "type": "string"
+                                  },
+                                  "nameTh": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "kind": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "code",
+                                  "nameEn",
+                                  "nameTh",
+                                  "kind"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "prize": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "nameEn": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "nameEn"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "value": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "money",
+                                      "percent",
+                                      "item",
+                                      "ticket",
+                                      "gift"
+                                    ]
+                                  },
+                                  "text": {
+                                    "type": "string"
+                                  },
+                                  "redeemedSatang": {
+                                    "type": "integer",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "text",
+                                  "redeemedSatang"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "place": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "booth",
+                                      "counter",
+                                      "import"
+                                    ]
+                                  },
+                                  "stationId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "nullable": true
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "stationId",
+                                  "name"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "codeLast4": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "issued",
+                                  "printed",
+                                  "held",
+                                  "redeemed",
+                                  "expired",
+                                  "void"
+                                ]
+                              },
+                              "printCount": {
+                                "type": "integer"
+                              },
+                              "expiresAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "redeemed": {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "branchName": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "stationName": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "saleId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "nullable": true
+                                  },
+                                  "receiptNumber": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "branchName",
+                                  "stationName",
+                                  "saleId",
+                                  "receiptNumber"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "record",
+                              "id",
+                              "branchId",
+                              "branchName",
+                              "issuedAt",
+                              "businessDate",
+                              "type",
+                              "prize",
+                              "value",
+                              "place",
+                              "codeLast4",
+                              "source",
+                              "status",
+                              "printCount",
+                              "expiresAt",
+                              "redeemed"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "record": {
+                                "type": "string",
+                                "enum": [
+                                  "voucher_type"
+                                ]
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "type": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "nameEn": {
+                                    "type": "string"
+                                  },
+                                  "nameTh": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "kind": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "code",
+                                  "nameEn",
+                                  "nameTh",
+                                  "kind"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "value": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "money",
+                                      "percent",
+                                      "item",
+                                      "ticket",
+                                      "gift"
+                                    ]
+                                  },
+                                  "text": {
+                                    "type": "string"
+                                  },
+                                  "redeemedSatang": {
+                                    "type": "integer",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "text",
+                                  "redeemedSatang"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "codeLast4": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "on",
+                                  "off",
+                                  "archived"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "record",
+                              "id",
+                              "type",
+                              "value",
+                              "codeLast4",
+                              "state"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "vouchers"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
