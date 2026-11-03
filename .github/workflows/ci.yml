@@ -705,6 +705,13 @@ jobs:
       - name: The app's checklist copy checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/checklist-copies.check.ts
+      # SCRUM-659: the same on the real Studio checklists page under jsdom,
+      # against the real routes: a normal edit saves as before, the box and the
+      # required question behave, a double click makes one copy, and the shared
+      # note names only branches the person may see.
+      - name: The app's checklist copy editor checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/checklist-copies-ui.check.ts
       # SCRUM-601: tapping a child's card in Check-ins (Camp) opens the child's
       # quick details — the large photo (and full size), name, age, birthday,
       # camp, parent contact, notes and today's state — on the real list under

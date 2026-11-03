@@ -96,7 +96,8 @@ export function addedBranchQuestion({
 }): { question: string; copyLabel: string; copyHint: string; shareLabel: string; shareHint: string } {
   const names = joinNames(added.map((id) => nameOf(branches, id) ?? "This branch"));
   const keepsAny = selectedBranchIds.some((id) => originalBranchIds.includes(id));
-  const original = joinNames(originalBranchIds.map((id) => nameOf(branches, id) ?? "its branch"));
+  const originalNames = originalBranchIds.map((id) => nameOf(branches, id));
+  const original = originalNames.every(Boolean) ? joinNames(originalNames as string[]) : "its current branches";
   return {
     question: `How should ${names} be added?`,
     copyLabel: added.length === 1 ? "Make a separate copy for this branch" : "Make a separate copy for each new branch",

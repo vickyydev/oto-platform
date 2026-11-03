@@ -10,6 +10,7 @@ import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFoo
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ChecklistEmployeePicker } from "@/components/checklist-employee-picker";
 import { ClipboardList, Lock, Plus, Trash2, Clock, User, Users, Building2, MapPin, Camera, Image, ChevronDown, ChevronUp, Pencil, Upload, ClipboardCheck, GripVertical, Wrench } from "lucide-react";
 import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
@@ -23,6 +24,16 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { MediaUploadButton, MediaPreviewStrip, MediaDropZone, UploadingFilesPreview, UploadStatusBanner, type ChecklistAttachment } from "@/components/media";
 import { uploadQueue } from "@/lib/uploadQueue";
+import { useBranchContext } from "@/hooks/use-branch-context";
+import {
+  addedBranchIds as branchesAddedTo,
+  addedBranchQuestion,
+  checklistBranchIds,
+  sameBranches,
+  saveAsNewSummary,
+  sharedChecklistNote,
+  type AddedBranchChoice,
+} from "@/lib/checklist-branch-edit";
 
 interface Employee {
   id: string;
@@ -155,6 +166,13 @@ export default function StudioChecklistsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingChecklist, setEditingChecklist] = useState<ChecklistTemplate | null>(null);
+  // SCRUM-659: the editor's two copy decisions. Neither is ever set for the person.
+  const [saveAsNew, setSaveAsNew] = useState(false);
+  const [addedBranchChoice, setAddedBranchChoice] = useState<AddedBranchChoice | null>(null);
+  // Set before a save is sent, cleared when it settles: a double click reaches
+  // here before the button can render as disabled, and must not make two copies.
+  const editSaveInFlightRef = useRef(false);
+  const { branches: visibleBranches, activeBranchId } = useBranchContext();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -274,6 +292,7 @@ export default function StudioChecklistsPage() {
     .filter(emp => emp.status === "active") // Only show active employees
     .filter(emp => {
       if (selectedBranchIds.length === 0) return true; // No branch filter
+      if (form.getValues("assignedEmployeeIds").includes(emp.id)) return true; // Someone already named stays listed
       if (selectedBranchIds.length === 1) return emp.branchId === selectedBranchIds[0];
       return selectedBranchIds.includes(emp.branchId || ""); // Multiple branches selected
     });
@@ -289,6 +308,25 @@ export default function StudioChecklistsPage() {
   });
 
   const allBranchesSelected = branches.length > 0 && selectedBranchIds.length === branches.length;
+
+  const originalBranchIds = useMemo(
+    () => (editingChecklist ? checklistBranchIds(editingChecklist) : []),
+    [editingChecklist],
+  );
+  const addedBranches = branchesAddedTo(originalBranchIds, selectedBranchIds);
+  const addedBranchesKey = addedBranches.join(",");
+  // The answer belongs to the branches it was given for: a different set asks again.
+  useEffect(() => {
+    setAddedBranchChoice(null);
+  }, [addedBranchesKey]);
+  const branchChoiceNeeded = !saveAsNew && addedBranches.length > 0;
+  const branchChoiceMissing = branchChoiceNeeded && !addedBranchChoice;
+  const makesCopies = saveAsNew || (branchChoiceNeeded && addedBranchChoice === "copy");
+  const canReachAllBranches = !!user?.hasAllBranchesAccess;
+  // A shared checklist can also be on a branch this person does not have: it stays
+  // selected but is not in their picker. A new checklist goes to the branches they
+  // can see and choose, so splitting off a copy never asks for one out of reach.
+  const saveAsNewBranchIds = selectedBranchIds.filter((id) => branches.some((branch) => branch.id === id));
 
   const { data: locations = [] } = useQuery<Location[]>({
     queryKey: ["/api/locations"],
@@ -414,7 +452,21 @@ export default function StudioChecklistsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: CreateFormValues }) => {
+    mutationFn: async ({
+      id,
+      data,
+      copyMode,
+      branchChoice,
+      originalBranches,
+      newChecklistBranches,
+    }: {
+      id: string;
+      data: CreateFormValues;
+      copyMode: "new" | "added" | null;
+      branchChoice: AddedBranchChoice | null;
+      originalBranches: string[];
+      newChecklistBranches: string[];
+    }) => {
       const validItems = items.filter((i) => i.title.trim()).map(item => ({
         id: item.id,
         title: item.title,
@@ -448,10 +500,13 @@ export default function StudioChecklistsPage() {
       if (data.recurrence === "monthly" && data.monthlyDay) {
         payload.monthlyDay = data.monthlyDay;
       }
-      if (data.branchIds.length > 0) {
+      // Sent only when the branches change: a save that leaves them alone leaves
+      // them alone, and the server works out what was added from the same list.
+      if (data.branchIds.length > 0 && !sameBranches(data.branchIds, originalBranches)) {
         payload.branchId = data.branchIds[0];
         payload.branchIds = data.branchIds;
       }
+      if (branchChoice) payload.branchCopyChoice = branchChoice;
       switch (data.assignmentType) {
         case "employee":
           payload.assignedEmployeeIds = data.assignedEmployeeIds;
@@ -483,10 +538,23 @@ export default function StudioChecklistsPage() {
         payload.scheduleTime4 = data.scheduleTime4 || null;
         payload.scheduleTime5 = data.scheduleTime5 || null;
       }
+      if (copyMode === "new") {
+        // The create path, naming the original: this request writes nothing to it.
+        const { branchId: _branchId, branchCopyChoice: _choice, isActive: _isActive, ...fields } = payload;
+        const response = await apiRequest("POST", "/api/checklists/templates", {
+          ...fields,
+          branchIds: newChecklistBranches,
+          copiedFromTemplateId: id,
+        });
+        return response.json();
+      }
       const response = await apiRequest("PATCH", `/api/checklists/templates/${id}`, payload);
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSettled: () => {
+      editSaveInFlightRef.current = false;
+    },
+    onSuccess: (data: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/checklists/templates"] });
       queryClient.invalidateQueries({ queryKey: ["/api/checklists/today"] });
       queryClient.invalidateQueries({ predicate: (query) => {
@@ -498,6 +566,22 @@ export default function StudioChecklistsPage() {
       form.reset();
       setItems([{ title: "", cameraEnabled: true, galleryEnabled: false }]);
       setHeaderAttachments([]);
+      if (variables.copyMode === "new") {
+        const made = data?.createdCount || 1;
+        toast({
+          title: made > 1 ? `${made} new checklists created` : "New checklist created",
+          description: "The original was not changed.",
+        });
+        return;
+      }
+      if (variables.copyMode === "added") {
+        const copies = data?.createdCopies?.length || 0;
+        toast({
+          title: "Checklist template updated",
+          description: copies > 1 ? `Made ${copies} separate copies, one per new branch.` : "Made a separate copy for the new branch.",
+        });
+        return;
+      }
       const propagated = data?.propagatedRunCount || 0;
       toast({ 
         title: "Checklist template updated",
@@ -506,8 +590,10 @@ export default function StudioChecklistsPage() {
           : undefined,
       });
     },
-    onError: () => {
-      toast({ title: "Failed to update checklist", variant: "destructive" });
+    onError: (error: any, variables) => {
+      // A copy is refused for a reason the person can act on (a branch out of
+      // reach, a photo setting); a plain save keeps its message.
+      toast({ title: (variables.copyMode && error?.message) || "Failed to update checklist", variant: "destructive" });
     },
   });
 
@@ -533,6 +619,8 @@ export default function StudioChecklistsPage() {
 
   const openEditDialog = async (checklist: ChecklistTemplate) => {
     setEditingChecklist(checklist);
+    setSaveAsNew(false);
+    setAddedBranchChoice(null);
     // Fetch checklist items
     try {
       const res = await fetch(`/api/checklists/templates/${checklist.id}`, { credentials: "include" });
@@ -587,7 +675,8 @@ export default function StudioChecklistsPage() {
     form.reset({
       name: checklist.name,
       description: checklist.description || "",
-      branchIds: checklist.branchIds || (checklist.branchId ? [checklist.branchId] : []),
+      // A checklist with one branch stores it alone and an empty list.
+      branchIds: checklistBranchIds(checklist),
       recurrence: checklist.recurrence || "daily",
       weeklyDays: (checklist as any).weeklyDays || [],
       monthlyDay: (checklist as any).monthlyDay || null,
@@ -641,7 +730,36 @@ export default function StudioChecklistsPage() {
       toast({ title: "Please select at least one employee", variant: "destructive" });
       return;
     }
-    updateMutation.mutate({ id: editingChecklist.id, data });
+    if (branchChoiceMissing) {
+      toast({ title: "Choose how to add the new branch", variant: "destructive" });
+      return;
+    }
+    if (makesCopies) {
+      // A copy goes through the create path, so it answers to the same checks.
+      if (data.assignmentType === "role" && !data.assignedRoleId) {
+        toast({ title: "Please select a role", variant: "destructive" });
+        return;
+      }
+      if (data.assignmentType === "department" && !data.assignedDepartmentId) {
+        toast({ title: "Please select a department", variant: "destructive" });
+        return;
+      }
+      // A file still uploading lands on the original after the copy is made.
+      if (activeUploadCount > 0) {
+        toast({ title: "Please wait for the uploads to finish", variant: "destructive" });
+        return;
+      }
+    }
+    if (editSaveInFlightRef.current) return;
+    editSaveInFlightRef.current = true;
+    updateMutation.mutate({
+      id: editingChecklist.id,
+      data,
+      copyMode: saveAsNew ? "new" : makesCopies ? "added" : null,
+      branchChoice: !saveAsNew && branchChoiceNeeded ? addedBranchChoice : null,
+      originalBranches: originalBranchIds,
+      newChecklistBranches: saveAsNewBranchIds,
+    });
   };
 
   const addItem = () => {
@@ -756,6 +874,13 @@ export default function StudioChecklistsPage() {
     }
     return null;
   };
+
+  const sharedNote = editingChecklist
+    ? sharedChecklistNote({ originalBranchIds, visibleBranches, activeBranchId, branchCount: branches.length })
+    : null;
+  const addedQuestion = branchChoiceNeeded
+    ? addedBranchQuestion({ added: addedBranches, selectedBranchIds, originalBranchIds, branches })
+    : null;
 
   if (isLoading) {
     return (
@@ -935,7 +1060,7 @@ export default function StudioChecklistsPage() {
             onUploadComplete={(attachment) => {
               setHeaderAttachments(prev => [...prev, attachment]);
             }}
-            disabled={!editingChecklist}
+            disabled={!editingChecklist || saveAsNew}
           >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -987,6 +1112,13 @@ export default function StudioChecklistsPage() {
                   <FormLabel>Reference Media</FormLabel>
                   <p className="text-xs text-muted-foreground">Add photos or videos as reference for staff completing this checklist.</p>
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center bg-muted/30">
+                    {/* Media saves to the checklist the moment it changes, so it
+                        cannot change while the original is meant to stay as it is. */}
+                    {saveAsNew ? (
+                      <p className="text-xs text-muted-foreground" data-testid="text-edit-media-copied">
+                        These copy across to the new checklist. Add or remove files on it after saving.
+                      </p>
+                    ) : (
                     <div className="flex flex-col items-center gap-2">
                       <Upload className="h-8 w-8 text-muted-foreground/50" />
                       <p className="text-sm text-muted-foreground">Drag & drop files here, or</p>
@@ -1002,11 +1134,12 @@ export default function StudioChecklistsPage() {
                         Browse Files
                       </MediaUploadButton>
                     </div>
+                    )}
                     {headerAttachments.length > 0 && (
                       <div className="mt-3 pt-3 border-t">
                         <MediaPreviewStrip
                           attachments={headerAttachments}
-                          editable
+                          editable={!saveAsNew}
                           onRemove={async (id) => {
                             try {
                               await apiRequest("DELETE", `/api/checklist-media/${id}`);
@@ -1046,6 +1179,48 @@ export default function StudioChecklistsPage() {
                     </Badge>
                   ))}
                 </div>
+                {sharedNote && (
+                  <p className="text-xs text-muted-foreground rounded-md border bg-muted/30 p-2" data-testid="text-edit-shared-note">
+                    {sharedNote}
+                  </p>
+                )}
+                {branchChoiceNeeded && addedQuestion && (
+                  <div className="rounded-md border p-3 space-y-2" data-testid="group-edit-branch-choice">
+                    <p className="text-sm font-medium">{addedQuestion.question}</p>
+                    <RadioGroup
+                      value={addedBranchChoice ?? ""}
+                      onValueChange={(value) => setAddedBranchChoice(value as AddedBranchChoice)}
+                    >
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <RadioGroupItem value="copy" className="mt-0.5" data-testid="radio-edit-branch-copy" />
+                        <span>
+                          <span className="text-sm block">{addedQuestion.copyLabel}</span>
+                          <span className="text-xs text-muted-foreground block">{addedQuestion.copyHint}</span>
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <RadioGroupItem value="share" className="mt-0.5" data-testid="radio-edit-branch-share" />
+                        <span>
+                          <span className="text-sm block">{addedQuestion.shareLabel}</span>
+                          <span className="text-xs text-muted-foreground block">{addedQuestion.shareHint}</span>
+                        </span>
+                      </label>
+                    </RadioGroup>
+                  </div>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer pt-1">
+                  <Checkbox
+                    checked={saveAsNew}
+                    onCheckedChange={(checked) => setSaveAsNew(checked === true)}
+                    data-testid="checkbox-edit-save-as-new"
+                  />
+                  <span className="text-sm">Save as a new checklist</span>
+                </label>
+                {saveAsNew && (
+                  <p className="text-xs text-muted-foreground" data-testid="text-edit-save-as-new-summary">
+                    {saveAsNewSummary({ selectedBranchIds: saveAsNewBranchIds, branches, canReachAllBranches })}
+                  </p>
+                )}
               </div>
 
               {/* Location */}
@@ -1366,6 +1541,7 @@ export default function StudioChecklistsPage() {
                             <MediaDropZone
                               target="item"
                               checklistTemplateItemId={item.id}
+                              disabled={saveAsNew}
                               onUploadComplete={(attachment) => {
                                 setItemAttachments(prev => ({
                                   ...prev,
@@ -1374,6 +1550,11 @@ export default function StudioChecklistsPage() {
                               }}
                             >
                               <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-3 text-center bg-muted/30">
+                                {saveAsNew ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    These copy across to the new checklist. Add or remove files on it after saving.
+                                  </p>
+                                ) : (
                                 <div className="flex flex-col items-center gap-2">
                                   <Upload className="h-6 w-6 text-muted-foreground/50" />
                                   <p className="text-xs text-muted-foreground">Drag & drop files here, or</p>
@@ -1392,11 +1573,12 @@ export default function StudioChecklistsPage() {
                                     Browse Files
                                   </MediaUploadButton>
                                 </div>
+                                )}
                                 {(itemAttachments[item.id] || []).length > 0 && (
                                   <div className="mt-3 pt-3 border-t">
                                     <MediaPreviewStrip
                                       attachments={itemAttachments[item.id] || []}
-                                      editable
+                                      editable={!saveAsNew}
                                       onRemove={async (id) => {
                                         try {
                                           await apiRequest("DELETE", `/api/checklist-media/${id}`);
@@ -1527,12 +1709,17 @@ export default function StudioChecklistsPage() {
               )}
 
               </DialogBody>
+              {branchChoiceMissing && (
+                <p className="text-xs text-muted-foreground sm:text-right" data-testid="text-edit-choice-needed">
+                  Choose how to add the new branch before saving.
+                </p>
+              )}
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)} data-testid="button-cancel-edit">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateMutation.isPending} data-testid="button-save-checklist">
-                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                <Button type="submit" disabled={updateMutation.isPending || branchChoiceMissing} data-testid="button-save-checklist">
+                  {updateMutation.isPending ? "Saving..." : saveAsNew ? "Save as New Checklist" : "Save Changes"}
                 </Button>
               </DialogFooter>
             </form>
