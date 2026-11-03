@@ -29080,6 +29080,7 @@
             }
           }
         },
+        "deprecated": true,
         "responses": {
           "200": {
             "description": "Default Response",
