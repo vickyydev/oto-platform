@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-03T02:00:36.029Z",
+  "failure": "One Render metric GET returned a non-array result before the first busy step. Its HTTP status was not recorded by the old helper.",
+  "readback": "A fresh independent GET returned HTTP 200, one series and four connection samples.",
+  "change": "Only read-only Render metric GETs now record HTTP status and retry a network failure, 429 or 5xx at most twice with 1s/2s waits. A malformed success, non-retryable response, exhausted retry or missing fresh sample still stops. Application writes and all resource thresholds are unchanged.",
+  "busySalesBeforeStop": 0,
+  "syntheticChildOut": true,
+  "serverStreamsAfterClose": 0
+}
