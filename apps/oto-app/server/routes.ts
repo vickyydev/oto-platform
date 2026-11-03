@@ -25191,7 +25191,7 @@ ${context}`;
     }
   });
 
-  // Delete a Fix report made by mistake or a duplicate (SCRUM-641): managers and
+  // Delete a Fix report that is not needed or is a duplicate (SCRUM-641): managers and
   // admins, at a branch they reach. By role alone, unlike the board's reading of
   // "manager" (all-branch staff stay staff), and the row and its history stay.
   app.delete("/api/fix-reports/:id", requireAuth, async (req, res, next) => {

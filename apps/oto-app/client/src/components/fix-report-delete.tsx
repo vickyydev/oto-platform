@@ -26,8 +26,8 @@ interface FixReportDeleteProps {
 }
 
 /**
- * Deleting a Fix report made by mistake or a duplicate, for managers and admins,
- * asking first. The server keeps the row and records who deleted it.
+ * Deleting a Fix report that is not needed or is a duplicate, for managers and
+ * admins, asking first. The server keeps the row and records who deleted it.
  */
 export function FixReportDelete({ reportId, onDeleted }: FixReportDeleteProps) {
   const { user } = useAuth();
@@ -77,8 +77,8 @@ export function FixReportDelete({ reportId, onDeleted }: FixReportDeleteProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this report?</AlertDialogTitle>
             <AlertDialogDescription>
-              Use this for a report made by mistake or a duplicate. It will disappear from the Fix Board and from
-              everyone's lists.
+              Use this for a report that is not needed or is a duplicate. It will disappear from the Fix Board and
+              from everyone's lists.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

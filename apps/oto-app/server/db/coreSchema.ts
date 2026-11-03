@@ -998,7 +998,7 @@ export const fixReports = pgTable(
     closedBySupplierTokenId: uuid("closed_by_supplier_token_id"), // Will reference fix_supplier_tokens
     doneNote: text("done_note"),
 
-    // Deleted from the Fix module (SCRUM-641): a report made by mistake or a
+    // Deleted from the Fix module (SCRUM-641): a report that is not needed or is a
     // duplicate is hidden everywhere; the row, its comments and its media stay.
     archivedAt: timestamp("archived_at"),
     archivedByUserId: varchar("archived_by_user_id").references(() => users.id, { onDelete: "set null" }),
