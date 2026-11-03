@@ -25,5 +25,13 @@
       "sha256": "125e0e1db76704c37008e1c0072eaca72868c354cac9a24ad1081a235624daae"
     }
   ],
-  "staging": "pending"
+  "staging": "pending",
+  "testedSourceBeforeFinalDocsRebase": "e15590d27525230e0529f12b1ca37f585f75dd8e",
+  "mainCandidate": "8dee9f447ff486c7a2d5dc038ab7f34d00718137",
+  "sourceChange": "4f8aeba796dd7ea5d64a999fb947cdee1602005e",
+  "mainCi": {
+    "run": 41737710922,
+    "status": "in_progress"
+  },
+  "jiraStatus": "Testing"
 }
