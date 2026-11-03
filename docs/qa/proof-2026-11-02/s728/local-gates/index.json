@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-03T17:27:22.476Z",
+  "at": "2026-11-03T17:43:41.068Z",
   "gates": [
     {
       "key": "v1-api1",
@@ -96,6 +96,18 @@
       "source": "35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2",
       "exitCode": 0,
       "receipt": "local-gates/completion-pos.json"
+    },
+    {
+      "key": "completion-api1",
+      "source": "3fa77e0613f3a2d0ce87a2782d54a0915b405830",
+      "exitCode": 1,
+      "receipt": "local-gates/completion-api1.json"
+    },
+    {
+      "key": "release-types",
+      "source": "edf18cb491560eaa918b4106fb2dd75df90fa397",
+      "exitCode": 0,
+      "receipt": "local-gates/release-types.json"
     }
   ],
   "interpretation": "Failed and superseded runs are retained. Only completed zero-exit runs are passes. Full API and branch CI completion must be recorded separately."

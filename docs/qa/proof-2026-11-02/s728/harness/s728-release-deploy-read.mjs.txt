@@ -1,0 +1,12 @@
+﻿import assert from 'node:assert/strict';
+import {writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {render,stagingServices} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+const [sha,ciRun,phase]=process.argv.slice(2);assert.match(sha??'',/^[a-f0-9]{40}$/);assert.match(phase??'',/^[a-z-]+$/);
+const root='C:/oto-lanes/codex-box-outage-release-20261104';
+const ci=JSON.parse(execFileSync('gh',['run','view',ciRun,'--json','headSha,conclusion,status'],{cwd:root,encoding:'utf8'}));assert.equal(ci.headSha,sha);assert.equal(ci.status,'completed');assert.equal(ci.conclusion,'success');
+const names=['oto-api-staging','oto-pos-web-staging','oto-console-staging'];const services=await stagingServices();
+const deployments=await Promise.all(names.map(async name=>{const s=services.find(x=>x.name===name);assert.ok(s?.id);const d=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;assert.ok(d?.id);return{name,id:s.id,deployId:d.id,status:d.status,source:d.commit?.id,finishedAt:d.finishedAt??null};}));
+const ready=deployments.every(d=>d.status==='live'&&d.source===sha);const receipt={unit:'SCRUM-728',at:new Date().toISOString(),phase,source:sha,ciRun,ready,deployments};
+if(ready){const results=await Promise.all(['https://oto-api-staging.onrender.com/health','https://oto-pos-web-staging.onrender.com/healthz','https://oto-console-staging.onrender.com/'].map(async url=>{const r=await fetch(url,{signal:AbortSignal.timeout(15000)});return{url,status:r.status};}));assert.ok(results.every(r=>r.status===200));receipt.health=results;}
+writeFileSync(root+`/docs/qa/proof-2026-11-02/s728/deploy-${phase}.json`,JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));

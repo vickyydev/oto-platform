@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {job} from './qa-render-job.mjs';
+assert.equal(process.env.S728_WINDOW_RELEASED,'true');
+const sha=process.argv[2];assert.match(sha??'',/^[a-f0-9]{40}$/);
+const program=`(async()=>{
+const {Client}=require('pg');const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();
+try{await c.query('BEGIN READ ONLY');await c.query("SET LOCAL statement_timeout='15s'");
+const rows=(await c.query("SELECT kind,count(*)::int AS active,count(*) FILTER (WHERE box_id IS NULL)::int AS unboxed,count(*) FILTER (WHERE box_id IS NULL AND name NOT LIKE 'ZZ TEST%')::int AS unboxed_non_test FROM core.station WHERE archived_at IS NULL GROUP BY kind ORDER BY kind")).rows;
+await c.query('ROLLBACK');console.log(JSON.stringify({event:'s728_unboxed_census',at:new Date().toISOString(),environment:'staging',readOnly:true,rows,productionCountVerified:false,passed:true}));
+}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'s728_unboxed_census_error',name:e.name,code:e.code??'ERROR'}));process.exitCode=1;});`;
+const receipt=await job(program,'s728_unboxed_census',sha);
+const out='C:/oto-lanes/codex-box-outage-release-20261104/docs/qa/proof-2026-11-02/s728';mkdirSync(out,{recursive:true});
+writeFileSync(out+'/unboxed-station-census.json',JSON.stringify(receipt,null,2)+'\n');
+console.log(JSON.stringify(receipt.result));

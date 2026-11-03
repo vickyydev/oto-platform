@@ -1,0 +1,15 @@
+{
+  "key": "types",
+  "sha": "edf18cb491560eaa918b4106fb2dd75df90fa397",
+  "start": "2026-11-03T17:39:27.810Z",
+  "end": "2026-11-03T17:42:40.614Z",
+  "command": "pnpm typecheck; pnpm lint; pnpm api-types:check",
+  "log": "C:/oto-lanes/s728-gates-release-types.log",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "39c93e930c8a4969dc52435f542c702d308bdc7952023924f530f5d34a82da3d",
+  "logBytes": 8702,
+  "summary": [
+    "Tasks:    16 successful, 16 total"
+  ]
+}
