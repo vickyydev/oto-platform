@@ -9,6 +9,7 @@ import {
   type StationSessionDocument,
 } from '@oto/shared';
 import { ApiError, NetworkError } from './client';
+import type { ApiResponse } from '@oto/api-types';
 
 /**
  * THE TILL'S SIDE OF THE STATION BRIDGE (offline plan §2.2, Round 3).
@@ -171,7 +172,7 @@ export interface BridgeIntentAnswer<R = Record<string, unknown>> {
 export const bridgeApi = {
   status: (stationId: string, signal?: AbortSignal) =>
     request<BridgeStatus>('GET', stationId, 'status', undefined, { signal }),
-  displays: (stationId: string) => request<{ displays: Array<{ id: string; name: string; connected: boolean }> }>(
+  displays: (stationId: string) => request<ApiResponse<'/box/v1/station/{stationId}/displays', 'get'>>(
     'GET', stationId, 'displays'),
   /**
    * Unlock through the box (OD-2). The answer's session is held for the

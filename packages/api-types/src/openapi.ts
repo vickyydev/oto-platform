@@ -37241,6 +37241,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/box/v1/station/{stationId}/displays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Active displays seen at this station within ten seconds; no display credential is returned. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    stationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            displays: {
+                                id: string;
+                                name: string;
+                                connected: boolean;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/box/v1/station/{stationId}/unlock": {
         parameters: {
             query?: never;

@@ -1,7 +1,7 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, child, memberTierVerification, station, syncQuarantine, visit, visitChild } from '@oto/db';
+import { auditLog, child, deviceCredential, memberTierVerification, station, syncQuarantine, visit, visitChild } from '@oto/db';
 import type { BoxAgent, BridgeTillCaller } from '@oto/box-agent';
 import { newId } from '@oto/shared';
 import { ADMIN, RECEPTION, SECOND_OPERATOR_ADMIN, boxBySlot, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
@@ -71,6 +71,28 @@ async function queue(caller: BridgeTillCaller, type: string, payload: Record<str
 async function flush() { await agent.outbox()!.flush(); }
 
 describe('SCRUM-728 durable action replay review', () => {
+  it('High: display presence shares a typed contract, stays scoped to the selected station, and never exposes credentials', async () => {
+    const url = `/box/v1/station/${stationId}/displays`;
+    expect((await ctx.app.inject({ method: 'GET', url })).statusCode).toBe(401);
+    expect((await call('GET', url, undefined, foreign)).statusCode).toBe(404);
+    expect((await call('GET', url, undefined, reception)).statusCode).toBe(403);
+    const authorization = `Bearer ${newId().replaceAll('-', '')}${newId().replaceAll('-', '')}`;
+    const pair = await ctx.app.inject({ method: 'POST', url: '/display/pairing', headers: { authorization }, payload: {} });
+    expect(pair.statusCode).toBe(200);
+    const claim = await call('POST', `/stations/${stationId}/displays/claim`, { pairingCode: pair.json().pairingCode, name: 'ZZ TEST presence' });
+    expect(claim.statusCode).toBe(200);
+    const id = claim.json().device.id as string;
+    await ctx.db.update(deviceCredential).set({ lastSeenAt: new Date() }).where(eq(deviceCredential.id, id));
+    const read = await call('GET', url);
+    expect(read.statusCode).toBe(200);
+    expect(read.headers['cache-control']).toBe('private, no-store');
+    expect(read.json()).toEqual({ displays: [{ id, name: 'ZZ TEST presence', connected: true }] });
+    await ctx.db.update(deviceCredential).set({ lastSeenAt: new Date(Date.now() - 11_000) }).where(eq(deviceCredential.id, id));
+    expect((await call('GET', url)).json().displays[0].connected).toBe(false);
+    await ctx.db.update(deviceCredential).set({ revokedAt: new Date() }).where(eq(deviceCredential.id, id));
+    expect((await call('GET', url)).json()).toEqual({ displays: [] });
+  });
+
   it('High: lost add-children answer replays onto the original visit, without restamping or a second audit', async () => {
     const f = await family();
     const opened = await call('POST', '/visits', { memberId: f.memberId, childIds: [f.childIds[0]] });
