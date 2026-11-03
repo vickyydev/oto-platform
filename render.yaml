@@ -335,8 +335,12 @@ services:
       - key: STAFF_TOKEN_PRIVATE_KEY
         # SCRUM-713: Ed25519 PKCS#8 PEM, held only in the API environment.
         # Publishes the public key and enables bound shift-token issuance.
-        # STAFF_OFFLINE_SIGN_IN remains absent/false. The temporary proof-only
-        # BOX_BRIDGE_ALLOW_LOOPBACK is removed after the local-agent proof.
+        # Required at production startup. Keep the existing staging key.
+        # STAFF_OFFLINE_SIGN_IN defaults true per OD-6; explicit false disables
+        # fresh sign-in on both box types through their versioned configuration.
+        # BOX_BRIDGE_ZONE and POS build-time VITE_BOX_BRIDGE_ZONE default empty:
+        # no external address is then accepted. Configure only an approved zone.
+        # Temporary local-proof loopback flags are removed after proof.
         sync: false
       - key: ALLOWED_ORIGINS
         # BLOCKS THE FIRST DEPLOY IF LEFT BLANK. Each static site is served

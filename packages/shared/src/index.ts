@@ -74,3 +74,5 @@ export * from './suite-screens';
 export * from './handoff-target';
 export * from './ui-preferences';
 export * from './station-readiness';
+
+export { trustedBoxBridgeOrigin } from './box-bridge-origin';

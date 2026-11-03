@@ -56,6 +56,7 @@ const forcedOffline = () =>
   );
 
 beforeEach(() => {
+  vi.stubEnv('VITE_BOX_BRIDGE_ZONE', 'example.test');
   setBridgeOrigin(null);
   setLaneStation(null);
   setLaneStation(STATION);
@@ -65,6 +66,7 @@ afterEach(() => {
   setBridgeOrigin(null);
   setLaneStation(null);
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
@@ -427,4 +429,30 @@ describe('the selected park and its station lane', () => {
       expect(bridgeUrl(STATION, 'status')).toBe(`/api/box/v1/station/${STATION}/status`);
     } finally { hook.unmount(); }
   });
+});
+
+describe('SCRUM-727: independent till address check before any password leaves the page', () => {
+  it.each(['https://evil.example', 'https://counter.example.test.evil.test', 'https://0.0.0.0', 'https://[::]'])('HIGH: refuses %s even if the API named it', async target => {
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    setBridgeOrigin(target);
+    await prepareConfiguredBridgeUnlock(STATION, { token: 'test-only', password: 'test-only' })();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(bridgeUrl(STATION, 'unlock')).toMatch(/^\/api\//);
+  });
+  it('HIGH: an absent build-time zone keeps the credential on this origin', async () => {
+    vi.stubEnv('VITE_BOX_BRIDGE_ZONE', '');
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    setBridgeOrigin('https://counter.example.test');
+    await prepareConfiguredBridgeUnlock(STATION, { token: 'test-only', password: 'test-only' })();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+it('SCRUM-727 HIGH: online bridge unlock refuses redirects and makes one attempt', async () => {
+  const fetch = vi.fn(async (_url: unknown, _init?: RequestInit) => { throw new TypeError('redirect refused'); });
+  vi.stubGlobal('fetch', fetch);
+  setBridgeOrigin('https://counter.example.test');
+  await prepareConfiguredBridgeUnlock(STATION, { token: 'test-only', password: 'test-only' })();
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch.mock.calls[0]?.[1]).toMatchObject({ redirect: 'error', credentials: 'omit', method: 'POST' });
 });

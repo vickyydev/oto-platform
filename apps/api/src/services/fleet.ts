@@ -41,7 +41,7 @@ import {
 } from '@oto/shared';
 import { TerminalCommandPayloadSchema } from '@oto/box-agent';
 import { AppError } from '../lib/errors';
-import { boxBridgeOrigin } from '../lib/box-bridge-origin';
+import { boxBridgeOrigin, readBoxBridgeOrigin, type BoxBridgePolicy } from '../lib/box-bridge-origin';
 import { pgErrorOf } from '../lib/scrub';
 import { holdsGrantAt } from './access-control';
 import { resolveEffectivePermissions } from './permissions';
@@ -810,7 +810,7 @@ export async function pickStation(
    * `staff: []`, always. The answer to a pick goes to the iPad that just took
    * the station, and who else may take it is the administrator's business.
    */
-  const [view] = await stationViews(db, [row], { withStaff: false });
+  const [view] = await stationViews(db, [row], { withStaff: false }, env);
   const token = minted as MintedStaffToken | null;
   return {
     station: view!,
@@ -845,6 +845,7 @@ async function stationViews(
   exec: Exec,
   rows: Array<typeof station.$inferSelect>,
   opts: { withStaff: boolean },
+  env?: BoxBridgePolicy,
 ): Promise<StationView[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
@@ -919,7 +920,7 @@ async function stationViews(
       boxId: r.boxId,
       boxName: b?.name ?? null,
       boxStatus: b?.status ?? null,
-      bridgeOrigin: b?.role === 'virtual' ? null : b?.bridgeOrigin ?? null,
+      bridgeOrigin: b?.role === 'virtual' ? null : readBoxBridgeOrigin(b?.bridgeOrigin, env),
       capabilities: (r.capabilities ?? []) as StationCapability[],
       accessScope: r.accessScope,
       configVersion: r.configVersion,
@@ -936,6 +937,7 @@ async function stationViews(
 export async function listStations(
   db: Db,
   ctx: { operatorId: string; branchId: string; includeArchived: boolean },
+  env?: BoxBridgePolicy,
 ): Promise<StationView[]> {
   const rows = await db
     .select()
@@ -948,14 +950,15 @@ export async function listStations(
       ),
     )
     .orderBy(asc(station.name));
-  return stationViews(db, rows, { withStaff: true });
+  return stationViews(db, rows, { withStaff: true }, env);
 }
 
 export async function getStationView(
   db: Db,
   row: typeof station.$inferSelect,
+  env?: BoxBridgePolicy,
 ): Promise<StationView> {
-  const [view] = await stationViews(db, [row], { withStaff: true });
+  const [view] = await stationViews(db, [row], { withStaff: true }, env);
   return view!;
 }
 
@@ -1198,6 +1201,7 @@ export async function createStation(
   actor: { accountId: string; operatorId: string },
   branchId: string,
   input: StationWriteInput,
+  env?: BoxBridgePolicy,
 ): Promise<{ station: StationView }> {
   /**
    * SCRUM-270 — a body id that already names this branch's station is the
@@ -1212,7 +1216,7 @@ export async function createStation(
     (row) => row.operatorId === actor.operatorId && row.branchId === branchId,
   );
   if (claim.replay) {
-    const [view] = await stationViews(db, [claim.row], { withStaff: true });
+    const [view] = await stationViews(db, [claim.row], { withStaff: true }, env);
     return markReplay({ station: view! });
   }
   if (!input.boxId) {
@@ -1258,7 +1262,7 @@ export async function createStation(
       await replaceAssignments(tx, id, input.devices);
       await replaceStaff(tx, id, input.staffAccountIds, actor.accountId);
       const [row] = await tx.select().from(station).where(eq(station.id, id)).limit(1);
-      const [view] = await stationViews(tx, [row!], { withStaff: true });
+      const [view] = await stationViews(tx, [row!], { withStaff: true }, env);
       await audit.record(tx, {
         actorAccountId: actor.accountId,
         operatorId: actor.operatorId,
@@ -1282,6 +1286,7 @@ export async function updateStation(
   actor: { accountId: string; operatorId: string },
   before: typeof station.$inferSelect,
   patch: Partial<Omit<StationWriteInput, 'id'>>,
+  env?: BoxBridgePolicy,
 ): Promise<{ station: StationView }> {
   /**
    * `boxId: null` is accepted only where the station already has none — a
@@ -1311,7 +1316,7 @@ export async function updateStation(
     exceptStationId: before.id,
   });
 
-  const [beforeView] = await stationViews(db, [before], { withStaff: true });
+  const [beforeView] = await stationViews(db, [before], { withStaff: true }, env);
   const devices = patch.devices ?? beforeView!.devices.map((d) => ({ role: d.role, deviceId: d.deviceId }));
   const staffAccountIds = patch.staffAccountIds ?? beforeView!.staff.map((s) => s.accountId);
   const paymentRouting = patch.paymentRouting === undefined ? before.paymentRouting : patch.paymentRouting;
@@ -1355,7 +1360,7 @@ export async function updateStation(
       }
 
       const [mid] = await tx.select().from(station).where(eq(station.id, before.id)).limit(1);
-      const [midView] = await stationViews(tx, [mid!], { withStaff: true });
+      const [midView] = await stationViews(tx, [mid!], { withStaff: true }, env);
       /**
        * One rule, no per-field judgement: the version moves when anything the
        * box can see moves, and stands still otherwise. A station-level version
@@ -1385,7 +1390,7 @@ export async function updateStation(
           .set({ configVersion: sql`${station.configVersion} + 1` })
           .where(eq(station.id, before.id))
           .returning();
-        [view] = (await stationViews(tx, [after!], { withStaff: true })) as [StationView];
+        [view] = (await stationViews(tx, [after!], { withStaff: true }, env)) as [StationView];
       }
       await audit.record(tx, {
         actorAccountId: actor.accountId,
@@ -1445,6 +1450,7 @@ function boxView(
   row: typeof box.$inferSelect,
   counts: { devices: number; stations: number },
   now = Date.now(),
+  env?: BoxBridgePolicy,
 ): BoxView {
   return {
     id: row.id,
@@ -1454,7 +1460,7 @@ function boxView(
     role: row.role,
     status: row.status,
     hostname: row.hostname,
-    bridgeOrigin: row.role === 'virtual' ? null : row.bridgeOrigin,
+    bridgeOrigin: row.role === 'virtual' ? null : readBoxBridgeOrigin(row.bridgeOrigin, env),
     agentVersion: row.agentVersion,
     currentEpoch: row.currentEpoch,
     registeredAt: row.registeredAt?.toISOString() ?? null,
@@ -1503,6 +1509,7 @@ async function boxCounts(
 export async function listBoxes(
   db: Db,
   ctx: { operatorId: string; branchId: string; includeArchived: boolean },
+  env?: BoxBridgePolicy,
 ): Promise<BoxView[]> {
   const rows = await db
     .select()
@@ -1517,7 +1524,7 @@ export async function listBoxes(
     .orderBy(asc(box.slot));
   const counts = await boxCounts(db, rows.map((r) => r.id));
   const now = Date.now();
-  return rows.map((r) => boxView(r, counts.get(r.id) ?? { devices: 0, stations: 0 }, now));
+  return rows.map((r) => boxView(r, counts.get(r.id) ?? { devices: 0, stations: 0 }, now, env));
 }
 
 /**
@@ -1536,7 +1543,7 @@ export async function createBox(
   actor: { accountId: string; operatorId: string },
   branchId: string,
   input: { id?: string | null; name: string; slot: string; role: BoxRole; bridgeOrigin?: string | null },
-  env: Pick<Env, 'DEPLOY_ENV' | 'BOX_BRIDGE_ALLOW_LOOPBACK'> = { DEPLOY_ENV: 'production', BOX_BRIDGE_ALLOW_LOOPBACK: false },
+  env?: BoxBridgePolicy,
 ): Promise<{ box: BoxView; claimCode: string; expiresAt: string }> {
   const bridgeOrigin = boxBridgeOrigin(input.bridgeOrigin, env);
   if (input.role === 'virtual' && bridgeOrigin) throw new AppError(400, 'VIRTUAL_BOX_BRIDGE', 'A virtual box uses the platform address. Leave its bridge address empty.');
@@ -1580,7 +1587,7 @@ export async function createBox(
         requestId: ctx.requestId ?? null,
       });
       const [row] = await tx.select().from(box).where(eq(box.id, id)).limit(1);
-      const view = boxView(row!, { devices: 0, stations: 0 });
+      const view = boxView(row!, { devices: 0, stations: 0 }, Date.now(), env);
       await audit.record(tx, {
         actorAccountId: actor.accountId,
         operatorId: actor.operatorId,
@@ -1614,9 +1621,9 @@ export async function updateBox(
   actor: { accountId: string; operatorId: string },
   before: typeof box.$inferSelect,
   patch: { name?: string; slot?: string; role?: BoxRole; status?: BoxStatus; bridgeOrigin?: string | null },
-  env: Pick<Env, 'DEPLOY_ENV' | 'BOX_BRIDGE_ALLOW_LOOPBACK'> = { DEPLOY_ENV: 'production', BOX_BRIDGE_ALLOW_LOOPBACK: false },
+  env?: BoxBridgePolicy,
 ): Promise<{ box: BoxView }> {
-  const bridgeOrigin = patch.bridgeOrigin === undefined ? before.bridgeOrigin : boxBridgeOrigin(patch.bridgeOrigin, env);
+  const bridgeOrigin = boxBridgeOrigin(patch.bridgeOrigin === undefined ? before.bridgeOrigin : patch.bridgeOrigin, env);
   if ((patch.role ?? before.role) === 'virtual' && bridgeOrigin) throw new AppError(400, 'VIRTUAL_BOX_BRIDGE', 'A virtual box uses the platform address. Clear its bridge address first.');
   if (patch.status !== undefined && patch.status !== 'disabled' && patch.status !== 'offline') {
     throw new AppError(
@@ -1673,7 +1680,7 @@ export async function updateBox(
         requestId: ctx.requestId,
       });
       const counts = await boxCounts(tx, [before.id]);
-      return { box: boxView(after!, counts.get(before.id) ?? { devices: 0, stations: 0 }) };
+      return { box: boxView(after!, counts.get(before.id) ?? { devices: 0, stations: 0 }, Date.now(), env) };
     });
   } catch (err) {
     rethrowFleetConflict(err);

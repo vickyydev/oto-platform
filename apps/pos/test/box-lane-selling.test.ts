@@ -126,6 +126,7 @@ const bridgeCalls = (seen: Seen[]) =>
   seen.filter((s) => isIntentUrl(s.url)).map((s) => s.body as { type: string; payload: Record<string, unknown> });
 
 beforeEach(() => {
+  vi.stubEnv('VITE_BOX_BRIDGE_ZONE', 'example.test');
   setBridgeOrigin(null);
   setLaneStation(null);
   setLaneStation(STATION);
@@ -137,6 +138,7 @@ afterEach(() => {
   setLaneStation(null);
   setBridgeStaffName(null);
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('the box lane in the sale writer', () => {

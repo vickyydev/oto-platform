@@ -140,7 +140,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const { row } = await standing(req, req.params.stationId, true);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       reply.header('cache-control', 'private, no-store');
       return bridged(() => bridge.status(row.id));
     },
@@ -199,7 +199,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { row } = await standing(req, req.params.stationId, false);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       const bearer = /^Bearer (\S+)$/i.exec(req.headers.authorization ?? '')?.[1] ?? null;
       return { ended: bridge.end(bearer) };
     },
@@ -219,7 +219,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const { row, caller } = await standing(req, req.params.stationId, true);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       const snapshot = await bridged(() => bridge.session(row.id, caller, req.query.view));
       reply.header('cache-control', 'private, no-store');
       return { view: snapshot.view, document: snapshot.document, serverTime: snapshot.serverTime };
@@ -239,7 +239,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const { row, caller } = await standing(req, req.params.stationId, true);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       const view = req.query.view;
       const first = await bridged(() => bridge.session(row.id, caller, view));
       openChannel(req, reply, row.id, view, (send) => {
@@ -273,7 +273,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     async (req) => {
       const { row, caller } = await standing(req, req.params.stationId, false);
       await assertStationReady(app.db, req.requireAuth().operatorId, row.id);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       const result = await bridged(() =>
         bridge.claim(row.id, caller!, req.body.holder, actionIdOf(req)),
       );
@@ -294,7 +294,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { row, caller } = await standing(req, req.params.stationId, false);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       const result = await bridged(() => bridge.renew(row.id, caller!, req.body.leaseId));
       return { lease: { ...result.lease }, takenOver: false, document: result.document };
     },
@@ -313,7 +313,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { row, caller } = await standing(req, req.params.stationId, false);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       const result = await bridged(() =>
         bridge.release(row.id, caller!, req.body.leaseId, actionIdOf(req)),
       );
@@ -335,7 +335,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const { row, caller } = await standing(req, req.params.stationId, false);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       reply.header('cache-control', 'private, no-store');
       const member = await bridged(() => bridge.lookup(row.id, caller!, req.query.phone));
       return { member: member as unknown as Record<string, unknown> | null };
@@ -356,7 +356,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { row, caller } = await standing(req, req.params.stationId, false);
-      const { bridge } = await bridgeForStation(app.db, row, req.log);
+      const { bridge } = await bridgeForStation(app.db, row, req.log, app.env);
       const intent = { ...req.body, actionId: req.body.actionId ?? actionIdOf(req) ?? undefined };
       return bridged(() => bridge.intent(row.id, caller!, intent));
     },

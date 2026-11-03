@@ -14,7 +14,7 @@ import type { Env } from '../env';
 import { boxStoreFor } from '../lib/box-store';
 import { usableSigningKeys } from '../lib/signing-keys';
 import { audit } from './audit';
-import { inProcessBox } from './box';
+import { inProcessBox, boxSettings } from './box';
 import { hasPermission, type EffectivePermission } from './permissions';
 import { sharedThrottle } from './staff-token';
 import { managerForStation, type StationRow } from './station-session';
@@ -124,6 +124,7 @@ interface MountedBox {
   branch: BridgeBranch | null;
   link: { up: boolean; offline: boolean };
   keys: StaffSigningKey[];
+  freshSignInAllowed: boolean;
   log: FastifyBaseLogger | undefined;
 }
 
@@ -141,6 +142,7 @@ export async function bridgeForStation(
   db: Db,
   row: StationRow,
   log?: FastifyBaseLogger,
+  env?: Pick<Env, 'STAFF_OFFLINE_SIGN_IN'>,
 ): Promise<{ bridge: StationBridge; boxId: string }> {
   const { manager, boxId } = managerForStation(db, row, log);
   let boxes = perDb.get(db as unknown as object);
@@ -156,6 +158,7 @@ export async function bridgeForStation(
       branch: null,
       link: { up: true, offline: false },
       keys: [],
+      freshSignInAllowed: true,
       log,
       bridge: null as unknown as StationBridge,
     };
@@ -166,6 +169,7 @@ export async function bridgeForStation(
       station: (stationId) => entry.stations.get(stationId) ?? null,
       branch: () => entry.branch,
       signingKeys: () => entry.keys,
+      freshSignInAllowed: () => entry.freshSignInAllowed,
       link: () => entry.link,
       sealer: () => inProcessBox(boxId)?.sealer() ?? null,
       // Round 4: a sale taken on this mount is written by the virtual box's own
@@ -185,6 +189,8 @@ export async function bridgeForStation(
     mounted = entry;
   }
   mounted.log = log;
+  mounted.freshSignInAllowed = env?.STAFF_OFFLINE_SIGN_IN
+    ?? inProcessBox(boxId)?.config()?.staffOfflineSignIn ?? boxSettings().staffOfflineSignIn;
 
   const [br] = await db
     .select({
@@ -278,7 +284,7 @@ export async function unlockThroughBridge(
   body: BridgeUnlockRequest,
   log?: FastifyBaseLogger,
 ): Promise<BridgeUnlockResponse> {
-  const { bridge, boxId } = await bridgeForStation(db, row, log);
+  const { bridge, boxId } = await bridgeForStation(db, row, log, env);
   const keys = [`unlock:${ctx.sessionId}`, `unlock-account:${ctx.accountId}`];
   const throttle = sharedThrottle(db, keys, env, async () => {
     await audit.record(db, {
