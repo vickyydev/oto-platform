@@ -1,0 +1,475 @@
+{
+  "jobId": "job-dbl2lorbc2fs73amqlq0",
+  "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "startedAt": "2026-11-03T18:41:38.460Z",
+  "status": "succeeded",
+  "result": {
+    "event": "older_proof_app_census",
+    "at": "2026-11-03T18:41:43.316Z",
+    "readOnly": true,
+    "branch": {
+      "id": "01a1a260-64fa-72bd-99c9-ff4c663df7cf",
+      "name": "ZZ TEST older proof mw0xplf7 wallet branch",
+      "core_branch_id": "01a1a260-64f5-7fb7-b0a9-272c85215239"
+    },
+    "counts": [
+      {
+        "schema_name": "otoapp",
+        "table_name": "activity_log",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "advisor_attendance_corrections",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "advisor_attendance_sessions",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "ask_oto_threads",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "attention_items",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "beo_locations",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "branch_events",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "casual_workers",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "checklist_runs",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "checklist_templates",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "contract_instances",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "core_events",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "coverage_rules",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "department_branch_assignments",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "directory_cache",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "dropoff_checkins",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "dropoff_forms",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "duty_blocks",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employee_assets",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employee_changes",
+        "column_name": "new_branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employee_changes",
+        "column_name": "old_branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employee_documents",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employee_letters",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employee_offboarding",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employee_presence",
+        "column_name": "current_work_branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employee_time_off",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "employees",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "fix_reports",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "hiring_media_assets",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "issues",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "kiosk_auth_attempts",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "kiosk_codes",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "kiosk_devices",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "knowledge_files",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "leave_policies",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "location_branch_access",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "nanny_reservations",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "offboarding_checklist",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "org_nodes",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "org_nodes",
+        "column_name": "scope_branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_branch_details_versions",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_day_reconciliations",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_exceptions",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_ot_bank_bookings",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_profile_allocations",
+        "column_name": "home_branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_rule_lists",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_service_policies",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_statutory_audit",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_statutory_documents",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "payroll_statutory_filings",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "policy_documents",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "presence_notification_deliveries",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "role_branch_assignments",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "schedule_assignments",
+        "column_name": "borrowed_from_branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "schedule_shift_breaks",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "schedule_shift_rows",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "schedule_templates",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "schedule_week_plans",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "service_checkins",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "shift_groups",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "shifts",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "sick_leave_policies",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "staff_cost_allocations",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "statutory_rule_sets",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "task_activities",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "tasks",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "template_assignments",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "time_adjustments",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "time_entries",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "time_events",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "timekeeping_issues",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "training_modules",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "troubleshooting_flows",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "user_branch_access",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "voucher_redemptions",
+        "column_name": "branch_id",
+        "n": 0
+      },
+      {
+        "schema_name": "otoapp",
+        "table_name": "voucher_templates",
+        "column_name": "branch_id",
+        "n": 0
+      }
+    ],
+    "passed": true
+  }
+}

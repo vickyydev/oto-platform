@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {need} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import {render,service} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+const census=JSON.parse(readFileSync('C:/oto-lanes/older-proof-app-census.json','utf8'));assert.equal(census.result.passed,true);assert.ok(census.result.counts.length>30);assert.ok(census.result.counts.every(c=>c.n===0));assert.ok(Date.now()-Date.parse(census.result.at)<15*60e3);
+const branch=census.result.branch,sha='2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e',LAUNCHER='https://oto-launcher-staging.onrender.com',APP='https://oto-app-staging.onrender.com';
+const r={at:new Date().toISOString(),branch,censusJob:census.jobId,source:sha,steps:[],deployments:[]},save=()=>writeFileSync('C:/oto-lanes/older-proof-app-retire.json',JSON.stringify(r,null,2)+'\n');
+for(const name of ['oto-api-staging','oto-app-staging']){const s=await service(name),d=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;assert.equal(d.status,'live');if(name==='oto-api-staging')assert.equal(d.commit.id,sha);r.deployments.push({name,source:d.commit.id,id:d.id});}save();
+const {chromium}=createRequire('C:/oto-lanes/codex-first-print-20261103/apps/pos/package.json')('@playwright/test');const browser=await chromium.launch({channel:'msedge'}),ctx=await browser.newContext(),p=await ctx.newPage();
+try{
+ const login=await ctx.request.post(LAUNCHER+'/api/auth/sign-in',{data:{phone:need('STAGING_ADMIN_PHONE'),password:need('STAGING_ADMIN_PASSWORD')}});assert.equal(login.status(),200);
+ const handoff=await ctx.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'oto_app'}});assert.equal(handoff.status(),200);const launch=(await handoff.json()).launchUrl;assert.equal(new URL(launch).origin,APP);const exchange=p.waitForResponse(x=>x.request().method()==='POST'&&x.url()===APP+'/api/auth/handoff',{timeout:45000});await p.goto(launch);assert.equal((await exchange).status(),200);assert.equal((await ctx.request.get(APP+'/api/user')).status(),200);
+ const before=await ctx.request.get(APP+'/api/branches/'+branch.id);assert.equal(before.status(),200);const row=await before.json();assert.equal(row.name,branch.name);assert.equal(row.coreBranchId,branch.core_branch_id);r.steps.push('exact synthetic branch identity read through the app');save();
+ const removed=await ctx.request.delete(APP+'/api/branches/'+branch.id);r.deleteStatus=removed.status();save();assert.equal(removed.status(),204);
+ const after=await ctx.request.get(APP+'/api/branches/'+branch.id);assert.equal(after.status(),404);r.steps.push('canonical branch deletion returned 204; reread returned 404');save();
+}finally{
+ const appOut=await ctx.request.post(APP+'/api/logout');r.appSignOutStatus=appOut.status();const launcherOut=await ctx.request.post(LAUNCHER+'/api/auth/sign-out');r.launcherSignOutStatus=launcherOut.status();r.completedAt=new Date().toISOString();save();await browser.close();
+}
+console.log(JSON.stringify(r));

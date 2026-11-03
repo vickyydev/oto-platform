@@ -1,0 +1,5 @@
+import {writeFileSync} from 'node:fs';
+import {job} from './qa-render-job.mjs';
+const event='older_proof_app_branch_read';
+const program=`(async()=>{const{Client}=require('pg'),c=new Client({connectionString:process.env.DATABASE_URL,options:'-c default_transaction_read_only=on -c statement_timeout=15000'});await c.connect();try{await c.query('BEGIN READ ONLY');const id='01a1a260-64f5-7fb7-b0a9-272c85215239';const branches=(await c.query('SELECT id,name,archived_at IS NOT NULL archived FROM core.branch WHERE id=$1',[id])).rows;const app=(await c.query('SELECT id,name,core_branch_id FROM otoapp.branches WHERE core_branch_id=$1',[id])).rows;await c.query('ROLLBACK');console.log(JSON.stringify({event:'${event}',at:new Date().toISOString(),readOnly:true,branches,app}));}finally{await c.end();}})().catch(e=>{console.error(JSON.stringify({event:'${event}_error',name:e.name,code:e.code??null}));process.exitCode=1;});`;
+const result=await job(program,event,'2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e');writeFileSync('C:/oto-lanes/older-proof-app-branch-read.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));

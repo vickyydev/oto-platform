@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-03T18:42:29.956Z",
+  "branch": {
+    "id": "01a1a260-64fa-72bd-99c9-ff4c663df7cf",
+    "name": "ZZ TEST older proof mw0xplf7 wallet branch",
+    "core_branch_id": "01a1a260-64f5-7fb7-b0a9-272c85215239"
+  },
+  "censusJob": "job-dbl2lorbc2fs73amqlq0",
+  "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "steps": [],
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+      "id": "dep-dbl0uhjbc2fs738gbic0"
+    },
+    {
+      "name": "oto-app-staging",
+      "source": "629714f266253c4b6951b68237da7db13c8cf26e",
+      "id": "dep-dbjsjmk9v7es73b1lhpg"
+    }
+  ],
+  "appSignOutStatus": 200,
+  "launcherSignOutStatus": 200,
+  "completedAt": "2026-11-03T18:42:35.366Z"
+}

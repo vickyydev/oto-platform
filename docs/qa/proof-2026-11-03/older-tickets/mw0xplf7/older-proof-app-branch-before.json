@@ -1,0 +1,25 @@
+{
+  "jobId": "job-dbl2krjbc2fs73amonh0",
+  "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "startedAt": "2026-11-03T18:39:41.085Z",
+  "status": "succeeded",
+  "result": {
+    "event": "older_proof_app_branch_read",
+    "at": "2026-11-03T18:39:47.504Z",
+    "readOnly": true,
+    "branches": [
+      {
+        "id": "01a1a260-64f5-7fb7-b0a9-272c85215239",
+        "name": "ZZ TEST older proof mw0xplf7 wallet branch",
+        "archived": true
+      }
+    ],
+    "app": [
+      {
+        "id": "01a1a260-64fa-72bd-99c9-ff4c663df7cf",
+        "name": "ZZ TEST older proof mw0xplf7 wallet branch",
+        "core_branch_id": "01a1a260-64f5-7fb7-b0a9-272c85215239"
+      }
+    ]
+  }
+}
