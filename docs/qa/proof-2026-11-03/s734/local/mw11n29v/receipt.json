@@ -1,0 +1,677 @@
+{
+  "unit": "SCRUM-734 local rehearsal",
+  "startedAt": "2026-11-03T18:51:07.733Z",
+  "source": "3e076ae4527c6618dfbcf8e0a875284b7473eef4",
+  "name": "ZZ TEST SCRUM-734 mw11n29v",
+  "fixtures": {
+    "branches": [
+      {
+        "id": "01a1a2c0-b161-7669-b289-40f660458775",
+        "name": "ZZ TEST SCRUM-734 mw11n29v source",
+        "code": "zz734-mw11n29v-a",
+        "role": "source",
+        "otoApp": {
+          "appBranchId": null,
+          "appBranchName": null,
+          "status": null,
+          "mappedBy": null,
+          "reason": "app_not_installed"
+        }
+      },
+      {
+        "id": "01a1a2c0-b1a2-70f6-a5d5-f13137e74a9e",
+        "name": "ZZ TEST SCRUM-734 mw11n29v target",
+        "code": "zz734-mw11n29v-b",
+        "role": "target",
+        "otoApp": {
+          "appBranchId": null,
+          "appBranchName": null,
+          "status": null,
+          "mappedBy": null,
+          "reason": "app_not_installed"
+        }
+      }
+    ],
+    "categoryId": "01a1a2c0-b284-75c8-87a5-050f2cbb8750",
+    "sourceProductId": "01a1a2c0-b2b4-7749-b6bb-5114d9ef0f5a",
+    "sourceLocationId": "01a1a2c0-b2f6-79af-8791-a05bdb4f101b",
+    "sourceStock": {
+      "groupId": "01a1a2c0-b329-7cc6-a151-bae3601a2e0c",
+      "stockItemIds": [
+        "01a1a2c0-b32b-71fe-b28e-fe4fdc322474"
+      ]
+    }
+  },
+  "screens": [
+    {
+      "file": "s734-clone-preview.png",
+      "at": "2026-11-03T18:51:42.869Z",
+      "url": "http://127.0.0.1:57149/organisation/branches",
+      "kind": "local native Console"
+    },
+    {
+      "file": "s734-clone-completed.png",
+      "at": "2026-11-03T18:51:43.396Z",
+      "url": "http://127.0.0.1:57149/organisation/branches",
+      "kind": "local native Console"
+    },
+    {
+      "file": "s734-copied-care-settings.png",
+      "at": "2026-11-03T18:51:44.603Z",
+      "url": "http://127.0.0.1:57149/catalogue/care",
+      "kind": "local native Console"
+    },
+    {
+      "file": "s734-copied-stock.png",
+      "at": "2026-11-03T18:51:45.389Z",
+      "url": "http://127.0.0.1:57149/catalogue/inventory",
+      "kind": "local native Console"
+    },
+    {
+      "file": "s734-copied-stock-pack.png",
+      "at": "2026-11-03T18:51:45.962Z",
+      "url": "http://127.0.0.1:57149/catalogue/inventory",
+      "kind": "local native Console"
+    }
+  ],
+  "outcome": "native clone preview, copy, care and stock screens passed locally",
+  "staging": false,
+  "fixtureSourceSha256": "b8f368d3e560493802b70ac08a117b399c51f5a3a2c2029cbeabb1924c9161a3",
+  "identity": {
+    "actorId": "01a1a2c0-929a-753d-997e-e761334fa4fc",
+    "originalBranchId": "01a1a2c0-922d-7aa2-8ebc-f043af7b4592"
+  },
+  "policy": {
+    "bands": [
+      {
+        "id": "zz-young",
+        "label": "ZZ TEST young",
+        "minAge": 0,
+        "maxAge": 6,
+        "requirement": "nanny"
+      },
+      {
+        "id": "zz-older",
+        "label": "ZZ TEST older",
+        "minAge": 7,
+        "maxAge": null,
+        "requirement": "none"
+      }
+    ],
+    "siblingWaiver": {
+      "enabled": false,
+      "guardianMinAge": 12,
+      "waivableRequirement": "drop_off",
+      "staffOnly": true
+    }
+  },
+  "confirmations": [
+    {
+      "id": "zz-required",
+      "text": "ZZ TEST required confirmation",
+      "required": true,
+      "order": 2
+    },
+    {
+      "id": "zz-optional",
+      "text": "ZZ TEST optional confirmation",
+      "required": false,
+      "order": 7
+    }
+  ],
+  "pricing": {
+    "oneTimeFee": {
+      "weekday": 12300,
+      "weekend": 23400
+    },
+    "nannyHourly": {
+      "weekday": 34500,
+      "weekend": 45600
+    },
+    "extraHour": {
+      "weekday": 6700,
+      "weekend": 7800
+    },
+    "fullDayHours": 7,
+    "nannyRatioSoftMax": 4,
+    "prepaidFoodUnused": "forfeit"
+  },
+  "stockBody": {
+    "name": "ZZ TEST SCRUM-734 mw11n29v cups",
+    "active": true,
+    "productId": "01a1a2c0-b2b4-7749-b6bb-5114d9ef0f5a",
+    "unitCostSatang": 12,
+    "reorder": {
+      "reorderPoint": 4,
+      "reorderQuantity": 12,
+      "leadTimeDays": 2,
+      "supplierName": "ZZ TEST supplier",
+      "supplierContact": "ZZ TEST contact"
+    },
+    "units": [
+      {
+        "label": "ZZ TEST case of 12",
+        "eaches": 12
+      }
+    ],
+    "showPhotoInPos": false,
+    "sizes": [
+      {
+        "variantId": null,
+        "label": "Each",
+        "lowStockThreshold": 3,
+        "startingStock": 0,
+        "parByLocation": {
+          "01a1a2c0-b2f6-79af-8791-a05bdb4f101b": 5
+        }
+      }
+    ]
+  },
+  "sourceConfig": {
+    "policy": {
+      "bands": [
+        {
+          "id": "zz-young",
+          "label": "ZZ TEST young",
+          "minAge": 0,
+          "maxAge": 6,
+          "requirement": "nanny"
+        },
+        {
+          "id": "zz-older",
+          "label": "ZZ TEST older",
+          "minAge": 7,
+          "maxAge": null,
+          "requirement": "none"
+        }
+      ],
+      "siblingWaiver": {
+        "enabled": false,
+        "guardianMinAge": 12,
+        "waivableRequirement": "drop_off",
+        "staffOnly": true
+      },
+      "confirmations": [
+        {
+          "id": "zz-required",
+          "text": "ZZ TEST required confirmation",
+          "required": true,
+          "order": 2
+        },
+        {
+          "id": "zz-optional",
+          "text": "ZZ TEST optional confirmation",
+          "required": false,
+          "order": 7
+        }
+      ]
+    },
+    "pricing": {
+      "oneTimeFee": {
+        "weekday": 12300,
+        "weekend": 23400
+      },
+      "nannyHourly": {
+        "weekday": 34500,
+        "weekend": 45600
+      },
+      "extraHour": {
+        "weekday": 6700,
+        "weekend": 7800
+      },
+      "fullDayHours": 7,
+      "nannyRatioSoftMax": 4,
+      "prepaidFoodUnused": "forfeit"
+    },
+    "photoRetentionDays": 30,
+    "nannies": []
+  },
+  "preview": {
+    "sourceBranch": {
+      "id": "01a1a2c0-b161-7669-b289-40f660458775",
+      "name": "ZZ TEST SCRUM-734 mw11n29v source"
+    },
+    "targetBranch": {
+      "id": "01a1a2c0-b1a2-70f6-a5d5-f13137e74a9e",
+      "name": "ZZ TEST SCRUM-734 mw11n29v target"
+    },
+    "targetHasSales": false,
+    "plan": {
+      "ticketPackages": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "holidays": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "taxConfig": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "products": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw11n29v cup"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierGroups": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierOptions": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierLinks": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "discountCodes": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "taxOverrides": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "printTemplates": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "stockLocations": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw11n29v shelf"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "supervisionPolicy": {
+        "create": [
+          "supervision policy"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "confirmationItems": {
+        "create": [
+          "zz-optional",
+          "zz-required"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "dropOffPricing": {
+        "create": [
+          "drop-off and nanny prices"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "stockItems": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw11n29v cups"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "stockUnits": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw11n29v cups: ZZ TEST case of 12"
+        ],
+        "exists": [],
+        "blocked": []
+      }
+    },
+    "counts": {
+      "ticketPackages": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "holidays": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "taxConfig": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "products": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierGroups": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierOptions": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierLinks": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "discountCodes": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "taxOverrides": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "printTemplates": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockLocations": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "supervisionPolicy": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "confirmationItems": {
+        "created": 2,
+        "existing": 0,
+        "blocked": 0
+      },
+      "dropOffPricing": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockItems": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockUnits": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      }
+    },
+    "shared": [
+      "product categories",
+      "the shared modifier library and its options",
+      "customer tiers",
+      "payment methods",
+      "staff benefit role templates",
+      "wheel layouts",
+      "voucher definitions",
+      "discount codes that apply to every branch"
+    ]
+  },
+  "cloneSubmittedAt": "2026-11-03T18:51:42.872Z",
+  "clone": {
+    "sourceBranchId": "01a1a2c0-b161-7669-b289-40f660458775",
+    "targetBranchId": "01a1a2c0-b1a2-70f6-a5d5-f13137e74a9e",
+    "counts": {
+      "ticketPackages": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "holidays": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "taxConfig": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "products": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierGroups": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierOptions": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "modifierLinks": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "discountCodes": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "taxOverrides": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "printTemplates": {
+        "created": 0,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockLocations": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "supervisionPolicy": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "confirmationItems": {
+        "created": 2,
+        "existing": 0,
+        "blocked": 0
+      },
+      "dropOffPricing": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockItems": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      },
+      "stockUnits": {
+        "created": 1,
+        "existing": 0,
+        "blocked": 0
+      }
+    },
+    "plan": {
+      "ticketPackages": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "holidays": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "taxConfig": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "products": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw11n29v cup"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierGroups": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierOptions": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "modifierLinks": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "discountCodes": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "taxOverrides": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "printTemplates": {
+        "create": [],
+        "exists": [],
+        "blocked": []
+      },
+      "stockLocations": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw11n29v shelf"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "supervisionPolicy": {
+        "create": [
+          "supervision policy"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "confirmationItems": {
+        "create": [
+          "zz-optional",
+          "zz-required"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "dropOffPricing": {
+        "create": [
+          "drop-off and nanny prices"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "stockItems": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw11n29v cups"
+        ],
+        "exists": [],
+        "blocked": []
+      },
+      "stockUnits": {
+        "create": [
+          "ZZ TEST SCRUM-734 mw11n29v cups: ZZ TEST case of 12"
+        ],
+        "exists": [],
+        "blocked": []
+      }
+    },
+    "created": 8
+  },
+  "targetConfig": {
+    "policy": {
+      "bands": [
+        {
+          "id": "zz-young",
+          "label": "ZZ TEST young",
+          "minAge": 0,
+          "maxAge": 6,
+          "requirement": "nanny"
+        },
+        {
+          "id": "zz-older",
+          "label": "ZZ TEST older",
+          "minAge": 7,
+          "maxAge": null,
+          "requirement": "none"
+        }
+      ],
+      "siblingWaiver": {
+        "enabled": false,
+        "guardianMinAge": 12,
+        "waivableRequirement": "drop_off",
+        "staffOnly": true
+      },
+      "confirmations": [
+        {
+          "id": "zz-required",
+          "text": "ZZ TEST required confirmation",
+          "required": true,
+          "order": 2
+        },
+        {
+          "id": "zz-optional",
+          "text": "ZZ TEST optional confirmation",
+          "required": false,
+          "order": 7
+        }
+      ]
+    },
+    "pricing": {
+      "oneTimeFee": {
+        "weekday": 12300,
+        "weekend": 23400
+      },
+      "nannyHourly": {
+        "weekday": 34500,
+        "weekend": 45600
+      },
+      "extraHour": {
+        "weekday": 6700,
+        "weekend": 7800
+      },
+      "fullDayHours": 7,
+      "nannyRatioSoftMax": 4,
+      "prepaidFoodUnused": "forfeit"
+    },
+    "photoRetentionDays": 30,
+    "nannies": []
+  },
+  "nativeProofCompletedAt": "2026-11-03T18:51:46.032Z",
+  "smsCount": 0,
+  "completedAt": "2026-11-03T18:51:46.033Z",
+  "disposableDatabaseDropped": true
+}
