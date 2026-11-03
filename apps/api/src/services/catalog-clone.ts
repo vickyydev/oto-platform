@@ -4,20 +4,26 @@ import {
   branch,
   branchHoliday,
   branchTaxConfig,
+  confirmationItem,
   discountDefinition,
+  dropOffPricing,
   modifierGroup,
   modifierOption,
   printTemplate,
   product,
   productModifierGroup,
   sale,
+  stockItem,
   stockLocation,
+  stockUnit,
+  supervisionPolicy,
   taxOverride,
   ticketPackage,
 } from '@oto/db';
 import { isUntouchedDefaultTemplate, newId } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
+import { stockGroupKey } from './stock';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -31,9 +37,10 @@ import type { Exec, Tx } from './tx';
  *
  * THE LINE THIS FILE IS ABOUT: **branch-owned is copied, operator-wide is
  * referenced.** A ticket package, a holiday, a tax configuration, a print
- * template, a branch-pinned item and a stockroom each carry `branch_id` and are
+ * template, supervision rule, stock item and stockroom carry `branch_id` and are
  * one park's own, so each is copied with a fresh id. A product category, the
- * shared modifier library, a tier, a stock item and an operator-wide discount
+ * shared modifier library, a tier, a payment method, a staff benefit template
+ * and an operator-wide discount
  * carry no branch at all: they are ALREADY the target branch's, because they
  * belong to the operator that owns both. Copying those would not give the new
  * park its own category list — it would give the operator two categories called
@@ -46,17 +53,14 @@ import type { Exec, Tx } from './tx';
  *   - **Stock levels** (`pos.stock_level`). What is on the shelf is a count,
  *     not a definition, and the ticket excludes it by name (S2-14b owns it).
  *     The stockroom it is counted in IS copied.
- *   - **Supervision policy, payment methods, staff benefit templates.** Named
- *     in the ticket's paragraph, and they have no table on the platform yet:
- *     they live in the POS catalogue store only, against SCRUM-210, SCRUM-206
- *     and SCRUM-218 (`MOCK_MUTATOR_TICKETS` in `CatalogStoreContext.tsx`).
- *     There is nothing here to copy until those land, and this file needs three
- *     more entities on the day they do.
- *   - **Booth settings and prizes** (`pos.booth_settings`, `pos.booth_prize`).
- *     Branch-owned, but not in the ticket's list, and a box reads them through
- *     `booth_config_version` — a copy that inserted the rows without minting
- *     the version a box syncs against would ship a television a configuration
- *     nothing describes. That belongs to the booth slice.
+ *   - **Payment methods and staff benefit role templates.** Their platform
+ *     tables are operator-wide, so both branches already share them.
+ *   - **Booth settings, prizes and published versions.** All three belong
+ *     to a station (`packages/db/src/schema/booth.ts`), not to a branch alone.
+ *     Stations are not cloned, so there is no target booth for their rows.
+ *     Copying drafts alone would also leave the running version undescribed.
+ *     Wheel layouts are operator-wide and are already shared. Configure and
+ *     publish an actual new booth through its own setup flow.
  *   - **Boxes, stations, devices.** The panel's old wording says "devices,
  *     etc."; a device is hardware standing in a mall, and copying its row would
  *     invent a printer nobody has plugged in.
@@ -94,6 +98,11 @@ export const CLONE_ENTITIES = [
   'taxOverrides',
   'printTemplates',
   'stockLocations',
+  'supervisionPolicy',
+  'confirmationItems',
+  'dropOffPricing',
+  'stockItems',
+  'stockUnits',
 ] as const;
 
 export type CloneEntity = (typeof CLONE_ENTITIES)[number];
@@ -164,6 +173,13 @@ interface CloneWrites {
     >;
   }>;
   stockLocations: Array<typeof stockLocation.$inferInsert>;
+  supervisionPolicy: Array<typeof supervisionPolicy.$inferInsert>;
+  confirmationItems: Array<typeof confirmationItem.$inferInsert>;
+  dropOffPricing: Array<typeof dropOffPricing.$inferInsert>;
+  stockItems: Array<typeof stockItem.$inferInsert>;
+  stockUnits: Array<typeof stockUnit.$inferInsert>;
+  /** Set after products and their stock items exist, to satisfy both FKs. */
+  productStockLinks: Array<{ productId: string; stockItemId: string }>;
 }
 
 export interface CloneScope {
@@ -256,6 +272,12 @@ export async function planBranchClone(
     printTemplates: [],
     printTemplateFills: [],
     stockLocations: [],
+    supervisionPolicy: [],
+    confirmationItems: [],
+    dropOffPricing: [],
+    stockItems: [],
+    stockUnits: [],
+    productStockLinks: [],
   };
   const [targetBranch] = await exec
     .select({ code: branch.code })
@@ -352,6 +374,85 @@ export async function planBranchClone(
     }
   }
 
+  // --- Stockrooms -----------------------------------------------------------
+  // The definitions, not the counts: `stock_level` is what is on the shelf and
+  // is nobody else's to copy (the ticket excludes it; S2-14b owns it).
+  const locationIdAtTarget = new Map<string, string>();
+  {
+    const sourceRows = await exec
+      .select()
+      .from(stockLocation)
+      .where(and(eq(stockLocation.branchId, sourceBranchId), isNull(stockLocation.archivedAt)));
+    const targetRows = await exec
+      .select({ id: stockLocation.id, name: stockLocation.name, sellPoint: stockLocation.sellPoint, archivedAt: stockLocation.archivedAt })
+      .from(stockLocation)
+      .where(eq(stockLocation.branchId, targetBranchId));
+    const taken = new Set(targetRows.map((r) => r.name));
+    // One sell point per branch (`stock_location_sell_point_unique`): a target
+    // that already has one keeps it, and the copies come across as storage.
+    let targetHasSellPoint = targetRows.some((r) => r.sellPoint && !r.archivedAt);
+    for (const row of sourceRows) {
+      if (taken.has(row.name)) {
+        plan.stockLocations.exists.push(row.name);
+        const existing = targetRows.find(t => t.name === row.name && !t.archivedAt);
+        if (existing) locationIdAtTarget.set(row.id, existing.id);
+        continue;
+      }
+      plan.stockLocations.create.push(row.name);
+      const id = newId();
+      locationIdAtTarget.set(row.id, id);
+      writes.stockLocations.push({
+        id,
+        operatorId,
+        branchId: targetBranchId,
+        name: row.name,
+        // S2-14b: the place's kind and whether it is the sell point come with it.
+        type: row.type,
+        sellPoint: row.sellPoint && row.active && !targetHasSellPoint,
+        active: row.active,
+      });
+      if (row.sellPoint && row.active) targetHasSellPoint = true;
+    }
+  }
+
+  // --- Supervision configuration --------------------------------------------
+  // Singletons keep an existing target choice. Confirmations match by their
+  // branch-local code, including retired target rows so a clone cannot revive
+  // wording that branch deliberately removed.
+  {
+    const [source] = await exec.select().from(supervisionPolicy).where(eq(supervisionPolicy.branchId, sourceBranchId));
+    const [target] = await exec.select({ id: supervisionPolicy.id }).from(supervisionPolicy).where(eq(supervisionPolicy.branchId, targetBranchId));
+    if (source) {
+      if (target) plan.supervisionPolicy.exists.push('supervision policy');
+      else {
+        const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = source;
+        writes.supervisionPolicy.push({ ...rest, id: newId(), operatorId, branchId: targetBranchId });
+        plan.supervisionPolicy.create.push('supervision policy');
+      }
+    }
+    const sourceItems = await exec.select().from(confirmationItem)
+      .where(and(eq(confirmationItem.branchId, sourceBranchId), isNull(confirmationItem.archivedAt)));
+    const targetItems = await exec.select({ code: confirmationItem.code }).from(confirmationItem)
+      .where(eq(confirmationItem.branchId, targetBranchId));
+    const taken = new Set(targetItems.map(row => row.code));
+    for (const row of sourceItems) {
+      if (taken.has(row.code)) { plan.confirmationItems.exists.push(row.code); continue; }
+      const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = row;
+      writes.confirmationItems.push({ ...rest, id: newId(), operatorId, branchId: targetBranchId });
+      plan.confirmationItems.create.push(row.code);
+    }
+    const [sourcePrices] = await exec.select().from(dropOffPricing).where(eq(dropOffPricing.branchId, sourceBranchId));
+    const [targetPrices] = await exec.select({ id: dropOffPricing.id }).from(dropOffPricing).where(eq(dropOffPricing.branchId, targetBranchId));
+    if (sourcePrices) {
+      if (targetPrices) plan.dropOffPricing.exists.push('drop-off and nanny prices');
+      else {
+        const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = sourcePrices;
+        writes.dropOffPricing.push({ ...rest, id: newId(), operatorId, branchId: targetBranchId });
+        plan.dropOffPricing.create.push('drop-off and nanny prices');
+      }
+    }
+  }
+
   // --- Items ----------------------------------------------------------------
   //
   // Only rows PINNED to the source branch. A product with a null `branch_id` is
@@ -371,6 +472,7 @@ export async function planBranchClone(
   const productIdAtTarget = new Map<string, string>();
   /** The source ids that are actually being COPIED — their children travel too. */
   const copiedProductIds = new Set<string>();
+  const copiedProductLabels = new Map<string, string>();
   {
     const nameKey = (p: { kind: string; name: string }) => `${p.kind} ${p.name}`;
     const targetByName = new Map(targetProducts.map((p) => [nameKey(p), p.id]));
@@ -409,10 +511,140 @@ export async function planBranchClone(
       const id = newId();
       productIdAtTarget.set(row.id, id);
       copiedProductIds.add(row.id);
-      plan.products.create.push(row.code ? `${row.name} (${row.code} → ${code})` : label);
+      const copiedLabel = row.code ? `${row.name} (${row.code} → ${code})` : label;
+      copiedProductLabels.set(row.id, copiedLabel);
+      plan.products.create.push(copiedLabel);
       const { id: _id, branchId: _branchId, createdAt: _c, updatedAt: _u, ...rest } = row;
-      // S2-14b: a stock link is the source branch's shelf; the copy starts untracked.
+      // Insert the product first; its target-local stock marker follows after
+      // the stock item exists. Never retain the source branch's shelf id.
       writes.products.push({ ...rest, code, sku, stockItemId: null, id, operatorId, branchId: targetBranchId });
+    }
+  }
+
+  // --- Stock definitions and their target-local links ------------------------
+  {
+    const sourceRows = await exec.select().from(stockItem)
+      .where(and(eq(stockItem.operatorId, operatorId), eq(stockItem.branchId, sourceBranchId), isNull(stockItem.archivedAt)));
+    const targetRows = await exec.select().from(stockItem)
+      .where(and(eq(stockItem.operatorId, operatorId), eq(stockItem.branchId, targetBranchId)));
+    const sharedProducts = new Set((await exec.select({ id: product.id }).from(product)
+      .where(and(eq(product.operatorId, operatorId), isNull(product.branchId), isNull(product.archivedAt))))
+      .map(row => row.id));
+    const productHere = (id: string) => productIdAtTarget.get(id) ?? (sharedProducts.has(id) ? id : null);
+    const payloadOf = (row: typeof stockItem.$inferSelect): Record<string, unknown> =>
+      row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload) ? row.payload as Record<string, unknown> : {};
+    const naturalKey = (row: typeof stockItem.$inferSelect) => row.productId
+      ? JSON.stringify([row.productId, row.variantId])
+      : JSON.stringify([null, row.name, payloadOf(row).itemSku ?? null, row.variantLabel, row.sku]);
+    // A live target definition wins over an archived predecessor of its key.
+    const taken = new Map([...targetRows].sort((a, b) => Number(!a.archivedAt) - Number(!b.archivedAt))
+      .map(row => [naturalKey(row), row]));
+    const stockIdAtTarget = new Map<string, string>();
+    const copiedStockLabels = new Map<string, string>();
+    const groupIdAtTarget = new Map<string, string>();
+    const ambiguousGroups = new Set<string>();
+    for (const row of sourceRows) {
+      const productId = row.productId === null ? null : productHere(row.productId);
+      if (row.productId !== null && productId === null) continue;
+      const existing = taken.get(naturalKey({ ...row, productId }));
+      if (!existing || existing.archivedAt) continue;
+      const sourceGroup = stockGroupKey(row), targetGroup = stockGroupKey(existing);
+      const previous = groupIdAtTarget.get(sourceGroup);
+      if (previous && previous !== targetGroup) ambiguousGroups.add(sourceGroup);
+      groupIdAtTarget.set(sourceGroup, targetGroup);
+    }
+    const labelOf = (row: typeof stockItem.$inferSelect) => `${row.name}${row.variantLabel ? ` (${row.variantLabel})` : ''}${row.sku ? ` [${row.sku}]` : ''}`;
+    for (const row of sourceRows) {
+      const label = labelOf(row);
+      const productId = row.productId === null ? null : productHere(row.productId);
+      if (row.productId !== null && productId === null) {
+        plan.stockItems.blocked.push({ name: label, reason: 'its product could not be copied or is not available at this branch' });
+        continue;
+      }
+      const key = naturalKey({ ...row, productId });
+      if (ambiguousGroups.has(stockGroupKey(row))
+        || sourceRows.filter(s => naturalKey(s) === naturalKey(row)).length > 1
+        || targetRows.filter(t => !t.archivedAt && naturalKey(t) === key).length > 1) {
+        plan.stockItems.blocked.push({ name: label, reason: 'the stock item or its size group is ambiguous; copying it could merge different items' });
+        continue;
+      }
+      const existing = taken.get(key);
+      if (existing) {
+        plan.stockItems.exists.push(label);
+        if (!existing.archivedAt) stockIdAtTarget.set(row.id, existing.id);
+        continue;
+      }
+      if (row.productId !== null && !sharedProducts.has(row.productId) && !copiedProductIds.has(row.productId)) {
+        plan.stockItems.blocked.push({ name: label, reason: 'the target product already exists without this stock definition; its inventory choice is kept' });
+        continue;
+      }
+      const parByLocation: Record<string, number> = {};
+      let unavailableLocation = false;
+      for (const [sourceId, quantity] of Object.entries(row.parByLocation)) {
+        const targetId = locationIdAtTarget.get(sourceId);
+        if (!targetId) { unavailableLocation = true; break; }
+        parByLocation[targetId] = quantity;
+      }
+      if (unavailableLocation) {
+        plan.stockItems.blocked.push({ name: label, reason: 'a shelf minimum names a stockroom that is unavailable at the target branch' });
+        continue;
+      }
+      const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = row;
+      const id = newId();
+      const sourceGroup = stockGroupKey(row);
+      const groupId = groupIdAtTarget.get(sourceGroup) ?? newId();
+      groupIdAtTarget.set(sourceGroup, groupId);
+      writes.stockItems.push({ ...rest, id, operatorId, branchId: targetBranchId, productId, parByLocation,
+        payload: { ...payloadOf(row), groupId } });
+      stockIdAtTarget.set(row.id, id);
+      copiedStockLabels.set(row.id, label);
+      plan.stockItems.create.push(label);
+    }
+    // A tracked product must not silently become untracked when one of its
+    // stock definitions is blocked. Remove that whole copied product graph
+    // before planning its modifiers, discounts and tax overrides below.
+    for (const row of sourceProducts) {
+      if (!copiedProductIds.has(row.id)) continue;
+      const missingStock = (row.stockItemId !== null && !stockIdAtTarget.has(row.stockItemId))
+        || sourceRows.some(stock => stock.productId === row.id && !stockIdAtTarget.has(stock.id));
+      if (missingStock) {
+        const productId = productIdAtTarget.get(row.id)!;
+        const label = copiedProductLabels.get(row.id)!;
+        writes.products = writes.products.filter(p => p.id !== productId);
+        plan.products.create = plan.products.create.filter(name => name !== label);
+        plan.products.blocked.push({ name: row.name, reason: 'one of its stock definitions cannot be copied; copying the product would lose its stock tracking' });
+        productIdAtTarget.delete(row.id);
+        copiedProductIds.delete(row.id);
+        for (const stock of sourceRows.filter(stock => stock.productId === row.id)) {
+          const stockId = stockIdAtTarget.get(stock.id);
+          const stockLabel = copiedStockLabels.get(stock.id);
+          if (stockId && stockLabel) {
+            writes.stockItems = writes.stockItems.filter(s => s.id !== stockId);
+            plan.stockItems.create = plan.stockItems.create.filter(name => name !== stockLabel);
+            plan.stockItems.blocked.push({ name: stockLabel, reason: 'its product could not keep all of its stock definitions' });
+            stockIdAtTarget.delete(stock.id);
+          }
+        }
+      } else if (row.stockItemId !== null) {
+        writes.productStockLinks.push({ productId: productIdAtTarget.get(row.id)!, stockItemId: stockIdAtTarget.get(row.stockItemId)! });
+      }
+    }
+    if (sourceRows.length) {
+      const sourceUnits = await exec.select().from(stockUnit)
+        .where(and(eq(stockUnit.operatorId, operatorId), inArray(stockUnit.stockItemId, sourceRows.map(row => row.id)), isNull(stockUnit.archivedAt)));
+      const targetIds = [...new Set(stockIdAtTarget.values())];
+      const targetUnits = targetIds.length ? await exec.select().from(stockUnit).where(inArray(stockUnit.stockItemId, targetIds)) : [];
+      const unitKey = (item: string, code: string) => JSON.stringify([item, code]);
+      const existingUnits = new Set(targetUnits.map(row => unitKey(row.stockItemId, row.code)));
+      for (const row of sourceUnits) {
+        const targetId = stockIdAtTarget.get(row.stockItemId);
+        const label = `${labelOf(sourceRows.find(stock => stock.id === row.stockItemId)!)}: ${row.label}`;
+        if (!targetId) { plan.stockUnits.blocked.push({ name: label, reason: 'its stock item is unavailable at the target branch' }); continue; }
+        if (existingUnits.has(unitKey(targetId, row.code))) { plan.stockUnits.exists.push(label); continue; }
+        const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = row;
+        writes.stockUnits.push({ ...rest, id: newId(), operatorId, stockItemId: targetId });
+        plan.stockUnits.create.push(label);
+      }
     }
   }
 
@@ -689,42 +921,6 @@ export async function planBranchClone(
     }
   }
 
-  // --- Stockrooms -----------------------------------------------------------
-  // The definitions, not the counts: `stock_level` is what is on the shelf and
-  // is nobody else's to copy (the ticket excludes it; S2-14b owns it).
-  {
-    const sourceRows = await exec
-      .select()
-      .from(stockLocation)
-      .where(and(eq(stockLocation.branchId, sourceBranchId), isNull(stockLocation.archivedAt)));
-    const targetRows = await exec
-      .select({ name: stockLocation.name, sellPoint: stockLocation.sellPoint, archivedAt: stockLocation.archivedAt })
-      .from(stockLocation)
-      .where(eq(stockLocation.branchId, targetBranchId));
-    const taken = new Set(targetRows.map((r) => r.name));
-    // One sell point per branch (`stock_location_sell_point_unique`): a target
-    // that already has one keeps it, and the copies come across as storage.
-    let targetHasSellPoint = targetRows.some((r) => r.sellPoint && !r.archivedAt);
-    for (const row of sourceRows) {
-      if (taken.has(row.name)) {
-        plan.stockLocations.exists.push(row.name);
-        continue;
-      }
-      plan.stockLocations.create.push(row.name);
-      writes.stockLocations.push({
-        id: newId(),
-        operatorId,
-        branchId: targetBranchId,
-        name: row.name,
-        // S2-14b: the place's kind and whether it is the sell point come with it.
-        type: row.type,
-        sellPoint: row.sellPoint && row.active && !targetHasSellPoint,
-        active: row.active,
-      });
-      if (row.sellPoint && row.active) targetHasSellPoint = true;
-    }
-  }
-
   return { plan, writes };
 }
 
@@ -754,7 +950,9 @@ export const SHARED_WITH_THE_OPERATOR = [
   'product categories',
   'the shared modifier library and its options',
   'customer tiers',
-  'stock items',
+  'payment methods',
+  'staff benefit role templates',
+  'wheel layouts',
   'voucher definitions',
   'discount codes that apply to every branch',
 ];
@@ -846,6 +1044,14 @@ export async function cloneBranchCatalog(
     });
   }
   if (writes.stockLocations.length) await tx.insert(stockLocation).values(writes.stockLocations);
+  if (writes.supervisionPolicy.length) await tx.insert(supervisionPolicy).values(writes.supervisionPolicy);
+  if (writes.confirmationItems.length) await tx.insert(confirmationItem).values(writes.confirmationItems);
+  if (writes.dropOffPricing.length) await tx.insert(dropOffPricing).values(writes.dropOffPricing);
+  if (writes.stockItems.length) await tx.insert(stockItem).values(writes.stockItems);
+  if (writes.stockUnits.length) await tx.insert(stockUnit).values(writes.stockUnits);
+  for (const link of writes.productStockLinks) {
+    await tx.update(product).set({ stockItemId: link.stockItemId }).where(eq(product.id, link.productId));
+  }
 
   const counts = countsOf(plan);
   const created = Object.values(counts).reduce((sum, c) => sum + c.created, 0);
