@@ -1,0 +1,10 @@
+{
+  "at": "2026-11-03T07:47:46.989Z",
+  "networkFailureSimulation": true,
+  "signOutAttempts": 1,
+  "localClosed": 1,
+  "adminClosed": 1,
+  "browserClosed": 1,
+  "everyCleanupAttempted": true,
+  "passed": true
+}

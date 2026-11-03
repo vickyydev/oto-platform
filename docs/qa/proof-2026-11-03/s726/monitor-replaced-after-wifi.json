@@ -1,0 +1,7 @@
+{
+  "at": "2026-11-03T07:50:07.275Z",
+  "jobId": "job-dbknhhjncjis73erbjq0",
+  "statusBefore": "running",
+  "statusAfter": "canceled",
+  "reason": "Replace own bounded read-only monitor so a fresh full soak fits after the client Wi-Fi interruption"
+}

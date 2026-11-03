@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-03T06:02:55.088Z",
-  "monitorId": "job-dbknhhjncjis73erbjq0",
+  "at": "2026-11-03T07:51:35.747Z",
+  "monitorId": "job-dbkp4ck9v7es73f0a9u0",
   "durationSeconds": 10800,
   "source": "5069944660dfd43571d39f097aa90a77b1092c36",
   "quiet": {
@@ -10,20 +10,20 @@
     "nonTestSales": 0
   },
   "cash": {
-    "at": "2026-11-03T06:02:52.902Z",
-    "sampleAt": "2026-11-03T06:02:44.335Z",
-    "attempts": 150,
-    "sales": 150,
-    "cashAttempts": 150,
-    "allBoxSales": 151,
+    "at": "2026-11-03T07:51:33.324Z",
+    "sampleAt": "2026-11-03T07:51:22.079Z",
+    "attempts": 177,
+    "sales": 177,
+    "cashAttempts": 177,
+    "allBoxSales": 178,
     "knownUnpaidVoids": 1,
     "unexpectedBoxSales": 0,
     "passed": true
   },
   "resources": {
-    "startTime": "2026-11-03T06:01:22.902Z",
-    "endTime": "2026-11-03T06:02:52.903Z",
-    "at": "2026-11-03T06:02:52.903Z",
+    "startTime": "2026-11-03T07:50:03.324Z",
+    "endTime": "2026-11-03T07:51:33.325Z",
+    "at": "2026-11-03T07:51:33.325Z",
     "series": {
       "cpu": [
         {
@@ -36,20 +36,20 @@
           "unit": "cpu",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
-              "value": 0.024730634
+              "timestamp": "2026-11-03T07:50:03.324Z",
+              "value": 0.044727534
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
-              "value": 0.016618267
+              "timestamp": "2026-11-03T07:50:33.324Z",
+              "value": 0.018643534
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
-              "value": 0.0281
+              "timestamp": "2026-11-03T07:51:03.324Z",
+              "value": 0.024263768
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
-              "value": 0.0281
+              "timestamp": "2026-11-03T07:51:33.324Z",
+              "value": 0.024263768
             }
           ],
           "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
@@ -57,35 +57,35 @@
         {
           "labels": [
             {
+              "field": "instance",
+              "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
+            },
+            {
               "field": "service",
               "value": "srv-danh2ljtqb8s73bt9en0"
             },
             {
               "field": "resource",
               "value": "srv-danh2ljtqb8s73bt9en0"
-            },
-            {
-              "field": "instance",
-              "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
             }
           ],
           "unit": "cpu",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
-              "value": 0.0129051
+              "timestamp": "2026-11-03T07:50:03.324Z",
+              "value": 0.030029366
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
-              "value": 0.036211632
+              "timestamp": "2026-11-03T07:50:33.324Z",
+              "value": 0.014687033
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
-              "value": 0.015988367
+              "timestamp": "2026-11-03T07:51:03.324Z",
+              "value": 0.0039582667
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
-              "value": 0.015988367
+              "timestamp": "2026-11-03T07:51:33.324Z",
+              "value": 0.0039582667
             }
           ],
           "resourceId": "srv-danh2ljtqb8s73bt9en0"
@@ -93,35 +93,35 @@
         {
           "labels": [
             {
-              "field": "instance",
-              "value": "srv-dbk7qu8n74is73bm894g-crp9t"
-            },
-            {
               "field": "service",
               "value": "srv-dbk7qu8n74is73bm894g"
             },
             {
               "field": "resource",
               "value": "srv-dbk7qu8n74is73bm894g"
+            },
+            {
+              "field": "instance",
+              "value": "srv-dbk7qu8n74is73bm894g-crp9t"
             }
           ],
           "unit": "cpu",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
-              "value": 0.00017846667
+              "timestamp": "2026-11-03T07:50:03.324Z",
+              "value": 0.00012653333
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
-              "value": 0.0001809
+              "timestamp": "2026-11-03T07:50:33.324Z",
+              "value": 0.0001459
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
-              "value": 0.000073133335
+              "timestamp": "2026-11-03T07:51:03.324Z",
+              "value": 0.00017513333
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
-              "value": 0.000073133335
+              "timestamp": "2026-11-03T07:51:33.324Z",
+              "value": 0.00017513333
             }
           ],
           "resourceId": "srv-dbk7qu8n74is73bm894g"
@@ -138,19 +138,19 @@
           "unit": "cpu",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
+              "timestamp": "2026-11-03T07:50:03.324Z",
               "value": 1
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
+              "timestamp": "2026-11-03T07:50:33.324Z",
               "value": 1
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
+              "timestamp": "2026-11-03T07:51:03.324Z",
               "value": 1
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
+              "timestamp": "2026-11-03T07:51:33.324Z",
               "value": 1
             }
           ],
@@ -174,19 +174,19 @@
           "unit": "cpu",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
+              "timestamp": "2026-11-03T07:50:03.324Z",
               "value": 0.5
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
+              "timestamp": "2026-11-03T07:50:33.324Z",
               "value": 0.5
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
+              "timestamp": "2026-11-03T07:51:03.324Z",
               "value": 0.5
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
+              "timestamp": "2026-11-03T07:51:33.324Z",
               "value": 0.5
             }
           ],
@@ -210,19 +210,19 @@
           "unit": "cpu",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
+              "timestamp": "2026-11-03T07:50:03.324Z",
               "value": 1
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
+              "timestamp": "2026-11-03T07:50:33.324Z",
               "value": 1
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
+              "timestamp": "2026-11-03T07:51:03.324Z",
               "value": 1
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
+              "timestamp": "2026-11-03T07:51:33.324Z",
               "value": 1
             }
           ],
@@ -248,20 +248,20 @@
           "unit": "bytes",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
-              "value": 117460990
+              "timestamp": "2026-11-03T07:50:03.324Z",
+              "value": 109776900
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
-              "value": 117456900
+              "timestamp": "2026-11-03T07:50:33.324Z",
+              "value": 109776900
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
-              "value": 117460990
+              "timestamp": "2026-11-03T07:51:03.324Z",
+              "value": 109776900
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
-              "value": 117460990
+              "timestamp": "2026-11-03T07:51:33.324Z",
+              "value": 109776900
             }
           ],
           "resourceId": "srv-dbk7qu8n74is73bm894g"
@@ -269,35 +269,35 @@
         {
           "labels": [
             {
+              "field": "instance",
+              "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
+            },
+            {
               "field": "service",
               "value": "srv-danh2ljtqb8s73bt9en0"
             },
             {
               "field": "resource",
               "value": "srv-danh2ljtqb8s73bt9en0"
-            },
-            {
-              "field": "instance",
-              "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
             }
           ],
           "unit": "bytes",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
-              "value": 367484930
+              "timestamp": "2026-11-03T07:50:03.324Z",
+              "value": 365072400
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
-              "value": 336584700
+              "timestamp": "2026-11-03T07:50:33.324Z",
+              "value": 366497800
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
-              "value": 354918400
+              "timestamp": "2026-11-03T07:51:03.324Z",
+              "value": 366759940
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
-              "value": 354918400
+              "timestamp": "2026-11-03T07:51:33.324Z",
+              "value": 366759940
             }
           ],
           "resourceId": "srv-danh2ljtqb8s73bt9en0"
@@ -312,20 +312,20 @@
           "unit": "bytes",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
-              "value": 662056960
+              "timestamp": "2026-11-03T07:50:03.324Z",
+              "value": 688660500
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
-              "value": 660160500
+              "timestamp": "2026-11-03T07:50:33.324Z",
+              "value": 650948600
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
-              "value": 663560200
+              "timestamp": "2026-11-03T07:51:03.324Z",
+              "value": 644747260
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
-              "value": 663560200
+              "timestamp": "2026-11-03T07:51:33.324Z",
+              "value": 644747260
             }
           ],
           "resourceId": "dpg-dangso3m8hqs73b9ir80-a"
@@ -342,19 +342,19 @@
           "unit": "bytes",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
+              "timestamp": "2026-11-03T07:50:03.324Z",
               "value": 2147483600
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
+              "timestamp": "2026-11-03T07:50:33.324Z",
               "value": 2147483600
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
+              "timestamp": "2026-11-03T07:51:03.324Z",
               "value": 2147483600
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
+              "timestamp": "2026-11-03T07:51:33.324Z",
               "value": 2147483600
             }
           ],
@@ -378,19 +378,19 @@
           "unit": "bytes",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
+              "timestamp": "2026-11-03T07:50:03.324Z",
               "value": 536870900
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
+              "timestamp": "2026-11-03T07:50:33.324Z",
               "value": 536870900
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
+              "timestamp": "2026-11-03T07:51:03.324Z",
               "value": 536870900
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
+              "timestamp": "2026-11-03T07:51:33.324Z",
               "value": 536870900
             }
           ],
@@ -399,34 +399,34 @@
         {
           "labels": [
             {
-              "field": "instance",
-              "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
-            },
-            {
               "field": "service",
               "value": "srv-danh2ljtqb8s73bt9en0"
             },
             {
               "field": "resource",
               "value": "srv-danh2ljtqb8s73bt9en0"
+            },
+            {
+              "field": "instance",
+              "value": "srv-danh2ljtqb8s73bt9en0-s2n5n"
             }
           ],
           "unit": "bytes",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
+              "timestamp": "2026-11-03T07:50:03.324Z",
               "value": 2147483600
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
+              "timestamp": "2026-11-03T07:50:33.324Z",
               "value": 2147483600
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
+              "timestamp": "2026-11-03T07:51:03.324Z",
               "value": 2147483600
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
+              "timestamp": "2026-11-03T07:51:33.324Z",
               "value": 2147483600
             }
           ],
@@ -444,19 +444,19 @@
           "unit": "unitless",
           "values": [
             {
-              "timestamp": "2026-11-03T06:01:22.902Z",
+              "timestamp": "2026-11-03T07:50:03.324Z",
               "value": 9
             },
             {
-              "timestamp": "2026-11-03T06:01:52.902Z",
+              "timestamp": "2026-11-03T07:50:33.324Z",
               "value": 9
             },
             {
-              "timestamp": "2026-11-03T06:02:22.902Z",
+              "timestamp": "2026-11-03T07:51:03.324Z",
               "value": 9
             },
             {
-              "timestamp": "2026-11-03T06:02:52.902Z",
+              "timestamp": "2026-11-03T07:51:33.324Z",
               "value": 9
             }
           ],
@@ -470,9 +470,9 @@
         "plan": "standard",
         "cpu": {
           "samples": 4,
-          "min": 0.0129051,
-          "max": 0.036211632,
-          "mean": 0.0202733665
+          "min": 0.0039582667,
+          "max": 0.030029366,
+          "mean": 0.013158233099999998
         },
         "cpu-limit": {
           "samples": 4,
@@ -482,9 +482,9 @@
         },
         "memory": {
           "samples": 4,
-          "min": 336584700,
-          "max": 367484930,
-          "mean": 353476607.5
+          "min": 365072400,
+          "max": 366759940,
+          "mean": 366272520
         },
         "memory-limit": {
           "samples": 4,
@@ -492,17 +492,17 @@
           "max": 2147483600,
           "mean": 2147483600
         },
-        "cpuPercentMax": 3.6211632000000002,
-        "memoryPercentMax": 17.112350939490295
+        "cpuPercentMax": 3.0029366,
+        "memoryPercentMax": 17.078590961067178
       },
       "srv-dbk7qu8n74is73bm894g": {
         "name": "oto-pos-web-staging",
         "plan": "starter",
         "cpu": {
           "samples": 4,
-          "min": 0.000073133335,
-          "max": 0.0001809,
-          "mean": 0.000126408335
+          "min": 0.00012653333,
+          "max": 0.00017513333,
+          "mean": 0.00015567499749999999
         },
         "cpu-limit": {
           "samples": 4,
@@ -512,9 +512,9 @@
         },
         "memory": {
           "samples": 4,
-          "min": 117456900,
-          "max": 117460990,
-          "mean": 117459967.5
+          "min": 109776900,
+          "max": 109776900,
+          "mean": 109776900
         },
         "memory-limit": {
           "samples": 4,
@@ -522,17 +522,17 @@
           "max": 536870900,
           "mean": 536870900
         },
-        "cpuPercentMax": 0.036180000000000004,
-        "memoryPercentMax": 21.878814813766216
+        "cpuPercentMax": 0.035026666,
+        "memoryPercentMax": 20.447541485299354
       },
       "dpg-dangso3m8hqs73b9ir80-a": {
         "name": "oto-db-staging",
         "plan": "1c-2g",
         "cpu": {
           "samples": 4,
-          "min": 0.016618267,
-          "max": 0.0281,
-          "mean": 0.024387225250000002
+          "min": 0.018643534,
+          "max": 0.044727534,
+          "mean": 0.027974651000000003
         },
         "cpu-limit": {
           "samples": 4,
@@ -542,9 +542,9 @@
         },
         "memory": {
           "samples": 4,
-          "min": 660160500,
-          "max": 663560200,
-          "mean": 662334465
+          "min": 644747260,
+          "max": 688660500,
+          "mean": 657275905
         },
         "memory-limit": {
           "samples": 4,
@@ -558,69 +558,69 @@
           "max": 9,
           "mean": 9
         },
-        "cpuPercentMax": 2.81,
-        "memoryPercentMax": 30.899430384474183
+        "cpuPercentMax": 4.4727534,
+        "memoryPercentMax": 32.068254211580474
       }
     },
     "metricReads": [
       {
-        "at": "2026-11-03T06:02:53.365Z",
+        "at": "2026-11-03T07:51:33.774Z",
         "metric": "/metrics/cpu",
         "attempt": 1,
         "status": 200,
         "errorName": null,
         "headers": {
           "ratelimit-limit": "30",
-          "ratelimit-remaining": "16",
-          "ratelimit-reset": "6"
+          "ratelimit-remaining": "19",
+          "ratelimit-reset": "26"
         }
       },
       {
-        "at": "2026-11-03T06:02:53.809Z",
+        "at": "2026-11-03T07:51:34.205Z",
         "metric": "/metrics/cpu-limit",
         "attempt": 1,
         "status": 200,
         "errorName": null,
         "headers": {
           "ratelimit-limit": "30",
-          "ratelimit-remaining": "15",
-          "ratelimit-reset": "6"
+          "ratelimit-remaining": "18",
+          "ratelimit-reset": "25"
         }
       },
       {
-        "at": "2026-11-03T06:02:54.247Z",
+        "at": "2026-11-03T07:51:34.640Z",
         "metric": "/metrics/memory",
         "attempt": 1,
         "status": 200,
         "errorName": null,
         "headers": {
           "ratelimit-limit": "30",
-          "ratelimit-remaining": "14",
-          "ratelimit-reset": "5"
+          "ratelimit-remaining": "17",
+          "ratelimit-reset": "25"
         }
       },
       {
-        "at": "2026-11-03T06:02:54.691Z",
+        "at": "2026-11-03T07:51:35.287Z",
         "metric": "/metrics/memory-limit",
         "attempt": 1,
         "status": 200,
         "errorName": null,
         "headers": {
           "ratelimit-limit": "30",
-          "ratelimit-remaining": "13",
-          "ratelimit-reset": "5"
+          "ratelimit-remaining": "16",
+          "ratelimit-reset": "24"
         }
       },
       {
-        "at": "2026-11-03T06:02:55.088Z",
+        "at": "2026-11-03T07:51:35.747Z",
         "metric": "/metrics/active-connections",
         "attempt": 1,
         "status": 200,
         "errorName": null,
         "headers": {
           "ratelimit-limit": "30",
-          "ratelimit-remaining": "12",
-          "ratelimit-reset": "5"
+          "ratelimit-remaining": "15",
+          "ratelimit-reset": "24"
         }
       }
     ]

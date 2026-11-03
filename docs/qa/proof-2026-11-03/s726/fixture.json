@@ -247,7 +247,8 @@
     "01a19f4d-5ea6-7325-99b6-33141f43a3d3",
     "01a19f4d-6467-7eba-8e2c-d12706f54368",
     "01a1a002-24a2-732f-8e5b-9708a1a4ce4c",
-    "01a1a00c-450d-712a-9ba2-ee2c466d2a22"
+    "01a1a00c-450d-712a-9ba2-ee2c466d2a22",
+    "01a1a025-769c-72dc-9cb3-05115f878a89"
   ],
   "voidedDrafts": [
     {
@@ -768,6 +769,34 @@
       "kind": "native",
       "stationId": "01a19e88-2a5d-7685-989b-22601c493045",
       "recordedAt": "2026-11-03T06:15:25.058Z"
+    },
+    {
+      "id": "01a1a024-98ea-7267-b98b-9e1111234306",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T06:41:55.340Z"
+    },
+    {
+      "id": "01a1a025-6e4b-790d-bd12-0034bf571fea",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "recordedAt": "2026-11-03T06:42:51.075Z"
+    },
+    {
+      "id": "01a1a025-8286-7632-963b-dd293ad2cea9",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "native",
+      "stationId": "01a19e88-2a5d-7685-989b-22601c493045",
+      "recordedAt": "2026-11-03T06:42:56.149Z"
+    },
+    {
+      "id": "01a1a060-201a-7782-8dab-5a4adc573443",
+      "accountId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+      "kind": "admin",
+      "stationId": null,
+      "recordedAt": "2026-11-03T07:46:56.565Z"
     }
   ],
   "sources": {
@@ -2142,6 +2171,39 @@
       "postCount": 1,
       "finalised": true,
       "receiptNumber": "Z72601-000031"
+    },
+    {
+      "id": "01a1a00c-cbe6-7990-bf90-d28f55915f0c",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:15:55.890Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000034"
+    },
+    {
+      "id": "01a1a00e-a0c9-79f4-a90a-22e978c7087b",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:17:55.931Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000035"
+    },
+    {
+      "id": "01a1a010-75bd-716b-a2b4-d892f5296aa3",
+      "stationId": "01a19e80-5cc2-78d4-93a7-b0e563dc8519",
+      "at": "2026-11-03T06:19:55.966Z",
+      "phase": "soak_2h",
+      "grossSatang": 100,
+      "native": true,
+      "postCount": 1,
+      "finalised": true,
+      "receiptNumber": "Z72601-000036"
     }
   ],
   "previousFamilies": [
@@ -2214,20 +2276,34 @@
       "pickupPhotoId": "841270ce-1e9c-43ae-9eae-14c05cba61f9",
       "releasedAt": "2026-11-03T06:04:48.798Z",
       "releaseId": "0eee97cd-bb70-4ec0-bea8-ecf525ba0490"
+    },
+    {
+      "registrationId": "cc22c188-940a-415b-9c97-9aa472f4ff0a",
+      "checkinId": "a8fe3d4a-da46-40c9-b354-27e6cc92d3da",
+      "saleId": "0446ada2-8d0d-4c06-b995-b349c2ff589b",
+      "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 6",
+      "photoId": "40bb634e-43b5-44ce-961e-9c19cd7bf8da",
+      "grossSatang": 111500,
+      "receiptNumber": "Z72601-000033",
+      "bandId": "01a1a00b-b135-7746-9c4c-64bbb2ae6e3d",
+      "inPark": false,
+      "pickupPhotoId": "24d973e8-358c-49d9-8492-f5808208bed0",
+      "releasedAt": "2026-11-03T06:21:17.645Z",
+      "releaseId": "2b32ee84-c06c-41c5-86b5-0d3c5b660035"
     }
   ],
   "family": {
-    "registrationId": "cc22c188-940a-415b-9c97-9aa472f4ff0a",
-    "checkinId": "a8fe3d4a-da46-40c9-b354-27e6cc92d3da",
-    "saleId": "0446ada2-8d0d-4c06-b995-b349c2ff589b",
-    "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 6",
-    "photoId": "40bb634e-43b5-44ce-961e-9c19cd7bf8da",
+    "registrationId": "7384613c-7c98-42a4-a184-a7e5580aa2e0",
+    "checkinId": "7a3058eb-78a6-45ba-b92a-a0c8af72ec1f",
+    "saleId": "4f37b62b-8883-4e83-ab97-fc6a536c2c93",
+    "childName": "ZZ TEST SCRUM-726 mvzv6zgu child 7",
+    "photoId": "e333449a-a8bc-444b-a24d-b7e2f5a0f297",
     "grossSatang": 111500,
-    "receiptNumber": "Z72601-000033",
-    "bandId": "01a1a00b-b135-7746-9c4c-64bbb2ae6e3d",
+    "receiptNumber": "Z72601-000037",
+    "bandId": "01a1a024-f671-713e-bf6b-44bb9f2ad345",
     "inPark": false,
-    "pickupPhotoId": "24d973e8-358c-49d9-8492-f5808208bed0",
-    "releasedAt": "2026-11-03T06:21:17.645Z",
-    "releaseId": "2b32ee84-c06c-41c5-86b5-0d3c5b660035"
+    "pickupPhotoId": "8cb1a203-c1ba-42dd-91e6-856f4444b642",
+    "releasedAt": "2026-11-03T07:46:58.462Z",
+    "releaseId": "4ea3a275-5289-4da3-927b-71e71dd49b45"
   }
 }

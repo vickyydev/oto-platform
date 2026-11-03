@@ -1,10 +1,10 @@
 {
-  "at": "2026-11-03T06:25:42.413Z",
-  "sampleAt": "2026-11-03T06:25:32.037Z",
-  "attempts": 155,
-  "sales": 155,
-  "cashAttempts": 155,
-  "allBoxSales": 156,
+  "at": "2026-11-03T07:49:18.309Z",
+  "sampleAt": "2026-11-03T07:49:11.598Z",
+  "attempts": 177,
+  "sales": 177,
+  "cashAttempts": 177,
+  "allBoxSales": 178,
   "knownUnpaidVoids": 1,
   "unexpectedBoxSales": 0,
   "passed": true

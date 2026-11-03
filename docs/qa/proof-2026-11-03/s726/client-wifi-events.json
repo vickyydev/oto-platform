@@ -1,0 +1,47 @@
+{
+    "events":  [
+                   {
+                       "at":  "2026-11-03T07:23:46.3087069Z",
+                       "eventId":  8003
+                   },
+                   {
+                       "at":  "2026-11-03T07:23:58.9151265Z",
+                       "eventId":  8002
+                   },
+                   {
+                       "at":  "2026-11-03T07:29:16.9027049Z",
+                       "eventId":  8002
+                   },
+                   {
+                       "at":  "2026-11-03T07:29:26.9638316Z",
+                       "eventId":  8002
+                   },
+                   {
+                       "at":  "2026-11-03T07:29:51.3841716Z",
+                       "eventId":  8002
+                   },
+                   {
+                       "at":  "2026-11-03T07:30:59.3483609Z",
+                       "eventId":  8002
+                   },
+                   {
+                       "at":  "2026-11-03T07:32:05.4429419Z",
+                       "eventId":  8002
+                   },
+                   {
+                       "at":  "2026-11-03T07:32:15.4451649Z",
+                       "eventId":  8002
+                   },
+                   {
+                       "at":  "2026-11-03T07:32:18.6964992Z",
+                       "eventId":  8002
+                   },
+                   {
+                       "at":  "2026-11-03T07:41:23.2914281Z",
+                       "eventId":  8001
+                   }
+               ],
+    "interpretation":  "Disconnect, failed connections, then reconnect coincide with the measured ENOTFOUND interruption. No SSID, adapter identity or settings are recorded or changed.",
+    "source":  "Windows WLAN AutoConfig Operational",
+    "recordedAt":  "2026-11-03T07:48:54.8523890Z"
+}

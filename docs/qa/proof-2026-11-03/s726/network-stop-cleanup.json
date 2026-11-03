@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-03T07:46:56.569Z",
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+  "exactInterruptedSessionIds": [
+    "01a1a024-98ea-7267-b98b-9e1111234306",
+    "01a1a025-6e4b-790d-bd12-0034bf571fea",
+    "01a1a025-8286-7632-963b-dd293ad2cea9"
+  ],
+  "childOut": true,
+  "exactDisplaysRevoked": 1,
+  "sessions": {
+    "jobId": "job-dbkp2t49v7es73f06k9g",
+    "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+    "startedAt": "2026-11-03T07:47:00.071Z",
+    "status": "succeeded",
+    "result": {
+      "event": "s726_network_session_cleanup",
+      "at": "2026-11-03T07:47:52.402Z",
+      "sessionIds": [
+        "01a1a024-98ea-7267-b98b-9e1111234306",
+        "01a1a025-6e4b-790d-bd12-0034bf571fea",
+        "01a1a025-8286-7632-963b-dd293ad2cea9"
+      ],
+      "sessionsEnded": 3,
+      "normalSignOutService": true,
+      "passed": true
+    }
+  },
+  "server": {
+    "stations": 0,
+    "connections": 0,
+    "perStation": {}
+  },
+  "completedAt": "2026-11-03T07:48:08.578Z"
+}
