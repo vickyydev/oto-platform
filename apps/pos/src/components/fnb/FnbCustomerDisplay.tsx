@@ -3,7 +3,8 @@ import type { DisplayFnbCart, DisplayTotals } from '@oto/shared';
 import { breakdownModifiers, describeModifiers } from '@/lib/fnb';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { perUnitBaht, taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
-import { computeManualDiscount, formatDiscountDetail } from '@/lib/manualDiscount';
+import { computeManualDiscount } from '@/lib/manualDiscount';
+import { customerDiscountDetail, customerTaxRowLabel } from '@/lib/customerDisplayCopy';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
@@ -46,10 +47,6 @@ interface FnbCustomerDisplayProps {
 }
 
 type PublicDiscount = DisplayFnbCart['manualDiscounts'][number];
-const discountDetail = (discount: ManualDiscount | PublicDiscount) => 'reason' in discount
-  ? formatDiscountDetail(discount)
-  : discount.type === 'comp' ? 'Comp (100% off)' : discount.type === 'percent'
-    ? `${discount.value}% off` : `฿${discount.value} off`;
 
 function capturedTaxes(totals: DisplayTotals): TaxBreakdownBaht {
   // Only the captured service/tax fields are read by taxRowsOf.
@@ -117,7 +114,7 @@ function BalanceChip({ wristband }: { wristband: Wristband }) {
     <div className="inline-flex items-center gap-3 rounded-2xl bg-foreground/5 border border-foreground/10 px-5 py-3">
       <Wallet className="w-6 h-6 text-primary shrink-0" />
       <div className="text-left">
-        <div className="text-sm text-foreground/60 leading-tight">{wristband.customerNickname}'s {t('common.credit')}</div>
+        <div className="text-sm text-foreground/60 leading-tight">{t('display.credit.of', { name: wristband.customerNickname })}</div>
         <div className="text-2xl font-black text-primary tabular-nums leading-tight">
           ฿{wristband.creditBalanceTHB}
         </div>
@@ -137,7 +134,7 @@ function OrderLines({
   manualAmounts: Record<string, number>;
   capturedLines?: DisplayFnbCart['lines'];
 }) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const rows = capturedLines?.map(line => ({ ...line, displayName: line.translations?.[lang] ?? line.name }))
     ?? lines.map(line => ({ id: line.id, qty: line.qty, displayName: resolveName(line.menuItem, lang),
       basePrice: resolveRateToday(line.menuItem.price), lineTotal: line.lineTotal,
@@ -162,7 +159,7 @@ function OrderLines({
                 </span>
                 <div className="min-w-0">
                   <div className="text-xl font-bold leading-tight">{line.displayName}</div>
-                  <div className="text-foreground/40 text-sm tabular-nums">฿{line.basePrice} base</div>
+                  <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.base', { price: line.basePrice })}</div>
                   {capturedLines && line.variantLabel && <div className="text-foreground/60 text-sm">{line.variantLabel}</div>}
                   {line.qty > 1 && (
                     <div className="text-foreground/40 text-sm tabular-nums">
@@ -173,7 +170,7 @@ function OrderLines({
                         second arithmetic on this screen could contradict it in
                         front of the guest it is being read by.
                       */}
-                      ฿{perUnitBaht(line.lineTotal, line.qty)} each × {line.qty}
+                      {t('display.price.eachTimes', { price: perUnitBaht(line.lineTotal, line.qty), qty: line.qty })}
                     </div>
                   )}
                   {breakdown.length > 0 && (
@@ -189,7 +186,7 @@ function OrderLines({
                             <span className="text-foreground/75">{mod.optionName}</span>
                           </span>
                           <span className="ml-auto shrink-0 tabular-nums">
-                            {mod.price > 0 ? `฿${mod.price}` : 'free'}
+                            {mod.price > 0 ? `฿${mod.price}` : t('display.price.free')}
                           </span>
                         </li>
                       ))}
@@ -215,7 +212,7 @@ function OrderLines({
                 >
                   <span className="flex items-center gap-2.5 text-base font-semibold">
                     <BadgePercent className="w-5 h-5 shrink-0" />
-                    {discountDetail(md)}
+                    {customerDiscountDetail(md, t)}
                   </span>
                   <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
                 </div>
@@ -352,7 +349,7 @@ export function FnbCustomerDisplay({
               >
                 <span className="flex items-center gap-2 text-lg">
                   <BadgePercent className="w-5 h-5 shrink-0" />
-                  {t('common.discount')} · {discountDetail(md)}
+                  {t('common.discount')} · {customerDiscountDetail(md, t)}
                 </span>
                 <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
               </div>
@@ -360,7 +357,7 @@ export function FnbCustomerDisplay({
           })}
           {(taxBreakdown ? taxRowsOf(taxBreakdown) : []).map((row) => (
             <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-              <span className="text-lg">{row.label}</span>
+              <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
               <span className="text-lg tabular-nums">฿{row.amount}</span>
             </div>
           ))}

@@ -47,6 +47,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactChannel } from '@/types';
 import { readTicketDisplayView } from '@/lib/displaySession';
+import { displayErrorText } from '@/lib/customerDisplayCopy';
 import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildrenReview';
 import { FnbCustomerDisplay, type FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
 import { PublicMerchCustomerDisplay, type PublicMerchStage } from '@/components/merch/PublicMerchCustomerDisplay';
@@ -350,8 +351,8 @@ export default function Display() {
   return <div className="dark h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col" data-testid="separate-display">
     {session && connection === 'reconnecting' && <p role="status" className="shrink-0 px-4 py-2 text-sm">{t('display.reconnecting')}</p>}
     {error && (!(session && connection !== 'connected') || pending.current) && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
-      <span>{error}</span>
-      <Button size="sm" onClick={() => { if (pairingMode === 'expiry-error') { void expirePairing(); return; } const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>Retry</Button>
+      <span>{session ? displayErrorText(error, lang, t) : error}</span>
+      <Button size="sm" onClick={() => { if (pairingMode === 'expiry-error') { void expirePairing(); return; } const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>{session ? t('display.retry') : 'Retry'}</Button>
     </div>}
     {!persistent && <p className="shrink-0 px-4 py-2 text-sm">This browser cannot remember the display. Keep this page open or enable site storage.</p>}
     {!session ? <main className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-5">
@@ -383,7 +384,7 @@ export default function Display() {
           onAction={action => { void send('display.child_review', action); }} />
       </div>
       {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">
-        {busy ? 'Sending…' : 'Please wait for the team to confirm this change.'}
+        {busy ? t('display.sending') : t('display.waitForConfirm')}
       </p>}
     </> : view?.consent ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
@@ -393,7 +394,7 @@ export default function Display() {
           onAction={action => { void send('display.consent', action); }} />
       </div>
       {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">
-        {busy ? 'Sending…' : 'Please wait for the team to confirm this change.'}
+        {busy ? t('display.sending') : t('display.waitForConfirm')}
       </p>}
     </> : merch && document ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
@@ -413,11 +414,11 @@ export default function Display() {
           onSkipIdentify={() => { void send('display.skip_identify', { requestId }); }}
           onCustomerDone={() => { void send('display.contact_done', { requestId, phone, nickname, contactChannel }); }} />
       </div>
-      {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">{busy ? 'Sending…' : 'Thank you. Please wait for the team.'}</p>}
+      {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">{busy ? t('display.sending') : t('display.thankYouWait')}</p>}
     </> : <main className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-5">
       <Monitor className="h-14 w-14 text-primary" />
-      <h1 className="text-3xl font-bold">Welcome to OTO Park</h1>
-      <p className="text-xl">Please follow the staff screen.</p>
+      <h1 className="text-3xl font-bold">{t('display.idle.title')}</h1>
+      <p className="text-xl">{t('display.idle.followStaff')}</p>
       <p className="text-sm text-muted-foreground">{session.station.name} · {session.device.name}</p>
     </main>}
   </div>;

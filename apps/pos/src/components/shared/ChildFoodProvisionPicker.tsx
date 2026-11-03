@@ -5,6 +5,9 @@ import { resolveRateToday } from '@/lib/pricingMode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { tFor } from '@/i18n/LanguageContext';
+import { resolveName } from '@/i18n/resolveTranslation';
+import type { SupportedLang } from '@/i18n/types';
 import { UtensilsCrossed, Wallet, ShoppingBasket, AlertTriangle, Plus, Minus } from 'lucide-react';
 
 interface ChildFoodProvisionPickerProps {
@@ -20,6 +23,8 @@ interface ChildFoodProvisionPickerProps {
    * (sky/slate gradient), 'default' for light-mode admin surfaces.
    */
   variant?: 'dark' | 'default';
+  /** The customer's language, on a customer-facing screen. Left out, English. */
+  lang?: SupportedLang;
 }
 
 const NONE_PROVISION: ChildFoodProvision = { mode: 'none', paidTHB: 0 };
@@ -55,8 +60,11 @@ export function ChildFoodProvisionPicker({
   value,
   onChange,
   variant = 'dark',
+  lang,
 }: ChildFoodProvisionPickerProps) {
   const dark = variant === 'dark';
+  const t = tFor(lang ?? 'en');
+  const nameOf = <T extends Parameters<typeof resolveName>[0]>(row: T) => (lang ? resolveName(row, lang) : row.name);
 
   // Local state for the credit amount input string (avoids the 0 → clear flicker).
   const [creditStr, setCreditStr] = useState<string>(
@@ -141,22 +149,22 @@ export function ChildFoodProvisionPicker({
       <div className="flex gap-2">
         <button type="button" className={modeBtn(value.mode === 'none')} onClick={() => setMode('none')}>
           <UtensilsCrossed className="h-5 w-5" />
-          <span className="text-sm font-semibold">No food</span>
+          <span className="text-sm font-semibold">{t('food.none')}</span>
         </button>
         <button type="button" className={modeBtn(value.mode === 'prepaid_credit')} onClick={() => setMode('prepaid_credit')}>
           <Wallet className="h-5 w-5" />
-          <span className="text-sm font-semibold text-center leading-tight">Prepaid credit</span>
+          <span className="text-sm font-semibold text-center leading-tight">{t('food.prepaidCredit')}</span>
         </button>
         <button type="button" className={modeBtn(value.mode === 'prepaid_items')} onClick={() => setMode('prepaid_items')}>
           <ShoppingBasket className="h-5 w-5" />
-          <span className="text-sm font-semibold text-center leading-tight">Choose items</span>
+          <span className="text-sm font-semibold text-center leading-tight">{t('food.chooseItems')}</span>
         </button>
       </div>
 
       {/* No food explanation */}
       {value.mode === 'none' && (
         <p className={cn('text-sm', dark ? 'text-foreground/50' : 'text-muted-foreground')}>
-          Staff will not be able to place food orders for {childName || 'this child'} without a manager override.
+          {t('food.noneNote', { name: childName || t('superviseConsent.thisChild') })}
         </p>
       )}
 
@@ -164,8 +172,7 @@ export function ChildFoodProvisionPicker({
       {value.mode === 'prepaid_credit' && (
         <div className={cardBase}>
           <p className={cn('mb-3 text-sm', dark ? 'text-foreground/70' : 'text-muted-foreground')}>
-            Enter an amount to load onto {childName || "the child"}'s wristband as spendable credit.
-            The credit is NOT taxed now — it is taxed when spent at the counter.
+            {t('food.creditNote', { name: childName || t('food.theChild') })}
           </p>
           <div className="relative">
             <span className={cn('pointer-events-none absolute inset-y-0 left-3 flex items-center text-lg font-bold', dark ? 'text-foreground/60' : 'text-muted-foreground')}>฿</span>
@@ -185,7 +192,7 @@ export function ChildFoodProvisionPicker({
           </div>
           {(value.creditAmountTHB ?? 0) > 0 && (
             <p className={cn('mt-2 text-sm font-semibold', dark ? 'text-primary' : 'text-primary')}>
-              ฿{value.creditAmountTHB} will be added to the total and loaded onto the band at payment.
+              {t('food.creditAdded', { amount: value.creditAmountTHB ?? 0 })}
             </p>
           )}
         </div>
@@ -204,7 +211,7 @@ export function ChildFoodProvisionPicker({
             )}>
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
               <div className="text-sm">
-                <span className="font-bold">Allergy / medical: </span>
+                <span className="font-bold">{t('food.allergyPrefix')}</span>
                 {allergiesMedical}
               </div>
             </div>
@@ -217,7 +224,7 @@ export function ChildFoodProvisionPicker({
             return (
               <div key={cat.id} className={cardBase}>
                 <div className={cn('mb-2 text-xs font-bold uppercase tracking-widest', dark ? 'text-foreground/40' : 'text-muted-foreground')}>
-                  {cat.name}
+                  {nameOf(cat)}
                 </div>
                 <div className="space-y-2">
                   {items.map((item) => {
@@ -225,7 +232,7 @@ export function ChildFoodProvisionPicker({
                     return (
                       <div key={item.id} className="flex items-center gap-3">
                         <div className="min-w-0 flex-1">
-                          <div className={cn('text-sm font-medium', base)}>{item.name}</div>
+                          <div className={cn('text-sm font-medium', base)}>{nameOf(item)}</div>
                           <div className={cn('text-xs', dark ? 'text-foreground/50' : 'text-muted-foreground')}>฿{resolveRateToday(item.price)}</div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -263,19 +270,19 @@ export function ChildFoodProvisionPicker({
             <div className={cn('rounded-xl border p-3', dark ? 'border-primary/30 bg-primary/10' : 'border-primary/20 bg-primary/5')}>
               <div className="flex items-center justify-between">
                 <span className={cn('text-sm font-semibold', dark ? 'text-primary' : 'text-primary')}>
-                  Prepaid items total
+                  {t('food.itemsTotal')}
                 </span>
                 <span className={cn('text-lg font-bold tabular-nums', dark ? 'text-primary' : 'text-primary')}>
                   ฿{value.paidTHB}
                 </span>
               </div>
               <p className={cn('mt-1 text-xs', dark ? 'text-foreground/50' : 'text-muted-foreground')}>
-                These items are taxed now and loaded as entitlements on the band.
+                {t('food.itemsTaxed')}
               </p>
             </div>
           ) : (
             <p className={cn('text-sm', dark ? 'text-foreground/50' : 'text-muted-foreground')}>
-              Pick at least one item above to proceed with prepaid items.
+              {t('food.pickOne')}
             </p>
           )}
         </div>

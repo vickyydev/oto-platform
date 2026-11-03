@@ -12,6 +12,7 @@ interface ScreenKeyboardProps {
   onChange: (next: string) => void;
   onDone: () => void;
   doneLabel: string;
+  spaceLabel?: string;
   /** The same bound the display's intent accepts for a nickname. */
   maxLength?: number;
 }
@@ -22,7 +23,7 @@ interface ScreenKeyboardProps {
  * capital and carries on in lower case. The number keypad's companion, in its
  * design language.
  */
-export function ScreenKeyboard({ value, onChange, onDone, doneLabel, maxLength = 100 }: ScreenKeyboardProps) {
+export function ScreenKeyboard({ value, onChange, onDone, doneLabel, spaceLabel = 'Space', maxLength = 100 }: ScreenKeyboardProps) {
   const add = (text: string) => {
     if (value.length + text.length > maxLength) return;
     onChange(value + text);
@@ -61,10 +62,10 @@ export function ScreenKeyboard({ value, onChange, onDone, doneLabel, maxLength =
         <button
           type="button"
           onClick={() => add(' ')}
-          aria-label="Space"
+          aria-label={spaceLabel}
           className={cn(KEY, 'flex-[3] text-lg font-semibold text-foreground/70')}
         >
-          Space
+          {spaceLabel}
         </button>
         <button
           type="button"

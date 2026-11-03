@@ -1,5 +1,6 @@
 import { TicketType, CustomerTier, AddOn, SelectedAddOn, AddOnVariantQty, CartLine, DiscountComponentTarget, WeekdayWeekendPrice } from '@/types';
 import { tierLabel } from '@/lib/membership';
+import type { SupportedLang } from '@/i18n/types';
 // Import the catalog getters from their source (the store), NOT from mockApi.
 // mockApi -> lib/sale -> lib/pricing already forms an import cycle; pulling
 // getAddOns from mockApi closed that loop, so when a module evaluated pricing.ts
@@ -321,7 +322,10 @@ export type LineBreakdownKind = 'kids' | 'adults' | 'socks' | 'addon';
 export interface LineBreakdownItem {
   key: string;
   kind: LineBreakdownKind;
+  /** English, as every staff screen reads it. A customer's screen names the row by its key. */
   label: string;
+  /** An add-on's translated names, for the customer's screens (SCRUM-729). */
+  translations?: Partial<Record<SupportedLang, string>>;
   unitPrice: number;
   quantity: number;
   subtotal: number;
@@ -387,14 +391,22 @@ export function computeLineBreakdown(
     });
   }
   line.addOns.forEach((a) => {
-    const label =
+    const variants =
       a.variantBreakdown && a.variantBreakdown.length > 0
-        ? `${a.name} (${addOnVariantSummary(a.variantBreakdown)})`
-        : a.name;
+        ? ` (${addOnVariantSummary(a.variantBreakdown)})`
+        : '';
+    const translations = a.translations
+      ? Object.fromEntries(
+          Object.entries(a.translations)
+            .filter((entry): entry is [string, { name: string }] => !!entry[1])
+            .map(([language, value]) => [language, `${value.name}${variants}`]),
+        )
+      : undefined;
     items.push({
       key: a.id,
       kind: 'addon',
-      label,
+      label: `${a.name}${variants}`,
+      ...(translations ? { translations } : {}),
       unitPrice: a.price,
       quantity: a.quantity,
       subtotal: a.price * a.quantity,

@@ -18,12 +18,19 @@ import {
   isAdultRulePriced,
   isTierPriced,
   unpricedCartLines,
-  unpricedLineReason,
   type LineBreakdownKind,
 } from '@/lib/pricing';
 import { taxRowsOf, ticketTotals, unpricedDropOffLines, type OrderTotals } from '@/lib/cartWire';
-import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
-import { paymentMethodKind, paymentMethodLabel } from '@/lib/payments';
+import {
+  breakdownRowLabel,
+  customerDiscountDetail,
+  customerDiscountTarget,
+  customerGrantLabel,
+  customerPaymentMethod,
+  customerTaxRowLabel,
+  customerUnpricedReason,
+} from '@/lib/customerDisplayCopy';
+import { paymentMethodKind } from '@/lib/payments';
 import { tierNeedsProof } from '@/lib/membership';
 import { kioskFlags } from '@/lib/kioskFlags';
 import { cn } from '@/lib/utils';
@@ -139,11 +146,12 @@ interface CustomerDisplayProps {
 }
 
 function ChargeBanner({ target }: { target: ChargeTarget }) {
+  const { t } = useLanguage();
   return (
     <div className="shrink-0 flex items-center justify-center gap-3 bg-primary/15 border-b border-primary/30 px-6 py-4 text-primary text-center">
       <PartyPopper className="w-6 h-6 shrink-0" />
       <span className="font-bold text-xl">
-        Charging to {target.partyTitle}
+        {t('till.order.chargingTo', { title: target.partyTitle })}
         {target.childName ? ` · ${target.childName}` : ''}
       </span>
     </div>
@@ -243,6 +251,7 @@ export function NicknameField({
           onChange={onChange}
           onDone={() => setOpen(false)}
           doneLabel={t('common.done')}
+          spaceLabel={t('display.keyboard.space')}
         />
       )}
     </div>
@@ -484,6 +493,7 @@ export function CustomerDisplay({
                   <div className="mt-1">
                     {(captured?.rows ?? computeLineBreakdown(line)).map((item) => {
                       const key = breakdownComponentKey(item);
+                      const rowLabel = breakdownRowLabel(item, lang, t);
                       const matches = componentDiscounts.filter(
                         (md) => componentKey(md.targetComponent!) === key
                       );
@@ -506,7 +516,7 @@ export function CustomerDisplay({
                         <div key={item.key}>
                           <BreakdownRow
                             kind={item.kind}
-                            label={item.label}
+                            label={rowLabel}
                             unitPrice={item.unitPrice}
                             quantity={item.quantity}
                             subtotal={item.subtotal}
@@ -522,7 +532,7 @@ export function CustomerDisplay({
                               >
                                 <span className="flex items-center gap-3 text-base font-semibold">
                                   <BadgePercent className="w-5 h-5 shrink-0" />
-                                  {formatDiscountTarget(md)} · {formatDiscountDetail(md)}
+                                  {customerDiscountTarget(md, rowLabel, t)} · {customerDiscountDetail(md, t)}
                                 </span>
                                 <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
                               </div>
@@ -542,7 +552,7 @@ export function CustomerDisplay({
                       >
                         <span className="flex items-center gap-3 text-lg font-semibold">
                           <BadgePercent className="w-6 h-6 shrink-0" />
-                          {formatDiscountDetail(md)}
+                          {customerDiscountDetail(md, t)}
                         </span>
                         <span className="text-xl font-bold tabular-nums">−฿{amt}</span>
                       </div>
@@ -571,7 +581,7 @@ export function CustomerDisplay({
                   >
                     <span className="flex items-center gap-2 text-lg">
                       <BadgePercent className="w-5 h-5 shrink-0" />
-                      {t('common.discount')} · {formatDiscountDetail(md)}
+                      {t('common.discount')} · {customerDiscountDetail(md, t)}
                     </span>
                     <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
                   </div>
@@ -598,7 +608,7 @@ export function CustomerDisplay({
           {!unquotable &&
             taxRows.map((row) => (
               <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-                <span className="text-lg">{row.label}</span>
+                <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
                 <span className="text-lg tabular-nums">฿{row.amount}</span>
               </div>
             ))}
@@ -612,7 +622,7 @@ export function CustomerDisplay({
                   className="flex items-center gap-2 text-base"
                 >
                   <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <span>{unpricedLineReason(u)}</span>
+                  <span>{customerUnpricedReason(u, t)}</span>
                 </div>
               ))}
             </div>
@@ -754,7 +764,7 @@ export function CustomerDisplay({
           <p className="text-2xl text-foreground/70">{t('common.toStaff')}</p>
           {sale.paymentMethod && (
             <div className="mt-6 px-5 py-2 rounded-full bg-foreground/5 border border-foreground/10 text-lg text-foreground/80">
-              {t('common.payingBy', { method: paymentMethodLabel(sale.paymentMethod) })}
+              {t('common.payingBy', { method: customerPaymentMethod(sale.paymentMethod, lang, t) })}
             </div>
           )}
         </div>
@@ -807,7 +817,7 @@ export function CustomerDisplay({
                 >
                   {showGrantQr && <QrCode seed={v.id} className="w-16 h-16" />}
                   <div className="flex-1">
-                    <div className="text-foreground/60">{v.label}</div>
+                    <div className="text-foreground/60">{customerGrantLabel(v, t)}</div>
                     <div className="text-3xl font-black text-primary">฿{v.valueTHB}</div>
                   </div>
                 </div>
@@ -827,7 +837,7 @@ export function CustomerDisplay({
                 >
                   {showGrantQr && <QrCode seed={v.id} className="w-16 h-16" />}
                   <div className="flex-1">
-                    <div className="text-foreground/60">{v.label}</div>
+                    <div className="text-foreground/60">{customerGrantLabel(v, t)}</div>
                     <div className="text-2xl font-black">×{v.quantity}</div>
                   </div>
                 </div>

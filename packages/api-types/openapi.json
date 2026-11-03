@@ -26007,6 +26007,32 @@
                                                           "type": "string",
                                                           "maxLength": 500
                                                         },
+                                                        "translations": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "en": {
+                                                              "type": "string",
+                                                              "maxLength": 500
+                                                            },
+                                                            "th": {
+                                                              "type": "string",
+                                                              "maxLength": 500
+                                                            },
+                                                            "ru": {
+                                                              "type": "string",
+                                                              "maxLength": 500
+                                                            },
+                                                            "zh": {
+                                                              "type": "string",
+                                                              "maxLength": 500
+                                                            },
+                                                            "fr": {
+                                                              "type": "string",
+                                                              "maxLength": 500
+                                                            }
+                                                          },
+                                                          "additionalProperties": false
+                                                        },
                                                         "unitPrice": {
                                                           "type": "number",
                                                           "minimum": 0,

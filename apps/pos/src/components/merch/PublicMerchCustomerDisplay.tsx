@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { DisplayMerchCart, DisplayPayment, DisplayTotals } from '@oto/shared';
 import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
+import { customerDiscountDetail, customerTaxRowLabel } from '@/lib/customerDisplayCopy';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -9,9 +10,6 @@ import { Sparkles, Wallet, ShoppingBag, PartyPopper, Banknote, CreditCard,
   BadgePercent, QrCode as QrCodeIcon, Loader2 } from 'lucide-react';
 
 export type PublicMerchStage = 'welcome' | 'order' | 'payment' | 'thankyou';
-type Discount = DisplayMerchCart['manualDiscounts'][number];
-const discountDetail = (discount: Discount) => discount.type === 'comp' ? 'Comp (100% off)'
-  : discount.type === 'percent' ? `${discount.value}% off` : `฿${discount.value} off`;
 
 function taxRows(totals: DisplayTotals) {
   const captured: TaxBreakdownBaht = { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0,
@@ -81,7 +79,7 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
               <div className="min-w-0">
                 <div className="text-xl font-bold leading-tight">{line.translations?.[lang] ?? line.name}</div>
                 {line.variantLabel && <div className="text-foreground/60 text-sm">{line.variantLabel}</div>}
-                <div className="text-foreground/40 text-sm tabular-nums">฿{line.unitPrice} each</div>
+                <div className="text-foreground/40 text-sm tabular-nums">{t('display.price.each', { price: line.unitPrice })}</div>
               </div>
             </div>
             <div className="text-2xl font-bold tabular-nums shrink-0">฿{line.lineTotal}</div>
@@ -89,7 +87,7 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
           {cart.manualDiscounts.filter(discount => discount.scope === 'line' && discount.targetLineId === line.id)
             .map(discount => totals.manualAmounts[discount.id] > 0 && <div key={discount.id}
               className="mt-3 flex items-center justify-between rounded-xl bg-emerald-500/10 px-4 py-2.5 text-(--cd-success)">
-              <span className="flex items-center gap-2.5 text-base font-semibold"><BadgePercent className="w-5 h-5 shrink-0" />{discountDetail(discount)}</span>
+              <span className="flex items-center gap-2.5 text-base font-semibold"><BadgePercent className="w-5 h-5 shrink-0" />{customerDiscountDetail(discount, t)}</span>
               <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
             </div>)}
         </div>)}</div>
@@ -98,11 +96,11 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
         {cart.manualDiscounts.filter(discount => discount.scope === 'order').map(discount => totals.manualAmounts[discount.id] > 0
           && <div key={discount.id} className="flex items-center justify-between mb-2 text-(--cd-success)">
             <span className="flex items-center gap-2 text-lg"><BadgePercent className="w-5 h-5 shrink-0" />
-              {t('common.discount')} · {discountDetail(discount)}</span>
+              {t('common.discount')} · {customerDiscountDetail(discount, t)}</span>
             <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
           </div>)}
         {taxRows(totals).map(row => <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-          <span className="text-lg">{row.label}</span><span className="text-lg tabular-nums">฿{row.amount}</span>
+          <span className="text-lg">{customerTaxRowLabel(row, t)}</span><span className="text-lg tabular-nums">฿{row.amount}</span>
         </div>)}
         <div className="flex items-center justify-between"><span className="text-2xl text-foreground/70">{t('common.total')}</span>
           <span className="text-5xl font-black text-primary tabular-nums">฿{totals.total}</span></div>
@@ -170,5 +168,5 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
       </div></div>
     </div></Shell>;
   }
-  return <Shell><div className="flex-1 flex items-center justify-center p-8 text-center text-xl">Please follow the staff screen.</div></Shell>;
+  return <Shell><div className="flex-1 flex items-center justify-center p-8 text-center text-xl">{t('display.idle.followStaff')}</div></Shell>;
 }

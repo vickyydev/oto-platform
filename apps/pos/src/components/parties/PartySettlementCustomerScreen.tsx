@@ -6,7 +6,8 @@ import {
   partyLineItemsTotal,
   partyPaymentsTotal,
 } from '@/lib/party';
-import { paymentMethodLabel, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
+import { paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
+import { customerPaymentMethod } from '@/lib/customerDisplayCopy';
 import { PromptPayCustomerScreen } from '@/components/shared/PromptPayCustomerScreen';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -87,7 +88,7 @@ export function PartySettlementCustomerScreen({
   method,
   qr,
 }: PartySettlementCustomerScreenProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const lineItemsTotal = partyLineItemsTotal(party);
   const extraGroups = partyExtraChargeGroups(party);
   const total = computePartyTotal(party);
@@ -184,7 +185,7 @@ export function PartySettlementCustomerScreen({
                       />
                     )}
                     <BillRow
-                      label={<span className="text-foreground/55">{t('party.review.subtotal', { label: g.label })}</span>}
+                      label={<span className="text-foreground/55">{t('party.review.subtotal', { label: t(g.kind === 'ticket' ? 'party.review.extraTickets' : 'party.review.extraFnb') })}</span>}
                       value={`+฿${g.total}`}
                       muted
                     />
@@ -234,7 +235,7 @@ export function PartySettlementCustomerScreen({
     }
 
     const Icon = method ? paymentMethodIcon(paymentMethodKind(method)) : Banknote;
-    const label = method ? paymentMethodLabel(method) : '';
+    const label = method ? customerPaymentMethod(method, lang, t) : '';
     return (
       <Shell>
         <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">

@@ -2,7 +2,10 @@ import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StationSessionDocument } from '@oto/shared';
 vi.mock('react', async () => ({ ...await vi.importActual('react'), ...await import('./support/hooks') }));
-vi.mock('@/i18n/LanguageContext', () => ({ useLanguage: () => ({ lang: 'en', t: (key: string) => key === 'display.connectionPaused' ? 'Connection paused, your order is safe' : 'Reconnecting' }) }));
+vi.mock('@/i18n/LanguageContext', async () => {
+  const actual = await vi.importActual<typeof import('@/i18n/LanguageContext')>('@/i18n/LanguageContext');
+  return { ...actual, useLanguage: () => ({ lang: 'en', t: actual.tFor('en') }) };
+});
 vi.mock('@/lib/displaySession', () => ({ readTicketDisplayView: () => null }));
 const mock = vi.hoisted(() => ({ session: vi.fn(), pairing: vi.fn(), start: vi.fn(), stream: vi.fn(), intent: vi.fn() }));
 vi.mock('@/api/bridge', () => ({ displayBridgeApi: { session: mock.session, intent: mock.intent }, watchBridgeSnapshots: mock.stream }));

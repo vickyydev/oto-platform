@@ -3,6 +3,7 @@ import { childReviewAge, type ChildReviewAction, type ChildReviewPrompt } from '
 import { SavedChildrenReview, type SavedChildrenReviewSlot } from './SavedChildrenReview';
 import { slotAge } from '@/components/till/SupervisionGate';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 type ServerSlot = ChildReviewPrompt['slots'][number];
 const draftFrom = (slot: ServerSlot): SavedChildrenReviewSlot => ({
@@ -20,6 +21,7 @@ export function PublicSavedChildrenReview({ prompt, busy, onAction }: {
   busy: boolean;
   onAction: (action: ChildReviewAction) => void;
 }) {
+  const { lang, t } = useLanguage();
   const [drafts, setDrafts] = useState(() => prompt.slots.map(draftFrom));
   const previousSlots = useRef(prompt.slots);
   useEffect(() => {
@@ -46,17 +48,17 @@ export function PublicSavedChildrenReview({ prompt, busy, onAction }: {
 
   return <div className="flex h-full min-h-0 flex-col" data-testid="display-child-review">
     {prompt.save.status === 'saving' && <p role="status" className="shrink-0 px-8 py-3 text-center">
-      Saving the confirmed details to the member's record. Please wait.
+      {t('childReview.saving')}
     </p>}
     {prompt.save.status === 'failed' && <div role="alert" className="shrink-0 px-8 py-3 text-center">
-      <p>The save could not be confirmed. Retry the same change or ask the team to continue on the staff screen.</p>
+      <p>{t('childReview.saveFailed')}</p>
       <Button className="mt-2" disabled={busy} onClick={() => {
         if (prompt.save.slotId && prompt.save.actionId) onAction({ ...fence, action: 'retry',
           slotId: prompt.save.slotId, retryActionId: prompt.save.actionId });
-      }}>Retry child save</Button>
+      }}>{t('childReview.retrySave')}</Button>
     </div>}
     <div className="flex-1 min-h-0">
-      <SavedChildrenReview publicMode busy={locked} slots={drafts}
+      <SavedChildrenReview publicMode lang={lang} busy={locked} slots={drafts}
         publicReferenceDate={prompt.referenceDate}
         savedChildren={prompt.choices.map(child => ({ id: child.id, childName: child.name,
           dateOfBirth: child.dateOfBirth ?? undefined, childAge: child.ageYears }))}

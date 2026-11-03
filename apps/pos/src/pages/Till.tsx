@@ -30,6 +30,7 @@ import { useBranch } from '@/branch/BranchContext';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
+import { tFor, useLanguage, type TFunction } from '@/i18n/LanguageContext';
 import { prefillSlots, slotPatchFromSavedChild } from '@/lib/savedChildren';
 import type { SavedChild } from '@/types';
 import { AddAttendeeModal } from '@/components/parties/AddAttendeeModal';
@@ -161,6 +162,8 @@ function reviewDate() {
 
 export default function Till() {
   const { operator, locked, offlineUnlock, can } = useOperator();
+  // The customer's half of the counter only: this page's own staff half stays in English.
+  const { lang: customerLang, t: customerT } = useLanguage();
   const staffLocked = useRef(locked);
   staffLocked.current = locked;
   const { station } = useStation();
@@ -2116,13 +2119,13 @@ export default function Till() {
         (!s.savedChildId || confirmedSavedIds.includes(s.id)),
     );
   const finishReview = () => { if (reviewCanContinue && !staffLocked.current) setStep(7); };
-  const reviewSaveNotice = reviewSave.save.status === 'idle' ? null : (
+  const reviewSaveNotice = (t: TFunction) => reviewSave.save.status === 'idle' ? null : (
     <div className="mx-6 my-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4" role="status">
-      <p>{reviewSave.save.status === 'saving' ? "Saving this child's details…" : "The save reply could not be confirmed. Retry the same correction before continuing."}</p>
+      <p>{reviewSave.save.status === 'saving' ? t('childReview.savingOne') : t('childReview.saveReplyFailed')}</p>
       {reviewSave.save.status === 'failed' && <Button className="mt-3" onClick={() => {
         const { slotId, actionId } = reviewSave.save;
         if (slotId && actionId) void reviewSave.retry(slotId, actionId);
-      }}>Retry child save</Button>}
+      }}>{t('childReview.retrySave')}</Button>}
     </div>
   );
 
@@ -3485,7 +3488,7 @@ export default function Till() {
             )}
           </>)}
           {step === 8 && tier && (
-            <>{reviewSaveNotice}<SavedChildrenReview
+            <>{reviewSaveNotice(tFor('en'))}<SavedChildrenReview
               slots={superSlots}
               savedChildren={member?.savedChildren ?? []}
               confirmedIds={confirmedSavedIds}
@@ -3728,8 +3731,9 @@ export default function Till() {
         )}
         {inlineDisplay && step === 8 && tier && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
-            {reviewSaveNotice}
+            {reviewSaveNotice(customerT)}
             <SavedChildrenReview
+              lang={customerLang}
               slots={superSlots}
               savedChildren={member?.savedChildren ?? []}
               confirmedIds={confirmedSavedIds}
@@ -3776,7 +3780,7 @@ export default function Till() {
             <DialogDescription>Complete the child and guardian checks on this staff screen before continuing.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 dark" inert={gateSaving}>
-            <ConsentCapture slots={superSlots} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+            <ConsentCapture staffScreen slots={superSlots} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
               parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
               onParentNameChange={setSuperParentName} onParentPhoneChange={setSuperParentPhone}
               onParentContactMethodChange={setSuperParentContactMethod} onConsentAckChange={setSuperConsentAck}

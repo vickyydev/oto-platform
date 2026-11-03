@@ -1,7 +1,8 @@
 import { ManualDiscount, MerchOrder, MerchOrderLine, Wristband } from '@/types';
 import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
 import { resolveRateToday } from '@/lib/pricingMode';
-import { computeManualDiscount, formatDiscountDetail } from '@/lib/manualDiscount';
+import { computeManualDiscount } from '@/lib/manualDiscount';
+import { customerDiscountDetail, customerTaxRowLabel } from '@/lib/customerDisplayCopy';
 import { QrCode } from '@/components/till/QrCode';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
@@ -78,7 +79,7 @@ function BalanceChip({ wristband }: { wristband: Wristband }) {
       <Wallet className="w-6 h-6 text-primary shrink-0" />
       <div className="text-left">
         <div className="text-sm text-foreground/60 leading-tight">
-          {wristband.customerNickname}'s {t('common.credit')}
+          {t('display.credit.of', { name: wristband.customerNickname })}
         </div>
         <div className="text-2xl font-black text-primary tabular-nums leading-tight">
           ฿{wristband.creditBalanceTHB ?? 0}
@@ -89,7 +90,7 @@ function BalanceChip({ wristband }: { wristband: Wristband }) {
 }
 
 function OrderLines({ lines }: { lines: MerchOrderLine[] }) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   return (
     <div className="space-y-3">
       {lines.map((line) => (
@@ -105,7 +106,7 @@ function OrderLines({ lines }: { lines: MerchOrderLine[] }) {
               <div className="min-w-0">
                 <div className="text-xl font-bold leading-tight">{resolveName(line.merchItem, lang)}</div>
                 <div className="text-foreground/40 text-sm tabular-nums">
-                  ฿{resolveRateToday(line.merchItem.price)} each
+                  {t('display.price.each', { price: resolveRateToday(line.merchItem.price) })}
                 </div>
               </div>
             </div>
@@ -231,7 +232,7 @@ export function MerchCustomerDisplay({
               <div key={md.id} className="flex items-center justify-between mb-2 text-(--cd-success)">
                 <span className="flex items-center gap-2 text-lg">
                   <BadgePercent className="w-5 h-5 shrink-0" />
-                  {t('common.discount')} · {formatDiscountDetail(md)}
+                  {t('common.discount')} · {customerDiscountDetail(md, t)}
                 </span>
                 <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
               </div>
@@ -242,7 +243,7 @@ export function MerchCustomerDisplay({
               key={row.key}
               className="flex items-center justify-between mb-2 text-foreground/60"
             >
-              <span className="text-lg">{row.label}</span>
+              <span className="text-lg">{customerTaxRowLabel(row, t)}</span>
               <span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
             </div>
           ))}

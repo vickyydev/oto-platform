@@ -10,6 +10,8 @@ import {
 } from '@/lib/childDob';
 import { Cake, Calendar, Check, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { tFor } from '@/i18n/LanguageContext';
+import type { SupportedLang } from '@/i18n/types';
 
 interface ChildDobPickerProps {
   // Stored ISO date of birth (preferred source of truth). When present the
@@ -32,6 +34,9 @@ interface ChildDobPickerProps {
   childName?: string;
   // An independent display uses the staff-selected visit date, rather than its own clock.
   referenceDate?: string;
+  // The customer's language, on a customer-facing screen only. Left out on a
+  // staff screen, which stays in English whatever the display is set to (SCRUM-729).
+  lang?: SupportedLang;
 }
 
 type Step = 'age' | 'month' | 'day' | 'confirm';
@@ -46,11 +51,14 @@ export function ChildDobPicker({
   maxAge = MAX_CHILD_AGE,
   size = 'md',
   className,
-  placeholder = 'Tap to set age',
+  placeholder,
   disabled,
   childName,
   referenceDate,
+  lang,
 }: ChildDobPickerProps) {
+  const t = tFor(lang ?? 'en');
+  const monthLabels = MONTH_LABELS.map((_, index) => t(`dob.month.${index + 1}`));
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>('age');
   const [pickedAge, setPickedAge] = useState<number | null>(null);
@@ -125,8 +133,8 @@ export function ChildDobPicker({
 
   // Always singular — one picker, one child. Personalized when a name is known.
   const ageTitle = childName?.trim()
-    ? `How old is ${childName.trim()}?`
-    : 'How old is this child?';
+    ? t('dob.howOldNamed', { name: childName.trim() })
+    : t('dob.howOld');
 
   return (
     <>
@@ -143,10 +151,10 @@ export function ChildDobPicker({
         <Cake className="h-5 w-5 text-primary" />
         {displayAge != null ? (
           <span>
-            {displayAge} <span className="text-foreground/50">yrs</span>
+            {displayAge} <span className="text-foreground/50">{t('dob.yrs')}</span>
           </span>
         ) : (
-          <span className="text-foreground/40">{placeholder}</span>
+          <span className="text-foreground/40">{placeholder ?? t('dob.tapToSet')}</span>
         )}
       </button>
 
@@ -161,28 +169,28 @@ export function ChildDobPicker({
                   setStep(step === 'confirm' ? 'day' : step === 'day' ? 'month' : 'age')
                 }
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground/5 text-foreground/70 hover:bg-foreground/10"
-                aria-label="Back"
+                aria-label={t('common.back')}
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
             )}
             <div className="flex flex-1 flex-wrap items-center gap-1.5 text-sm font-semibold">
               <Crumb
-                label={pickedAge != null ? `${pickedAge} yrs` : 'Age'}
+                label={pickedAge != null ? `${pickedAge} ${t('dob.yrs')}` : t('superviseConsent.age')}
                 active={step === 'age'}
                 done={pickedAge != null}
                 onClick={() => setStep('age')}
               />
               <span className="text-foreground/30">›</span>
               <Crumb
-                label={pickedMonth != null ? MONTH_LABELS[pickedMonth - 1] : 'Month'}
+                label={pickedMonth != null ? monthLabels[pickedMonth - 1]! : t('dob.monthCrumb')}
                 active={step === 'month'}
                 done={pickedMonth != null}
                 onClick={() => pickedAge != null && setStep('month')}
               />
               <span className="text-foreground/30">›</span>
               <Crumb
-                label={pickedDay != null ? String(pickedDay) : 'Day'}
+                label={pickedDay != null ? String(pickedDay) : t('dob.dayCrumb')}
                 active={step === 'day'}
                 done={pickedDay != null}
                 onClick={() => pickedMonth != null && setStep('day')}
@@ -212,9 +220,9 @@ export function ChildDobPicker({
             )}
 
             {step === 'month' && (
-              <Section icon={Calendar} title="Birthday month?">
+              <Section icon={Calendar} title={t('dob.birthdayMonth')}>
                 <div className="grid grid-cols-3 gap-2.5">
-                  {MONTH_LABELS.map((label, i) => (
+                  {monthLabels.map((label, i) => (
                     <GridButton
                       key={label}
                       selected={pickedMonth === i + 1}
@@ -229,7 +237,7 @@ export function ChildDobPicker({
             )}
 
             {step === 'day' && (
-              <Section icon={Calendar} title="Birthday day?">
+              <Section icon={Calendar} title={t('dob.birthdayDay')}>
                 <div className="grid grid-cols-7 gap-1.5">
                   {Array.from({ length: dayCount }, (_, i) => i + 1).map((d) => (
                     <GridButton
@@ -252,9 +260,9 @@ export function ChildDobPicker({
                   <Cake className="h-8 w-8" />
                 </div>
                 <div>
-                  <div className="text-4xl font-black text-foreground">{previewAge} years old</div>
+                  <div className="text-4xl font-black text-foreground">{t('dob.yearsOld', { age: previewAge })}</div>
                   <div className="mt-1 text-lg text-foreground/60">
-                    Born {formatDob(previewDob)}
+                    {t('dob.born', { date: formatDob(previewDob, monthLabels) })}
                   </div>
                 </div>
                 <button
@@ -262,7 +270,7 @@ export function ChildDobPicker({
                   onClick={handleConfirm}
                   className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-xl font-bold text-primary-foreground hover:bg-primary/90"
                 >
-                  <Check className="h-6 w-6" /> Confirm
+                  <Check className="h-6 w-6" /> {t('common.confirm')}
                 </button>
               </div>
             )}

@@ -12,7 +12,7 @@ import { ChildFoodProvisionPicker } from '@/components/shared/ChildFoodProvision
 import { Badge } from '@/components/ui/badge';
 import { slotAge, type SupervisedSlot } from './SupervisionGate';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { tFor, useLanguage } from '@/i18n/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import {
   ShieldCheck,
@@ -55,6 +55,11 @@ interface ConsentCaptureProps {
   // driven off `slots.length > 0`, not `anyNeedsConsent`.
   acknowledgedConfirmationIds: string[];
   onToggleConfirmation: (id: string) => void;
+  /**
+   * This copy is the till's private dialog, on the staff screen: English,
+   * whatever the customer's half is set to (SCRUM-698, SCRUM-729).
+   */
+  staffScreen?: boolean;
 }
 
 /**
@@ -83,8 +88,11 @@ export function ConsentCapture({
   onUpdateChild,
   acknowledgedConfirmationIds,
   onToggleConfirmation,
+  staffScreen = false,
 }: ConsentCaptureProps) {
-  const { t } = useLanguage();
+  const customer = useLanguage();
+  const t = staffScreen ? tFor('en') : customer.t;
+  const lang = staffScreen ? undefined : customer.lang;
   // Customer-friendly wording for each resolved requirement (parents read this,
   // so it's warmer than the staff gate's terse "Nanny required").
   const REQUIREMENT_META = {
@@ -161,6 +169,7 @@ export function ConsentCapture({
               <div className="sm:w-40">
                 <label className="text-lg text-foreground/70">{t('superviseConsent.age')}</label>
                 <ChildDobPicker
+                  lang={lang}
                   dateOfBirth={slot.dateOfBirth}
                   age={slotAge(slot)}
                   childName={slot.name}
@@ -208,6 +217,7 @@ export function ConsentCapture({
                       <p className="mt-2 text-sm text-foreground/70">{t('superviseConsent.photoAtReception')}</p>
                     ) : (
                       <CameraCapture
+                        lang={lang}
                         className="mt-2"
                         value={slot.childPhotoUrl}
                         onCapture={(dataUrl) => onUpdateChild(slot.id, { childPhotoUrl: dataUrl })}
@@ -249,6 +259,7 @@ export function ConsentCapture({
                     {t('superviseConsent.foodDrinksFor', { name: slot.name || t('superviseConsent.thisChild') })}
                   </label>
                   <ChildFoodProvisionPicker
+                    lang={lang}
                     childName={slot.name}
                     allergiesMedical={slot.allergiesMedical}
                     value={slot.foodProvision ?? DEFAULT_PROVISION}
@@ -299,7 +310,7 @@ export function ConsentCapture({
                   inputClassName="h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground"
                   channel={onParentContactMethodChange ? parentContactMethod : undefined}
                   onChannelChange={onParentContactMethodChange}
-                  translate
+                  translate={!staffScreen}
                 />
               </div>
             )}

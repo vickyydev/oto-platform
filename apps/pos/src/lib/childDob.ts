@@ -86,9 +86,9 @@ export const MONTH_LABELS = [
 ];
 
 // Format an ISO DOB for display, e.g. "14 Mar 2020". Falls back to the raw string.
-export function formatDob(dateOfBirth: string): string {
+export function formatDob(dateOfBirth: string, monthLabels: readonly string[] = MONTH_LABELS): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth.trim());
   if (!m) return dateOfBirth;
   const month = Number(m[2]);
-  return `${Number(m[3])} ${MONTH_LABELS[month - 1]} ${m[1]}`;
+  return `${Number(m[3])} ${monthLabels[month - 1]} ${m[1]}`;
 }

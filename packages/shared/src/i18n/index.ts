@@ -13,13 +13,13 @@ type Entry = Record<SupportedLang, string>;
 export const messages: Record<string, Entry> = {
   'display.reconnecting': {
     en: 'Reconnecting',
-    th: 'Reconnecting', // Thai placeholder pending translation.
-    zh: 'Reconnecting', ru: 'Reconnecting', fr: 'Reconnecting',
+    th: 'กำลังเชื่อมต่อใหม่',
+    zh: '正在重新连接', ru: 'Переподключение', fr: 'Reconnexion',
   },
   'display.connectionPaused': {
     en: 'Connection paused, your order is safe',
-    th: 'Connection paused, your order is safe', // Thai placeholder pending translation.
-    zh: 'Connection paused, your order is safe', ru: 'Connection paused, your order is safe', fr: 'Connection paused, your order is safe',
+    th: 'การเชื่อมต่อหยุดชั่วคราว คำสั่งซื้อของคุณปลอดภัย',
+    zh: '连接已暂停，您的订单是安全的', ru: 'Соединение приостановлено, ваш заказ в безопасности', fr: 'Connexion interrompue, votre commande est en sécurité',
   },
   'till.identify.membersSave': {
     en: 'Members save',

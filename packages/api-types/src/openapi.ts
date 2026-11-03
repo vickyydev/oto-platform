@@ -11992,6 +11992,13 @@ export interface paths {
                                                         /** @enum {string} */
                                                         kind: "kids" | "adults" | "socks" | "addon";
                                                         label: string;
+                                                        translations?: {
+                                                            en?: string;
+                                                            th?: string;
+                                                            ru?: string;
+                                                            zh?: string;
+                                                            fr?: string;
+                                                        };
                                                         unitPrice: number;
                                                         quantity: number;
                                                         subtotal: number;

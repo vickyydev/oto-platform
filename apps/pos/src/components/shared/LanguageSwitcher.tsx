@@ -15,7 +15,7 @@ export function LanguageSwitcher({
   variant?: 'dark' | 'light';
   className?: string;
 }) {
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -46,7 +46,7 @@ export function LanguageSwitcher({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-semibold transition-colors ${pillClass}`}
-        aria-label="Change language"
+        aria-label={t('common.changeLanguage')}
       >
         <Globe className="w-4 h-4" />
         {current.nativeLabel}

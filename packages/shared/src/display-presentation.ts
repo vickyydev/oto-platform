@@ -10,16 +10,22 @@ const money = z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER / 100)
   .refine(value => Math.abs(value * 100 - Math.round(value * 100)) < 0.001);
 const taxMode = z.enum(['none', 'inclusive', 'exclusive']);
 
-/** Captured presentation rows; a display never resolves a catalog price. */
+const translations = z.object({
+  en: text.optional(), th: text.optional(), ru: text.optional(), zh: text.optional(), fr: text.optional(),
+});
+
+/**
+ * Captured presentation rows; a display never resolves a catalog price. An
+ * add-on row brings its translated names with it for the same reason (SCRUM-729);
+ * a publisher that sends none leaves the display on the name it was sold under.
+ */
 export const DisplayLineBreakdownSchema = z.object({
   rows: z.array(z.object({
     key: id, kind: z.enum(['kids', 'adults', 'socks', 'addon']), label: text,
+    translations: translations.optional(),
     unitPrice: money, quantity: count, subtotal: money, unpriced: z.boolean().optional(),
   })).max(200),
   priced: z.boolean(), lengthChosen: z.boolean(),
-});
-const translations = z.object({
-  en: text.optional(), th: text.optional(), ru: text.optional(), zh: text.optional(), fr: text.optional(),
 });
 const component = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('kids') }), z.object({ kind: z.literal('adults') }),

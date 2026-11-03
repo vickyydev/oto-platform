@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Camera, RotateCcw, CameraOff, Loader2, AlertTriangle } from 'lucide-react';
+import { tFor } from '@/i18n/LanguageContext';
+import type { SupportedLang } from '@/i18n/types';
 
 type CamState = 'idle' | 'requesting' | 'live' | 'captured' | 'denied' | 'unavailable';
 
@@ -20,6 +22,8 @@ interface CameraCaptureProps {
    */
   upload?: (dataUrl: string) => Promise<string>;
   onUploaded?: (fileId: string | null) => void;
+  /** The customer's language, on a customer-facing screen. Left out, English. */
+  lang?: SupportedLang;
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
@@ -31,7 +35,8 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
  * with no photo (the caller decides whether a photo is mandatory). Always stops
  * the stream on capture and on unmount so the camera light goes off.
  */
-export function CameraCapture({ value, onCapture, onClear, className, upload, onUploaded }: CameraCaptureProps) {
+export function CameraCapture({ value, onCapture, onClear, className, upload, onUploaded, lang }: CameraCaptureProps) {
+  const t = tFor(lang ?? 'en');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [state, setState] = useState<CamState>(value ? 'captured' : 'idle');
@@ -53,7 +58,7 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
     } catch (err) {
       if (pendingRef.current !== dataUrl) return;
       setSave('failed');
-      setSaveError(err instanceof Error ? err.message : 'The photo did not save.');
+      setSaveError(err instanceof Error ? err.message : t('camera.saveFailed'));
       onUploaded?.(null);
     }
   };
@@ -130,34 +135,34 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
         />
 
         {(state === 'captured' && value) && (
-          <img src={value} alt="Captured" className="h-full w-full object-cover" />
+          <img src={value} alt={t('camera.capturedAlt')} className="h-full w-full object-cover" />
         )}
 
         {state === 'captured' && save === 'saving' && (
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/60 py-2 text-sm text-foreground/80">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Saving photo…</span>
+            <span>{t('camera.saving')}</span>
           </div>
         )}
 
         {state === 'captured' && save === 'failed' && (
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/70 px-3 py-2 text-center text-sm text-amber-300">
             <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{saveError ?? 'The photo did not save.'}</span>
+            <span>{saveError ?? t('camera.saveFailed')}</span>
           </div>
         )}
 
         {state === 'idle' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-foreground/50">
             <Camera className="h-12 w-12" />
-            <span className="text-base">No photo yet</span>
+            <span className="text-base">{t('camera.noPhoto')}</span>
           </div>
         )}
 
         {state === 'requesting' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-foreground/60">
             <Loader2 className="h-10 w-10 animate-spin" />
-            <span className="text-base">Starting camera…</span>
+            <span className="text-base">{t('camera.starting')}</span>
           </div>
         )}
 
@@ -165,10 +170,10 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-amber-300">
             <CameraOff className="h-10 w-10" />
             <span className="text-base font-semibold">
-              {state === 'denied' ? 'Camera access blocked' : 'No camera available'}
+              {state === 'denied' ? t('camera.blocked') : t('camera.none')}
             </span>
             <span className="text-sm text-foreground/50">
-              You can continue without a photo — staff will note it's missing.
+              {t('camera.continueWithout')}
             </span>
           </div>
         )}
@@ -177,12 +182,12 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
       <div className="mt-3 flex gap-3">
         {state === 'idle' && (
           <Button size="lg" className="h-14 flex-1 rounded-2xl text-lg" onClick={() => void start()}>
-            <Camera className="mr-2 h-5 w-5" /> Start camera
+            <Camera className="mr-2 h-5 w-5" /> {t('camera.start')}
           </Button>
         )}
         {state === 'live' && (
           <Button size="lg" className="h-14 flex-1 rounded-2xl text-lg" onClick={capture}>
-            <Camera className="mr-2 h-5 w-5" /> Take photo
+            <Camera className="mr-2 h-5 w-5" /> {t('camera.take')}
           </Button>
         )}
         {state === 'captured' && (
@@ -192,12 +197,12 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
             className="h-14 flex-1 rounded-2xl border-foreground/20 bg-foreground/5 text-lg text-foreground hover:bg-foreground/10"
             onClick={retake}
           >
-            <RotateCcw className="mr-2 h-5 w-5" /> Retake
+            <RotateCcw className="mr-2 h-5 w-5" /> {t('camera.retake')}
           </Button>
         )}
         {state === 'captured' && save === 'failed' && value && (
           <Button size="lg" className="h-14 flex-1 rounded-2xl text-lg" onClick={() => void store(value)}>
-            <RotateCcw className="mr-2 h-5 w-5" /> Save again
+            <RotateCcw className="mr-2 h-5 w-5" /> {t('camera.saveAgain')}
           </Button>
         )}
         {(state === 'denied' || state === 'unavailable') && (
@@ -207,7 +212,7 @@ export function CameraCapture({ value, onCapture, onClear, className, upload, on
             className="h-14 flex-1 rounded-2xl border-foreground/20 bg-foreground/5 text-lg text-foreground hover:bg-foreground/10"
             onClick={() => void start()}
           >
-            <RotateCcw className="mr-2 h-5 w-5" /> Try again
+            <RotateCcw className="mr-2 h-5 w-5" /> {t('camera.tryAgain')}
           </Button>
         )}
       </div>

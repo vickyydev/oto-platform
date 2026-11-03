@@ -7,6 +7,8 @@ import { childReviewAge } from '@oto/shared';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { tFor } from '@/i18n/LanguageContext';
+import type { SupportedLang } from '@/i18n/types';
 import {
   Baby,
   Check,
@@ -67,6 +69,12 @@ interface SavedChildrenReviewProps<Child extends SavedChildrenReviewChoice> {
   busy?: boolean;
   onStaffHelp?: () => void;
   publicReferenceDate?: string;
+  /**
+   * The customer's language, where this runs on the customer's half of the
+   * counter or on a paired display. Left out where it runs on the staff screen,
+   * which stays in English whatever the display is set to (SCRUM-729).
+   */
+  lang?: SupportedLang;
 }
 
 /**
@@ -95,7 +103,9 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
   busy = false,
   onStaffHelp,
   publicReferenceDate,
+  lang,
 }: SavedChildrenReviewProps<Child>) {
+  const t = tFor(lang ?? 'en');
   // Saved children already mapped to a slot — so a swap picker never offers the
   // same child twice across two slots.
   const assignedIds = useMemo(
@@ -108,14 +118,13 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
       <div className="shrink-0 px-8 pt-8 pb-4 text-center">
         <div className="mb-2 inline-flex items-center gap-2 text-primary">
           <Sparkles className="h-6 w-6" />
-          <span className="text-sm font-bold uppercase tracking-widest">Welcome back</span>
+          <span className="text-sm font-bold uppercase tracking-widest">{t('childReview.welcomeBack')}</span>
         </div>
         <h2 className="text-4xl font-black">
-          {slots.length === 1 ? 'Is this still your child?' : 'Are these still your children?'}
+          {slots.length === 1 ? t('childReview.titleOne') : t('childReview.titleMany')}
         </h2>
         <p className="mt-1 text-lg text-foreground/60">
-          {publicMode ? 'Choose a saved child for each place, check their name and age, then confirm.'
-            : 'We saved their details from last time — check each one and confirm.'}
+          {publicMode ? t('childReview.subtitlePublic') : t('childReview.subtitle')}
         </p>
       </div>
 
@@ -144,41 +153,42 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
             >
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-base">
-                  <Baby className="h-4 w-4" /> Child {idx + 1}
+                  <Baby className="h-4 w-4" /> {t('childReview.childN', { n: idx + 1 })}
                 </Badge>
                 {prefilled ? (
                   confirmed ? (
                     <Badge className="gap-1.5 bg-emerald-500/20 px-3 py-1.5 text-base text-emerald-300">
-                      <Check className="h-4 w-4" /> Confirmed
+                      <Check className="h-4 w-4" /> {t('childReview.confirmed')}
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-base text-amber-300">
-                      <ShieldCheck className="h-4 w-4" /> Saved — still correct?
+                      <ShieldCheck className="h-4 w-4" /> {t('childReview.stillCorrect')}
                     </Badge>
                   )
                 ) : (
                   <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-base text-primary">
-                    <UserPlus className="h-4 w-4" /> {publicMode ? 'Choose a saved child or ask the team' : "New — we'll save this"}
+                    <UserPlus className="h-4 w-4" /> {publicMode ? t('childReview.chooseOrAsk') : t('childReview.newWillSave')}
                   </Badge>
                 )}
               </div>
 
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="flex-1">
-                  <label className="text-lg text-foreground/70">Child's name</label>
+                  <label className="text-lg text-foreground/70">{t('superviseConsent.childName')}</label>
                   <Input
-                    aria-label={`Child ${idx + 1} name`}
+                    aria-label={t('childReview.nameAria', { n: idx + 1 })}
                     value={slot.name}
                     disabled={busy || publicMode && !prefilled}
                     maxLength={publicMode ? 100 : undefined}
                     onChange={(e) => onUpdateSlot(slot.id, { name: e.target.value })}
-                    placeholder="Full name"
+                    placeholder={t('superviseConsent.fullName')}
                     className="mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30"
                   />
                 </div>
                 <div className="sm:w-40">
-                  <label className="text-lg text-foreground/70">Age</label>
+                  <label className="text-lg text-foreground/70">{t('superviseConsent.age')}</label>
                   <ChildDobPicker
+                    lang={lang}
                     disabled={busy || publicMode && !prefilled}
                     referenceDate={publicMode ? publicReferenceDate : undefined}
                     maxAge={publicMode ? 17 : undefined}
@@ -197,18 +207,18 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                 <div className="mt-3 space-y-1 text-base text-foreground/60">
                   {slot.allergiesMedical?.trim() && (
                     <p>
-                      <span className="font-semibold text-foreground/80">Allergies / medical:</span>{' '}
+                      <span className="font-semibold text-foreground/80">{t('childReview.allergiesMedical')}</span>{' '}
                       {slot.allergiesMedical}
                     </p>
                   )}
                   {slot.foodRestrictions?.trim() && (
                     <p>
-                      <span className="font-semibold text-foreground/80">Dietary:</span>{' '}
+                      <span className="font-semibold text-foreground/80">{t('childReview.dietary')}</span>{' '}
                       {slot.foodRestrictions}
                     </p>
                   )}
                   <p className="text-sm text-foreground/40">
-                    You can adjust allergies, dietary and food on the next screen.
+                    {t('childReview.adjustNext')}
                   </p>
                 </div>
               )}
@@ -221,14 +231,14 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                     disabled={busy || !named || !aged}
                     onClick={() => onConfirmSlot(slot.id)}
                   >
-                    <Check className="mr-2 h-5 w-5" /> Confirm
+                    <Check className="mr-2 h-5 w-5" /> {t('common.confirm')}
                   </Button>
                 )}
 
                 {/* Swap a different saved child into this slot, or mark it new. */}
                 {savedChildren.length > 0 && (
                   <select
-                    aria-label={`Child ${idx + 1} saved profile`}
+                    aria-label={t('childReview.savedProfileAria', { n: idx + 1 })}
                     disabled={busy}
                     value={slot.savedChildId ?? '__new__'}
                     onChange={(e) => {
@@ -245,12 +255,15 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                   >
                     {pickable.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.childName} (age {(c.dateOfBirth
-                          ? publicMode && publicReferenceDate ? childReviewAge(c.dateOfBirth, publicReferenceDate) : ageFromDob(c.dateOfBirth)
-                          : c.childAge) ?? 'not set'})
+                        {t('childReview.ageOption', {
+                          name: c.childName,
+                          age: (c.dateOfBirth
+                            ? publicMode && publicReferenceDate ? childReviewAge(c.dateOfBirth, publicReferenceDate) : ageFromDob(c.dateOfBirth)
+                            : c.childAge) ?? t('childReview.ageNotSet'),
+                        })}
                       </option>
                     ))}
-                    <option value="__new__">{publicMode ? '+ A new child — ask the team' : '+ A new child'}</option>
+                    <option value="__new__">{publicMode ? t('childReview.newChildAsk') : t('childReview.newChild')}</option>
                   </select>
                 )}
 
@@ -262,7 +275,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
                     disabled={!publicMode && busy}
                     onClick={() => publicMode ? onStaffHelp?.() : onRemoveSaved(slot.id, slot.savedChildId!)}
                   >
-                    <Trash2 className="mr-2 h-5 w-5" /> {publicMode ? 'Ask the team to remove a child' : 'Remove from saved'}
+                    <Trash2 className="mr-2 h-5 w-5" /> {publicMode ? t('childReview.askRemove') : t('childReview.removeSaved')}
                   </Button>
                 )}
               </div>
@@ -274,20 +287,11 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
         <div className="flex items-start gap-3 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-sm text-foreground/60">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-foreground/40" />
           {publicMode ? (
-            <p>Edits stay on this display until you press Confirm. Wait for the member's record to be
-              confirmed before pressing Done. Adding or removing a child continues on the staff screen.</p>
+            <p>{t('childReview.notePublic')}</p>
           ) : detailsStore === 'booking-only' ? (
-            <p>
-              These details come from your family's saved record. Changes you make here apply to
-              this booking only — to update the saved record, ask at reception. The photo is never
-              saved — it's re-taken each visit.
-            </p>
+            <p>{t('childReview.noteBooking')}</p>
           ) : (
-            <p>
-              These details are saved to the member's record. Every change made here is written to
-              their profile and recorded with who made it and when. The photo is never saved — it's
-              re-taken each visit.
-            </p>
+            <p>{t('childReview.noteMember')}</p>
           )}
         </div>
       </div>
@@ -301,11 +305,11 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
             onClick={onBack}
             disabled={busy}
           >
-            <ArrowLeft className="mr-2 h-5 w-5" /> Back
+            <ArrowLeft className="mr-2 h-5 w-5" /> {t('common.back')}
           </Button>
           {publicMode && onStaffHelp && <Button variant="outline" size="lg"
             className="h-14 rounded-2xl px-6 text-lg" onClick={onStaffHelp}>
-            Continue on staff screen
+            {t('childReview.continueOnStaff')}
           </Button>}
           <Button
             size="lg"
@@ -313,7 +317,7 @@ export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
             className="h-14 flex-1 rounded-2xl text-lg font-bold gap-2"
             onClick={onContinue}
           >
-            {publicMode ? 'Done' : 'Continue'}
+            {publicMode ? t('common.done') : t('common.continue')}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
