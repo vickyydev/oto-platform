@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-03T14:06:21.880Z",
+  "devices": [
+    {
+      "id": "01a19e80-5bd0-764d-904a-c603e9b4bd5d",
+      "role": "receipt"
+    },
+    {
+      "id": "01a19e80-5c21-7c62-9fa8-60c7c2645543",
+      "role": "kitchen"
+    },
+    {
+      "id": "01a19e80-5c71-7748-b7bc-a4f5f0ce7e37",
+      "role": "kids_band"
+    }
+  ],
+  "archived": 3,
+  "signedOut": true,
+  "completedAt": "2026-11-03T14:06:22.797Z"
+}

@@ -1,0 +1,44 @@
+{
+  "at": "2026-11-03T10:09:08.162Z",
+  "boxId": "01a19e80-5ac5-78f7-9778-edf58a06783c",
+  "statuses": {
+    "queued": {
+      "returned": 0,
+      "capped": false,
+      "sample": []
+    },
+    "failed": {
+      "returned": 0,
+      "capped": false,
+      "sample": []
+    },
+    "skipped": {
+      "returned": 2,
+      "capped": false,
+      "sample": [
+        {
+          "id": "01a19f07-fbab-792c-a985-ed7a01cb35c6",
+          "status": "skipped",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "errorCode": "NO_DEVICE_FOR_ROLE",
+          "deviceId": "01a19e80-5c21-7c62-9fa8-60c7c2645543",
+          "finishedAt": "2026-11-03T01:31:07.171Z",
+          "stationId": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+          "queuedAt": "2026-11-03T01:31:02.887Z"
+        },
+        {
+          "id": "01a19f07-fba6-703b-ba94-050051f4ae3d",
+          "status": "skipped",
+          "kind": "receipt",
+          "role": "receipt",
+          "errorCode": "NO_DEVICE_FOR_ROLE",
+          "deviceId": "01a19e80-5bd0-764d-904a-c603e9b4bd5d",
+          "finishedAt": "2026-11-03T01:31:07.125Z",
+          "stationId": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+          "queuedAt": "2026-11-03T01:31:02.886Z"
+        }
+      ]
+    }
+  }
+}

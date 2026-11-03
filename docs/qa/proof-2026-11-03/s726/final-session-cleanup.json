@@ -1,0 +1,15 @@
+{
+  "jobId": "job-dbkujtmk1f9s73e1up00",
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+  "startedAt": "2026-11-03T14:04:38.213Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s726_final_session_cleanup",
+    "at": "2026-11-03T14:05:34.218Z",
+    "sessionId": "01a1a0da-9c8d-7c7d-8103-e2e2f631a8b7",
+    "wasActive": true,
+    "revoked": true,
+    "normalSignOutService": true,
+    "passed": true
+  }
+}

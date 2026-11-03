@@ -1,0 +1,95 @@
+{
+  "jobId": "job-dbkum4rncjis73fd52ig",
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+  "startedAt": "2026-11-03T14:09:22.952Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s726_database_cleanup",
+    "at": "2026-11-03T14:10:07.147Z",
+    "readOnly": true,
+    "stationsArchived": 43,
+    "devicesArchived": 3,
+    "boxArchived": true,
+    "productArchived": true,
+    "categoryArchived": true,
+    "activeCredentials": 0,
+    "activeSessions": 0,
+    "saleRows": 239,
+    "cashAttempts": 238,
+    "knownUnpaidVoids": 1,
+    "unexpectedSales": 0,
+    "printJobs": {
+      "total": 476,
+      "printed": 474,
+      "skipped": 2,
+      "outstanding": 0,
+      "knownTerminalSkips": [
+        {
+          "id": "01a19f07-fba6-703b-ba94-050051f4ae3d",
+          "kind": "receipt",
+          "role": "receipt",
+          "station_id": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+          "subject_type": "sale",
+          "subject_id": "95ff25d8-3615-44b2-bdd6-fed4860a53e1",
+          "error_code": "NO_DEVICE_FOR_ROLE",
+          "finished_at": "2026-11-03T01:31:07.125Z"
+        },
+        {
+          "id": "01a19f07-fbab-792c-a985-ed7a01cb35c6",
+          "kind": "kitchen_ticket",
+          "role": "kitchen",
+          "station_id": "01a19f07-f5bb-79c0-91d9-240a1744a0b0",
+          "subject_type": "sale",
+          "subject_id": "95ff25d8-3615-44b2-bdd6-fed4860a53e1",
+          "error_code": "NO_DEVICE_FOR_ROLE",
+          "finished_at": "2026-11-03T01:31:07.171Z"
+        }
+      ],
+      "boxQueue": 0
+    },
+    "families": [
+      {
+        "checkinId": "38fe058c-61d5-414b-9590-01edf98a48a2",
+        "childStatus": "out",
+        "releaseRows": 1
+      },
+      {
+        "checkinId": "e539afab-0be4-4eb3-a86b-7dec3868c648",
+        "childStatus": "out",
+        "releaseRows": 1
+      },
+      {
+        "checkinId": "08dacbde-e8a8-4adb-843b-b5fbbf5b9828",
+        "childStatus": "out",
+        "releaseRows": 1
+      },
+      {
+        "checkinId": "5f9c856e-82c9-401c-8c81-361755875e5b",
+        "childStatus": "out",
+        "releaseRows": 1
+      },
+      {
+        "checkinId": "2c590ceb-3762-41fa-80e0-2ea6cd1826b2",
+        "childStatus": "out",
+        "releaseRows": 1
+      },
+      {
+        "checkinId": "a8fe3d4a-da46-40c9-b354-27e6cc92d3da",
+        "childStatus": "out",
+        "releaseRows": 1
+      },
+      {
+        "checkinId": "7a3058eb-78a6-45ba-b92a-a0c8af72ec1f",
+        "childStatus": "out",
+        "releaseRows": 1
+      },
+      {
+        "checkinId": "80dd1882-eee9-4e62-a334-d2fc662b1d7a",
+        "childStatus": "out",
+        "releaseRows": 1
+      }
+    ],
+    "checkedSessionIds": 87,
+    "passed": true
+  }
+}
