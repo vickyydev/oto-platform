@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { FastifyRequest } from 'fastify';
 import {
   BridgeStatusSchema,
+  BridgeDisplaysSchema,
   BridgeUnlockRequestSchema,
   BridgeUnlockResponseSchema,
   KIOSK_REDEEM_SCOPE,
@@ -21,7 +22,7 @@ import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { displayDeviceOf, kioskDeviceOf } from '../plugins/credential';
 import { holdsGrantAt } from '../services/access-control';
-import { displayBearerHash, displayIntent, displaySession } from '../services/display';
+import { displayBearerHash, displayIntent, displaySession, stationDisplays } from '../services/display';
 import { assertStationReady } from '../services/fleet';
 import { abandonKioskSession, kioskState, redeemAtKiosk, startKioskSession } from '../services/kiosk';
 import { bridgeForStation, platformCaller, subscribeDisplayChannel, unlockThroughBridge } from '../services/station-bridge';
@@ -145,6 +146,19 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
       return bridged(() => bridge.status(row.id));
     },
   );
+
+  app.get('/box/v1/station/:stationId/displays', {
+    config: { dynamicPermission: true },
+    schema: {
+      description: 'Active displays seen at this station within ten seconds; no display credential is returned.',
+      params: Params,
+      response: { 200: BridgeDisplaysSchema },
+    },
+  }, async (req, reply) => {
+    const { row } = await standing(req, req.params.stationId, true);
+    reply.header('cache-control', 'private, no-store');
+    return stationDisplays(app.db, row.id, req.requireAuth().operatorId);
+  });
 
   app.post(
     '/box/v1/station/:stationId/unlock',

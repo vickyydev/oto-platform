@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { ApiResponse } from '@oto/api-types';
 import { BOX_LANE_PAYMENT_REFUSAL, BOX_LANE_UNREACHABLE, type BridgeLane } from '@oto/shared';
 import { api, ApiError, NetworkError } from '@/api/client';
 import { bridgeApi, hasBridgeOrigin } from '@/api/bridge';
@@ -116,7 +117,7 @@ async function recoverLane(): Promise<BridgeLane> {
     if (status.link.lane === 'platform' && lane === 'box') {
       // The box and this browser can have different routes to the API. Its
       // heartbeat alone cannot move a browser with a broken forwarder back.
-      const me = await api.get<{ sessionLocked: boolean }>('/me', { signal: controller.signal });
+      const me = await api.get<ApiResponse<'/me/', 'get'>>('/me', { signal: controller.signal });
       if (stationId !== id) return lane;
       if (me.sessionLocked) {
         if (!platformLocked) window.dispatchEvent(new CustomEvent('oto:session-locked'));
