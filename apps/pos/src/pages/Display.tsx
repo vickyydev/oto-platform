@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Monitor } from 'lucide-react';
-import { DisplayPaymentSchema, DisplayTotalsSchema, readDisplayFnbCart, readDisplayMerchCart, type StationIntent } from '@oto/shared';
+import { DisplayPaymentSchema, DisplayTotalsSchema, readDisplayFnbCart, readDisplayMerchCart, readDisplayTenderCart, type StationIntent } from '@oto/shared';
+import { TenderCustomerDisplay } from '@/components/shared/TenderCustomerDisplay';
 import { displayApi, DisplayError, newDisplayCredential, newerDisplaySession, readDisplayCredential, rememberDisplayCredential, type DisplaySession } from '@/api/display';
 import { displayBridgeApi, watchBridgeSnapshots } from '@/api/bridge';
 import { ApiError } from '@/api/client';
@@ -341,7 +342,12 @@ export default function Display() {
     && (document.stage !== 'payment' || merchPayment?.success)
     && (!merchCart.completion || merchTotals?.success && merchCart.completion.total === merchTotals.data.total)
     ? { cart: merchCart, totals: merchTotals?.success ? merchTotals.data : undefined } : null;
-  const view = document && !isFnb && !isMerch ? readTicketDisplayView(document) : null;
+  const isTender = document?.cart?.kind === 'tender';
+  const tenderCart = document && isTender ? readDisplayTenderCart(document.cart, document.stage) : null;
+  const tenderPayment = tenderCart ? DisplayPaymentSchema.safeParse(document?.payment) : null;
+  const tender = tenderCart && tenderPayment?.success && document?.member === null && document.prompt === null && document.totals === null
+    ? { cart: tenderCart, payment: tenderPayment.data } : null;
+  const view = document && !isFnb && !isMerch && !isTender ? readTicketDisplayView(document) : null;
   const answer = document?.prompt?.answer;
   // The public response deliberately omits the staff wizard step. Its validated
   // input prompt identifies the review without exposing that staff-only state.
@@ -369,7 +375,10 @@ export default function Display() {
         : <Loader2 className="h-8 w-8 animate-spin" aria-label={pairingMode === 'expiring' ? 'Expiring code' : 'Connecting'} />}
     </main> : connection === 'paused' ? <main className="flex-1 flex items-center justify-center p-8 text-center">
       <h1 role="status" className="text-3xl font-bold">{t('display.connectionPaused')}</h1>
-    </main> : fnb && document ? <>
+    </main> : tender ? <>
+      <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
+      <div className="flex-1 min-h-0"><TenderCustomerDisplay {...tender} /></div>
+    </> : fnb && document ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
       <div className="flex-1 min-h-0" data-testid="display-fnb">
         <FnbCustomerDisplay stage={document.stage as FnbCustomerStage} presentation={fnb}

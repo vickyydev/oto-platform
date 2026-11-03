@@ -11966,6 +11966,15 @@ export interface paths {
                                             };
                                         } | null;
                                     } | {
+                                        /** @enum {string} */
+                                        kind: "tender";
+                                        /** @enum {boolean} */
+                                        supported: true;
+                                        /** @enum {string} */
+                                        subject: "event_pass" | "party_balance";
+                                        /** @enum {string} */
+                                        method: "qr" | "card";
+                                    } | {
                                         supported: boolean;
                                         nickname: string;
                                         sale: {

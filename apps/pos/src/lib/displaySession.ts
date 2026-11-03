@@ -468,11 +468,15 @@ export function takeTicketDisplayLeaseForSignOut(): Promise<string | undefined> 
 
 /** A lock pauses this publisher without discarding the current visitor's prompt. */
 type DisplayPresentation = Pick<StationSessionDocument, 'stage' | 'step' | 'cart' | 'member' | 'totals' | 'payment' | 'prompt'>;
-interface StationDisplayState {
+export interface StationDisplayState {
   key: string;
   supported: boolean;
   presentation: (requestId: string) => DisplayPresentation;
 }
+/** The cleanup belongs to this handoff only; a late cleanup cannot end its successor. */
+export type StationDisplayHandoff = (state: StationDisplayState) => () => void;
+const clearedHandoff: StationDisplayState = { key: 'tender:finished', supported: false,
+  presentation: () => ({ stage: 'welcome', step: null, cart: null, member: null, totals: null, payment: null, prompt: null }) };
 
 export function useTicketDisplay(stationId: string | null, state: TicketDisplayState, onAnswer: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>, active = true) {
   const refreshingInput = state.quoteRefreshing === true && (state.step === 7 || state.step === 8);
@@ -480,17 +484,35 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
     key: `${state.sessionKey}:${state.stage}:${state.step}:${state.reviewRevision ?? 0}:${state.online === true}:${state.childReview?.visitorId ?? ''}:${state.consentRevision ?? ''}:${state.consent?.visitorId ?? ''}`,
     supported: ticketDisplayPresentation(state, '').cart.supported,
     presentation: requestId => ticketDisplayPresentation(state, requestId),
-  }, active && !refreshingInput, onAnswer);
+  }, active, onAnswer, refreshingInput);
 }
 
 /** The ticket and guest order surfaces share one leased presentation publisher. */
 export function useStationDisplay(stationId: string | null, state: StationDisplayState, active = true,
-  onAnswer?: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>) {
-  const current = useRef({ state, onAnswer, active });
-  current.current = { state, onAnswer, active };
+  onAnswer?: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>, basePaused = false) {
+  const [temporary, setTemporary] = useState<{ stationId: string; state: StationDisplayState | null } | null>(null);
+  const target = useRef(stationId);
+  target.current = stationId;
+  const handover: StationDisplayHandoff = useCallback((next) => {
+    if (!stationId || target.current !== stationId) return () => undefined;
+    const owner = { stationId, state: next };
+    setTemporary(owner);
+    // If the base quote is still refreshing, clear the finished QR now and
+    // restore the base only when it is ready. Never leave a paid code behind it.
+    return () => setTemporary(held => held === owner ? { stationId, state: null } : held);
+  }, [stationId]);
+  const held = temporary?.stationId === stationId ? temporary : null;
+  useEffect(() => {
+    if (!basePaused) setTemporary(value => value?.state === null ? null : value);
+  }, [basePaused, temporary]);
+  const shown = held?.state ?? (held && basePaused ? clearedHandoff : state);
+  const answer = held ? undefined : onAnswer;
+  const publishing = active && (!basePaused || !!held);
+  const current = useRef({ state: shown, onAnswer: answer, active: publishing });
+  current.current = { state: shown, onAnswer: answer, active: publishing };
   const publisher = useRef<DisplayPublisher | null>(null);
   const wake = useRef<((ownChange?: boolean) => void) | null>(null);
-  const presentationSignature = JSON.stringify({ key: state.key, presentation: state.presentation('') });
+  const presentationSignature = JSON.stringify({ key: shown.key, presentation: shown.presentation('') });
   useEffect(() => { wake.current?.(true); }, [presentationSignature]);
   const [connected, setConnected] = useState<ConnectedDisplay[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -514,7 +536,7 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
 
   useEffect(() => {
     const channel = publisher.current;
-    if (!stationId || !active || !channel || channel.stationId !== stationId) return;
+    if (!stationId || !publishing || !channel || channel.stationId !== stationId) return;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const base = `/stations/${stationId}`;
@@ -722,6 +744,6 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
       clearTimeout(immediate);
       clearTimeout(timer);
     };
-  }, [stationId, active]);
-  return { connected, error, supported: state.supported };
+  }, [stationId, publishing]);
+  return { connected, error, supported: shown.supported, handover };
 }
