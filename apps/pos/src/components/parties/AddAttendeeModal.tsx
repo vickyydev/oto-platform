@@ -1,4 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type MutableRefObject } from 'react';
+import { newId } from '@oto/shared';
+import { useOperator } from '@/auth/OperatorContext';
+import { ApiError } from '@/api/client';
+import { openPassOnPlatform, readPaidPass, type EventWriteIds } from '@/api/events';
+import { finaliseSale, salesApi, type ApiSale } from '@/api/sales';
+import { usePaymentStage, type PaymentDisplayState } from '@/lib/usePaymentStage';
+import type { SaleWriteOutcome } from '@/lib/saleWriter';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StepPayment } from '@/components/till/StepPayment';
@@ -13,7 +20,7 @@ import {
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { paymentMethodKind } from '@/lib/payments';
 import { ageFromDob } from '@/lib/childDob';
-import type { OtoEvent, Member, SavedChild } from '@/types';
+import type { EventAttendee, OtoEvent, Member, SavedChild } from '@/types';
 import type { NewEventAttendeeInput } from '@/mockApi';
 import {
   Tent,
@@ -67,7 +74,22 @@ interface AddAttendeeModalProps {
    * mints + prints the band, otherwise they stay booked. The parent closes the modal.
    */
   onCheckIn: (checkInNow: boolean) => void;
+  /**
+   * SCRUM-732 — what a pass paid by QR or card needs from its host: where it is
+   * sold, the ids its one sale is made under (the host's, so a cash press after a
+   * declined card goes against the same sale) and where the paid child goes.
+   */
+  routedPass: {
+    branchSlug: string;
+    stationId: string | null | undefined;
+    idsRef: MutableRefObject<EventWriteIds | null>;
+    memberId?: string | null;
+    onAttendee: (attendee: EventAttendee) => void;
+  };
 }
+
+/** Why a pass's sale is voided when staff leave it with no money taken, as the voids report reads it. */
+const PASS_LEFT_UNPAID = 'Event pass left unpaid at the till';
 
 /** Build a partial AttendeeForm from a known member + optional saved child. */
 function buildPrefillForm(member: Member, child?: SavedChild | null): Partial<AttendeeForm> {
@@ -94,18 +116,27 @@ function buildPrefillForm(member: Member, child?: SavedChild | null): Partial<At
 // selected, otherwise a "pay our staff" prompt.
 function CustomerPaymentPane({
   amount,
-  seed,
+  qr,
   note,
   paymentMethod,
 }: {
   amount: number;
-  seed: string;
+  /** What the payment stage holds: the code the payment route answered with, once it has. */
+  qr: PaymentDisplayState;
   note?: string;
   paymentMethod: string | null;
 }) {
   const isQr = !!paymentMethod && paymentMethodKind(paymentMethod) === 'qr';
   if (isQr) {
-    return <PromptPayCustomerScreen amount={amount} seed={seed} note={note} />;
+    return (
+      <PromptPayCustomerScreen
+        amount={amount}
+        qrPayload={qr.qrPayload}
+        qrImageUrl={qr.qrImageUrl}
+        expiresAt={qr.expiresAt}
+        {...(note ? { note } : {})}
+      />
+    );
   }
   return (
     <div className="h-full w-full bg-gradient-to-b from-sky-950 via-slate-950 to-slate-950 text-white flex flex-col items-center justify-center text-center px-10">
@@ -144,8 +175,10 @@ export function AddAttendeeModal({
   prefillSavedChildren = [],
   onSell,
   onCheckIn,
+  routedPass,
 }: AddAttendeeModalProps) {
   const isCamp = event.type === 'camp';
+  const { locked: operatorLocked, offlineUnlock } = useOperator();
   // Reuse the app-wide customer-display toggle (same one the Till split harness
   // uses) so it behaves like every other secondary screen.
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
@@ -161,10 +194,19 @@ export function AddAttendeeModal({
   const [pickedChildId, setPickedChildId] = useState<string | '__new__'>('__new__');
   // S2-20 E2 — the sell request is on its way: nothing is pressed twice meanwhile.
   const [selling, setSelling] = useState(false);
+  // SCRUM-732 — one opening of this form is one payment stage.
+  const [session, setSession] = useState(0);
+  const scope = `event-pass:${event.id}:${session}`;
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  // SCRUM-732 — the sale rung up for a QR or a card, while no money is on it.
+  const heldSaleRef = useRef<ApiSale | null>(null);
 
   // Reinitialise when the modal (re)opens so stale state from a previous sale is cleared.
   useEffect(() => {
     if (!open) return;
+    setSession((s) => s + 1);
+    heldSaleRef.current = null;
     const p = initialPhase(prefillMember, prefillSavedChildren);
     setPhase(p);
     setPaymentMethod(null);
@@ -182,19 +224,101 @@ export function AddAttendeeModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // The saved child the form was pre-filled from, when it was.
+  const savedChildId = prefillMember && pickedChildId !== '__new__' ? pickedChildId : undefined;
+
+  /**
+   * SCRUM-732 — A QR OR A CARD GOES THE WAY THE TICKET TILL'S DOES: this stage,
+   * the station's routing, the real code on the customer's screen, and nothing
+   * recorded until the payment confirms. Cash stays the one press it was
+   * (`handleConfirmPayment`). Pressing its submit rings the pass up once.
+   */
+  const stage = usePaymentStage({
+    scope,
+    isCurrentScope: (s) => s === scopeRef.current,
+    active: open && phase === 'payment',
+    paused: operatorLocked || Boolean(offlineUnlock),
+    totalSatang: Math.round(doorFeeTHB * 100),
+    prepareSale: async (): Promise<SaleWriteOutcome> => {
+      const ids = (routedPass.idsRef.current ??= { attendeeId: newId(), saleId: newId(), actionId: newId() });
+      const outcome = await openPassOnPlatform({
+        event,
+        branchSlug: routedPass.branchSlug,
+        stationId: routedPass.stationId,
+        input: buildAttendeeInput(form),
+        registerProperly: form.registerProperly,
+        doorFeeTHB,
+        ids,
+        memberId: routedPass.memberId ?? null,
+        childId: savedChildId ?? null,
+      });
+      if (outcome.ok && outcome.written) heldSaleRef.current = outcome.sale;
+      else if (!outcome.ok && !outcome.retryable) routedPass.idsRef.current = null;
+      return outcome;
+    },
+    finaliseSale: async (tender, actionId): Promise<SaleWriteOutcome> => {
+      const saleId = heldSaleRef.current?.id ?? routedPass.idsRef.current?.saleId;
+      if (!saleId || !actionId) {
+        return { ok: false, saleId: saleId ?? '', message: 'This pass has not been recorded.', retryable: true };
+      }
+      try {
+        const answer = await finaliseSale(saleId, actionId, tender);
+        return { ok: true, written: true, saleId, ...answer };
+      } catch (err) {
+        return {
+          ok: false,
+          saleId,
+          message: err instanceof Error ? err.message : 'The payment could not be confirmed.',
+          retryable: !(err instanceof ApiError) || err.status >= 500 || err.code === 'IDEMPOTENCY_IN_FLIGHT',
+          ...(err instanceof ApiError ? { code: err.code } : {}),
+        };
+      }
+    },
+    onComplete: async () => {
+      // Paid: the sale has closed and the child is on the roster, on the platform.
+      heldSaleRef.current = null;
+      const attendeeId = routedPass.idsRef.current?.attendeeId;
+      if (!attendeeId) return;
+      routedPass.onAttendee(
+        await readPaidPass({ event, branchSlug: routedPass.branchSlug, attendeeId, input: buildAttendeeInput(form) }),
+      );
+      setPhase('checkin');
+    },
+    onTenderCancelled: () => setPaymentMethod(null),
+  });
+
+  /** The method on this screen: the stage's once it holds the tender, which it may have let go. */
+  const electronic = !!paymentMethod && ['card', 'qr'].includes(paymentMethodKind(paymentMethod));
+  const usesStage = electronic || stage.locked;
+  const chosenMethod = usesStage ? stage.state.method : paymentMethod;
+
+  /** A sale rung up with no money on it is not left open behind a closed form. */
+  const releaseHeldSale = () => {
+    const held = heldSaleRef.current;
+    if (!held) return;
+    heldSaleRef.current = null;
+    routedPass.idsRef.current = null;
+    // A refusal leaves it for the till's left-behind card, which offers the void.
+    void salesApi.voidSale(held.id, PASS_LEFT_UNPAID).catch(() => undefined);
+  };
+
   const close = () => {
+    // A tender waiting for its answer holds the screen, as it holds the ticket till.
+    if (phase === 'payment' && stage.locked) return;
+    releaseHeldSale();
     onOpenChange(false);
   };
+  const closeRef = useRef(close);
+  closeRef.current = close;
 
   // Escape closes the takeover, matching the previous dialog behavior.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
+      if (e.key === 'Escape') closeRef.current();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the Escape listener is attached once per open: close is a new function every render and only calls onOpenChange(false)
   }, [open]);
 
   const set: SetAttendeeField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
@@ -208,9 +332,6 @@ export function AddAttendeeModal({
     setForm({ ...emptyAttendeeForm, ...buildPrefillForm(prefillMember, child) });
     setPhase('form');
   };
-
-  // The saved child the form was pre-filled from, when it was.
-  const savedChildId = prefillMember && pickedChildId !== '__new__' ? pickedChildId : undefined;
 
   /** One sell request at a time; false when it could not be persisted. */
   const sell = async (paymentMethodUsed?: string): Promise<boolean> => {
@@ -255,6 +376,7 @@ export function AddAttendeeModal({
     // Pass is paid — persist the attendee + sale immediately so a completed
     // payment always lands a roster entry, THEN let staff choose check-in.
     if (!(await sell(paymentMethod))) return;
+    heldSaleRef.current = null;
     setPhase('checkin');
   };
 
@@ -425,10 +547,20 @@ export function AddAttendeeModal({
           <StepPayment
             total={doorFeeTHB}
             selectedMethod={paymentMethod}
-            onSelectMethod={setPaymentMethod}
+            onSelectMethod={(method) => {
+              setPaymentMethod(method);
+              stage.selectMethod(method);
+            }}
             onComplete={() => void handleConfirmPayment()}
-            onBack={() => setPhase('form')}
+            onBack={() => {
+              // Back to the form may change the child, so the sale rung up for them goes.
+              releaseHeldSale();
+              if (electronic) setPaymentMethod(null);
+              setPhase('form');
+            }}
             busy={selling}
+            fixedAmount
+            {...(usesStage ? { paymentStage: stage } : {})}
           />
         </div>
       </div>
@@ -513,9 +645,9 @@ export function AddAttendeeModal({
     ) : phase === 'payment' ? (
       <CustomerPaymentPane
         amount={doorFeeTHB}
-        seed={`walkup-${event.id}-${doorFeeTHB}`}
+        qr={stage.display}
         note={event.title}
-        paymentMethod={paymentMethod}
+        paymentMethod={chosenMethod}
       />
     ) : (
       <div className="h-full w-full bg-gradient-to-b from-emerald-950 via-slate-950 to-slate-950 text-white flex flex-col items-center justify-center text-center px-10">

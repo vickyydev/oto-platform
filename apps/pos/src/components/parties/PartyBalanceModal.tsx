@@ -18,7 +18,9 @@ import {
   paymentMethodIcon,
   paymentMethodKind,
 } from '@/lib/payments';
-import type { PartyPaymentConfirmation } from '@/api/parties';
+import { PARTY_TENDER_HINT, type PartyPaymentConfirmation, type PartyTenderPress } from '@/api/parties';
+import { usePartyTender } from '@/lib/usePartyTender';
+import { PaymentTenderPanel, paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
 import { PartySettlementCustomerScreen } from './PartySettlementCustomerScreen';
 import {
   Wallet,
@@ -45,7 +47,14 @@ interface PartyBalanceModalProps {
     amount: number,
     method: PartyPaymentMethod,
     shownOutstanding: number,
+    tender?: PartyTenderPress,
   ) => void | PartyPaymentConfirmation | Promise<PartyPaymentConfirmation>;
+  /** SCRUM-732 — the counter a QR or a card is taken at, routed by its own setup. */
+  stationId?: string | null;
+  /** The staff lock is up: a tender waiting for its answer is not polled meanwhile. */
+  paused?: boolean;
+  /** The bill moved under a tender: read it again before staff go back to it. */
+  onBillMoved?: () => void;
 }
 
 // Staff-side helper copy keyed by tender kind while waiting for the money to land.
@@ -54,9 +63,8 @@ const collectHint = (method: PartyPaymentMethod): string => {
     case 'cash':
       return 'Collect the cash from the customer, then confirm.';
     case 'card':
-      return 'Run the customer’s card for the amount, then confirm.';
     case 'qr':
-      return 'The customer scans the QR on their display. Confirm once the money lands in your PromptPay app.';
+      return PARTY_TENDER_HINT[paymentMethodKind(method) === 'qr' ? 'qr' : 'card'];
     default:
       return `Collect the ${paymentMethodLabel(method)} payment, then confirm.`;
   }
@@ -68,6 +76,9 @@ export function PartyBalanceModal({
   party,
   operatorName,
   onConfirm,
+  stationId,
+  paused,
+  onBillMoved,
 }: PartyBalanceModalProps) {
   const total = computePartyTotal(party);
   const outstanding = computePartyOutstanding(party);
@@ -128,6 +139,32 @@ export function PartyBalanceModal({
     setStage('collect');
   };
 
+  // SCRUM-732 — a QR or a card is taken, not reported: the tender decides when
+  // the money is in, and only then does the platform's record of it come back.
+  const routed = ['card', 'qr'].includes(paymentMethodKind(collectMethod));
+  const tender = usePartyTender({
+    scope: `party-balance:${party.id}:${collectMethod}:${collectAmount}:${collectOutstanding}`,
+    active: open && stage === 'collect' && routed,
+    paused: Boolean(paused),
+    party,
+    stationId,
+    amount: collectAmount,
+    method: collectMethod,
+    outstanding: collectOutstanding,
+    record: async (press) =>
+      (await onConfirm(collectAmount, collectMethod, collectOutstanding, press)) ?? { recorded: true, amount: collectAmount },
+    onRecorded: (recorded) => {
+      setCollectAmount(recorded);
+      setStage('done');
+    },
+    onRefused: () => {
+      onBillMoved?.();
+      setStage('review');
+    },
+  });
+  // Staff cannot leave a tender that is waiting for its answer, as at the ticket till.
+  const collecting = open && stage === 'collect' && routed && tender.locked;
+
   const handleReceived = async () => {
     if (collectAmount <= 0 || recording) return;
     setRecording(true);
@@ -155,7 +192,7 @@ export function PartyBalanceModal({
         : 'Payment recorded';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (next || !collecting) onOpenChange(next); }}>
       <DialogContent className="max-w-none w-screen h-[100dvh] p-0 gap-0 border-0 rounded-none overflow-hidden flex flex-col bg-background">
         <DialogTitle className="sr-only">Take balance payment for {party.title}</DialogTitle>
         <DialogDescription className="sr-only">
@@ -342,25 +379,45 @@ export function PartyBalanceModal({
                     <p className="text-muted-foreground max-w-sm mb-8">
                       {collectHint(collectMethod)}
                     </p>
+                    {routed && (
+                      <div className="w-full max-w-md text-left mb-6">
+                        <PaymentTenderPanel stage={tender} showSubmit={false} fixedAmount />
+                      </div>
+                    )}
                     <div className="flex gap-3 w-full max-w-md">
                       <Button
                         variant="outline"
                         size="lg"
                         className="h-14 gap-2"
-                        onClick={() => setStage('review')}
+                        disabled={routed && !tender.canBack && !tender.canCancel}
+                        onClick={() => {
+                          if (routed && tender.canCancel) void tender.cancel();
+                          else setStage('review');
+                        }}
                       >
                         <ArrowLeft className="w-5 h-5" />
                         Back
                       </Button>
-                      <Button
-                        size="lg"
-                        className="flex-1 h-14 text-lg gap-2"
-                        disabled={recording}
-                        onClick={() => void handleReceived()}
-                      >
-                        <Check className="w-5 h-5" />
-                        Payment received
-                      </Button>
+                      {routed ? (
+                        <Button
+                          size="lg"
+                          className="flex-1 h-14 text-lg gap-2"
+                          disabled={!tender.canSubmit}
+                          onClick={() => void tender.submit()}
+                        >
+                          {paymentSubmitLabel(tender)}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="lg"
+                          className="flex-1 h-14 text-lg gap-2"
+                          disabled={recording}
+                          onClick={() => void handleReceived()}
+                        >
+                          <Check className="w-5 h-5" />
+                          Payment received
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -410,6 +467,7 @@ export function PartyBalanceModal({
                 party={party}
                 amount={stage === 'review' ? amount : collectAmount}
                 method={stage === 'review' ? (method || undefined) : collectMethod}
+                qr={tender.display}
               />
             </div>
           )}

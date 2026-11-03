@@ -29,6 +29,7 @@ import {
   type PartyChargeConfirmation,
   type PartyChargeLine,
   type PartyPaymentConfirmation,
+  type PartyTenderPress,
   type PartyWriteIds,
   type PartyWriteOutcome,
 } from '@/api/parties';
@@ -129,7 +130,7 @@ const listOf = (items: string[]) =>
   items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 
 export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyDetailProps) {
-  const { operator } = useOperator();
+  const { operator, locked: operatorLocked } = useOperator();
   const { station } = useStation();
   // S2-20 E4 — the party as the platform last answered a write with it, until
   // the host's re-read of the day brings the same party back.
@@ -228,6 +229,8 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     amount: number,
     method: PartyPaymentMethod,
     shownOutstanding: number,
+    // SCRUM-732 — a routed tender that has answered names the ids it was opened under.
+    tender?: PartyTenderPress,
   ): Promise<PartyPaymentConfirmation> => {
     const blocked = blockerOf(true);
     if (!operator || blocked || !station) {
@@ -241,7 +244,8 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       method,
       outstanding: shownOutstanding,
       stationId: station.stationId,
-      ids: idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
+      ids: tender?.ids ?? idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
+      ...(tender?.slip ? { slip: tender.slip } : {}),
     });
     settled('payment', outcome, 'Payment not recorded', PARTY_PAYMENT_NOT_CONFIRMED);
     return partyPaymentConfirmationOf(outcome, amount);
@@ -684,6 +688,9 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         party={party}
         operatorName={operator?.name ?? ''}
         onConfirm={handleTakePayment}
+        stationId={station?.stationId ?? null}
+        paused={operatorLocked}
+        onBillMoved={onChanged}
       />
       <PartyFnbModal
         open={showFnb}

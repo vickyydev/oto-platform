@@ -12,7 +12,9 @@ import {
   paymentMethodIcon,
   paymentMethodKind,
 } from '@/lib/payments';
-import type { PartyPaymentConfirmation } from '@/api/parties';
+import { PARTY_TENDER_HINT, type PartyPaymentConfirmation, type PartyTenderPress } from '@/api/parties';
+import { usePartyTender } from '@/lib/usePartyTender';
+import { PaymentTenderPanel, paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
 import { PartySettlementCustomerScreen } from '@/components/parties/PartySettlementCustomerScreen';
 import { HandToCustomer } from '@/components/mobile/HandToCustomer';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -28,9 +30,8 @@ const collectHint = (method: PartyPaymentMethod): string => {
     case 'cash':
       return 'Collect the cash from the customer, then confirm.';
     case 'card':
-      return "Run the customer's card for the amount, then confirm.";
     case 'qr':
-      return 'The customer scans the QR on their display. Confirm once the money lands in your PromptPay app.';
+      return PARTY_TENDER_HINT[paymentMethodKind(method) === 'qr' ? 'qr' : 'card'];
     default:
       return `Collect the ${paymentMethodLabel(method)} payment, then confirm.`;
   }
@@ -50,8 +51,15 @@ interface MobilePartyPaymentProps {
     amount: number,
     method: PartyPaymentMethod,
     shownOutstanding: number,
+    tender?: PartyTenderPress,
   ) => void | PartyPaymentConfirmation | Promise<PartyPaymentConfirmation>;
   onBack: () => void;
+  /** SCRUM-732 — the counter a QR or a card is taken at, routed by its own setup. */
+  stationId?: string | null;
+  /** The staff lock is up: a tender waiting for its answer is not polled meanwhile. */
+  paused?: boolean;
+  /** The bill moved under a tender: read it again before staff go back to it. */
+  onBillMoved?: () => void;
 }
 
 export function MobilePartyPayment({
@@ -59,6 +67,9 @@ export function MobilePartyPayment({
   operatorName,
   onConfirm,
   onBack,
+  stationId,
+  paused,
+  onBillMoved,
 }: MobilePartyPaymentProps) {
   const { t } = useLanguage();
   const total = computePartyTotal(party);
@@ -112,6 +123,30 @@ export function MobilePartyPayment({
     setStep('collect');
   };
 
+  // SCRUM-732 — a QR or a card is taken, not reported: the tender decides when
+  // the money is in, and only then does the platform's record of it come back.
+  const routed = ['card', 'qr'].includes(paymentMethodKind(collectMethod));
+  const tender = usePartyTender({
+    scope: `party-balance:${party.id}:${collectMethod}:${collectAmount}:${collectOutstanding}`,
+    active: step === 'collect' && routed,
+    paused: Boolean(paused),
+    party,
+    stationId,
+    amount: collectAmount,
+    method: collectMethod,
+    outstanding: collectOutstanding,
+    record: async (press) =>
+      (await onConfirm(collectAmount, collectMethod, collectOutstanding, press)) ?? { recorded: true, amount: collectAmount },
+    onRecorded: (recorded) => {
+      setCollectAmount(recorded);
+      setStep('done');
+    },
+    onRefused: () => {
+      onBillMoved?.();
+      setStep('pick');
+    },
+  });
+
   const handleReceived = async () => {
     if (collectAmount <= 0 || recording) return;
     setRecording(true);
@@ -156,7 +191,11 @@ export function MobilePartyPayment({
         <div className="shrink-0 px-4 pt-4 pb-3 border-b flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setStep('pick')}
+            disabled={routed && !tender.canBack && !tender.canCancel}
+            onClick={() => {
+              if (routed && tender.canCancel) void tender.cancel();
+              else setStep('pick');
+            }}
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Back"
           >
@@ -165,8 +204,8 @@ export function MobilePartyPayment({
           <h2 className="font-bold">Collect payment</h2>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <div className="w-20 h-20 rounded-full bg-violet-500/15 text-violet-400 flex items-center justify-center mb-6">
+        <div className={`flex-1 flex flex-col items-center px-6 text-center ${routed ? 'overflow-y-auto justify-start py-4' : 'justify-center'}`}>
+          <div className="w-20 h-20 shrink-0 rounded-full bg-violet-500/15 text-violet-400 flex items-center justify-center mb-6">
             {(() => {
               const Icon = paymentMethodIcon(paymentMethodKind(collectMethod));
               return <Icon className="w-10 h-10" />;
@@ -178,23 +217,43 @@ export function MobilePartyPayment({
           <p className="text-muted-foreground max-w-xs text-sm mb-8">
             {collectHint(collectMethod)}
           </p>
+          {routed && (
+            <div className="w-full max-w-sm text-left">
+              <PaymentTenderPanel stage={tender} showSubmit={false} fixedAmount />
+            </div>
+          )}
         </div>
 
         <div className="shrink-0 p-4 space-y-3 border-t">
-          <Button
-            size="lg"
-            className="w-full h-14 text-lg gap-2"
-            disabled={recording}
-            onClick={() => void handleReceived()}
-          >
-            <Check className="w-5 h-5" />
-            Payment received
-          </Button>
+          {routed ? (
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg gap-2"
+              disabled={!tender.canSubmit}
+              onClick={() => void tender.submit()}
+            >
+              {paymentSubmitLabel(tender)}
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg gap-2"
+              disabled={recording}
+              onClick={() => void handleReceived()}
+            >
+              <Check className="w-5 h-5" />
+              Payment received
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="lg"
             className="w-full h-10 text-muted-foreground"
-            onClick={() => setStep('pick')}
+            disabled={routed && !tender.canBack && !tender.canCancel}
+            onClick={() => {
+              if (routed && tender.canCancel) void tender.cancel();
+              else setStep('pick');
+            }}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back

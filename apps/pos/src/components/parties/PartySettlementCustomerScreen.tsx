@@ -30,6 +30,8 @@ interface PartySettlementCustomerScreenProps {
   // operator moves to the payment stage).
   amount: number;
   method?: PartyPaymentMethod;
+  /** SCRUM-732 — the code the payment route answered with, once it has. */
+  qr?: { qrPayload: string | null; qrImageUrl: string | null; expiresAt: string | null } | null;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -83,6 +85,7 @@ export function PartySettlementCustomerScreen({
   party,
   amount,
   method,
+  qr,
 }: PartySettlementCustomerScreenProps) {
   const { t } = useLanguage();
   const lineItemsTotal = partyLineItemsTotal(party);
@@ -222,7 +225,9 @@ export function PartySettlementCustomerScreen({
       return (
         <PromptPayCustomerScreen
           amount={amount}
-          seed={`party-promptpay-${party.id}-${amount}`}
+          qrPayload={qr?.qrPayload ?? null}
+          qrImageUrl={qr?.qrImageUrl ?? null}
+          expiresAt={qr?.expiresAt ?? null}
           note={isPartial ? t('party.payment.partPayment', { remaining: remainingAfter }) : undefined}
         />
       );

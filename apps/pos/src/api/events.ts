@@ -20,7 +20,7 @@ import type { ApiResponse } from '@oto/api-types';
 // puts the party tab on the platform (`api/parties.ts`).
 
 import { useEffect, useRef, useState } from 'react';
-import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
+import { BRIDGE_EVENT_INTENTS, EVENT_CHECKIN_REFUSALS, eventRosterStats, newId, type BridgeEventsDayAnswer, type EventAttendeeCreateBody, type EventAttendeeInput, type EventAttendeeView, type EventAttendeeWriteAnswer, type EventCheckinAnswer, type EventCheckinBody, type EventCheckinView, type EventCheckoutBody, type EventDayAnswer, type EventDropInPricing, type EventPartyWalkUpCharge, type EventPassOpenAnswer, type EventPassOpenBody, type EventPassSellBody, type EventPassesAnswer, type EventReprintBody, type EventView, type EventsCacheItem, type PartyChargeView, type PartyPaymentView } from '@oto/shared';
 import type { NewEventAttendeeInput } from '@/mockApi';
 import type { EventAttendee, EventAttendeeCheckin, OtoEvent, PartyBooking, PartyExtraCharge, PartyPayment } from '@/types';
 import { branchTradingDate, resolveRateToday, serverTradingDate } from '@/lib/pricingMode';
@@ -30,6 +30,8 @@ import { apiBranchIdForSlug } from './catalogBridge';
 import { api, ApiError, idemKey, NetworkError } from './client';
 import { bridgeApi, bridgeStaffName } from './bridge';
 import type { ApiSalePrintJob } from './history';
+import type { ApiSale } from './sales';
+import type { SaleWriteOutcome } from '@/lib/saleWriter';
 
 /** A till with no platform branch, in the counter's words (like the check-in board's). */
 export const EVENTS_NOT_LINKED =
@@ -389,6 +391,17 @@ export const eventsApi = {
       idempotencyKey: `event-pass:${body.attendeeId}:${body.tender.method}:${body.tender.tenderedSatang ?? ''}`,
       ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
     }),
+  /** SCRUM-732 — a pass for a QR or a card: rung up, the child held for the money. */
+  openPass: (eventId: string, body: EventPassOpenBody) =>
+    api.post<EventPassOpenAnswer>(`/events/${encodeURIComponent(eventId)}/passes/open`, body, {
+      idempotencyKey: `event-pass-open:${body.attendeeId}`,
+      ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
+    }),
+  /** SCRUM-732 — what a pass opened for a QR or a card came to, once its tender answered. */
+  readPass: (eventId: string, attendeeId: string, branchId: string) =>
+    api.get<EventAttendeeWriteAnswer>(
+      `/events/${encodeURIComponent(eventId)}/passes/${encodeURIComponent(attendeeId)}?branchId=${encodeURIComponent(branchId)}`,
+    ),
   /** S2-20 E2 — the branch's walk-up prices (camp day, event day, party guest), in satang. */
   dropInPricing: (branchId: string) => api.get<ApiResponse<'/branches/{branchId}/event-drop-in-pricing', 'get'>>(`/branches/${encodeURIComponent(branchId)}/event-drop-in-pricing`),
 };
@@ -560,6 +573,86 @@ export async function sellOnPlatform(args: {
       err.status >= 500 ||
       err.code === 'IDEMPOTENCY_IN_FLIGHT';
     return { ok: false, message: messageOf(err), retryable };
+  }
+}
+
+/**
+ * SCRUM-732 — A PASS PAID BY QR OR CARD. Those tenders answer later, so the pass
+ * is rung up first: the sale in `tendering`, the child held beside it. The
+ * payment stage then takes the tender on the ordinary routes, as the ticket till
+ * does, and the platform puts the child on the roster when the sale closes.
+ * Answers in the stage's own terms (`prepareSale`).
+ */
+export async function openPassOnPlatform(args: {
+  event: OtoEvent;
+  branchSlug: string;
+  stationId: string | null | undefined;
+  input: NewEventAttendeeInput;
+  registerProperly: boolean;
+  doorFeeTHB: number;
+  ids: EventWriteIds;
+  memberId?: string | null;
+  childId?: string | null;
+}): Promise<SaleWriteOutcome> {
+  const branchId = apiBranchIdForSlug(args.branchSlug);
+  if (!branchId) return { ok: false, saleId: args.ids.saleId, message: EVENTS_NOT_LINKED, retryable: false };
+  const memberId = args.memberId && UUID.test(args.memberId) ? args.memberId : null;
+  const childId = memberId && args.childId && UUID.test(args.childId) ? args.childId : null;
+  try {
+    const answer = await eventsApi.openPass(args.event.id, {
+      branchId,
+      attendeeId: args.ids.attendeeId,
+      actionId: args.ids.actionId,
+      attendee: toAttendeeInput(args.input),
+      registerProperly: args.event.type === 'camp' ? args.registerProperly : false,
+      stationId: args.stationId ?? '',
+      saleId: args.ids.saleId,
+      expectedTotalSatang: Math.round(args.doorFeeTHB * 100),
+      ...(memberId ? { memberId } : {}),
+      ...(childId ? { childId } : {}),
+    });
+    return { ok: true, written: true, sale: answer.sale as unknown as ApiSale, replay: answer.replayed, saleId: args.ids.saleId };
+  } catch (err) {
+    const retryable =
+      err instanceof NetworkError ||
+      !(err instanceof ApiError) ||
+      err.status >= 500 ||
+      err.code === 'IDEMPOTENCY_IN_FLIGHT';
+    return {
+      ok: false,
+      saleId: args.ids.saleId,
+      message: messageOf(err),
+      retryable,
+      ...(err instanceof ApiError ? { code: err.code } : {}),
+    };
+  }
+}
+
+/**
+ * The child a paid pass put on the roster. The sale has closed, so the child is
+ * on the platform whatever this read comes to: a read that fails answers the
+ * child as the till captured them, not yet confirmed by the OTO App, and the
+ * check-in choice goes on under the same attendee id.
+ */
+export async function readPaidPass(args: {
+  event: OtoEvent;
+  branchSlug: string;
+  attendeeId: string;
+  input: NewEventAttendeeInput;
+}): Promise<EventAttendee> {
+  const branchId = apiBranchIdForSlug(args.branchSlug);
+  const fallback: EventAttendee = { ...args.input, id: args.attendeeId, syncState: 'pending' };
+  if (!branchId) return fallback;
+  try {
+    const answer = await eventsApi.readPass(args.event.id, args.attendeeId, branchId);
+    return {
+      ...args.input,
+      id: answer.attendee.id,
+      ...(args.event.type === 'camp' ? { attendanceDays: answer.attendee.attendanceDays } : {}),
+      syncState: answer.attendee.syncState,
+    };
+  } catch {
+    return fallback;
   }
 }
 

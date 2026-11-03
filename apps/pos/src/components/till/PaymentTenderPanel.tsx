@@ -19,7 +19,12 @@ export function paymentSubmitLabel(stage: PaymentStageController, confirmationLa
   return label(kind === 'cash' ? 'recordCash' : kind === 'qr' ? 'startQr' : kind === 'card' ? 'startCard' : 'selectMethod');
 }
 
-export function PaymentTenderPanel({ stage, showSubmit = true }: { stage: PaymentStageController; showSubmit?: boolean }) {
+/**
+ * `fixedAmount` — the screen has already fixed what this tender takes (a pass is
+ * paid in one tender; a party's collect step froze its amount), so no part
+ * amount is offered here.
+ */
+export function PaymentTenderPanel({ stage, showSubmit = true, fixedAmount = false }: { stage: PaymentStageController; showSubmit?: boolean; fixedAmount?: boolean }) {
   const { state } = stage;
   const kind = state.method ? findPaymentMethod(state.method)?.kind : null;
   const [field, setField] = useState<'amount' | 'cash' | null>(null);
@@ -50,7 +55,7 @@ export function PaymentTenderPanel({ stage, showSubmit = true }: { stage: Paymen
       {state.settlements.map((part) => <p key={part.attemptId} className="text-sm">{isCreditSettlement(part) ? 'Credit' : findPaymentMethod(part.method)?.label ?? part.method} · ฿{format(part.amountSatang)}</p>)}
       <p className="mt-2 font-bold">{label('balance')} ฿{format(state.outstandingSatang)}</p>
     </div>}
-    {state.method && !stage.locked && state.phase !== 'manual' && state.outstandingSatang > 0 && <div className="space-y-3">
+    {!fixedAmount && state.method && !stage.locked && state.phase !== 'manual' && state.outstandingSatang > 0 && <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div><Label htmlFor="payment-part-amount">{label('amount')}</Label>
           <Input id="payment-part-amount" inputMode="decimal" value={field === 'amount' ? text : format(state.amountSatang)}

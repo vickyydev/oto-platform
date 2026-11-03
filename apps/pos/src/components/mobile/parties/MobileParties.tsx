@@ -27,6 +27,7 @@ import {
   type PartyChargeConfirmation,
   type PartyChargeLine,
   type PartyPaymentConfirmation,
+  type PartyTenderPress,
   type PartyWriteIds,
   type PartyWriteOutcome,
 } from '@/api/parties';
@@ -63,7 +64,7 @@ function findEvent(id: string | null, events: readonly OtoEvent[]): OtoEvent | n
 const todayISO = () => eventsToday();
 
 export function MobileParties() {
-  const { operator } = useOperator();
+  const { operator, locked: operatorLocked } = useOperator();
   const { station } = useStation();
   const { branch } = useBranch();
   const today = todayISO();
@@ -152,6 +153,8 @@ export function MobileParties() {
     amount: number,
     method: PartyPaymentMethod,
     shownOutstanding: number,
+    // SCRUM-732 — a routed tender that has answered names the ids it was opened under.
+    tender?: PartyTenderPress,
   ): Promise<PartyPaymentConfirmation> => {
     // Nothing is sent in either case below: the same press may go again.
     if (!operator || !selectedEvent || selectedEvent.type !== 'party') return { recorded: false, retry: true };
@@ -166,7 +169,8 @@ export function MobileParties() {
       method,
       outstanding: shownOutstanding,
       stationId: station.stationId,
-      ids: idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
+      ids: tender?.ids ?? idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
+      ...(tender?.slip ? { slip: tender.slip } : {}),
     });
     settled('payment', outcome, 'Payment not recorded', PARTY_PAYMENT_NOT_CONFIRMED);
     return partyPaymentConfirmationOf(outcome, amount);
@@ -348,6 +352,9 @@ export function MobileParties() {
           operatorName={operator?.name ?? ''}
           onConfirm={handleTakePayment}
           onBack={handleBackToDetail}
+          stationId={station?.stationId ?? null}
+          paused={operatorLocked}
+          onBillMoved={bump}
         />
       </div>
     );

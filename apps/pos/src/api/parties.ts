@@ -9,6 +9,7 @@
 //   PATCH /parties/:id           an edit, written back to the OTO App
 //   POST  /parties/:id/charges   extra tickets or F&B on the tab: a ledger entry
 //   POST  /parties/:id/payments  money against the balance, through the tender machine
+//   POST  /parties/:id/payments/tender  a QR or a card, routed by the station (SCRUM-732)
 //
 // and each answers with the party as it now stands, mapped here into the
 // prototype's `PartyBooking` so every screen keeps its exact rendering path:
@@ -17,7 +18,7 @@
 // first sent and kept for a retry of that press, so a press that went through
 // twice is one charge, one payment or one edit.
 
-import type { EventDetailAnswer, PartyEditFields, PartyWriteAnswer } from '@oto/shared';
+import type { EventDetailAnswer, PartyEditFields, PartyTenderBody, PartyWriteAnswer } from '@oto/shared';
 import type { PartyEditPatch } from '@/components/parties/PartyEditForm';
 import type { PartyBooking, PartyPaymentMethod } from '@/types';
 import { paymentMethodKind } from '@/lib/payments';
@@ -25,6 +26,7 @@ import { currentLane } from '@/lib/lane';
 import { apiBranchIdForSlug } from './catalogBridge';
 import { api, ApiError, NetworkError } from './client';
 import { EVENTS_NOT_LINKED, toOtoEvent } from './events';
+import type { PaymentStartResult } from './payments';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -46,6 +48,12 @@ export const partiesApi = {
     api.post<PartyWriteAnswer>(`/parties/${encodeURIComponent(partyId)}/payments`, body, {
       idempotencyKey: `party-payment:${body.paymentId}`,
       headers: { 'x-oto-action-id': body.actionId },
+    }),
+  /** SCRUM-732 — a QR or a card against the balance, routed by the station. */
+  startTender: (partyId: string, body: PartyTenderBody) =>
+    api.post<PaymentStartResult>(`/parties/${encodeURIComponent(partyId)}/payments/tender`, body, {
+      idempotencyKey: `party-tender:${body.paymentId}`,
+      ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
     }),
 };
 
@@ -222,6 +230,8 @@ export async function payPartyOnPlatform(args: {
   outstanding: number;
   stationId: string;
   ids: PartyWriteIds;
+  /** A card taken on a terminal the platform cannot reach: what its slip says. */
+  slip?: PartySlip;
 }): Promise<PartyWriteOutcome> {
   const branchId = apiBranchIdForSlug(args.party.branchId);
   if (!branchId) return { ok: false, message: EVENTS_NOT_LINKED, retryable: false };
@@ -232,13 +242,88 @@ export async function payPartyOnPlatform(args: {
       paymentId: args.ids.id,
       actionId: args.ids.actionId,
       amountSatang: satang(args.amount),
-      tender: { method: args.method, kind: paymentMethodKind(args.method) },
+      tender: { method: args.method, kind: paymentMethodKind(args.method), ...args.slip },
       expectedOutstandingSatang: satang(args.outstanding),
     });
     return { ok: true, party: partyOf(answer, args.party.branchId), answer };
   } catch (err) {
     return failureOf(err);
   }
+}
+
+/** What staff are told while a routed tender does the collecting. */
+export const PARTY_TENDER_HINT = {
+  card: 'The card terminal takes the payment. It is recorded when the terminal answers.',
+  qr: 'The customer scans the QR on their display. The payment is recorded when it is confirmed.',
+} as const;
+
+/** The approval code and TID read off a card terminal's own slip. */
+export interface PartySlip {
+  approvalCode: string;
+  tid: string;
+}
+
+/** What one party press was handed by its payment screen once a routed tender has answered. */
+export interface PartyTenderPress {
+  ids: PartyWriteIds;
+  slip?: PartySlip;
+}
+
+export type PartyTenderOutcome =
+  | { ok: true; answer: PaymentStartResult }
+  | { ok: false; message: string; retryable: boolean; code?: string; details?: unknown };
+
+/**
+ * SCRUM-732 — a QR or a card against the party's balance. The amount, the tender
+ * and the balance shown are frozen as "Payment received" freezes them, and this
+ * records nothing: the money counts once the attempt it answers with is paid.
+ */
+export async function startPartyTenderOnPlatform(args: {
+  party: PartyBooking;
+  amount: number;
+  method: PartyPaymentMethod;
+  outstanding: number;
+  stationId: string | null | undefined;
+  ids: PartyWriteIds;
+}): Promise<PartyTenderOutcome> {
+  const branchId = apiBranchIdForSlug(args.party.branchId);
+  if (!branchId) return { ok: false, message: EVENTS_NOT_LINKED, retryable: false };
+  if (!args.stationId || !UUID.test(args.stationId)) {
+    return { ok: false, message: 'This device is not set up as a till on the platform, so it cannot take a payment.', retryable: false };
+  }
+  const kind = paymentMethodKind(args.method);
+  try {
+    const answer = await partiesApi.startTender(args.party.id, {
+      branchId,
+      stationId: args.stationId,
+      paymentId: args.ids.id,
+      actionId: args.ids.actionId,
+      amountSatang: satang(args.amount),
+      tender: { method: args.method, kind },
+      expectedOutstandingSatang: satang(args.outstanding),
+      ...(kind === 'qr' ? { requestQrPayload: true, qrDirection: 'show' as const } : {}),
+    });
+    return { ok: true, answer };
+  } catch (err) {
+    const failure = failureOf(err);
+    return err instanceof ApiError ? { ...failure, code: err.code, details: err.details } : failure;
+  }
+}
+
+/**
+ * The tender a 409 PAYMENT_IN_FLIGHT names, when it was opened at this counter:
+ * the one this till may bring back on screen and finish. Another counter's is
+ * that counter's, as a colleague's unpaid sale is theirs.
+ */
+export function inFlightTenderOf(
+  details: unknown,
+  stationId: string | null | undefined,
+): { attemptId: string; paymentId: string } | null {
+  const waiting = (details as { waiting?: unknown } | null | undefined)?.waiting;
+  if (!Array.isArray(waiting) || waiting.length !== 1) return null;
+  const only = waiting[0] as { attemptId?: unknown; paymentId?: unknown; stationId?: unknown };
+  if (typeof only.attemptId !== 'string' || typeof only.paymentId !== 'string' || only.stationId !== stationId) return null;
+  return { attemptId: only.attemptId, paymentId: only.paymentId };
 }
 
 /**

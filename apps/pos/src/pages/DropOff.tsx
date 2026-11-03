@@ -1151,6 +1151,12 @@ export default function DropOff() {
           }
           onSell={handleAddAttendeeSell}
           onCheckIn={handleAddAttendeeCheckIn}
+          routedPass={{
+            branchSlug: branchId,
+            stationId: station?.stationId,
+            idsRef: addAttendeeIdsRef,
+            onAttendee: setAddedAttendee,
+          }}
         />
       )}
     </div>

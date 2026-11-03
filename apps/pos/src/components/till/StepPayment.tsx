@@ -50,6 +50,8 @@ interface StepPaymentProps {
    */
   nothingToPay?: boolean;
   paymentStage?: PaymentStageController;
+  /** SCRUM-732 — this sale is paid in one tender: no part amount is offered. */
+  fixedAmount?: boolean;
 }
 
 // Visual accent per method KIND (the tender list itself is configured in Admin).
@@ -87,7 +89,7 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, nothingToPay, paymentStage }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, nothingToPay, paymentStage, fixedAmount }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
   if (paymentStage) {
     selectedMethod = paymentStage.state.method;
@@ -165,7 +167,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
       )}
 
       {notice}
-      {paymentStage && !unpriced && <PaymentTenderPanel stage={paymentStage} showSubmit={false} />}
+      {paymentStage && !unpriced && <PaymentTenderPanel stage={paymentStage} showSubmit={false} {...(fixedAmount ? { fixedAmount } : {})} />}
 
       <div className="mt-auto pt-6 flex items-center justify-between gap-4">
         {/* While a gateway QR is pending, Back is the way out of it: the QR is

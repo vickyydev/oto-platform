@@ -455,11 +455,11 @@ function phone() {
 // =============================================================================
 
 describe('the plain path — what is collected is what is recorded and what the guest is thanked for', () => {
-  it('iPad: full balance by card, one press, one payment of ฿9,000, "Collected now ฿9000"', async () => {
+  it('iPad: full balance by cash, one press, one payment of ฿9,000, "Collected now ฿9000"', async () => {
     const screen = ipad();
     screen.open();
-    expect(screen.press('Card')).toBe(true);
-    expect(screen.press('Take ฿9000 by Card')).toBe(true);
+    expect(screen.press('Cash')).toBe(true);
+    expect(screen.press('Take ฿9000 by Cash')).toBe(true);
     expect(await screen.received()).toBe(true);
     expect(thisTill()).toEqual([expect.objectContaining({ amountSatang: 900_000, askedSatang: 900_000 })]);
     expect(screen.words()).toContain('Payment recorded');
@@ -485,10 +485,10 @@ describe('the plain path — what is collected is what is recorded and what the 
     expect(screen.words()).toContain('Collected now ฿5000');
   });
 
-  it('phone: full balance by card, one press, one payment of ฿9,000, "Collected ฿9000"', async () => {
+  it('phone: full balance by cash, one press, one payment of ฿9,000, "Collected ฿9000"', async () => {
     const screen = phone();
-    expect(screen.press('Card')).toBe(true);
-    expect(screen.press('Show bill · ฿9000 by Card')).toBe(true);
+    expect(screen.press('Cash')).toBe(true);
+    expect(screen.press('Show bill · ฿9000 by Cash')).toBe(true);
     screen.handBack();
     expect(await screen.received()).toBe(true);
     expect(thisTill()).toEqual([expect.objectContaining({ amountSatang: 900_000, askedSatang: 900_000 })]);
@@ -503,7 +503,7 @@ describe('the plain path — what is collected is what is recorded and what the 
 
 describe('two tills on one party, and a lost answer — the till must not record other money than it collected', () => {
   /**
-   * Till A shows ฿9,000 owed and collects ฿9,000 by card. Meanwhile till B
+   * Till A shows ฿9,000 owed and collects ฿9,000 by cash. Meanwhile till B
    * takes ฿5,000. A's press is refused (PARTY_BALANCE_CHANGED, nothing taken —
    * right), the party is read again under the still-open collect step, and A
    * presses "Payment received" again: the till now sends the NEW balance
@@ -513,8 +513,8 @@ describe('two tills on one party, and a lost answer — the till must not record
   it('iPad: after a refusal the next press records nothing, or exactly what was collected', async () => {
     const screen = ipad();
     screen.open();
-    screen.press('Card');
-    expect(screen.press('Take ฿9000 by Card')).toBe(true);
+    screen.press('Cash');
+    expect(screen.press('Take ฿9000 by Cash')).toBe(true);
     otherTillTakes(500_000);
     await screen.received(); // refused: the balance moved
     expect(thisTill()).toEqual([]);
@@ -547,8 +547,8 @@ describe('two tills on one party, and a lost answer — the till must not record
 
   it('phone: after a refusal the next press records nothing, or exactly what was collected', async () => {
     const screen = phone();
-    screen.press('Card');
-    expect(screen.press('Show bill · ฿9000 by Card')).toBe(true);
+    screen.press('Cash');
+    expect(screen.press('Show bill · ฿9000 by Cash')).toBe(true);
     screen.handBack();
     otherTillTakes(500_000);
     await screen.received();
@@ -577,15 +577,15 @@ describe('two tills on one party, and a lost answer — the till must not record
   it('what the fix is made of: the refused press is not sent again; back on the bill as it now reads, the next collect is its own request', async () => {
     const screen = ipad();
     screen.open();
-    screen.press('Card');
-    screen.press('Take ฿9000 by Card');
+    screen.press('Cash');
+    screen.press('Take ฿9000 by Cash');
     otherTillTakes(500_000);
     await screen.received(); // refused: the balance moved
     // Back on the bill, as it now reads — no "Payment received" to press again.
     expect(screen.words()).toContain('Take balance payment');
     expect(screen.words()).toContain('Outstanding ฿4000');
     expect(await screen.received()).toBe(false);
-    expect(screen.press('Take ฿4000 by Card')).toBe(true);
+    expect(screen.press('Take ฿4000 by Cash')).toBe(true);
     expect(await screen.received()).toBe(true);
     const bodies = postMock.mock.calls.map((c) => c[1] as { paymentId: string; amountSatang: number; expectedOutstandingSatang: number });
     expect(bodies.map((b) => [b.amountSatang, b.expectedOutstandingSatang])).toEqual([
@@ -608,8 +608,8 @@ describe('the fix — one collect is one request under one set of ids, and the t
   it('iPad: the retry after a lost answer is byte-identical — body and key — and is answered with the recorded payment', async () => {
     const screen = ipad();
     screen.open();
-    screen.press('Card');
-    screen.press('Take ฿9000 by Card');
+    screen.press('Cash');
+    screen.press('Take ฿9000 by Cash');
     server.loseNextAnswer = true;
     await screen.received(); // recorded; its answer lost; the party read again (฿0 owed)
     expect(screen.words()).toContain('Payment received'); // still collecting
@@ -645,8 +645,8 @@ describe('the fix — one collect is one request under one set of ids, and the t
     server.chargeSatang = 50; // ฿0.50 on the tab: ฿9,000.50 owed
     const screen = ipad();
     screen.open();
-    expect(screen.press('Card')).toBe(true);
-    expect(screen.press('Take ฿9000.5 by Card')).toBe(true);
+    expect(screen.press('Cash')).toBe(true);
+    expect(screen.press('Take ฿9000.5 by Cash')).toBe(true);
     expect(await screen.received()).toBe(true);
     expect(thisTill()).toEqual([expect.objectContaining({ askedSatang: 900_050, amountSatang: 900_000 })]);
     expect(screen.words()).toContain('Collected now ฿9000 ');
@@ -658,8 +658,8 @@ describe('the fix — one collect is one request under one set of ids, and the t
   it('phone: the retry after a lost answer is byte-identical, and "Collected" is the payment recorded', async () => {
     server.chargeSatang = 50;
     const screen = phone();
-    screen.press('Card');
-    expect(screen.press('Show bill · ฿9000.5 by Card')).toBe(true);
+    screen.press('Cash');
+    expect(screen.press('Show bill · ฿9000.5 by Cash')).toBe(true);
     screen.handBack();
     server.loseNextAnswer = true;
     await screen.received();
@@ -675,14 +675,14 @@ describe('the fix — one collect is one request under one set of ids, and the t
 
   it('phone: a refusal is back on the bill as it now reads; the next collect is its own request for what is now owed', async () => {
     const screen = phone();
-    screen.press('Card');
-    screen.press('Show bill · ฿9000 by Card');
+    screen.press('Cash');
+    screen.press('Show bill · ฿9000 by Cash');
     screen.handBack();
     otherTillTakes(500_000);
     await screen.received();
     expect(screen.words()).toContain('Take payment');
     expect(screen.words()).toContain('Outstanding ฿4000');
-    expect(screen.press('Show bill · ฿4000 by Card')).toBe(true);
+    expect(screen.press('Show bill · ฿4000 by Cash')).toBe(true);
     screen.handBack();
     expect(await screen.received()).toBe(true);
     const bodies = postMock.mock.calls.map((c) => c[1] as { paymentId: string; amountSatang: number; expectedOutstandingSatang: number });
@@ -704,8 +704,8 @@ describe('a reply that never came says the truth — not confirmed, press again 
   it('iPad: recorded, its answer lost — "Payment not confirmed", never "Payment not recorded"; the press again confirms it', async () => {
     const screen = ipad();
     screen.open();
-    screen.press('Card');
-    screen.press('Take ฿9000 by Card');
+    screen.press('Cash');
+    screen.press('Take ฿9000 by Cash');
     server.loseNextAnswer = true;
     await screen.received();
     expect(toastTitles()).toEqual(['Payment not confirmed']);
@@ -720,8 +720,8 @@ describe('a reply that never came says the truth — not confirmed, press again 
   it('iPad: a request that never arrived reads the same — the till cannot tell it from a lost answer', async () => {
     const screen = ipad();
     screen.open();
-    screen.press('Card');
-    screen.press('Take ฿9000 by Card');
+    screen.press('Cash');
+    screen.press('Take ฿9000 by Cash');
     server.dropNextRequest = true;
     await screen.received();
     expect(toastTitles()).toEqual(['Payment not confirmed']);
@@ -731,8 +731,8 @@ describe('a reply that never came says the truth — not confirmed, press again 
   it('iPad: a definite no keeps "Payment not recorded" — nothing was taken', async () => {
     const screen = ipad();
     screen.open();
-    screen.press('Card');
-    screen.press('Take ฿9000 by Card');
+    screen.press('Cash');
+    screen.press('Take ฿9000 by Cash');
     otherTillTakes(500_000);
     await screen.received();
     expect(toastTitles()).toEqual(['Payment not recorded']);
@@ -740,8 +740,8 @@ describe('a reply that never came says the truth — not confirmed, press again 
 
   it('phone: recorded, its answer lost — "Payment not confirmed", never "Payment not recorded"; the press again confirms it', async () => {
     const screen = phone();
-    screen.press('Card');
-    screen.press('Show bill · ฿9000 by Card');
+    screen.press('Cash');
+    screen.press('Show bill · ฿9000 by Cash');
     screen.handBack();
     server.loseNextAnswer = true;
     await screen.received();
@@ -754,8 +754,8 @@ describe('a reply that never came says the truth — not confirmed, press again 
 
   it('phone: a definite refusal is "Payment not recorded"', async () => {
     const screen = phone();
-    screen.press('Card');
-    screen.press('Show bill · ฿9000 by Card');
+    screen.press('Cash');
+    screen.press('Show bill · ฿9000 by Cash');
     screen.handBack();
     otherTillTakes(500_000);
     await screen.received();
@@ -802,8 +802,8 @@ describe('RE-REVIEW: a platform fault and a request still running are "Payment n
       const run = faultThenRun(kind);
       const screen = ipad();
       screen.open();
-      screen.press('Card');
-      screen.press('Take ฿9000 by Card');
+      screen.press('Cash');
+      screen.press('Take ฿9000 by Cash');
       await screen.received();
       expect(toastTitles()).toEqual(['Payment not confirmed']);
       expect(screen.words()).toContain('Payment received');
@@ -823,8 +823,8 @@ describe('RE-REVIEW: a platform fault and a request still running are "Payment n
     it(`phone, ${kind}: "Payment not confirmed", still on collect; the same press again is one payment of ฿9,000`, async () => {
       const run = faultThenRun(kind);
       const screen = phone();
-      screen.press('Card');
-      screen.press('Show bill · ฿9000 by Card');
+      screen.press('Cash');
+      screen.press('Show bill · ฿9000 by Cash');
       screen.handBack();
       await screen.received();
       expect(toastTitles()).toEqual(['Payment not confirmed']);

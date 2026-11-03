@@ -3850,6 +3850,13 @@ export default function Till() {
           prefillSavedChildren={eventPassPrefilledMember?.savedChildren ?? []}
           onSell={handleEventPassSell}
           onCheckIn={handleEventPassCheckIn}
+          routedPass={{
+            branchSlug: branch.id,
+            stationId: station?.stationId,
+            idsRef: eventPassIdsRef,
+            memberId: eventPassPrefilledMember?.id ?? null,
+            onAttendee: setEventPassAttendee,
+          }}
         />
       )}
 
