@@ -114,6 +114,24 @@ describe('the fixtures the ticket names', () => {
 });
 
 describe('keys the park cannot afford to lose', () => {
+  it('keeps a complete UUID whose numeric groups resemble a card, without keeping an adjacent card', () => {
+    // SCRUM-742: this real random test identifier was damaged in ops_run.detail.
+    const id = 'e88e3138-2708-4749-9142-3a13fca6c6cb';
+    expect(redact({ tenantId: id, groups: [id] })).toEqual({ tenantId: id, groups: [id] });
+    expect(scrubText(`park group ${id}: card 4111-1111-1111-1111`)).toBe(`park group ${id}: card [redacted:card]`);
+    expect(scrubText(`4111111111111111 ${id} 4111 1111 1111 1111`)).toBe(`[redacted:card] ${id} [redacted:card]`);
+  });
+
+  it('still masks UUID-shaped credentials and card-like fragments in malformed identifiers', () => {
+    const id = 'e88e3138-2708-4749-9142-3a13fca6c6cb';
+    expect(redact({ password: id, token: id, name: id, payload: { tenantId: id } })).toEqual({
+      password: '[redacted]', token: '[redacted]', name: '[redacted]', payload: '[redacted]',
+    });
+    for (const malformed of [id + 'x', 'x' + id, id.slice(0, -1)]) {
+      expect(scrubText(malformed)).toContain('[redacted:card]');
+    }
+  });
+
   it('keeps a phone hash, an op name and a qualified name', () => {
     const out = redact({
       phoneHash: 'ph_9f1c2b3d4e5a',
