@@ -285,6 +285,8 @@ rollback (PI_BOOTH.md §7, "Update").
 
 ## H. The counter scanner — into the box
 
+**Not yet: keep the cradle in the iPad until SCRUM-731 lands.** With the cradle on the box, vouchers, booking QRs, staff benefit QRs and product barcodes reach the till, but a scanned wristband opens nothing at F&B, the shop or History.
+
 The Zebra cradle (DS2278 on its CR2278 cradle) plugs into the **counter box**, not the
 iPad: the box reads it itself and the till, the customer display and the gate on that
 station hear every scan, online or offline. It needs a box release built after SCRUM-700
