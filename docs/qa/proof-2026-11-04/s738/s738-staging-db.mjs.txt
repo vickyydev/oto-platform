@@ -1,0 +1,69 @@
+import assert from 'node:assert/strict';
+import {Script} from 'node:vm';
+import {render,service} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+
+export async function job(program,event,expectedSha){
+ new Script(program);
+ const api=await service('oto-api-staging');assert.equal(api.id,'srv-danh2ljtqb8s73bt9en0');
+ const live=(await render('GET',`/services/${api.id}/deploys?limit=1`))[0]?.deploy;assert.equal(live?.status,'live');assert.equal(live.commit.id,expectedSha);
+ const startedAt=new Date().toISOString();
+ const startCommand='cd apps/api && node -e "eval(Buffer.from(\''+Buffer.from(program).toString('base64')+'\',\'base64\').toString())"';
+ const made=await render('POST',`/services/${api.id}/jobs`,{startCommand});assert.ok(made.id,'Staging proof job was not created');
+ let status;for(let i=0;i<120;i++){const d=await render('GET',`/services/${api.id}/jobs/${made.id}`);if(['succeeded','failed','canceled'].includes(d.status)){status=d.status;break;}await new Promise(r=>setTimeout(r,3000));}
+ const qs=new URLSearchParams({ownerId:api.ownerId,resource:made.id,startTime:startedAt,limit:'100',direction:'forward'});
+ let rows=[];for(let i=0;i<8;i++){const logs=await render('GET',`/logs?${qs}`);rows=(logs.logs??[]).flatMap(x=>{try{return [JSON.parse(x.message)];}catch{return [];}}).filter(x=>x.event===event||x.event===event+'_error');if(rows.length)break;await new Promise(r=>setTimeout(r,2500));}
+ const result={jobId:made.id,source:live.commit.id,startedAt,status,result:rows.find(x=>x.event===event)??null,errors:rows.filter(x=>x.event===event+'_error')};
+ return result;
+}
+
+function program(spec,event,body){return `(async()=>{const assert=require('node:assert/strict'),{Client}=require('pg'),s=${JSON.stringify(spec)},c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();try{assert.ok(s.name.startsWith('ZZ TEST SCRUM-738 '));${body}}catch(e){await c.query('ROLLBACK').catch(()=>{});console.error(JSON.stringify({event:'${event}_error',name:e.name,code:e.code??'ASSERTION',message:String(e.message).replace(/postgres[^\\s]*/gi,'[database omitted]').slice(0,300)}));process.exitCode=1;}finally{await c.end();}})();`;}
+
+export async function createEvents(spec,sha,run=job){
+ const event='s738_fixture_events';
+ return run(program(spec,event,`
+ await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");
+ const mapping=(await c.query('SELECT id,tenant_id FROM otoapp.branches WHERE core_branch_id=$1',[s.branchId])).rows;assert.equal(mapping.length,1);
+ const day=(await c.query("SELECT ((now() AT TIME ZONE timezone) - (business_day_start - '00:00'::time))::date::text AS day FROM core.branch WHERE id=$1",[s.branchId])).rows[0].day;
+ for(const e of Object.values(s.events)){assert.ok(e.title.startsWith(s.name+' '));assert.ok(['workshop','birthday'].includes(e.type));
+ await c.query("INSERT INTO otoapp.core_events (id,tenant_id,branch_id,event_type,title,event_date,start_time,end_time,location_text,num_children,num_adults,entry_price_weekday_thb,entry_price_weekend_thb,child_name,parent_name,whatsapp_phone_e164,total_value,prepayment_amount,status) VALUES ($1,$2,$3,$4,$5,$6,'09:00','20:00','ZZ TEST room',3,2,$7,$7,'ZZ TEST child','ZZ TEST guardian',NULL,$8,0,'upcoming')",[e.id,mapping[0].tenant_id,mapping[0].id,e.type,e.title,day,e.type==='workshop'?1:null,e.type==='birthday'?2:null]);}
+ const view=(await c.query('SELECT id,title,type,archived,entry_price_weekday_satang,total_value_satang FROM otoapp_v.events WHERE id::text=ANY($1::text[])',[Object.values(s.events).map(e=>e.id)])).rows;assert.equal(view.length,3);assert.ok(view.every(e=>!e.archived));
+ await c.query('COMMIT');console.log(JSON.stringify({event:'${event}',at:new Date().toISOString(),day,view,passed:true}));`),event,sha);
+}
+
+export async function readProof(spec,sha,run=job){
+ const event='s738_proof_readback';
+ return run(program(spec,event,`
+ await c.query('BEGIN READ ONLY');await c.query("SET LOCAL statement_timeout='15s'");const one=async(q,p)=>(await c.query(q,p)).rows;
+ const station=(await one('SELECT name FROM core.station WHERE id=$1',[s.stationId]))[0];assert.equal(station.name,s.name+' till');
+ const sales=await one('SELECT id,status,gross_satang FROM pos.sale WHERE station_id=$1',[s.stationId]);
+ const partyPayments=await one('SELECT p.otoapp_event_id,a.amount_satang FROM pos.party_payment p JOIN pos.payment_attempt a ON a.id=p.payment_attempt_id WHERE p.otoapp_event_id=ANY($1::uuid[])',[[s.events.party.id,s.events.mobile.id]]);
+ const attendees=(await one("SELECT count(*)::int n,count(*) FILTER (WHERE parent_phone IS NOT NULL AND parent_phone<>'')::int phones FROM otoapp.event_attendees WHERE event_id::text=$1",[s.events.pass.id]))[0];
+ const lease=(await one('SELECT lease_id IS NULL AS released FROM edge.station_session WHERE station_id=$1',[s.stationId]))[0];
+ const attempts=await one('SELECT id,status,provider FROM pos.payment_attempt WHERE station_id=$1',[s.stationId]);
+ const holds=await one('SELECT status,count(*)::int n FROM pos.event_pass_hold WHERE station_id=$1 GROUP BY status',[s.stationId]);
+ assert.equal(sales.length,2);assert.ok(sales.every(x=>x.status==='finalised'&&Number(x.gross_satang)===100));assert.equal(partyPayments.length,2);assert.ok(partyPayments.every(x=>Number(x.amount_satang)===200));assert.equal(attendees.n,2);assert.equal(attendees.phones,0);assert.equal(lease.released,true);assert.equal(attempts.length,4);assert.ok(attempts.every(x=>x.status==='approved'&&x.provider==='simulator'));assert.deepEqual(holds,[{status:'applied',n:2}]);
+ await c.query('COMMIT');console.log(JSON.stringify({event:'${event}',at:new Date().toISOString(),sales,partyPayments,attendees,lease,attempts,holds,passed:true}));`),event,sha);
+}
+
+export async function archiveEvents(spec,sha,run=job){
+ const event='s738_archive_events';
+ return run(program(spec,event,`
+ await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");
+ const ids=Object.values(s.events).map(e=>e.id),rows=(await c.query('SELECT id,title FROM otoapp.core_events WHERE id::text=ANY($1::text[])',[ids])).rows;assert.equal(rows.length,3);assert.ok(rows.every(r=>r.title.startsWith(s.name+' ')));
+ await c.query('UPDATE otoapp.core_events SET is_archived=true,updated_at=now() WHERE id::text=ANY($1::text[]) AND title LIKE $2',[ids,s.name+' %']);
+ const view=(await c.query('SELECT id,title,archived FROM otoapp_v.events WHERE id::text=ANY($1::text[])',[ids])).rows;assert.equal(view.length,3);assert.ok(view.every(e=>e.archived));
+ await c.query('COMMIT');console.log(JSON.stringify({event:'${event}',at:new Date().toISOString(),view,passed:true}));`),event,sha);
+}
+
+export async function readCleanup(spec,sha,run=job){
+ const event='s738_cleanup_readback';
+ return run(program(spec,event,`
+ await c.query('BEGIN READ ONLY');await c.query("SET LOCAL statement_timeout='15s'");const one=async(q,p)=>(await c.query(q,p)).rows;
+ const station=(await one('SELECT name,archived_at IS NOT NULL AS archived FROM core.station WHERE id=$1',[s.stationId]))[0];assert.equal(station.name,s.name+' till');assert.equal(station.archived,true);
+ const credential=(await one('SELECT label,revoked_at IS NOT NULL AS revoked FROM core.device_credential WHERE id=$1 AND station_id=$2',[s.displayId,s.stationId]))[0];assert.equal(credential.label,s.name+' display');assert.equal(credential.revoked,true);
+ const sessions=(await one('SELECT count(*)::int n FROM core.session WHERE station_id=$1 AND expires_at>now() AND revoked_at IS NULL',[s.stationId]))[0].n;assert.equal(sessions,0);
+ const lease=(await one('SELECT lease_id IS NULL AS released FROM edge.station_session WHERE station_id=$1',[s.stationId]))[0];assert.equal(lease.released,true);
+ const events=(await one('SELECT count(*)::int n,count(*) FILTER (WHERE is_archived)::int archived FROM otoapp.core_events WHERE id::text=ANY($1::text[])',[Object.values(s.events).map(e=>e.id)]))[0];assert.deepEqual(events,{n:3,archived:3});
+ const pending=(await one("SELECT count(*)::int n FROM pos.payment_attempt WHERE station_id=$1 AND status NOT IN ('approved','declined','cancelled','not_found')",[s.stationId]))[0].n;assert.equal(pending,0);
+ await c.query('COMMIT');console.log(JSON.stringify({event:'${event}',at:new Date().toISOString(),station,credential,sessions,lease,events,pending,financialHistoryRetained:true,passed:true}));`),event,sha);
+}

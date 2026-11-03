@@ -1,0 +1,59 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+import {execFileSync} from 'node:child_process';
+import {randomUUID} from 'node:crypto';
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {need} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import {journeys} from './s738-staging-journeys.mjs';
+import {createEvents,readProof,archiveEvents,readCleanup} from './s738-staging-db.mjs';
+const [root,sha]=process.argv.slice(2);assert.match(root??'',/^C:\/oto-lanes\//);assert.match(sha??'',/^[a-f0-9]{40}$/);
+execFileSync('git',['merge-base','--is-ancestor',sha,'origin/main'],{cwd:root,stdio:'ignore'});
+const {statusOf}=await import(pathToFileURL(root+'/scripts/agent/jira.mjs').href);
+assert.equal((await statusOf('SCRUM-732')).status,'Deployed');assert.equal((await statusOf('SCRUM-735')).status,'Deployed');
+const {render,stagingServices,envValue}=await import(pathToFileURL(root+'/scripts/agent/render.mjs').href);
+const {chromium,expect}=createRequire(root+'/apps/pos/package.json')('@playwright/test');
+const POS='https://oto-pos-web-staging.onrender.com',CONSOLE='https://oto-console-staging.onrender.com',LAUNCHER='https://oto-launcher-staging.onrender.com';
+const stamp=Date.now().toString(36),name='ZZ TEST SCRUM-738 '+stamp,out=root+'/docs/qa/proof-2026-11-04/s738/staging/'+stamp;mkdirSync(out,{recursive:true});
+const f={name,events:Object.fromEntries([['pass','workshop'],['party','birthday'],['mobile','birthday']].map(([key,type])=>[key,{id:randomUUID(),title:name+' '+key,type}]))};
+const r={unit:'SCRUM-738',source:sha,startedAt:new Date().toISOString(),fixture:f,cases:[],attempts:[],screens:[],cleanup:{},outcome:'incomplete'};
+const save=()=>writeFileSync(out+'/receipt.json',JSON.stringify(r,null,2)+'\n'),phase=v=>{r.phase=v;save();};
+const services=(await stagingServices()).filter(s=>['oto-api-staging','oto-pos-web-staging','oto-console-staging','oto-launcher-staging','oto-app-staging'].includes(s.name));assert.equal(services.length,5);
+const apiService=services.find(s=>s.name==='oto-api-staging');assert.equal(apiService.id,'srv-danh2ljtqb8s73bt9en0');
+async function live(){return Promise.all(services.map(async s=>{const d=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;assert.equal(d?.status,'live','Deployment not live: '+s.name);if(['oto-api-staging','oto-pos-web-staging'].includes(s.name))assert.equal(d.commit.id,sha,'Live source differs: '+s.name);return {name:s.name,commit:d.commit.id,deployId:d.id,finishedAt:d.finishedAt};}));}
+const settingsNames=async()=>{const rows=await render('GET',`/services/${apiService.id}/env-vars?limit=100`);assert.ok(Array.isArray(rows));const names=rows.map(row=>(row.envVar??row).key);assert.ok(names.every(x=>typeof x==='string'));assert.equal(new Set(names).size,names.length);return names.sort();};
+r.deployments=await live();const stable=async()=>assert.deepEqual(await live(),r.deployments);
+const baselineNames=await settingsNames();assert.equal(baselineNames.length,57);r.apiSettingNameCount=57;assert.equal(await envValue(apiService.id,'PGW_PROVIDER'),'simulator','Gateway must be simulated');r.gatewaySimulatorVerified=true;
+r.ci=JSON.parse(execFileSync('gh',['run','list','--branch','main','--commit',sha,'--limit','1','--json','databaseId,headSha,status,conclusion'],{cwd:root,encoding:'utf8'}))[0];assert.equal(r.ci?.conclusion,'success');assert.equal(r.ci.headSha,sha);save();
+const browser=await chromium.launch(),displayBrowser=await chromium.launch(),admin=await browser.newContext({viewport:{width:1600,height:1100}}),ctx=await browser.newContext({viewport:{width:1600,height:1100}}),displayCtx=await displayBrowser.newContext({viewport:{width:1280,height:900}});
+const p=await ctx.newPage(),display=await displayCtx.newPage();admin.setDefaultTimeout(20000);ctx.setDefaultTimeout(20000);displayCtx.setDefaultTimeout(20000);r.browser={version:browser.version(),independentDisplayProcess:true};
+const fetchApi=(context,origin)=>async(method,path,data)=>{const response=await context.request.fetch(origin+'/api'+path,{method,data,headers:method==='GET'?{}:{'Idempotency-Key':randomUUID()}});const body=await response.json().catch(()=>null);assert.equal(response.status(),200,method+' '+path+' '+response.status()+' '+(body?.error?.code??''));return body;};
+const adminApi=fetchApi(admin,CONSOLE),api=fetchApi(ctx,POS);
+async function enter(context,app,page){const login=await context.request.post(LAUNCHER+'/api/auth/sign-in',{data:{phone:need('STAGING_ADMIN_PHONE'),password:need('STAGING_ADMIN_PASSWORD')}});assert.equal(login.status(),200,'Staging sign-in failed');const handoff=await context.request.post(LAUNCHER+'/api/auth/handoff',{data:{app}});assert.equal(handoff.status(),200);const exchange=page.waitForResponse(res=>new URL(res.url()).pathname==='/api/auth/handoff/exchange'&&res.request().method()==='POST');await page.goto((await handoff.json()).launchUrl,{waitUntil:'domcontentloaded'}).catch(()=>{throw new Error('Staging handoff navigation failed');});assert.equal((await exchange).status(),200);}
+async function shot(label,page=display){await stable();await page.bringToFront();await page.evaluate(async()=>{await document.fonts.ready;await Promise.all(document.getAnimations().filter(a=>a.effect?.getComputedTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>undefined)));await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});await page.screenshot({path:out+'/'+label+'.png',fullPage:true,mask:[page.locator('input[type=password]'),page.locator('input[type=tel],input[inputmode=tel]'),page.getByTestId('display-pairing-code')]});r.screens.push({file:label+'.png',at:new Date().toISOString()});save();}
+const requireJob=result=>{assert.equal(result.status,'succeeded','Proof database job failed');assert.equal(result.result?.passed,true,'Proof database job did not pass');};
+try{
+ phase('admin handoff');await enter(admin,'console',await admin.newPage());const me=await adminApi('GET','/me');f.branchId=me.operatorContext.branchId;assert.ok(f.branchId);
+ phase('own virtual station');await stable();const boxes=(await adminApi('GET',`/branches/${f.branchId}/boxes`)).boxes;const virtual=boxes.find(b=>b.role==='virtual'&&b.status==='online'&&!b.archived&&!/FWBooth1|Pi/i.test(b.name));assert.ok(virtual,'No online virtual box');f.boxId=virtual.id;
+ const stations=(await adminApi('GET',`/branches/${f.branchId}/stations?includeArchived=true`)).stations,used=new Set(stations.map(s=>s.codePrefix)),prefix=Array.from({length:1000},(_,i)=>'Z'+(Date.now()+i).toString(36).slice(-5).toUpperCase()).find(x=>!used.has(x));assert.ok(prefix);
+ const made=await adminApi('POST',`/branches/${f.branchId}/stations`,{name:name+' till',boxId:virtual.id,kind:'till',codePrefix:prefix,accessScope:'all_staff',paymentRouting:{card:'manual',qr:'gateway'},devices:[]});f.stationId=made.station.id;save();assert.equal(made.station.ready,true);
+ phase('own event fixtures');r.eventsCreateAttempted=true;save();r.eventsCreate=await createEvents(f,sha);save();requireJob(r.eventsCreate);
+ phase('staff handoff');await enter(ctx,'pos',p);await expect(p.getByRole('heading',{name:'Which station are you on?'})).toBeVisible();await p.getByRole('button',{name:new RegExp(name+' till')}).click();await expect(p.getByText('Membership Check',{exact:true})).toBeVisible();
+ await journeys({p,display,POS,f,r,api,shot,save,expect,ctx,phase,stable});assert.equal(r.cases.length,4);assert.ok(r.signOut?.nativeButton);
+ phase('independent proof readback');r.proofReadback=await readProof(f,sha);save();requireJob(r.proofReadback);await stable();r.proofFinishedAt=new Date().toISOString();r.outcome='four native staging tender/display journeys and sign-out passed; cleanup follows';save();
+}catch(error){r.failure={phase:r.phase,name:error.name,message:error.message.split('\n').slice(0,2).join(' ').replace(/https?:\/\/\S+/g,'[address omitted]')};process.exitCode=1;save();await shot('failure-display').catch(()=>{});}
+finally{
+ await displayBrowser.close();r.cleanup.startedAt=new Date().toISOString();save();
+ const cleanupError=(step,error)=>{(r.cleanup.errors??=[]).push({step,name:error.name,message:error.message.split('\n')[0]});process.exitCode=1;save();};
+ try{for(const id of r.attempts){const info=await adminApi('GET','/payments/attempts/'+id);assert.equal(info.attempt.id,id);assert.equal(info.attempt.provider,'simulator');if(['created','sent_to_terminal'].includes(info.attempt.status))await api('POST',`/payments/attempts/${id}/cancel`,{reason:'ZZ TEST SCRUM-738 cleanup'});}}catch(e){cleanupError('own pending attempts',e);}
+ try{if((await ctx.request.get(POS+'/api/me')).status()===200){const doc=f.stationId?(await adminApi('GET',`/stations/${f.stationId}/session`)).document:null;const logout=await ctx.request.post(POS+'/api/auth/sign-out',{data:doc?.lease?.leaseId?{stationLeaseId:doc.lease.leaseId}:{}});assert.equal(logout.status(),200);}assert.equal((await ctx.request.get(POS+'/api/me')).status(),401);r.cleanup.staffSessionEnded=true;}catch(e){cleanupError('staff sign-out',e);}
+ try{if(f.displayId){const credentials=(await adminApi('GET',`/branches/${f.branchId}/credentials?includeRevoked=true`)).credentials,own=credentials.find(x=>x.id===f.displayId);assert.equal(own.label,name+' display');assert.equal(own.stationId,f.stationId);await adminApi('POST',`/credentials/${f.displayId}/revoke`,{reason:'ZZ TEST SCRUM-738 proof complete'});const after=(await adminApi('GET',`/branches/${f.branchId}/credentials?includeRevoked=true`)).credentials.find(x=>x.id===f.displayId);assert.ok(after.revokedAt);r.cleanup.displayRevoked=true;}}catch(e){cleanupError('display revoke',e);}
+ try{if(f.stationId){const own=(await adminApi('GET','/stations/'+f.stationId)).station;assert.equal(own.name,name+' till');assert.equal(own.boxId,f.boxId);await adminApi('DELETE','/stations/'+f.stationId);const after=(await adminApi('GET',`/branches/${f.branchId}/stations?includeArchived=true`)).stations.find(x=>x.id===f.stationId);assert.equal(after.archived,true);r.cleanup.stationArchived=true;}}catch(e){cleanupError('station archive',e);}
+ try{if(r.eventsCreateAttempted){r.cleanup.events=await archiveEvents(f,sha);save();requireJob(r.cleanup.events);}}catch(e){cleanupError('event archive',e);}
+ try{if(f.stationId&&f.displayId){r.cleanup.readback=await readCleanup(f,sha);save();requireJob(r.cleanup.readback);}}catch(e){cleanupError('independent cleanup readback',e);}
+ r.cleanup.sessions=[];for(const[context,origin]of [[ctx,LAUNCHER],[admin,CONSOLE],[admin,LAUNCHER]]){try{const logout=await context.request.post(origin+'/api/auth/sign-out');assert.equal(logout.status(),200);assert.equal((await context.request.get(origin+'/api/me')).status(),401);r.cleanup.sessions.push({app:new URL(origin).hostname,signedOut:true});}catch(e){cleanupError('remaining session sign-out',e);}}
+ try{assert.deepEqual(await settingsNames(),baselineNames);r.apiSettingNameCountAfter=57;r.cleanup.settingNamesUnchanged=true;await stable();r.deploymentsAfter=await live();}catch(e){cleanupError('stable service readback',e);}
+ if(!r.failure&&!r.cleanup.errors){r.outcome='four native staging tender/display journeys, native sign-out and independent cleanup passed';r.cleanup.passed=true;}
+ r.finishedAt=new Date().toISOString();save();await browser.close();
+}
+console.log(JSON.stringify({out,source:sha,outcome:r.outcome,failed:!!r.failure,cleanupPassed:r.cleanup.passed??false,cases:r.cases.length,images:r.screens.map(s=>s.file)}));

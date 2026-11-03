@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import { createServer } from 'node:net';
+import { spawn, spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { createEvents, readProof, archiveEvents, readCleanup } from './s738-staging-db.mjs';
+import { createTestContext, teardownAll, ADMIN, CENTRAL_BRANCH_CODE } from './codex-tender-display-20261104/apps/api/test/helpers.ts';
+import * as eventWrites from './codex-tender-display-20261104/apps/oto-app/server/directory/eventWrites.ts';
+const root='C:/oto-lanes/codex-tender-display-20261104';
+const require=createRequire(root+'/apps/api/package.json');
+const {Pool}=require('pg');
+const free=()=>new Promise<number>((resolve,reject)=>{const s=createServer();s.on('error',reject);s.listen(0,'127.0.0.1',()=>{const a=s.address();assert.ok(a&&typeof a!=='string');s.close(()=>resolve(a.port));});});
+const [apiPort,posPort]=await Promise.all([free(),free()]);
+const origin=(port:number)=>`http://127.0.0.1:${port}`;
+const ctx=await createTestContext({otoapp:true,env:{DEPLOY_ENV:'local',PROCESS_ROLES:'api,jobs',PGW_PROVIDER:'simulator',PGW_MERCHANT_ID:'ZZTEST738',
+  PGW_SECRET_KEY:randomBytes(32).toString('hex'),PGW_WEBHOOK_SECRET:randomBytes(24).toString('hex'),ALLOWED_ORIGINS:origin(posPort),COOKIE_SECURE:'false'}});
+const pool=new Pool({connectionString:(ctx.db as any).$client.options.connectionString,options:'-c search_path=otoapp',max:3});
+const stamp=Date.now().toString(36),name='ZZ TEST SCRUM-738 '+stamp;
+const out=root+'/docs/qa/proof-2026-11-04/s738/local/'+stamp;mkdirSync(out,{recursive:true});
+let server:ReturnType<typeof spawn>|undefined,code=1;
+const programResults:any[]=[];
+async function localJob(program:string,event:string,_sha:string){
+ const rows:any[]=[],localProcess={env:{DATABASE_URL:(ctx.db as any).$client.options.connectionString},exitCode:0};
+ await new Function('require','process','console','return '+program)(require,localProcess,{log:(line:string)=>rows.push(JSON.parse(line)),error:(line:string)=>rows.push(JSON.parse(line))});
+ const result={event,status:localProcess.exitCode===0?'succeeded':'failed',result:rows.find(row=>row.event===event),errors:rows.filter(row=>row.event===event+'_error')};programResults.push(result);
+ writeFileSync(out+'/guarded-programs.json',JSON.stringify(programResults,null,2)+'\n');assert.equal(result.status,'succeeded',event);assert.equal(result.result?.passed,true,event);return result;
+}
+try {
+ const branch=(await pool.query('SELECT id, operator_id, timezone, business_day_start FROM core.branch WHERE code=$1 LIMIT 1',[CENTRAL_BRANCH_CODE])).rows[0];assert.ok(branch,'Seeded local branch missing');
+ const tenant=randomUUID(),appBranch=randomUUID();
+ await pool.query('INSERT INTO otoapp.tenants (id,name,slug) VALUES ($1,$2,$3)',[tenant,name,'zz-s738-'+stamp]);
+ await pool.query('INSERT INTO otoapp.branches (id,tenant_id,name,address,core_branch_id) VALUES ($1,$2,$3,$4,$5)',[appBranch,tenant,name+' branch','ZZ TEST local',branch.id]);
+ const day=(await pool.query("SELECT ((now() AT TIME ZONE $1) - ($2::time - '00:00'::time))::date::text AS day",[branch.timezone,branch.business_day_start])).rows[0].day;
+ const events:Record<string,{id:string;title:string;type:string}>={};
+ for(const [key,type] of [['pass','workshop'],['party','birthday'],['mobile','birthday']]){
+  const id=randomUUID(),title=name+' '+key;events[key!]={id,title,type:type!};
+ }
+ await createEvents({name,branchId:branch.id,events},'local',localJob);
+ const directory=(ctx.app as any).otoAppDirectory;
+ (ctx.app as any).otoAppDirectory={...directory,configured:true,async addAttendee(eventId:string,body:any){
+  const event=await eventWrites.findTenantEvent(pool,tenant,eventId);if(!event)return {ok:false,status:404,code:'OTOAPP_EVENT_NOT_FOUND',message:'Event not found',retryable:false};
+  const result=await eventWrites.createEventAttendee(pool,event,body);
+  return result.ok?{ok:true,status:result.status,body:result.body}:{ok:false,status:result.status,code:'OTOAPP_'+result.error.toUpperCase(),message:result.message,retryable:result.status>=500};
+ }};
+ await ctx.app.listen({port:apiPort,host:'127.0.0.1'});
+ const base=Object.fromEntries(['PATH','Path','SystemRoot','TEMP','TMP','LOCALAPPDATA','USERPROFILE'].filter(k=>process.env[k]).map(k=>[k,process.env[k]]));
+ server=spawn(process.execPath,[root+'/apps/pos/server/dist/index.js'],{cwd:root+'/apps/pos',env:{...base,PORT:String(posPort),API_UPSTREAM:origin(apiPort)},windowsHide:true,stdio:'ignore'});
+ let ready=false;for(let i=0;i<80;i++){if(await fetch(origin(posPort)).then(r=>r.ok).catch(()=>false)){ready=true;break;}await new Promise(r=>setTimeout(r,500));}assert.ok(ready,'POS server did not start');
+ const fixture={mode:'local',name,branchId:branch.id,day,events,out};writeFileSync(out+'/fixture.json',JSON.stringify(fixture,null,2)+'\n');
+ const child=spawn(process.execPath,['C:/oto-lanes/s738-native-browser.mjs'],{cwd:root,windowsHide:true,stdio:'inherit',env:{...base,S738_MODE:'local',S738_POS:origin(posPort),S738_PHONE:ADMIN.phone,S738_PASSWORD:ADMIN.password,S738_FIXTURE:out+'/fixture.json'}});
+ code=await new Promise<number>(resolve=>child.once('exit',value=>resolve(value??1)));
+ const counts=(await pool.query(`SELECT (SELECT count(*)::int FROM pos.sale WHERE station_id=(SELECT id FROM core.station WHERE name=$1)) AS sales,
+  (SELECT count(*)::int FROM pos.party_payment WHERE otoapp_event_id=ANY($2::uuid[])) AS party_payments,
+  (SELECT lease_id FROM edge.station_session WHERE station_id=(SELECT id FROM core.station WHERE name=$1)) AS remaining_lease`,[name+' till',[events.party!.id,events.mobile!.id]])).rows[0];
+ writeFileSync(out+'/readback.json',JSON.stringify({at:new Date().toISOString(),counts,smsSent:ctx.smsLog.length},null,2)+'\n');
+ assert.equal(ctx.smsLog.length,0);
+ if(code===0){assert.equal(counts.sales,2);assert.equal(counts.party_payments,2);assert.equal(counts.remaining_lease,null);}
+ if(code===0){
+  const browser=JSON.parse(readFileSync(out+'/browser.json','utf8')),spec={name,branchId:branch.id,events,...browser.fixture};
+  await readProof(spec,'local',localJob);await archiveEvents(spec,'local',localJob);
+  const station=await pool.query('UPDATE core.station SET archived_at=now() WHERE id=$1 AND name=$2 RETURNING id',[spec.stationId,name+' till']);assert.equal(station.rowCount,1);
+  const display=await pool.query('UPDATE core.device_credential SET revoked_at=now() WHERE id=$1 AND station_id=$2 AND label=$3 RETURNING id',[spec.displayId,spec.stationId,name+' display']);assert.equal(display.rowCount,1);
+  await readCleanup(spec,'local',localJob);
+ }
+}catch(error){console.error(JSON.stringify({localProofFailed:true,error:(error as Error).name,message:(error as Error).message.replace(/postgres[^\s]*/g,'[database omitted]'),out}));code=1;}
+finally{if(server?.pid&&server.exitCode===null)spawnSync('taskkill',['/pid',String(server.pid),'/t','/f'],{windowsHide:true,stdio:'ignore'});await pool.end();await ctx.close();await teardownAll();writeFileSync(out+'/database-cleanup.json',JSON.stringify({at:new Date().toISOString(),dropped:true})+'\n');}
+process.exit(code);

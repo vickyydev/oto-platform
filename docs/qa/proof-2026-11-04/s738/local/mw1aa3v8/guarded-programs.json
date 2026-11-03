@@ -1,0 +1,161 @@
+[
+  {
+    "event": "s738_fixture_events",
+    "status": "succeeded",
+    "result": {
+      "event": "s738_fixture_events",
+      "at": "2026-11-03T22:52:58.853Z",
+      "day": "2026-11-04",
+      "view": [
+        {
+          "id": "f336e024-5820-4fd7-a8e9-64f2df0b0c2d",
+          "title": "ZZ TEST SCRUM-738 mw1aa3v8 pass",
+          "type": "event",
+          "archived": false,
+          "entry_price_weekday_satang": "100",
+          "total_value_satang": null
+        },
+        {
+          "id": "b0788513-6e54-46de-b2cc-448927c32b7d",
+          "title": "ZZ TEST SCRUM-738 mw1aa3v8 party",
+          "type": "party",
+          "archived": false,
+          "entry_price_weekday_satang": null,
+          "total_value_satang": "200"
+        },
+        {
+          "id": "1266ccc5-6c1e-4eed-bc99-87539a77ecc2",
+          "title": "ZZ TEST SCRUM-738 mw1aa3v8 mobile",
+          "type": "party",
+          "archived": false,
+          "entry_price_weekday_satang": null,
+          "total_value_satang": "200"
+        }
+      ],
+      "passed": true
+    },
+    "errors": []
+  },
+  {
+    "event": "s738_proof_readback",
+    "status": "succeeded",
+    "result": {
+      "event": "s738_proof_readback",
+      "at": "2026-11-03T22:53:18.906Z",
+      "sales": [
+        {
+          "id": "01a1a39d-ba6b-7bb0-a639-24ec7e763e17",
+          "status": "finalised",
+          "gross_satang": "100"
+        },
+        {
+          "id": "01a1a39d-d21e-7e38-b423-849087d7a46b",
+          "status": "finalised",
+          "gross_satang": "100"
+        }
+      ],
+      "partyPayments": [
+        {
+          "otoapp_event_id": "b0788513-6e54-46de-b2cc-448927c32b7d",
+          "amount_satang": "200"
+        },
+        {
+          "otoapp_event_id": "1266ccc5-6c1e-4eed-bc99-87539a77ecc2",
+          "amount_satang": "200"
+        }
+      ],
+      "attendees": {
+        "n": 2,
+        "phones": 0
+      },
+      "lease": {
+        "released": true
+      },
+      "attempts": [
+        {
+          "id": "01a1a39d-bb12-77ae-a8f2-32f9f3e8edff",
+          "status": "approved",
+          "provider": "simulator"
+        },
+        {
+          "id": "01a1a39d-c6b5-777b-8180-251a841af6fc",
+          "status": "approved",
+          "provider": "simulator"
+        },
+        {
+          "id": "01a1a39d-d24d-759d-aebc-7ad3a016b38b",
+          "status": "approved",
+          "provider": "simulator"
+        },
+        {
+          "id": "01a1a39d-dd4f-759f-b859-fae0d5cebcca",
+          "status": "approved",
+          "provider": "simulator"
+        }
+      ],
+      "holds": [
+        {
+          "status": "applied",
+          "n": 2
+        }
+      ],
+      "passed": true
+    },
+    "errors": []
+  },
+  {
+    "event": "s738_archive_events",
+    "status": "succeeded",
+    "result": {
+      "event": "s738_archive_events",
+      "at": "2026-11-03T22:53:18.944Z",
+      "view": [
+        {
+          "id": "f336e024-5820-4fd7-a8e9-64f2df0b0c2d",
+          "title": "ZZ TEST SCRUM-738 mw1aa3v8 pass",
+          "archived": true
+        },
+        {
+          "id": "b0788513-6e54-46de-b2cc-448927c32b7d",
+          "title": "ZZ TEST SCRUM-738 mw1aa3v8 party",
+          "archived": true
+        },
+        {
+          "id": "1266ccc5-6c1e-4eed-bc99-87539a77ecc2",
+          "title": "ZZ TEST SCRUM-738 mw1aa3v8 mobile",
+          "archived": true
+        }
+      ],
+      "passed": true
+    },
+    "errors": []
+  },
+  {
+    "event": "s738_cleanup_readback",
+    "status": "succeeded",
+    "result": {
+      "event": "s738_cleanup_readback",
+      "at": "2026-11-03T22:53:18.999Z",
+      "station": {
+        "name": "ZZ TEST SCRUM-738 mw1aa3v8 till",
+        "archived": true
+      },
+      "credential": {
+        "label": "ZZ TEST SCRUM-738 mw1aa3v8 display",
+        "revoked": true
+      },
+      "sessions": 0,
+      "lease": {
+        "released": true
+      },
+      "events": {
+        "n": 3,
+        "archived": 3
+      },
+      "pending": 0,
+      "financialHistoryRetained": true,
+      "passed": true
+    },
+    "errors": []
+  }
+]

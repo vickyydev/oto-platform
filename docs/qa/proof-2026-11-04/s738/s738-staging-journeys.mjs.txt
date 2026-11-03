@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+export async function journeys(S){
+const {p,display,POS,f,r,api,shot,save,expect,ctx,phase,stable}=S,made={station:{id:f.stationId}};
+ phase('separately paired display');await stable();await display.goto(POS+'/display');
+ const code=await display.getByTestId('display-pairing-code').innerText();
+ const paired=await api('POST',`/stations/${made.station.id}/displays/claim`,{pairingCode:code,name:f.name+' display'});r.fixture.displayId=paired.device.id;save();
+ await expect(display.getByTestId('display-pairing-code')).toHaveCount(0);
+ const read=async()=>(await api('GET',`/stations/${made.station.id}/session`)).document;
+ const takeQr=async(label)=>{
+  const started=p.waitForResponse(res=>res.request().method()==='POST'&&/\/(payments\/attempts|parties\/[^/]+\/payments\/tender)$/.test(new URL(res.url()).pathname));
+  await p.getByRole('button',{name:'Show payment QR',exact:true}).click();
+  const response=await started;assert.equal(response.status(),200);const body=await response.json();assert.equal(body.attempt.provider,'simulator');r.attempts.push(body.attempt.id);save();
+  await expect(display.getByTestId('payment-qr')).toBeVisible();
+  const before=await read();assert.equal(before.cart.kind,'tender');assert.equal(before.payment.status,'pending');
+  await shot(label+'-pending-display');
+  const paid=await api('POST','/webhooks/2c2p/simulator',{attemptId:body.attempt.id,event:'paid'});assert.equal(paid.gatewayState,'paid');
+  await expect(display.getByTestId('display-tender')).toHaveCount(0);await expect(display.getByTestId('payment-qr')).toHaveCount(0);
+  const after=await read();assert.equal(after.lease.leaseId,before.lease.leaseId);assert.notEqual(after.cart?.kind,'tender');assert.notEqual(after.stage,'payment');
+  assert.ok(after.payment===null||after.payment.status==='idle');assert.equal(after.payment?.qrPayload??null,null);assert.equal(after.payment?.qrImageUrl??null,null);
+  await shot(label+'-restored-display');r.cases.push({label,attemptId:body.attempt.id,saleId:body.attempt.saleId,pendingStage:before.stage,restoredStage:after.stage,sameLease:true,paidAt:new Date().toISOString()});save();
+ };
+ phase('ticket pass');await stable();
+ await p.getByText(f.events.pass.title,{exact:true}).locator('..').locator('..').locator('..').getByRole('button',{name:'Sell pass',exact:true}).click();
+ await p.locator('#staff-name').fill('ZZ TEST display child');await p.locator('#staff-parent').fill('ZZ TEST display guardian');
+ await p.getByRole('button',{name:/^Continue to payment/}).click();await p.getByText('PromptPay',{exact:true}).click();
+ await takeQr('till-pass');await expect(p.getByText('Pass paid — check in now?',{exact:true})).toBeVisible();
+ phase('party balance');await stable();await p.goto(POS+'/parties');await p.getByText(f.events.party.title,{exact:true}).click();
+ await p.getByRole('button',{name:/^Take balance/}).click();await p.getByRole('button',{name:'PromptPay',exact:true}).click();
+ await p.getByRole('button',{name:/^Take ฿.* by PromptPay/}).click();await takeQr('party-balance');
+ phase('drop-off event pass');await stable();await p.goto(POS+'/drop-off');await p.getByRole('button',{name:'Events',exact:true}).last().click();
+ await p.getByText(f.events.pass.title,{exact:true}).click();await p.getByRole('button',{name:'Add attendee',exact:true}).click();
+ await p.locator('#staff-name').fill('ZZ TEST dropoff child');await p.locator('#staff-parent').fill('ZZ TEST dropoff guardian');
+ await p.getByRole('button',{name:/^Continue to payment/}).click();await p.getByText('PromptPay',{exact:true}).click();
+ await takeQr('dropoff-pass');await expect(p.getByText('Pass paid — check in now?',{exact:true})).toBeVisible();
+ phase('phone party balance');await stable();await p.setViewportSize({width:390,height:844});await p.goto(POS+'/parties');
+ await p.getByText(f.events.mobile.title,{exact:true}).click();await p.getByRole('button',{name:/^Take payment/}).click();
+ await p.getByRole('button',{name:'PromptPay',exact:true}).click();await p.getByRole('button',{name:/^Show bill/}).click();
+ await p.getByRole('button',{name:'Customer is ready',exact:true}).click();await p.getByRole('button',{name:'Customer reviewed — continue',exact:true}).click();
+ await takeQr('mobile-party-balance');
+ phase('sign-out lease');await stable();
+ await p.setViewportSize({width:1600,height:1100});await p.goto(POS);await expect(p.getByText('Membership Check',{exact:true})).toBeVisible();
+ await expect.poll(async()=>Boolean((await read()).lease?.leaseId)).toBe(true);
+ const held=await read();assert.ok(held.lease?.leaseId);
+ await p.getByRole('button',{name:'Lock screen',exact:true}).click();
+ const leaving=p.waitForResponse(res=>res.request().method()==='POST'&&new URL(res.url()).pathname==='/api/auth/sign-out');
+ await p.getByRole('button',{name:'Sign out and hand over the till',exact:true}).click();const signedOut=await leaving;assert.equal(signedOut.status(),200);
+ assert.equal(signedOut.request().postDataJSON().stationLeaseId,held.lease.leaseId);
+ assert.equal((await ctx.request.get(POS+'/api/me')).status(),401);r.signOut={at:new Date().toISOString(),sessionEnded:true,nativeButton:true,sameLeaseSubmitted:true};
+ await shot('signed-out-staff',p);await shot('signed-out-display');
+
+}
