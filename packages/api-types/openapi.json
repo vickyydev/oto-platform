@@ -93565,6 +93565,63 @@
         }
       }
     },
+    "/box/v1/station/{stationId}/displays": {
+      "get": {
+        "description": "Active displays seen at this station within ten seconds; no display credential is returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "stationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "displays": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "connected": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "connected"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "displays"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/box/v1/station/{stationId}/unlock": {
       "post": {
         "description": "Unlock this till through its box: the staff token and the password checked against the box's own copy of the staff list and the deny-list (OD-2). A fresh sign-in with no live token is admitted for somebody the box has seen in 30 days while it holds a deny-list pulled within 72 hours (OD-6). Takes the lock off the platform session and records both halves together.",
