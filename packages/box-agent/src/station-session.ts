@@ -842,6 +842,12 @@ const CUSTOMER_DENIED_KEYS = [
    * order, so the screen facing the guest never receives it.
    */
   'benefitcode',
+  /**
+   * SCRUM-731 — a wallet's voucher QR read at the counter. It rides the scan to
+   * the staff screens because the till spends by it; whoever holds it can spend
+   * the credit, so the screen facing the guest never receives it.
+   */
+  'walletkey',
 ];
 
 /**

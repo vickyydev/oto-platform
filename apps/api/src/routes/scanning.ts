@@ -186,8 +186,10 @@ export async function scanningRoutes(app: App): Promise<void> {
       /**
        * `scannedCredential`: a staff benefit QR comes back in
        * `detail.benefitCode` for the staff screen to present to the cloud
-       * (S2-21 round 2). That answer is never kept under an Idempotency-Key;
-       * every other scan's answer is, so a retried scan is not a second one.
+       * (S2-21 round 2), and a wallet's voucher QR in `detail.walletKey` for
+       * the till to spend by (SCRUM-731). Those answers are never kept under an
+       * Idempotency-Key; every other scan's answer is, so a retried scan is not
+       * a second one.
        */
       config: { dynamicPermission: true, scannedCredential: true },
       schema: {

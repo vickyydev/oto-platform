@@ -5,8 +5,10 @@ import {
   BAND_CODE_SIGNATURE_LENGTH,
   bandShortCode,
   isLegacyBoothCode,
+  isWalletQrCode,
   normaliseBandCode,
   normaliseBoothCode,
+  normaliseWalletKeyValue,
   parseBandCode,
   parseBandShortCode,
   parseBookingQr,
@@ -14,6 +16,7 @@ import {
   verifyBookingQr,
   verifyBoothCode,
   VOUCHER_CODE_HANDLER,
+  WALLET_QR_HANDLER,
 } from '@oto/shared';
 
 import { benefitCredentialHandler, type BenefitBoxContext } from './benefit-credential';
@@ -78,6 +81,7 @@ export const SCAN_CODE_KINDS = [
   'band',
   'booking',
   'voucher',
+  'wallet',
   'benefit',
   'product',
   'staff_badge',
@@ -698,6 +702,38 @@ export function bookingQrHandler(key: () => string | Uint8Array | null): ScanHan
   };
 }
 
+// --- A wallet's voucher QR (SCRUM-731) --------------------------------------
+
+/** The name the wallet QR handler goes by, shared with the screens that read it. */
+export { WALLET_QR_HANDLER };
+
+/**
+ * The handler: the QR on a printed credit voucher, read at the counter.
+ *
+ * Like the Lucky Wheel voucher, the box says what the string IS and nothing
+ * about whether it is any good: whether a wallet carries it, and what it can
+ * spend, is answered at the till's request by the platform or the box's own
+ * snapshot (`loadScannedTab`), the same answer a typed QR gets. So it is always
+ * `handled`, never `refused`.
+ *
+ * THE KEY TRAVELS, and has to, because the till spends by it. It is a bearer
+ * instrument (`mintVoucherQr`), so it goes to staff screens only: the name
+ * `walletKey` is on the customer view's deny list (`redactScanForCustomer`) and
+ * ends in `key`, which keeps an answer carrying it out of the replay store
+ * (`carriesSecret` in the api's idempotency plugin), as a benefit QR's answer
+ * is. The tape keeps its fingerprint, as it does for every scan.
+ */
+export function walletQrHandler(): ScanHandler {
+  return {
+    name: WALLET_QR_HANDLER,
+    kind: 'wallet',
+    matches: isWalletQrCode,
+    handle(ctx) {
+      return { outcome: 'handled', detail: { walletKey: normaliseWalletKeyValue('voucher_qr', ctx.code) } };
+    },
+  };
+}
+
 export class ScanRouter {
   private readonly options: ScanRouterOptions;
   private readonly handlers: ScanHandler[] = [];
@@ -739,6 +775,13 @@ export class ScanRouter {
    * the code fall to a broad matcher.
    */
   private readonly benefit: ScanHandler;
+  /**
+   * SCRUM-731 — a wallet's voucher QR (`QR-…`), claimed by the router itself
+   * after the benefit QR and for the same reason: its shape is the platform's
+   * own (`@oto/shared`'s `mintVoucherQr`). Always present, so it is classified
+   * on any router.
+   */
+  private readonly walletQr = walletQrHandler();
 
   constructor(options: ScanRouterOptions) {
     this.options = options;
@@ -776,6 +819,7 @@ export class ScanRouter {
       ...(this.band ? [this.band.name] : []),
       this.booking.name,
       this.benefit.name,
+      this.walletQr.name,
       ...this.handlers.map((h) => h.name),
     ];
   }
@@ -788,8 +832,9 @@ export class ScanRouter {
    * api mints at payment, not one invented here). A retail
    * barcode is matched (`isProductBarcode`), because its shape was decided by
    * GS1 long before this park existed — and so are a Lucky Wheel voucher code
-   * (`isBoothVoucherCode`, S2-10b) and a band code (`isBandCodeCandidate`,
-   * S2-11), whose shapes the platform decided and mints.
+   * (`isBoothVoucherCode`, S2-10b), a band code (`isBandCodeCandidate`, S2-11)
+   * and a wallet's voucher QR (`isWalletQrCode`, SCRUM-731), whose shapes the
+   * platform decided and mints.
    */
   classify(code: string): { kind: ScanCodeKind; handler: ScanHandler | null } {
     // The router's own first: see `voucher` and `band`. Shape tests on a
@@ -799,6 +844,7 @@ export class ScanRouter {
     if (this.band?.matches(code)) return { kind: this.band.kind, handler: this.band };
     if (this.booking.matches(code)) return { kind: this.booking.kind, handler: this.booking };
     if (this.benefit.matches(code)) return { kind: this.benefit.kind, handler: this.benefit };
+    if (this.walletQr.matches(code)) return { kind: this.walletQr.kind, handler: this.walletQr };
     for (const handler of this.handlers) {
       let claimed = false;
       try {

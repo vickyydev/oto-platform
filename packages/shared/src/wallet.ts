@@ -283,6 +283,22 @@ export function mintVoucherQr(): string {
   return out;
 }
 
+/**
+ * Is this string a wallet's voucher QR, by its shape? (SCRUM-731)
+ *
+ * `QR-` and what follows it: twenty characters as `mintVoucherQr` makes them,
+ * or a wallet id as older demo data spells it, read the way the lookup reads a
+ * key (`normaliseWalletKeyValue`). A shape test and nothing more: whether a
+ * wallet carries it is `walletFor`'s answer, and only the platform or the box's
+ * snapshot can give that. The twenty is what keeps it off a band's short code
+ * (`T1-7KMQ4X`), whose tail is six characters.
+ */
+const WALLET_QR_SHAPE = /^QR-[0-9A-Z-]{20,48}$/;
+
+export function isWalletQrCode(raw: string): boolean {
+  return WALLET_QR_SHAPE.test(raw.trim().toUpperCase());
+}
+
 /** A scanned key as the lookup stores it: trimmed, and a voucher QR upper-cased. */
 export function normaliseWalletKeyValue(kind: WalletKeyKind, value: string): string {
   const trimmed = value.trim();

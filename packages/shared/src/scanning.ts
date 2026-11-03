@@ -51,6 +51,8 @@ export const SCAN_CODE_KINDS = [
   'band',
   'booking',
   'voucher',
+  /** A wallet's voucher QR (`QR-…`, `mintVoucherQr`). Not a Lucky Wheel voucher, which is `voucher`. */
+  'wallet',
   'benefit',
   'product',
   'staff_badge',
@@ -70,6 +72,12 @@ export type ScanOutcome = (typeof SCAN_OUTCOMES)[number];
  * for both sides (SCRUM-421).
  */
 export const VOUCHER_CODE_HANDLER = 'voucher';
+
+/**
+ * The name the box's wallet QR handler goes by (SCRUM-731): one constant for the
+ * box that registers it and the screens that read it, as the voucher's is.
+ */
+export const WALLET_QR_HANDLER = 'wallet-qr';
 
 /**
  * How much of a scanned code may be written down.

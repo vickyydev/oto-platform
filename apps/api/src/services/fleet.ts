@@ -33,6 +33,7 @@ import {
   SIMULATOR_ACTIONS_WITH_SECRETS,
   SimulatorActionSchema,
   hasBenefitCredentialHeader,
+  isWalletQrCode,
   WEB_INVOICE_STATION_CODE,
   invoiceStationSegment,
   newId,
@@ -2096,6 +2097,23 @@ export async function queueCommand(
         409,
         'SIMULATOR_ACTION_CARRIES_SECRET',
         'A staff benefit code cannot travel through the command queue — it is stored and shown. Drive that scan through the station scan simulator instead.',
+      );
+    }
+    /**
+     * SCRUM-731 — a wallet's voucher QR is a bearer instrument (whoever holds
+     * it can spend the credit), so it stays out of those same three places.
+     * The same door serves it: the station scan simulator stores nothing.
+     */
+    if (
+      name === 'scanner.scan' &&
+      'input' in action &&
+      typeof (action.input as { code?: unknown })?.code === 'string' &&
+      isWalletQrCode((action.input as { code: string }).code)
+    ) {
+      throw new AppError(
+        409,
+        'SIMULATOR_ACTION_CARRIES_SECRET',
+        'A credit voucher QR cannot travel through the command queue — it is stored and shown. Drive that scan through the station scan simulator instead.',
       );
     }
     /** And a device named in it must be one of THIS box's, as a test print's is. */

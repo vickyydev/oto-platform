@@ -5,6 +5,7 @@ import {
   earningPersonsOf,
   grantExpiresAt,
   grantLinesOfLedger,
+  isWalletQrCode,
   mintVoucherQr,
   personGrantsOf,
   unitCreditSatang,
@@ -181,6 +182,18 @@ describe('keys and expiry', () => {
     const b = mintVoucherQr();
     expect(a).toMatch(/^QR-[0-9A-HJKMNP-TV-Z]{20}$/);
     expect(a).not.toBe(b);
+  });
+
+  it('what a counter scanner reads as a wallet QR: a minted one, however it arrives, and nothing a counter also scans', () => {
+    const qr = mintVoucherQr();
+    expect(isWalletQrCode(qr)).toBe(true);
+    expect(isWalletQrCode(`  ${qr.toLowerCase()}
+`)).toBe(true);
+    expect(isWalletQrCode('QR-0192f3a4-5b6c-7d8e-9fa0-b1c2d3e4f777')).toBe(true);
+    // A band's short code whose prefix happens to be QR, and other things that are not one.
+    for (const other of ['QR-D4DQD2', 'QR-', 'QR', 'T1-7KMQ4X', '8850000000017', `XQR-${'A'.repeat(20)}`, `QR-${'A'.repeat(49)}`, `QR-${'A'.repeat(19)}.`]) {
+      expect(isWalletQrCode(other), other).toBe(false);
+    }
   });
 
   it('a Bangkok business day ends at the next 05:00 on its wall clock', () => {
