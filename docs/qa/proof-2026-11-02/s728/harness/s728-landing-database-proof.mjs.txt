@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { databaseCheckProgram } from './s728-database-check-program.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { render, service } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/render.mjs';
+assert.equal(process.env.S728_WINDOW_RELEASED,'true');
+const proof=JSON.parse(readFileSync(process.argv[2],'utf8'));
+assert.equal(proof.mode,'staging');assert.equal(proof.outcome,'passed');assert.ok(proof.cleanedAt&&proof.signingKey);
+const out='C:/oto-lanes/codex-box-outage-final-20261103/docs/qa/proof-2026-11-02/s728';
+const program=databaseCheckProgram(proof);
+const api=await service('oto-api-staging');assert.equal(api.id,'srv-danh2ljtqb8s73bt9en0');
+const live=(await render('GET',`/services/${api.id}/deploys?limit=1`))[0].deploy;assert.equal(live.status,'live');assert.equal(live.commit.id,proof.source);
+const startCommand='cd apps/api && node -e "eval(Buffer.from(\''+Buffer.from(program).toString('base64')+'\',\'base64\').toString())"';
+const job=await render('POST',`/services/${api.id}/jobs`,{startCommand});assert.ok(job.id);
+const receipt={unit:'SCRUM-728',source:proof.source,jobId:job.id,startedAt:new Date().toISOString(),readOnly:true};
+const save=()=>writeFileSync(out+'/database-proof.json',JSON.stringify(receipt,null,2)+'\n');save();console.log('Read-only cleanup job',job.id);
+for(let i=0;i<90;i++){const state=await render('GET',`/services/${api.id}/jobs/${job.id}`);if(['succeeded','failed','canceled'].includes(state.status)){receipt.status=state.status;save();break;}await new Promise(r=>setTimeout(r,5000));}
+assert.equal(receipt.status,'succeeded');
+const qs=new URLSearchParams({ownerId:api.ownerId,resource:job.id,startTime:receipt.startedAt,limit:'100',direction:'forward'});
+const logs=await render('GET',`/logs?${qs}`);const row=(logs.logs??[]).map(l=>{try{return JSON.parse(l.message);}catch{return null;}}).find(x=>x?.event==='s728_database_proof');assert.ok(row?.passed);receipt.result=row;save();
+console.log(JSON.stringify({jobId:job.id,passed:true,archived:true,bridgeCleared:true,shiftRevoked:true,saleRows:1,publicKeyRows:1}));

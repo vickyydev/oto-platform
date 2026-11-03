@@ -1,0 +1,96 @@
+{
+  "at": "2026-11-03T17:14:58.810Z",
+  "purpose": "Exact local validation and prepared staging helpers; snapshots are evidence, not automatic release approval",
+  "files": [
+    {
+      "name": "s728-final-browser-proof.mjs",
+      "sourceSha256": "6f7fbaf8ee054315dcd5bfd7327358710690503d8de34e2414a9aa06736cd852",
+      "archiveSha256": "277ca791fbea0f68ecd01c8b06cb1d444e0ec443cb1d71cdd0fcd9b373a0a9a1",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-final-local-run.mts",
+      "sourceSha256": "bbbcb988f184923b5024156c6bfd5299fb293f8a6eb1d5e1dd96c0b4aa40d37a",
+      "archiveSha256": "440bb4f9a20c14552647ed0dc8fbb42fbbeca61dd07bc75d7f82a84d0423316e",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-final-proof-account.mjs",
+      "sourceSha256": "65d112744b8e27b9413725a989455f0b68086f7123f46e7162b6c3d019a08bea",
+      "archiveSha256": "42b040c382fd2bbee35e68e95e7b034fc90f781febf4c781af2d9e09acbe4337",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-database-check-program.mjs",
+      "sourceSha256": "686f3378aa13ff7a18b078635e0b8961da05e33899dc4ea466e2759a8a238b16",
+      "archiveSha256": "686f3378aa13ff7a18b078635e0b8961da05e33899dc4ea466e2759a8a238b16",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-landing-staging-settings.mjs",
+      "sourceSha256": "5d2b422721c78f9ca2ad4b34d58b7cee40251f0b3f8e6f4f2bacc5576ea11408",
+      "archiveSha256": "cfa07b600879bdfb3a030ef8109d18c82c30ef0af0ee23460b3103f3996a09f7",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-deploy-read.mjs",
+      "sourceSha256": "7acbb259a64f399e5c6926c2f7684bbc829a61e8d9ff5c56d96ad20a5a3ee519",
+      "archiveSha256": "2658465fb0142f219cc367f475ba2edc0f96fa319c5445c129793f09abadab8a",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-landing-database-proof.mjs",
+      "sourceSha256": "0c2733a91f8a11eebaafb3098fa3d7266c5be67b3074e72e90d26261f97aacf9",
+      "archiveSha256": "57b955f4ae8f286ee2397f201159a535c24d05c951c88d7e670d7ea2b8511cd5",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-unboxed-census.mjs",
+      "sourceSha256": "941465d7bb601b2f9259813a8a50b3b26c7d9176519636a0ea945a64cd9817a0",
+      "archiveSha256": "941465d7bb601b2f9259813a8a50b3b26c7d9176519636a0ea945a64cd9817a0",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "qa-render-job.mjs",
+      "sourceSha256": "c765b9758669fd63f37ad3f64d61014ff8f6b3720291a85994e5930d073c533d",
+      "archiveSha256": "c765b9758669fd63f37ad3f64d61014ff8f6b3720291a85994e5930d073c533d",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s719-agent-control.mjs",
+      "sourceSha256": "ef64e1defa05caf68a01180c6431c2a7bef118c1b7bc489197ae7e359fc67d00",
+      "archiveSha256": "ef64e1defa05caf68a01180c6431c2a7bef118c1b7bc489197ae7e359fc67d00",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-final-api-gate.mts",
+      "sourceSha256": "7663b87f91da72c7a1bc9ef9f0a62fa1921de996ab7c73e25462bfb40c535cb2",
+      "archiveSha256": "709e96bcba854e6d43956bf5b1be13505f3a4602e261f0f67776cb4143c99afe",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-final-console-gate.mts",
+      "sourceSha256": "dff2589a8e6516e8c6ed49bfb6eaed48cc3909365956b878ad53ebea414519e2",
+      "archiveSha256": "dff2589a8e6516e8c6ed49bfb6eaed48cc3909365956b878ad53ebea414519e2",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-v6-gates.mjs",
+      "sourceSha256": "3ec15575f05c79ae43c77287735d73d48ca908cc52fe7fb9a4872823642fbcee",
+      "archiveSha256": "1bad749f9982519da89418c172d5b5a32d4dfe4a990b389612b5d21416ea490f",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-v7-gates.mjs",
+      "sourceSha256": "b133a1170709b05f3c0e2c933b33b9e19593be33cf1ffdd7f8079664909cac4a",
+      "archiveSha256": "47a6a7976ba3fba8b9b136dd3759601633da6f9b013e724000bd6a3c2b365be4",
+      "normalization": "LF with one final newline"
+    },
+    {
+      "name": "s728-completion-gates.mjs",
+      "sourceSha256": "34b18a6f5d98bb6c1550921fd37cafc4cdb528625ee2ea5914f2ce410f07d15f",
+      "archiveSha256": "34b18a6f5d98bb6c1550921fd37cafc4cdb528625ee2ea5914f2ce410f07d15f",
+      "normalization": "LF with one final newline"
+    }
+  ]
+}

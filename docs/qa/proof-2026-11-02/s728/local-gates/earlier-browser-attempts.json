@@ -1,0 +1,141 @@
+{
+  "at": "2026-11-03T17:14:58.980Z",
+  "attempts": [
+    {
+      "directory": "mw0wvyf7",
+      "source": "3ed841c6f0c47e07e230149f7ba96447edef5967",
+      "receiptSha256": "ac09f2b418a463f2de338dffe1841bddebc164c3910b9b92332e04914d4a7e37",
+      "outcome": "incomplete",
+      "failedStep": "restore internet and prove the configured display is connected online",
+      "errorName": "TimeoutError",
+      "safeError": "locator.click: Timeout 30000ms exceeded.",
+      "passedChecks": [
+        "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+        "API save refuses unrelated DNS names and every tested IP literal",
+        "One configured policy and the existing public signing key reach the real agent",
+        "Real bundled display recovers from two injected startup 503 answers without a page reload",
+        "The initial box-only read opens the native password screen; unlock lets the first native sale proceed",
+        "Cold page restores the prepared station behind a password; fresh offline sign-in is visibly marked"
+      ],
+      "environment": "local only; disposable database removed by wrapper"
+    },
+    {
+      "directory": "mw0x6n4e",
+      "source": "1694037b46a6854ec4b139e6972afd62b41055f6",
+      "receiptSha256": "7e0251466f4e86e4b7e129b209032dcfdc118ca68750228663827c4e34be28d9",
+      "outcome": "incomplete",
+      "failedStep": "restore internet and prove the configured display is connected online",
+      "errorName": "TimeoutError",
+      "safeError": "locator.waitFor: Timeout 35000ms exceeded.",
+      "passedChecks": [
+        "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+        "API save refuses unrelated DNS names and every tested IP literal",
+        "One configured policy and the existing public signing key reach the real agent",
+        "Real bundled display recovers from two injected startup 503 answers without a page reload",
+        "The initial box-only read opens the native password screen; unlock lets the first native sale proceed",
+        "Cold page restores the prepared station behind a password; fresh offline sign-in is visibly marked"
+      ],
+      "environment": "local only; disposable database removed by wrapper"
+    },
+    {
+      "directory": "mw0xida2",
+      "source": "1694037b46a6854ec4b139e6972afd62b41055f6",
+      "receiptSha256": "6f44571418a80590afa5d7c699afeb767f836962f32277ef2c83e7f1430973b7",
+      "outcome": "incomplete",
+      "failedStep": "manager ends only this test shift; cached decision refuses both unlock forms",
+      "errorName": "TimeoutError",
+      "safeError": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"",
+      "passedChecks": [
+        "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+        "API save refuses unrelated DNS names and every tested IP literal",
+        "One configured policy and the existing public signing key reach the real agent",
+        "Real bundled display recovers from two injected startup 503 answers without a page reload",
+        "The initial box-only read opens the native password screen; unlock lets the first native sale proceed",
+        "Cold page restores the prepared station behind a password; fresh offline sign-in is visibly marked",
+        "Online configured box reports its connected display, hides the inline harness, and resumes its staff stream",
+        "A restarted real agent and empty display asset cache recover the paired order; a real build mismatch still refuses",
+        "The one synthetic cash sale converges under the same id with an empty outbox and zero quarantine"
+      ],
+      "environment": "local only; disposable database removed by wrapper"
+    },
+    {
+      "directory": "mw0vufbx",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "receiptSha256": "7badca894c429be5e979bbaf786578b3ac02f0b97b6dc49f4a8628bcf068b71e",
+      "outcome": "incomplete",
+      "passedChecks": [
+        "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+        "API save refuses unrelated DNS names and every tested IP literal",
+        "One configured policy and the existing public signing key reach the real agent",
+        "Real bundled display recovers from two injected startup 503 answers without a page reload"
+      ],
+      "environment": "local only; disposable database removed by wrapper"
+    },
+    {
+      "directory": "mw0w08c4",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "receiptSha256": "d6f0d32049b26bd9161995387bff1d84ebb1422e4142831e88b98d7670db11c9",
+      "outcome": "incomplete",
+      "failedStep": "first sale after link loss opens the box lock screen without retrying its write",
+      "errorName": "TimeoutError",
+      "safeError": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"",
+      "passedChecks": [
+        "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+        "API save refuses unrelated DNS names and every tested IP literal",
+        "One configured policy and the existing public signing key reach the real agent",
+        "Real bundled display recovers from two injected startup 503 answers without a page reload"
+      ],
+      "environment": "local only; disposable database removed by wrapper"
+    },
+    {
+      "directory": "mw0w6j24",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "receiptSha256": "6eb8803d5a536cf3acc5a49619a9bec45249201ba9b71d2054c4684a37f87051",
+      "outcome": "incomplete",
+      "failedStep": "first sale after link loss opens the box lock screen without retrying its write",
+      "errorName": "Error",
+      "safeError": "expect(locator).toHaveCount(expected) failed",
+      "passedChecks": [
+        "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+        "API save refuses unrelated DNS names and every tested IP literal",
+        "One configured policy and the existing public signing key reach the real agent",
+        "Real bundled display recovers from two injected startup 503 answers without a page reload"
+      ],
+      "environment": "local only; disposable database removed by wrapper"
+    },
+    {
+      "directory": "mw0wg6zr",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "receiptSha256": "bdeb4829eecde5a80d956c5a9b5a6b88c9dfc8e7a8aea06dd537632d40388fec",
+      "outcome": "incomplete",
+      "failedStep": "first sale after link loss opens the box lock screen without retrying its write",
+      "errorName": "Error",
+      "safeError": "expect(locator).toHaveCount(expected) failed",
+      "passedChecks": [
+        "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+        "API save refuses unrelated DNS names and every tested IP literal",
+        "One configured policy and the existing public signing key reach the real agent",
+        "Real bundled display recovers from two injected startup 503 answers without a page reload"
+      ],
+      "environment": "local only; disposable database removed by wrapper"
+    },
+    {
+      "directory": "mw0wkxw2",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "receiptSha256": "5c78394c08b806baf0bb8c4aa633e3021ae628dcb7cc362b88eb4d1642ff36a6",
+      "outcome": "incomplete",
+      "failedStep": "restore internet and prove the configured display is connected online",
+      "errorName": "TimeoutError",
+      "safeError": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"",
+      "passedChecks": [
+        "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+        "API save refuses unrelated DNS names and every tested IP literal",
+        "One configured policy and the existing public signing key reach the real agent",
+        "Real bundled display recovers from two injected startup 503 answers without a page reload",
+        "A first-sale box refusal opens the native password screen and the password unlock succeeds",
+        "Cold page restores the prepared station behind a password; fresh offline sign-in is visibly marked"
+      ],
+      "environment": "local only; disposable database removed by wrapper"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "key": "smoke",
+  "sha": "1694037b46a6854ec4b139e6972afd62b41055f6",
+  "start": "2026-11-03T16:46:28.587Z",
+  "end": "2026-11-03T16:50:10.964Z",
+  "command": "VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e",
+  "log": "C:/oto-lanes/s728-gates-v6-smoke.log",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "32c743816b377a863b8d5310be4f967069da45194721e9c5b56fccf42ffc3616",
+  "logBytes": 10377,
+  "summary": [
+    "7 passed (2.5m)"
+  ]
+}

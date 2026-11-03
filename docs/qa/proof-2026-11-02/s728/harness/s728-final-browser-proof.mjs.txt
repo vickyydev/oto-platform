@@ -1,0 +1,242 @@
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { createServer, request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import { randomUUID, randomBytes, createHash, createPublicKey } from 'node:crypto';
+import { spawn, execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
+import { provision } from './s728-final-proof-account.mjs';
+
+const root='C:/oto-lanes/codex-box-outage-final-20261103';
+const {chromium,expect}=createRequire(root+'/apps/pos/package.json')('@playwright/test');
+const mode=process.env.S728_MODE;
+assert.ok(['local','staging'].includes(mode));
+const sha=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+const API=process.env.S728_API,POS=process.env.S728_POS,CONSOLE=process.env.S728_CONSOLE,LAUNCHER=process.env.S728_LAUNCHER??CONSOLE;
+for(const u of [API,POS,CONSOLE,LAUNCHER])assert.ok(u);
+if(mode==='local')for(const u of [API,POS,CONSOLE,LAUNCHER])assert.equal(new URL(u).hostname,'127.0.0.1');
+else {
+  assert.equal(process.env.S728_WINDOW_RELEASED,'true');
+  assert.equal(API,'https://oto-api-staging.onrender.com');
+  const ci=JSON.parse(execFileSync('gh',['run','view',process.env.S728_CI,'--json','headSha,conclusion'],{cwd:root,encoding:'utf8'}));
+  assert.equal(ci.headSha,sha); assert.equal(ci.conclusion,'success');
+}
+const need=mode==='local'?k=>process.env[k]:(await import('file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs')).need;
+const baseOut=process.env.S728_OUT;assert.ok(baseOut);
+const stamp=Date.now().toString(36),name='ZZ TEST SCRUM-728 '+stamp;
+const out=baseOut+'/'+stamp;mkdirSync(out,{recursive:true});
+const home='C:/oto-lanes/s728-agent-'+stamp;mkdirSync(home,{recursive:true});
+const bundle=root+'/packages/box-agent/dist/oto-box/oto-box.mjs';
+const version=readFileSync(root+'/packages/box-agent/dist/oto-box/VERSION','utf8').trim();
+assert.ok(version.includes(sha.slice(0,7))&&!version.includes('+local'));
+const receipt={unit:'SCRUM-728',mode,source:sha,version,startedAt:new Date().toISOString(),checks:[],outcome:'incomplete',limitations:['Windows local agent and test-only localhost zone; no real box address','No physical Pi, private HTTPS, certificate, printer or power-cut acceptance','One ZZ TEST cash sale; no electronic payment or SMS']};
+const save=()=>writeFileSync(out+'/browser-'+stamp+'.json',JSON.stringify(receipt,null,2)+'\n');
+const check=(name,detail={})=>{receipt.checks.push({name,...detail,at:new Date().toISOString(),passed:true});save();console.log('PASS',name);};
+let step='preflight';const mark=s=>{step=s;console.log(s);};
+let preparationActivity;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const until=async(label,fn,ms=120000)=>{const end=Date.now()+ms;while(Date.now()<end){const v=await fn().catch(()=>null);if(v)return v;await sleep(1000);}throw Error('Timed out: '+label);};
+const listen=s=>new Promise((resolve,reject)=>{s.once('error',reject);s.listen(0,'127.0.0.1',()=>resolve(s.address().port));});
+const port=async()=>{const s=createServer();const p=await listen(s);await new Promise(r=>s.close(r));return p;};
+let cloudDown=false;
+const request=API.startsWith('https:')?httpsRequest:httpRequest;
+const proxy=createServer((req,res)=>{if(cloudDown){req.socket.destroy();return;}const up=request(API+req.url,{method:req.method,headers:{...req.headers,host:new URL(API).host}},r=>{res.writeHead(r.statusCode,r.headers);r.pipe(res);});up.on('error',()=>{if(!res.headersSent)res.writeHead(502);res.end();});req.on('aborted',()=>up.destroy());res.on('close',()=>up.destroy());req.pipe(up);});
+const cloudPort=await listen(proxy),kioskPort=await port(),bridgePort=await port();
+const bridge=`http://zz-test-s728.localhost:${bridgePort}`,loopback=`http://127.0.0.1:${bridgePort}`;
+receipt.local={bridgeOrigin:bridge,home};save();
+const baseEnv=Object.fromEntries(['PATH','Path','SystemRoot','TEMP','TMP','LOCALAPPDATA','USERPROFILE'].filter(k=>process.env[k]).map(k=>[k,process.env[k]]));
+const env={...baseEnv,OTO_BOX_API:`http://127.0.0.1:${cloudPort}`,OTO_BOX_HOME:home,OTO_BOX_PORT:String(kioskPort),OTO_BOX_BRIDGE_PORT:String(bridgePort),OTO_BOX_BRIDGE_ORIGINS:POS};
+const command=(args,input='')=>new Promise((resolve,reject)=>{const c=spawn(process.execPath,['--disable-warning=ExperimentalWarning',bundle,...args],{cwd:root,env,windowsHide:true});c.stdout.on('data',()=>{});c.stderr.on('data',()=>{});c.on('error',reject);c.on('exit',code=>resolve(code));c.stdin.end(input);});
+let agent=null;
+const start=()=>{agent=spawn(process.execPath,['--disable-warning=ExperimentalWarning','C:/oto-lanes/s719-agent-control.mjs',pathToFileURL(bundle).href,'run'],{cwd:root,env,windowsHide:true});agent.stdout.on('data',()=>{});agent.stderr.on('data',()=>{});};
+const stop=async()=>{if(!agent||agent.exitCode!==null)return;const c=agent;await new Promise(resolve=>{c.once('exit',resolve);c.stdin.write('STOP\n');setTimeout(()=>{if(c.exitCode===null)c.kill();},15000).unref();});agent=null;};
+const cache=scope=>{if(!existsSync(home+'/box.sqlite'))return null;const db=new DatabaseSync(home+'/box.sqlite',{readOnly:true});try{const r=db.prepare('select payload from box_cache where scope = ?').get(scope);return r?JSON.parse(r.payload):null;}finally{db.close();}};
+const browser=await chromium.launch({channel:'msedge'});
+const admin=await browser.newContext({viewport:{width:1500,height:1000}});admin.setDefaultTimeout(30000);
+const consolePage=await admin.newPage();let displayCtx,display,displayId,tillCtx,till,stationId,boxId,accountId,held,staffPhone,staffPassword,staffGrantId,passed=false;
+const api=async(method,path,body)=>{const r=await admin.request.fetch(CONSOLE+'/api'+path,{method,data:body,headers:{...(body===undefined?{}:{'content-type':'application/json'}),...(method==='GET'?{}:{'Idempotency-Key':randomUUID()})}});return{status:r.status(),body:await r.json().catch(()=>null)};};
+const capture=async(page,file)=>page.screenshot({path:out+'/'+file,fullPage:false,animations:'disabled',maskColor:'#d6d3d1',mask:[page.locator('input[type="password"]'),page.getByTestId('display-pairing-code')]});
+const unlockNative=async()=>{await till.locator('input[type="password"]').fill(staffPassword);const reply=till.waitForResponse(r=>r.url()===bridge+`/box/v1/station/${stationId}/unlock`&&r.request().method()==='POST');await till.getByRole('button',{name:'Unlock',exact:true}).click();return reply;};
+const local=`http://127.0.0.1:${kioskPort}`;
+const localPost=body=>till.evaluate(async({bridge,stationId,body})=>{const r=await fetch(`${bridge}/box/v1/station/${stationId}/unlock`,{method:'POST',credentials:'omit',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const b=await r.json();return{status:r.status,code:b.error?.code,method:b.method,offlineFresh:b.offlineFresh};},{bridge,stationId,body});
+async function addFries(note) {
+  await till.getByRole('button',{name:'F&B',exact:true}).click();
+  await till.getByRole('button',{name:/No wristband.*continue as guest/}).click();
+  await till.getByPlaceholder('Search dish…').fill('French Fries');
+  await till.getByRole('button',{name:/French Fries/}).click();
+  const d=till.getByRole('dialog');
+  await d.getByPlaceholder('e.g. no pickles, extra crispy').fill(note);
+  await d.getByRole('button',{name:/^Add to order/}).click();
+}
+async function payment() {
+  await till.getByRole('button',{name:/^Charge ฿/}).click();
+  const d=till.getByRole('dialog',{name:'Pick-up Code',exact:true});
+  await d.getByRole('button',{name:'7',exact:true}).click();await d.getByRole('button',{name:'8',exact:true}).click();
+  await d.getByRole('button',{name:/^Continue to Payment/}).click();
+}
+try {
+  mark('create only a dedicated ZZ TEST counter and till');
+  assert.equal((await admin.request.post(LAUNCHER+'/api/auth/sign-in',{data:{phone:need('STAGING_ADMIN_PHONE'),password:need('STAGING_ADMIN_PASSWORD')}})).status(),200);
+  if(mode==='staging'){const hand=await(await admin.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'console'}})).json();await consolePage.goto(hand.launchUrl);}else await consolePage.goto(CONSOLE+'/overview');
+  await consolePage.waitForURL('**/overview');
+  const me=(await api('GET','/me')).body,branchId=me.operatorContext.branchId;
+  accountId=randomUUID();staffPhone='+6690006'+String(Math.floor(Math.random()*10000)).padStart(4,'0');staffPassword=randomBytes(24).toString('base64url');
+  const staffSpec={accountId,employeeId:randomUUID(),name:name+' staff',phone:staffPhone,actorId:me.account.id,operatorId:me.operatorContext.effectiveOperatorId};
+  receipt.staff={accountId,employeeId:staffSpec.employeeId,name:staffSpec.name};save();receipt.staff.provision=await provision(staffSpec,mode,sha);save();
+  const grant=await api('POST','/accounts/'+accountId+'/role-assignments',{roleName:'reception',scopeType:'branch',scopeId:branchId});assert.equal(grant.status,200);staffGrantId=grant.body.id;receipt.staff.grantId=staffGrantId;save();
+  const temp=await api('POST','/accounts/'+accountId+'/temp-password',{});assert.equal(temp.status,200);
+  const setup=await browser.newContext();try{assert.equal((await setup.request.post(POS+'/api/auth/sign-in',{data:{phone:staffPhone,password:temp.body.temporaryPassword}})).status(),200);assert.equal((await setup.request.post(POS+'/api/auth/change-password',{data:{currentPassword:temp.body.temporaryPassword,password:staffPassword}})).status(),200);assert.equal((await setup.request.post(POS+'/api/auth/sign-out',{data:{}})).status(),200);}finally{delete temp.body.temporaryPassword;await setup.close();}
+  check('Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account');
+  const made=await api('POST',`/branches/${branchId}/boxes`,{name,slot:'zz-test-s728-'+stamp,role:'counter'});assert.equal(made.status,200);boxId=made.body.box.id;receipt.fixture={name,boxId,branchId};save();
+  assert.equal(await command(['claim','--hostname','ZZ TEST SCRUM-728 local agent'],made.body.claimCode+'\n'),0);delete made.body.claimCode;
+  const printer=await api('POST',`/boxes/${boxId}/devices`,{kind:'receipt_printer',label:'ZZ TEST SCRUM-728 receipt',transport:'simulated',protocol:'escpos',model:'Welltech G4 (Xprinter XP-C260)'});assert.equal(printer.status,200);receipt.fixture.printerId=printer.body.device.id;
+  const station=await api('POST',`/branches/${branchId}/stations`,{name:name+' till',kind:'till',boxId,codePrefix:'Z728',paymentRouting:{card:'manual',qr:'none'},accessScope:'all_staff',capabilities:[],devices:[{deviceId:printer.body.device.id,role:'receipt'}]});assert.equal(station.status,200);stationId=station.body.station.id;receipt.fixture.stationId=stationId;save();
+  for(const address of ['https://evil.example','https://127.0.0.1','https://0.0.0.0','https://[::]']) {
+    const r=await api('PATCH','/boxes/'+boxId,{bridgeOrigin:address});assert.equal(r.status,400);assert.equal(r.body.error.code,'BOX_BRIDGE_ORIGIN_INVALID');
+  }
+  check('API save refuses unrelated DNS names and every tested IP literal');
+  await consolePage.goto(CONSOLE+'/devices');await consolePage.getByRole('button',{name,exact:true}).click();const drawer=consolePage.getByRole('dialog');await drawer.getByPlaceholder('https://counter-1.example.com').fill(bridge);
+  await expect(drawer.getByRole('alert').filter({hasText:'A display still open on the web address will stop updating.'})).toBeVisible();
+  await capture(consolePage,'s728-before-save-display-warning.png');
+  const saved=consolePage.waitForResponse(r=>r.url().endsWith('/api/boxes/'+boxId)&&r.request().method()==='PATCH');await drawer.getByRole('button',{name:'Save bridge address',exact:true}).click();assert.equal((await saved).status(),200);await drawer.getByPlaceholder('https://counter-1.example.com').scrollIntoViewIfNeeded();await capture(consolePage,'s728-configured-test-zone.png');start();
+  await until('staff and station cache',async()=>cache('staff')&&cache('station_config'));
+  const config=JSON.parse(readFileSync(home+'/config-bundle.json','utf8'));assert.equal(config.staffOfflineSignIn,true);assert.ok(config.signingKeys.some(k=>k.purpose==='staff_token'));
+  check('One configured policy and the existing public signing key reach the real agent');
+  tillCtx=await browser.newContext({viewport:{width:1600,height:1000}});tillCtx.setDefaultTimeout(30000);await tillCtx.grantPermissions(['local-network-access'],{origin:POS});till=await tillCtx.newPage();
+  receipt.lockTrace=[];
+  await till.exposeFunction('s728Trace',entry=>{receipt.lockTrace.push({at:new Date().toISOString(),...entry});save();});
+  await till.addInitScript(()=>{
+    window.addEventListener('oto:session-locked',()=>window.s728Trace({event:'session-locked',stack:new Error().stack?.split('\n').slice(1,5)}));
+    window.addEventListener('keydown',()=>window.s728Trace({event:'keyboard-activity'}));
+  });
+  till.on('response',r=>{if([401,423].includes(r.status())||new URL(r.url()).pathname.endsWith('/auth/lock')){const path=new URL(r.url()).pathname;receipt.lockTrace.push({at:new Date().toISOString(),path,status:r.status(),...(path.endsWith('/intents')?{intent:r.request().postDataJSON()?.type}:{})});save();}});
+  await till.goto(POS);await till.locator('input[inputmode="tel"],input[type="tel"]').first().fill(staffPhone.replace(/^\+?66/,'').replace(/^0/,''));await till.locator('input[type="password"][autocomplete="current-password"]').fill(staffPassword);
+  const signed=till.waitForResponse(r=>r.url().endsWith('/api/auth/sign-in')&&r.request().method()==='POST');await till.getByRole('button',{name:'Sign in',exact:true}).click();assert.equal((await signed).status(),200);
+  const picked=till.waitForResponse(r=>r.url().endsWith('/api/me/session/station')&&r.request().method()==='PUT');await till.getByRole('button',{name:new RegExp(name)}).click();const pick=await picked;assert.equal(pick.status(),200);const body=await pick.json();assert.equal(body.station.bridgeOrigin,bridge);held=body.staffToken;assert.ok(held.token);receipt.fixture.shiftId=held.jti;const keyId=JSON.parse(Buffer.from(held.token.split('.')[0],'base64url').toString()).kid;const signingKey=config.signingKeys.find(k=>k.purpose==='staff_token'&&k.kid===keyId);assert.ok(signingKey);receipt.signingKey={kid:keyId,publicFingerprint:createHash('sha256').update(createPublicKey(signingKey.publicKey).export({type:'spki',format:'der'})).digest('hex')};save();await till.getByText('Membership Check',{exact:true}).waitFor();
+  // Fixture pulls can take several minutes. The test operator stays active while
+  // preparing them; the real two-minute inactivity lock remains unchanged.
+  preparationActivity=setInterval(()=>{void till.keyboard.press('Shift').catch(()=>{});},15_000);
+  await until('new shift cached',async()=>cache('staff')?.items?.some(x=>x.accountId===accountId&&x.lastTokenId===held.jti));
+  mark('local display starts through temporary 503 answers without a manual reload');
+  displayCtx=await browser.newContext({viewport:{width:1600,height:1000}});display=await displayCtx.newPage();
+  let startupRequests=0;
+  await displayCtx.route(local+'/api/display/version',route=>{
+    startupRequests+=1;
+    return startupRequests<=2?route.fulfill({status:503,contentType:'application/json',body:'{}'}):route.continue();
+  });
+  await display.goto(local+'/display?keyboard=screen');
+  await display.getByRole('heading',{name:'Connecting to this counter',exact:true}).waitFor();
+  await capture(display,'s728-display-starting.png');
+  await display.getByRole('heading',{name:'Set up this display',exact:true}).waitFor();
+  assert.ok(startupRequests>=3);await displayCtx.unroute(local+'/api/display/version');
+  const code=(await display.getByTestId('display-pairing-code').innerText()).trim();
+  const paired=await api('POST',`/stations/${stationId}/displays/claim`,{pairingCode:code,name:'ZZ TEST SCRUM-728 display'});
+  assert.equal(paired.status,200);displayId=paired.body.device.id;receipt.fixture.displayId=displayId;save();
+  await until('paired display cache',async()=>JSON.stringify(cache('station_config')).includes(displayId));
+  check('Real bundled display recovers from two injected startup 503 answers without a page reload',{startupRequests});
+
+  mark('first sale after link loss opens the box lock screen without retrying its write');
+  // The mounted till refreshes its check-in board when lane selection changes.
+  // Observe that real refusal before cutting the link, rather than expecting
+  // a second user action to reach a screen that the refusal has already locked.
+  const firstRefusal=till.waitForResponse(r=>r.url()===bridge+`/box/v1/station/${stationId}/intents`&&r.status()===401).then(r=>({response:r}),error=>({error}));
+  cloudDown=true;await tillCtx.route(POS+'/api/**',route=>route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({error:{code:'UPSTREAM_UNAVAILABLE',message:'ZZ TEST isolated outage'}})}));
+  await until('agent box lane',async()=>(await(await fetch(loopback+`/box/v1/station/${stationId}/status`)).json()).link.lane==='box');
+  clearInterval(preparationActivity);preparationActivity=undefined;
+  const initial=await firstRefusal;if(initial.error)throw initial.error;const first=initial.response;
+  assert.equal((await first.json()).error.code,'BOX_SESSION_REQUIRED');
+  receipt.firstBoxRefusal={intent:first.request().postDataJSON().type,status:first.status()};save();
+  await till.getByRole('button',{name:'Unlock',exact:true}).waitFor();await capture(till,'s728-first-sale-lock.png');
+  assert.equal((await unlockNative()).status(),200);
+  await addFries('ZZ TEST first sale unlock');
+  check('The initial box-only read opens the native password screen; unlock lets the first native sale proceed');
+
+  mark('cold till page during the outage restores only a locked prepared station');
+  await till.evaluate(()=>localStorage.removeItem('oto.pos.staff-token.v1'));
+  await till.goto(POS+'/');
+  await till.getByRole('button',{name:'Unlock',exact:true}).waitFor();
+  await capture(till,'s728-cold-till-locked.png');
+  const fresh=await unlockNative();assert.equal(fresh.status(),200);assert.equal((await fresh.json()).method,'offline_sign_in');
+  await till.getByText('Membership Check',{exact:true}).waitFor();
+  await expect(till.getByRole('status').filter({hasText:'using this box'})).toBeVisible();
+  await capture(till,'s728-cold-till-unlocked.png');
+  await display.getByRole('button',{name:'Find my membership',exact:true}).waitFor({timeout:35000});
+  check('Cold page restores the prepared station behind a password; fresh offline sign-in is visibly marked');
+
+  mark('restore internet and prove the configured display is connected online');
+  cloudDown=false;await tillCtx.unroute(POS+'/api/**');
+  await until('agent platform lane',async()=>(await(await fetch(loopback+`/box/v1/station/${stationId}/status`)).json()).link.lane==='platform');
+  // Explicit normal online unlock also proves recovery of the platform session.
+  if(!await till.getByRole('button',{name:'Unlock',exact:true}).isVisible())await till.getByRole('button',{name:'Lock screen',exact:true}).click();await till.getByRole('button',{name:'Unlock',exact:true}).waitFor();
+  const online=till.waitForResponse(r=>r.url().endsWith('/api/auth/unlock')&&r.request().method()==='POST');
+  const repicked=till.waitForResponse(r=>r.url().endsWith('/api/me/session/station')&&r.request().method()==='PUT').then(r=>({response:r}),error=>({error}));
+  await till.locator('input[type="password"]').fill(staffPassword);await till.getByRole('button',{name:'Unlock',exact:true}).click();assert.equal((await online).status(),200);
+  // Successful online recovery rehydrates the authoritative station selection.
+  const selected=await repicked;if(selected.error)throw selected.error;const repick=selected.response;assert.equal(repick.status(),200);
+  held=(await repick.json()).staffToken;receipt.fixture.shiftId=held.jti;save();
+  await until('new online shift cached',async()=>cache('staff')?.items?.some(x=>x.accountId===accountId&&x.lastTokenId===held.jti));
+  if(!await till.getByRole('button',{name:'Unlock',exact:true}).isVisible())await till.getByRole('button',{name:'Lock screen',exact:true}).click();await till.getByRole('button',{name:'Unlock',exact:true}).waitFor();
+  assert.equal((await unlockNative()).status(),200);
+  await till.getByText('Display connected: Customer display',{exact:true}).waitFor({timeout:35000});
+  await expect(till.getByText(/Test harness/)).toHaveCount(0);
+  await capture(till,'s728-online-display-connected.png');
+  check('Online configured box reports its connected display, hides the inline harness, and resumes its staff stream');
+
+  mark('cash sale on the box after cold reload and a transient display restart');
+  cloudDown=true;await tillCtx.route(POS+'/api/**',route=>route.abort('internetdisconnected'));
+  await addFries('ZZ TEST SCRUM-728 outage cash');
+  await display.getByTestId('display-fnb').getByText('French Fries',{exact:true}).waitFor({timeout:35000});
+  await capture(display,'s728-local-display.png');
+  const state=await displayCtx.storageState();await displayCtx.close();
+  await stop();start();await until('agent restarted',async()=>(await fetch(local+'/api/display/version')).ok);
+  displayCtx=await browser.newContext({viewport:{width:1600,height:1000},storageState:state});display=await displayCtx.newPage();
+  const cdp=await displayCtx.newCDPSession(display);await cdp.send('Network.clearBrowserCache');
+  await display.goto(local+'/display?keyboard=screen');
+  await display.getByTestId('display-fnb').getByText('French Fries',{exact:true}).waitFor({timeout:35000});
+  await capture(display,'s728-display-cold-restart.png');
+  await displayCtx.route(local+'/api/display/version',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({build:'different-release'})}));
+  await display.reload();await display.getByRole('heading',{name:'Reload this display',exact:true}).waitFor();
+  await capture(display,'s728-display-build-mismatch.png');await displayCtx.unroute(local+'/api/display/version');await display.reload();
+  await display.getByTestId('display-fnb').getByText('French Fries',{exact:true}).waitFor({timeout:35000});
+  check('A restarted real agent and empty display asset cache recover the paired order; a real build mismatch still refuses');
+  // Restart discards the in-memory box session; obtain a new one through the real password screen.
+  if(!await till.getByRole('button',{name:'Unlock',exact:true}).isVisible())await till.getByRole('button',{name:'Lock screen',exact:true}).click();
+  await till.getByRole('button',{name:'Unlock',exact:true}).waitFor();assert.equal((await unlockNative()).status(),200);
+  await payment();await till.getByRole('button',{name:/^Cash /}).click();
+  await till.getByLabel('Cash received',{exact:true}).fill(await till.getByLabel('Payment amount',{exact:true}).inputValue());
+  const paid=till.waitForResponse(r=>r.url()===bridge+`/box/v1/station/${stationId}/intents`&&r.request().postDataJSON()?.type==='sale.finalise');
+  await till.getByRole('button',{name:'Record cash',exact:true}).click();const cash=await paid;assert.equal(cash.status(),200);
+  const sold=(await cash.json()).result;assert.equal(sold.finalised,true);assert.match(sold.sale.receiptNumber,/^Z728-/);
+  receipt.offlineSale={id:sold.sale.id,receiptNumber:sold.sale.receiptNumber,grossSatang:sold.sale.totals.grossSatang};save();
+  await till.getByRole('heading',{name:'Order Confirmed',exact:true}).waitFor();await capture(till,'s728-cash-receipt.png');
+  cloudDown=false;await tillCtx.unroute(POS+'/api/**');
+  await until('same cash sale replayed',async()=>{const r=await api('GET','/sales/'+sold.sale.id);return r.status===200&&r.body.sale.status==='finalised'&&(await(await fetch(loopback+`/box/v1/station/${stationId}/status`)).json()).outboxDepth===0;},180000);
+  const quarantine=await api('GET',`/ops/quarantine?boxId=${boxId}&limit=200`);assert.equal(quarantine.status,200);assert.equal(quarantine.body.events.length,0);
+  check('The one synthetic cash sale converges under the same id with an empty outbox and zero quarantine',{saleId:sold.sale.id});
+  assert.equal((await api('POST',`/credentials/${displayId}/revoke`,{})).status,200);
+  await until('display revocation cached',async()=>!JSON.stringify(cache('station_config')).includes(displayId));
+  await display.getByRole('heading',{name:'Set up this display',exact:true}).waitFor({timeout:15000});
+  await display.getByRole('button',{name:'Expire code now',exact:true}).click();await display.getByRole('button',{name:'New code',exact:true}).waitFor();
+  receipt.fixture.displayRevoked=true;
+  await till.evaluate(()=>localStorage.removeItem('oto.pos.staff-token.v1'));
+  mark('manager ends only this test shift; cached decision refuses both unlock forms');
+  cloudDown=false;const ended=await api('DELETE','/staff-tokens/'+held.jti);assert.equal(ended.status,200);assert.equal(ended.body.revoked,1);
+  await until('ended shift cached',async()=>cache('staff')?.items?.some(x=>x.accountId===accountId&&x.lastTokenId===held.jti&&x.lastTokenRevoked&&typeof x.managerEndedAt==='string'));cloudDown=true;
+  await tillCtx.route(POS+'/api/**',route=>route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({error:{code:'UPSTREAM_UNAVAILABLE',message:'ZZ TEST isolated outage'}})}));
+  await until('ended-shift outage reached the agent',async()=>(await(await fetch(loopback+`/box/v1/station/${stationId}/status`)).json()).link.lane==='box');
+  if(!await till.getByRole('button',{name:'Unlock',exact:true}).isVisible())await till.getByRole('button',{name:'Lock screen',exact:true}).click();await till.getByRole('button',{name:'Unlock',exact:true}).waitFor();const endedNative=await unlockNative();assert.equal(endedNative.status(),401);assert.equal((await endedNative.json()).error.code,'STAFF_TOKEN_REVOKED');await till.getByText('This shift is no longer valid',{exact:false}).waitFor();await capture(till,'s728-ended-shift-refused.png');
+  const withToken=await localPost({token:held.token,password:staffPassword,accountId});assert.equal(withToken.status,401);assert.equal(withToken.code,'STAFF_TOKEN_REVOKED');check('The ended test shift is refused with its token and with the token omitted');
+  mark('retire exact fixture and sign out');cloudDown=false;await tillCtx.unroute(POS+'/api/**');await stop();
+  assert.equal((await tillCtx.request.post(POS+'/api/auth/sign-out',{data:{}})).status(),200);assert.equal((await tillCtx.request.get(POS+'/api/me')).status(),401);receipt.tillSignedOutAt=new Date().toISOString();
+  assert.equal((await api('PATCH','/boxes/'+boxId,{bridgeOrigin:null})).status,200);assert.equal((await api('DELETE','/stations/'+stationId)).status,200);const deviceRetired=await api('DELETE','/devices/'+receipt.fixture.printerId);assert.equal(deviceRetired.status,200);assert.deepEqual(deviceRetired.body.stillAssignedTo,[]);receipt.fixture.printerRetired=true;assert.equal((await api('PATCH','/boxes/'+boxId,{status:'disabled'})).status,200);assert.equal((await api('DELETE','/boxes/'+boxId)).status,200);
+  assert.equal((await api('PATCH','/accounts/'+accountId,{status:'inactive'})).status,200);assert.equal((await api('DELETE','/accounts/'+accountId+'/role-assignments/'+staffGrantId)).status,200);
+  const retired=(await api('GET','/accounts?q='+encodeURIComponent(receipt.staff.name))).body.accounts.find(x=>x.id===accountId);assert.equal(retired.status,'inactive');assert.equal((await api('GET','/accounts/'+accountId+'/permissions')).body.assignments.length,0);receipt.staff.retiredAt=new Date().toISOString();save();
+  assert.equal((await admin.request.post(LAUNCHER+'/api/auth/sign-out',{data:{}})).status(),200);assert.equal((await admin.request.get(LAUNCHER+'/api/me')).status(),401);receipt.adminSignedOutAt=new Date().toISOString();receipt.cleanedAt=new Date().toISOString();check('Test bridge cleared, exact ZZ TEST box and till archived, sessions signed out');passed=true;receipt.outcome='passed';
+} catch(error) {
+  if(till)await capture(till,'s728-failed-step.png').catch(()=>{});receipt.failedStep=step;receipt.errorName=error.name;receipt.assertion=typeof error.actual==='number'?{actual:error.actual,expected:error.expected}:undefined;receipt.location=error.stack?.split('\n').find(x=>x.includes('s728-'));receipt.safeError=error instanceof assert.AssertionError?'Assertion failed':String(error.message).split('\n')[0].slice(0,180);console.error('Proof stopped at',step,receipt.errorName);process.exitCode=1;
+} finally {
+  clearInterval(preparationActivity);
+  cloudDown=false;await tillCtx?.unroute(POS+'/api/**').catch(()=>{});await stop();if(!receipt.adminSignedOutAt)await admin.request.post(LAUNCHER+'/api/auth/sign-out',{data:{}}).catch(()=>{});if(!receipt.tillSignedOutAt)await tillCtx?.request.post(POS+'/api/auth/sign-out',{data:{}}).catch(()=>{});await browser.close();proxy.closeAllConnections();await new Promise(r=>proxy.close(r));receipt.finishedAt=new Date().toISOString();receipt.fixtureRetained=!passed;save();console.log(JSON.stringify({outcome:receipt.outcome,failedStep:receipt.failedStep,fixture:receipt.fixture,proof:out+'/browser-'+stamp+'.json'}));
+}

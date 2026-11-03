@@ -1,0 +1,24 @@
+import { readFileSync, writeFileSync, openSync, closeSync } from 'node:fs';
+import { spawn, execFileSync } from 'node:child_process';
+const root='C:/oto-lanes/codex-box-outage-final-20261103';
+const key=process.argv[2];
+const commands={
+ tools:'node scripts/check-no-mock-members.mjs; node --test scripts/inbox/whatsapp-history.test.mjs; node apps/oto-app/server/lib/telemetry/check-sync.mjs; for f in scripts/pi/*.sh; do bash -n "$f"; done; /c/oto-lanes/s713-shellcheck/shellcheck.exe --severity=error scripts/pi/*.sh',
+ api1:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s728-final-api-gate.mts --shard=1/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s728-final-v4-api1.json',
+ api2:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s728-final-api-gate.mts --shard=2/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s728-final-v4-api2.json',
+ api3:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s728-final-api-gate.mts --shard=3/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s728-final-v4-api3.json',
+ workspace:'pnpm exec turbo run test --filter="!@oto/api" --concurrency=1',
+ types:'pnpm typecheck; pnpm lint; pnpm api-types:check',
+ build:'VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true pnpm build; pnpm --filter @oto/pos build:display; pnpm --filter @oto/box-agent build:runner',
+ smoke:'VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e',
+ browser:'S727_REAUTH_PROBE=true pnpm --filter @oto/api exec tsx C:/oto-lanes/s727-review-local-run.mts'
+};
+if(!commands[key])throw Error('Unknown gate');
+const sha=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+const log='C:/oto-lanes/s728-gates-v6-'+key+'.log';
+const receipt='C:/oto-lanes/s728-gates-v6-'+key+'-exit.json';
+const start=new Date().toISOString(); const fd=openSync(log,'wx');
+console.log(JSON.stringify({key,sha,start,log,command:commands[key],output:'direct file descriptor, unpiped'}));
+const child=spawn('C:/Program Files/Git/bin/bash.exe',['-c','set -eo pipefail; '+commands[key]],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});
+child.once('error',e=>{closeSync(fd);writeFileSync(receipt,JSON.stringify({key,sha,start,end:new Date().toISOString(),error:e.name,exitCode:1},null,2));process.exitCode=1;});
+child.once('exit',(code,signal)=>{closeSync(fd);const result={key,sha,start,end:new Date().toISOString(),command:commands[key],log,exitCode:code??1,signal};writeFileSync(receipt,JSON.stringify(result,null,2));console.log(JSON.stringify(result));console.log(readFileSync(log,'utf8').slice(-3000));process.exitCode=code??1;});
