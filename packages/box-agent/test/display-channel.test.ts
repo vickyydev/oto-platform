@@ -27,6 +27,20 @@ test('display channel: credential-only, initial and changed redacted snapshots, 
   const base = `http://127.0.0.1:${port}/box/v1/station/${STATION_ID}/display`;
   const controller = new AbortController();
   try {
+    const presenceUrl = base.replace(/\/display$/, '/displays');
+    assert.equal((await fetch(presenceUrl)).status, 401);
+    await store.store.writeBundle(BOX_ID, { scope: 'deny_list', schemaVersion: 1, cursorSeq: 0,
+      appliedAt: store.now().toISOString(), payload: { items: [{ revokedAccountIds: [], revokedTokenIds: [] }] } });
+    const staffSession = bridge.issue(STATION_ID, { accountId: OPERATOR_ID, method: 'offline_token',
+      offlineFresh: false, jti: null, expiresAt: store.now().getTime() + 60_000, permissions: new Set() });
+    const presence = async () => {
+      const response = await fetch(presenceUrl, { headers: { authorization: `Bearer ${staffSession}` } });
+      assert.equal(response.status, 200);
+      const body = await response.json() as { displays: Array<{ connected: boolean }> };
+      assert.equal(JSON.stringify(body).includes('credentialHash'), false);
+      return body.displays;
+    };
+    assert.equal((await presence())[0]?.connected, false);
     for (const authorization of ['', 'Bearer bs_staff', `Bearer ${'b'.repeat(64)}`]) {
       assert.equal((await fetch(`${base}/channel`, { headers: { authorization } })).status, 401);
     }
@@ -51,6 +65,11 @@ test('display channel: credential-only, initial and changed redacted snapshots, 
     };
     const first = await next();
     const read = await (await fetch(`${base}/session`, { headers })).json() as { document: unknown };
+    assert.equal((await presence())[0]?.connected, true);
+    store.setNow(new Date(store.now().getTime() + 11_000).toISOString());
+    assert.equal((await presence())[0]?.connected, false);
+    await fetch(`${base}/session`, { headers });
+    assert.equal((await presence())[0]?.connected, true);
     assert.deepEqual(first.document, read.document);
     const caller = { kind: 'till' as const, accountId: 'staff', can: () => true, method: 'platform' as const, offlineFresh: false, jti: null };
     const lease = await bridge.claim(STATION_ID, caller, 'test', null);
@@ -68,6 +87,7 @@ test('display channel: credential-only, initial and changed redacted snapshots, 
     assert.equal(JSON.stringify(changed).includes('PRIVATE'), false);
     assert.equal(changed.actionId, null);
     await configure(false);
+    assert.deepEqual(await presence(), []);
     const deadline = setTimeout(() => controller.abort(), 7_000);
     try { let ended = false; while (!ended) ended = (await reader.read()).done; assert.equal(ended, true); }
     finally { clearTimeout(deadline); }

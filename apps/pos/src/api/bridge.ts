@@ -164,6 +164,8 @@ export interface BridgeIntentAnswer<R = Record<string, unknown>> {
 export const bridgeApi = {
   status: (stationId: string, signal?: AbortSignal) =>
     request<BridgeStatus>('GET', stationId, 'status', undefined, { signal }),
+  displays: (stationId: string) => request<{ displays: Array<{ id: string; name: string; connected: boolean }> }>(
+    'GET', stationId, 'displays'),
   /**
    * Unlock through the box (OD-2). The answer's session is held for the
    * calls that follow, which is what a Pi needs; a virtual box also accepts

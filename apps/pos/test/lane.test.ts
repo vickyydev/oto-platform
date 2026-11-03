@@ -265,7 +265,7 @@ describe('which lane a call takes', () => {
     expect(quote.totals.grossSatang).toBe(70000);
   });
 
-  it('comes back to the platform when the box says its link is up and the switch is off', async () => {
+  it('comes back only when the box link and this browser both reach an unlocked platform session', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => forcedOffline()),
@@ -281,7 +281,8 @@ describe('which lane a call takes', () => {
     expect(currentLane()).toBe('box');
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => reply({ link: { up: true, offline: false, lane: 'platform' } })),
+      vi.fn(async (url: string) => reply(url === '/api/me' ? { sessionLocked: false }
+        : { link: { up: true, offline: false, lane: 'platform' } })),
     );
     expect(await refreshLane()).toBe('platform');
   });
