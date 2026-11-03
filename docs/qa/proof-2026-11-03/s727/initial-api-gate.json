@@ -1,0 +1,27 @@
+{
+  "numTotalTestSuites": 2024,
+  "numPassedTestSuites": 2018,
+  "numFailedTestSuites": 6,
+  "numTotalTests": 6557,
+  "numPassedTests": 6149,
+  "numFailedTests": 3,
+  "numPendingTests": 401,
+  "numTodoTests": 4,
+  "success": false,
+  "source": "57e806045a761e0a246581c5c9b688e5fd2c655a",
+  "classification": "Initial failed gate; retained, superseded only by a completed final gate",
+  "failedTests": [
+    {
+      "file": "operator-switch-lifecycle-review.test.ts",
+      "test": "SCRUM-640 Q22 native lifecycle house review R4 [critical] FINDING: invalidateAllSessions clears only the revoked account rows in its caller transaction, including an unrevoked expired row"
+    },
+    {
+      "file": "payments-2c2p.test.ts",
+      "test": "a production deployment will not quietly run a pretend gateway accepts a complete production configuration"
+    },
+    {
+      "file": "sync-api.test.ts",
+      "test": "the cache bundle gives a box only the staff who may stand at its own counters"
+    }
+  ]
+}
