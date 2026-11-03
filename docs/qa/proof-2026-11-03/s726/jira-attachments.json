@@ -1,0 +1,24 @@
+{
+  "key": "SCRUM-726",
+  "at": "2026-11-03T14:21:04.789Z",
+  "statusBefore": "Testing",
+  "files": [
+    {
+      "id": "12342",
+      "name": "s726-staging-proof.png"
+    },
+    {
+      "id": "12343",
+      "name": "s726-soak-trends.png"
+    },
+    {
+      "id": "12344",
+      "name": "s726-native-till.png"
+    },
+    {
+      "id": "12345",
+      "name": "s726-native-display.png"
+    }
+  ],
+  "commentPosted": true
+}

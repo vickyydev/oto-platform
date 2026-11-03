@@ -1,0 +1,137 @@
+{
+  "at": "2026-11-03T14:22:12.262Z",
+  "source": "5069944660dfd43571d39f097aa90a77b1092c36",
+  "proofCommit": "2bd5db2207e5d3df05dd58f725d004b0fa5467ea",
+  "ci": {
+    "id": 41556479254,
+    "url": "https://github.com/vickyydev/oto-platform/actions/runs/41556479254",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "ci",
+        "conclusion": "success",
+        "skippedSteps": [
+          "Migrations apply cleanly from empty (twice)",
+          "Seed",
+          "Pi scripts parse",
+          "Working tree before the pack",
+          "Pack the Pi release",
+          "Upload the Pi release",
+          "Console end-to-end report"
+        ]
+      },
+      {
+        "name": "oto-app",
+        "conclusion": "success",
+        "skippedSteps": [
+          "Run actions/setup-node@v4",
+          "Install the OTO App",
+          "Build the OTO App",
+          "The OTO App's inherited typecheck ceiling",
+          "The payroll golden example (engine leg)",
+          "The payroll engine checks",
+          "The suite theme checks",
+          "Install PostgreSQL 16 and video evidence tools",
+          "Rehearse the app restore and replay",
+          "Keep the restore counts",
+          "The otoapp schema, as the platform makes it",
+          "The app's migrations apply cleanly from empty (twice)",
+          "The app's route checks",
+          "The app's fix module checks",
+          "The app's night-job checks",
+          "The app's suite sign-in checks",
+          "The app's hand-off target checks",
+          "The app's tenant ownership checks",
+          "The app's Attention checks",
+          "The app's attendance checks",
+          "The app's attendance evidence parser checks",
+          "The app's attendance reviewer transaction checks",
+          "The app's document checks",
+          "The app's finance import checks",
+          "The app's finance ownership checks",
+          "The app's Xero connection ownership checks",
+          "The app's administration and payroll checks",
+          "The app's record deletion checks",
+          "The app's event status and shift-row merge checks",
+          "The app's schedule history view-as checks",
+          "The app's camp cancelled-day checks",
+          "The app's camp creation day-exclusion checks",
+          "The app's salary visibility checks",
+          "The app's checklist media and history checks",
+          "The app's leave type checks",
+          "The app's task assignees in Today checks",
+          "The app's checklist assignees in Today checks",
+          "The app's check-in child card checks",
+          "The app's leave balance reach checks",
+          "The app's access escalation checks",
+          "The app's named rights checks",
+          "The app's kiosk device checks",
+          "The app's birthdays and sidebar checks",
+          "The app's payroll configuration checks",
+          "The app's payroll profile editor check",
+          "The app's payroll cutover check",
+          "The payroll golden example (service and HTTP leg)",
+          "The app's payroll feeds checks",
+          "The app's payroll lifecycle checks",
+          "The app's payroll statutory documents checks",
+          "The app's payroll outputs checks",
+          "Run pnpm/action-setup@v4",
+          "Install the focused feature review dependencies",
+          "The app's feature runtime reviews",
+          "The app's issue reporting review",
+          "The app's scheduling park-group review",
+          "The offboarding census",
+          "The tenant ownership read-back"
+        ]
+      },
+      {
+        "name": "pos-tests",
+        "conclusion": "success",
+        "skippedSteps": []
+      },
+      {
+        "name": "api-tests (2)",
+        "conclusion": "success",
+        "skippedSteps": []
+      },
+      {
+        "name": "api-tests (3)",
+        "conclusion": "success",
+        "skippedSteps": []
+      },
+      {
+        "name": "api-tests (1)",
+        "conclusion": "success",
+        "skippedSteps": []
+      }
+    ]
+  },
+  "statuses": {
+    "SCRUM-502": "Deployed",
+    "SCRUM-503": "Deployed",
+    "SCRUM-673": "Deployed",
+    "SCRUM-726": "Deployed"
+  },
+  "proofImages": [
+    {
+      "id": "12342",
+      "name": "s726-staging-proof.png"
+    },
+    {
+      "id": "12343",
+      "name": "s726-soak-trends.png"
+    },
+    {
+      "id": "12344",
+      "name": "s726-native-till.png"
+    },
+    {
+      "id": "12345",
+      "name": "s726-native-display.png"
+    }
+  ],
+  "followup": "SCRUM-737",
+  "stagingWindowReleased": true,
+  "temporarySettingRemoved": true
+}
