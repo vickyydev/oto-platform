@@ -1,0 +1,39 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { attach, commentWithImages, jget, statusOf } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+const root='C:/oto-lanes/codex-qr-review-notes-20261104', base=root+'/docs/qa/proof-2026-11-04/s739/';
+const manifest=JSON.parse(readFileSync(base+'staging-proof.json','utf8'));
+assert.equal(manifest.imagesOpened,true);assert.equal(manifest.cleanupPassed,true);assert.equal(manifest.images.length,12);
+const statusBefore=(await statusOf('SCRUM-739')).status;assert.equal(statusBefore,'Testing');
+for(const image of manifest.images)assert.equal(createHash('sha256').update(readFileSync(image.path)).digest('hex'),image.sha256);
+const evidenceCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+assert.equal(evidenceCommit,'80a42976e42193ae1c97b60d33c36b03ac4ec4b9');
+const receipt={key:'SCRUM-739',source:manifest.source,evidenceCommit,statusBefore,startedAt:new Date().toISOString()};
+const save=()=>writeFileSync(base+'jira-publication.json',JSON.stringify(receipt,null,2)+'\n');save();
+const uploaded=await attach('SCRUM-739',manifest.images.map(i=>i.path));assert.ok([200,201].includes(uploaded.status));
+assert.equal(uploaded.files.length,12);receipt.attachments=uploaded.files;save();
+const text=`Staging proof passed on 4 November, 06:02 to 06:06 Bangkok. Ticket, food and shop staff can now answer a gateway QR that is waiting for a person, on a desktop or phone. The existing review asks them to check the bank slip and gateway report, say what they checked, and tick the acknowledgement before Money taken or No money taken becomes available. The phone Shop uses the existing shop screen.
+
+Six one-baht simulator sales were checked, one of each sale type at each width. The simulator reported a payment after the QR closed. Each sale stayed held without a receipt until the review was answered. Money taken then finished it. Independent reads found exactly six finished sales and six approved payments, with one confirmation and one finish recorded for each. Receipts are Z30-000001 through Z30-000006. Locking and unlocking the phone Shop retained the same payment.
+
+The twelve pictures below were opened and inspected. In order: the food payment held; its answer buttons locked; its completed review; its finished receipt; phone food review; desktop shop review; phone shop staff lock; resumed phone shop review; finished phone shop receipt; desktop ticket review; phone ticket review; finished phone ticket receipt. The password input alone is masked.
+
+Cleanup is complete and independently read back. The exact ZZ TEST box, till, two products, two categories and ticket package are retired. Both unused test bands are revoked, the six test alerts and inactive working document are retired with audit, all test queues and sessions are empty, and sign-out answers 401. The six financial records remain readable. No wallet credit was granted. All 57 API settings and the deployment identities stayed unchanged.
+
+Source and live platform version: dde3887aa3162d6b6c006c4135ad2ef20e163b6c. Main checks passed first time: https://github.com/vickyydev/oto-platform/actions/runs/41731884131. Report and opened image list: https://github.com/vickyydev/oto-platform/blob/${evidenceCommit}/docs/qa/proof-2026-11-04/s739/README.md.
+
+To retest on staging, choose a ZZ TEST till routed to the payment simulator, start a ticket, food or shop QR, and use the simulator's late-payment action for that attempt. The sale must remain held. Open Review the QR payment: both answers must stay disabled until the note and acknowledgement are present. Answer Money taken and read the sale back: one finished sale and one payment.
+
+These are simulator results. Real bank payments, physical printing and a customer display on its own device were not tested by this unit. The visible no-printer warnings are retained. No-money and denied-permission outcomes passed automated tests; these staging pictures show Money taken. The separate OTO App was unchanged and path-skipped, with its complete live build context verified identical. The original sale-writer test that hid this review was deliberately changed; the expiry hold, permission and box PAX guards remain.`;
+writeFileSync(base+'jira-proof-comment.txt',text+'\n');
+const posted=await commentWithImages('SCRUM-739',text,manifest.images.map(i=>i.file));assert.equal(posted.status,201);
+const id=posted.body.match(/"id"\s*:\s*"(\d+)"/)?.[1];assert.ok(id);receipt.commentId=id;save();
+const read=await jget('/rest/api/2/issue/SCRUM-739/comment/'+id+'?expand=renderedBody');
+assert.equal(read.id,id);assert.equal(typeof read.renderedBody,'string');
+const tags=read.renderedBody.match(/<img\b[^>]*>/gi)??[];
+receipt.inlineChecks=receipt.attachments.map(a=>({file:a.name,id:a.id,rendered:tags.some(tag=>tag.includes('/'+a.id+'/')||tag.includes('attachmentId='+a.id)||tag.includes('attachment-id="'+a.id+'"'))}));
+receipt.renderedImageCount=tags.length;save();assert.ok(receipt.inlineChecks.every(i=>i.rendered),'Inspect image references before walking the ticket');
+receipt.inlineImagesVerified=true;receipt.verifiedAt=new Date().toISOString();save();
+console.log(JSON.stringify({key:receipt.key,commentId:id,attachments:receipt.attachments.length,inlineImagesVerified:true,statusBefore},null,2));

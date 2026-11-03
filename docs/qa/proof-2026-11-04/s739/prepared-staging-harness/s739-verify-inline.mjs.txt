@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { jget } from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/jira.mjs';
+const path='C:/oto-lanes/codex-qr-review-notes-20261104/docs/qa/proof-2026-11-04/s739/jira-publication.json';
+const r=JSON.parse(readFileSync(path,'utf8'));
+const comment=await jget('/rest/api/2/issue/SCRUM-739/comment/'+r.commentId+'?expand=renderedBody');
+assert.equal(comment.id,r.commentId);
+const tags=comment.renderedBody.match(/<img\b[^>]*>/gi)??[];assert.equal(tags.length,12);
+const sources=tags.map(tag=>{const src=tag.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1];assert.ok(src);return new URL(src.replaceAll('&amp;','&'),'https://jira.invalid').pathname.split('/').filter(Boolean);});
+r.initialInlineChecks=r.inlineChecks;
+r.initialVerificationLimit='The first matcher required a slash after the attachment ID; Jira uses the exact ID as the final content-path segment.';
+r.inlineChecks=r.attachments.map(a=>({file:a.name,id:a.id,rendered:sources.filter(parts=>parts.at(-1)===a.id&&parts.at(-2)==='content'&&parts.at(-3)==='attachment').length===1}));
+assert.ok(r.inlineChecks.every(x=>x.rendered));r.inlineImagesVerified=true;r.verifiedAt=new Date().toISOString();
+writeFileSync(path,JSON.stringify(r,null,2)+'\n');
+console.log(JSON.stringify({commentId:r.commentId,exactAttachmentPaths:r.inlineChecks.length,inlineImagesVerified:true}));

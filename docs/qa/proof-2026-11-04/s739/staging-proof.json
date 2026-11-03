@@ -72,7 +72,7 @@
     }
   ],
   "imagesOpened": true,
-  "jiraPublished": false,
+  "jiraPublished": true,
   "sales": [
     {
       "kind": "food",
@@ -122,5 +122,7 @@
   "cleanupReadJob": "job-dbl6heqjnfac73eqgck0",
   "cleanupPassed": true,
   "physicalPrinting": "unproven",
-  "openedAt": "2026-11-03T23:05:26.353Z"
+  "openedAt": "2026-11-03T23:05:26.353Z",
+  "jiraCommentId": "13359",
+  "jiraStatusReadBack": "Deployed"
 }

@@ -1,7 +1,10 @@
 # SCRUM-739: review an ordinary sale's held gateway QR
 
 Staging proof and cleanup passed on 4 November 2026, 06:02:27-06:06:24
-Bangkok. Jira image publication is pending; the ticket remains Testing.
+Bangkok. All twelve inspected images render inside [Jira comment 13359](https://oto-suite-dev.atlassian.net/browse/SCRUM-739?focusedCommentId=13359).
+The exact attachment IDs were verified, then jira.mjs walk moved the ticket
+to Deployed and fresh reads confirmed it. It was never moved to Done.
+[Jira publication receipt](jira-publication.json) binds the result.
 
 Source and live platform commit: `dde3887aa3162d6b6c006c4135ad2ef20e163b6c`.
 [Main CI 41731884131](https://github.com/vickyydev/oto-platform/actions/runs/41731884131)

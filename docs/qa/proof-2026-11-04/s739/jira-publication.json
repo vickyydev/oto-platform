@@ -1,0 +1,188 @@
+{
+  "key": "SCRUM-739",
+  "source": "dde3887aa3162d6b6c006c4135ad2ef20e163b6c",
+  "evidenceCommit": "80a42976e42193ae1c97b60d33c36b03ac4ec4b9",
+  "statusBefore": "Testing",
+  "startedAt": "2026-11-03T23:10:07.859Z",
+  "attachments": [
+    {
+      "id": "12410",
+      "name": "s739-food-desktop-02-held.png"
+    },
+    {
+      "id": "12411",
+      "name": "s739-food-desktop-03-review-locked.png"
+    },
+    {
+      "id": "12412",
+      "name": "s739-food-desktop-04-review-ready.png"
+    },
+    {
+      "id": "12413",
+      "name": "s739-food-desktop-05-completed.png"
+    },
+    {
+      "id": "12414",
+      "name": "s739-food-phone-04-review-ready.png"
+    },
+    {
+      "id": "12415",
+      "name": "s739-shop-desktop-04-review-ready.png"
+    },
+    {
+      "id": "12416",
+      "name": "s739-shop-phone-02b-staff-locked.png"
+    },
+    {
+      "id": "12417",
+      "name": "s739-shop-phone-04-review-ready.png"
+    },
+    {
+      "id": "12418",
+      "name": "s739-shop-phone-05-completed.png"
+    },
+    {
+      "id": "12419",
+      "name": "s739-tickets-desktop-04-review-ready.png"
+    },
+    {
+      "id": "12420",
+      "name": "s739-tickets-phone-04-review-ready.png"
+    },
+    {
+      "id": "12421",
+      "name": "s739-tickets-phone-05-completed.png"
+    }
+  ],
+  "commentId": "13359",
+  "inlineChecks": [
+    {
+      "file": "s739-food-desktop-02-held.png",
+      "id": "12410",
+      "rendered": true
+    },
+    {
+      "file": "s739-food-desktop-03-review-locked.png",
+      "id": "12411",
+      "rendered": true
+    },
+    {
+      "file": "s739-food-desktop-04-review-ready.png",
+      "id": "12412",
+      "rendered": true
+    },
+    {
+      "file": "s739-food-desktop-05-completed.png",
+      "id": "12413",
+      "rendered": true
+    },
+    {
+      "file": "s739-food-phone-04-review-ready.png",
+      "id": "12414",
+      "rendered": true
+    },
+    {
+      "file": "s739-shop-desktop-04-review-ready.png",
+      "id": "12415",
+      "rendered": true
+    },
+    {
+      "file": "s739-shop-phone-02b-staff-locked.png",
+      "id": "12416",
+      "rendered": true
+    },
+    {
+      "file": "s739-shop-phone-04-review-ready.png",
+      "id": "12417",
+      "rendered": true
+    },
+    {
+      "file": "s739-shop-phone-05-completed.png",
+      "id": "12418",
+      "rendered": true
+    },
+    {
+      "file": "s739-tickets-desktop-04-review-ready.png",
+      "id": "12419",
+      "rendered": true
+    },
+    {
+      "file": "s739-tickets-phone-04-review-ready.png",
+      "id": "12420",
+      "rendered": true
+    },
+    {
+      "file": "s739-tickets-phone-05-completed.png",
+      "id": "12421",
+      "rendered": true
+    }
+  ],
+  "renderedImageCount": 12,
+  "initialInlineChecks": [
+    {
+      "file": "s739-food-desktop-02-held.png",
+      "id": "12410",
+      "rendered": false
+    },
+    {
+      "file": "s739-food-desktop-03-review-locked.png",
+      "id": "12411",
+      "rendered": false
+    },
+    {
+      "file": "s739-food-desktop-04-review-ready.png",
+      "id": "12412",
+      "rendered": false
+    },
+    {
+      "file": "s739-food-desktop-05-completed.png",
+      "id": "12413",
+      "rendered": false
+    },
+    {
+      "file": "s739-food-phone-04-review-ready.png",
+      "id": "12414",
+      "rendered": false
+    },
+    {
+      "file": "s739-shop-desktop-04-review-ready.png",
+      "id": "12415",
+      "rendered": false
+    },
+    {
+      "file": "s739-shop-phone-02b-staff-locked.png",
+      "id": "12416",
+      "rendered": false
+    },
+    {
+      "file": "s739-shop-phone-04-review-ready.png",
+      "id": "12417",
+      "rendered": false
+    },
+    {
+      "file": "s739-shop-phone-05-completed.png",
+      "id": "12418",
+      "rendered": false
+    },
+    {
+      "file": "s739-tickets-desktop-04-review-ready.png",
+      "id": "12419",
+      "rendered": false
+    },
+    {
+      "file": "s739-tickets-phone-04-review-ready.png",
+      "id": "12420",
+      "rendered": false
+    },
+    {
+      "file": "s739-tickets-phone-05-completed.png",
+      "id": "12421",
+      "rendered": false
+    }
+  ],
+  "initialVerificationLimit": "The first matcher required a slash after the attachment ID; Jira uses the exact ID as the final content-path segment.",
+  "inlineImagesVerified": true,
+  "verifiedAt": "2026-11-03T23:11:06.927Z",
+  "statusAfter": "Deployed",
+  "statusReadAt": "2026-11-03T23:12:18.614Z"
+}
