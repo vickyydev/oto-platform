@@ -133,18 +133,38 @@ async function firstCashSale(options: {
     expect(changed.statusCode).toBe(200);
   }
   const readsBeforeCommand = configReads;
-  const printed = () => [...devices.map(d => d.deviceId), spareReceiptId].map(id => agent.printing()!.printouts(id).length);
+  const printerIds = [...devices.map(d => d.deviceId), spareReceiptId];
+  const printed = () => printerIds.map(id => agent.printing()!.printouts(id).length);
+  const drawerKicks = () => printerIds.map(id => agent.printing()!.events(id).filter(e => e.kind === 'drawer.kick').length);
   const beforePrintouts = printed();
+  const beforeKicks = drawerKicks();
   configFault = options.configFault ?? null;
   try { await agent.runPendingCommands(); } finally { configFault = null; }
   const commandConfigReads = configReads - readsBeforeCommand;
   const rows = await ctx.db.select().from(printJob).where(inArray(printJob.id, jobs.map(j => j.id)));
   // A later ordinary command poll never sends another receipt or charges again.
   const printouts = printed();
-  if (options.configFault || options.unassigned || options.removeAfterQueue) expect(printouts).toEqual(beforePrintouts);
-  else expect(printouts.reduce((a, n) => a + n, 0) - beforePrintouts.reduce((a, n) => a + n, 0)).toBe(2);
+  if (options.configFault || options.unassigned || options.removeAfterQueue) {
+    expect(printouts).toEqual(beforePrintouts);
+    expect(drawerKicks()).toEqual(beforeKicks);
+  } else {
+    const outputs = printerIds.flatMap((deviceId, i) => agent.printing()!.printouts(deviceId)
+      .slice(beforePrintouts[i]).map(p => ({ deviceId, bytes: p.jobBytes, height: p.heightDots, truncated: p.truncated })));
+    const paper = outputs.filter(p => p.height > 0);
+    expect(paper.map(p => p.deviceId).sort()).toEqual(jobs.map(j => j.deviceId).sort());
+    expect(paper.every(p => !p.truncated)).toBe(true);
+    // The simulator also records the five-byte ESC p drawer pulse when its
+    // session closes: zero paper height and no cut terminator are intentional.
+    const receiptDevice = jobs.find(j => j.kind === 'receipt')!.deviceId;
+    expect(outputs.filter(p => p.height === 0)).toEqual([
+      { deviceId: receiptDevice, bytes: 5, height: 0, truncated: true },
+    ]);
+    expect(drawerKicks().map((n, i) => n - beforeKicks[i]!)).toEqual(printerIds.map(id => id === receiptDevice ? 1 : 0));
+  }
+  const kicks = drawerKicks();
   await agent.runPendingCommands();
   expect(printed()).toEqual(printouts);
+  expect(drawerKicks()).toEqual(kicks);
   const paid = await ctx.db.select().from(paymentAttempt).where(and(eq(paymentAttempt.saleId, saleId), eq(paymentAttempt.status, 'approved')));
   expect(paid.map(p => ({ method: p.method, amount: p.amountSatang }))).toEqual([{ method: 'cash', amount: 100 }]);
   console.info(JSON.stringify({ options, commandConfigReads,
