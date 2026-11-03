@@ -1,0 +1,5 @@
+import {writeFileSync} from 'node:fs';
+import 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+const {render,service}=await import('file:///C:/oto-lanes/codex-first-print-release-20261104/scripts/agent/render.mjs');
+const rows=[];for(const name of ['oto-api-staging','oto-pos-web-staging','oto-pos-staging','oto-console-staging','oto-launcher-staging','oto-booth-staging','oto-app-staging']){const s=await service(name),d=(await render('GET',`/services/${s.id}/deploys?limit=1`))[0]?.deploy;rows.push({name,id:s.id,status:d?.status,source:d?.commit?.id,deployId:d?.id,finishedAt:d?.finishedAt??null});}
+const result={at:new Date().toISOString(),readOnly:true,services:rows};if(process.argv[2])writeFileSync(process.argv[2],JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));

@@ -1,0 +1,13 @@
+{
+  "recordedAt": "2026-11-03T19:54:45.860Z",
+  "source": "773fd25f5436bf07f663af183761481b3197a3ef",
+  "command": "pnpm --filter @oto/box-agent build:runner",
+  "exitCode": 0,
+  "bundleSha256": "232adcfd0951776fb1aeda10e3229f1192e174a50dbc38a6e8372326d251a59e",
+  "earlierInvocation": {
+    "command": "pnpm --filter @oto/box-agent build",
+    "exitCode": 1,
+    "reason": "That package has no build script; the documented build:runner command then passed."
+  },
+  "physicalDeviceUpdated": false
+}

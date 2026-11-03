@@ -1,0 +1,62 @@
+{
+  "at": "2026-11-03T19:51:15.701Z",
+  "readOnly": true,
+  "services": [
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "status": "live",
+      "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+      "deployId": "dep-dbl369gu01pc73emis8g",
+      "finishedAt": "2026-11-03T19:20:40.424464Z"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "status": "live",
+      "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+      "deployId": "dep-dbl36albedkc73eurkbg",
+      "finishedAt": "2026-11-03T19:19:21.381497Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "status": "live",
+      "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+      "deployId": "dep-dbl2pl3bc2fs738jikn0",
+      "finishedAt": "2026-11-03T18:57:01.508459Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "srv-danng2p42hec73f38e3g",
+      "status": "live",
+      "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+      "deployId": "dep-dbl2pl3bc2fs738jikqg",
+      "finishedAt": "2026-11-03T18:55:21.303167Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "id": "srv-danli3ajnfac7391jrk0",
+      "status": "live",
+      "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+      "deployId": "dep-dbl2pkrbc2fs738jik4g",
+      "finishedAt": "2026-11-03T18:51:47.98532Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "id": "srv-dapkbobtqb8s73delilg",
+      "status": "live",
+      "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+      "deployId": "dep-dbl2pl3bc2fs738jikeg",
+      "finishedAt": "2026-11-03T18:54:42.317438Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "status": "live",
+      "source": "629714f266253c4b6951b68237da7db13c8cf26e",
+      "deployId": "dep-dbjsjmk9v7es73b1lhpg",
+      "finishedAt": "2026-11-01T23:27:20.626127Z"
+    }
+  ]
+}
