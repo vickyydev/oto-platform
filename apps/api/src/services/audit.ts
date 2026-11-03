@@ -8,6 +8,8 @@ import { auditContextForActor, impersonationForActor } from './audit-context';
  * so the audit row commits atomically with the change.
  */
 export interface AuditEntry {
+  /** Durable identity for an action that can arrive through either lane. */
+  id?: string;
   actorAccountId: string | null;
   action: string;
   entityType: string;
@@ -68,7 +70,7 @@ export const audit = {
     // A row written as the subject of a view-as window names the person who was really there.
     const impersonated = entry.actorType ? null : impersonationForActor(entry.actorAccountId);
     await (tx as InsertCapable).insert(auditLog).values({
-      id: newId(),
+      id: entry.id ?? newId(),
       operatorId: entry.operatorId ?? null,
       branchId: entry.branchId ?? null,
       actorAccountId: impersonated ? impersonated.actorAccountId : entry.actorAccountId,

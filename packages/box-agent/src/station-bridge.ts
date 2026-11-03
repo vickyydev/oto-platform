@@ -67,6 +67,7 @@ import {
   tierProofNoteProblem,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
+  OfflineVisitChildrenAddedSchema,
   bandShortCode,
   bridgeCartOf,
   fractionalMoneyRefusal,
@@ -2191,6 +2192,31 @@ export class StationBridge {
         },
       );
       return { child: childOf({ ...next, id: body.childId }) };
+    }
+
+    if (type === 'visit.children_add') {
+      this.require(caller, 'pos:visit:create');
+      const parsed = OfflineVisitChildrenAddedSchema.safeParse(payload);
+      if (!parsed.success) invalid(parsed.error);
+      const body = parsed.data!;
+      const found = await this.resolveMember(body.memberId);
+      if (!found) throw new BridgeError(404, 'NOT_FOUND', 'Member not found');
+      const shown = await this.present(found.member, [], found.source);
+      const saved = new Set(shown.children.map((c) => c.id));
+      if (body.childIds.some((id) => !saved.has(id))) {
+        throw new BridgeError(400, 'VALIDATION', "One or more children are not on this member's saved list");
+      }
+      const held = await this.host.store.readOverlay(this.host.boxId, 'visit', body.visitId);
+      if (held && held.memberId !== found.id) throw new BridgeError(404, 'NOT_FOUND', 'Visit not found');
+      const record = held?.record ?? { id: body.visitId, memberId: found.id,
+        visitDate: this.tradingDay(), status: 'draft' };
+      if (record.status === 'closed') throw new BridgeError(409, 'VISIT_CLOSED', 'That visit is closed');
+      const prior = Array.isArray(record.childIds) ? record.childIds as string[] : [];
+      await this.produce(station, caller,
+        { type: factType, payload: { ...body, memberId: found.id }, actionId },
+        { kind: 'visit', entityId: body.visitId, memberId: found.id, phone: null,
+          record: { ...record, childIds: [...new Set([...prior, ...body.childIds])] } });
+      return { id: body.visitId, visitDate: record.visitDate, status: record.status };
     }
 
     // visit.create

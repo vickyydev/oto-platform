@@ -5787,6 +5787,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "verificationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "toTier": {
                     "type": "string",
                     "minLength": 1
@@ -5832,7 +5836,173 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "member": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "nickname": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "email": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "tierCode": {
+                          "type": "string"
+                        },
+                        "preferredChannel": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "notes": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "childrenReviewSince": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "children": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "dateOfBirth": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "ageYears": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 17,
+                                "nullable": true
+                              },
+                              "allergies": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "medicalNotes": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "medicalAlert": {
+                                "type": "boolean"
+                              },
+                              "dietary": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "foodRestrictions": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "notes": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "lastConfirmedAt": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "id",
+                              "lastConfirmedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "tierVerification": {
+                          "type": "object",
+                          "properties": {
+                            "tier": {
+                              "type": "string"
+                            },
+                            "proofType": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "verifiedAt": {
+                              "type": "string"
+                            },
+                            "verifiedBy": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "reverifyDue": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "tier",
+                            "proofType",
+                            "note",
+                            "verifiedAt",
+                            "verifiedBy",
+                            "expiresAt",
+                            "reverifyDue"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "phone",
+                        "nickname",
+                        "name",
+                        "email",
+                        "tierCode",
+                        "preferredChannel",
+                        "notes",
+                        "childrenReviewSince",
+                        "children",
+                        "tierVerification"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "member"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -5845,6 +6015,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "verificationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "reason": {
                     "type": "string",
                     "minLength": 3,
@@ -5872,7 +6046,173 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "member": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "nickname": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "email": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "tierCode": {
+                          "type": "string"
+                        },
+                        "preferredChannel": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "notes": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "childrenReviewSince": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "children": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "dateOfBirth": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "nullable": true
+                              },
+                              "ageYears": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 17,
+                                "nullable": true
+                              },
+                              "allergies": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "medicalNotes": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "medicalAlert": {
+                                "type": "boolean"
+                              },
+                              "dietary": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "foodRestrictions": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "notes": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "lastConfirmedAt": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "id",
+                              "lastConfirmedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "tierVerification": {
+                          "type": "object",
+                          "properties": {
+                            "tier": {
+                              "type": "string"
+                            },
+                            "proofType": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "verifiedAt": {
+                              "type": "string"
+                            },
+                            "verifiedBy": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "reverifyDue": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "tier",
+                            "proofType",
+                            "note",
+                            "verifiedAt",
+                            "verifiedBy",
+                            "expiresAt",
+                            "reverifyDue"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "phone",
+                        "nickname",
+                        "name",
+                        "email",
+                        "tierCode",
+                        "preferredChannel",
+                        "notes",
+                        "childrenReviewSince",
+                        "children",
+                        "tierVerification"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "member"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -6115,13 +6455,18 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "childIds": {
                     "type": "array",
                     "items": {
                       "type": "string",
                       "format": "uuid"
                     },
-                    "minItems": 1
+                    "minItems": 1,
+                    "maxItems": 20
                   }
                 },
                 "required": [
@@ -92883,7 +93228,7 @@
     },
     "/box/v1/sync/push": {
       "post": {
-        "description": "Hand over a batch of facts. Each event is validated and applied on its own, under its own SAVEPOINT: a duplicate is dropped, and a conflict, a malformed envelope or a poison payload is quarantined without costing the rest of the batch. An old journal epoch is refused. Types this api applies: band.gate_event, booking.redeemed, booth.spin_recorded, booth.voucher_printed, checkin.created, checkin.updated, child.created, child.updated, event.checked_in, event.checked_out, guardian.created, member.created, member.tier_changed, member.updated, payment.recorded, promo.voucher_issued, release.created, sale.finalised, station.takeover, supervision_waiver.created, visit.created, wallet.spent.",
+        "description": "Hand over a batch of facts. Each event is validated and applied on its own, under its own SAVEPOINT: a duplicate is dropped, and a conflict, a malformed envelope or a poison payload is quarantined without costing the rest of the batch. An old journal epoch is refused. Types this api applies: band.gate_event, booking.redeemed, booth.spin_recorded, booth.voucher_printed, checkin.created, checkin.updated, child.created, child.updated, event.checked_in, event.checked_out, guardian.created, member.created, member.tier_changed, member.updated, payment.recorded, promo.voucher_issued, release.created, sale.finalised, station.takeover, supervision_waiver.created, visit.children_added, visit.created, wallet.spent.",
         "requestBody": {
           "required": true,
           "content": {

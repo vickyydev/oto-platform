@@ -5,6 +5,7 @@ import { branchToday } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { addVisitChildren } from '../services/visit-children';
 import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 
@@ -186,8 +187,8 @@ export async function visitRoutes(app: App): Promise<void> {
    * now adds its children to the visit the first one opened.
    *
    * Idempotent by construction: a child already on the visit is left as it is
-   * (its first confirmation time kept) and only re-stamped as confirmed, so
-   * sending the same request twice changes nothing the second time. Same rules
+   * (its first confirmation time kept). A durable operation id also keeps
+   * a lost-answer replay from stamping confirmation or auditing it twice. Same rules
    * as opening one: the member's own children, not archived; read at the
    * branch the visit is on. A closed visit takes no more children.
    */
@@ -198,7 +199,7 @@ export async function visitRoutes(app: App): Promise<void> {
       schema: {
         description: "Add confirmed children to an open visit (the family's one visit for the day)",
         params: z.object({ id: z.string().uuid() }),
-        body: z.object({ childIds: z.array(z.string().uuid()).min(1) }),
+        body: z.object({ operationId: ClientIdSchema.optional(), childIds: z.array(z.string().uuid()).min(1).max(20) }),
         response: {
           200: z.object({ id: z.string().uuid(), visitDate: z.string(), status: z.string() }),
         },
@@ -209,48 +210,15 @@ export async function visitRoutes(app: App): Promise<void> {
       const [v] = await app.db.select().from(visit).where(eq(visit.id, req.params.id)).limit(1);
       if (!v || v.operatorId !== auth.operatorId) throw errors.notFound('Visit not found');
       await req.requirePermission('pos:visit:create', { branchId: v.branchId });
-      if (v.status === 'closed') throw errors.conflict('VISIT_CLOSED', 'That visit is closed');
-      if (!v.memberId) throw errors.badRequest('childIds require a memberId');
-      const childIds = [...new Set(req.body.childIds)];
-      const rows = await app.db
-        .select({ id: child.id })
-        .from(child)
-        .where(and(inArray(child.id, childIds), eq(child.memberId, v.memberId), isNull(child.archivedAt)));
-      if (rows.length !== childIds.length) {
-        throw errors.badRequest('One or more children do not belong to this member');
-      }
-      const memberId = v.memberId;
-      const now = new Date();
-      return withTx(app.db, opCtx(req), 'visit.children_add', async (tx) => {
-        const before = (
-          await tx.select({ childId: visitChild.childId }).from(visitChild).where(eq(visitChild.visitId, v.id))
-        ).map((r) => r.childId);
-        const added = childIds.filter((id) => !before.includes(id));
-        if (added.length > 0) {
-          await tx
-            .insert(visitChild)
-            .values(added.map((childId) => ({ visitId: v.id, childId, confirmedAt: now })))
-            .onConflictDoNothing();
-        }
-        await tx.update(child).set({ lastConfirmedAt: now }).where(inArray(child.id, childIds));
-        // The same confirmation the create path clears the offline-merge flag on.
-        await tx
-          .update(member)
-          .set({ childrenReviewSince: null })
-          .where(and(eq(member.id, memberId), isNotNull(member.childrenReviewSince)));
-        await audit.record(tx, {
-          actorAccountId: auth.accountId,
-          operatorId: auth.operatorId,
-          branchId: v.branchId,
-          action: 'visit.children_add',
-          entityType: 'visit',
-          entityId: v.id,
-          before: { childIds: before },
-          after: { childIds: [...before, ...added], confirmedChildIds: childIds },
-          requestId: req.id,
-        });
-        return { id: v.id, visitDate: v.visitDate, status: v.status };
-      });
+      return withTx(app.db, opCtx(req), 'visit.children_add', (tx) => addVisitChildren(tx, {
+        operationId: req.body.operationId,
+        visitId: v.id,
+        operatorId: auth.operatorId,
+        branchId: v.branchId,
+        childIds: req.body.childIds,
+        now: new Date(),
+        actor: { actorAccountId: auth.accountId, requestId: req.id },
+      }));
     },
   );
 
