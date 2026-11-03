@@ -31,6 +31,7 @@ import { ApiError, NetworkError } from './client';
 let origin: string | null = null;
 let boxSession: string | null = null;
 let sessionRevision = 0;
+const sessionListeners = new Set<() => void>();
 
 /**
  * SCRUM-503 — the refusals the BOX answered, so a note can name who said no.
@@ -62,6 +63,7 @@ export function hasBridgeOrigin(): boolean { return origin !== null; }
 export function holdBoxSession(value: string | null): void {
   sessionRevision += 1;
   boxSession = value;
+  for (const listener of sessionListeners) listener();
 }
 
 /** Prepare before platform authentication, invoke only after it succeeds. */
@@ -134,7 +136,14 @@ async function request<T>(
   } | null;
   if (!res.ok) {
     const err = data?.error;
-    if (res.status === 423) window.dispatchEvent(new CustomEvent('oto:session-locked'));
+    // Background display reads may arrive before the bounded online unlock.
+    // A staff action that needs a box session opens the password screen once;
+    // it is never replayed automatically after the unlock.
+    const staffAction = rest.startsWith('members/') || (rest === 'intents'
+      && (body as { type?: string } | undefined)?.type !== 'session.publish_display');
+    if (res.status === 423 || (staffAction && res.status === 401 && err?.code === 'BOX_SESSION_REQUIRED')) {
+      window.dispatchEvent(new CustomEvent('oto:session-locked'));
+    }
     const refusal = new ApiError(
       res.status,
       err?.code ?? 'UNKNOWN',
@@ -235,7 +244,15 @@ export function watchBridgeSnapshots(stationId: string, options: {
   let retry: ReturnType<typeof setTimeout> | undefined;
   let controller: AbortController | undefined;
   let deadline: ReturnType<typeof setTimeout> | undefined;
+  let awaitingSession = false;
+  const afterUnlock = () => {
+    if (stopped || !awaitingSession || !boxSession) return;
+    awaitingSession = false;
+    clearTimeout(retry);
+    retry = setTimeout(() => { void connect(); }, 0);
+  };
   const connect = async () => {
+    const revision = sessionRevision;
     controller = new AbortController();
     const active = controller;
     const arm = (ms: number) => {
@@ -246,7 +263,7 @@ export function watchBridgeSnapshots(stationId: string, options: {
     try {
       const bearer = options.bearer ?? boxSession;
       const response = await fetch(bridgeUrl(stationId, options.bearer ? 'display/channel' : 'channel?view=staff'), {
-        credentials: options.bearer || origin ? 'omit' : 'same-origin', cache: 'no-store',
+        credentials: options.bearer || origin ? 'omit' : 'same-origin', cache: 'no-store', redirect: 'error',
         headers: { accept: 'text/event-stream', ...(bearer ? { authorization: `Bearer ${bearer}` } : {}) },
         signal: active.signal,
       });
@@ -282,12 +299,25 @@ export function watchBridgeSnapshots(stationId: string, options: {
       } finally { await reader.cancel().catch(() => undefined); }
     } catch (error) {
       if (!stopped) { options.onState(false); options.onFailure(error); }
-      if (error instanceof ApiError && error.status === 401) return;
+      if (error instanceof ApiError && error.status === 401) {
+        // A paired display's revoked credential stays refused. A staff stream
+        // waits for a genuinely new box session, including an unlock that
+        // overtook this response, instead of polling the rejected credential.
+        if (!options.bearer) {
+          awaitingSession = true;
+          if (revision !== sessionRevision) afterUnlock();
+        }
+        return;
+      }
     } finally { clearTimeout(deadline); active.abort(); }
     if (!stopped) retry = setTimeout(() => { void connect(); }, Math.min(15_000, 1_000 * 2 ** attempt++));
   };
+  if (!options.bearer) sessionListeners.add(afterUnlock);
   void connect();
-  return () => { stopped = true; clearTimeout(retry); clearTimeout(deadline); controller?.abort(); };
+  return () => {
+    stopped = true; sessionListeners.delete(afterUnlock);
+    clearTimeout(retry); clearTimeout(deadline); controller?.abort();
+  };
 }
 
 /**
