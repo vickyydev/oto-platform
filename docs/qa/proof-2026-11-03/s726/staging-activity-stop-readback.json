@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-03T06:06:41.695Z",
+  "sampleAt": "2026-11-03T06:06:14.768Z",
+  "ownSessions": 70,
+  "otherStationSessions": [],
+  "otherUnboundSessionIds": [],
+  "nonTestSessions": 0,
+  "nonTestSales": 0,
+  "connections": {
+    "total": 9,
+    "active": 1,
+    "waiting_on_lock": 0
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "at": "2026-11-03T06:08:05.146Z",
+  "samples": [
+    {
+      "at": "2026-11-03T06:03:14.402Z",
+      "otherUnbound": 0,
+      "otherStation": 0
+    },
+    {
+      "at": "2026-11-03T06:03:29.433Z",
+      "otherUnbound": 0,
+      "otherStation": 0
+    },
+    {
+      "at": "2026-11-03T06:03:44.463Z",
+      "otherUnbound": 0,
+      "otherStation": 0
+    },
+    {
+      "at": "2026-11-03T06:03:59.491Z",
+      "otherUnbound": 0,
+      "otherStation": 0
+    },
+    {
+      "at": "2026-11-03T06:04:14.520Z",
+      "otherUnbound": 0,
+      "otherStation": 0
+    },
+    {
+      "at": "2026-11-03T06:04:29.548Z",
+      "otherUnbound": 1,
+      "otherStation": 0
+    },
+    {
+      "at": "2026-11-03T06:04:44.575Z",
+      "otherUnbound": 1,
+      "otherStation": 0
+    },
+    {
+      "at": "2026-11-03T06:04:59.608Z",
+      "otherUnbound": 2,
+      "otherStation": 0
+    }
+  ]
+}

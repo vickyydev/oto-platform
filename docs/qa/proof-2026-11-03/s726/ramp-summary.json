@@ -1,0 +1,425 @@
+{
+  "at": "2026-11-03T06:04:20.279Z",
+  "sources": {
+    "srv-danh2ljtqb8s73bt9en0": "5069944660dfd43571d39f097aa90a77b1092c36",
+    "srv-dbk7qu8n74is73bm894g": "5069944660dfd43571d39f097aa90a77b1092c36"
+  },
+  "steps": [
+    {
+      "name": "ramp_1",
+      "mix": {
+        "tills": 1,
+        "displays": 1,
+        "boards": 1,
+        "nativeTills": 1,
+        "nativeBoards": 1
+      },
+      "seconds": 180.304,
+      "calls": 275,
+      "p50": 79.5619000000006,
+      "p95": 140.09820000000764,
+      "errors": 0,
+      "cash": 2,
+      "serverStreams": [
+        3,
+        3
+      ],
+      "workingDatabaseConnectionsMax": 16,
+      "poolWaitingMax": 0,
+      "resources": [
+        {
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "cpuPercentPeak": 6.81552,
+          "memoryMiBPeak": 362.421875,
+          "memoryPercentPeak": 17.696381010779312
+        },
+        {
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "cpuPercentPeak": 1.48221328,
+          "memoryMiBPeak": 113.08202743530273,
+          "memoryPercentPeak": 22.086333977125598
+        },
+        {
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "cpuPercentPeak": 6.0705833,
+          "memoryMiBPeak": 674.9179840087891,
+          "memoryPercentPeak": 32.95498042453037
+        }
+      ],
+      "display": {
+        "native": [
+          449.8368999999948,
+          475.77449999999953
+        ],
+        "scriptedP95": null
+      }
+    },
+    {
+      "name": "ramp_2",
+      "mix": {
+        "tills": 2,
+        "displays": 2,
+        "boards": 1,
+        "nativeTills": 1,
+        "nativeBoards": 1
+      },
+      "seconds": 180.322,
+      "calls": 467,
+      "p50": 78.39689999999246,
+      "p95": 132.51510000001872,
+      "errors": 0,
+      "cash": 3,
+      "serverStreams": [
+        6,
+        6
+      ],
+      "workingDatabaseConnectionsMax": 16,
+      "poolWaitingMax": 0,
+      "resources": [
+        {
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "cpuPercentPeak": 5.33578,
+          "memoryMiBPeak": 354.93359565734863,
+          "memoryPercentPeak": 17.330742362828754
+        },
+        {
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "cpuPercentPeak": 1.19611332,
+          "memoryMiBPeak": 111.68359756469727,
+          "memoryPercentPeak": 21.81320313691802
+        },
+        {
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "cpuPercentPeak": 9.760352999999999,
+          "memoryMiBPeak": 677.8515815734863,
+          "memoryPercentPeak": 33.09822249632081
+        }
+      ],
+      "display": {
+        "native": [
+          469.0052999999607,
+          453.4234000000288
+        ],
+        "scriptedP95": 94.20370000001276
+      }
+    },
+    {
+      "name": "ramp_4",
+      "mix": {
+        "tills": 4,
+        "displays": 4,
+        "boards": 2,
+        "nativeTills": 1,
+        "nativeBoards": 2
+      },
+      "seconds": 180.771,
+      "calls": 935,
+      "p50": 76.52119999995921,
+      "p95": 131.31939999992028,
+      "errors": 0,
+      "cash": 6,
+      "serverStreams": [
+        12,
+        12
+      ],
+      "workingDatabaseConnectionsMax": 14,
+      "poolWaitingMax": 0,
+      "resources": [
+        {
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "cpuPercentPeak": 8.993136999999999,
+          "memoryMiBPeak": 362.17968940734863,
+          "memoryPercentPeak": 17.684555542123814
+        },
+        {
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "cpuPercentPeak": 1.8540266,
+          "memoryMiBPeak": 114.37108993530273,
+          "memoryPercentPeak": 22.338104002284346
+        },
+        {
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "cpuPercentPeak": 9.3782336,
+          "memoryMiBPeak": 663.2773399353027,
+          "memoryPercentPeak": 32.386589587925144
+        }
+      ],
+      "display": {
+        "native": [
+          457.2909000000218,
+          355.42169999994803
+        ],
+        "scriptedP95": 110.43989999999758
+      }
+    },
+    {
+      "name": "ramp_6",
+      "mix": {
+        "tills": 6,
+        "displays": 6,
+        "boards": 2,
+        "nativeTills": 1,
+        "nativeBoards": 2
+      },
+      "seconds": 180.313,
+      "calls": 1337,
+      "p50": 75.3066000000108,
+      "p95": 128.874599999981,
+      "errors": 0,
+      "cash": 9,
+      "serverStreams": [
+        18,
+        18
+      ],
+      "workingDatabaseConnectionsMax": 15,
+      "poolWaitingMax": 0,
+      "resources": [
+        {
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "cpuPercentPeak": 10.5188966,
+          "memoryMiBPeak": 368.13281059265137,
+          "memoryPercentPeak": 17.975235293997123
+        },
+        {
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "cpuPercentPeak": 1.9518331999999998,
+          "memoryMiBPeak": 114.33984756469727,
+          "memoryPercentPeak": 22.332001976639077
+        },
+        {
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "cpuPercentPeak": 10.502803,
+          "memoryMiBPeak": 677.9335975646973,
+          "memoryPercentPeak": 33.10222718348117
+        }
+      ],
+      "display": {
+        "native": [
+          463.0354000000516,
+          358.5613000000594
+        ],
+        "scriptedP95": 302.139899999951
+      }
+    },
+    {
+      "name": "ramp_8",
+      "mix": {
+        "tills": 8,
+        "displays": 8,
+        "boards": 3,
+        "nativeTills": 1,
+        "nativeBoards": 3
+      },
+      "seconds": 180.012,
+      "calls": 1803,
+      "p50": 73.53499999991618,
+      "p95": 116.15810000000056,
+      "errors": 0,
+      "cash": 12,
+      "serverStreams": [
+        24,
+        24
+      ],
+      "workingDatabaseConnectionsMax": 16,
+      "poolWaitingMax": 0,
+      "resources": [
+        {
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "cpuPercentPeak": 11.157423,
+          "memoryMiBPeak": 409.53906059265137,
+          "memoryPercentPeak": 19.99702488996889
+        },
+        {
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "cpuPercentPeak": 2.5783,
+          "memoryMiBPeak": 113.36718559265137,
+          "memoryPercentPeak": 22.142028930977634
+        },
+        {
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "cpuPercentPeak": 15.71098,
+          "memoryMiBPeak": 691.3554668426514,
+          "memoryPercentPeak": 33.75759190896731
+        }
+      ],
+      "display": {
+        "native": [
+          478.1298999999417,
+          376.7612000000663
+        ],
+        "scriptedP95": 111.59920000005513
+      }
+    },
+    {
+      "name": "ramp_12",
+      "mix": {
+        "tills": 12,
+        "displays": 12,
+        "boards": 4,
+        "nativeTills": 1,
+        "nativeBoards": 4
+      },
+      "seconds": 180.763,
+      "calls": 2674,
+      "p50": 74.37129999999888,
+      "p95": 121.57750000013039,
+      "errors": 0,
+      "cash": 18,
+      "serverStreams": [
+        36,
+        36
+      ],
+      "workingDatabaseConnectionsMax": 16,
+      "poolWaitingMax": 0,
+      "resources": [
+        {
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "cpuPercentPeak": 18.827506999999997,
+          "memoryMiBPeak": 414.23047065734863,
+          "memoryPercentPeak": 20.226097652154362
+        },
+        {
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "cpuPercentPeak": 3.0972334,
+          "memoryMiBPeak": 114.85156059265137,
+          "memoryPercentPeak": 22.431945929645284
+        },
+        {
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "cpuPercentPeak": 20.29122,
+          "memoryMiBPeak": 684.7617149353027,
+          "memoryPercentPeak": 33.43563135941993
+        }
+      ],
+      "display": {
+        "native": [
+          357.5378000000492,
+          346.9476999999024
+        ],
+        "scriptedP95": 122.05380000011064
+      }
+    },
+    {
+      "name": "ramp_24",
+      "mix": {
+        "tills": 24,
+        "displays": 24,
+        "boards": 8,
+        "nativeTills": 1,
+        "nativeBoards": 8
+      },
+      "seconds": 180.796,
+      "calls": 5368,
+      "p50": 76.7554999999702,
+      "p95": 151.66889999993145,
+      "errors": 0,
+      "cash": 36,
+      "serverStreams": [
+        72,
+        72
+      ],
+      "workingDatabaseConnectionsMax": 16,
+      "poolWaitingMax": 0,
+      "resources": [
+        {
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "cpuPercentPeak": 27.545342,
+          "memoryMiBPeak": 419.03905868530273,
+          "memoryPercentPeak": 20.460891994704873
+        },
+        {
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "cpuPercentPeak": 5.3133066,
+          "memoryMiBPeak": 116.42578125,
+          "memoryPercentPeak": 22.739410908656065
+        },
+        {
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "cpuPercentPeak": 36.31281,
+          "memoryMiBPeak": 735.0468635559082,
+          "memoryPercentPeak": 35.89096093679132
+        }
+      ],
+      "display": {
+        "native": [
+          364.91030000010505,
+          553.1089000001084
+        ],
+        "scriptedP95": 252.05830000014976
+      }
+    },
+    {
+      "name": "ramp_32",
+      "mix": {
+        "tills": 32,
+        "displays": 32,
+        "boards": 11,
+        "nativeTills": 1,
+        "nativeBoards": 11
+      },
+      "seconds": 180.573,
+      "calls": 7177,
+      "p50": 79.6284999998752,
+      "p95": 150.02010000008158,
+      "errors": 0,
+      "cash": 48,
+      "serverStreams": [
+        96,
+        96
+      ],
+      "workingDatabaseConnectionsMax": 16,
+      "poolWaitingMax": 2,
+      "resources": [
+        {
+          "name": "oto-api-staging",
+          "plan": "standard",
+          "cpuPercentPeak": 33.29733,
+          "memoryMiBPeak": 425.91796875,
+          "memoryPercentPeak": 20.796776282715268
+        },
+        {
+          "name": "oto-pos-web-staging",
+          "plan": "starter",
+          "cpuPercentPeak": 7.3077664,
+          "memoryMiBPeak": 117.25781440734863,
+          "memoryPercentPeak": 22.901917388333025
+        },
+        {
+          "name": "oto-db-staging",
+          "plan": "1c-2g",
+          "cpuPercentPeak": 50.598330000000004,
+          "memoryMiBPeak": 725.9375,
+          "memoryPercentPeak": 35.446167784471086
+        }
+      ],
+      "display": {
+        "native": [
+          376.6806000000797,
+          353.64240000001155
+        ],
+        "scriptedP95": 123.24890000000596
+      }
+    }
+  ]
+}
