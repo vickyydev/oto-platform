@@ -1,6 +1,15 @@
 # SCRUM-739: review an ordinary sale's held gateway QR
 
-Local work in progress. No source landing or staging acceptance is claimed.
+4 November, 05:34 Bangkok: local release checks and branch CI are complete.
+Run 41723536314 passed all six jobs on exact source d1404fb0 after one
+failed-shard retry. The original startup failure and complete-file local
+pass remain recorded; no test guard changed. Rebased 2ab9ae0a contains the
+latest main documents with application, test and build files identical to
+checked abb18abf. SCRUM-732 reads Deployed and released its slot; 739 claimed
+it at c2e2f4a0 and retains it for this landing and staging proof.
+
+Main CI and staging acceptance still must be verified on the landing SHA.
+The checkpoints below retain their original observations.
 
 4 November, 05:13 Bangkok: complete local gates are now green. The three
 API shards passed all 447 files: 6,224 passed, 401 inherited skips and four
