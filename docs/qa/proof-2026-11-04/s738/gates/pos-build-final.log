@@ -1,0 +1,26 @@
+
+> @oto/pos@0.1.0 build C:\oto-lanes\codex-tender-display-20261104\apps\pos
+> tsc -p server/tsconfig.json && vite build --config vite.config.ts && node server/dist/compress.js
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2402 modules transformed.
+[plugin vite:reporter]
+(!) C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/api/platform.ts is dynamically imported by C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/api/catalogBridge.ts but also statically imported by C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/api/catalogBridge.ts, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/api/members.ts, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/auth/OperatorContext.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/branch/BranchContext.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/auth/LockScreen.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/book/BookCheckingPayment.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/book/BookIdentify.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/book/BookVerifyFamily.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/history/SaleDetail.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/mobile/MobileTill.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/mobile/history/MobileHistory.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/shared/PricingModeIndicator.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/shared/PrinterHealthIndicator.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/shared/VerifyTierModal.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/components/till/VisitChildrenModal.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/lib/deferredTierVerification.ts, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/lib/demoControls.ts, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/lib/displaySession.ts, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/lib/themePref.ts, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/pages/Book.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/pages/History.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/pages/StationSetup.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/pages/Till.tsx, C:/oto-lanes/codex-tender-display-20261104/apps/pos/src/station/StationContext.tsx, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/public/index.html                                 1.98 kB │ gzip:   0.82 kB
+dist/public/sw.js                                      7.75 kB
+dist/public/assets/inter-cyrillic-DqGufNeO.woff2      18.75 kB
+dist/public/assets/inter-latin-Dx4kXJAl.woff2         48.26 kB
+dist/public/assets/inter-latin-ext-DO1Apj_S.woff2     85.07 kB
+dist/public/assets/logo-oto-nNYXf9Wy.png             173.77 kB
+dist/public/assets/index-BhWK9C7_.css                201.97 kB │ gzip:  29.57 kB
+dist/public/assets/index-CfEUw90b.js               2,397.73 kB │ gzip: 666.59 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.98s

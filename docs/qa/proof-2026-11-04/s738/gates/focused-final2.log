@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-tender-display-20261104/apps/pos
+
+ ✓ test/s720-publisher.test.ts (22 tests) 44ms
+ ✓ test/s738-tender-display.test.ts (6 tests) 13ms
+ ✓ test/s720-display.test.ts (12 tests) 43ms
+
+ Test Files  3 passed (3)
+      Tests  40 passed (40)
+   Start at  04:56:10
+   Duration  2.71s (transform 1.31s, setup 0ms, collect 4.96s, tests 100ms, environment 1ms, prepare 816ms)
