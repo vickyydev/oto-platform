@@ -1,0 +1,9 @@
+
+ RUN  v3.2.7 C:/oto-lanes/codex-menu-code-20261104/apps/pos
+
+ ✓ test/s735-menu-code-review.test.ts (7 tests) 11ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  06:13:44
+   Duration  1.52s (transform 531ms, setup 0ms, collect 1.06s, tests 11ms, environment 0ms, prepare 153ms)

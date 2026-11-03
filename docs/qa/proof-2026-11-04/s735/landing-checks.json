@@ -1,0 +1,29 @@
+{
+  "at": "2026-11-03T23:14:27.982Z",
+  "source": "e15590d27525230e0529f12b1ca37f585f75dd8e",
+  "identicalApplicationAndPackageTreeTo": "16869d1b7c6351de81f5f872714b5458ca2e06e8",
+  "posPassed": 1783,
+  "focusedAfterRebase": 7,
+  "wholePosTypecheck": true,
+  "touchedFileLint": true,
+  "productionBuild": true,
+  "files": [
+    {
+      "path": "apps/pos/src/api/menu.ts",
+      "sha256": "afd541f0f2736300a9b7b9fcadca271a4a10a15282ac5277beff3dcde559333a"
+    },
+    {
+      "path": "apps/pos/src/types.ts",
+      "sha256": "4ce9993844bf93d532692b9b9d3936463841ffa34aefeb7cb25fab600091b938"
+    },
+    {
+      "path": "apps/pos/src/components/fnb/MenuGrid.tsx",
+      "sha256": "9e36bc9520a394afdb57557aced96db33ced62624289d250bef3c25f82060f3f"
+    },
+    {
+      "path": "apps/pos/test/s735-menu-code-review.test.ts",
+      "sha256": "125e0e1db76704c37008e1c0072eaca72868c354cac9a24ad1081a235624daae"
+    }
+  ],
+  "staging": "pending"
+}
