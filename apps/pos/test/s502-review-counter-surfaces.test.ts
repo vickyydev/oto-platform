@@ -101,7 +101,7 @@ describe('4 — the switch moves the scan exactly as a real outage does', () => 
     expect(found).toEqual({ wristband: null, error: 'The platform could not look this band up: The platform is restarting' });
   });
 
-  it('switched back: once the box says the platform is the lane again, the next scan is the platform’s', async () => {
+  it('switched back: once the box and unlocked platform answer again, the next scan is the platform’s', async () => {
     setLaneStation('station-1');
     vi.spyOn(api, 'get').mockRejectedValueOnce(new ApiError(503, 'STATION_FORCED_OFFLINE', 'forced'));
     boxAnswers();
@@ -109,7 +109,9 @@ describe('4 — the switch moves the scan exactly as a real outage does', () => 
     expect(currentLane()).toBe('box');
 
     vi.spyOn(bridgeApi, 'status').mockResolvedValue({ link: { up: true, offline: false, lane: 'platform' } } as never);
+    const recovery = vi.spyOn(api, 'get').mockResolvedValueOnce({ sessionLocked: false });
     expect(await refreshLane()).toBe('platform');
+    expect(recovery).toHaveBeenLastCalledWith('/me', { signal: expect.any(AbortSignal) });
     vi.restoreAllMocks();
     const get = vi.spyOn(api, 'get').mockResolvedValue({ wallet: null, ledger: [], stay });
     const intent = vi.spyOn(bridgeApi, 'intent');
