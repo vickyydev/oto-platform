@@ -3,5 +3,11 @@
   "runSource": "35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2",
   "exitCode": 0,
   "independentCleanup": true,
-  "disposableDatabaseRemoved": true
+  "disposableDatabaseRemoved": true,
+  "archive": {
+    "sha256": "093e5928d75c4b83fa0a16adbae452f2685eb5bfa89261fa8f593eb39b974f45",
+    "normalization": "Removed one surplus final LF; no executed code changed",
+    "reconstructExecutedSource": "Append one LF byte to the archived text",
+    "reconstructionSha256": "e3010d515127b7908983b4ce7cfcd5e66fbb1de5833523cd5fff7cc9dba88870"
+  }
 }

@@ -12,5 +12,11 @@
       "openedAndInspected": true
     }
   ],
-  "scope": "Second complete local rehearsal; only the additional warning image is archived here. The eleven core images from the preceding completed run were opened and are recorded separately."
+  "scope": "Second complete local rehearsal; only the additional warning image is archived here. The eleven core images from the preceding completed run were opened and are recorded separately.",
+  "archive": {
+    "sha256": "d57d4931081baabf9bb033141da238dd267bc5dacdaedc6ad0eb59b3f33d7229",
+    "normalization": "Removed one surplus final LF; no executed code changed",
+    "reconstructExecutedSource": "Append one LF byte to the archived text",
+    "reconstructionSha256": "759cf1091f602a5aa4eeea497ac326485b7bf3ca80efb3c08c31de0888120bcb"
+  }
 }

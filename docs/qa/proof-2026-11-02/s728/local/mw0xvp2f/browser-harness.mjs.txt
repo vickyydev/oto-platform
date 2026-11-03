@@ -238,4 +238,3 @@ try {
   clearInterval(preparationActivity);
   cloudDown=false;await tillCtx?.unroute(POS+'/api/**').catch(()=>{});await stop();if(!receipt.adminSignedOutAt)await admin.request.post(LAUNCHER+'/api/auth/sign-out',{data:{}}).catch(()=>{});if(!receipt.tillSignedOutAt)await tillCtx?.request.post(POS+'/api/auth/sign-out',{data:{}}).catch(()=>{});await browser.close();proxy.closeAllConnections();await new Promise(r=>proxy.close(r));receipt.finishedAt=new Date().toISOString();receipt.fixtureRetained=!passed;save();console.log(JSON.stringify({outcome:receipt.outcome,failedStep:receipt.failedStep,fixture:receipt.fixture,proof:out+'/browser-'+stamp+'.json'}));
 }
-
