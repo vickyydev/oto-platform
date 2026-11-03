@@ -40,9 +40,14 @@ zero sync anomalies, archived box/till/printer, cleared bridge, inactive test
 account, zero grants/sessions, revoked shift and display credentials, and the
 unchanged public signing key. Both sessions signed out, the agent stopped
 and the disposable database was removed. This is local evidence, not staging
-acceptance. The address image was taken after saving and does not show the
-before-save warning; the prepared staging helper adds that explicit assertion
-and image. The exact executed local helper is archived beside its receipt.
+acceptance. The exact executed local helper is archived beside its receipt.
+
+A [second complete local rehearsal](local/mw0y9zig/browser-mw0y9zig.json)
+on `3fa77e0613f3a2d0ce87a2782d54a0915b405830` also passes and independently
+cleans up. It adds the explicit before-save warning assertion and
+[opened image](local/mw0y9zig/s728-before-save-display-warning.png), closing
+the first run's after-save screenshot limit. Its executed helper and
+[inspection receipt](local/mw0y9zig/inspection.json) are archived alongside it.
 
 ## Gate evidence
 
@@ -54,7 +59,10 @@ files are [identical](source-equivalence.json). The complete POS suite passes
 all 1,734 tests across 130 files with one worker and unchanged deadlines.
 The other 14 non-API workspace tasks pass. Console end-to-end passes all
 357 cases against built apps. [Receipts and log hashes](local-gates/index.json)
-retain the runs. Complete API shards and corrected branch CI remain in progress.
+retain the runs. The [completed original API run](local-gates/api-complete-run-before-inventory-correction.json)
+covers 444 files: 6,173 passes, the one corrected inventory failure, 401 existing
+skips and four TODOs. Shards 2 and 3 exited zero. The entire failed shard is
+being repeated, and corrected full-SHA branch CI remains in progress.
 The initial failures are retained, not counted as green runs:
 
 - The first full API run found the old ID inventory still classified tier
@@ -105,3 +113,5 @@ No real box address, park device, SMS or electronic payment is authorized by
 this proof. Physical Pi/iPad, private HTTPS/certificate, printer and power-cut
 acceptance are separate. The signing key stays, BOX_AGENT_TEST_SLOT stays
 untouched, and OD-4 plus open Q727-1/Q727-2 retain their existing behavior.
+Physical boxes need the corresponding agent release; these checks do not
+install anything on a park device.

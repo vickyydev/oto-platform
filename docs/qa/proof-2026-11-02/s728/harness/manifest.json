@@ -1,11 +1,11 @@
 {
-  "at": "2026-11-03T17:14:58.810Z",
+  "at": "2026-11-03T17:27:22.409Z",
   "purpose": "Exact local validation and prepared staging helpers; snapshots are evidence, not automatic release approval",
   "files": [
     {
       "name": "s728-final-browser-proof.mjs",
-      "sourceSha256": "6f7fbaf8ee054315dcd5bfd7327358710690503d8de34e2414a9aa06736cd852",
-      "archiveSha256": "277ca791fbea0f68ecd01c8b06cb1d444e0ec443cb1d71cdd0fcd9b373a0a9a1",
+      "sourceSha256": "759cf1091f602a5aa4eeea497ac326485b7bf3ca80efb3c08c31de0888120bcb",
+      "archiveSha256": "d57d4931081baabf9bb033141da238dd267bc5dacdaedc6ad0eb59b3f33d7229",
       "normalization": "LF with one final newline"
     },
     {
@@ -88,8 +88,8 @@
     },
     {
       "name": "s728-completion-gates.mjs",
-      "sourceSha256": "34b18a6f5d98bb6c1550921fd37cafc4cdb528625ee2ea5914f2ce410f07d15f",
-      "archiveSha256": "34b18a6f5d98bb6c1550921fd37cafc4cdb528625ee2ea5914f2ce410f07d15f",
+      "sourceSha256": "29a8d01cc96badbe8aa2421f7181d8c9a3d277650afff660fdd3bf5b630a6e20",
+      "archiveSha256": "29a8d01cc96badbe8aa2421f7181d8c9a3d277650afff660fdd3bf5b630a6e20",
       "normalization": "LF with one final newline"
     }
   ]
