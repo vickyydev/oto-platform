@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StationSessionDocument } from '@oto/shared';
 vi.mock('react', () => import('./support/hooks'));
-const mock = vi.hoisted(() => ({ lease: vi.fn(), renew: vi.fn(), session: vi.fn(), publish: vi.fn(), release: vi.fn(), watch: vi.fn(), get: vi.fn(), lane: { value: 'platform' }, local: { value: false } }));
+const mock = vi.hoisted(() => ({ lease: vi.fn(), renew: vi.fn(), session: vi.fn(), publish: vi.fn(), release: vi.fn(), watch: vi.fn(), get: vi.fn(), displays: vi.fn(), lane: { value: 'platform' }, local: { value: false } }));
 vi.mock('@/api/bridge', () => ({ bridgeApi: mock, watchBridgeSnapshots: mock.watch, hasBridgeOrigin: () => mock.local.value }));
 vi.mock('@/api/client', async () => ({ ...await vi.importActual('@/api/client'), api: { get: mock.get } }));
 vi.mock('@/lib/lane', () => ({ currentLane: () => mock.lane.value, isBoxLaneTrigger: () => false }));
@@ -34,6 +34,7 @@ beforeEach(() => {
   leases = 0;
   box = { stationId: 'station', boxId: 'box', schemaVersion: 1, sequence: 100, stage: 'identify', language: 'en', lease: null, takeoverCount: 0, updatedAt: '2026-11-02T00:00:00Z' };
   mock.get.mockResolvedValue({ displays: [{ id: 'display', name: 'ZZ TEST', connected: true }] });
+  mock.displays.mockResolvedValue({ displays: [{ id: 'display', name: 'ZZ TEST local', connected: true }] });
   mock.lease.mockImplementation(claim);
   mock.session.mockImplementation(async () => ({ document: box }));
   mock.renew.mockImplementation(async (_station: string, leaseId: string) => {
@@ -64,6 +65,7 @@ describe('SCRUM-720 a box whose sequence fell', () => {
     mock.get.mockResolvedValue({ displays: [] });
     const hook = await mount();
     expect(mock.publish).toHaveBeenCalledOnce();
+    expect(hook.result.current.connected).toEqual([{ id: 'display', name: 'ZZ TEST local', connected: true }]);
     await vi.advanceTimersByTimeAsync(60_000);
     hook.rerender(state('ZZ TEST local display after idle'));
     await vi.advanceTimersByTimeAsync(100);

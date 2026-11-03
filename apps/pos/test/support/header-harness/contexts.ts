@@ -51,6 +51,7 @@ const operatorValue: OperatorValue = {
   mustChangePassword: false,
   changePassword: never,
   offlineUnlock: null,
+  offlinePreparation: null,
   can: () => params.get('cash') !== 'no',
   lockNow: noop,
   handoffError: null,

@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import {
+  BridgeDisplaysSchema,
   BridgeUnlockRequestSchema,
   STATION_BRIDGE_BASE,
   STATION_VIEWS,
@@ -250,6 +251,9 @@ export function createBridgeServer(options: BridgeServerOptions): BridgeServer {
       switch (route) {
         case 'GET status':
           return send(res, 200, await bridge.status(stationId));
+        case 'GET displays':
+          await till(bridge, stationId, req);
+          return send(res, 200, BridgeDisplaysSchema.parse(await bridge.connectedDisplays(stationId)));
         case 'POST unlock': {
           const body = BridgeUnlockRequestSchema.safeParse(await readBody(req));
           if (!body.success) throw new Refusal(400, 'VALIDATION', 'That unlock could not be read');

@@ -37203,6 +37203,7 @@ export interface paths {
                             cachedAt: string | null;
                             cacheAgeSeconds: number | null;
                             mustChangePassword: boolean;
+                            permissions?: string[];
                         };
                     };
                 };
