@@ -1,0 +1,16 @@
+{
+  "key": "pos",
+  "sha": "35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2",
+  "start": "2026-11-03T17:08:28.873Z",
+  "end": "2026-11-03T17:12:50.112Z",
+  "command": "pnpm --filter @oto/pos exec vitest run --maxWorkers=1 --no-file-parallelism --reporter=default --reporter=json --outputFile=C:/oto-lanes/s728-final-pos-serial.json",
+  "log": "C:/oto-lanes/s728-gates-completion-pos.log",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "1d292ae7ecad856e55c1c5f9af66f5b8d0bdcb9d2e8b3fbb6e285b821d72191f",
+  "logBytes": 27284,
+  "summary": [
+    "Test Files  130 passed (130)",
+    "Tests  1734 passed (1734)"
+  ]
+}

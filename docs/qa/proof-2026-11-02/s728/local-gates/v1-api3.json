@@ -1,0 +1,16 @@
+{
+  "key": "api3",
+  "sha": "78a754063bb102b41f1b108d72452ca8346fa89b",
+  "start": "2026-11-03T16:05:45.734Z",
+  "end": "2026-11-03T16:55:29.270Z",
+  "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s728-api-gate.mts --shard=3/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s728-gates-api3.json",
+  "log": "C:/oto-lanes/s728-gates-v1-api3.log",
+  "exitCode": 1,
+  "signal": null,
+  "logSha256": "a02abcf1b098b2ce0f1b37cb60ca440b9c6cabf5230482e4d553cf23fb4c3d58",
+  "logBytes": 328957,
+  "summary": [
+    "Test Files  1 failed | 144 passed | 2 skipped (147)",
+    "Tests  1 failed | 1915 passed | 121 skipped | 1 todo (2038)"
+  ]
+}

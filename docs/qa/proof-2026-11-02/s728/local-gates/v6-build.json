@@ -1,0 +1,15 @@
+{
+  "key": "build",
+  "sha": "1694037b46a6854ec4b139e6972afd62b41055f6",
+  "start": "2026-11-03T16:44:35.243Z",
+  "end": "2026-11-03T16:45:30.658Z",
+  "command": "VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true pnpm build; pnpm --filter @oto/pos build:display; pnpm --filter @oto/box-agent build:runner",
+  "log": "C:/oto-lanes/s728-gates-v6-build.log",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "4f4329e3c854f3e721e9878b4a2c86f78e39b4f2de727bf41007fb596a5d8d81",
+  "logBytes": 12151,
+  "summary": [
+    "Tasks:    5 successful, 5 total"
+  ]
+}

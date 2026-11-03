@@ -1,0 +1,27 @@
+{
+  "key": "workspace",
+  "sha": "78a754063bb102b41f1b108d72452ca8346fa89b",
+  "start": "2026-11-03T16:08:30.030Z",
+  "end": "2026-11-03T16:25:01.832Z",
+  "command": "pnpm exec turbo run test --filter=\"!@oto/api\" --concurrency=1",
+  "log": "C:/oto-lanes/s728-gates-v1-workspace.log",
+  "exitCode": 1,
+  "signal": null,
+  "logSha256": "a6b48542e89e280ec7681caacb8e4d55abbb8bd61c0b591e53d4d4b5d346eb79",
+  "logBytes": 703084,
+  "summary": [
+    "@oto/shared:test:  Test Files  58 passed (58)",
+    "@oto/shared:test:       Tests  886 passed (886)",
+    "@oto/messaging:test:  Test Files  6 passed (6)",
+    "@oto/messaging:test:       Tests  79 passed (79)",
+    "@oto/print:test:  Test Files  12 passed (12)",
+    "@oto/print:test:       Tests  283 passed (283)",
+    "@oto/telemetry:test:  Test Files  4 passed (4)",
+    "@oto/telemetry:test:       Tests  36 passed (36)",
+    "@oto/db:test:  Test Files  55 passed (55)",
+    "@oto/db:test:       Tests  384 passed (384)",
+    "@oto/api-types:test:  Test Files  1 failed (1)",
+    "@oto/api-types:test:       Tests  3 failed | 7 passed (10)",
+    "Tasks:    5 successful, 14 total"
+  ]
+}
