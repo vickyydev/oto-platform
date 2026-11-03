@@ -1,14 +1,46 @@
 # SCRUM-727 release evidence
 
-## Source landed; staging proof pending
+## Staging proof passed; cleanup deployment pending
 
-Release source: `4e515c61217770396da4dd86119cc0666cdc1d29`.
+Source: `4e515c61217770396da4dd86119cc0666cdc1d29`.
 [CI 41659700598](https://github.com/vickyydev/oto-platform/actions/runs/41659700598)
-passed all six jobs. Jira is Testing. The matching clean agent is built. Initial API/POS/Console deployments are
-live and healthy on that source. The temporary test-only zone and policy
-settings have been applied with every unrelated value unchanged; matching
-API/POS rebuilds are running. No fixture exists yet. The
-[restore baseline](settings-enable.json) and [CI receipt](ci.json) are recorded.
+passed all six jobs. [Job and step outcomes](ci.json) identify unchanged paths
+that were gated. API, POS web and Console were verified live on that SHA before
+the test; the actual local agent was built clean from the same source.
+
+The [real-browser receipt](staging/mw0ulb5n/browser-mw0ulb5n.json) records the
+staging run from 15:33 to 15:37 UTC on 3 November. It proves the trusted-zone
+save, one online password/token send without retry, forged-token and token-only
+refusal, outage token/password unlock, marked fresh sign-in on desktop and
+mobile, and manager-ended-shift refusal with or without its token.
+
+All four native images were opened and inspected; their hashes and the
+attachment names are in [the inspection record](staging/mw0ulb5n/image-inspection.json):
+
+- [Configured test destination](../../jira-comments/attachments/SCRUM-727/s727-mw0ulb5n-configured-test-zone.png)
+- [Desktop fresh sign-in notice](../../jira-comments/attachments/SCRUM-727/s727-mw0ulb5n-fresh-sign-in-desktop.png)
+- [Mobile fresh sign-in notice](../../jira-comments/attachments/SCRUM-727/s727-mw0ulb5n-fresh-sign-in-mobile.png)
+- [Ended-shift refusal](../../jira-comments/attachments/SCRUM-727/s727-mw0ulb5n-ended-shift-refused.png)
+
+[Independent database proof](database-proof.json), job
+`job-dbkvviuk1f9s73e56o00`, confirms the exact box/till/printer are archived,
+the test address is cleared, the dedicated staff account is inactive with no
+role or active session, its shift is revoked, and sales and sync anomalies are
+zero. The original public signing-key fingerprint matches. The agent stopped
+and both browser sessions signed out. Its private cache stays outside Git.
+
+The [temporary settings](settings-enable.json) are [restored](settings-restore.json)
+to their complete original fingerprints: API 57 names and POS four. The signing
+key stays and BOX_AGENT_TEST_SLOT remains absent. Same-source cleanup deployments
+are still running; their live/healthy readback and the inline Jira image comment
+remain before Deployed. Jira remains Testing at this checkpoint.
+
+Limits: Windows local agent and a test-only localhost zone; no real address,
+physical Pi/iPad, private HTTPS/certificate, printer or power-cut acceptance.
+No sale, payment or SMS occurred. The visible Test harness strip belongs to
+SCRUM-728. The notice clearing after a fresh online sign-in was proven in the
+local rehearsal. Q727-1 (platform session termination) and Q727-2 (named-staff
+scope) remain open and unbuilt in the offline plan.
 
 ## Current review candidate
 

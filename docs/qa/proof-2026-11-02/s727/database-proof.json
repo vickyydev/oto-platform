@@ -1,0 +1,28 @@
+{
+  "unit": "SCRUM-727",
+  "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+  "jobId": "job-dbkvviuk1f9s73e56o00",
+  "startedAt": "2026-11-03T15:37:48.003Z",
+  "readOnly": true,
+  "status": "succeeded",
+  "result": {
+    "event": "s727_database_proof",
+    "at": "2026-11-03T15:38:34.134Z",
+    "readOnly": true,
+    "kid": "ddc53eda85cb9a78",
+    "publicFingerprint": "ddc53eda85cb9a7892aa764a4c8b1dd2e537db16a8c8f6abd448b6a458315866",
+    "publicKeyRows": 1,
+    "boxArchived": true,
+    "printerArchived": true,
+    "stationArchived": true,
+    "bridgeCleared": true,
+    "staffInactive": true,
+    "staffRoleGrants": 0,
+    "staffActiveSessions": 0,
+    "shiftRevoked": true,
+    "revokedReason": "admin",
+    "saleRows": 0,
+    "syncAnomalies": 0,
+    "passed": true
+  }
+}

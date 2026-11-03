@@ -1,0 +1,37 @@
+{
+  "source": "4e515c61217770396da4dd86119cc0666cdc1d29",
+  "at": "2026-11-03T15:40:48.108Z",
+  "method": "Each native PNG opened with view_image after the successful staging run",
+  "notes": [
+    "Configured address is a test-only child of localhost, not a real box address",
+    "Desktop and mobile show the offline sign-in notice",
+    "Ended-shift image shows the refusal and the masked password field",
+    "No benefit QR or secret is visible; the existing Test harness strip remains SCRUM-728 scope"
+  ],
+  "images": [
+    {
+      "file": "s727-configured-test-zone.png",
+      "attachment": "s727-mw0ulb5n-configured-test-zone.png",
+      "sha256": "7ec0a20f816aa13d78dc27397e3ca7c9e00f95d9dc8ff4828a45c4048bb46d21",
+      "openedAndInspected": true
+    },
+    {
+      "file": "s727-fresh-sign-in-desktop.png",
+      "attachment": "s727-mw0ulb5n-fresh-sign-in-desktop.png",
+      "sha256": "8376347d4f9c17717bfb58d306e855c9a089bd6593388c04017a0ed6933a8834",
+      "openedAndInspected": true
+    },
+    {
+      "file": "s727-fresh-sign-in-mobile.png",
+      "attachment": "s727-mw0ulb5n-fresh-sign-in-mobile.png",
+      "sha256": "562c3a34dac606faae97c182a2d3c2e5ed4f905a353684e999b697609ec2235c",
+      "openedAndInspected": true
+    },
+    {
+      "file": "s727-ended-shift-refused.png",
+      "attachment": "s727-mw0ulb5n-ended-shift-refused.png",
+      "sha256": "d91db80590239681db3a8196e73a964764d7a409e8e0c1b7e106c84c4af4f20f",
+      "openedAndInspected": true
+    }
+  ]
+}
