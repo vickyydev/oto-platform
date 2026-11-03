@@ -243,9 +243,20 @@ describe('SCRUM-371 — the phone till keeps its sale through a staff lock, as t
   it('the gate keeps the phone shell mounted under the lock screen on the ticket tab, in one shape locked or not', () => {
     const app = src('App.tsx');
     expect(app).toContain('const phoneTicketTill = isMobile && location === "/";');
-    expect(app).toContain('(locked && (!(retainedStation || phoneTicketTill) || mustChangePassword');
+    expect(app).toContain('(locked && (!(retainedStation || phoneTicketTill || phoneMerchStation) || mustChangePassword');
     const mobile = app.slice(app.indexOf('if (isMobile) {'), app.indexOf('<Router />'));
     expect(mobile).toMatch(/hidden=\{locked\} inert=\{locked\}[\s\S]*<MobileShell \/>[\s\S]*\{locked \? <LockScreen \/> : <InactivityWarning \/>\}/);
+  });
+
+  it('the phone shop retains its original payment under a staff lock and pauses its controls', () => {
+    const app = src('App.tsx');
+    expect(app).toContain("const phoneMerchStation = isMobile && location === '/merch-station';");
+    expect(src('components/mobile/MobileShell.tsx')).toContain('<Route path="/merch-station" component={MerchStation} />');
+    const shop = src('pages/MerchStation.tsx');
+    expect(shop).toContain('paused: locked,');
+    const lockedReturn = shop.indexOf('if (locked) return null;');
+    expect(lockedReturn).toBeGreaterThan(shop.indexOf('usePaymentStage({'));
+    expect(shop.slice(lockedReturn)).not.toMatch(/\buse[A-Z]\w*\(/);
   });
 
   it('the shell draws no bars while locked, and the till draws nothing after its last hook', () => {
