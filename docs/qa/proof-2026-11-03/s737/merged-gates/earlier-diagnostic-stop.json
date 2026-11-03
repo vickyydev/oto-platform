@@ -1,0 +1,9 @@
+{
+  "startedAt": "2026-11-03T19:11:55Z",
+  "outcome": "inconclusive; deliberately stopped",
+  "reason": "The standalone framework-only probe did not complete its unbounded request-start barrier. It is not evidence for or against the original Console failure.",
+  "ownedProcessId": 99272,
+  "acceptanceEvidence": false,
+  "applicationSourceOrTestChanged": false,
+  "stopRecordedAt": "2026-11-03T19:14:10.976Z"
+}

@@ -1,0 +1,14 @@
+{
+  "key": "console",
+  "sha": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+  "start": "2026-11-03T19:03:09.236Z",
+  "end": "2026-11-03T19:12:38.782Z",
+  "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-release-console-gate.mts",
+  "log": "C:/oto-lanes/s737-release-console-merged-repeat.log",
+  "exitCode": 0,
+  "signal": null,
+  "passed": 357,
+  "failed": 0,
+  "sourceAndAssertionsUnchanged": true,
+  "logSha256": "3aec840ba5b060ffaf2bfcf9e6cd80d3cc1c933c7b5febf4a16b6808b6659940"
+}

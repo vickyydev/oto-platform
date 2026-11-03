@@ -1,0 +1,69 @@
+{
+  "startedAt": "2026-11-03T19:14:56.689Z",
+  "endedAt": "2026-11-03T19:15:01.250Z",
+  "iterations": 15,
+  "samples": [
+    {
+      "iteration": 0,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 1,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 2,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 3,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 4,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 5,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 6,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 7,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 8,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 9,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 10,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 11,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 12,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 13,
+      "pendingAtRemoval": 3
+    },
+    {
+      "iteration": 14,
+      "pendingAtRemoval": 3
+    }
+  ],
+  "requestErrors": [],
+  "meaning": "Framework-only controlled probe: remove overlapping handlers while three forwarded responses are held, then release them. No application assertion or source changed."
+}

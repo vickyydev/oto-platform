@@ -1,0 +1,15 @@
+import {createServer} from 'node:http';
+import {createRequire} from 'node:module';
+import {writeFileSync} from 'node:fs';
+const {chromium}=createRequire('C:/oto-lanes/codex-first-print-release-20261104/apps/pos/package.json')('@playwright/test');
+const failures=[],samples=[],server=createServer((req,res)=>{if(req.url==='/'){res.setHeader('Content-Type','text/html');res.end('<title>ZZ TEST route lifecycle</title>');return;}res.setHeader('Content-Type','application/json');res.end(JSON.stringify({booth:{id:'a',name:'ZZ TEST route lifecycle'}}));});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({channel:'msedge'}),startedAt=new Date().toISOString();
+try{for(let n=0;n<15;n++){const context=await browser.newContext(),page=await context.newPage();let active=0,started,release,timer;const began=new Promise(r=>{started=r;}),blocked=new Promise(r=>{release=r;});
+ try{await page.route(/\/api\/booths\/b\//,async route=>{active++;if(active===3)started();try{const response=await route.fetch({url:route.request().url().replace('/b/','/a/')});const body=await response.json();await blocked;await route.fulfill({response,json:{...body,booth:{...body.booth,id:'b',name:'ZZ TEST route replacement'}}});}catch(e){failures.push({iteration:n,error:e.name,message:e.message.replace(/http:\/\/[^\s"']+/g,'[local-url]')});}finally{active--;}});
+ await page.route(/\/api\/booths\/[^/]+\/versions(?:\?|$)/,route=>route.fulfill({json:{versions:[]}}));await page.goto(origin);
+ const fetched=page.evaluate(async()=>Promise.all(['draft','setup-status','spins','versions'].map(x=>fetch('/api/booths/b/'+x).then(r=>r.json()).then(()=>true,()=>false))));
+ await Promise.race([began,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Three forwarded requests did not start')),10000);})]);clearTimeout(timer);
+ samples.push({iteration:n,pendingAtRemoval:active});const removing=page.unrouteAll({behavior:'wait'});release();await removing;const results=await fetched;if(!results.every(Boolean))failures.push({iteration:n,error:'FETCH_REJECTED'});
+ }catch(e){failures.push({iteration:n,error:e.name,message:e.message});break;}finally{clearTimeout(timer);release();await context.close();}
+ }}finally{await browser.close();await new Promise(r=>server.close(r));}
+const result={startedAt,endedAt:new Date().toISOString(),iterations:samples.length,samples,requestErrors:failures,meaning:'Framework-only controlled probe: remove overlapping handlers while three forwarded responses are held, then release them. No application assertion or source changed.'};writeFileSync('C:/oto-lanes/s743-route-lifecycle-diagnostic.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
