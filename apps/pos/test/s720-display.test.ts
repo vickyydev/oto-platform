@@ -34,6 +34,34 @@ const mount = async () => {
   await settle();
   return { hook, text: () => JSON.stringify(tree) };
 };
+describe('SCRUM-738 paired tender frame', () => {
+  const tender = { ...document, stage: 'payment' as const,
+    cart: { kind: 'tender', supported: true, subject: 'party_balance', method: 'qr' }, member: null, prompt: null, totals: null,
+    payment: { saleId: null, amountSatang: 12000, qrPayload: 'ZZ TEST gateway payload', qrImageUrl: null,
+      expiresAt: null, status: 'pending', offline: false, online: true } };
+  it('HIGH: the paired display selects the finite tender screen and gateway metadata', async () => {
+    mock.session.mockResolvedValue({ ...session, document: tender });
+    const view = await mount();
+    expect(view.text()).toContain('ZZ TEST gateway payload');
+    expect(view.text()).toContain('party_balance');
+    expect(view.text()).not.toContain('Welcome to OTO Park');
+    view.hook.unmount();
+  });
+  it('HIGH: a malformed tender or mixed visitor frame falls back without exposing its QR', async () => {
+    for (const changes of [
+      { stage: 'identify' }, { payment: null }, { payment: { ...tender.payment, amountSatang: -1 } },
+      { member: { nickname: 'PRIVATE' } }, { prompt: { kind: 'identify' } }, { totals: {} },
+      { cart: { ...tender.cart, subject: 'account' } },
+    ]) {
+      mock.session.mockResolvedValue({ ...session, document: { ...tender, ...changes } });
+      const view = await mount();
+      expect(view.text()).toContain('Welcome to OTO Park');
+      expect(view.text()).not.toContain('ZZ TEST gateway payload');
+      expect(view.text()).not.toContain('PRIVATE');
+      view.hook.unmount();
+    }
+  });
+});
 /** A live stream that then goes down, so the only way back is an accepted document. */
 const pause = async () => {
   const view = await mount();

@@ -39,6 +39,7 @@ import {
   DisplayTotalsSchema,
   readDisplayFnbCart,
   readDisplayMerchCart,
+  readDisplayTenderCart,
   stationLeaseLive,
 } from '@oto/shared';
 
@@ -868,7 +869,8 @@ export function redactForCustomer(document: StationSessionDocument): StationSess
   const childReview = document.prompt?.kind === 'child_review'
     ? ChildReviewDocumentPromptSchema.safeParse(document.prompt) : null;
   const consent = document.prompt?.kind === 'consent' ? ConsentDocumentPromptSchema.safeParse(document.prompt) : null;
-  const isGuestOrder = document.cart?.kind === 'fnb' || document.cart?.kind === 'merch';
+  const isTender = document.cart?.kind === 'tender';
+  const isGuestOrder = document.cart?.kind === 'fnb' || document.cart?.kind === 'merch' || isTender;
   const cart = customerDisplayCart(document.cart, document.stage);
   return {
     ...document,
@@ -877,7 +879,7 @@ export function redactForCustomer(document: StationSessionDocument): StationSess
     step: null,
     lease: null,
     cart,
-    totals: isGuestOrder && !cart?.supported ? null : totals.success ? totals.data : null,
+    totals: isTender || isGuestOrder && !cart?.supported ? null : totals.success ? totals.data : null,
     payment: isGuestOrder && !cart?.supported ? null : payment.success ? payment.data : null,
     // Date of birth is permitted only in this finite, visitor-bound review.
     // The generic customer deny-list remains unchanged everywhere else.
@@ -908,6 +910,7 @@ function customerDisplayCart(value: unknown, stage: StationSessionStage): Record
   if (value === null || value === undefined) return null;
   if (recordValue(value)?.kind === 'fnb') return readDisplayFnbCart(value, stage);
   if (recordValue(value)?.kind === 'merch') return readDisplayMerchCart(value, stage);
+  if (recordValue(value)?.kind === 'tender') return readDisplayTenderCart(value, stage);
   const parsed = DisplayCartSchema.safeParse(value);
   if (parsed.success) return parsed.data;
   const cart = recordValue(value);
@@ -1164,6 +1167,7 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
       }
       const isFnb = recordValue(cart)?.kind === 'fnb';
       const isMerch = recordValue(cart)?.kind === 'merch';
+      const isTender = recordValue(cart)?.kind === 'tender';
       const isGuestOrder = isFnb || isMerch;
       const guestCart = isFnb ? readDisplayFnbCart(cart, stage) : isMerch ? readDisplayMerchCart(cart, stage) : null;
       const shownCart = isGuestOrder ? guestCart : customerDisplayCart(cart, stage);
@@ -1171,6 +1175,9 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
       const shownMember = DisplayMemberSchema.safeParse(member);
       const shownTotals = DisplayTotalsSchema.safeParse(totals);
       const shownPayment = DisplayPaymentSchema.safeParse(payment);
+      if (isTender && (prompt != null || member != null || totals != null || !shownPayment.success)) {
+        return notPermitted('A tender display needs its payment state and no visitor details.');
+      }
       if ((cart !== undefined && cart !== null && !shownCart)
         || (member !== undefined && member !== null && !shownMember.success)
         || (totals !== undefined && totals !== null && !shownTotals.success)

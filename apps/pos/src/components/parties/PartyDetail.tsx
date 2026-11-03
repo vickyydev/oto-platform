@@ -35,6 +35,7 @@ import {
 } from '@/api/parties';
 import { toast } from '@/hooks/use-toast';
 import { PartyBalanceModal } from './PartyBalanceModal';
+import { useTenderDisplay } from '@/lib/tenderDisplay';
 import { PartyFnbModal } from './PartyFnbModal';
 import { PartyTicketModal } from './PartyTicketModal';
 import { PartyEditForm, type PartyEditPatch } from './PartyEditForm';
@@ -132,6 +133,7 @@ const listOf = (items: string[]) =>
 export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyDetailProps) {
   const { operator, locked: operatorLocked } = useOperator();
   const { station } = useStation();
+  const linkedDisplay = useTenderDisplay(station?.stationId ?? null, !operatorLocked);
   // S2-20 E4 — the party as the platform last answered a write with it, until
   // the host's re-read of the day brings the same party back.
   const [fresh, setFresh] = useState<PartyBooking | null>(null);
@@ -683,6 +685,7 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       </ScrollArea>
 
       <PartyBalanceModal
+        displayHandoff={linkedDisplay.handover}
         open={showBalance}
         onOpenChange={setShowBalance}
         party={party}

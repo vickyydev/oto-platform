@@ -5,6 +5,8 @@ import { ApiError } from '@/api/client';
 import { openPassOnPlatform, readPaidPass, type EventWriteIds } from '@/api/events';
 import { finaliseSale, salesApi, type ApiSale } from '@/api/sales';
 import { usePaymentStage, type PaymentDisplayState } from '@/lib/usePaymentStage';
+import { useTenderPresentation } from '@/lib/tenderDisplay';
+import type { StationDisplayHandoff } from '@/lib/displaySession';
 import type { SaleWriteOutcome } from '@/lib/saleWriter';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -38,6 +40,7 @@ import {
 } from 'lucide-react';
 
 interface AddAttendeeModalProps {
+  displayHandoff?: StationDisplayHandoff;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   event: OtoEvent;
@@ -176,6 +179,7 @@ export function AddAttendeeModal({
   onSell,
   onCheckIn,
   routedPass,
+  displayHandoff,
 }: AddAttendeeModalProps) {
   const isCamp = event.type === 'camp';
   const { locked: operatorLocked } = useOperator();
@@ -294,6 +298,7 @@ export function AddAttendeeModal({
   const electronic = !!paymentMethod && ['card', 'qr'].includes(paymentMethodKind(paymentMethod));
   const usesStage = electronic || stage.locked;
   const chosenMethod = usesStage ? stage.state.method : paymentMethod;
+  useTenderPresentation(displayHandoff, 'event_pass', chosenMethod, stage.display, open && phase === 'payment');
 
   /** A sale rung up with no money on it is not left open behind a closed form. */
   const releaseHeldSale = () => {

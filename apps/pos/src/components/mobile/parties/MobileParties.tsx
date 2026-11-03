@@ -37,6 +37,7 @@ import { MobileEventsList } from './MobileEventsList';
 import { MobilePartyDetail } from './MobilePartyDetail';
 import { MobileEventAttendeeList } from './MobileEventAttendeeList';
 import { MobilePartyPayment } from './MobilePartyPayment';
+import { useTenderDisplay } from '@/lib/tenderDisplay';
 import { MobilePartyFnb } from './MobilePartyFnb';
 
 type Step = 'list' | 'detail' | 'payment' | 'fnb';
@@ -66,6 +67,7 @@ const todayISO = () => eventsToday();
 export function MobileParties() {
   const { operator, locked: operatorLocked } = useOperator();
   const { station } = useStation();
+  const linkedDisplay = useTenderDisplay(station?.stationId ?? null, !operatorLocked);
   const { branch } = useBranch();
   const today = todayISO();
 
@@ -348,6 +350,7 @@ export function MobileParties() {
     return (
       <div className="h-full overflow-hidden">
         <MobilePartyPayment
+          displayHandoff={linkedDisplay.handover}
           party={selectedEvent as unknown as PartyBooking}
           operatorName={operator?.name ?? ''}
           onConfirm={handleTakePayment}
