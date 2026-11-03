@@ -173,6 +173,10 @@ jobs:
           set -eo pipefail
           pnpm --filter @oto/pos exec playwright install --with-deps chromium
           pnpm --filter @oto/pos e2e
+          # SCRUM-730: a family who paid online is never offered a charge. The
+          # harness runs only the smoke flows unless it is named a spec. This one
+          # pays through the simulated gateway, and a skip fails this gate.
+          PAYMENTS_SIMULATOR=on pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
       # installs `oto-box-<version>-<YYYYMMDD>-<commit>.tgz` (the build id:
       # `packages/box-agent/src/build.ts`), and the guide says the file

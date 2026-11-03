@@ -14,6 +14,8 @@ import { resolve } from 'node:path';
  *
  * Runs on the isolated harness, with the simulated gateway switched on by name:
  * `PAYMENTS_SIMULATOR=on pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts`.
+ * The Till end-to-end step in CI runs it that way, and on that harness a skip is a
+ * red gate (`required-cases.ts`), so the setting cannot quietly go missing.
  * `POS_E2E_SHOTS` names a folder to keep the screens in.
  */
 
@@ -83,6 +85,22 @@ async function signIn(page: Page): Promise<void> {
   await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 30_000 });
 }
 
+/**
+ * THE TILL BEHIND THE DIALOG HOLDS NOTHING TO CHARGE. A modal hides the page behind
+ * it from `getByRole`, so a plain role query there counts 0 whatever the till holds.
+ * These reach behind it, and the Current Order heading proves the reach: that panel
+ * is there on an empty till. A line loading behind the dialog lands after it opens,
+ * so the checks wait that out first.
+ */
+async function expectNothingToCharge(page: Page): Promise<void> {
+  await page.waitForTimeout(1_500);
+  await expect(page.getByRole('heading', { name: 'Current Order', includeHidden: true })).toHaveCount(1);
+  await expect(page.getByText('No items added yet', { exact: true })).toHaveCount(1);
+  await expect(page.getByText('Total', { exact: true }).locator('..')).toHaveText('Total฿0');
+  await expect(page.getByRole('button', { name: /^Pay /, includeHidden: true })).toHaveText('Pay ฿0');
+  await expect(page.getByRole('heading', { name: 'Amount Due', includeHidden: true })).toHaveCount(0);
+}
+
 const openBoard = (page: Page) => page.getByRole('button', { name: 'Check-in', exact: true }).click();
 const familyCard = (page: Page, parentName: string) =>
   page.locator('div.rounded-xl, [class*="bg-card"]').filter({ hasText: parentName }).filter({ has: page.getByRole('button', { name: 'Check in', exact: true }) }).last();
@@ -101,13 +119,12 @@ test('Check in on a paid online drop-off family opens the booking, and never a c
   await expect(card.getByText('Booked & paid · no payment needed')).toBeVisible();
   await shot(page, '01-board-booked-and-paid');
 
-  // The press: no tier step, no line, no payment. The booking's own dialog.
+  // The press: no tier step, no line, total ฿0. The booking's own dialog.
   await card.getByRole('button', { name: 'Check in', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText(booking.reference)).toBeVisible({ timeout: 20_000 });
   await expect(dialog.getByRole('button', { name: 'Confirm & Issue' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Pay ฿/ })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Amount Due' })).toHaveCount(0);
+  await expectNothingToCharge(page);
   await shot(page, '02-check-in-opens-the-booking');
 
   await dialog.getByRole('button', { name: 'Confirm & Issue' }).click();
@@ -140,7 +157,51 @@ test('Check in on a paid online nanny family opens the booking too, and is not r
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText(booking.reference)).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/has not been paid for yet/)).toHaveCount(0);
+  await expectNothingToCharge(page);
   await shot(page, '06-nanny-check-in-opens-the-booking');
+});
+
+test('The Add drop-off picker never adds a paid online child to a sale, and a sibling still joins', async ({ page, request }) => {
+  requireFixture();
+  const parent = 'ZZ TEST Khun Ying';
+  const paidChild = 'ZZ TEST Bua';
+  const sibling = 'ZZ TEST Nok';
+  await paidBooking(request, parent, { childName: paidChild, ageYears: 6 });
+
+  await signIn(page);
+  await page.getByRole('button', { name: 'Skip — walk-in (Tourist)' }).click();
+  await page.getByRole('heading', { name: 'Tourist' }).click();
+  await page.getByRole('button', { name: 'Add drop-off child' }).click();
+
+  const family = page
+    .getByRole('dialog')
+    .locator('div')
+    .filter({ hasText: `${parent}'s booking` })
+    .filter({ has: page.getByRole('button', { name: 'Add sibling' }) })
+    .last();
+  await expect(family.getByText(paidChild)).toBeVisible({ timeout: 20_000 });
+  await expect(family.getByRole('button', { name: 'Paid online', exact: true })).toBeDisabled();
+  await expect(family.getByText('Paid online', { exact: true })).toHaveCount(2);
+  await shot(page, '09-picker-paid-online');
+
+  // The sibling joins the family at the door: a name and the age picker's three taps.
+  await family.getByRole('button', { name: 'Add sibling' }).click();
+  await family.getByPlaceholder('Child name').fill(sibling);
+  await family.getByRole('button', { name: 'Tap to set age' }).click();
+  await page.getByRole('button', { name: '5', exact: true }).click();
+  await page.getByRole('button', { name: 'Jan', exact: true }).click();
+  await page.getByRole('button', { name: '15', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click();
+  await family.getByRole('button', { name: 'Add & attach' }).click();
+
+  // On the sale, at the till's price: the sibling, and only the sibling.
+  await expect(page.getByRole('heading', { name: `${sibling} · 5y` })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('heading', { name: '1 Hour Play' }).click();
+  const order = page.getByRole('heading', { name: 'Current Order' }).locator('../..');
+  await expect(order.getByText(sibling)).toBeVisible();
+  await expect(order.getByText(paidChild)).toHaveCount(0);
+  await expect(order.getByRole('button', { name: /^Pay ฿[1-9]/ })).toBeEnabled({ timeout: 20_000 });
+  await shot(page, '10-picker-sibling-on-the-sale');
 });
 
 test.describe('on a phone', () => {
@@ -169,6 +230,10 @@ test.describe('on a phone', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByText(booking.reference)).toBeVisible({ timeout: 20_000 });
     await expect(dialog.getByRole('button', { name: 'Confirm & Issue' })).toBeVisible();
+    // Behind the dialog: the phone's cart bar on nothing, and no payment step.
+    await page.waitForTimeout(1_500);
+    await expect(page.getByText('No items yet', { exact: true })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Amount Due', includeHidden: true })).toHaveCount(0);
     await shot(page, '08-phone-check-in-opens-the-booking');
   });
 });
