@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-03T20:21:09.151Z",
+  "initialCheck": {
+    "expected": "filename inside one rendered image tag",
+    "actual": 0,
+    "expectedCount": 1,
+    "stoppedBeforeTransition": true
+  },
+  "finding": "Jira renders attachment IDs in image paths and omits filenames. Its additional issue icon is not proof.",
+  "correction": "Match each expected attachment ID as a complete URL path segment and require exactly one rendered image per attachment.",
+  "originalCommentReused": true,
+  "duplicateCommentPosted": false,
+  "comments": {
+    "SCRUM-737": "13314",
+    "SCRUM-742": "13315"
+  },
+  "verifiedProofCounts": {
+    "SCRUM-737": 2,
+    "SCRUM-742": 1
+  }
+}

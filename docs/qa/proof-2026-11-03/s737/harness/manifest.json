@@ -112,7 +112,13 @@
       "executedBytesSha256": "d085b81ae501c10c4e8cb8f64233d0ff336f498aa1a0f7f0aee25957d4d8edf9",
       "archivedLfSha256": "d085b81ae501c10c4e8cb8f64233d0ff336f498aa1a0f7f0aee25957d4d8edf9",
       "state": "executed for the source-bound staging proof and cleanup"
+    },
+    {
+      "file": "attach-s737-proof.mjs.txt",
+      "originalPath": "C:/oto-lanes/attach-s737-proof.mjs",
+      "executedBytesSha256": "99efd4c97a7f75c39f5b30c3c78ff9107d2d74aba97768f3b1ee3303d49fa671",
+      "state": "executed; checks exact attachment IDs after retaining the original filename-check diagnostic"
     }
   ],
-  "updatedAt": "2026-11-03T20:16:54.888Z"
+  "updatedAt": "2026-11-03T20:21:09.153Z"
 }

@@ -1,5 +1,7 @@
 # SCRUM-737 first-sale printer configuration
 
+Jira reads **Deployed**, never Done, at 2026-11-03T20:21:09.153Z. The opened native print record and first-sale card are attachments 12389 and 12390, shown exactly once inside comment 13314. Evidence commit: b6adb07389d30e017b5cde116eea495959494c37. Exact cleanup is verified and the source/API/proof/cleanup window is released.
+
 ## Verified staging result
 
 Source and matching local agent: `773fd25f5436bf07f663af183761481b3197a3ef`. Main CI [41704476807](https://github.com/vickyydev/oto-platform/actions/runs/41704476807) passed all six jobs. API, new POS, old POS, Console, Launcher, Booth and OTO App were all live on this exact source throughout the proof. Deployment IDs and times are in [the receipt](staging/mw14jlle/receipt.json).
@@ -10,7 +12,7 @@ Independent read-only job `job-dbl40jutlv9c73cqdid0` confirmed one finalised cas
 
 Exact cleanup job `job-dbl41pbncjis73e225r0` confirmed the till, box, two devices and menu fixtures archived; the box disabled with no secret, claim or address; zero active own sessions, leases or pending commands/prints. Both browser sessions signed out. The cash sale, audit history and original historical skipped rows are retained. No setting, plan, service size or park device changed.
 
-Opened images: [native print records](staging/mw14jlle/s737-native-print-jobs.png), [first-sale card](staging/mw14jlle/s737-staging-proof.png), [live redaction card](staging/mw14jlle/s742-staging-proof.png), and both original simulator PNGs. The cards label their limits and name every live source. Inline Jira publication and Deployed readback follow this evidence commit.
+Opened images: [native print records](staging/mw14jlle/s737-native-print-jobs.png), [first-sale card](staging/mw14jlle/s737-staging-proof.png), [live redaction card](staging/mw14jlle/s742-staging-proof.png), and both original simulator PNGs. The cards label their limits and name every live source. The inline Jira images and Deployed readback are verified above.
 
 Staff feedback remains unchanged. Code review shows that the post-payment sale read produces “Some items not printed” if it already sees a skip. A later box-reported skip produces no new warning automatically; reopening History reads the final status. This notification timing was not exercised in the staging proof. No notification change is included. The independent intermittent Console request-mock issue remains open as SCRUM-743.
 

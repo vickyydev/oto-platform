@@ -1,0 +1,27 @@
+{
+  "at": "2026-11-03T20:21:09.153Z",
+  "source": "773fd25f5436bf07f663af183761481b3197a3ef",
+  "mainCi": 41704476807,
+  "evidenceCommit": "b6adb07389d30e017b5cde116eea495959494c37",
+  "states": {
+    "SCRUM-737": "Deployed",
+    "SCRUM-742": "Deployed",
+    "SCRUM-50": "Deployed",
+    "SCRUM-47": "Deployed",
+    "SCRUM-57": "Deployed",
+    "SCRUM-56": "Deployed",
+    "SCRUM-91": "Deployed",
+    "SCRUM-88": "Deployed",
+    "SCRUM-77": "Deployed",
+    "SCRUM-99": "Deployed",
+    "SCRUM-734": "In Progress",
+    "SCRUM-707": "In Progress",
+    "SCRUM-743": "To Do"
+  },
+  "proofProcessExitCode": 0,
+  "localAgentStopped": true,
+  "browserClosed": true,
+  "cleanupVerified": true,
+  "physicalPrintersTested": false,
+  "slotReleasedByThisCheckpoint": true
+}

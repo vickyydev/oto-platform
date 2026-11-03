@@ -1,0 +1,38 @@
+{
+  "source": "773fd25f5436bf07f663af183761481b3197a3ef",
+  "evidenceCommit": "b6adb07389d30e017b5cde116eea495959494c37",
+  "startedAt": "2026-11-03T20:17:54.915Z",
+  "tickets": {
+    "SCRUM-737": {
+      "statusBefore": "Testing",
+      "attachments": [
+        {
+          "id": "12389",
+          "name": "s737-native-print-jobs.png"
+        },
+        {
+          "id": "12390",
+          "name": "s737-staging-proof.png"
+        }
+      ],
+      "commentId": "13314",
+      "inlineImagesVerified": true,
+      "imageCount": 2,
+      "verifiedAt": "2026-11-03T20:18:45.579Z"
+    },
+    "SCRUM-742": {
+      "statusBefore": "Testing",
+      "attachments": [
+        {
+          "id": "12391",
+          "name": "s742-staging-proof.png"
+        }
+      ],
+      "commentId": "13315",
+      "inlineImagesVerified": true,
+      "imageCount": 1,
+      "verifiedAt": "2026-11-03T20:18:49.209Z"
+    }
+  },
+  "finishedAt": "2026-11-03T20:18:49.210Z"
+}

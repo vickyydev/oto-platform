@@ -1,5 +1,7 @@
 # UUID masking release-check finding
 
+Jira reads **Deployed**, never Done, at 2026-11-03T20:21:09.153Z. The opened live-source card is attachment 12391, shown exactly once inside comment 13315. Evidence commit: b6adb07389d30e017b5cde116eea495959494c37. This narrow masking repair ships with SCRUM-737; its shared release window is released.
+
 ## Verified staging result
 
 Source: `773fd25f5436bf07f663af183761481b3197a3ef`. Main CI [41704476807](https://github.com/vickyydev/oto-platform/actions/runs/41704476807) passed all six jobs. API, new POS, old POS, Console, Launcher, Booth and OTO App were all live on this exact source throughout the proof. Deployment IDs and times are in [the receipt](../s737/staging/mw14jlle/receipt.json).
@@ -10,7 +12,7 @@ The original failing telemetry run is retained. The corrected existing suite pas
 
 The masking checks wrote no application record or setting. The associated printer proof and its exact fixture cleanup are documented in [SCRUM-737](../s737/README.md). All seven live deployments remained unchanged afterwards; the API returned healthy and its 57 setting names were identical.
 
-The [opened live redaction card](../s737/staging/mw14jlle/s742-staging-proof.png) labels the checks and names every live source. It proves those explicit masking cases against the deployed source; it is not coverage of every screen or data shape. Inline Jira publication and Deployed readback follow this evidence commit.
+The [opened live redaction card](../s737/staging/mw14jlle/s742-staging-proof.png) labels the checks and names every live source. It proves those explicit masking cases against the deployed source; it is not coverage of every screen or data shape. The inline Jira images and Deployed readback are verified above.
 
 ## Historical progress checkpoints
 **4 November 2026, SCRUM-742 REPRODUCED AND FIXED LOCALLY; FINAL RELEASE GATES REQUIRED:** The complete 737 battery exposed a real masking fault: numeric groups inside a canonical UUID became card-redaction text in ops_run.detail. Jira 742 records the exact failing identifier and plan. The existing telemetry suite reproduced it before the source edit (37 pass, one fail), then passed all 38 cases with a complete-UUID alternative in the grouped-card matcher. Denied credential/person fields, adjacent cards and malformed identifiers still mask; no guard or old test changed. The vendored OTO App copy is identical. This is a narrow data-reliability gate repair beside 737, with no setting or migration. API night-job review, final workspace/API/OTO App gates, exact live-source proof and opened evidence remain; 737/742 stay In Progress. 730 has released its window to 728; this lane takes no slot and changes no staging state.**

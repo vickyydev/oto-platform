@@ -1,0 +1,64 @@
+{
+  "version": 2,
+  "commentId": "13314",
+  "keys": [
+    "self",
+    "id",
+    "author",
+    "body",
+    "renderedBody",
+    "updateAuthor",
+    "created",
+    "updated",
+    "jsdPublic"
+  ],
+  "bodyType": "string",
+  "renderedType": "string",
+  "renderedLength": 3024,
+  "images": [
+    {
+      "attributeNames": [
+        "class",
+        "src",
+        "size"
+      ],
+      "attachmentMatches": [],
+      "filenameMatches": [],
+      "alt": null
+    },
+    {
+      "attributeNames": [
+        "src",
+        "width",
+        "style"
+      ],
+      "attachmentMatches": [
+        "12389"
+      ],
+      "filenameMatches": [],
+      "alt": null
+    },
+    {
+      "attributeNames": [
+        "src",
+        "width",
+        "style"
+      ],
+      "attachmentMatches": [
+        "12390"
+      ],
+      "filenameMatches": [],
+      "alt": null
+    }
+  ],
+  "expected": [
+    {
+      "id": "12389",
+      "name": "s737-native-print-jobs.png"
+    },
+    {
+      "id": "12390",
+      "name": "s737-staging-proof.png"
+    }
+  ]
+}
