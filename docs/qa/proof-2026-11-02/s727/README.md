@@ -1,7 +1,11 @@
 # SCRUM-727 release evidence
 
 Status: **In Progress; local checks only**. Source
-`2a714b783d703925ae9b715af9fbd4f426f01dea` is committed locally and unpublished.
+`2a714b783d703925ae9b715af9fbd4f426f01dea` was rebased over documentation only
+and backed up as `8e99e33e6561a04f8b5c6da5dabae805ba538bb6` on
+[`lane/codex-box-unlock-20261103`](https://github.com/vickyydev/oto-platform/tree/lane/codex-box-unlock-20261103).
+Runtime code and tests are identical. Main has not received this source.
+The owner requires a lane push after every commit; branch backup deploys nothing.
 SCRUM-726 reserves the staging source/API window through 17:30 Bangkok or its
 exact cleanup record. No staging proof, API restart, Render change or
 BOX_AGENT_TEST_SLOT change has been made. SCRUM-728 remains queued.
