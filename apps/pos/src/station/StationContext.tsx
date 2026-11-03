@@ -11,11 +11,12 @@ import { ScannerMode, StationProfile } from '@/types';
 import { useBranch } from '@/branch/BranchContext';
 import { useOperator } from '@/auth/OperatorContext';
 import { stationsApi, type ApiStation, type PickableStation } from '@/api/platform';
-import { ApiError, isMissingRoute } from '@/api/client';
+import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import { forgetStationDevices, rememberStation, toStationProfile } from '@/station/fleet';
 import { forgetStaffToken, rememberStaffToken } from '@/auth/staffToken';
-import { setLaneStation } from '@/lib/lane';
+import { noteLaneFailure, setLaneStation } from '@/lib/lane';
 import { holdBoxSession, setBridgeOrigin } from '@/api/bridge';
+import { forgetOfflinePreparation, prepareOfflineStation } from '@/auth/offlinePreparation';
 
 interface StationContextValue {
   /** The station this till is working, or null while none has been picked. */
@@ -141,7 +142,7 @@ const failure = (err: unknown): string =>
 
 export function StationProvider({ children }: { children: ReactNode }) {
   const { branch, switching } = useBranch();
-  const { operator, mustChangePassword } = useOperator();
+  const { operator, mustChangePassword, offlinePreparation } = useOperator();
   const scopeKey = `${branch.id}:${operator?.id ?? ''}:${mustChangePassword}:${switching}`;
   const scope = useRef({ key: scopeKey, generation: 0 });
   if (scope.current.key !== scopeKey) scope.current = { key: scopeKey, generation: scope.current.generation + 1 };
@@ -165,7 +166,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
   const [localProfiles, setLocalProfiles] = useState<Record<string, StationProfile>>({});
 
   const adopt = useCallback(
-    (station: ApiStation, scannerMode?: ScannerMode) => {
+    (station: ApiStation, scannerMode?: ScannerMode, online = true) => {
       const mode = scannerMode ?? readRemembered(branch.id)?.scannerMode;
       rememberStation(station);
       setBridgeOrigin(station.bridgeOrigin ?? null);
@@ -174,6 +175,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
       setActive(station);
       setPicked(toStationProfile(station, branch.id, mode));
       writeRemembered(branch.id, { id: station.id, name: station.name, scannerMode: mode, bridgeOrigin: station.bridgeOrigin ?? null });
+      if (online) prepareOfflineStation(station, branch.id, mode);
       setNotice(null);
     },
     [branch.id],
@@ -249,6 +251,16 @@ export function StationProvider({ children }: { children: ReactNode }) {
     setResolved(false);
     forgetStationDevices();
 
+    if (offlinePreparation?.operator.id === accountId && offlinePreparation.catalog.branch.code === branch.id) {
+      adopt(offlinePreparation.station, offlinePreparation.scannerMode, false);
+      noteLaneFailure(new NetworkError());
+      setFleetAvailable(true);
+      setStations([]);
+      setLoading(false);
+      setResolved(true);
+      return;
+    }
+
     void (async () => {
       setLoading(true);
       setError(null);
@@ -280,7 +292,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
           }
         } catch (err) {
           if (cancelled) return;
-          if (err instanceof ApiError && err.code === 'STATION_NOT_READY') {
+          if (err instanceof ApiError && ['STATION_NOT_READY', 'STATION_HAS_NO_BOX'].includes(err.code)) {
             forgetRemembered(branch.id);
             forgetStaffToken();
             setNotice(err.message);
@@ -291,7 +303,9 @@ export function StationProvider({ children }: { children: ReactNode }) {
             // one sentence explaining where it went.
             forgetRemembered(branch.id);
             setNotice(`${remembered.name} is no longer yours to work. Pick another station.`);
-          } else {
+          } else if (err instanceof NetworkError || (err instanceof ApiError
+            && ((err.status === 502 && err.code === 'UPSTREAM_UNAVAILABLE')
+              || (err.status === 503 && err.code === 'STATION_FORCED_OFFLINE')))) {
             // Not a refusal — the API did not answer at all. Keep working the
             // station this device remembers rather than stopping the counter
             // over a network that may already be back.
@@ -303,6 +317,8 @@ export function StationProvider({ children }: { children: ReactNode }) {
               branchId: branch.id,
               scannerMode: remembered.scannerMode ?? 'camera',
             });
+          } else {
+            setNotice(failure(err));
           }
         }
       }
@@ -315,7 +331,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [accountId, mustChangePassword, branch.id, adopt, switching]);
+  }, [accountId, mustChangePassword, branch.id, adopt, switching, offlinePreparation]);
 
   const setStation = useCallback(
     (profile: StationProfile) => {
@@ -325,6 +341,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
   );
 
   const clearStation = useCallback(() => {
+    forgetOfflinePreparation();
     setBridgeOrigin(null);
     holdBoxSession(null);
     setLaneStation(null);
