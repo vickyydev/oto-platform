@@ -16,7 +16,7 @@ import { forgetStationDevices, rememberStation, toStationProfile } from '@/stati
 import { forgetStaffToken, rememberStaffToken } from '@/auth/staffToken';
 import { noteLaneFailure, setLaneStation } from '@/lib/lane';
 import { holdBoxSession, setBridgeOrigin } from '@/api/bridge';
-import { forgetOfflinePreparation, prepareOfflineStation } from '@/auth/offlinePreparation';
+import { forgetOfflineStation, prepareOfflineStation } from '@/auth/offlinePreparation';
 
 interface StationContextValue {
   /** The station this till is working, or null while none has been picked. */
@@ -341,7 +341,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
   );
 
   const clearStation = useCallback(() => {
-    forgetOfflinePreparation();
+    forgetOfflineStation();
     setBridgeOrigin(null);
     holdBoxSession(null);
     setLaneStation(null);

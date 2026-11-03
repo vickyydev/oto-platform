@@ -19,6 +19,11 @@ export interface OfflinePreparation {
 
 export function forgetOfflinePreparation(): void {
   preparedOperator = null;
+  forgetOfflineStation();
+}
+
+/** Changing stations clears its saved copy, while this online sign-in remains eligible. */
+export function forgetOfflineStation(): void {
   try { window.localStorage.removeItem(KEY); } catch { /* Site data may be blocked. */ }
 }
 
