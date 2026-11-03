@@ -239,6 +239,20 @@ This is a future operation, **not authorization to execute it during SCRUM-718**
 | Pi OTO_BOX_BRIDGE_ORIGINS | Owner/box lane adds the approved new origin while retaining old during transition. This lane does not edit the Pi. | Keep or restore the old allowed origin; verify the old till can reach the box. |
 | SCRUM-711 `--kiosk-url` | Owner changes the kiosk URL at the agreed bench step, with a new pairing and reboot proof. | Restore the old kiosk URL and pairing, then verify the display. |
 
+For either direction, a saved API environment value is not active until the
+API is redeployed. Read current STATUS and reserve the source/API window first.
+Use `replacePosHandoffOrigin` in `scripts/agent/render.mjs` for the single POS
+mapping, preserving all other entries. Deploy the already approved full SHA
+with `node scripts/agent/render.mjs deploy oto-api-staging <full-sha>`; poll
+`node scripts/agent/render.mjs deploys oto-api-staging` until that exact SHA is
+live, then check health. Rebuild/deploy the launcher and Console after their
+VITE changes and wait for each exact deployment before testing handoff in a
+fresh browser. Do not treat an accepted deploy request as completion. If source
+changes, first use `bash scripts/agent/watch-ci.sh <full-sha> 110`; no release
+or setting change while main is red or another lane holds its proof window.
+Keep the old POS service available until rollback and forward sign-ins are
+verified. The owner's authorization for the device switch is still required.
+
 Before switching: finish or void every open order using existing controls, resolve
 unknown payment outcomes, release the till lease and sign out. Do not copy cookies,
 display secrets or a cart between origins. Keep the old service and settings until
