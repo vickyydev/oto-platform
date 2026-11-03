@@ -1,0 +1,55 @@
+{
+  "at": "2026-11-03T21:00:16.587Z",
+  "mode": "unroute",
+  "events": [
+    {
+      "at": "2026-11-03T21:00:11.560Z",
+      "kind": "handler started",
+      "path": "/api/booths/second/a"
+    },
+    {
+      "at": "2026-11-03T21:00:11.561Z",
+      "kind": "handler started",
+      "path": "/api/booths/second/b"
+    },
+    {
+      "at": "2026-11-03T21:00:11.567Z",
+      "kind": "server received",
+      "path": "/api/booths/first/a"
+    },
+    {
+      "at": "2026-11-03T21:00:11.567Z",
+      "kind": "server received",
+      "path": "/api/booths/first/b"
+    },
+    {
+      "at": "2026-11-03T21:00:11.567Z",
+      "kind": "teardown started",
+      "path": "unroute"
+    },
+    {
+      "at": "2026-11-03T21:00:11.573Z",
+      "kind": "handler fulfilled",
+      "path": "/api/booths/second/a"
+    },
+    {
+      "at": "2026-11-03T21:00:11.575Z",
+      "kind": "server received",
+      "path": "/api/booths/second/b"
+    },
+    {
+      "at": "2026-11-03T21:00:11.579Z",
+      "kind": "handler failed",
+      "path": "/api/booths/second/b"
+    }
+  ],
+  "errors": [
+    {
+      "path": "/api/booths/second/b",
+      "name": "Error",
+      "message": "route.fulfill: Route is already handled!"
+    }
+  ],
+  "barrierError": "Probe barrier timed out: teardown",
+  "passed": false
+}
