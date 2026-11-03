@@ -1,0 +1,11 @@
+{
+  "key": "otoapp",
+  "sha": "e186b0ad5ddf9006f13e3ac1f8a0ab8e5fbb5173",
+  "start": "2026-11-03T17:40:43.006Z",
+  "end": "2026-11-03T17:44:48.674Z",
+  "command": "cd /c/oto-lanes/codex-first-print-app-gates-20261104/apps/oto-app\nnpm ci --ignore-scripts\nnpm run build\nnpm run check:ratchet",
+  "log": "C:/oto-lanes/s737-otoapp.log",
+  "exitCode": 0,
+  "signal": null,
+  "rawLogSha256": "95e8d61d6502312aa92b5c22e88d6272dd2eb4bf2402fa994215feb83db2af50"
+}

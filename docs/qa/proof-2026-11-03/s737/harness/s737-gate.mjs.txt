@@ -1,0 +1,28 @@
+import { readFileSync, writeFileSync, openSync, closeSync } from 'node:fs';
+import { spawn, execFileSync } from 'node:child_process';
+const root='C:/oto-lanes/codex-first-print-20261103';
+const key=process.argv[2];
+const commands={
+  telemetry:'pnpm --filter @oto/telemetry test',
+  redaction:'pnpm --filter @oto/telemetry test\npnpm --filter @oto/telemetry typecheck\npnpm exec eslint packages/telemetry/src/redact.ts packages/telemetry/test/redact.test.ts\nnode apps/oto-app/server/lib/telemetry/check-sync.mjs\npnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts test/s217b-r4b.test.ts',
+  otoapp:'cd /c/oto-lanes/codex-first-print-app-gates-20261104/apps/oto-app\nnpm ci --ignore-scripts\nnpm run build\nnpm run check:ratchet',
+  final:'pnpm typecheck --concurrency=1\npnpm lint\npnpm api-types:check\npnpm --filter @oto/pos exec vitest run --maxWorkers=2\npnpm exec turbo run test --filter="!@oto/api" --filter="!@oto/pos" --concurrency=1\npnpm build --concurrency=1\npnpm --filter @oto/pos build:display\npnpm --filter @oto/box-agent build:runner\nnode scripts/check-no-mock-members.mjs\nnode --test scripts/inbox/whatsapp-history.test.mjs\nnode apps/oto-app/server/lib/telemetry/check-sync.mjs',
+  review:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts test/s737-first-sale-print-review.test.ts\npnpm --filter @oto/api typecheck\npnpm exec eslint apps/api/test/s737-first-sale-print-review.test.ts',
+  console:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-console-gate.mts',
+  api1:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts --shard=1/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s737-api1.json',
+  api2:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts --shard=2/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s737-api2.json',
+  api3:'pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-api-gate.mts --shard=3/3 --reporter=default --reporter=json --outputFile=C:/oto-lanes/s737-api3.json',
+  workspace:'pnpm typecheck --concurrency=1\npnpm lint\npnpm api-types:check\npnpm exec turbo run test --filter="!@oto/api" --concurrency=1\npnpm build --concurrency=1\npnpm --filter @oto/pos build:display\npnpm --filter @oto/box-agent build:runner',
+  smoke:'POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e\nPAYMENTS_SIMULATOR=on POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts\nCONSOLE_E2E_BROWSER=msedge CONSOLE_E2E_BUILT=1 pnpm --filter @oto/console e2e',
+  finish:'pnpm --filter @oto/pos exec vitest run --maxWorkers=2\npnpm exec turbo run test --filter="!@oto/api" --filter="!@oto/pos" --concurrency=1\npnpm build --concurrency=1\npnpm --filter @oto/pos build:display\npnpm --filter @oto/box-agent build:runner',
+  tools:'node scripts/check-no-mock-members.mjs\nnode --test scripts/inbox/whatsapp-history.test.mjs\nnode apps/oto-app/server/lib/telemetry/check-sync.mjs\nfor f in scripts/pi/*.sh; do bash -n "$f"; done\n/c/oto-lanes/s713-shellcheck/shellcheck.exe --severity=error scripts/pi/*.sh',
+};
+if(!commands[key]) throw new Error('Unknown gate');
+const sha=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+const suffix=process.argv[3] ? '-'+process.argv[3] : '';
+const log=`C:/oto-lanes/s737-${key}${suffix}.log`, receipt=`C:/oto-lanes/s737-${key}${suffix}-exit.json`;
+const start=new Date().toISOString(), fd=openSync(log,'wx');
+console.log(JSON.stringify({key,sha,start,log,command:commands[key],output:'direct file descriptor, unpiped'}));
+const child=spawn('C:/Program Files/Git/bin/bash.exe',['-c','set -eo pipefail\n'+commands[key]],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});
+child.once('error',e=>{closeSync(fd);writeFileSync(receipt,JSON.stringify({key,sha,start,end:new Date().toISOString(),error:e.name,exitCode:1},null,2));process.exitCode=1;});
+child.once('exit',(code,signal)=>{closeSync(fd);const result={key,sha,start,end:new Date().toISOString(),command:commands[key],log,exitCode:code??1,signal};writeFileSync(receipt,JSON.stringify(result,null,2));console.log(JSON.stringify(result));console.log(readFileSync(log,'utf8').slice(-2400));process.exitCode=code??1;});

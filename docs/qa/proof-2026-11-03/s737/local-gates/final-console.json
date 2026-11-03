@@ -1,0 +1,11 @@
+{
+  "key": "console",
+  "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+  "start": "2026-11-03T17:25:14.274Z",
+  "end": "2026-11-03T17:32:18.548Z",
+  "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s737-console-gate.mts",
+  "log": "C:/oto-lanes/s737-console.log",
+  "exitCode": 0,
+  "signal": null,
+  "rawLogSha256": "c89bda5c9d7b52b03bd4dfe0199db169f0b680d5e493268f782d33d8256ee534"
+}

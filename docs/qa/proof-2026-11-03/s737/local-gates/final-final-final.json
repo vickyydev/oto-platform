@@ -1,0 +1,11 @@
+{
+  "key": "final",
+  "sha": "e186b0ad5ddf9006f13e3ac1f8a0ab8e5fbb5173",
+  "start": "2026-11-03T17:40:32.766Z",
+  "end": "2026-11-03T17:47:13.898Z",
+  "command": "pnpm typecheck --concurrency=1\npnpm lint\npnpm api-types:check\npnpm --filter @oto/pos exec vitest run --maxWorkers=2\npnpm exec turbo run test --filter=\"!@oto/api\" --filter=\"!@oto/pos\" --concurrency=1\npnpm build --concurrency=1\npnpm --filter @oto/pos build:display\npnpm --filter @oto/box-agent build:runner\nnode scripts/check-no-mock-members.mjs\nnode --test scripts/inbox/whatsapp-history.test.mjs\nnode apps/oto-app/server/lib/telemetry/check-sync.mjs",
+  "log": "C:/oto-lanes/s737-final-final.log",
+  "exitCode": 0,
+  "signal": null,
+  "rawLogSha256": "e2e500b1bdf37a281989d5f1c6def74966bb5e464f0336fd95cbb5c51fdd5f39"
+}
