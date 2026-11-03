@@ -1,0 +1,84 @@
+{
+  "at": "2026-11-03T17:14:58.862Z",
+  "gates": [
+    {
+      "key": "v1-api1",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "exitCode": 0,
+      "receipt": "local-gates/v1-api1.json"
+    },
+    {
+      "key": "v1-api2",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "exitCode": 0,
+      "receipt": "local-gates/v1-api2.json"
+    },
+    {
+      "key": "v1-api3",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "exitCode": 1,
+      "receipt": "local-gates/v1-api3.json"
+    },
+    {
+      "key": "v1-workspace",
+      "source": "78a754063bb102b41f1b108d72452ca8346fa89b",
+      "exitCode": 1,
+      "receipt": "local-gates/v1-workspace.json"
+    },
+    {
+      "key": "v4-workspace",
+      "source": "8306bca8f1a98cd5cc972d6342f5b75c1c866179",
+      "exitCode": 1,
+      "receipt": "local-gates/v4-workspace.json"
+    },
+    {
+      "key": "v6-types",
+      "source": "1694037b46a6854ec4b139e6972afd62b41055f6",
+      "exitCode": 0,
+      "receipt": "local-gates/v6-types.json"
+    },
+    {
+      "key": "v6-build",
+      "source": "1694037b46a6854ec4b139e6972afd62b41055f6",
+      "exitCode": 0,
+      "receipt": "local-gates/v6-build.json"
+    },
+    {
+      "key": "v6-tools",
+      "source": "1694037b46a6854ec4b139e6972afd62b41055f6",
+      "exitCode": 0,
+      "receipt": "local-gates/v6-tools.json"
+    },
+    {
+      "key": "v6-smoke",
+      "source": "1694037b46a6854ec4b139e6972afd62b41055f6",
+      "exitCode": 0,
+      "receipt": "local-gates/v6-smoke.json"
+    },
+    {
+      "key": "v6-workspace",
+      "source": "35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2",
+      "exitCode": 1,
+      "receipt": "local-gates/v6-workspace.json"
+    },
+    {
+      "key": "v7-console",
+      "source": "82388b081adb87ab1e4a44219ac2017242dc1603",
+      "exitCode": 0,
+      "receipt": "local-gates/v7-console.json"
+    },
+    {
+      "key": "completion-workspace",
+      "source": "35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2",
+      "exitCode": 0,
+      "receipt": "local-gates/completion-workspace.json"
+    },
+    {
+      "key": "completion-pos",
+      "source": "35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2",
+      "exitCode": 0,
+      "receipt": "local-gates/completion-pos.json"
+    }
+  ],
+  "interpretation": "Failed and superseded runs are retained. Only completed zero-exit runs are passes. Full API and branch CI completion must be recorded separately."
+}

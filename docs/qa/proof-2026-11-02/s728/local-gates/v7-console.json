@@ -1,0 +1,15 @@
+{
+  "key": "console",
+  "sha": "82388b081adb87ab1e4a44219ac2017242dc1603",
+  "start": "2026-11-03T17:02:18.071Z",
+  "end": "2026-11-03T17:12:22.975Z",
+  "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s728-final-console-gate.mts",
+  "log": "C:/oto-lanes/s728-gates-v7-console.log",
+  "exitCode": 0,
+  "signal": null,
+  "logSha256": "244a1b70a7827a76e1da3c59027bf90445718a8aec895e133656df1f6b0fe6cc",
+  "logBytes": 66112,
+  "summary": [
+    "357 passed (9.0m)"
+  ]
+}

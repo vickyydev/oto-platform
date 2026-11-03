@@ -1,0 +1,64 @@
+{
+  "at": "2026-11-03T17:14:21.514Z",
+  "environment": "local only",
+  "images": [
+    {
+      "name": "s728-cash-receipt.png",
+      "sha256": "f773b160c0b4349d09d041fa06a692dfe8dcec75e7c76a4bcd3296bbe09fb610",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-cold-till-locked.png",
+      "sha256": "a7f39203d1153a6802b9af1d96d1d18faa536796ba11017c7fe2c44eb052436f",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-cold-till-unlocked.png",
+      "sha256": "0495ba641ecc2161abbf97339bb2a2f17817b48d08d2e3f40625d524f5c447e2",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-configured-test-zone.png",
+      "sha256": "65f02dddc91f8991c8523d02554275505d8cdb070a99326226a6d74840551bca",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-display-build-mismatch.png",
+      "sha256": "d6e2017e7ec98d503c884287a59afbf68ee6c172d18e272e91eb2aeff0b90b40",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-display-cold-restart.png",
+      "sha256": "2a55388bd151b0c0da4384fdd39fc5add6f0eb32d16366f93d87679d724587e5",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-display-starting.png",
+      "sha256": "f6888f5e1401f55281095333c3e497b47200c4ff3770758565f55c47f9417ac8",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-ended-shift-refused.png",
+      "sha256": "0ef2239dc39cc5cda4dcb63eb31ab88f5fbe6588fde2da9ec6f96841b74a0ff2",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-first-sale-lock.png",
+      "sha256": "a7f39203d1153a6802b9af1d96d1d18faa536796ba11017c7fe2c44eb052436f",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-local-display.png",
+      "sha256": "2a55388bd151b0c0da4384fdd39fc5add6f0eb32d16366f93d87679d724587e5",
+      "openedAndInspected": true
+    },
+    {
+      "name": "s728-online-display-connected.png",
+      "sha256": "d09ae41c817291747dcff611276fd807dcfb2680014b7a29410a2280b26d5909",
+      "openedAndInspected": true
+    }
+  ],
+  "passwordInputsMasked": true,
+  "benefitQrPresent": false,
+  "limits": "Configured-address image is after save; it does not show the warning that is rendered before saving."
+}

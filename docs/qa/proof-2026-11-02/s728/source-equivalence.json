@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-03T17:14:58.970Z",
+  "testedProduct": "1694037b46a6854ec4b139e6972afd62b41055f6",
+  "backedSource": "35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2",
+  "productFilesIdentical": true,
+  "changedFiles": [
+    "apps/api/test/routes-guarded.test.ts",
+    "apps/pos/test/s502-review-counter-surfaces.test.ts",
+    "docs/handover/CLOUD_HANDOVER.md",
+    "docs/handover/CODEX_HANDOVER.md",
+    "docs/progress/STATUS.md"
+  ]
+}
