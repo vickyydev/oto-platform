@@ -1,0 +1,35 @@
+{
+  "recordedAt": "2026-11-03T21:34:04.930Z",
+  "source": "82d16a2d8b00c020ad0230e51b08e86a594d5f1d",
+  "base": "65c22edf1832e5927536c28ea3db94222ef681e3",
+  "testSha256": "382aac2ab6c778cf34ebeecf12b38a3fc09bb32ae0744ae196d968536455badd",
+  "receipts": [
+    {
+      "file": "final-repeat10.log",
+      "exitCode": 0,
+      "checks": 60,
+      "rawSha256": "5f5ffbcc7847e26067fa3928a11a85647546f06c18f7f68a209b2eb5743fdbc0"
+    },
+    {
+      "file": "final-console-full.log",
+      "exitCode": 0,
+      "checks": 357,
+      "rawSha256": "23f197bca37cec372045eb276ca1ff10eb1debe094d31fdfa54fcad02d808f13"
+    },
+    {
+      "file": "final-typecheck.log",
+      "exitCode": 0,
+      "rawSha256": "7cb4121c1e1fc915c42e15c047b41bfd8ca9c581bd2604a7962e58ab5d1551eb"
+    },
+    {
+      "file": "final-eslint.log",
+      "exitCode": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "retries": 0,
+  "workers": 1,
+  "builtConsole": true,
+  "mainLanding": false,
+  "stagingChanges": false
+}
