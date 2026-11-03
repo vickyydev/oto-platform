@@ -422,7 +422,14 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       // supplies the existing password/token proof to a configured local box;
       // this bounded call neither delays online access nor stores the password.
       void connectLocal?.();
-      if (currentLane() === 'box') void refreshLane();
+      if (currentLane() === 'box') await refreshLane();
+      if (offlinePreparation) {
+        // A cold offline page began with no platform permissions or selected
+        // shift. Restore those from the authenticated API before resuming.
+        const resumed = await hydrate();
+        setLocked(resumed.sessionLocked);
+        return;
+      }
       setOfflineUnlock(null);
       setLocked(false);
       return;
@@ -431,7 +438,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       noteLaneFailure(err);
     }
     return throughBox(station!);
-  }, [operator?.id]);
+  }, [operator?.id, offlinePreparation, hydrate]);
 
   // (Re)arm the inactivity countdown. Called on login and on every interaction.
   const armTimers = useCallback(() => {
