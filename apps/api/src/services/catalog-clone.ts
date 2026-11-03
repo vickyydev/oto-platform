@@ -829,8 +829,10 @@ export async function cloneBranchCatalog(
     const [after] = await tx
       .update(printTemplate)
       .set({ ...fill.content, version: sql`${printTemplate.version} + 1`, updatedAt: new Date() })
-      .where(eq(printTemplate.id, fill.before.id))
+      // The version too: a save that landed since the plan was read is that park's.
+      .where(and(eq(printTemplate.id, fill.before.id), eq(printTemplate.version, fill.before.version)))
       .returning();
+    if (!after) continue;
     await audit.record(tx, {
       actorAccountId: ctx.actorAccountId,
       operatorId: ctx.operatorId,
