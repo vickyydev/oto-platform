@@ -57,7 +57,7 @@ import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { FixActivityFeed, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
+import { FixActivityFeed, formatFixDateTime, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
 import { getMediaThumbUrl, isVideoUrl } from "@/lib/media";
 
 interface FixReport {
@@ -81,13 +81,9 @@ interface FixReport {
   doneNote?: string | null;
   createdAt: string;
   updatedAt: string;
-  reportedById?: string | null;
+  reportedBy?: string | null;
+  reportedByName?: string | null;
   assignedDepartmentId?: string | null;
-  reportedBy?: {
-    id: string;
-    fullName?: string | null;
-    email: string;
-  } | null;
   branch?: {
     id: string;
     name: string;
@@ -547,7 +543,7 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
   const completionCameraRef = useRef<HTMLInputElement>(null);
   const completionGalleryRef = useRef<HTMLInputElement>(null);
   
-  const { data: detailsResponse, isLoading: loadingDetails } = useQuery<{ report: FixReport; comments: FixComment[]; location?: { id: string; name: string } }>({
+  const { data: detailsResponse, isLoading: loadingDetails } = useQuery<{ report: FixReport; reporter?: { id: string; name: string | null }; comments: FixComment[]; location?: { id: string; name: string } }>({
     queryKey: ['/api/fix-reports', report?.id, 'details'],
     enabled: !!report?.id && open,
   });
@@ -688,12 +684,12 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
     message: c.message,
     createdAt: c.createdAt,
     authorUserId: c.authorUserId,
-    author: c.authorType === 'supplier_token'
-      ? { id: c.supplierToken?.id || '', fullName: c.supplierToken?.name || 'Supplier', email: '' }
-      : c.author || null,
+    author: c.author || null,
     authorType: c.authorType,
+    supplierToken: c.supplierToken,
   }));
   
+  const reportedByName = detailsResponse?.reporter?.name || details.reportedByName;
   const locationText = details.locationDetails?.name || details.location || details.locationNote;
   const tagText = details.tags?.[0];
   
@@ -828,6 +824,13 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
                   </Badge>
                 )}
               </div>
+              <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1" data-testid="text-fix-reported-by">
+                <User className="w-3 h-3 shrink-0" />
+                <span>
+                  {reportedByName ? `Reported by ${reportedByName} · ` : "Reported "}
+                  {formatFixDateTime(details.createdAt)}
+                </span>
+              </p>
             </div>
             <StatusPill 
               status={details.status}
@@ -897,6 +900,7 @@ function ReportDetailDialog({ report, open, onClose, onUpdate }: ReportDetailDia
                 <FixActivityFeed
                   entries={activityEntries}
                   createdAt={details.createdAt}
+                  reportedByName={reportedByName}
                   currentUserId={authUser?.id}
                 />
               </div>

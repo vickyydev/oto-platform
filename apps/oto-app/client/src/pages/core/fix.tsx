@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { FixActivityFeed, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
+import { FixActivityFeed, formatFixDateTime, rawCommentToActivityEntry } from "@/components/fix-activity-feed";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -86,10 +86,12 @@ interface FixComment {
   message: string;
   createdAt: string;
   author?: { id: string; fullName?: string | null; email: string } | null;
+  supplierToken?: { id: string; name: string } | null;
 }
 
 interface ReportDetail {
   report: FixReport & { assignedDepartmentId?: string | null };
+  reporter?: { id: string; name: string | null };
   comments: FixComment[];
   assignedDepartment?: { id: string; name: string } | null;
   departmentMembers?: { id: string; name: string; initials: string }[];
@@ -182,6 +184,12 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
               {report?.title || "Fix Report"}
             </h2>
             {report && <StatusBadge status={report.status} />}
+            {report && (
+              <p className="text-xs text-muted-foreground mt-1" data-testid="text-detail-reported-by">
+                {detail?.reporter?.name ? `Reported by ${detail.reporter.name} · ` : "Reported "}
+                {formatFixDateTime(report.createdAt)}
+              </p>
+            )}
           </div>
         </div>
 
@@ -248,8 +256,10 @@ function ReportDetailSheet({ reportId, open, onClose }: ReportDetailSheetProps) 
                   authorUserId: c.authorUserId,
                   author: c.author,
                   authorType: c.authorType,
+                  supplierToken: c.supplierToken,
                 }))}
                 createdAt={report?.createdAt}
+                reportedByName={detail?.reporter?.name}
                 currentUserId={user?.id}
               />
             </div>

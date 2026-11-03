@@ -26,16 +26,25 @@
 //   7. An urgent report at the branch a member does not reach does not
 //      alert that member (they could not open it); an all-branch member is.
 //
+// SCRUM-641 — report and comment improvements:
+//   8. Opening a report names who reported it and when, and every comment
+//      names its author and when; the author is the session's, never the
+//      request's, and a supplier signs with the name on their link.
+//
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built:
 //   npx tsx tests/fix-module.check.ts
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { randomBytes, randomUUID, scryptSync } from "node:crypto";
+import { createHash, randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { format, parseISO } from "date-fns";
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { FixActivityFeed, rawCommentToActivityEntry } from "../client/src/components/fix-activity-feed";
 import { notificationTarget } from "../client/src/lib/notification-target";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -335,6 +344,81 @@ try {
     const urgentB = await report(author, `ZZ TEST urgent at B ${run}`, "urgent", branchB.id);
     assert.deepEqual(await inbox(fixerA, urgentB.id), []);
     assert.equal((await inbox(fixerAll, urgentB.id)).length, 1);
+  });
+
+  // ─── SCRUM-641 ─────────────────────────────────────────────────────────────
+
+  const threaded = await report(author, `ZZ TEST thread ${run}`, "normal", branchA.id);
+  const details = async (who: Login, id: string) => {
+    const res = await call("GET", `/api/fix-reports/${id}/details`, { cookie: cookie[who.label] });
+    assert.equal(res.status, 200, `${who.label} details: ${show(res)}`);
+    return res.body;
+  };
+
+  await check("641: opening a report names who reported it and when", async () => {
+    const opened = await details(fixerA, threaded.id);
+    assert.deepEqual(opened.reporter, { id: author.id, name: `ZZ TEST Author ${run}` });
+    assert.ok(!Number.isNaN(Date.parse(opened.report.createdAt)), opened.report.createdAt);
+  });
+
+  await check("641: a report stored without a name still names its author", async () => {
+    await q("update fix_reports set reported_by_name = null where id = $1", [threaded.id]);
+    assert.equal((await details(fixerA, threaded.id)).reporter.name, `ZZ TEST Author ${run}`);
+  });
+
+  await check("641: a comment's author is the session's, whatever the request says", async () => {
+    const res = await call("POST", `/api/fix-reports/${threaded.id}/comments`, {
+      cookie: cookie[fixerA.label],
+      body: { message: "ZZ on my way", authorUserId: admin.id, authorType: "supplier_token", author: { fullName: "Somebody else" } },
+    });
+    assert.equal(res.status, 201, show(res));
+    assert.equal(res.body.authorUserId, fixerA.id);
+    assert.equal(res.body.authorType, "staff_user");
+    const [comment] = (await details(admin, threaded.id)).comments;
+    assert.equal(comment.author.fullName, `ZZ TEST FixerA ${run}`);
+    assert.ok(!Number.isNaN(Date.parse(comment.createdAt)), comment.createdAt);
+  });
+
+  const supplierToken = randomBytes(32).toString("hex");
+  const supplierName = `ZZ TEST Supplier ${run}`;
+  const [supplier] = await q<{ id: string }>(
+    `insert into fix_supplier_tokens (tenant_id, name, token_hash, allowed_branch_ids, created_by_user_id)
+     values ($1, $2, $3, $4::jsonb, $5) returning id`,
+    [tenant, supplierName, createHash("sha256").update(supplierToken).digest("hex"), JSON.stringify([branchA.id]), admin.id],
+  );
+
+  await check("641: a supplier's comment carries the name on their link", async () => {
+    const res = await call("POST", `/api/supplier-portal/fix-reports/${threaded.id}/comments?token=${supplierToken}`, {
+      body: { message: "ZZ arriving at noon" },
+    });
+    assert.equal(res.status, 201, show(res));
+    const comment = (await details(admin, threaded.id)).comments.find((c: { supplierTokenId: string | null }) => c.supplierTokenId === supplier.id);
+    assert.deepEqual(comment.supplierToken, { id: supplier.id, name: supplierName });
+  });
+
+  // tsx compiles the client's JSX with the classic transform, which reads a global React.
+  (globalThis as { React?: unknown }).React = React;
+
+  await check("641: the thread shows each author's name with the date and time", async () => {
+    const opened = await details(admin, threaded.id);
+    const html = renderToStaticMarkup(React.createElement(FixActivityFeed, {
+      entries: opened.comments.map(rawCommentToActivityEntry),
+      createdAt: opened.report.createdAt,
+      reportedByName: opened.reporter.name,
+      currentUserId: admin.id,
+    }));
+    const when = (iso: string) => format(parseISO(iso), "dd MMM yyyy, HH:mm");
+    assert.ok(html.includes(`Report submitted by ZZ TEST Author ${run}`), html);
+    assert.ok(html.includes(when(opened.report.createdAt)), html);
+    assert.ok(html.includes(`ZZ TEST FixerA ${run}`), html);
+    assert.ok(html.includes(supplierName), html);
+    for (const comment of opened.comments) assert.ok(html.includes(when(comment.createdAt)), html);
+    // One's own comment still reads as one's own, with the name beside it.
+    const own = renderToStaticMarkup(React.createElement(FixActivityFeed, {
+      entries: opened.comments.map(rawCommentToActivityEntry),
+      currentUserId: fixerA.id,
+    }));
+    assert.ok(own.includes(`ZZ TEST FixerA ${run} (you)`), own);
   });
 
   console.log(`fix-module.check: ${checks} checks passed`);

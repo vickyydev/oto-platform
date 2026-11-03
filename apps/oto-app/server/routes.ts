@@ -192,7 +192,7 @@ import {
   wizardEmployeeEdits,
   type EmployeeParkGroupIdField,
 } from "./lib/employeeParkGroups";
-import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
+import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments, fixSupplierTokens } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
@@ -24954,18 +24954,30 @@ ${context}`;
         return res.status(404).json({ message: "Fix report not found" });
       }
 
-      // Enrich comments with author names
-      const enrichedComments = await Promise.all(
-        result.comments.map(async (comment) => {
-          let author: { id: string; fullName?: string | null; email: string } | null = null;
-          if (comment.authorUserId) {
-            const [u] = await db.select({ id: users.id, fullName: users.fullName, email: users.email })
-              .from(users).where(eq(users.id, comment.authorUserId)).limit(1);
-            if (u) author = u;
-          }
-          return { ...comment, author };
-        })
-      );
+      // The names the report's thread shows (SCRUM-641): who reported it, the
+      // staff author of each comment, and a supplier by the name on their link.
+      const authorIds = [...new Set([result.report.reportedBy, ...result.comments.map(c => c.authorUserId)])]
+        .filter((id): id is string => !!id);
+      const authorRows = await db.select({ id: users.id, fullName: users.fullName, email: users.email })
+        .from(users).where(inArray(users.id, authorIds));
+      const authors = new Map(authorRows.map(u => [u.id, u]));
+      const supplierIds = [...new Set(result.comments.map(c => c.supplierTokenId))]
+        .filter((id): id is string => !!id);
+      const supplierRows = supplierIds.length === 0 ? [] : await db
+        .select({ id: fixSupplierTokens.id, name: fixSupplierTokens.name })
+        .from(fixSupplierTokens)
+        .where(and(inArray(fixSupplierTokens.id, supplierIds), eq(fixSupplierTokens.tenantId, result.report.tenantId)));
+      const suppliers = new Map(supplierRows.map(s => [s.id, s]));
+      const enrichedComments = result.comments.map(comment => ({
+        ...comment,
+        author: comment.authorUserId ? authors.get(comment.authorUserId) ?? null : null,
+        supplierToken: comment.supplierTokenId ? suppliers.get(comment.supplierTokenId) ?? null : null,
+      }));
+      const reporterRow = authors.get(result.report.reportedBy);
+      const reporter = {
+        id: result.report.reportedBy,
+        name: reporterRow?.fullName || result.report.reportedByName || reporterRow?.email || null,
+      };
 
       // Attach department info + members if assigned
       let assignedDepartment: { id: string; name: string } | null = null;
@@ -25004,6 +25016,7 @@ ${context}`;
 
       res.json({
         ...result,
+        reporter,
         comments: enrichedComments,
         assignedDepartment,
         departmentMembers,

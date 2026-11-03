@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Wrench, CheckCircle, Clock, ArrowRight, MessageSquare } from "lucide-react";
-import { formatDistanceToNow, parseISO } from "date-fns";
+import { Wrench, ArrowRight, MessageSquare } from "lucide-react";
+import { format, parseISO } from "date-fns";
 
 export interface FixActivityEntry {
   id: string;
@@ -16,6 +16,8 @@ export interface FixActivityEntry {
 interface FixActivityFeedProps {
   entries: FixActivityEntry[];
   createdAt?: string;
+  /** Who reported it: the report's first row names them. */
+  reportedByName?: string | null;
   reportTitle?: string;
   currentUserId?: string;
 }
@@ -31,6 +33,11 @@ const STATUS_LABELS: Record<string, string> = {
   closed: "Closed",
   fixed: "Fixed",
 };
+
+/** The date and time a report or comment was written, in the viewer's clock. */
+export function formatFixDateTime(iso: string): string {
+  return format(parseISO(iso), "dd MMM yyyy, HH:mm");
+}
 
 function isStatusChangeMessage(message: string) {
   return message.startsWith("[status_change]");
@@ -59,6 +66,7 @@ function ActivityRow({
 }) {
   const isMe = entry.authorUserId && entry.authorUserId === currentUserId;
   const name = entry.author?.fullName || entry.author?.email || "System";
+  const shownName = isMe ? `${name} (you)` : name;
   const initials = name === "System" ? "SY" : name.split(" ").map((p: string) => p[0]).slice(0, 2).join("").toUpperCase();
 
   if (entry.type === "creation") {
@@ -68,9 +76,11 @@ function ActivityRow({
           <Wrench className="w-4 h-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0 pb-3 border-b border-muted last:border-0">
-          <p className="text-sm font-medium">Report submitted</p>
+          <p className="text-sm font-medium" data-testid="text-fix-submitted-by">
+            {entry.author?.fullName ? `Report submitted by ${entry.author.fullName}` : "Report submitted"}
+          </p>
           <p className="text-xs text-muted-foreground">
-            {entry.createdAt ? formatDistanceToNow(parseISO(entry.createdAt), { addSuffix: true }) : ""}
+            {entry.createdAt ? formatFixDateTime(entry.createdAt) : ""}
           </p>
         </div>
       </div>
@@ -86,12 +96,12 @@ function ActivityRow({
         </div>
         <div className="flex-1 min-w-0 pb-3 border-b border-muted last:border-0">
           <div className="flex items-center gap-1 flex-wrap text-sm">
-            <span className="font-medium">{isMe ? "You" : name}</span>
+            <span className="font-medium">{shownName}</span>
             <span className="text-muted-foreground">changed status to</span>
             <span className="font-semibold text-foreground">{parsed?.label || "updated"}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {formatDistanceToNow(parseISO(entry.createdAt), { addSuffix: true })}
+            {formatFixDateTime(entry.createdAt)}
           </p>
         </div>
       </div>
@@ -99,15 +109,15 @@ function ActivityRow({
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid={`fix-comment-${entry.id}`}>
       <Avatar className="w-8 h-8 shrink-0">
         <AvatarFallback className="text-xs bg-muted">{initials}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0 pb-3 border-b border-muted last:border-0">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-sm font-medium">{isMe ? "You" : name}</span>
+          <span className="text-sm font-medium">{shownName}</span>
           <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(parseISO(entry.createdAt), { addSuffix: true })}
+            {formatFixDateTime(entry.createdAt)}
           </span>
         </div>
         <p className="text-sm text-foreground/80 mt-0.5">{entry.message}</p>
@@ -119,7 +129,7 @@ function ActivityRow({
 export function FixActivityFeed({
   entries,
   createdAt,
-  reportTitle,
+  reportedByName,
   currentUserId,
 }: FixActivityFeedProps) {
   const allEntries: FixActivityEntry[] = [
@@ -130,6 +140,7 @@ export function FixActivityFeed({
             type: "creation" as const,
             message: "Report submitted",
             createdAt,
+            author: reportedByName ? { id: "", fullName: reportedByName, email: "" } : null,
           },
         ]
       : []),
@@ -166,6 +177,7 @@ export function rawCommentToActivityEntry(comment: {
   authorUserId?: string | null;
   author?: { id: string; fullName?: string | null; email: string } | null;
   authorType?: string;
+  supplierToken?: { id: string; name: string } | null;
 }): FixActivityEntry {
   const isStatusChange = isStatusChangeMessage(comment.message);
   return {
@@ -174,7 +186,10 @@ export function rawCommentToActivityEntry(comment: {
     message: comment.message,
     createdAt: comment.createdAt,
     authorUserId: comment.authorUserId,
-    author: comment.author,
+    // A supplier signs with the name on their link, and has no login.
+    author: comment.authorType === "supplier_token"
+      ? { id: comment.supplierToken?.id || "", fullName: comment.supplierToken?.name || "Supplier", email: "" }
+      : comment.author,
     authorType: comment.authorType,
   };
 }
