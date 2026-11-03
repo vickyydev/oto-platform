@@ -1,0 +1,101 @@
+{
+  "at": "2026-11-03T21:49:08.731Z",
+  "finalPhoneSource": "d1404fb0613418e81d6a03a4f6811af295c0a46e",
+  "frozenBaseSource": "2cc09fb05d7830e42b0bb6cf81778de72d1f82af",
+  "gates": [
+    {
+      "key": "types",
+      "sha": "2cc09fb05d7830e42b0bb6cf81778de72d1f82af",
+      "start": "2026-11-03T21:20:35.589Z",
+      "end": "2026-11-03T21:23:54.971Z",
+      "command": "pnpm typecheck; pnpm lint; pnpm api-types:check",
+      "log": "C:/oto-lanes/s739-full-types.log",
+      "exitCode": 0,
+      "signal": null,
+      "logBytes": 8476,
+      "logSha256": "13752e98ee49a8b4d9631a7c6108fd072ec576560599d29c03f9927b5a8c36a2"
+    },
+    {
+      "key": "tools",
+      "sha": "2cc09fb05d7830e42b0bb6cf81778de72d1f82af",
+      "start": "2026-11-03T21:27:30.788Z",
+      "end": "2026-11-03T21:27:33.747Z",
+      "command": "node scripts/check-no-mock-members.mjs; node --test scripts/inbox/whatsapp-history.test.mjs; node apps/oto-app/server/lib/telemetry/check-sync.mjs; for f in scripts/pi/*.sh; do bash -n \"$f\"; done; /c/oto-lanes/s713-shellcheck/shellcheck.exe --severity=error scripts/pi/*.sh",
+      "log": "C:/oto-lanes/s739-full-tools.log",
+      "exitCode": 0,
+      "signal": null,
+      "logBytes": 6350,
+      "logSha256": "a0abe9236c507bfe257c3f2b76b96bb5edc0630dd3769e3d6fd64bdc528be744"
+    },
+    {
+      "key": "build",
+      "sha": "2cc09fb05d7830e42b0bb6cf81778de72d1f82af",
+      "start": "2026-11-03T21:29:04.608Z",
+      "end": "2026-11-03T21:29:50.455Z",
+      "command": "pnpm build; pnpm --filter @oto/pos build:display; pnpm --filter @oto/box-agent build:runner",
+      "log": "C:/oto-lanes/s739-full-build.log",
+      "exitCode": 0,
+      "signal": null,
+      "logBytes": 12995,
+      "logSha256": "648f05207618ee9e914055f46b826436055aa46c68ba02068cabda27664322ef"
+    },
+    {
+      "key": "workspace",
+      "sha": "2cc09fb05d7830e42b0bb6cf81778de72d1f82af",
+      "start": "2026-11-03T21:20:35.567Z",
+      "end": "2026-11-03T21:42:41.409Z",
+      "command": "pnpm exec turbo run test --filter=\"!@oto/api\" --concurrency=1",
+      "log": "C:/oto-lanes/s739-full-workspace.log",
+      "exitCode": 0,
+      "signal": null,
+      "logBytes": 1080012,
+      "logSha256": "e7c3a1cf1f7766ba350fceecadc6e9ab4c82fcd412107c44d1c56ab1e96c6b53"
+    },
+    {
+      "key": "console",
+      "sha": "2cc09fb05d7830e42b0bb6cf81778de72d1f82af",
+      "start": "2026-11-03T21:31:09.845Z",
+      "end": "2026-11-03T21:38:58.518Z",
+      "command": "pnpm --filter @oto/api exec tsx C:/oto-lanes/s739-console-gate.mts",
+      "log": "C:/oto-lanes/s739-full-console.log",
+      "exitCode": 0,
+      "signal": null,
+      "logBytes": 66485,
+      "logSha256": "1e2cf056e587bf636b50934a62a88a3025867f55385650c8a34243038ef27233"
+    },
+    {
+      "key": "smoke",
+      "sha": "d1404fb0613418e81d6a03a4f6811af295c0a46e",
+      "start": "2026-11-03T21:38:10.412Z",
+      "end": "2026-11-03T21:41:09.360Z",
+      "command": "POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e",
+      "log": "C:/oto-lanes/s739-phone-full-smoke.log",
+      "exitCode": 0,
+      "signal": null,
+      "logBytes": 10346,
+      "logSha256": "f9708a9f89357f22388084be3cd5bb2fd45e9dbb93207e328622f9b02d2e94f8"
+    },
+    {
+      "sha": "d1404fb0613418e81d6a03a4f6811af295c0a46e",
+      "command": "pnpm --filter @oto/pos test",
+      "log": "C:/oto-lanes/s739-phone-final-pos.log",
+      "exitCode": 0,
+      "logBytes": 27604,
+      "logSha256": "f970d1a2fba1be9b0cd64a7765c3b96a48876ffb220f26df2c910bcabce1b9d0"
+    },
+    {
+      "sha": "d1404fb0613418e81d6a03a4f6811af295c0a46e",
+      "command": "PAYMENTS_SIMULATOR=on POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts",
+      "log": "C:/oto-lanes/s739-phone-final-dropoff.log",
+      "exitCode": 0,
+      "logBytes": 10032,
+      "logSha256": "d408a0b0ca538fd1d049c2ee0f9ba088a1838f079ae6f1c23eb7617976d82c88"
+    }
+  ],
+  "pending": [
+    "three full local API shards",
+    "full branch CI 41723536314",
+    "732 Deployed prerequisite",
+    "739 main landing, exact-source CI/live/staging proof and cleanup"
+  ]
+}
