@@ -21,11 +21,13 @@ import { MobileDropOffBoard } from './dropoff/MobileDropOffBoard';
 import { MobileMessaging } from './messaging/MobileMessaging';
 import { MobileStock } from './stock/MobileStock';
 import StationSetup from '@/pages/StationSetup';
+import MerchStation from '@/pages/MerchStation';
 import logoUrl from '@/assets/logo-oto.png';
 import { getTotalUnreadCount, UnreadBadge } from './messaging/messagingUtils';
 import {
   Ticket,
   GlassWater,
+  ShoppingBag,
   Baby,
   Users,
   ReceiptText,
@@ -38,6 +40,7 @@ import {
 const TABS = [
   { href: '/', label: 'Tickets', icon: Ticket, exact: true },
   { href: '/order-station', label: 'F&B', icon: GlassWater, exact: false },
+  { href: '/merch-station', label: 'Shop', icon: ShoppingBag, exact: false },
   { href: '/drop-off', label: 'Check-in', icon: Baby, exact: false },
   { href: '/parties', label: 'Events', icon: Users, exact: false },
   { href: '/history', label: 'History', icon: ReceiptText, exact: false },
@@ -91,7 +94,7 @@ function ComingSoon({ surface }: { surface: string }) {
 /**
  * Portrait phone shell for the mobile POS. Wraps all mobile routes with:
  *   - a compact top bar (logo · occupancy chip · operator badge + lock)
- *   - a bottom tab bar (Tickets live; all others are "coming soon" placeholders)
+ *   - a bottom tab bar for the selling and daily-work screens
  *
  * Sits inside the existing auth gate / provider tree so the operator session,
  * station profile, and contexts are shared across the breakpoint switch.
@@ -159,6 +162,7 @@ export function MobileShell() {
             path="/order-station"
             component={MobileOrderStation}
           />
+          <Route path="/merch-station" component={MerchStation} />
           <Route path="/drop-off" component={MobileDropOffBoard} />
           <Route
             path="/parties"
