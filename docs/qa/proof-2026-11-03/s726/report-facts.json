@@ -1,0 +1,24 @@
+{
+  "at": "2026-11-03T14:14:59.861Z",
+  "peak": {
+    "oto-pos-web-staging": {
+      "cpu": 7.3077664,
+      "memory": 22.901917388333025
+    },
+    "oto-api-staging": {
+      "cpu": 33.29733,
+      "memory": 20.796776282715268
+    },
+    "oto-db-staging": {
+      "cpu": 50.598330000000004,
+      "memory": 35.89096093679132
+    }
+  },
+  "normalP95": 128.874599999981,
+  "largestCleanPairs": 32,
+  "bend": null,
+  "soakSeconds": 7200.597,
+  "soakCash": 60,
+  "totalCash": 238,
+  "leaseRenewals": 451
+}

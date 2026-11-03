@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-03T14:16:01.917Z",
+  "openedAllFour": true,
+  "notes": "Opened the final generated proof card, full two-hour trend chart and both native staging screenshots. Text is readable, source and timestamps are visible on the card/chart, ZZ TEST item and matching cash/receipt are visible, no benefit QR or real-person data is shown. The native captures are from the end of the measured soak; the final card is after same-source cleanup deployment.",
+  "images": [
+    {
+      "file": "s726-staging-proof.png",
+      "sha256": "5446d1b6b14041bcf8b8469aaa06fb038298258089246076349c840ad34aa4ac"
+    },
+    {
+      "file": "s726-soak-trends.png",
+      "sha256": "1f5a73d022d9eb40b54fdfa41bb681043dcf8fd7994e688c739c62cf16879e75"
+    },
+    {
+      "file": "s726-native-till.png",
+      "sha256": "7a0fe8237bfeb5421e4123f7b2b4b81f29c4c13358e1ee3a1a03dfa6502cf8b6"
+    },
+    {
+      "file": "s726-native-display.png",
+      "sha256": "80f487229f19cd7a977a734a01dc3449927796e3f1a8e83457dcbac1c70c9c23"
+    }
+  ]
+}

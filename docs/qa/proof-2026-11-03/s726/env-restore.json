@@ -66,5 +66,7 @@
   ],
   "countAfter": 57,
   "otherValuesByteIdentical": true,
-  "deployId": "dep-dbkumptg1s2s73dqokng"
+  "deployId": "dep-dbkumptg1s2s73dqokng",
+  "liveAt": "2026-11-03T14:14:10.229232Z",
+  "healthCheckedAt": "2026-11-03T14:14:30.972Z"
 }
