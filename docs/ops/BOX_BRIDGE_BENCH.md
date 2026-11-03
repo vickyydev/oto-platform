@@ -50,6 +50,33 @@ Origin guards. Caddy publishes only `/box/v1/station/*`, never this page or the
 kiosk control routes. `--kiosk-url` stays exactly as configured until explicitly
 changed; installing a bridge does not change it.
 
+## Moving a customer display to this box
+
+Saving the bridge address moves the till publisher to the box immediately after
+the next station pick. A display still on the web POS address keeps reading the
+platform and will stop following that till. The Console warns before saving.
+At an idle counter, switch the kiosk to the box-local display address above,
+pair it online, wait for its credential to reach the box, re-pick the station,
+then lock/unlock once. Verify the connected display and both directions before
+serving a family. Do not save a real address during software-only proof.
+
+The local display retries temporary startup/network failures automatically;
+only a real build mismatch asks for Reload. Its paired credential must remain
+in the browser profile. A cold till page can restore a previously prepared
+station and public catalogue to the password screen; this saves no password,
+session credential, permission grant, customer or open order. Clearing site
+storage removes that preparation and requires an online sign-in and station pick.
+
+The current till no longer calls cloud `/auth/unlock-offline`. That deprecated
+endpoint is retained for compatibility with previously built virtual-box clients:
+it requires a live platform session and its selected station, uses the same
+reviewed password/token/revocation rules and shared cooldown, and atomically
+audits unlocking that platform session. It cannot work without API access and
+is not a second recovery route for an unprepared till. Keeping those checks
+avoids stranding a still-running older client during rollout; no new caller is
+introduced. Removing the compatibility endpoint can follow a separately
+verified old-client retirement. Its existing adversarial tests remain in place.
+
 ## Prepare the owner's chosen DNS provider
 
 1. The owner chooses the DNS zone and a unique box hostname. Reserve the box's

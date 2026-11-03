@@ -21,7 +21,7 @@ function unavailable(res: ServerResponse): void {
   if (res.destroyed || res.writableEnded) return;
   if (res.headersSent) { res.destroy(); return; }
   // This is an API failure, not a lost internet connection. In lane.ts a
-  // 502 remains ApiError; only a real network failure/forced-offline switches.
+  // This exact 502 envelope can select a configured local box. Other refusals stand.
   res.writeHead(502, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
   res.end(JSON.stringify({ error: { code: 'UPSTREAM_UNAVAILABLE',
     message: 'The platform is temporarily unavailable. Please try again.' } }));

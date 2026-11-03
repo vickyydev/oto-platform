@@ -80,20 +80,6 @@ export const authApi = {
   /** Inactivity lock: the session survives, business routes refuse (S2-01a). */
   lock: () => api.post<{ locked: true }>('/auth/lock'),
   unlock: (password: string) => api.post<{ locked: false }>('/auth/unlock', { password }),
-  /**
-   * Unlock with no internet (S2-06): the box checks the shift token against
-   * its cached signing key and deny-list, and the password against its cached
-   * hash. `cachedAt` is how old that copy is, which the banner shows — an
-   * unlock allowed by a two-day-old cache is a different statement from one
-   * allowed by a cache taken ten minutes ago.
-   */
-  unlockOffline: (token: string | null, password: string) =>
-    api.post<{
-      locked: false;
-      authMethod: string;
-      cachedAt: string | null;
-      cacheAgeSeconds: number | null;
-    }>('/auth/unlock-offline', token ? { token, password } : { password }),
   /** Mint a shift token for the station this session already holds. */
   staffToken: () =>
     api.post<{ token: string; jti: string; expiresAt: string; stationId: string }>(

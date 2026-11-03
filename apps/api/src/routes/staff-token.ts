@@ -152,6 +152,7 @@ export async function staffTokenRoutes(app: App): Promise<void> {
     {
       config: { auth: 'session' },
       schema: {
+        deprecated: true,
         description:
           'Unlock from the cached staff and revocation data through the legacy cloud route, which still requires API access. The local box bridge uses the same verifier independently. A valid token and password record offline_token. With STAFF_OFFLINE_SIGN_IN enabled, no token or otherwise valid expiry may record offline_sign_in after recent-recognition and complete, fresh revocation checks. Forged, foreign and ended-shift tokens refuse. Five wrong passwords share the online cooldown.',
         body: z.object({
