@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-03T18:56:22.980Z",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "phase": "read-only census preflight",
+  "outcome": "stopped before any remote request",
+  "reason": "Shared job helper referenced an older worktree without RENDER_API_KEY",
+  "fix": "Dedicated helper copy reads the existing original-repository credentials; shared helper unchanged",
+  "stagingMutation": false
+}

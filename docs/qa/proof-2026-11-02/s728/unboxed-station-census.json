@@ -1,0 +1,34 @@
+{
+  "jobId": "job-dbl2sm942hec73dmpulg",
+  "source": "00f414ba0f78d91b0e87813924c3c53a64dddf5b",
+  "startedAt": "2026-11-03T18:56:24.303Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s728_unboxed_census",
+    "at": "2026-11-03T18:57:21.654Z",
+    "environment": "staging",
+    "readOnly": true,
+    "rows": [
+      {
+        "kind": "booth",
+        "active": 5,
+        "unboxed": 0,
+        "unboxed_non_test": 0
+      },
+      {
+        "kind": "kiosk",
+        "active": 1,
+        "unboxed": 0,
+        "unboxed_non_test": 0
+      },
+      {
+        "kind": "till",
+        "active": 12,
+        "unboxed": 0,
+        "unboxed_non_test": 0
+      }
+    ],
+    "productionCountVerified": false,
+    "passed": true
+  }
+}

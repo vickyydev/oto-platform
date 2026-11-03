@@ -1,6 +1,6 @@
 # SCRUM-728 release evidence
 
-## Testing: exact-SHA CI passed, deployment underway
+## Testing: exact source live, isolated proof settings deploying
 
 Source `00f414ba0f78d91b0e87813924c3c53a64dddf5b` is on main and backed
 up on `lane/codex-box-outage-20261104-r9`.
@@ -11,7 +11,11 @@ and migration steps were path-gated; full step outcomes are in [ci.json](ci.json
 All local gates and the complete branch CI also passed.
 SCRUM-727 is Deployed with [its separate evidence](../s727/README.md).
 SCRUM-728 retains the source, API, proof and cleanup slot released by 730.
-No SCRUM-728 staging fixture, restart or setting change has occurred yet.
+API, POS web and Console are live and healthy on that SHA. The temporary
+localhost proof zone, explicit loopback permission and password-only test
+policy are recorded in [settings-enable.json](settings-enable.json); all
+unrelated setting fingerprints match the baseline. Same-source API/POS
+deployments are applying them. No proof fixture exists yet.
 
 ## Behavior and review
 
@@ -27,7 +31,7 @@ No SCRUM-728 staging fixture, restart or setting change has occurred yet.
 | Returning box link races the browser's API path and lock | Recovery requires both the box and a bounded browser `/me` read with an unlocked session. Unlock checks recovery immediately; a cold prepared page hydrates authoritative permissions and station selection after online unlock. | `s728-lane-recovery`, auth lifecycle and counter-switch review; native online recovery. OD-4 receipt-collision behavior is unchanged. |
 | Remembered unboxed station returns 409 | Both unboxed/not-ready refusals clear the remembered choice and display the picker and setup explanation. They do not activate the outage lane. | Entire lane suite, including both explicit 409 cases. A production census is still a prerequisite before production rollout. |
 | Legacy cloud unlock fallback | The current POS caller is removed. The deprecated API endpoint remains for previously built virtual-box clients during rollout, retaining session/selected-station guards, reviewed verifier, shared cooldown and atomic audit. It cannot bypass an unavailable API. | Existing endpoint guards remain; seam inventory records the compatibility reason. Remove only after old clients retire. |
-| Stale operating notes | Forwarder comment, loopback guidance, live-origin/handoff counts and deploy/wait rollback instructions now match the system. | Whole lint/contracts, checked scripts and read-only settings comparison. No Render setting was changed. |
+| Stale operating notes | Forwarder comment, loopback guidance, live-origin/handoff counts and deploy/wait rollback instructions now match the system. | Whole lint/contracts, checked scripts and read-only settings comparison. Temporary proof settings are recorded separately. |
 
 ## Completed local browser proof
 
@@ -135,3 +139,11 @@ acceptance are separate. The signing key stays, BOX_AGENT_TEST_SLOT stays
 untouched, and OD-4 plus open Q727-1/Q727-2 retain their existing behavior.
 Physical boxes need the corresponding agent release; these checks do not
 install anything on a park device.
+
+The read-only [staging census](unboxed-station-census.json) found all five
+active booths, one kiosk and twelve tills boxed. No production census is
+claimed. The first census attempt stopped before any remote request because
+a shared helper referenced an older worktree without credentials; the dedicated
+helper copy uses the original repository environment. The shared helper is
+unchanged. Reconstructable [staging helper snapshots](staging-harness/manifest.json)
+preserve the exact executed bytes, including their original line endings.
