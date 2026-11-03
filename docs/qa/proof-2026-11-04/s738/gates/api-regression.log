@@ -1,0 +1,225 @@
+The files belonging to this database system will be owned by user "waqar".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+
+fixing permissions on existing directory C:/Users/waqar/AppData/Local/Temp/oto-pg-w2boT1 ...
+ok
+
+creating subdirectories ...
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default max_connections ...
+100
+selecting default shared_buffers ...
+128MB
+selecting default time zone ...
+Asia/Bangkok
+creating configuration files ...
+ok
+running bootstrap script ...
+ok
+
+performing post-bootstrap initialization ...
+ok
+syncing data to disk ...
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\oto^-lanes^\codex^-tender^-display^-20261104^\node^_modules^\^.pnpm^\^@embedded^-postgres^+windows^-x64^@16^.14^.0^-beta^.17^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\waqar^\AppData^\Local^\Temp^\oto^-pg^-w2boT1^" -l logfile start
+
+
+2026-11-04 04:58:46.938 +07 [102392] LOG:  starting PostgreSQL 16.14, compiled by Visual C++ build 1944, 64-bit
+
+2026-11-04 04:58:46.942 +07 [102392] LOG:  listening on IPv6 address "::1", port 55829
+
+2026-11-04 04:58:46.942 +07 [102392] LOG:  listening on IPv4 address "127.0.0.1", port 55829
+
+2026-11-04 04:58:46.987 +07 [58236] LOG:  database system was shut down at 2026-11-04 04:58:43 +07
+
+2026-11-04 04:58:47.013 +07 [102392] LOG:  database system is ready to accept connections
+
+2026-11-04 04:58:51.961 +07 [9988] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+
+ RUN  v3.2.7 C:/oto-lanes/codex-tender-display-20261104/apps/api
+
+2026-11-04 04:59:09.709 +07 [108620] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/station-session-api.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/station-session-api.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/station-session-api.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/station-session-api.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:33304) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 04:59:16.612 +07 [21248] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/station-session-api.test.ts > paired display transport uses the redacted station document (SCRUM-201)
+Suite registry: registered 6 app(s).
+
+stdout | test/station-session-api.test.ts > paired display transport uses the redacted station document (SCRUM-201)
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/station-session-api.test.ts > paired display transport uses the redacted station document (SCRUM-201)
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/station-session-api.test.ts > paired display transport uses the redacted station document (SCRUM-201)
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:33304) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(node:33304) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+2026-11-04 04:59:19.581 +07 [105976] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 04:59:22.546 +07 [105976] LOG:  checkpoint complete: wrote 4135 buffers (25.2%); 0 WAL file(s) added, 0 removed, 3 recycled; write=0.479 s, sync=2.451 s, total=2.965 s; sync files=3934, longest=0.005 s, average=0.001 s; distance=48418 kB, estimate=48418 kB; lsn=0/44C08E0, redo lsn=0/44C08A8
+
+(node:33304) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+2026-11-04 04:59:32.529 +07 [98956] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/station-session-api.test.ts > forced-offline cloud trading is fenced by the selected virtual station (SCRUM-285)
+Suite registry: registered 6 app(s).
+
+stdout | test/station-session-api.test.ts > forced-offline cloud trading is fenced by the selected virtual station (SCRUM-285)
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/station-session-api.test.ts > forced-offline cloud trading is fenced by the selected virtual station (SCRUM-285)
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/station-session-api.test.ts > forced-offline cloud trading is fenced by the selected virtual station (SCRUM-285)
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:33304) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+2026-11-04 04:59:34.646 +07 [105976] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 04:59:34.774 +07 [105976] LOG:  checkpoint complete: wrote 255 buffers (1.6%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.071 s, sync=0.046 s, total=0.128 s; sync files=121, longest=0.002 s, average=0.001 s; distance=16784 kB, estimate=45254 kB; lsn=0/5524928, redo lsn=0/55248F0
+
+2026-11-04 04:59:35.093 +07 [105976] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 04:59:35.101 +07 [105976] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.001 s, total=0.008 s; sync files=2, longest=0.001 s, average=0.001 s; distance=1 kB, estimate=40729 kB; lsn=0/5524F40, redo lsn=0/5524F08
+
+ ✓ test/station-session-api.test.ts (53 tests) 30019ms
+   ✓ the virtual box keeps its queue across a restart (S2-05) > remembers the offline flag and three queued facts through a new api  4050ms
+2026-11-04 04:59:45.079 +07 [97180] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/scrum-732-routed-tenders.test.ts
+Suite registry: registered 6 app(s).
+
+stdout | test/scrum-732-routed-tenders.test.ts
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/scrum-732-routed-tenders.test.ts
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/scrum-732-routed-tenders.test.ts
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:66572) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 04:59:55.879 +07 [105976] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 04:59:55.899 +07 [105976] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.006 s, sync=0.004 s, total=0.021 s; sync files=4, longest=0.002 s, average=0.001 s; distance=27040 kB, estimate=39360 kB; lsn=0/6F8CFF8, redo lsn=0/6F8CFC0
+
+ ✓ test/scrum-732-routed-tenders.test.ts (38 tests) 16299ms
+   ✓ an event pass paid by QR > the gateway confirms: paid, one sale closed and numbered, the child on the roster, the OTO App told, with no till in the path  641ms
+   ✓ an event pass paid by card > goes to the terminal, and the child lands with the close that follows the approval  797ms
+   ✓ an event pass paid by card > approved with the till gone: the sale closes and the child lands, and a till that comes back finds it done  310ms
+   ✓ a party's balance paid by card > goes to the terminal; approved, it is on the bill, with no sale behind it  749ms
+2026-11-04 05:00:05.874 +07 [4368] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/s720-display-record.test.ts > SCRUM-720 the last-answered record
+Suite registry: registered 6 app(s).
+
+stdout | test/s720-display-record.test.ts > SCRUM-720 the last-answered record
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/s720-display-record.test.ts > SCRUM-720 the last-answered record
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s720-display-record.test.ts > SCRUM-720 the last-answered record
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:25556) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 05:00:20.385 +07 [105976] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 05:00:20.466 +07 [105976] LOG:  checkpoint complete: wrote 793 buffers (4.8%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.032 s, sync=0.035 s, total=0.082 s; sync files=50, longest=0.002 s, average=0.001 s; distance=19738 kB, estimate=37398 kB; lsn=0/82D3B20, redo lsn=0/82D3AE8
+
+ ✓ test/s720-display-record.test.ts (8 tests) 20621ms
+   ✓ SCRUM-720 the last-answered record > follows what the stream delivered, with no poll to correct it  5147ms
+   ✓ SCRUM-720 the last-answered record > never records for a display revoked while its stream was open  7044ms
+2026-11-04 05:00:30.988 +07 [37380] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/s738-tender-display-review.test.ts > SCRUM-738 separate tender display adversarial review
+Suite registry: registered 6 app(s).
+
+stdout | test/s738-tender-display-review.test.ts > SCRUM-738 separate tender display adversarial review
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/s738-tender-display-review.test.ts > SCRUM-738 separate tender display adversarial review
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s738-tender-display-review.test.ts > SCRUM-738 separate tender display adversarial review
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:98512) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 05:00:33.276 +07 [105976] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 05:00:33.294 +07 [105976] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.005 s, sync=0.003 s, total=0.019 s; sync files=4, longest=0.001 s, average=0.001 s; distance=16388 kB, estimate=35297 kB; lsn=0/92D4DD0, redo lsn=0/92D4D98
+
+ ✓ test/s738-tender-display-review.test.ts (3 tests) 9897ms
+2026-11-04 05:00:40.709 +07 [107336] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+
+
+stdout | test/s710-display-channel-review.test.ts > SCRUM-710 display channel adversarial review
+Suite registry: registered 6 app(s).
+
+stdout | test/s710-display-channel-review.test.ts > SCRUM-710 display channel adversarial review
+Settings catalogue: 8 inserted, 0 updated.
+
+stdout | test/s710-display-channel-review.test.ts > SCRUM-710 display channel adversarial review
+Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.
+
+stdout | test/s710-display-channel-review.test.ts > SCRUM-710 display channel adversarial review
+Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park's printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.
+
+(node:54616) [FSTDEP023] FastifyDeprecation: disableRequestLogging option is deprecated. Use the logController option with disableRequestLogging or isLogDisabled override instead. The disableRequestLogging top-level option will be removed in `fastify@6`.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-11-04 05:00:47.761 +07 [105976] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 05:00:47.783 +07 [105976] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.006 s, sync=0.003 s, total=0.023 s; sync files=4, longest=0.001 s, average=0.001 s; distance=16619 kB, estimate=33429 kB; lsn=0/A30FA30, redo lsn=0/A30F9F8
+
+ ✓ test/s710-display-channel-review.test.ts (2 tests) 11742ms
+   ✓ SCRUM-710 display channel adversarial review > HIGH: connect and each publish expose exactly display/session, never private fields or the staff lease  5073ms
+ ✓ test/s720-display-channel-rate.test.ts (6 tests) 14ms
+
+ Test Files  6 passed (6)
+      Tests  110 passed (110)
+   Start at  04:58:52
+   Duration  117.01s (transform 6.68s, setup 0ms, collect 26.54s, tests 88.59s, environment 1ms, prepare 715ms)
+
+2026-11-04 05:00:50.117 +07 [105976] LOG:  checkpoint starting: immediate force wait
+
+2026-11-04 05:00:50.129 +07 [105976] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.002 s, total=0.013 s; sync files=2, longest=0.001 s, average=0.001 s; distance=2 kB, estimate=30086 kB; lsn=0/A310290, redo lsn=0/A310258

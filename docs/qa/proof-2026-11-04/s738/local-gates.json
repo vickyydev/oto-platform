@@ -1,0 +1,382 @@
+{
+  "recordedAt": "2026-11-03T22:34:36.412Z",
+  "source": "40dfe61052e6802ad1e5145752d24a172c8c8ba7",
+  "sourceFiles": [
+    {
+      "path": "apps/api/test/s738-tender-display-review.test.ts",
+      "sha256": "5d3006c44f0b73b7e4ea6e565f82a7f8a313e180193f36cd5b1e32936134e16d"
+    },
+    {
+      "path": "apps/pos/src/components/mobile/parties/MobileParties.tsx",
+      "sha256": "2084662fc00651c169e38b15ce74dacca795fd671cf8c77c64c3ec2d1bfc1fc2"
+    },
+    {
+      "path": "apps/pos/src/components/mobile/parties/MobilePartyPayment.tsx",
+      "sha256": "f38f8f0cdb692a0021f4efe534edbd634dc6fb3fcffb14ab819171a76c720e5b"
+    },
+    {
+      "path": "apps/pos/src/components/parties/AddAttendeeModal.tsx",
+      "sha256": "3449b1d422fd1813c5b444a23430db3ed3ed417d7390e4d048541d1fc277e6d6"
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyBalanceModal.tsx",
+      "sha256": "f5b61c9a6aa2b4fe0932aefc49ca43b324002ce0f38a5c3ccbdc0742dc171214"
+    },
+    {
+      "path": "apps/pos/src/components/parties/PartyDetail.tsx",
+      "sha256": "d6c75500065f1eb47135ce1637f81dea84e9a6b67f22f261129da3444abe2e9a"
+    },
+    {
+      "path": "apps/pos/src/components/shared/TenderCustomerDisplay.tsx",
+      "sha256": "963ba4b6f3390f7c0e6e6d4225e77f3e7001cd7a422cba1eb6a0117aa38bd259"
+    },
+    {
+      "path": "apps/pos/src/lib/displaySession.ts",
+      "sha256": "21d9df6b21b0dcf1995f50be0fa24a92b88a43d87eabed682e6e8d8444c7841a"
+    },
+    {
+      "path": "apps/pos/src/lib/tenderDisplay.ts",
+      "sha256": "d4bd51ec187ffbcfa1afc0825c5c1c0de5bc8200c39def6514eceda83fa4cded"
+    },
+    {
+      "path": "apps/pos/src/pages/Display.tsx",
+      "sha256": "bde125b5383e833302fafb6a367c214e14ce74c042be3dbf2554d83254ccd817"
+    },
+    {
+      "path": "apps/pos/src/pages/DropOff.tsx",
+      "sha256": "cf2e34b47a29625ebe6bb62ab3faf93f62516acea11a6bad9f0bd3ff41e5cac8"
+    },
+    {
+      "path": "apps/pos/src/pages/Till.tsx",
+      "sha256": "fb5ecc2ed227c84cdba760aa90844948c9fd08686346c841c511c8a20ece78c3"
+    },
+    {
+      "path": "apps/pos/test/s720-display.test.ts",
+      "sha256": "9ae5927d1496308af0c00f595e5087a70cd881702f0052d3407e51bff1c22026"
+    },
+    {
+      "path": "apps/pos/test/s720-publisher.test.ts",
+      "sha256": "e743002e0581e5dffe085534cff436200bd24bb12af082abd7f45ae919f67a87"
+    },
+    {
+      "path": "apps/pos/test/s738-tender-display.test.ts",
+      "sha256": "2d202d9193743607fb62edf92295d1a6a6f183003aa91f3d9b003ab6fe18b371"
+    },
+    {
+      "path": "packages/api-types/openapi.json",
+      "sha256": "38204a33d05eae3af251fb7b1e4aff43e7a8325999099d576ab1e1c7254e6889"
+    },
+    {
+      "path": "packages/api-types/src/openapi.ts",
+      "sha256": "e71eee4cfd968c2ff817c53ba9de4aecdbeda38e7ec0f25a86134ee0ee71f2ad"
+    },
+    {
+      "path": "packages/box-agent/src/station-session.ts",
+      "sha256": "76e1ea0ac6774984f4b8c3b8a99bb031020da274b2a14398980f570e6a9ce4e1"
+    },
+    {
+      "path": "packages/shared/src/display-presentation.ts",
+      "sha256": "fe4e17d22cbeb513e681a43910a2cb0e9bebdb039ff641a006f073cd95eba84f"
+    },
+    {
+      "path": "packages/shared/src/display-tender.ts",
+      "sha256": "fce5e782a39a8bb020dc3ebaebe172bb59c23e53efaa1db237db092a6a6d24e5"
+    },
+    {
+      "path": "packages/shared/src/index.ts",
+      "sha256": "ed84bdfaf7007439a838b75f609daccac853807511a3d8934d3ee10d9ca267a3"
+    }
+  ],
+  "logs": [
+    {
+      "file": "gates/workspace-full.log",
+      "exitCode": 0,
+      "rawSha256": "3c1171faee94d5ee39b4d38a0e5d5906368658d5b42c0d2485d980b060152b78",
+      "storedSha256": "4e41c6891727826556566d5ebba52e7f9f481d9c8584305c5150eba2613a1579"
+    },
+    {
+      "file": "gates/api-regression.log",
+      "exitCode": 0,
+      "rawSha256": "d129f3fb7f90ccbf54a7773f4d01e0993866be36a8412c8aeb3422fff19d70f3",
+      "storedSha256": "e783aefb9352939eca84dd7b0446c007ab1cca0f82bf8f538cf14d60e6a29a67"
+    },
+    {
+      "file": "gates/api-after2.log",
+      "exitCode": 0,
+      "rawSha256": "3ed7d91e312e4dc4d20b6d588c75171ed52721793633cfe74caa6ca45a424525",
+      "storedSha256": "ca0366a1f7c50f600e2ff8c8786bcbf68817adc865d6baf156f3fa4a879a3ee7"
+    },
+    {
+      "file": "gates/focused-final2.log",
+      "exitCode": 0,
+      "rawSha256": "23afa557ee8bf19eafa4471f79d329b0bff7b36b5ad6b8b5ff64f26b3efb4cff",
+      "storedSha256": "3e36860587d79453d5e5e1876650adedaad6aec3857aef83ce66f88b97317751"
+    },
+    {
+      "file": "gates/pos-build-final.log",
+      "exitCode": 0,
+      "rawSha256": "1e41ac860f768ef770e298ddfe90d7d9f8cf378480ca703cbd67964204b37ee6",
+      "storedSha256": "ca4e3703abc20aeff9c08e5e5d7f9c300bd49231045a64ef598225bc8ef50dca"
+    },
+    {
+      "file": "gates/pos-typecheck3.log",
+      "exitCode": 0,
+      "rawSha256": "090f2b59d8bf7da91472435e51d3de1953f6a2895dc68a6a0cd5c7182aecab0d",
+      "storedSha256": "9d38420bc3beaf9bddc58036443f5f2041204ed4e8c3d9c70b33ca8c564f82bf"
+    },
+    {
+      "file": "gates/api-typecheck.log",
+      "exitCode": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "gates/box-typecheck2.log",
+      "exitCode": 0,
+      "rawSha256": "f7b56d03955dc672bb43a092eb960bcf41d10d1c50b150d465ddc153dda77c79",
+      "storedSha256": "29bc206d782a42b22fdc820ff7d70135e573b410b55b8ad3e823ec5a5736911a"
+    },
+    {
+      "file": "gates/shared-typecheck2.log",
+      "exitCode": 0,
+      "rawSha256": "ec21f08787e18be7b7ceadfbc210082eae061bdd443551c23903f9ced5cdc0c4",
+      "storedSha256": "538edd1765030297b96404c3de89906dfe65e06133fe1ea47d43918e90bdb9ec"
+    },
+    {
+      "file": "gates/api-types-check.log",
+      "exitCode": 0,
+      "rawSha256": "b96a4393bef10992d60f9d05422444da10a0cfc4984285efc138f7502fa0798e",
+      "storedSha256": "b96a4393bef10992d60f9d05422444da10a0cfc4984285efc138f7502fa0798e"
+    },
+    {
+      "file": "gates/eslint.log",
+      "exitCode": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "gates/lint-final.log",
+      "exitCode": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "fullLocalApiBattery": "running; no pass claimed",
+  "branchCi": {
+    "run": 41726625007,
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": 6
+  },
+  "native": {
+    "run": "mw19gyqf",
+    "cases": [
+      {
+        "label": "till-pass",
+        "attemptId": "01a1a389-04fa-772c-b08b-54256098d3c0",
+        "saleId": "01a1a389-043c-737e-a0d9-112ec8100e74",
+        "pendingStage": "payment",
+        "restoredStage": "identify",
+        "sameLease": true,
+        "paidAt": "2026-11-03T22:30:30.458Z"
+      },
+      {
+        "label": "party-balance",
+        "attemptId": "01a1a389-134c-7fba-8944-3e3cd2077afd",
+        "saleId": null,
+        "pendingStage": "payment",
+        "restoredStage": "welcome",
+        "sameLease": true,
+        "paidAt": "2026-11-03T22:30:34.161Z"
+      },
+      {
+        "label": "dropoff-pass",
+        "attemptId": "01a1a389-2036-762c-8d5f-ccb623fcfb65",
+        "saleId": "01a1a389-1fe5-7373-acfd-3416b6ca5cc8",
+        "pendingStage": "payment",
+        "restoredStage": "welcome",
+        "sameLease": true,
+        "paidAt": "2026-11-03T22:30:37.145Z"
+      },
+      {
+        "label": "mobile-party-balance",
+        "attemptId": "01a1a389-2a5b-7916-8550-ead5e3d08cc0",
+        "saleId": null,
+        "pendingStage": "payment",
+        "restoredStage": "welcome",
+        "sameLease": true,
+        "paidAt": "2026-11-03T22:30:40.109Z"
+      }
+    ],
+    "readback": {
+      "at": "2026-11-03T22:30:42.641Z",
+      "counts": {
+        "sales": 2,
+        "party_payments": 2,
+        "remaining_lease": null
+      },
+      "smsSent": 0
+    },
+    "cleanup": {
+      "at": "2026-11-03T22:30:44.224Z",
+      "dropped": true
+    },
+    "images": [
+      {
+        "file": "local/mw19gyqf/till-pass-pending-display.png",
+        "sha256": "3a744fcb020d84177b8f0de3882897933d846dafca5ce350e1f49b2261742529",
+        "opened": true
+      },
+      {
+        "file": "local/mw19gyqf/till-pass-pending-staff.png",
+        "sha256": "083d1653094f4f8f82403e2f19005925f815909bebf68f62d46be58acd8953f7",
+        "opened": false
+      },
+      {
+        "file": "local/mw19gyqf/till-pass-restored-display.png",
+        "sha256": "a69bc01103c6d4677096b4eb563156278d459c9894905c9f5d2f14b09585f114",
+        "opened": true
+      },
+      {
+        "file": "local/mw19gyqf/party-balance-pending-display.png",
+        "sha256": "7e238032e226e723719d8ef44ebf9f2d6e3e11e79afa82f6fb552ddb28c77e12",
+        "opened": true
+      },
+      {
+        "file": "local/mw19gyqf/party-balance-pending-staff.png",
+        "sha256": "2912c4fc8ef72b1d779b9d8e6b34daec8e4b3e8c431275664e37d6474aff8faf",
+        "opened": false
+      },
+      {
+        "file": "local/mw19gyqf/party-balance-restored-display.png",
+        "sha256": "0f27a43936af981e966653993de7f6196ae93377da11fb20b3663952b89e3814",
+        "opened": false
+      },
+      {
+        "file": "local/mw19gyqf/dropoff-pass-pending-display.png",
+        "sha256": "9ef2e423f5b6c5b3586aea9f56d244fc80b114f296c2d277a39537d63de44962",
+        "opened": true
+      },
+      {
+        "file": "local/mw19gyqf/dropoff-pass-pending-staff.png",
+        "sha256": "051e174bd5eca8ec9321c570a5a58600ac127eb832ac37e1ace215efe1c2d030",
+        "opened": false
+      },
+      {
+        "file": "local/mw19gyqf/dropoff-pass-restored-display.png",
+        "sha256": "0f27a43936af981e966653993de7f6196ae93377da11fb20b3663952b89e3814",
+        "opened": false
+      },
+      {
+        "file": "local/mw19gyqf/mobile-party-balance-pending-display.png",
+        "sha256": "50e03be26899756c9a8fd4616105c740b03da9c5a45b76fe613effb17f737073",
+        "opened": true
+      },
+      {
+        "file": "local/mw19gyqf/mobile-party-balance-pending-staff.png",
+        "sha256": "8b75b086c567711b691a4cc5275da47b33840a462fde737eea2ea6085826e76a",
+        "opened": false
+      },
+      {
+        "file": "local/mw19gyqf/mobile-party-balance-restored-display.png",
+        "sha256": "0f27a43936af981e966653993de7f6196ae93377da11fb20b3663952b89e3814",
+        "opened": false
+      },
+      {
+        "file": "local/mw19gyqf/signed-out-staff.png",
+        "sha256": "45fe700951a98927c77d848866df30174719dd74f7f2d926cf96c048cfb6904c",
+        "opened": true
+      },
+      {
+        "file": "local/mw19gyqf/signed-out-display.png",
+        "sha256": "a69bc01103c6d4677096b4eb563156278d459c9894905c9f5d2f14b09585f114",
+        "opened": false
+      }
+    ]
+  },
+  "earlierHarnessRuns": [
+    {
+      "run": "mw18ny2h",
+      "failure": null,
+      "cases": 0,
+      "dbDropped": true
+    },
+    {
+      "run": "mw18uxff",
+      "failure": {
+        "phase": "ticket pass",
+        "name": "TimeoutError",
+        "message": "locator.click: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Continue to payment', exact: true })\u001b[22m\n"
+      },
+      "cases": 0,
+      "dbDropped": true
+    },
+    {
+      "run": "mw18whhs",
+      "failure": {
+        "phase": "ticket pass",
+        "name": "TimeoutError",
+        "message": "locator.click: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'PromptPay', exact: true })\u001b[22m\n"
+      },
+      "cases": 0,
+      "dbDropped": true
+    },
+    {
+      "run": "mw18y319",
+      "failure": {
+        "phase": "ticket pass",
+        "name": "AssertionError",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ {\n+   amountSatang: 0,\n+   expiresAt: null,\n+   offline: false,\n+   online: true,\n+   qrImageUrl: null,\n+   qrPayload: null,\n+   saleId: null,\n+   status: 'idle'\n+ }\n- null\n"
+      },
+      "cases": 0,
+      "dbDropped": true
+    },
+    {
+      "run": "mw18zbxi",
+      "failure": null,
+      "cases": 2,
+      "dbDropped": true
+    },
+    {
+      "run": "mw1915jo",
+      "failure": {
+        "phase": "drop-off event pass",
+        "name": "Error",
+        "message": "locator.click: Error: strict mode violation: getByRole('button', { name: 'Events', exact: true }) resolved to 2 elements:\n    1) <button class=\"shrink-0 whitespace-nowrap rounded-md px-3 h-9 flex items-center gap-1.5 text-sm font-semibold transition-colors text-muted-foreground hover:text-foreground\">…</button> aka getByRole('link', { name: 'Events' }).getByRole('button')\n    2) <button type=\"button\" class=\"h-9 px-5 rounded-md text-sm font-semibold transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground\">Events</button> aka getByRole('button', { name: 'Events' }).nth(1)\n\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Events', exact: true })\u001b[22m\n"
+      },
+      "cases": 2,
+      "dbDropped": true
+    },
+    {
+      "run": "mw192c0d",
+      "failure": null,
+      "cases": 4,
+      "dbDropped": true
+    },
+    {
+      "run": "mw194d0l",
+      "failure": null,
+      "cases": 4,
+      "dbDropped": true
+    },
+    {
+      "run": "mw199c73",
+      "failure": null,
+      "cases": 4,
+      "dbDropped": true
+    },
+    {
+      "run": "mw19bh9e",
+      "failure": null,
+      "cases": 4,
+      "dbDropped": true
+    },
+    {
+      "run": "mw19efww",
+      "failure": null,
+      "cases": 4,
+      "dbDropped": true
+    }
+  ],
+  "staging": "unproven; no fixtures or setting changes"
+}
