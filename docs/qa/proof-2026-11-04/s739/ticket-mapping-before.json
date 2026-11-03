@@ -1,0 +1,385 @@
+{
+  "at": "2026-11-03T20:59:08.454Z",
+  "reason": "Owner assigned 739 to the QR review and 738 to the separate display; the existing descriptions were reversed relative to that assignment and SCRUM-732 comment 13321.",
+  "issues": [
+    {
+      "key": "SCRUM-738",
+      "summary": "A ticket, F&B or shop sale whose QR payment needs a person has no button to answer it at the counter",
+      "description": {
+        "type": "doc",
+        "version": 1,
+        "content": [
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 3
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "What happens"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "A guest pays a ticket, F&B or shop sale by QR, and the payment needs a person to check it, for example because it arrived after the code closed or for a different amount. The till locks on that sale's payment step with no button to answer it. The critical alert is the only remaining sign. The Console has no place to answer it either."
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "inlineCard",
+                "attrs": {
+                  "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-732#icft=SCRUM-732"
+                }
+              },
+              {
+                "type": "text",
+                "text": " adds the answer for an event pass and a party balance. Other sales on the till do not have it yet."
+              }
+            ]
+          },
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 3
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Where it is"
+              }
+            ]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "apps/pos/src/lib/usePaymentStage.ts:613: the review button is offered only on the card terminal route."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "apps/pos/test/sale-writer.test.ts:946: a test pins this as current behaviour."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "apps/api/src/routes/payments.ts:421: the API route that records the answer already exists."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 3
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Plan"
+              }
+            ]
+          },
+          {
+            "type": "orderedList",
+            "attrs": {
+              "order": 1
+            },
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "After "
+                      },
+                      {
+                        "type": "inlineCard",
+                        "attrs": {
+                          "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-732#icft=SCRUM-732"
+                        }
+                      },
+                      {
+                        "type": "text",
+                        "text": " lands, offer its review step on the till's other sales: check the bank slip and the gateway's report, then Money taken or No money, with a note. It needs pos:payment:confirm."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Keep the rule that this payment is not released when the code expires."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Change the pinned test on purpose, since this is the behaviour moving."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Prove it on staging with the simulator and a ZZ TEST sale: a late QR, the locked step, the answer, and the sale finished once."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "SCRUM-739",
+      "summary": "A customer display on its own device does not show the QR code for an event pass or a party balance",
+      "description": {
+        "type": "doc",
+        "version": 1,
+        "content": [
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 3
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "What happens"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "After "
+              },
+              {
+                "type": "inlineCard",
+                "attrs": {
+                  "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-732#icft=SCRUM-732"
+                }
+              },
+              {
+                "type": "text",
+                "text": ", a pass or party balance paid by QR shows the real code on the staff panel and on the display pane beside the till, and no placeholder code appears anywhere. A customer display running as its own device, like the counter display in "
+              },
+              {
+                "type": "inlineCard",
+                "attrs": {
+                  "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-711#icft=SCRUM-711"
+                }
+              },
+              {
+                "type": "text",
+                "text": ", does not show that code yet. Tickets, F&B and shop sales already show it there."
+              }
+            ]
+          },
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 3
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Why it waits"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "The change belongs in apps/pos/src/lib/displaySession.ts, which "
+              },
+              {
+                "type": "inlineCard",
+                "attrs": {
+                  "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-727#icft=SCRUM-727"
+                }
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inlineCard",
+                "attrs": {
+                  "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-728#icft=SCRUM-728"
+                }
+              },
+              {
+                "type": "text",
+                "text": " are working in. The till holds the station's display connection and repeats only its own screen, so a second sender would be overwritten or would stop sign-out from releasing the display."
+              }
+            ]
+          },
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 3
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Plan"
+              }
+            ]
+          },
+          {
+            "type": "orderedList",
+            "attrs": {
+              "order": 1
+            },
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "After "
+                      },
+                      {
+                        "type": "inlineCard",
+                        "attrs": {
+                          "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-727#icft=SCRUM-727"
+                        }
+                      },
+                      {
+                        "type": "text",
+                        "text": " and "
+                      },
+                      {
+                        "type": "inlineCard",
+                        "attrs": {
+                          "url": "https://oto-suite-dev.atlassian.net/browse/SCRUM-728#icft=SCRUM-728"
+                        }
+                      },
+                      {
+                        "type": "text",
+                        "text": " land, let useStationDisplay hand a station's display over for the length of a tender and take it back afterwards."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Add a small screen description for a pass or party tender."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Connect Till, DropOff, PartyDetail and MobileParties to it. No new setting is needed."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Prove it on staging on a ZZ TEST display linked as its own device: the code shows, then paid, and sign-out still releases the display."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
