@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+export function databaseCheckProgram(proof){
+const spec={fixture:proof.fixture,staff:proof.staff,sale:proof.offlineSale,...proof.signingKey};
+assert.ok(proof.staff?.retiredAt);
+assert.ok(spec.sale?.id&&Number.isSafeInteger(spec.sale.grossSatang)&&spec.sale.grossSatang>0);
+for(const id of [spec.fixture.boxId,spec.fixture.stationId,spec.fixture.shiftId])assert.match(id,/^[a-f0-9-]{36}$/);
+assert.ok(spec.fixture.name.startsWith('ZZ TEST SCRUM-728 '));
+const program=`(async()=>{
+const assert=require('node:assert/strict');const {Client}=require('pg');const {createPublicKey,createHash}=require('node:crypto');
+const s=${JSON.stringify(spec)};const c=new Client({connectionString:process.env.DATABASE_URL});await c.connect();
+try{
+await c.query('BEGIN READ ONLY');await c.query("SET LOCAL statement_timeout='15s'");
+const keys=(await c.query("SELECT kid,public_key,active FROM core.signing_key WHERE purpose='staff_token' AND kid=$1",[s.kid])).rows;
+assert.equal(keys.length,1);assert.ok(keys[0].active);const fingerprint=createHash('sha256').update(createPublicKey(keys[0].public_key).export({type:'spki',format:'der'})).digest('hex');assert.equal(fingerprint,s.publicFingerprint);
+const box=(await c.query('SELECT name,status,archived_at IS NOT NULL AS archived,bridge_origin IS NULL AS bridge_cleared FROM core.box WHERE id=$1',[s.fixture.boxId])).rows[0];assert.equal(box.name,s.fixture.name);assert.ok(box.archived&&box.bridge_cleared);assert.equal(box.status,'disabled');
+const station=(await c.query('SELECT name,archived_at IS NOT NULL AS archived FROM core.station WHERE id=$1',[s.fixture.stationId])).rows[0];assert.equal(station.name,s.fixture.name+' till');assert.ok(station.archived);
+const printer=(await c.query('SELECT label,archived_at IS NOT NULL AS archived FROM core.device WHERE id=$1 AND box_id=$2',[s.fixture.printerId,s.fixture.boxId])).rows;assert.equal(printer.length,1);assert.ok(printer[0].label.startsWith('ZZ TEST SCRUM-728 ')&&printer[0].archived);
+const shift=(await c.query('SELECT revoked_at IS NOT NULL AS revoked,revoked_reason FROM core.staff_token WHERE jti=$1 AND box_id=$2',[s.fixture.shiftId,s.fixture.boxId])).rows[0];assert.ok(shift.revoked);assert.equal(shift.revoked_reason,'admin');
+const staff=(await c.query('SELECT a.status,e.name FROM core.account a JOIN core.employee e ON e.id=a.employee_id WHERE a.id=$1 AND e.id=$2',[s.staff.accountId,s.staff.employeeId])).rows;assert.equal(staff.length,1);assert.equal(staff[0].status,'inactive');assert.equal(staff[0].name,s.staff.name);assert.ok(staff[0].name.startsWith('ZZ TEST SCRUM-728 '));
+const grants=(await c.query('SELECT count(*)::int n FROM core.role_assignment WHERE account_id=$1',[s.staff.accountId])).rows[0].n;assert.equal(grants,0);
+const sessions=(await c.query('SELECT count(*)::int n FROM core.session WHERE account_id=$1 AND revoked_at IS NULL AND expires_at>now()',[s.staff.accountId])).rows[0].n;assert.equal(sessions,0);
+const sales=(await c.query('SELECT count(*)::int AS n FROM pos.sale WHERE station_id=$1',[s.fixture.stationId])).rows[0].n;assert.equal(sales,1);
+const sale=(await c.query('SELECT id,status,receipt_number,gross_satang::text FROM pos.sale WHERE station_id=$1 AND id=$2',[s.fixture.stationId,s.sale.id])).rows[0];assert.equal(sale.status,'finalised');assert.equal(sale.receipt_number,s.sale.receiptNumber);assert.equal(Number(sale.gross_satang),s.sale.grossSatang);
+const payments=(await c.query('SELECT method,provider,status,amount_satang::text FROM pos.payment_attempt WHERE sale_id=$1',[s.sale.id])).rows;assert.equal(payments.length,1);assert.equal(payments[0].method,'cash');assert.equal(payments[0].provider,'manual');assert.equal(payments[0].status,'approved');assert.equal(Number(payments[0].amount_satang),s.sale.grossSatang);
+const credentials=(await c.query('SELECT count(*)::int n FROM core.device_credential WHERE station_id=$1 AND revoked_at IS NULL',[s.fixture.stationId])).rows[0].n;assert.equal(credentials,0);
+const anomalies=(await c.query('SELECT count(*)::int AS n FROM edge.sync_anomaly WHERE box_id=$1',[s.fixture.boxId])).rows[0].n;assert.equal(anomalies,0);
+await c.query('ROLLBACK');console.log(JSON.stringify({event:'s728_database_proof',at:new Date().toISOString(),readOnly:true,kid:s.kid,publicFingerprint:fingerprint,publicKeyRows:keys.length,boxArchived:box.archived,printerArchived:true,stationArchived:station.archived,bridgeCleared:box.bridge_cleared,staffInactive:true,staffRoleGrants:grants,staffActiveSessions:sessions,shiftRevoked:shift.revoked,revokedReason:shift.revoked_reason,saleRows:sales,saleId:sale.id,receiptNumber:sale.receipt_number,grossSatang:Number(sale.gross_satang),cashPayments:payments.length,activeDisplayCredentials:credentials,syncAnomalies:anomalies,passed:true}));
+}finally{await c.end();}
+})().catch(e=>{console.error(JSON.stringify({event:'s728_database_error',name:e.name,code:e.code??'ASSERTION'}));process.exitCode=1;});`;
+return program;
+}

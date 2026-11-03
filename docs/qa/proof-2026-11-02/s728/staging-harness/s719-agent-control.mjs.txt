@@ -1,0 +1,9 @@
+// Runs the bundled agent's own `main`, and stops it the way systemd would, on one line of stdin.
+const { main } = await import(process.argv[2]);
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (line) => {
+  if (line.trim() === 'STOP') process.emit('SIGTERM', 'SIGTERM');
+});
+const code = await main(process.argv.slice(3));
+process.stdin.destroy();
+process.exit(code);
