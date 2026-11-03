@@ -16,13 +16,16 @@
 //      older department, role and department assignment, location, and
 //      reference media. What the request leaves out comes from the original.
 //   4. A copy starts with a clean history: version 1, no runs; past runs and an
-//      in-progress run stay with the original, untouched.
+//      in-progress run stay with the original. A separate copy with nothing else
+//      changed writes nothing to the original: no new version, and the run is
+//      not touched. A change made in the same save reaches it as any save does.
 //   5. Reference media opens for staff at the copy's branch, removing it from
 //      one checklist leaves it on the other, and the stored object goes only
 //      with the last row that names it.
 //   6. "Make a separate copy" while adding a branch (PATCH branchCopyChoice
 //      "copy") makes one independent template per added branch; the original
-//      keeps its branches and takes the rest of the edit.
+//      keeps its branches and who it is assigned to, and takes the rest of the
+//      edit. Who the request assigns is the copy's.
 //   7. "Share", or a caller naming no choice, does what an edit always did.
 //      Removing a branch does too, with or without a copy.
 //   8. A checklist already shared, or on no branch, is not split by anything
@@ -34,7 +37,8 @@
 //  11. A manager at the second branch of a shared checklist can read it and
 //      copy it to their own branch; a plain save stays refused as before.
 //  12. The editor's wording: the shared note names only branches the person may
-//      see, and the two answers read as the owner wrote them.
+//      see and shows on a checklist on no branch whoever opens it, and the two
+//      answers read as the owner wrote them.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -150,6 +154,7 @@ async function employee(label: string, branchId: string): Promise<string> {
 }
 const ann = await employee("Ann", hkt);
 const bob = await employee("Bob", hkt);
+const rita = await employee("Rita", robinson);
 
 const location = randomUUID();
 await q("insert into locations (id, tenant_id, name) values ($1, $2, $3)", [location, tenant, `ZZ TEST Pool ${run}`]);
@@ -583,16 +588,71 @@ try {
     const copy = await templateRow(res.body.id);
     assert.equal(copy.template_version, 1, "a copy does not carry the original's version");
 
-    // The separate-copy answer on a plain edit: the in-progress run keeps its work.
-    const runItemsBefore = await q("select id, is_completed, note, completed_at from checklist_run_items where run_id = $1 order by id", [started.body.id]);
+    // The separate-copy answer with nothing else changed: no write to the original at all.
     const patched = await api("admin", "PATCH", `/api/checklists/templates/${daily.id}`, { branchIds: [hkt, patong], branchId: hkt, branchCopyChoice: "copy" });
     assert.equal(patched.status, 200, JSON.stringify(patched.body));
-    assert.deepEqual(await q("select id, is_completed, note, completed_at from checklist_run_items where run_id = $1 order by id", [started.body.id]), runItemsBefore);
+    assert.equal(patched.body.propagatedRunCount, 0);
+    assert.equal(await snapshot(daily.id), before, "adding a branch as a copy touched the original or its runs");
     const [stillRunning] = await q("select status, branch_id from checklist_runs where id = $1", [started.body.id]);
     assert.equal(stillRunning.status, "in_progress");
     assert.equal(stillRunning.branch_id, hkt);
     assert.deepEqual(await runsOf(patched.body.createdCopies[0].id), [], "runs came across to the branch copy");
     assert.deepEqual((await q("select status from checklist_runs where id = $1", [past]))[0].status, "completed");
+  });
+
+  await check("a separate copy sent as the editor sends it, with only a branch added: the original and its run are not written", async () => {
+    const daily = await fullChecklist("Editor sends", { recurrence: "daily", weeklyDays: [], description: "" });
+    const started = await api("managerHkt", "POST", "/api/checklist-runs/start", { templateId: daily.id, branchId: hkt });
+    assert.equal(started.status, 200, JSON.stringify(started.body));
+    await q("update checklist_runs set updated_at = now() - interval '1 hour' where id = $1", [started.body.id]);
+    const before = await snapshot(daily.id);
+
+    const res = await api("admin", "PATCH", `/api/checklists/templates/${daily.id}`, {
+      name: daily.name,
+      description: "",
+      recurrence: "daily",
+      scheduledTime: "08:15",
+      items: daily.items.map(asSent),
+      isActive: true,
+      locationId: location,
+      branchId: hkt,
+      branchIds: [hkt, robinson],
+      branchCopyChoice: "copy",
+      assignedEmployeeIds: [rita],
+      assignedRoleId: null,
+      assignedDepartmentId: null,
+      checklistType: "operational",
+    });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.propagatedRunCount, 0);
+    assert.equal(res.body.templateVersion, 1, "the answer names a version the original does not have");
+    assert.equal(res.body.createdCopies.length, 1);
+    assert.equal(await snapshot(daily.id), before, "the original or its run was written");
+    assert.deepEqual(await namedOf(res.body.createdCopies[0].id), [rita]);
+  });
+
+  await check("a separate copy with another change in the same save: the original takes it and its run follows, as any save does", async () => {
+    const daily = await fullChecklist("Also changed", { recurrence: "daily", weeklyDays: [] });
+    const started = await api("managerHkt", "POST", "/api/checklist-runs/start", { templateId: daily.id, branchId: hkt });
+    assert.equal(started.status, 200, JSON.stringify(started.body));
+    const itemsBefore = await q("select id, is_completed, note, completed_at from checklist_run_items where run_id = $1 order by id", [started.body.id]);
+
+    const res = await api("admin", "PATCH", `/api/checklists/templates/${daily.id}`, {
+      name: `${daily.name} edited`,
+      branchId: hkt,
+      branchIds: [hkt, robinson],
+      branchCopyChoice: "copy",
+    });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.propagatedRunCount, 1);
+    const row = await templateRow(daily.id);
+    assert.equal(row.name, `${daily.name} edited`);
+    assert.equal(row.template_version, 2);
+    const [runRow] = await q("select status, template_version_applied from checklist_runs where id = $1", [started.body.id]);
+    assert.equal(runRow.status, "in_progress");
+    assert.equal(runRow.template_version_applied, 2);
+    assert.deepEqual(await q("select id, is_completed, note, completed_at from checklist_run_items where run_id = $1 order by id", [started.body.id]), itemsBefore, "the work on the run changed");
+    assert.deepEqual(await runsOf(res.body.createdCopies[0].id), []);
   });
 
   // ── 5. Media ──────────────────────────────────────────────────────────────
@@ -680,7 +740,7 @@ try {
 
   // ── 6. A separate copy while adding a branch ──────────────────────────────
 
-  await check("separate copy: the original keeps its branch and the rest of the edit; each added branch gets its own", async () => {
+  await check("separate copy: the original keeps its branch and its people and takes the rest of the edit; each added branch gets its own", async () => {
     const original = await fullChecklist("Adding");
     const media = await attach({ templateId: original.id }, "adding");
     const res = await api("admin", "PATCH", `/api/checklists/templates/${original.id}`, {
@@ -689,7 +749,7 @@ try {
       branchIds: [hkt, robinson, patong],
       branchCopyChoice: "copy",
       items: [asSent(original.items[0]), asSent(original.items[1]), { title: "Added here" }],
-      assignedEmployeeIds: [ann],
+      assignedEmployeeIds: [rita],
       assignedRoleId: null,
       assignedDepartmentId: null,
     });
@@ -701,7 +761,8 @@ try {
     assert.deepEqual(row.branch_ids, [], "the original's branches were written");
     assert.equal(row.name, `${original.name} edited`, "the rest of the edit did not save to the original");
     assert.equal(row.template_version, 2);
-    assert.deepEqual(await namedOf(original.id), [ann]);
+    assert.deepEqual(await namedOf(original.id), [ann, bob], "the people the form re-picked for the copy moved the original's");
+    assert.equal(row.assigned_employee_id, ann, "the original's column followed the copy's people");
     assert.deepEqual((await itemsOf(original.id)).map((i) => i.title), ["First", "Second", "Added here"]);
 
     const copies = await Promise.all(res.body.createdCopies.map((c: { id: string }) => templateRow(c.id)));
@@ -711,11 +772,59 @@ try {
       assert.deepEqual(copy.branch_ids, []);
       assert.equal(copy.department_id, floor);
       assert.equal(copy.template_version, 1);
-      assert.deepEqual(await namedOf(copy.id), [ann]);
+      assert.deepEqual(await namedOf(copy.id), [rita]);
+      assert.equal(copy.assigned_employee_id, rita);
       const items = await itemsOf(copy.id);
       assert.deepEqual(items.map((i) => i.title), ["First", "Second", "Added here"]);
       assert.equal((await headerMediaOf(copy.id))[0].s3_key, media.s3Key);
       assert.ok(items.every((i) => i.template_id === copy.id));
+    }
+  });
+
+  await check("separate copy: whoever the request assigns is the copy's, and the original keeps who it had", async () => {
+    const assign = (fields: Record<string, unknown>) => ({ branchId: hkt, branchIds: [hkt, robinson], branchCopyChoice: "copy", ...fields });
+
+    const named = await fullChecklist("Keeps named");
+    const toEveryone = await api("admin", "PATCH", `/api/checklists/templates/${named.id}`, assign({ assignedEmployeeIds: [], assignedRoleId: null, assignedDepartmentId: null }));
+    assert.equal(toEveryone.status, 200);
+    assert.deepEqual(await namedOf(named.id), [ann, bob], "assigning the copy to everyone took the original's people off");
+    assert.equal((await templateRow(named.id)).assigned_employee_id, ann);
+    assert.deepEqual(await namedOf(toEveryone.body.createdCopies[0].id), []);
+
+    const byRole = await fullChecklist("Keeps role", { assignedEmployeeIds: [], assignedRoleId: "zz-role" });
+    const toPeople = await api("admin", "PATCH", `/api/checklists/templates/${byRole.id}`, assign({ assignedEmployeeIds: [rita], assignedRoleId: null, assignedDepartmentId: null }));
+    assert.equal(toPeople.status, 200);
+    const roleRow = await templateRow(byRole.id);
+    assert.equal(roleRow.assigned_role_id, "zz-role", "naming people on the copy took the role off the original");
+    assert.deepEqual(await namedOf(byRole.id), []);
+    const peopleCopy = await templateRow(toPeople.body.createdCopies[0].id);
+    assert.equal(peopleCopy.assigned_employee_id, rita);
+    assert.equal(peopleCopy.assigned_role_id, null);
+
+    const byDepartment = await fullChecklist("Keeps department", { assignedEmployeeIds: [], assignedDepartmentId: floor });
+    const toRole = await api("admin", "PATCH", `/api/checklists/templates/${byDepartment.id}`, assign({ assignedEmployeeIds: [], assignedRoleId: "zz-role", assignedDepartmentId: null }));
+    assert.equal(toRole.status, 200);
+    const departmentRow = await templateRow(byDepartment.id);
+    assert.equal(departmentRow.assigned_department_id, floor);
+    assert.equal(departmentRow.assigned_role_id, null);
+    const roleCopy = await templateRow(toRole.body.createdCopies[0].id);
+    assert.equal(roleCopy.assigned_role_id, "zz-role");
+    assert.equal(roleCopy.assigned_department_id, null);
+  });
+
+  await check("share, a caller naming no choice, and a copy with nothing added still re-assign the one template as a save always did", async () => {
+    const cases: Array<{ label: string; fields: Record<string, unknown> }> = [
+      { label: "share", fields: { branchId: hkt, branchIds: [hkt, robinson], branchCopyChoice: "share" } },
+      { label: "no choice", fields: { branchId: hkt, branchIds: [hkt, robinson] } },
+      { label: "nothing added", fields: { branchId: hkt, branchIds: [hkt], branchCopyChoice: "copy" } },
+    ];
+    for (const { label, fields } of cases) {
+      const one = await fullChecklist(`Moves ${label}`);
+      const res = await api("admin", "PATCH", `/api/checklists/templates/${one.id}`, { ...fields, assignedEmployeeIds: [rita], assignedRoleId: null, assignedDepartmentId: null });
+      assert.equal(res.status, 200, `${label}: ${JSON.stringify(res.body)}`);
+      assert.deepEqual(await namedOf(one.id), [rita], `${label}: the people did not move`);
+      assert.equal((await templateRow(one.id)).assigned_employee_id, rita, `${label}: the column did not follow`);
+      assert.equal((await templateRow(one.id)).template_version, 2, `${label}: no new version`);
     }
   });
 
@@ -931,7 +1040,7 @@ try {
       { id: "pat", name: "Patong" },
     ];
     const note = (originalBranchIds: string[], activeBranchId: string | null, visibleBranches = visible) =>
-      sharedChecklistNote({ originalBranchIds, visibleBranches, activeBranchId, branchCount: 3 });
+      sharedChecklistNote({ originalBranchIds, selectedBranchIds: originalBranchIds, visibleBranches, activeBranchId });
     assert.equal(note(["hkt", "rob"], "hkt"), "This is shared with Robinson. Changes apply to both branches.");
     assert.equal(note(["hkt", "rob"], null), "This is shared with HKT Central and Robinson. Changes apply to both branches.");
     assert.equal(note(["hkt", "rob", "pat"], "hkt"), "This is shared with Robinson and Patong. Changes apply to all 3 branches.");
@@ -941,7 +1050,11 @@ try {
     assert.equal(note(["hkt", "rob", "pat"], "hkt", [visible[0], visible[1]]), "This is shared with Robinson and 1 other branch. Changes apply to all 3 branches.");
     assert.equal(note(["hkt"], "hkt"), null, "a one-branch checklist has no note");
     assert.equal(note([], "hkt"), "This is shared with all branches. Changes apply to every branch.");
-    assert.equal(sharedChecklistNote({ originalBranchIds: [], visibleBranches: [visible[0]], activeBranchId: "hkt", branchCount: 1 }), null, "a one-branch park has nothing to share with");
+    assert.equal(note([], "hkt", [visible[0]]), "This is shared with all branches. Changes apply to every branch.", "a manager with one branch still changes it for all of them");
+    assert.equal(
+      sharedChecklistNote({ originalBranchIds: [], selectedBranchIds: ["hkt"], visibleBranches: [visible[0]], activeBranchId: "hkt" }),
+      "This is shared with all branches. Saving with a branch selected takes it off every other branch.",
+    );
   });
 
   await check("the two answers read as the owner wrote them; a change that keeps none of the branches says it moves", () => {
@@ -954,13 +1067,14 @@ try {
     assert.equal(one.question, "How should Robinson be added?");
     assert.equal(one.copyLabel, "Make a separate copy for this branch");
     assert.equal(one.shareLabel, "Share one checklist across both");
+    assert.match(one.copyHint, /This checklist keeps who it is assigned to and takes the rest of your changes\./);
     const two = addedBranchQuestion({ added: ["rob", "pat"], selectedBranchIds: ["hkt", "rob", "pat"], originalBranchIds: ["hkt"], branches });
     assert.equal(two.question, "How should Robinson and Patong be added?");
     assert.equal(two.copyLabel, "Make a separate copy for each new branch");
     assert.equal(two.shareLabel, "Share one checklist across all of them");
     const moved = addedBranchQuestion({ added: ["rob"], selectedBranchIds: ["rob"], originalBranchIds: ["hkt"], branches });
     assert.equal(moved.shareLabel, "Move this checklist to Robinson");
-    assert.match(moved.copyHint, /stays at HKT Central/);
+    assert.match(moved.copyHint, /stays at HKT Central, keeps who it is assigned to/);
   });
 
   await check("the branch arithmetic: an empty list is the one branch, a checklist on no branch has nothing added to it", () => {

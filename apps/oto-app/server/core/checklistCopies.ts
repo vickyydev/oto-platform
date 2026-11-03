@@ -285,6 +285,47 @@ export function planBranchCopies(
   return { addedBranchIds: added, originalBranchIds: unchanged ? null : kept };
 }
 
+const sameValue = (a: unknown, b: unknown): boolean => {
+  const blank = (v: unknown) => v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
+  return (blank(a) && blank(b)) || JSON.stringify(a) === JSON.stringify(b);
+};
+
+/** The item fields a save writes, as it writes them. */
+function checklistItemChanged(sent: any, stored: any, isChecker: boolean): boolean {
+  return sent.id !== stored.id
+    || !sameValue(sent.title, stored.title)
+    || !sameValue(sent.description, stored.description)
+    || !sameValue(sent.referenceMediaUrls, stored.referenceMediaUrls)
+    || (sent.requiresNote === true) !== (stored.requiresNote === true)
+    || (sent.requiresPhoto === true) !== (stored.requiresPhoto === true)
+    || (sent.cameraEnabled ?? true) !== (stored.cameraEnabled ?? true)
+    || (sent.galleryEnabled ?? false) !== (stored.galleryEnabled ?? false)
+    || (sent.isCritical === true) !== (stored.isCritical === true)
+    || (isChecker ? false : sent.linkedToFix === true) !== (stored.linkedToFix === true)
+    || !sameValue(sent.departmentId, stored.departmentId)
+    || !sameValue(sent.zoneLabel, stored.zoneLabel);
+}
+
+/**
+ * Whether a separate-copy save has anything to write to the original, beyond
+ * making its copies. The editor sends every field whether or not it changed, so
+ * this reads what the save would write against what is stored. Nothing to write
+ * means no write at all: no new version, and a run in progress is not touched.
+ *
+ * `update` is the save's field list; its timestamp and the older photo flag are
+ * not changes the person made. `items` is the list the save would write, or null
+ * when it writes none.
+ */
+export function checklistEditChangesOriginal(existing: any, update: Record<string, unknown>, items: any[] | null): boolean {
+  const { updatedAt: _updatedAt, requiresPhotoEvidence: _requiresPhotoEvidence, ...fields } = update;
+  if (Object.entries(fields).some(([key, value]) => !sameValue(value, existing[key]))) return true;
+  if (!items) return false;
+  const stored: any[] = existing.items ?? [];
+  const isChecker = (update.checklistType ?? existing.checklistType) === "checker";
+  return items.length !== stored.length
+    || items.some((item, position) => checklistItemChanged(item, stored[position], isChecker));
+}
+
 /**
  * The original's reference media on each copy. A row binds a file to a template
  * or an item, and access follows the row, so each copy needs rows of its own for

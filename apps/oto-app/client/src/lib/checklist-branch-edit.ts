@@ -47,20 +47,27 @@ function nameOf(branches: NamedBranch[], id: string): string | undefined {
  * see, and only counts the rest. `visibleBranches` is what the person's own
  * branch list holds; "other" is other than the branch they are working in, when
  * the checklist is at that branch.
+ *
+ * A checklist on no branch always says so, however few branches the person has:
+ * a manager with one branch cannot see the others, and their save still reaches
+ * them. `selectedBranchIds` is what the save would send; picking a branch on such
+ * a checklist takes it off the rest, as it always has.
  */
 export function sharedChecklistNote({
   originalBranchIds,
+  selectedBranchIds,
   visibleBranches,
   activeBranchId,
-  branchCount,
 }: {
   originalBranchIds: string[];
+  selectedBranchIds: string[];
   visibleBranches: NamedBranch[];
   activeBranchId: string | null;
-  branchCount: number;
 }): string | null {
   if (originalBranchIds.length === 0) {
-    return branchCount > 1 ? "This is shared with all branches. Changes apply to every branch." : null;
+    return selectedBranchIds.length > 0
+      ? "This is shared with all branches. Saving with a branch selected takes it off every other branch."
+      : "This is shared with all branches. Changes apply to every branch.";
   }
   if (originalBranchIds.length === 1) return null;
 
@@ -102,8 +109,8 @@ export function addedBranchQuestion({
     question: `How should ${names} be added?`,
     copyLabel: added.length === 1 ? "Make a separate copy for this branch" : "Make a separate copy for each new branch",
     copyHint: keepsAny
-      ? "Each copy starts with a clean history and is edited on its own. The rest of your changes also save to this checklist."
-      : `Each copy starts with a clean history and is edited on its own. This checklist stays at ${original} and takes the rest of your changes.`,
+      ? "Each copy starts with a clean history and is edited on its own. This checklist keeps who it is assigned to and takes the rest of your changes."
+      : `Each copy starts with a clean history and is edited on its own. This checklist stays at ${original}, keeps who it is assigned to and takes the rest of your changes.`,
     shareLabel: !keepsAny
       ? added.length === 1
         ? `Move this checklist to ${names}`

@@ -14,15 +14,17 @@
 //      until it is answered. Taking the branch off again drops the question, and
 //      adding it again asks again.
 //   4. "Make a separate copy" is one template per added branch, the original on
-//      its own branch. "Share" is what an edit always did: one template.
+//      its own branch and still naming its own people; with only a branch added
+//      it is not written at all. "Share" is what an edit always did: one template.
 //   5. Ticked with a branch added: no question, because the original is not
 //      touched at all.
 //   6. A shared checklist carries the note, naming only branches the person may
 //      see, and the box splits off a copy without changing it. A manager with
 //      only one of its branches, first or second, copies to that branch and is
-//      never asked for one out of reach.
-//   7. A checklist on no branch: the all-branches note, and picking a branch
-//      narrows it as today with no question.
+//      never asked for one out of reach. The second-branch manager is told a
+//      plain save is not theirs, and a refused one says why.
+//   7. A checklist on no branch: the all-branches note, for a manager with one
+//      branch too, and picking a branch narrows it as today with no question.
 //   8. While ticked, media cannot be changed, because media saves to the
 //      original the moment it changes.
 //   9. A refused copy says why, writes nothing and can be tried again. Named
@@ -376,6 +378,7 @@ try {
     assert.equal(row.branch_id, hkt.id);
     assert.deepEqual(row.branch_ids, []);
     assert.equal(row.template_version, 2);
+    assert.equal(byTestId("text-edit-copy-only"), null);
     await waitFor("the saved toast", () => toastSays("Checklist template updated"));
   });
 
@@ -460,6 +463,28 @@ try {
     assert.equal(copy.branch_id, robinson.id);
     assert.deepEqual(copy.branch_ids, []);
     await waitFor("the toast", () => toastSays("Made a separate copy for the new branch."));
+  });
+
+  await check("a separate copy with only a branch added: the re-picked people are the copy's, and the original is not written", async () => {
+    const one = await checklist("Keeps Ann", { employee: ann });
+    const before = await snapshot(one.id);
+    await openEditor(one.id);
+    await click(`badge-edit-branch-${robinson.id}`);
+    assert.equal(byTestId("text-edit-assign-for-copy"), null, "the note shows before the answer");
+    await click("radio-edit-branch-copy");
+    assert.ok(required("group-edit-branch-choice").textContent?.includes("This checklist keeps who it is assigned to and takes the rest of your changes."));
+    assert.equal(required("text-edit-assign-for-copy").textContent, "For the new copy. This checklist keeps who it is assigned to.");
+    await click(`select-edit-employee-${rita}`);
+    await save();
+    await waitClosed();
+    assert.equal(templateWrites().length, 1);
+    assert.deepEqual(templateWrites()[0].body.assignedEmployeeIds, [rita]);
+    assert.equal(await snapshot(one.id), before, "the original changed");
+    const copies = (await rowsNamed(one.name)).filter((r) => r.id !== one.id);
+    assert.equal(copies.length, 1);
+    assert.equal(copies[0].branch_id, robinson.id);
+    assert.equal(copies[0].assigned_employee_id, rita);
+    assert.equal((await templateRow(one.id)).assigned_employee_id, ann);
   });
 
   await check("share: what an edit always did, one template on both branches", async () => {
@@ -551,6 +576,7 @@ try {
     await click(`badge-edit-branch-${robinson.id}`);
     assert.equal(byTestId("group-edit-branch-choice"), null);
     assert.equal(saveButton().disabled, false);
+    assert.equal(required("text-edit-shared-note").textContent, "This is shared with all branches. Saving with a branch selected takes it off every other branch.");
     await click("button-cancel-edit");
 
     await openEditor(everywhere.id);
@@ -611,6 +637,21 @@ try {
 
   await mount(managerHkt, hkt.id);
 
+  await check("a manager with one branch is told a checklist on no branch reaches every branch, and picking theirs narrows it as today", async () => {
+    const everywhere = await checklist("Everywhere one branch", { branchId: null });
+    await openEditor(everywhere.id);
+    assert.equal(required("text-edit-shared-note").textContent, "This is shared with all branches. Changes apply to every branch.");
+    assert.equal(byTestId(`badge-edit-branch-${robinson.id}`), null, "the picker offers a branch out of reach");
+    await click(`badge-edit-branch-${hkt.id}`);
+    assert.equal(required("text-edit-shared-note").textContent, "This is shared with all branches. Saving with a branch selected takes it off every other branch.");
+    assert.equal(byTestId("group-edit-branch-choice"), null);
+    await save();
+    await waitClosed();
+    const row = await templateRow(everywhere.id);
+    assert.equal(row.branch_id, hkt.id);
+    assert.deepEqual(row.branch_ids, [hkt.id]);
+  });
+
   await check("a manager's note names only branches they may see, and splitting off a copy asks for none out of reach", async () => {
     const before = await snapshot(limited.id);
     await openEditor(limited.id);
@@ -618,6 +659,7 @@ try {
     assert.equal(note, "This is shared with 1 other branch. Changes apply to both branches.");
     assert.ok(!note.includes(robinson.name), "the note names a branch the person may not see");
     assert.equal(byTestId(`badge-edit-branch-${robinson.id}`), null, "the picker offers a branch out of reach");
+    assert.equal(byTestId("text-edit-copy-only"), null, "the first branch's manager can save, and is told they cannot");
 
     await click("checkbox-edit-save-as-new");
     assert.match(required("text-edit-save-as-new-summary").textContent ?? "", new RegExp(`^Creates one new checklist for ${hkt.name}\\.`));
@@ -631,11 +673,19 @@ try {
 
   await mount(managerRobinson, robinson.id);
 
-  await check("a manager at the second branch opens the shared checklist with its items and splits off a copy for their branch", async () => {
+  await check("a manager at the second branch is told a plain save is not theirs, a refused one says why, and the box splits off a copy for their branch", async () => {
     const before = await snapshot(limited.id);
     await openEditor(limited.id);
     assert.equal(required("text-edit-shared-note").textContent, "This is shared with 1 other branch. Changes apply to both branches.");
+    assert.match(required("text-edit-copy-only").textContent ?? "", /^You can't save changes to this shared checklist from your branch\. Tick "Save as a new checklist"/);
+    assert.equal(saveButton().disabled, false);
+    await save();
+    await waitFor("the refusal", () => toastSays("Access denied to this checklist"));
+    assert.ok(byTestId("input-edit-checklist-name"), "a refused save closed the editor");
+    assert.equal(await snapshot(limited.id), before, "a refused save wrote to the checklist");
+    writes.length = 0;
     await click("checkbox-edit-save-as-new");
+    assert.equal(byTestId("text-edit-copy-only"), null, "the hint stays once the box is ticked");
     await type("input-edit-checklist-name", `${limited.name} robinson`);
     await save();
     await waitClosed();

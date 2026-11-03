@@ -198,7 +198,7 @@ import { generateInstanceForDefinition } from "./core/taskGeneration";
 import { personFence, fenceAllows, fenceRows, EMPLOYEE_DENIED } from "./core/personScope";
 import { resolveSelfEmployeeId } from "./core/selfEmployee";
 import { requestedChecklistAssignees, setChecklistAssignees, withChecklistAssignees } from "./core/checklistAssignees";
-import { canReachChecklistTemplate, checklistCopyBranchRefusal, checklistCopyRequest, createChecklistCopies, createPreparedChecklistTemplates, loadChecklistCopySource, planBranchCopies, prepareChecklistTemplates, type PreparedChecklistTemplates } from "./core/checklistCopies";
+import { canReachChecklistTemplate, checklistCopyBranchRefusal, checklistCopyRequest, checklistEditChangesOriginal, createChecklistCopies, createPreparedChecklistTemplates, loadChecklistCopySource, planBranchCopies, prepareChecklistTemplates, type PreparedChecklistTemplates } from "./core/checklistCopies";
 
 async function requireAuthOrKiosk(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -21366,7 +21366,8 @@ OTO Company Limited`,
       // "Make a separate copy for this branch" (SCRUM-659): one independent
       // checklist per added branch through the create path's checks, all of
       // them passed before this edit writes anything. The original keeps its
-      // own branches and takes the rest of the edit as a plain save does.
+      // own branches and who it is assigned to, and takes the rest of the edit
+      // as a plain save does.
       let branchCopyPlan: { originalBranchIds: string[] | null } | null = null;
       let preparedCopies: PreparedChecklistTemplates | null = null;
       if (branchCopyChoice === "copy") {
@@ -21402,11 +21403,16 @@ OTO Company Limited`,
       }
       if (recurrence !== undefined) updateData.recurrence = recurrence;
       if (scheduledTime !== undefined) updateData.scheduledTime = scheduledTime;
-      // The employees it names (SCRUM-658): the column keeps the first.
-      const assignedEmployeeIds = requestedChecklistAssignees(req.body);
+      // The employees it names (SCRUM-658): the column keeps the first. Adding a
+      // branch empties the form's list and the form asks for it again, so on a
+      // separate copy who the form assigns is the copy's; the original keeps its
+      // own, and is not moved off the people at its branch (SCRUM-659).
+      const assignedEmployeeIds = preparedCopies ? undefined : requestedChecklistAssignees(req.body);
       if (assignedEmployeeIds !== undefined) updateData.assignedEmployeeId = assignedEmployeeIds[0] ?? null;
-      if (assignedRoleId !== undefined) updateData.assignedRoleId = assignedRoleId;
-      if (assignedDepartmentId !== undefined) updateData.assignedDepartmentId = assignedDepartmentId;
+      if (!preparedCopies) {
+        if (assignedRoleId !== undefined) updateData.assignedRoleId = assignedRoleId;
+        if (assignedDepartmentId !== undefined) updateData.assignedDepartmentId = assignedDepartmentId;
+      }
       if (locationId !== undefined) updateData.locationId = locationId;
       updateData.requiresPhotoEvidence = false;
       if (referenceMediaUrls !== undefined) updateData.referenceMediaUrls = referenceMediaUrls;
@@ -21422,6 +21428,18 @@ OTO Company Limited`,
       if (scheduleTime4 !== undefined) updateData.scheduleTime4 = scheduleTime4;
       if (scheduleTime5 !== undefined) updateData.scheduleTime5 = scheduleTime5;
       if (allowedCheckerRoles !== undefined) updateData.allowedCheckerRoles = allowedCheckerRoles;
+      
+      // A separate copy and nothing else changed (SCRUM-659): the copies are the
+      // whole save. The original is not written, so it gets no new version and a
+      // run in progress on it is not touched.
+      if (preparedCopies && !checklistEditChangesOriginal(existingTemplate, updateData, normalizedItems)) {
+        const copies = await createChecklistCopies(tenantId, req.user!.id, existingTemplate, preparedCopies);
+        return res.json({
+          ...existingTemplate,
+          propagatedRunCount: 0,
+          createdCopies: copies.map((copy) => ({ id: copy.id, branchId: copy.branchId })),
+        });
+      }
       
       const newVersion = (existingTemplate.templateVersion || 1) + 1;
       updateData.templateVersion = newVersion;

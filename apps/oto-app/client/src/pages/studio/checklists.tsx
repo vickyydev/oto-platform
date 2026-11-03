@@ -327,6 +327,12 @@ export default function StudioChecklistsPage() {
   // selected but is not in their picker. A new checklist goes to the branches they
   // can see and choose, so splitting off a copy never asks for one out of reach.
   const saveAsNewBranchIds = selectedBranchIds.filter((id) => branches.some((branch) => branch.id === id));
+  // A manager at the second branch of a shared checklist can open and copy it, but
+  // the server keeps a plain save for the first. Say so before they try.
+  const plainSaveRefused = !saveAsNew
+    && !!editingChecklist?.branchId
+    && branches.length > 0
+    && !branches.some((branch) => branch.id === editingChecklist.branchId);
 
   const { data: locations = [] } = useQuery<Location[]>({
     queryKey: ["/api/locations"],
@@ -575,11 +581,9 @@ export default function StudioChecklistsPage() {
         return;
       }
       if (variables.copyMode === "added") {
+        // The original may not have been written at all, so this names only the copies.
         const copies = data?.createdCopies?.length || 0;
-        toast({
-          title: "Checklist template updated",
-          description: copies > 1 ? `Made ${copies} separate copies, one per new branch.` : "Made a separate copy for the new branch.",
-        });
+        toast({ title: copies > 1 ? `Made ${copies} separate copies, one per new branch.` : "Made a separate copy for the new branch." });
         return;
       }
       const propagated = data?.propagatedRunCount || 0;
@@ -590,10 +594,10 @@ export default function StudioChecklistsPage() {
           : undefined,
       });
     },
-    onError: (error: any, variables) => {
-      // A copy is refused for a reason the person can act on (a branch out of
-      // reach, a photo setting); a plain save keeps its message.
-      toast({ title: (variables.copyMode && error?.message) || "Failed to update checklist", variant: "destructive" });
+    onError: (error: any) => {
+      // A save is refused for a reason the person can act on (a checklist or a
+      // branch out of reach, a photo setting), so the server's reason is shown.
+      toast({ title: error?.message || "Failed to update checklist", variant: "destructive" });
     },
   });
 
@@ -876,7 +880,7 @@ export default function StudioChecklistsPage() {
   };
 
   const sharedNote = editingChecklist
-    ? sharedChecklistNote({ originalBranchIds, visibleBranches, activeBranchId, branchCount: branches.length })
+    ? sharedChecklistNote({ originalBranchIds, selectedBranchIds: saveAsNew ? [] : selectedBranchIds, visibleBranches, activeBranchId })
     : null;
   const addedQuestion = branchChoiceNeeded
     ? addedBranchQuestion({ added: addedBranches, selectedBranchIds, originalBranchIds, branches })
@@ -1219,6 +1223,11 @@ export default function StudioChecklistsPage() {
                 {saveAsNew && (
                   <p className="text-xs text-muted-foreground" data-testid="text-edit-save-as-new-summary">
                     {saveAsNewSummary({ selectedBranchIds: saveAsNewBranchIds, branches, canReachAllBranches })}
+                  </p>
+                )}
+                {plainSaveRefused && (
+                  <p className="text-xs text-muted-foreground" data-testid="text-edit-copy-only">
+                    You can't save changes to this shared checklist from your branch. Tick "Save as a new checklist" to make your own copy.
                   </p>
                 )}
               </div>
@@ -1629,6 +1638,11 @@ export default function StudioChecklistsPage() {
                         <SelectItem value="department">Department</SelectItem>
                       </SelectContent>
                     </Select>
+                    {branchChoiceNeeded && addedBranchChoice === "copy" && (
+                      <p className="text-xs text-muted-foreground" data-testid="text-edit-assign-for-copy">
+                        {addedBranches.length > 1 ? "For the new copies." : "For the new copy."} This checklist keeps who it is assigned to.
+                      </p>
+                    )}
                   </FormItem>
                 )}
               />
