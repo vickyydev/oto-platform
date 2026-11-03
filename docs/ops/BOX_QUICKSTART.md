@@ -285,7 +285,7 @@ rollback (PI_BOOTH.md §7, "Update").
 
 ## H. The counter scanner — into the box
 
-**Not yet: keep the cradle in the iPad until SCRUM-736 lands.** The box reads the scanner, but on a real Pi no scan reaches the till yet, because the till listens only on the platform. In the iPad, the cradle types into the page as a keyboard and works.
+**Not yet: keep the cradle in the iPad until SCRUM-736 lands.** The box reads the scanner, but on a real Pi no scan reaches the till yet, because the till listens only on the platform. In the iPad, the cradle types into the page as a keyboard and works. Since SCRUM-731, a scan that does reach the till opens a wristband or a credit voucher at F&B and the shop, and a wristband at History, as a typed code does. That is proved through the simulator on a box running beside the api; the bench has yet to show it with the real cradle.
 
 The Zebra cradle (DS2278 on its CR2278 cradle) plugs into the **counter box**, not the
 iPad: the box reads it itself and the till, the customer display and the gate on that
