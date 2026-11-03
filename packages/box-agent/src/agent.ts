@@ -88,6 +88,7 @@ import {
   PLATFORM_DOCUMENT,
   PrinterError,
   createPrinting,
+  routeTo,
   printDocumentPath,
   readPlatformPrintDocument,
   testPrintJob,
@@ -2550,7 +2551,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   }
 
   async function syncConfig(): Promise<boolean> {
-    if (!credential || state.offline) return false;
+    return (await readConfig()) ?? false;
+  }
+
+  /** Null means unread; false means a successful, unchanged configuration. */
+  async function readConfig(): Promise<boolean | null> {
+    if (!credential || state.offline) return null;
     const { status, body } = await request<BoxConfigBundle>('/box/v1/config', {
       method: 'GET',
       headers: state.configVersion ? { 'if-none-match': `"${state.configVersion}"` } : {},
@@ -2558,11 +2564,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     if (status === 304) return false;
     if (status === 401) {
       await reregisterAfterRefusal('config');
-      return false;
+      return null;
     }
     if (status !== 200 || !body) {
       note('error', 'config could not be read', { status });
-      return false;
+      return null;
     }
     const changed = body.configVersion !== state.configVersion;
     bundle = options.configTransform ? options.configTransform(body) : body;
@@ -3941,6 +3947,17 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           templateVersion: null,
         };
         try {
+          const assignedDeviceId = typeof payload.deviceId === 'string' ? payload.deviceId : null;
+          if (assignedDeviceId && role && routeTo(bundle, role, stationId)?.device.id !== assignedDeviceId) {
+            // A command can arrive before the next heartbeat config pull. The
+            // cloud already resolved an assigned printer; refresh before the
+            // queue interprets our older bundle as an intentional missing role.
+            // A current assignment still wins if it changed again meanwhile.
+            const unread = () => new PrinterError('CONFIG_UNAVAILABLE',
+              'The printer assignments could not be refreshed; nothing was printed. Reprint from History after the box reconnects');
+            const refreshed = await readConfig().catch(() => { throw unread(); });
+            if (refreshed === null) throw unread();
+          }
           if (fromPlatform) {
             const document = await fetchPlatformDocument(jobId);
             job = document.job;

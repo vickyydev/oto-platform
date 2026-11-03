@@ -63,6 +63,8 @@ const WRITE_PIECE_BYTES = 16 * 1024;
 
 /** Why a print attempt ended. Short, non-leaking: these reach a Console page. */
 export type PrinterErrorCode =
+  /** The cloud assigned a printer but the box could not refresh its older route. */
+  | 'CONFIG_UNAVAILABLE'
   /** Nothing answered on the address. Cable, power, or the wrong IP. */
   | 'PRINTER_UNREACHABLE'
   /**
