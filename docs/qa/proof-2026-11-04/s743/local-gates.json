@@ -1,0 +1,49 @@
+{
+  "recordedAt": "2026-11-03T21:16:51.913Z",
+  "testedCommit": "2f5798e4f4fe35801218bb697045f48745195c0f",
+  "rebasedSource": "d30a996a69b4b290fcf2bb98b350abaf31eef28b",
+  "testFile": "apps/console/e2e/page-state-review.spec.ts",
+  "testSha256": "382aac2ab6c778cf34ebeecf12b38a3fc09bb32ae0744ae196d968536455badd",
+  "rebaseChanges": [
+    "docs/handover/CLOUD_HANDOVER.md",
+    "docs/handover/CODEX_HANDOVER.md",
+    "docs/progress/STATUS.md",
+    "docs/qa/proof-2026-11-04/s743/main-contract-guard-ci.txt",
+    "docs/qa/proof-2026-11-04/s743/main-contract-guard-local.log"
+  ],
+  "playwrightVersion": "1.63.0",
+  "browser": "Microsoft Edge",
+  "workers": 1,
+  "retries": 0,
+  "builtConsole": true,
+  "receipts": [
+    {
+      "file": "repeat10.log",
+      "exitCode": 0,
+      "checks": 60,
+      "rawSha256": "47c9bac345b15b36afe0d2b11574109a7c3fe2b6869e8befefe074daab2f1d70",
+      "savedSha256": "9acd3be74ae400ff769c5dee6917d63ff839e514d20bc7eb72986522f8ef4ad8"
+    },
+    {
+      "file": "console-full.log",
+      "exitCode": 0,
+      "checks": 357,
+      "rawSha256": "d28f8479ce2b6ab7dd9773ac4060a624bcc8123261236a39cee8c5eec2bcf599",
+      "savedSha256": "11502027ea19daedec6eb3fc44dce63602ccd40db71bed252cc0b3ff46f2c8d5"
+    },
+    {
+      "file": "typecheck.log",
+      "exitCode": 0,
+      "rawSha256": "7cb4121c1e1fc915c42e15c047b41bfd8ca9c581bd2604a7962e58ab5d1551eb",
+      "savedSha256": "7cb4121c1e1fc915c42e15c047b41bfd8ca9c581bd2604a7962e58ab5d1551eb"
+    },
+    {
+      "file": "eslint.log",
+      "exitCode": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "savedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "mainLanding": "held: main CI 41714895181 failed",
+  "stagingChanges": false
+}

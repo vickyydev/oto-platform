@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {createRequire} from 'node:module';
+import {writeFileSync} from 'node:fs';
+const root='C:/oto-lanes/codex-console-routes-20261104',mode=process.argv[2]??'unroute',out='C:/oto-lanes/s743-route-'+mode+'.json';
+assert.ok(['unroute','drain'].includes(mode));const {chromium}=createRequire(root+'/apps/console/package.json')('@playwright/test');
+const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
+const gates={a:deferred(),b:deferred()},begun=deferred(),firstDone=deferred(),escaped=deferred(),events=[],errors=[],pending=new Set();let count=0;
+const event=(kind,path)=>events.push({at:new Date().toISOString(),kind,path});
+const bound=async(p,name)=>{let timer;try{return await Promise.race([p,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Probe barrier timed out: '+name)),5000);})]);}finally{clearTimeout(timer);}};
+const server=createServer(async(req,res)=>{const path=new URL(req.url,'http://localhost').pathname;if(path==='/'){res.setHeader('content-type','text/html');res.end('<p>ZZ TEST route ownership probe</p>');return;}const part=path.split('/').at(-1);event('server received',path);if(path.includes('/first/')){count++;if(count===2)begun.resolve();await gates[part].promise;}else escaped.resolve();res.setHeader('content-type','application/json');res.end(JSON.stringify({path,source:path.includes('/first/')?'forwarded':'escaped to network'}));});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({channel:'msedge'}),page=await browser.newPage();
+let result;
+try{
+ await page.route(/\/api\/booths\/second\//,route=>{let work;work=(async()=>{const path=new URL(route.request().url()).pathname;event('handler started',path);try{const response=await route.fetch({url:route.request().url().replace('/second/','/first/')});const body=await response.json();await route.fulfill({response,json:body});event('handler fulfilled',path);if(path.endsWith('/a'))firstDone.resolve();}catch(e){errors.push({path,name:e.name,message:e.message});event('handler failed',path);if(path.endsWith('/a'))firstDone.resolve();}finally{pending.delete(work);}})();pending.add(work);return work;});
+ await page.goto(origin);const reads=page.evaluate(()=>Promise.all(['/api/booths/second/a','/api/booths/second/b'].map(async p=>({path:p,body:await fetch(p).then(r=>r.json())}))));await bound(begun.promise,'two forwarded requests');
+ event('teardown started',mode);const stopped=mode==='unroute'?page.unrouteAll({behavior:'wait'}):(async()=>{while(pending.size)await Promise.all([...pending]);await page.unrouteAll({behavior:'wait'});})();
+ gates.a.resolve();await bound(firstDone.promise,'first handler finished');if(mode==='unroute')await bound(escaped.promise,'remaining request reaches network');gates.b.resolve();
+ const values=await bound(reads,'browser reads');await bound(stopped,'teardown');result={at:new Date().toISOString(),mode,playwrightVersion:createRequire(root+'/apps/console/package.json')('@playwright/test/package.json').version,events,errors,values,passed:errors.length===0&&values.every(v=>v.body.source==='forwarded')};
+}catch(e){result={at:new Date().toISOString(),mode,events,errors,barrierError:e.message,passed:false};}finally{gates.a.resolve();gates.b.resolve();await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
+writeFileSync(out,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));process.exitCode=result.passed?0:1;
