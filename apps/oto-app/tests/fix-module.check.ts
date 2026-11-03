@@ -436,8 +436,9 @@ try {
     ))[0];
   const deletionRows = (id: string) =>
     q<{ branch_id: string; tenant_id: string; created_by: string; summary_text: string; metadata_json: string }>(
-      "select branch_id, tenant_id, created_by, summary_text, metadata_json from activity_log where activity_type = 'fix_report_deleted' and metadata_json::jsonb->>'fixReportId' = $1",
-      [id],
+      // Matched as text: the job's shared activity_log holds rows whose metadata is not JSON.
+      "select branch_id, tenant_id, created_by, summary_text, metadata_json from activity_log where activity_type = 'fix_report_deleted' and metadata_json like $1",
+      [`%"fixReportId":"${id}"%`],
     );
   const remove = (who: Login, id: string) => call("DELETE", `/api/fix-reports/${id}`, { cookie: cookie[who.label] });
 
