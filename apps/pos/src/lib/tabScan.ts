@@ -13,6 +13,8 @@ import type { Wristband } from '@/types';
 // code arrived. Every other moment changes nothing and says so in words: a
 // customer's tab is opened only where a typed code could have opened it, so the
 // sale on screen, its credit and its food override are never changed by a scan.
+// History's Add time dialog asks for a bracelet scan, so it takes one as it takes
+// the typed code, and only while its bracelets can still be chosen.
 
 /** The stages the F&B and shop counters share. */
 export type CounterStage = 'scan' | 'order' | 'payment' | 'confirmation';
@@ -105,12 +107,16 @@ export function ticketTillTabScanWords(scan: TabScan): TabScanWords {
       };
 }
 
+/** History's decision: its own two, or the band handed to the open Add time dialog. */
+export type HistoryTabScanDecision = TabScanDecision | { kind: 'add-time'; key: string };
+
 /**
  * HISTORY. A band opens its orders, as the typed bracelet code does. A credit
  * voucher does not, because History's typed form takes bracelet codes alone. An
- * open sale may have a refund under way on it, so a scan does not take it away.
+ * open sale may have a refund under way on it, so a scan does not take it away,
+ * unless that sale's Add time dialog is open and asking for this very scan.
  */
-export function decideHistoryTabScan(scan: TabScan, saleOpen: boolean): TabScanDecision {
+export function decideHistoryTabScan(scan: TabScan, saleOpen: boolean, addTimeOpen = false): HistoryTabScanDecision {
   if (!scan.ok) return say(refusal(scan));
   if (scan.what === 'wallet') {
     return say({
@@ -118,6 +124,7 @@ export function decideHistoryTabScan(scan: TabScan, saleOpen: boolean): TabScanD
       description: 'History finds orders by bracelet. A credit voucher opens at F&B or the shop. Nothing changed here.',
     });
   }
+  if (addTimeOpen) return { kind: 'add-time', key: scan.key };
   if (saleOpen) {
     return say({
       title: `Bracelet ${scan.key} not opened`,
@@ -126,6 +133,55 @@ export function decideHistoryTabScan(scan: TabScan, saleOpen: boolean): TabScanD
     });
   }
   return { kind: 'open', key: scan.key };
+}
+
+/**
+ * How a band reaches a dialog on top of a sale. History holds the one station
+ * channel; the dialog fills this slot for as long as it is on screen.
+ */
+export interface BandScanSlot {
+  current: ((key: string) => void) | null;
+}
+
+const notAdded = (key: string): string => `Bracelet ${key} not added`;
+
+/**
+ * Why the Add time dialog cannot take a band now, or null when it can. These are
+ * the moments its typed field is out of reach too: the charge has taken the
+ * bracelets as they stood, or the staff member is counting them instead.
+ */
+export function addTimeScanRefusal(key: string, dialog: { chargeUnderWay: boolean; countOnly: boolean }): TabScanWords | null {
+  if (dialog.chargeUnderWay) {
+    return {
+      title: notAdded(key),
+      description: 'The bracelets on this Add time are already set for payment. Nothing changed.',
+      variant: 'destructive',
+    };
+  }
+  if (dialog.countOnly) {
+    return {
+      title: notAdded(key),
+      description: 'Count only is chosen here. Press Select or scan bracelets, then scan again. Nothing changed.',
+      variant: 'destructive',
+    };
+  }
+  return null;
+}
+
+/** A band the Add time dialog took: ticking one already ticked shows nothing, so it says so. */
+export function addTimeScanTaken(key: string, alreadyTicked: boolean): TabScanWords {
+  return alreadyTicked
+    ? { title: `Bracelet ${key} is already ticked`, description: 'Nothing changed.' }
+    : { title: `Bracelet ${key} added`, description: 'It is ticked on this Add time.' };
+}
+
+/** Replacing bracelets on a paid charge is by its list alone: that dialog has no scan field. */
+export function replacementBandScanWords(key: string): TabScanWords {
+  return {
+    title: notAdded(key),
+    description: 'Tick the replacement bracelets on this list. Nothing changed.',
+    variant: 'destructive',
+  };
 }
 
 /**

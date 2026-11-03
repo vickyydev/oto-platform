@@ -18,6 +18,13 @@ import { finaliseSale, salesApi, type ApiSale } from '@/api/sales';
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import { usePaymentStage } from '@/lib/usePaymentStage';
+import {
+  addTimeScanRefusal,
+  addTimeScanTaken,
+  replacementBandScanWords,
+  type BandScanSlot,
+} from '@/lib/tabScan';
+import { toast } from '@/hooks/use-toast';
 import { getEnabledPaymentMethods, paymentMethodIcon, paymentMethodLabel } from '@/lib/payments';
 import { LEDGER_ONLY_NOTICE } from '@/components/history/ledgerNotice';
 import { Card } from '@/components/ui/card';
@@ -46,6 +53,20 @@ export function extensionBandFromScan(
 
 const plural = (count: number) => `${count} bracelet${count === 1 ? '' : 's'}`;
 
+/** While a dialog is on screen, a band the station's scanner reads goes to it (SCRUM-731). */
+function useBandScanSlot(slot: BandScanSlot | undefined, take: (key: string) => void): void {
+  const latest = useRef(take);
+  latest.current = take;
+  useEffect(() => {
+    if (!slot) return;
+    const taker = (key: string) => latest.current(key);
+    slot.current = taker;
+    return () => {
+      if (slot.current === taker) slot.current = null;
+    };
+  }, [slot]);
+}
+
 /**
  * Add time on a ticket sale: a separate paid charge scoped to this receipt;
  * the original money is never edited. Returns the approved History screen's
@@ -60,6 +81,7 @@ export function useSaleExtensions({
   offline,
   fmt,
   compact = false,
+  bandScans,
 }: {
   saleId: string;
   /** A ticket admission with bracelets; a time charge itself has no Add time. */
@@ -69,6 +91,8 @@ export function useSaleExtensions({
   fmt: (iso: string) => string;
   /** The phone layout's smaller action buttons. */
   compact?: boolean;
+  /** Where the screen's station channel hands a band while a dialog is open. */
+  bandScans?: BandScanSlot | undefined;
 }): { card: ReactNode; button: ReactNode; dialogs: ReactNode } {
   const { can, operator } = useOperator();
   const { active: station } = useStation();
@@ -211,6 +235,7 @@ export function useSaleExtensions({
           entry={resume}
           bands={data.eligibleBands}
           onClose={close}
+          bandScans={bandScans}
         />
       )}
       {open && data && station && !resume?.needsReselection && (
@@ -222,6 +247,7 @@ export function useSaleExtensions({
           resume={resume}
           operatorName={operator?.name ?? 'this account'}
           onClose={close}
+          bandScans={bandScans}
           onPaid={({ label, braceletCount }) => {
             const total = data.eligibleBands.length;
             setFlash(`Added ${label} to ${braceletCount} of ${plural(total)}`);
@@ -241,6 +267,7 @@ export function ExtensionPayment({
   operatorName,
   onClose,
   onPaid,
+  bandScans,
 }: {
   saleId: string;
   stationId: string;
@@ -250,6 +277,8 @@ export function ExtensionPayment({
   onClose: () => void;
   /** The approved History flash once the charge is paid: what was added, to how many. */
   onPaid?: (paid: { label: string; braceletCount: number }) => void;
+  /** Where the screen's station channel hands a band while this is open. */
+  bandScans?: BandScanSlot | undefined;
 }) {
   const { offlineUnlock, locked: operatorLocked } = useOperator();
   const [optionId, setOptionId] = useState(resume?.optionId ?? '');
@@ -370,16 +399,29 @@ export function ExtensionPayment({
   }, [stage.state.error, onClose]);
   const locked =
     frozen || preparing || operatorLocked || Boolean(offlineUnlock) || stage.busy || stage.locked;
-  const addScan = () => {
-    const match = extensionBandFromScan(scan, data.eligibleBands);
-    setScan('');
+  const addBracelet = (raw: string): ExtensionBand | null => {
+    const match = extensionBandFromScan(raw, data.eligibleBands);
     if (!match) {
       setScanError('This bracelet is not eligible on this receipt.');
-      return;
+      return null;
     }
     setScanError(null);
     setBandIds((ids) => (ids.includes(match.id) ? ids : [...ids, match.id]));
+    return match;
   };
+  const addScan = () => {
+    addBracelet(scan);
+    setScan('');
+  };
+  useBandScanSlot(bandScans, (key) => {
+    const refused = addTimeScanRefusal(key, { chargeUnderWay: locked, countOnly: mode === 'count' });
+    if (refused) {
+      toast(refused);
+      return;
+    }
+    const match = addBracelet(key);
+    if (match) toast(addTimeScanTaken(key, bandIds.includes(match.id)));
+  });
   return (
     <Dialog
       open
@@ -589,12 +631,14 @@ export function ExtensionPayment({
 
 /** Repair only the invalid credential slots on the existing paid or pending
  * charge. Its original selection and money remain on the ledger. */
-export function ExtensionBandRecovery({ saleId, stationId, entry, bands, onClose }: {
+export function ExtensionBandRecovery({ saleId, stationId, entry, bands, onClose, bandScans }: {
   saleId: string; stationId: string; entry: SaleExtension; bands: ExtensionBand[]; onClose: () => void;
+  bandScans?: BandScanSlot | undefined;
 }) {
   const { locked, offlineUnlock } = useOperator();
   const fixed = (entry.currentBandIds ?? []).filter((id) => bands.some((band) => band.id === id));
   const [selected, setSelected] = useState<string[]>(fixed);
+  useBandScanSlot(bandScans, (key) => toast(replacementBandScanWords(key)));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const frozen = useRef<{ actionId: string; stationId: string; bandIds: string[] } | null>(null);

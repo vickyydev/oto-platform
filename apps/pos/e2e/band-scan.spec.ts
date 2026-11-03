@@ -289,6 +289,70 @@ test('a band read mid-payment changes nothing, and the sale is what it was', asy
   await expect(page.getByText('ZZ TEST Second Child')).toHaveCount(0);
 });
 
+test('a band read while Add time is open is ticked, as the typed code ticks it', async ({ page, baseURL }) => {
+  onTheDisposableStack(baseURL);
+  await mkdir(PROOF, { recursive: true });
+
+  await signIn(page);
+  const at = await theCounter();
+  const bandCode = await childInPark(page, at, { name: 'ZZ TEST Fourth Child', allergies: 'ZZ TEST sesame allergy', foodRestrictions: null });
+  const otherBand = await childInPark(page, at, { name: 'ZZ TEST Fifth Child', allergies: 'ZZ TEST soy allergy', foodRestrictions: null });
+  const short = bandShortCode(bandCode)!;
+
+  await page.goto('/history');
+  await expect(page.getByLabel('Search transactions')).toBeVisible({ timeout: 20_000 });
+  await screenIsListening(page);
+  await scanAtTheBox(page, at.stationId, bandCode);
+  await expect(page.getByText(`#${short}`)).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('button', { hasText: '฿' }).first()).toBeVisible({ timeout: 15_000 });
+  await page.locator('button', { hasText: '฿' }).first().click();
+  const addTime = page.getByRole('button', { name: 'Add time', exact: true });
+  await expect(addTime).toBeEnabled({ timeout: 15_000 });
+
+  // On the sale with no dialog open, another band does not take it off the screen.
+  await scanAtTheBox(page, at.stationId, otherBand);
+  await expect(page.getByText(/^Bracelet .* not opened$/).first()).toBeVisible({ timeout: 10_000 });
+  await expect(addTime).toBeVisible();
+
+  await addTime.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('heading', { name: 'Add time' })).toBeVisible({ timeout: 10_000 });
+  const bracelet = dialog.getByRole('checkbox', { name: short });
+  await bracelet.uncheck();
+  await expect(bracelet).not.toBeChecked();
+
+  // The band read by the box ticks it, and the dialog stays where it was.
+  await scanAtTheBox(page, at.stationId, bandCode);
+  await expect(page.getByText(`Bracelet ${short} added`).first()).toBeVisible({ timeout: 10_000 });
+  await expect(bracelet).toBeChecked();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: resolve(PROOF, '8-add-time-takes-the-band.png') });
+
+  // Again: nothing would move on screen, so it says so.
+  await scanAtTheBox(page, at.stationId, bandCode);
+  await expect(page.getByText(`Bracelet ${short} is already ticked`).first()).toBeVisible({ timeout: 10_000 });
+
+  // A band from another receipt gets the words its typed code gets.
+  await scanAtTheBox(page, at.stationId, otherBand);
+  await expect(dialog.getByText('This bracelet is not eligible on this receipt.')).toBeVisible({ timeout: 10_000 });
+  await expect(bracelet).toBeChecked();
+
+  // Count only has nothing to tick.
+  await dialog.getByRole('button', { name: 'Count only' }).click();
+  await scanAtTheBox(page, at.stationId, bandCode);
+  await expect(page.getByText(/Count only is chosen here/).first()).toBeVisible({ timeout: 10_000 });
+  await dialog.getByRole('button', { name: 'Select or scan bracelets' }).click();
+
+  // Once the charge has the bracelets, a scan never reaches what it pays for.
+  await dialog.getByRole('button', { name: /\+30 minutes/ }).click();
+  await dialog.getByRole('button', { name: 'Continue to payment' }).click();
+  await expect(dialog.getByRole('button', { name: 'Continue to payment' })).toBeHidden({ timeout: 15_000 });
+  await scanAtTheBox(page, at.stationId, bandCode);
+  await expect(page.getByText(/already set for payment/).first()).toBeVisible({ timeout: 10_000 });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: resolve(PROOF, '9-add-time-mid-payment-changes-nothing.png') });
+});
+
 test('a band read while the station is locked does not land after the unlock', async ({ page, baseURL }) => {
   onTheDisposableStack(baseURL);
   test.skip(!ADMIN_PHONE || !ADMIN_PASSWORD, 'Needs a second session to scan while this one is locked');

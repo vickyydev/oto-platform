@@ -25,7 +25,7 @@ import { useStation } from '@/station/StationContext';
 import { toast } from '@/hooks/use-toast';
 import { explainLookup, useSearchLookup } from '@/lib/historyLookup';
 import { readTabScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
-import { decideHistoryTabScan } from '@/lib/tabScan';
+import { decideHistoryTabScan, type BandScanSlot } from '@/lib/tabScan';
 import { readRefundRequests, type RefundRequestNote } from '@/lib/refundRequests';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -236,6 +236,8 @@ export default function History() {
 
   /** Only the latest band's answers land: a second scan, or Back, overtakes a lookup still out. */
   const bandLookup = useRef(0);
+  /** Filled by the Add time dialog on an open sale, for as long as it is on screen. */
+  const addTimeScan = useRef<BandScanSlot['current']>(null);
 
   const backToList = () => {
     bandLookup.current += 1;
@@ -367,16 +369,21 @@ export default function History() {
   /**
    * SCRUM-731 — THE SAME BRACELET, READ BY THE COUNTER'S SCANNER. The box hands
    * over the short code printed under the QR, and it opens what that code opens
-   * when typed, from whichever list is on screen. What it cannot open is said in
+   * when typed, from whichever list is on screen. An open Add time dialog asks for
+   * it, and takes it as it takes the typed code. What it cannot open is said in
    * words (`decideHistoryTabScan`).
    */
   useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
     const scan = readTabScan(event);
     if (!scan) return;
-    const decision = decideHistoryTabScan(scan, selected !== null);
+    const decision = decideHistoryTabScan(scan, selected !== null, addTimeScan.current !== null);
     if (decision.kind === 'say') {
       const { kind: _kind, ...words } = decision;
       toast(words);
+      return;
+    }
+    if (decision.kind === 'add-time') {
+      addTimeScan.current?.(decision.key);
       return;
     }
     const search = parseHistorySearch(decision.key);
@@ -444,6 +451,7 @@ export default function History() {
               onBack={() => setSelected(null)}
               onVoided={onVoided}
               onRefunded={onRefunded}
+              bandScans={addTimeScan}
             />
           ) : view === 'scan' ? (
             <div className="flex-1 min-h-0 flex flex-col">

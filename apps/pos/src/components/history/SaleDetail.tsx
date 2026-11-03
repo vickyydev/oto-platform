@@ -1,4 +1,5 @@
 import { useSaleExtensions } from '@/components/history/SaleExtensions';
+import type { BandScanSlot } from '@/lib/tabScan';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
@@ -708,6 +709,8 @@ export interface SaleDetailProps {
   onVoided?: (saleId: string) => void;
   onRefunded?: (saleId: string, sale: ApiSale) => void;
   layout?: 'columns' | 'stacked';
+  /** Where History's station channel hands a band while Add time is open. */
+  bandScans?: BandScanSlot;
 }
 
 /** Desktop and phone share the same ledger reads and financial actions. */
@@ -1227,6 +1230,7 @@ export function SaleDetail(props: SaleDetailProps) {
     eligible: sale.status === 'finalised',
     offline,
     fmt,
+    bandScans: props.bandScans,
   });
 
   const contents = error ? (

@@ -5,8 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, type RenderedHook } from './support/hooks';
 import { readBenefitScan, readProductScan, readTabScan, readVoucherScan, type StationScanEvent } from '@/lib/scanChannel';
 import {
+  addTimeScanRefusal,
+  addTimeScanTaken,
   decideCounterTabScan,
   decideHistoryTabScan,
+  replacementBandScanWords,
   ticketTillTabScanWords,
   useCounterTabScan,
   type CounterStage,
@@ -155,6 +158,31 @@ describe('the ticket till and History', () => {
     expect(decision).toMatchObject({ kind: 'say' });
     expect(JSON.stringify(decision)).not.toContain(WALLET_KEY);
   });
+
+  it('with Add time open on the sale, a band goes to the dialog that asked for it', () => {
+    expect(decideHistoryTabScan({ ok: true, what: 'band', key: 'T1-7KMQ4X' }, true, true)).toEqual({ kind: 'add-time', key: 'T1-7KMQ4X' });
+  });
+
+  it('with Add time open, what is not a band it can use still gets the words History has for it', () => {
+    expect(decideHistoryTabScan({ ok: true, what: 'wallet', key: WALLET_KEY }, true, true)).toMatchObject({ kind: 'say' });
+    expect(decideHistoryTabScan({ ok: false, what: 'band', message: 'No key' }, true, true)).toMatchObject({ kind: 'say', description: 'No key' });
+  });
+
+  it('the words on a sale with a dialog open never send staff off the sale', () => {
+    const all = [
+      addTimeScanRefusal('T1-7KMQ4X', { chargeUnderWay: true, countOnly: false }),
+      addTimeScanRefusal('T1-7KMQ4X', { chargeUnderWay: false, countOnly: true }),
+      addTimeScanTaken('T1-7KMQ4X', true),
+      addTimeScanTaken('T1-7KMQ4X', false),
+      replacementBandScanWords('T1-7KMQ4X'),
+    ];
+    for (const said of all) expect(said?.description).not.toContain('Go back');
+  });
+
+  it('Add time refuses only where its typed field is out of reach too', () => {
+    expect(addTimeScanRefusal('T1-7KMQ4X', { chargeUnderWay: false, countOnly: false })).toBeNull();
+    expect(addTimeScanRefusal('T1-7KMQ4X', { chargeUnderWay: true, countOnly: true })?.description).toContain('already set for payment');
+  });
 });
 
 describe('useCounterTabScan — when the key waits for the form, and when it lets go', () => {
@@ -244,7 +272,9 @@ describe('the screens are wired to it', () => {
 
   it('History and the ticket till hear the channel for it', () => {
     expect(source('pages/History.tsx')).toContain('useStationScans(locked ? undefined : station?.stationId');
-    expect(source('pages/History.tsx')).toContain('decideHistoryTabScan(scan, selected !== null)');
+    expect(source('pages/History.tsx')).toContain('decideHistoryTabScan(scan, selected !== null, addTimeScan.current !== null)');
+    expect(source('pages/History.tsx')).toContain('bandScans={addTimeScan}');
+    expect(source('components/history/SaleDetail.tsx')).toContain('bandScans: props.bandScans');
     expect(source('pages/Till.tsx')).toContain('toast(ticketTillTabScanWords(tabScan))');
   });
 });
