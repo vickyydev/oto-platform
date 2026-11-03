@@ -1,0 +1,95 @@
+{
+  "at": "2026-11-03T06:00:01.563Z",
+  "services": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "sha": "5069944660dfd43571d39f097aa90a77b1092c36",
+      "deployId": "dep-dbkje1l9el5s73ejmiig",
+      "status": "live"
+    },
+    {
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "sha": "5069944660dfd43571d39f097aa90a77b1092c36",
+      "deployId": "dep-dbkje1l9el5s73ejmk80",
+      "status": "live"
+    }
+  ],
+  "oldMonitor": {
+    "jobId": "job-dbkjgiec6qcc73ak4pi0",
+    "status": "succeeded"
+  },
+  "completedSteps": [
+    {
+      "name": "ramp_1",
+      "calls": 275,
+      "p50": 79.5619000000006,
+      "p95": 140.09820000000764,
+      "errors": 0,
+      "cash": 2
+    },
+    {
+      "name": "ramp_2",
+      "calls": 467,
+      "p50": 78.39689999999246,
+      "p95": 132.51510000001872,
+      "errors": 0,
+      "cash": 3
+    },
+    {
+      "name": "ramp_4",
+      "calls": 935,
+      "p50": 76.52119999995921,
+      "p95": 131.31939999992028,
+      "errors": 0,
+      "cash": 6
+    },
+    {
+      "name": "ramp_6",
+      "calls": 1337,
+      "p50": 75.3066000000108,
+      "p95": 128.874599999981,
+      "errors": 0,
+      "cash": 9
+    },
+    {
+      "name": "ramp_8",
+      "calls": 1803,
+      "p50": 73.53499999991618,
+      "p95": 116.15810000000056,
+      "errors": 0,
+      "cash": 12
+    },
+    {
+      "name": "ramp_12",
+      "calls": 2674,
+      "p50": 74.37129999999888,
+      "p95": 121.57750000013039,
+      "errors": 0,
+      "cash": 18
+    },
+    {
+      "name": "ramp_24",
+      "calls": 5368,
+      "p50": 76.7554999999702,
+      "p95": 151.66889999993145,
+      "errors": 0,
+      "cash": 36
+    },
+    {
+      "name": "ramp_32",
+      "calls": 7177,
+      "p50": 79.6284999998752,
+      "p95": 150.02010000008158,
+      "errors": 0,
+      "cash": 48
+    }
+  ],
+  "totalRampCash": 134,
+  "stoppedAt": "2026-11-03T03:01:25.351Z",
+  "stop": {
+    "at": "2026-11-03T03:01:25.345Z",
+    "reason": "Measurement TypeError fetch failed"
+  },
+  "childOut": true,
+  "serverStreamsAfterClose": 0
+}

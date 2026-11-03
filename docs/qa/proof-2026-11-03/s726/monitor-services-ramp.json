@@ -1,0 +1,23 @@
+{
+  "services": [
+    {
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "name": "oto-api-staging",
+      "plan": "standard"
+    },
+    {
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "name": "oto-pos-web-staging",
+      "plan": "starter"
+    },
+    {
+      "id": "dpg-dangso3m8hqs73b9ir80-a",
+      "name": "oto-db-staging",
+      "plan": "1c-2g"
+    }
+  ],
+  "ownerId": "tea-dakeu6p42hec73abs5g0",
+  "databaseId": "dpg-dangso3m8hqs73b9ir80-a",
+  "maxConnections": 103,
+  "jobId": "job-dbkjgiec6qcc73ak4pi0"
+}

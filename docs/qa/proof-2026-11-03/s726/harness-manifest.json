@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-03T02:16:58.993Z",
+  "at": "2026-11-03T06:00:51.011Z",
   "node": "v22.17.1",
   "files": [
     {
@@ -28,7 +28,7 @@
     },
     {
       "path": "C:/oto-lanes/s726-remote-monitor.mjs",
-      "sha256": "f9be5edfc44371bc16de55803c2e05395d3f9b458aa2619a771e803b4f51c585"
+      "sha256": "2b256c034bb3d3e3a712a2ce34ae2b5149abed6b529cf4795373a6fc328a40cb"
     },
     {
       "path": "C:/oto-lanes/s726-family.mjs",
@@ -53,6 +53,18 @@
     {
       "path": "C:/oto-lanes/s726-env.mjs",
       "sha256": "3d002eb9c29c15474b12f6f3c40d52fd8ac0cc9f1bc3d513865abc767166a240"
+    },
+    {
+      "path": "C:/oto-lanes/s726-soak-only.mjs",
+      "sha256": "6602ff412a24fffadf4a388aa7161caf361669148fca80178d6f14fb8b7c13e7"
+    },
+    {
+      "path": "C:/oto-lanes/s726-render-read.mjs",
+      "sha256": "4966128d3beefc6cbe7e3676fa2dc0168c166ca8a9904b8024f827d9050da5c2"
+    },
+    {
+      "path": "C:/oto-lanes/s726-repeat-smoke.mjs",
+      "sha256": "8c8eb77a3cc0e34d4fe75a0eaedf414b92472ee808cad652511bce43e37548c2"
     }
   ],
   "notes": [
