@@ -1,11 +1,14 @@
 # SCRUM-728 release evidence
 
-## Testing: source landed, exact-SHA CI running
+## Testing: exact-SHA CI passed, deployment underway
 
 Source `00f414ba0f78d91b0e87813924c3c53a64dddf5b` is on main and backed
 up on `lane/codex-box-outage-20261104-r9`.
 [Main CI 41693411235](https://github.com/vickyydev/oto-platform/actions/runs/41693411235)
-is running for that exact SHA. All local gates and full branch CI passed.
+passed all six jobs for that exact SHA. The changed-area tests, types, lint,
+builds and native till/Console browser gates ran and passed. Unchanged OTO App
+and migration steps were path-gated; full step outcomes are in [ci.json](ci.json).
+All local gates and the complete branch CI also passed.
 SCRUM-727 is Deployed with [its separate evidence](../s727/README.md).
 SCRUM-728 retains the source, API, proof and cleanup slot released by 730.
 No SCRUM-728 staging fixture, restart or setting change has occurred yet.
