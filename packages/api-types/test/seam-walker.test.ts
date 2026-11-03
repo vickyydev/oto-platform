@@ -114,7 +114,7 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
     prefix: '/console/deploy-events',
     exact: true,
     caller:
-      'the release pipeline (SCRUM-643): a deploy step posts each release’s app, version, commit and CI outcome as a platform administrator; its CI wiring is assigned at the parent story’s acceptance',
+      'a platform administrator or a deploy step recording a release fact the feed cannot see (SCRUM-643); finished Render deployments arrive through job:release.feed (SCRUM-672), not this route',
   },
 ];
 
