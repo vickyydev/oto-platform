@@ -1,0 +1,13 @@
+{
+  "sha": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+  "start": "2026-11-03T19:00:22.853Z",
+  "end": "2026-11-03T19:02:39.923Z",
+  "log": "C:/oto-lanes/s737-console-mock-failure/reproduce.log",
+  "exitCode": 0,
+  "signal": null,
+  "completeFileRuns": 3,
+  "passed": 18,
+  "failed": 0,
+  "logSha256": "9797b96af836cba77e46504440643b4d5a9d0189297140f4563478f489b1d2a8",
+  "meaning": "The original intermittent route handling error did not reproduce. This does not erase the failed full run or establish its cause."
+}

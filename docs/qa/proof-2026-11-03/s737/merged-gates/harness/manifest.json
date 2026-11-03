@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-03T19:04:43.183Z",
+  "files": [
+    {
+      "file": "s737-release-gates.mjs.txt",
+      "sourceSha256": "2c78c0f95b2d9d5c062f97e92176ace88e703b190094ac30335fe32c419e82eb",
+      "archivedLfSha256": "2c78c0f95b2d9d5c062f97e92176ace88e703b190094ac30335fe32c419e82eb"
+    },
+    {
+      "file": "s737-release-api-gate.mts.txt",
+      "sourceSha256": "c348c7dcc53cc8efdfb96a32101e72211e3b6d660eaaddf68883c93258675931",
+      "archivedLfSha256": "c348c7dcc53cc8efdfb96a32101e72211e3b6d660eaaddf68883c93258675931"
+    },
+    {
+      "file": "s737-release-console-gate.mts.txt",
+      "sourceSha256": "6e58437602640fc6320cbc0da0404d476368cecfd06a5ea1424dbe21d1eb625a",
+      "archivedLfSha256": "6e58437602640fc6320cbc0da0404d476368cecfd06a5ea1424dbe21d1eb625a"
+    },
+    {
+      "file": "s737-console-repro-gate.mts.txt",
+      "sourceSha256": "acd5fbd9b48760b9f8cb882a3369b160307148e8d3bf812f0812b8800c82d41c",
+      "archivedLfSha256": "acd5fbd9b48760b9f8cb882a3369b160307148e8d3bf812f0812b8800c82d41c"
+    },
+    {
+      "file": "s737-console-repro-run.mjs.txt",
+      "sourceSha256": "f4728b80af5318f82c90d712ee7ff5aad3748a5e96e4012a93bc34480486f814",
+      "archivedLfSha256": "f4728b80af5318f82c90d712ee7ff5aad3748a5e96e4012a93bc34480486f814"
+    },
+    {
+      "file": "s737-staging-live.mjs.txt",
+      "sourceSha256": "59c29bafc55079531bed809c2a3e82f1999a1784daaaa7bb8cbef34f1040772a",
+      "archivedLfSha256": "59c29bafc55079531bed809c2a3e82f1999a1784daaaa7bb8cbef34f1040772a"
+    }
+  ]
+}

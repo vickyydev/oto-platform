@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-03T19:00:22.790Z",
+  "gate": {
+    "key": "browser",
+    "sha": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+    "start": "2026-11-03T18:41:54.853Z",
+    "end": "2026-11-03T18:55:47.644Z",
+    "command": "POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e\nPAYMENTS_SIMULATOR=on POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts\npnpm --filter @oto/api exec tsx C:/oto-lanes/s737-release-console-gate.mts",
+    "log": "C:/oto-lanes/s737-release-browser-merged.log",
+    "exitCode": 1,
+    "signal": null
+  },
+  "log": "C:/oto-lanes/s737-release-browser-merged.log",
+  "logSha256": "060f456ce3925bf0ba4d4be5c76c52fed79b2783e3f06b1d848f3b6cf99cdc74",
+  "console": {
+    "passed": 356,
+    "failed": 1
+  },
+  "error": "route.fulfill: Route is already handled!",
+  "file": "apps/console/e2e/page-state-review.spec.ts:28",
+  "errorContext": {
+    "originalSha256": "652d7a7586e492a0871c66867b83300e8bceeefb3d22c65f461029bf89b14f1c",
+    "archivedSha256": "25edefdf751445d56c1a1371f7c5f0d80b60244c6fec3a8423c9f7130ded1ce1",
+    "normalization": "LF and removed trailing spaces in Playwright line-numbered code. The raw original remains at C:/oto-lanes/s737-console-mock-failure/error-context.md."
+  }
+}

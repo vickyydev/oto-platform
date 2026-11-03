@@ -1,0 +1,13 @@
+import {copyFileSync,readFileSync,writeFileSync,mkdirSync,openSync,closeSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {spawn,execFileSync} from 'node:child_process';
+const root='C:/oto-lanes/codex-first-print-release-20261104',base='C:/oto-lanes/s737-console-mock-failure';
+mkdirSync(base,{recursive:true});
+for(const name of ['test-failed-1.png','error-context.md'])copyFileSync(root+'/apps/console/test-results/page-state-review-AUDIT-la-1ca5f-ce-selected-booth-B-history/'+name,base+'/'+name);
+const old='C:/oto-lanes/s737-release-browser-merged.log';
+writeFileSync(base+'/failure.json',JSON.stringify({at:new Date().toISOString(),gate:JSON.parse(readFileSync('C:/oto-lanes/s737-release-browser-merged-exit.json')),log:old,logSha256:createHash('sha256').update(readFileSync(old)).digest('hex'),console:{passed:356,failed:1},error:'route.fulfill: Route is already handled!',file:'apps/console/e2e/page-state-review.spec.ts:28'},null,2)+'\n');
+const log=base+'/reproduce.log',fd=openSync(log,'wx'),sha=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),start=new Date().toISOString();
+const child=spawn('C:/Program Files/Git/bin/bash.exe',['-c','set -eo pipefail\npnpm --filter @oto/api exec tsx C:/oto-lanes/s737-console-repro-gate.mts'],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});
+console.log(JSON.stringify({sha,start,log}));
+child.once('error',e=>{closeSync(fd);writeFileSync(base+'/reproduce-exit.json',JSON.stringify({sha,start,error:e.name,exitCode:1}));process.exitCode=1;});
+child.once('exit',(code,signal)=>{closeSync(fd);const result={sha,start,end:new Date().toISOString(),log,exitCode:code??1,signal};writeFileSync(base+'/reproduce-exit.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));console.log(readFileSync(log,'utf8').slice(-1400));process.exitCode=code??1;});
