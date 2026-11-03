@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearch } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { TxnKind, MemberActivity as MemberActivityData, type Wristband } from '@/types';
@@ -20,7 +20,12 @@ import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { useBranch } from '@/branch/BranchContext';
+import { useOperator } from '@/auth/OperatorContext';
+import { useStation } from '@/station/StationContext';
+import { toast } from '@/hooks/use-toast';
 import { explainLookup, useSearchLookup } from '@/lib/historyLookup';
+import { readTabScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { decideHistoryTabScan } from '@/lib/tabScan';
 import { readRefundRequests, type RefundRequestNote } from '@/lib/refundRequests';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,6 +106,8 @@ interface BandResult {
 
 export default function History() {
   const { branch } = useBranch();
+  const { station } = useStation();
+  const { locked } = useOperator();
   const branchApiId = branch.apiId ?? null;
   const timeZone = branch.timezone;
 
@@ -227,7 +234,11 @@ export default function History() {
     [branch.id, branch.name, patchEverywhere],
   );
 
+  /** Only the latest band's answers land: a second scan, or Back, overtakes a lookup still out. */
+  const bandLookup = useRef(0);
+
   const backToList = () => {
+    bandLookup.current += 1;
     setPhoneInput('');
     setMemberActivity(null);
     setMemberError(null);
@@ -304,6 +315,40 @@ export default function History() {
    * printed under it. The platform finds the band and its sale; nothing here
    * checks the code's signature, which is the gate's job, not History's.
    */
+  const openBand = useCallback(
+    async (search: { code: string; label: string }) => {
+      const asked = (bandLookup.current += 1);
+      const current = () => asked === bandLookup.current;
+      setScanError(null);
+      setView('band');
+      setBandResult(null);
+      setBandError(null);
+      setBandWallet(null);
+      // S2-14a round 2 — the band's real credit, beside its sales. A lookup
+      // that fails leaves the credit unsaid rather than reading ฿0.
+      void scanWallet(search.code).then(
+        (found) => {
+          if (current()) setBandWallet(found);
+        },
+        () => {
+          if (current()) setBandWallet(null);
+        },
+      );
+      try {
+        const found = await lookupSales(branchApiId, { band: search.code });
+        if (!current()) return;
+        setBandResult({
+          code: search.code,
+          label: search.label,
+          sales: found.sales.map((t) => ({ ...t, branchId: branch.id, branchName: branch.name })),
+        });
+      } catch (err) {
+        if (current()) setBandError(explainLookup(err, 'band'));
+      }
+    },
+    [branchApiId, branch.id, branch.name],
+  );
+
   const submitScan = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -314,27 +359,30 @@ export default function History() {
         );
         return;
       }
-      setScanError(null);
-      setView('band');
-      setBandResult(null);
-      setBandError(null);
-      setBandWallet(null);
-      // S2-14a round 2 — the band's real credit, beside its sales. A lookup
-      // that fails leaves the credit unsaid rather than reading ฿0.
-      void scanWallet(search.code).then(setBandWallet, () => setBandWallet(null));
-      try {
-        const found = await lookupSales(branchApiId, { band: search.code });
-        setBandResult({
-          code: search.code,
-          label: search.label,
-          sales: found.sales.map((t) => ({ ...t, branchId: branch.id, branchName: branch.name })),
-        });
-      } catch (err) {
-        setBandError(explainLookup(err, 'band'));
-      }
+      await openBand(search);
     },
-    [scanInput, branchApiId, branch.id, branch.name],
+    [scanInput, openBand],
   );
+
+  /**
+   * SCRUM-731 — THE SAME BRACELET, READ BY THE COUNTER'S SCANNER. The box hands
+   * over the short code printed under the QR, and it opens what that code opens
+   * when typed, from whichever list is on screen. What it cannot open is said in
+   * words (`decideHistoryTabScan`).
+   */
+  useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
+    const scan = readTabScan(event);
+    if (!scan) return;
+    const decision = decideHistoryTabScan(scan, selected !== null);
+    if (decision.kind === 'say') {
+      const { kind: _kind, ...words } = decision;
+      toast(words);
+      return;
+    }
+    const search = parseHistorySearch(decision.key);
+    if (search.kind === 'band') void openBand(search);
+    else toast({ title: 'That is not a bracelet code', description: 'Nothing changed here.', variant: 'destructive' });
+  });
 
   /** The search box asking the platform, when what it holds is a band code or a phone. */
   const lookup = useSearchLookup(query, branchApiId, reread);

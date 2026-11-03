@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { VOUCHER_CODE_HANDLER } from '@oto/shared';
+import { VOUCHER_CODE_HANDLER, WALLET_QR_HANDLER } from '@oto/shared';
 
 // THE STATION CHANNEL, FOR SCANS (S2-09b).
 //
@@ -27,7 +27,10 @@ import { VOUCHER_CODE_HANDLER } from '@oto/shared';
 // SKU, which for a size's barcode is the code itself: a product barcode is
 // printed on the product and is no secret. A Lucky Wheel voucher's code
 // travels too (S2-10b): it is the one thing the till must ask the platform
-// about, and it opens nothing on its own — see `readVoucherScan`.
+// about, and it opens nothing on its own — see `readVoucherScan`. So does a
+// wallet's voucher QR (SCRUM-731), which the till spends by, to staff screens
+// only; a band arrives as its short code, the one printed under its QR — see
+// `readTabScan`.
 
 /** One scan as the channel carries it — `StationScanMessage` in `@oto/box-agent`. */
 export interface StationScanEvent {
@@ -159,6 +162,57 @@ export function readBenefitScan(event: StationScanEvent): BenefitScanRead | null
   return { ok: false, message: typeof message === 'string' && message ? message : 'That staff benefit QR was not accepted.' };
 }
 
+/** The name the box's band handler goes by (`BAND_CODE_HANDLER` in `@oto/box-agent`). */
+export const BAND_CODE_HANDLER = 'band';
+/** What the box answers for the short code read on its own (`BAND_SHORT_CODE`). */
+export const BAND_SHORT_CODE = 'BAND_SHORT_CODE';
+/** The name the box's wallet QR handler goes by, shared with the box. */
+export { WALLET_QR_HANDLER };
+
+/**
+ * A scan that names a customer's tab (SCRUM-731): a wristband or a wallet's
+ * voucher QR. `key` is what a person would have typed to open the same tab, so
+ * a screen hands it to the typed path and has no second one. Null when the scan
+ * is neither.
+ */
+export type TabScan =
+  | { ok: true; what: 'band' | 'wallet'; key: string }
+  | { ok: false; what: 'band' | 'wallet'; message: string };
+
+export function readTabScan(event: StationScanEvent): TabScan | null {
+  const detail = event.detail ?? {};
+  if (event.codeKind === 'wallet') {
+    const key = detail.walletKey;
+    if (event.outcome === 'handled' && event.handler === WALLET_QR_HANDLER && typeof key === 'string' && key) {
+      return { ok: true, what: 'wallet', key };
+    }
+    return { ok: false, what: 'wallet', message: 'That credit voucher could not be read. Type its code instead.' };
+  }
+  if (event.codeKind !== 'band') return null;
+  // The box checked the signature and hands over the band it names, never the
+  // signed code (`bandCodeHandler`). The short code printed under the QR, read
+  // on its own, proves nothing at a gate; at a counter it opens what it opens
+  // when typed.
+  const held =
+    event.outcome === 'handled' && event.handler === BAND_CODE_HANDLER
+      ? (detail.band as { shortCode?: unknown } | undefined)?.shortCode
+      : event.errorCode === BAND_SHORT_CODE
+        ? detail.shortCode
+        : null;
+  if (typeof held === 'string' && held) return { ok: true, what: 'band', key: held };
+  const message = detail.message;
+  return {
+    ok: false,
+    what: 'band',
+    message: typeof message === 'string' && message ? message : 'That wristband could not be read. Type the code printed under its QR instead.',
+  };
+}
+
+/** Asleep, a background tab, another app in front: nothing heard now is this screen's. */
+export function screenHidden(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden';
+}
+
 /**
  * How long the stream has to open before this screen stops waiting for it.
  *
@@ -229,7 +283,9 @@ const POLL_REFUSALS = new Set([400, 401, 403, 404, 409]);
  * scan must not land on the cart beside the one it is about to hear. Whether
  * the screen was away is read from its visibility alone: a poll that failed
  * or timed out says nothing about it, and the scans of that gap are delivered
- * by the next poll that answers.
+ * by the next poll that answers. A stream holds its connection while the screen
+ * is hidden, so what it brings then is dropped on arrival (SCRUM-731), and so is
+ * what a poll already in flight brings.
  *
  * `onScan` is read through a ref, so a screen can hand in a fresh closure on
  * every render (its stage, its grid) without reopening anything.
@@ -250,7 +306,7 @@ export function useStationScans(
     let stopped = false;
 
     const deliver = (message: StationScanEvent) => {
-      if (!stopped && message.kind === 'scan') handler.current(message);
+      if (!stopped && !screenHidden() && message.kind === 'scan') handler.current(message);
     };
 
     // --- The poll -------------------------------------------------------------
@@ -264,16 +320,13 @@ export function useStationScans(
      */
     let cursor: number | null = null;
 
-    /** Asleep, a background tab, another app in front: nothing heard now is this screen's. */
-    const hidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
-
     const schedule = () => {
-      if (!stopped && !hidden()) pollTimer = setTimeout(pollOnce, POLL_INTERVAL_MS);
+      if (!stopped && !screenHidden()) pollTimer = setTimeout(pollOnce, POLL_INTERVAL_MS);
     };
 
     const pollOnce = async () => {
       pollTimer = null;
-      if (stopped || hidden()) return; // resumed by `onVisibility`
+      if (stopped || screenHidden()) return; // resumed by `onVisibility`
       const query = cursor === null ? 'view=staff' : `view=staff&after=${cursor}`;
       const abort = new AbortController();
       inFlight = abort;
@@ -318,7 +371,7 @@ export function useStationScans(
 
     const onVisibility = () => {
       if (stopped || !polling) return;
-      if (hidden()) {
+      if (screenHidden()) {
         // Paused. A poll still in flight is left to answer — `schedule` sends
         // no next one while hidden — and one due is not sent.
         if (pollTimer) clearTimeout(pollTimer);

@@ -26,6 +26,7 @@ import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { useFnbDisplay } from '@/lib/fnbDisplaySession';
 import { hasBridgeOrigin } from '@/api/bridge';
 import { readBenefitScan, readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { useCounterTabScan } from '@/lib/tabScan';
 import { useScannerBurst } from '@/lib/scannerBurst';
 import {
   CANCELLED_AT_THE_TILL,
@@ -882,7 +883,11 @@ export default function OrderStation() {
     if (stage === 'scan') loadBand(null);
     void redeemVoucher(code);
   };
+  // SCRUM-731 — a wristband or a credit voucher at this counter's scanner opens
+  // what a typed code opens, from the same form, and only on the first screen.
+  const tabScan = useCounterTabScan({ stage, held: wristband, locked, noun: 'order' });
   useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
+    if (tabScan.hear(event)) return;
     // S2-21 round 3 — a staff benefit QR at this counter's scanner, checked by
     // the box: applied to the order on screen, or its refusal said here.
     const benefitRead = readBenefitScan(event);
@@ -1371,7 +1376,7 @@ export default function OrderStation() {
            * S2-10b — THE BAND FIELD TAKES A VOUCHER TOO. The band field has the
            * keyboard on this screen, so a USB scanner's voucher lands in it, and
            * so does one typed off the slip. A value with a booth voucher's shape
-           * (`looksLikeVoucherCode` — a band code is digits and never has one) is
+           * (`looksLikeVoucherCode`, which no band code has) is
            * taken off the form on its way down, before the band lookup sees it,
            * and handled as the box's scan is: a guest order opens and the voucher
            * is held. Every other value reaches the band lookup unchanged.
@@ -1392,6 +1397,8 @@ export default function OrderStation() {
             <ScanWristband
               onLoadTab={(wb) => loadBand(wb)}
               onGuest={() => loadBand(null)}
+              scanned={tabScan.scanned}
+              onScannedTaken={tabScan.taken}
             />
           </div>
         )}

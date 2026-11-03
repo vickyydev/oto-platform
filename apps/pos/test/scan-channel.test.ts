@@ -1077,6 +1077,31 @@ describe('useStationScans — a hidden screen does not act on scans (SCRUM-424)'
     expect(polls[2]!.after).toBeNull();
   });
 
+  it('a stream stays connected while hidden, and what it brings then is dropped on arrival (SCRUM-731)', () => {
+    vi.stubGlobal('EventSource', FakeEventSource);
+    const { heard } = listen();
+    const stream = FakeEventSource.made[0]!;
+    stream.open();
+
+    doc.show('hidden');
+    stream.send('scan', JSON.stringify(scan({ detail: { code: 'SCANNED-WHILE-AWAY' } })));
+    expect(heard).toEqual([]);
+
+    doc.show('visible');
+    const now = scan();
+    stream.send('scan', JSON.stringify(now));
+    expect(heard).toEqual([now]);
+  });
+
+  it('a poll in flight when the screen hides delivers nothing it brings (SCRUM-731)', async () => {
+    const { heard } = listen();
+    await polls[0]!.answer({ next: 7, scans: [] });
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    doc.show('hidden');
+    await polls[1]!.answer({ next: 8, scans: [scan({ detail: { code: 'SCANNED-WHILE-AWAY' } })] });
+    expect(heard).toEqual([]);
+  });
+
   it('reads being away from visibility alone: a failed poll resets no cursor', async () => {
     const { heard } = listen();
     await polls[0]!.answer({ next: 7, scans: [] });

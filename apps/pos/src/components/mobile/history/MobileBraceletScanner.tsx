@@ -188,7 +188,12 @@ export function MobileBraceletScanner({
         </p>
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
-            inputMode="numeric"
+            // Band codes carry letters (`T1-7KMQ4X`), so no numbers-first keyboard.
+            inputMode="text"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
             value={code}
             onChange={(e) => {
               setCode(e.target.value);

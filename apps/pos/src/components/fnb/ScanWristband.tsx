@@ -6,6 +6,7 @@ import { BOX_CREDIT_REFUSAL_CODES, lookupBandFoodOnBox, lookupWalletOnBox, scanB
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { getActiveBranch } from '@/store/catalogStore';
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure, useLane } from '@/lib/lane';
+import { screenHidden } from '@/lib/scanChannel';
 import { useDemoControls } from '@/lib/demoControls';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -21,6 +22,12 @@ interface ScanWristbandProps {
   subtitle?: string;
   /** When set, an unknown code calls back here instead of showing the inline error. */
   onUnknownCode?: (code: string) => void;
+  /**
+   * SCRUM-731 — a key the counter's scanner read (`useCounterTabScan`), looked
+   * up exactly as a code typed here and handed back through `onScannedTaken`.
+   */
+  scanned?: string | null;
+  onScannedTaken?: () => void;
 }
 
 export function ScanWristband({
@@ -29,6 +36,8 @@ export function ScanWristband({
   title = 'Scan Wristband',
   subtitle = "Scan or type a wristband code to load the customer's tab.",
   onUnknownCode,
+  scanned,
+  onScannedTaken,
 }: ScanWristbandProps) {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +50,28 @@ export function ScanWristband({
   // SCRUM-515 — and only where people play, never on a real park's till.
   const showDemoBands = useDemoControls();
 
-  const submit = async (value: string) => {
-    if (looking) return;
+  // The screen this form is on can go while its lookup is out: a guest order
+  // started, the station locked. The answer then belongs to nobody.
+  const onScreen = useRef(true);
+  useEffect(() => {
+    onScreen.current = true;
+    return () => {
+      onScreen.current = false;
+    };
+  }, []);
+  const inFlight = useRef(false);
+
+  const submit = async (value: string, fromScanner = false) => {
+    if (inFlight.current) {
+      if (fromScanner) setError('Still looking up the last code. Scan again in a moment.');
+      return;
+    }
+    inFlight.current = true;
     setLooking(true);
     const found = await loadScannedTab(value);
+    inFlight.current = false;
     setLooking(false);
+    if (!onScreen.current || (fromScanner && screenHidden())) return;
     if (found.error) {
       setError(found.error);
       return;
@@ -70,6 +96,14 @@ export function ScanWristband({
     void submit(code);
   };
 
+  useEffect(() => {
+    if (!scanned) return;
+    onScannedTaken?.();
+    void submit(scanned, true);
+    // Asked once per key: `submit` and the callback are fresh on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanned]);
+
   return (
     // Centred by the block's own auto margins rather than `justify-center`: a
     // centred column that is taller than the screen (a tablet held sideways is
@@ -90,7 +124,12 @@ export function ScanWristband({
         <form onSubmit={handleSubmit} className="flex gap-3 mb-3">
           <Input
             autoFocus
-            inputMode="numeric"
+            // Band codes carry letters (`T1-7KMQ4X`), so no numbers-first keyboard.
+            inputMode="text"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
             value={code}
             onChange={(e) => {
               setCode(e.target.value);

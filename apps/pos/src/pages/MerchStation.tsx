@@ -8,6 +8,7 @@ import { getActiveMerchItems, getDiscountByCode, getDiscountReasons, recordMerch
 import { asksForSize, isOutOfStock, merchSizes } from '@/lib/merch';
 import { merchLineTotal } from '@/lib/cartWire';
 import { readProductScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { useCounterTabScan } from '@/lib/tabScan';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
@@ -312,9 +313,14 @@ export default function MerchStation() {
    * chosen, it starts a guest sale — the guest at the counter is holding the
    * thing. During payment it adds nothing: the sale being paid for must not
    * change under the person paying.
+   *
+   * SCRUM-731 — a wristband or a credit voucher opens what a typed code opens,
+   * from the same form, and only on the first screen.
    */
+  const tabScan = useCounterTabScan({ stage, held: wristband, locked, noun: 'sale' });
   const handleScan = (event: StationScanEvent) => {
     if (staffLocked.current) return;
+    if (tabScan.hear(event)) return;
     const scan = readProductScan(event);
     if (!scan) return;
     if (scan.kind === 'unknown') {
@@ -644,6 +650,8 @@ export default function MerchStation() {
             subtitle="Scan a wristband to put the sale on the customer's tab, or continue as a guest."
             onLoadTab={(wb) => loadBand(wb)}
             onGuest={() => loadBand(null)}
+            scanned={tabScan.scanned}
+            onScannedTaken={tabScan.taken}
           />
         )}
 

@@ -80,7 +80,8 @@ import { paymentMethodLabel } from '@/lib/payments';
 import { useCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
-import { readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { readTabScan, readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { ticketTillTabScanWords } from '@/lib/tabScan';
 import { useScannerBurst } from '@/lib/scannerBurst';
 import { vouchersApi } from '@/api/vouchers';
 import {
@@ -1531,6 +1532,9 @@ export default function Till() {
     else if (bookingScan) {
       toast({ title: 'Booking QR not accepted', description: bookingScan.refused, variant: 'destructive' });
     }
+    // SCRUM-731 — a wristband or a credit voucher means nothing to this sale, and says so.
+    const tabScan = readTabScan(event);
+    if (tabScan) toast(ticketTillTabScanWords(tabScan));
   });
   useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode, enabled: !locked });
   // A booking QR read by a scanner on this device rather than the box's.
