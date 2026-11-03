@@ -1,0 +1,57 @@
+{
+  "head": "0407da71f74cfe93e5c417233fb51a225c42773f",
+  "base": "61ef0011b0202bc1f6b6e6cc732eaf58fc5b0606",
+  "productAndTestsByteIdenticalTo": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+  "commits": [
+    "edd9beddf6769314ff41494f341e4c21962a3ed9",
+    "b0713bcffefcd04fe049b7cc7688919d087b3d25",
+    "73ac14eb373753552ce1799cc8141866f8d4bdc9",
+    "99586438445d6191e7b390be72dc4c7d95214878",
+    "b7702286787084f10d61cef837c6820ef9e12b32",
+    "67c5035e7fb1eb9d8832441c06b9f8680410cb19",
+    "359c1e9df541460f8c0212cdf250d122fa8ccd23",
+    "0407da71f74cfe93e5c417233fb51a225c42773f"
+  ],
+  "notes": [
+    {
+      "file": "docs/progress/STATUS.md",
+      "from": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+      "preservedNonblankLines": 2106
+    },
+    {
+      "file": "docs/progress/STATUS.md",
+      "from": "origin/main",
+      "preservedNonblankLines": 2110
+    },
+    {
+      "file": "docs/handover/CODEX_HANDOVER.md",
+      "from": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+      "preservedNonblankLines": 1453
+    },
+    {
+      "file": "docs/handover/CODEX_HANDOVER.md",
+      "from": "origin/main",
+      "preservedNonblankLines": 1457
+    },
+    {
+      "file": "docs/handover/CLOUD_HANDOVER.md",
+      "from": "4757ed1c7bf9ba85acb3ac8a008f36fc35987da8",
+      "preservedNonblankLines": 1303
+    },
+    {
+      "file": "docs/handover/CLOUD_HANDOVER.md",
+      "from": "origin/main",
+      "preservedNonblankLines": 1307
+    }
+  ],
+  "changedProductAndTestFiles": [
+    "apps/api/test/s737-first-sale-print-review.test.ts",
+    "apps/oto-app/server/lib/telemetry/redact.ts",
+    "packages/box-agent/src/agent.ts",
+    "packages/box-agent/src/printing/channel.ts",
+    "packages/telemetry/src/redact.ts",
+    "packages/telemetry/test/redact.test.ts"
+  ],
+  "journalLastEntry": "0099_box_bridge_origin",
+  "ownMigrations": 0
+}

@@ -24,7 +24,7 @@ const api=async(method,path,body)=>{const response=await ctx.request.fetch(CONSO
 let claimCode=null,agent=null;const credentials=memoryCredentialStore(),transport=httpTransport();let configReads=0;
 try {
  const login=await ctx.request.post(LAUNCHER+'/api/auth/sign-in',{data:{phone:need('STAGING_ADMIN_PHONE'),password:need('STAGING_ADMIN_PASSWORD')}});assert.equal(login.status(),200);
- const h=await ctx.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'console'}});assert.equal(h.status(),200);await p.goto((await h.json()).launchUrl);await p.waitForURL('**/overview');
+ const h=await ctx.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'console'}});assert.equal(h.status(),200);await p.goto((await h.json()).launchUrl).catch(()=>{throw new Error('Console handoff navigation failed');});await p.waitForURL('**/overview').catch(()=>{throw new Error('Console handoff did not reach Overview');});
  const me=await api('GET','/me');r.identity={actorId:me.account.id,branchId:me.operatorContext.branchId};assert.equal(r.identity.branchId,'01a0bbdc-8c42-7753-b7e3-5ae19fb66d33');save();
  const made=await api('POST',`/branches/${r.identity.branchId}/boxes`,{name:name+' box',slot:'zz-s737-'+stamp,role:'counter'});f.boxId=made.box.id;claimCode=made.claimCode;assert.equal(typeof claimCode,'string');save();
  for(const [kind,role] of [['receipt_printer','receipt'],['kitchen_printer','kitchen']]){const d=await api('POST',`/boxes/${f.boxId}/devices`,{kind,label:name+' '+role,transport:'simulated',address:'zz-s737-'+role+':9100',model:'Xprinter XP-80',protocol:'escpos'});f.devices.push({deviceId:d.device.id,role,label:d.device.label});save();}

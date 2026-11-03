@@ -4,9 +4,10 @@
     {
       "file": "s737-staging-live.mjs.txt",
       "originalPath": "C:/oto-lanes/s737-staging-live.mjs",
-      "executedBytesSha256": "678c68a87290ef4c47c76723f1bdba9e45a819bde78fc4d2854ccf24d0407861",
-      "archivedLfSha256": "678c68a87290ef4c47c76723f1bdba9e45a819bde78fc4d2854ccf24d0407861",
-      "state": "prepared; not run on staging"
+      "executedBytesSha256": "59c29bafc55079531bed809c2a3e82f1999a1784daaaa7bb8cbef34f1040772a",
+      "archivedLfSha256": "59c29bafc55079531bed809c2a3e82f1999a1784daaaa7bb8cbef34f1040772a",
+      "state": "prepared; not run on staging; handoff navigation errors omit credential-bearing URLs",
+      "previousPreparedBytesSha256": "678c68a87290ef4c47c76723f1bdba9e45a819bde78fc4d2854ccf24d0407861"
     },
     {
       "file": "s737-staging-read.mjs.txt",
@@ -85,5 +86,6 @@
       "archivedLfSha256": "6e58437602640fc6320cbc0da0404d476368cecfd06a5ea1424dbe21d1eb625a",
       "state": "gate helper"
     }
-  ]
+  ],
+  "updatedAt": "2026-11-03T19:33:48.816Z"
 }
