@@ -21,17 +21,29 @@ The screens: [the board](./s730/local-before-01-board.png) offers Check in with 
 | Screen | What a person sees |
 |---|---|
 | [Board, drop-off](./s730/local-after-01-board-booked-and-paid.png) | Booked & paid, no payment needed |
-| [Check in pressed](./s730/local-after-02-check-in-opens-the-booking.png) | The booking's redeem dialog: ฿645 paid, Confirm & Issue. No line, no Pay |
+| [Check in pressed](./s730/local-after-02-check-in-opens-the-booking.png) | The booking's redeem dialog: ฿645 paid, Confirm & Issue. Behind it, no line and total ฿0 |
 | [Redeemed](./s730/local-after-03-redeemed-no-payment.png) | "Payment is complete", Check in now |
 | [Back on the board](./s730/local-after-04-board-checks-in-with-no-payment.png) | "Already booked & paid, no payment needed", the visit photo, Check in & issue band |
 | [Board, nanny](./s730/local-after-05-nanny-board-booked-and-paid.png) | Booked & paid with the booked start |
 | [Nanny Check in pressed](./s730/local-after-06-nanny-check-in-opens-the-booking.png) | The booking's redeem dialog, not a refusal |
 | [Phone family screen](./s730/local-after-07-phone-family-booked-and-paid.png) | Booked & paid |
-| [Phone Check In pressed](./s730/local-after-08-phone-check-in-opens-the-booking.png) | The booking's redeem dialog on the phone till |
+| [Phone Check In pressed](./s730/local-after-08-phone-check-in-opens-the-booking.png) | The booking's redeem dialog on the phone till. Behind it, "No items yet" |
+| [Add drop-off picker](./s730/local-after-09-picker-paid-online.png) | The family's button reads Paid online and is disabled, the child reads Paid online, Add sibling stays |
+| [Sibling added at the door](./s730/local-after-10-picker-sibling-on-the-sale.png) | The sibling alone is on the sale, at the till's ฿915. The paid child is not on it |
 
 The band itself needs a camera for the visit photo, so the browser run stops at that step. `apps/api/test/booking-paid-online-no-second-charge.test.ts` and `booking-supervised.test.ts:192` take the child into the park with one band and no second sale.
 
-Rerun: `PAYMENTS_SIMULATOR=on POS_E2E_BROWSER=chromium node e2e/run.mjs e2e/dropoff-paid-online.spec.ts` from `apps/pos`, with `POS_E2E_SHOTS` naming a folder for the screens.
+Rerun: `PAYMENTS_SIMULATOR=on POS_E2E_BROWSER=chromium POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e e2e/dropoff-paid-online.spec.ts`, with `POS_E2E_SHOTS` naming a folder for the screens. The Till end-to-end step in CI runs it the same way, on its own disposable database. On that harness a skip fails the gate.
+
+## The checks can fail
+
+Each check was run against a till changed on purpose, then the change was taken back out:
+
+| Change | Result |
+|---|---|
+| The iPad board fires both hand-overs and the till loads a paid child | The spec fails at "No items added yet", behind the dialog |
+| The phone board fires both hand-overs and the till loads a paid child | The spec fails at "No items yet", behind the dialog |
+| The picker treats a paid child as chargeable | Three of the picker's render tests fail in `apps/pos/test/s730-paid-online-board.test.ts` |
 
 ## Staging proof
 
@@ -45,7 +57,7 @@ After landing:
 
 4. As ZZ TEST, pay a booking for a nanny child as well.
 5. Sign in at a till on the Check-in board. Screen: each family says Booked & paid.
-6. Press Check in on the drop-off family. Screen: the redeem dialog, with no line and no Pay.
+6. Press Check in on the drop-off family. Screen: the redeem dialog, with no line and total ฿0 behind it.
 7. Confirm & Issue, then Check in now. Screen: the board's payment-free check-in. Take the visit photo and issue the band. Read the sale: one sale, the booking's, at what was paid.
 8. Press Check in on the nanny family. Screen: the redeem dialog, not "has not been paid for yet".
 9. Add a sibling to a paid family with Add drop-off child. Screen: the paid child reads Paid online and the sibling goes on the sale at the till's price.
