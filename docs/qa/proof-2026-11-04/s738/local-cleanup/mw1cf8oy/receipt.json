@@ -1,0 +1,11 @@
+{
+  "source": "4cddd8de19061caff527be08a2fe642bedcead4b",
+  "startedAt": "2026-11-03T23:52:57.563Z",
+  "localOnly": true,
+  "failure": {
+    "name": "error",
+    "message": "null value in column \"address\" of relation \"branches\" violates not-null constraint"
+  },
+  "databaseDropped": true,
+  "finishedAt": "2026-11-03T23:53:11.975Z"
+}

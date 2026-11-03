@@ -1,0 +1,57 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {randomBytes,randomUUID} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {cleanupUnpaidPasses} from './s738-cleanup-unpaid.mjs';
+import {createEvents} from './s738-staging-db.mjs';
+import {createTestContext,teardownAll,signInAs,ADMIN,CENTRAL_BRANCH_CODE} from './codex-tender-display-20261104/apps/api/test/helpers.ts';
+
+const root='C:/oto-lanes/codex-tender-display-20261104';
+const require=createRequire(root+'/apps/api/package.json'),{Pool}=require('pg');
+const stamp=Date.now().toString(36),name='ZZ TEST SCRUM-738 '+stamp;
+const out=root+'/docs/qa/proof-2026-11-04/s738/local-cleanup/'+stamp;mkdirSync(out,{recursive:true});
+const receipt:any={source:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),startedAt:new Date().toISOString(),localOnly:true};
+let code=1;
+const ctx=await createTestContext({otoapp:true,env:{DEPLOY_ENV:'local',PROCESS_ROLES:'api,jobs',PGW_PROVIDER:'simulator',PGW_MERCHANT_ID:'ZZTEST738',PGW_SECRET_KEY:randomBytes(32).toString('hex'),PGW_WEBHOOK_SECRET:randomBytes(24).toString('hex')}});
+const pool=new Pool({connectionString:(ctx.db as any).$client.options.connectionString,max:2});
+try {
+ const cookie=await signInAs(ctx.app,ADMIN.phone,ADMIN.password);
+ const api=async(method:string,url:string,payload?:unknown)=>{
+  const res=await ctx.app.inject({method:method as any,url,headers:{cookie,'idempotency-key':randomUUID()},...(payload===undefined?{}:{payload:payload as any})});
+  assert.equal(res.statusCode,200,method+' '+url+' '+res.statusCode+' '+(res.json()?.error?.code??''));return res.json();
+ };
+ const branch=(await pool.query('SELECT id FROM core.branch WHERE code=$1',[CENTRAL_BRANCH_CODE])).rows[0];
+ const tenant=randomUUID(),appBranch=randomUUID();
+ await pool.query('INSERT INTO otoapp.tenants(id,name,slug) VALUES($1,$2,$3)',[tenant,name,'zz-cleanup-'+stamp]);
+ await pool.query('INSERT INTO otoapp.branches(id,tenant_id,name,address,core_branch_id) VALUES($1,$2,$3,$4,$5)',[appBranch,tenant,name+' branch','ZZ TEST local',branch.id]);
+ const events={pass:{id:randomUUID(),title:name+' pass',type:'workshop'},party:{id:randomUUID(),title:name+' party',type:'birthday'},mobile:{id:randomUUID(),title:name+' mobile',type:'birthday'}};
+ await createEvents({name,branchId:branch.id,events},'local',async(program:string,event:string)=>{
+  const messages:any[]=[],localProcess={env:{DATABASE_URL:(ctx.db as any).$client.options.connectionString},exitCode:0};
+  await new Function('require','process','console','return '+program)(require,localProcess,{log:(s:string)=>messages.push(JSON.parse(s)),error:(s:string)=>messages.push(JSON.parse(s))});
+  assert.equal(localProcess.exitCode,0);assert.equal(messages.find(x=>x.event===event)?.passed,true);return {};
+ });
+ const box=(await api('GET',`/branches/${branch.id}/boxes`)).boxes.find((b:any)=>b.role==='virtual'&&!b.archived);assert.ok(box);
+ const make=async(suffix:string,prefix:string)=>(await api('POST',`/branches/${branch.id}/stations`,{name:name+suffix,boxId:box.id,kind:'till',codePrefix:prefix,accessScope:'all_staff',paymentRouting:{card:'manual',qr:'gateway'},devices:[]})).station.id;
+ const stationId=await make(' till','Z38'),otherId=await make(' unrelated till','Z39');
+ const f={name,branchId:branch.id,stationId,boxId:box.id};
+ const open=async(id:string)=>{
+  await api('PUT','/me/session/station',{stationId:id});
+  const saleId=randomUUID();await api('POST',`/events/${events.pass.id}/passes/open`,{branchId:branch.id,stationId:id,saleId,attendeeId:randomUUID(),actionId:randomUUID(),attendee:{name:'ZZ TEST child',parentName:'ZZ TEST guardian'},registerProperly:false});return saleId;
+ };
+ const unrelated=await open(otherId),withoutTender=await open(stationId),withTender=await open(stationId);
+ const tender=await api('POST','/payments/attempts',{saleId:withTender,tender:'qr',method:'promptpay',kind:'qr',requestQrPayload:true,qrDirection:'show',actionId:randomUUID()});assert.equal(tender.attempt.provider,'simulator');
+ let writes=0;
+ await assert.rejects(()=>cleanupUnpaidPasses({fixture:{...f,name:name+'wrong'},read:api,write:async()=>{writes++;}}));
+ assert.equal(writes,0);
+ receipt.cleanup=await cleanupUnpaidPasses({fixture:f,read:api,write:api});assert.equal(receipt.cleanup.closed.length,2);
+ const holds=(await pool.query('SELECT sale_id,status FROM pos.event_pass_hold WHERE sale_id=ANY($1::uuid[]) ORDER BY sale_id',[[withoutTender,withTender]])).rows;
+ assert.equal(holds.length,2);assert.ok(holds.every((x:any)=>x.status==='released'));
+ assert.equal((await api('GET','/sales/'+unrelated)).sale.status,'tendering');
+ assert.equal((await api('GET','/payments/attempts/'+tender.attempt.id)).attempt.status,'cancelled');
+ assert.equal(ctx.smsLog.length,0);
+ receipt.checks={unstartedPassVoided:true,simulatorCancelledAndPassVoided:true,holdsReleased:2,otherTillPreserved:true,wrongIdentityWrites:0,sms:0};receipt.passed=true;code=0;
+}catch(error){receipt.failure={name:(error as Error).name,message:(error as Error).message.replace(/postgres[^\s]*/g,'[database omitted]')};}
+finally {await pool.end();await ctx.close();await teardownAll();receipt.databaseDropped=true;receipt.finishedAt=new Date().toISOString();writeFileSync(out+'/receipt.json',JSON.stringify(receipt,null,2)+'\n');}
+console.log(JSON.stringify({out,passed:receipt.passed??false,databaseDropped:receipt.databaseDropped,failure:receipt.failure}));
+process.exit(code);

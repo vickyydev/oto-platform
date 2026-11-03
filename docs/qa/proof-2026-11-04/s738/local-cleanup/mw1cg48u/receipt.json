@@ -1,0 +1,29 @@
+{
+  "source": "4cddd8de19061caff527be08a2fe642bedcead4b",
+  "startedAt": "2026-11-03T23:53:38.451Z",
+  "localOnly": true,
+  "cleanup": {
+    "closed": [
+      {
+        "saleId": "4c5ff7e7-d205-4a72-95b6-f1a7a3affeb8",
+        "status": "voided"
+      },
+      {
+        "saleId": "8b35ea68-12c7-44b5-9748-6b010abb9f50",
+        "status": "voided"
+      }
+    ],
+    "remainingUnpaid": 0
+  },
+  "checks": {
+    "unstartedPassVoided": true,
+    "simulatorCancelledAndPassVoided": true,
+    "holdsReleased": 2,
+    "otherTillPreserved": true,
+    "wrongIdentityWrites": 0,
+    "sms": 0
+  },
+  "passed": true,
+  "databaseDropped": true,
+  "finishedAt": "2026-11-03T23:53:51.932Z"
+}

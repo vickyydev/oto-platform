@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+
+/** Close only unpaid passes on this run's own till, preserving paid history. */
+export async function cleanupUnpaidPasses({fixture, read, write}) {
+  const f=fixture;
+  assert.match(f.name,/^ZZ TEST SCRUM-738 [a-z0-9]+$/);
+  const station=(await read('GET','/stations/'+f.stationId)).station;
+  assert.equal(station.name,f.name+' till');
+  assert.equal(station.boxId,f.boxId);
+  const path=`/sales?branchId=${f.branchId}&stationId=${f.stationId}&status=tendering&limit=200`;
+  const pending=(await read('GET',path)).sales;
+  assert.ok(Array.isArray(pending));
+  assert.ok(pending.length<=2,'More unfinished passes than this proof creates');
+  const closed=[];
+  for(const sale of pending) {
+    assert.equal(sale.stationId,f.stationId);
+    assert.equal(sale.branchId,f.branchId);
+    const detail=await read('GET','/sales/'+sale.id);
+    assert.equal(detail.sale.stationId,f.stationId);
+    assert.equal(detail.sale.status,'tendering');
+    for(const attempt of detail.attempts) {
+      assert.equal(attempt.provider,'simulator');
+      if(['created','sent_to_terminal'].includes(attempt.status)) {
+        await write('POST',`/payments/attempts/${attempt.id}/cancel`,{reason:'ZZ TEST SCRUM-738 interrupted proof'});
+      } else {
+        assert.ok(['cancelled','declined','not_found'].includes(attempt.status),'Do not void a pass with money or an unresolved tender');
+      }
+    }
+    await write('POST',`/sales/${sale.id}/void`,{reason:'ZZ TEST SCRUM-738 interrupted proof'});
+    const after=await read('GET','/sales/'+sale.id);
+    assert.equal(after.sale.status,'voided');
+    closed.push({saleId:sale.id,status:after.sale.status});
+  }
+  assert.deepEqual((await read('GET',path)).sales,[]);
+  return {closed,remainingUnpaid:0};
+}

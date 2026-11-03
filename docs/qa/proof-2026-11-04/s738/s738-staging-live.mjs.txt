@@ -7,6 +7,7 @@ import {mkdirSync,writeFileSync} from 'node:fs';
 import {need} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
 import {journeys} from './s738-staging-journeys.mjs';
 import {createEvents,readProof,archiveEvents,readCleanup} from './s738-staging-db.mjs';
+import {cleanupUnpaidPasses} from './s738-cleanup-unpaid.mjs';
 const [root,sha]=process.argv.slice(2);assert.match(root??'',/^C:\/oto-lanes\//);assert.match(sha??'',/^[a-f0-9]{40}$/);
 execFileSync('git',['merge-base','--is-ancestor',sha,'origin/main'],{cwd:root,stdio:'ignore'});
 const {statusOf}=await import(pathToFileURL(root+'/scripts/agent/jira.mjs').href);
@@ -46,6 +47,7 @@ finally{
  await displayBrowser.close();r.cleanup.startedAt=new Date().toISOString();save();
  const cleanupError=(step,error)=>{(r.cleanup.errors??=[]).push({step,name:error.name,message:error.message.split('\n')[0]});process.exitCode=1;save();};
  try{for(const id of r.attempts){const info=await adminApi('GET','/payments/attempts/'+id);assert.equal(info.attempt.id,id);assert.equal(info.attempt.provider,'simulator');if(['created','sent_to_terminal'].includes(info.attempt.status))await api('POST',`/payments/attempts/${id}/cancel`,{reason:'ZZ TEST SCRUM-738 cleanup'});}}catch(e){cleanupError('own pending attempts',e);}
+ try{if(f.stationId)r.cleanup.unpaidPasses=await cleanupUnpaidPasses({fixture:f,read:adminApi,write:api});}catch(e){cleanupError('own unpaid passes',e);}
  try{if((await ctx.request.get(POS+'/api/me')).status()===200){const doc=f.stationId?(await adminApi('GET',`/stations/${f.stationId}/session`)).document:null;const logout=await ctx.request.post(POS+'/api/auth/sign-out',{data:doc?.lease?.leaseId?{stationLeaseId:doc.lease.leaseId}:{}});assert.equal(logout.status(),200);}assert.equal((await ctx.request.get(POS+'/api/me')).status(),401);r.cleanup.staffSessionEnded=true;}catch(e){cleanupError('staff sign-out',e);}
  try{if(f.displayId){const credentials=(await adminApi('GET',`/branches/${f.branchId}/credentials?includeRevoked=true`)).credentials,own=credentials.find(x=>x.id===f.displayId);assert.equal(own.label,name+' display');assert.equal(own.stationId,f.stationId);await adminApi('POST',`/credentials/${f.displayId}/revoke`,{reason:'ZZ TEST SCRUM-738 proof complete'});const after=(await adminApi('GET',`/branches/${f.branchId}/credentials?includeRevoked=true`)).credentials.find(x=>x.id===f.displayId);assert.ok(after.revokedAt);r.cleanup.displayRevoked=true;}}catch(e){cleanupError('display revoke',e);}
  try{if(f.stationId){const own=(await adminApi('GET','/stations/'+f.stationId)).station;assert.equal(own.name,name+' till');assert.equal(own.boxId,f.boxId);await adminApi('DELETE','/stations/'+f.stationId);const after=(await adminApi('GET',`/branches/${f.branchId}/stations?includeArchived=true`)).stations.find(x=>x.id===f.stationId);assert.equal(after.archived,true);r.cleanup.stationArchived=true;}}catch(e){cleanupError('station archive',e);}
