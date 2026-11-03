@@ -1,0 +1,62 @@
+[
+  {
+    "shard": 1,
+    "total": 2236,
+    "passed": 2129,
+    "failed": 1,
+    "pending": 106,
+    "todo": 0,
+    "files": 148,
+    "failures": [
+      {
+        "file": "C:/oto-lanes/codex-first-print-20261103/apps/api/test/s217b-r4b.test.ts",
+        "title": "D. the platform’s two new jobs against a stand-in app review F1 on the two new jobs: a park group the app holds staff in, with no key here both fail naming it while the keyed park groups still run; the no-show check outside its hours checks nothing and fails nothing",
+        "message": [
+          "AssertionError: attention: expected [ [ …(2) ], [ …(2) ], [ …(2) ] ] to deeply equal [ [ …(2) ], [ …(2) ], [ …(2) ] ]\n    at C:\\oto-lanes\\codex-first-print-20261103\\apps\\api\\test\\s217b-r4b.test.ts:1143:81\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at file:///C:/oto-lanes/codex-first-print-20261103/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20"
+        ]
+      }
+    ]
+  },
+  {
+    "shard": 2,
+    "total": 2300,
+    "passed": 2123,
+    "failed": 0,
+    "pending": 174,
+    "todo": 3,
+    "files": 148,
+    "failures": []
+  },
+  {
+    "shard": 3,
+    "total": 2045,
+    "passed": 1920,
+    "failed": 3,
+    "pending": 121,
+    "todo": 1,
+    "files": 148,
+    "failures": [
+      {
+        "file": "C:/oto-lanes/codex-first-print-20261103/apps/api/test/s737-first-sale-print-review.test.ts",
+        "title": "new station first cash sale through the real API and box agent HIGH: prints both assigned jobs when the command tick precedes the next config pull",
+        "message": [
+          "AssertionError: expected 3 to be 2 // Object.is equality\n    at firstCashSale (C:\\oto-lanes\\codex-first-print-20261103\\apps\\api\\test\\s737-first-sale-print-review.test.ts:145:98)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at C:\\oto-lanes\\codex-first-print-20261103\\apps\\api\\test\\s737-first-sale-print-review.test.ts:158:42\n    at file:///C:/oto-lanes/codex-first-print-20261103/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20"
+        ]
+      },
+      {
+        "file": "C:/oto-lanes/codex-first-print-20261103/apps/api/test/s737-first-sale-print-review.test.ts",
+        "title": "new station first cash sale through the real API and box agent control: prints both jobs after the agent explicitly refreshes its configuration",
+        "message": [
+          "AssertionError: expected 3 to be 2 // Object.is equality\n    at firstCashSale (C:\\oto-lanes\\codex-first-print-20261103\\apps\\api\\test\\s737-first-sale-print-review.test.ts:145:98)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at C:\\oto-lanes\\codex-first-print-20261103\\apps\\api\\test\\s737-first-sale-print-review.test.ts:164:42\n    at file:///C:/oto-lanes/codex-first-print-20261103/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20"
+        ]
+      },
+      {
+        "file": "C:/oto-lanes/codex-first-print-20261103/apps/api/test/s737-first-sale-print-review.test.ts",
+        "title": "new station first cash sale through the real API and box agent HIGH: refreshes an existing station whose assigned printer changed before the sale",
+        "message": [
+          "AssertionError: expected 3 to be 2 // Object.is equality\n    at firstCashSale (C:\\oto-lanes\\codex-first-print-20261103\\apps\\api\\test\\s737-first-sale-print-review.test.ts:145:98)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at C:\\oto-lanes\\codex-first-print-20261103\\apps\\api\\test\\s737-first-sale-print-review.test.ts:169:48\n    at file:///C:/oto-lanes/codex-first-print-20261103/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20"
+        ]
+      }
+    ]
+  }
+]
