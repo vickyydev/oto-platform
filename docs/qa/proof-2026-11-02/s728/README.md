@@ -1,9 +1,9 @@
 # SCRUM-728 release evidence
 
-## In Progress: branch CI passed, final local shard running
+## In Progress: full gates passed, source landing next
 
-The release checkout is `lane/codex-box-outage-20261104-r8`, rebased onto
-main `d5116e7c306f0c487857375c048d4d029b3d78ce`. SCRUM-727 is Deployed with
+The release checkout is `lane/codex-box-outage-20261104-r9`, rebased onto
+main `746f8d77960c6b2a302bfe47669ec6e5c6ba8424`. SCRUM-727 is Deployed with
 [its separate evidence](../s727/README.md). SCRUM-730 released the window at
 00:30 Bangkok on 4 November; the 00:36 STATUS checkpoint reserves the next
 source, API, proof and cleanup slot for SCRUM-728. No SCRUM-728 source has
@@ -62,8 +62,12 @@ The other 14 non-API workspace tasks pass. Console end-to-end passes all
 357 cases against built apps. [Receipts and log hashes](local-gates/index.json)
 retain the runs. The [completed original API run](local-gates/api-complete-run-before-inventory-correction.json)
 covers 444 files: 6,173 passes, the one corrected inventory failure, 401 existing
-skips and four TODOs. Shards 2 and 3 exited zero. The entire failed shard is
-being repeated on frozen source `682dfdc43475e9ddb03df2dd2268826cde1bb4f2`.
+skips and four TODOs. Shards 2 and 3 exited zero. The entire failed shard
+passed on frozen source `682dfdc43475e9ddb03df2dd2268826cde1bb4f2`: 2,130
+tests and zero failures, process exit zero. The [completed final API battery](local-gates/api-final.json)
+has the same 444-file inventory: **6,174 passed, zero failed, 401 existing
+skips and four TODOs**. All three process receipts exited zero, and API runtime
+is identical across the runs.
 [Full branch CI](branch-ci.json) for
 `35dd6ac5acae613ed7c17a0f0d0ae0c4a820add2` passed all six jobs, including
 all three API shards, the complete POS set, OTO App checks and Console
@@ -96,8 +100,8 @@ The initial failures are retained, not counted as green runs:
   or deadlines; all 14 other workspace tasks also pass.
 - An API shard rerun was deliberately stopped after a rebase briefly changed
   its checkout. Its nonzero exit is retained as an interrupted run, not a
-  test result. The replacement runs in a frozen worktree; all release edits
-  and rebases now use a separate checkout.
+  test result. The completed replacement ran in a frozen worktree; all release
+  edits and rebases use a separate checkout.
 
 Native browser rehearsals exposed and pinned two actual recovery faults:
 unlock could choose the old lane before probing, and cold-page online recovery
@@ -110,8 +114,9 @@ run above supersedes them; staging acceptance remains required.
 
 ## Release conditions and limits
 
-The explicit STATUS release and reservation are recorded. Finish the frozen
-local API shard, rebase, inspect main CI, push the lane and main, and watch the exact full SHA.
+The explicit STATUS release and reservation are recorded, and all local
+gates plus full branch CI pass. Rebase over the later documentation-only
+closeout, inspect main CI, push the lane and main, and watch the exact full SHA.
 Only after the exact API, POS web and Console deployments are live: take the
 read-only staging census, apply the isolated test zone, and prove the native
 flows with one new ZZ TEST box, local agent, dedicated staff and cash only.

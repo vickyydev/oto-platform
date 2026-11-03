@@ -1,7 +1,13 @@
 {
-  "at": "2026-11-03T17:43:40.984Z",
+  "at": "2026-11-03T18:19:35.842Z",
   "purpose": "Exact local validation and prepared staging helpers; snapshots are evidence, not automatic release approval",
   "files": [
+    {
+      "name": "s728-final-gate-summary.mjs",
+      "sourceSha256": "d35af40f7fad2e9816e9d024c367da1c7b8088f13ca28e4f83d8f94898bdfb09",
+      "archiveSha256": "d35af40f7fad2e9816e9d024c367da1c7b8088f13ca28e4f83d8f94898bdfb09",
+      "normalization": "LF with one final newline"
+    },
     {
       "name": "s728-release-browser-proof.mjs",
       "sourceSha256": "69b09d64485068c86056eaa994d3910af3c475152884ba3dc3abd69417295613",

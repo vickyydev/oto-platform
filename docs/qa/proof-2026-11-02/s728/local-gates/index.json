@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-03T17:43:41.068Z",
+  "at": "2026-11-03T18:19:35.977Z",
   "gates": [
     {
       "key": "v1-api1",
@@ -104,11 +104,17 @@
       "receipt": "local-gates/completion-api1.json"
     },
     {
+      "key": "frozen-api1",
+      "source": "682dfdc43475e9ddb03df2dd2268826cde1bb4f2",
+      "exitCode": 0,
+      "receipt": "local-gates/frozen-api1.json"
+    },
+    {
       "key": "release-types",
       "source": "edf18cb491560eaa918b4106fb2dd75df90fa397",
       "exitCode": 0,
       "receipt": "local-gates/release-types.json"
     }
   ],
-  "interpretation": "Failed and superseded runs are retained. Only completed zero-exit runs are passes. Full API and branch CI completion must be recorded separately."
+  "interpretation": "Failed and superseded runs are retained. Only completed zero-exit runs are passes. API completion is recorded in api-final.json and branch CI in branch-ci.json. completion-api1 is operator-interrupted and is not an acceptance result."
 }
