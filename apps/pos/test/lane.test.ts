@@ -428,6 +428,28 @@ describe('the selected park and its station lane', () => {
     } finally { hook.unmount(); }
   });
 
+  it.each(['STATION_HAS_NO_BOX', 'STATION_NOT_READY'])('HIGH: a remembered station refused with %s returns to the picker, never an outage fallback', async code => {
+    vi.spyOn(branchContext, 'useBranch').mockReturnValue({ branch: parks[0]!, branches: parks, switching: false, setActiveBranchId: () => {} });
+    vi.spyOn(operatorContext, 'useOperator').mockReturnValue({ operator: { id: 'operator' }, mustChangePassword: false } as ReturnType<typeof operatorContext.useOperator>);
+    const key = `oto.pos.station.${parks[0]!.id}`;
+    const memory = new Map([[key, JSON.stringify({ id: STATION, name: 'ZZ TEST old till', bridgeOrigin: 'https://counter.example.test' })]]);
+    vi.stubGlobal('window', { localStorage: { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => memory.set(key, value), removeItem: (key: string) => memory.delete(key) } });
+    vi.spyOn(stationsApi, 'mine').mockResolvedValue({ stations: [] });
+    vi.spyOn(stationsApi, 'pick').mockRejectedValue(new ApiError(409, code, 'Configure this station before choosing it.'));
+    const hook = renderHook(() => StationProvider({ children: null }));
+    const value = () => hook.result.current.props.value as ReturnType<typeof import('@/station/StationContext').useStation>;
+    try {
+      await vi.waitFor(() => expect(value().resolved).toBe(true));
+      expect(value().station).toBeNull();
+      expect(value().active).toBeNull();
+      expect(value().notice).toBe('Configure this station before choosing it.');
+      expect(value().fleetAvailable).toBe(true);
+      expect(memory.has(key)).toBe(false);
+      expect(currentLane()).toBe('platform');
+      expect(bridgeUrl(STATION, 'status')).toBe(`/api/box/v1/station/${STATION}/status`);
+    } finally { hook.unmount(); }
+  });
+
   it('adopts and remembers the bridge, restores it during outage, and clears it on leaving or an older station answer', async () => {
     const selected = { branch: parks[0]!, branches: parks, switching: false, setActiveBranchId: () => {} };
     vi.spyOn(branchContext, 'useBranch').mockReturnValue(selected);
