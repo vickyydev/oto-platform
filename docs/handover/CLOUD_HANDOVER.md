@@ -17,6 +17,9 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**3 November 2026, 21:39 Bangkok, SCRUM-727 WORKSPACE CLEANUP FAILURE RETAINED; FULL RERUN:** The first complete non-API gate exited 1 after all 384 database assertions passed. Its sole suite failure is Windows EBUSY removing the temporary embedded-Postgres directory in `stock-r2-platform-sync.test.ts`. The original exit, log hash and failure are preserved in `s727/review-local/initial-workspace-stop.json`. No code, test, timeout or cleanup guard changed. The complete non-API gate is repeated once; three API shards continue without a reported failure. Source landing still waits for successful completion. Rebased candidate `eeed96af56d6357600be3a4c8fed29746592d44e` is backed up on `lane/codex-box-unlock-review-20261103-r2`, in `C:/oto-lanes/codex-727-review-proof-20261103`; every product file matches `0f400710`, and the original gate worktree remains frozen. 727 owns the released next slot; no staging setting or fixture changed. 728 remains saved until 727 proof.**
+
+
 **3 November 2026, 21:29 Bangkok, SCRUM-727 REVIEW BROWSER PROOF AND CLEANUP SAVED:** The final real local-agent/browser rehearsal passed on `5df58b98` (product-identical to review source `0f400710`). All four images were opened. Independent database read confirms exact box/till/printer retirement, cleared test address, inactive dedicated staff account with no roles or active sessions, revoked shift, zero sales and zero sync anomalies. No SMS or real address was used. Evidence and the used harness sources are in `docs/qa/proof-2026-11-02/s727/review-local/`. The three full API shards and remaining workspace battery continue; 727 source stays off main until they finish. 726 has released its window and 727 retains the next source/proof/cleanup slot. This is a docs-only evidence landing; no staging action. 728 remains backed up and resumes after 727 staging acceptance.**
 
 

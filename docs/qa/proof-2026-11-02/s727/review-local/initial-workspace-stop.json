@@ -1,0 +1,21 @@
+{
+  "key": "workspace",
+  "sha": "0f400710d05b0c86fa8bae27301615b7ecd80613",
+  "start": "2026-11-03T14:09:50.195Z",
+  "end": "2026-11-03T14:35:25.377Z",
+  "command": "pnpm exec turbo run test --filter=\"!@oto/api\" --concurrency=1",
+  "log": "C:/oto-lanes/s727-resume-v2-workspace.log",
+  "exitCode": 1,
+  "signal": null,
+  "logSha256": "89e168cd98fceec49bc104d0c4742181b941e1fb02e75a45891f95bf14a7546e",
+  "failure": {
+    "package": "@oto/db",
+    "file": "test/stock-r2-platform-sync.test.ts",
+    "phase": "embedded Postgres directory removal",
+    "code": "EBUSY",
+    "testsPassed": 384,
+    "assertionFailures": 0,
+    "suiteFailures": 1
+  },
+  "followUp": "Complete non-API workspace repeated unchanged; no test, timeout or cleanup guard edited."
+}
