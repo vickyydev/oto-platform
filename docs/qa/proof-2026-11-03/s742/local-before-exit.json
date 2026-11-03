@@ -1,0 +1,10 @@
+{
+  "key": "telemetry",
+  "sha": "3fa79d3eda9eb184dfb7dbae14d79ac18ad5e48b",
+  "start": "2026-11-03T17:30:38.197Z",
+  "end": "2026-11-03T17:30:43.248Z",
+  "command": "pnpm --filter @oto/telemetry test",
+  "log": "C:/oto-lanes/s737-telemetry-before.log",
+  "exitCode": 1,
+  "signal": null
+}
