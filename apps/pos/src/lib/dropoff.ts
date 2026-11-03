@@ -12,6 +12,31 @@ import { RateMode, resolveRate, todayRateMode } from '@/lib/pricingMode';
 // Minutes left before a child's booked play time runs out. Below this, "due soon".
 export const DUE_SOON_MINUTES = 15;
 
+/**
+ * WHAT "CHECK IN" DOES FOR A FAMILY'S WAITING CHILDREN — the iPad card and the
+ * phone's detail screen read the same answer.
+ *
+ *   - `toRedeem` (SCRUM-730): booked and paid online, with no sale until the
+ *     booking is redeemed. The board sends staff to redeem it, never to a charge;
+ *     the prototype took no payment for them (`checkInFamilyBooked`).
+ *   - `booked`: on a sale already, checked in with no payment.
+ *   - `walkUp`: not paid for yet, so the till takes the payment.
+ */
+export function familyCheckInActions(family: readonly CheckIn[]): {
+  toRedeem: CheckIn[];
+  booked: CheckIn[];
+  walkUp: CheckIn[];
+} {
+  const waiting = family.filter((c) => c.status === 'registered');
+  const awaitsRedemption = (c: CheckIn) => !!c.paidOnline && !c.paidOnline.redeemed;
+  const rest = waiting.filter((c) => !awaitsRedemption(c));
+  return {
+    toRedeem: waiting.filter(awaitsRedemption),
+    booked: rest.filter((c) => !!c.scheduledFor),
+    walkUp: rest.filter((c) => !c.scheduledFor),
+  };
+}
+
 // Plain-number view of the catalog's drop-off pricing config, resolved for one
 // rate mode. All fee math in this file works off concrete numbers — never the
 // raw WeekdayWeekendPrice shape — so callers must resolve once via

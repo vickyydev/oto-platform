@@ -159,6 +159,8 @@ export interface ApiCheckin {
   bandId: string | null;
   visitId: string | null;
   photoFileId: string | null;
+  /** SCRUM-730 — the online booking that paid for this child, on the board and the waiting list. */
+  paidOnline?: { bookingId: string; reference: string } | null;
 }
 
 export interface ApiRegistration {
@@ -270,6 +272,7 @@ export function apiCheckinToCheckIn(c: ApiCheckin, reg: Pick<ApiRegistration, 'g
     serviceType: c.service,
     status: c.status,
     ...(c.scheduledFor ? { scheduledFor: c.scheduledFor } : {}),
+    ...(c.paidOnline ? { paidOnline: { ...c.paidOnline, redeemed: !!c.saleId } } : {}),
     registeredAt: reg.createdAt,
   } as CheckIn;
 }
@@ -411,8 +414,9 @@ export const checkinApi = {
  * `getCheckIns()` from its in-memory store). One registration's children still
  * waiting to be checked in and not yet paid for, in the prototype's `CheckIn`
  * shape the till's drop-off line builder reads. A child already paid for
- * ("Leave as booked") is checked in from the board without a payment, so the
- * till never loads one onto a second sale. Read through the waiting list, so
+ * ("Leave as booked", or online: SCRUM-730, who has no sale until the booking
+ * is redeemed) is checked in from the board without a payment, so the till
+ * never loads one onto a second sale. Read through the waiting list, so
  * the box answers it while the link is down. `nannies` names a nanny already
  * assigned (the roster the till holds).
  */
@@ -425,7 +429,7 @@ export async function waitingStaysOf(
   const reg = registrations.find((r) => r.id === registrationId);
   if (!reg) return [];
   return reg.children
-    .filter((c) => c.status === 'registered' && !c.saleId)
+    .filter((c) => c.status === 'registered' && !c.saleId && !c.paidOnline)
     .map((c) => {
       const base = apiCheckinToCheckIn(c, reg);
       if (!c.nannyId) return base;

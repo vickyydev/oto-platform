@@ -15,3 +15,17 @@ export const takeDropOffHandoff = (): string | null => {
   pending = null;
   return current;
 };
+
+// SCRUM-730 — a family who paid online has nothing to charge: the board hands the
+// till their booking instead, and the till opens its redeem dialog on it.
+let pendingBooking: string | null = null;
+
+export const setBookingRedeemHandoff = (bookingId: string): void => {
+  pendingBooking = bookingId;
+};
+
+export const takeBookingRedeemHandoff = (): string | null => {
+  const current = pendingBooking;
+  pendingBooking = null;
+  return current;
+};

@@ -1,12 +1,13 @@
 import { CheckIn, ContactChannel } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
-import { remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
+import { familyCheckInActions, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
 import { WaChip } from '@/components/dropoff/WaChip';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ArrowLeft,
+  BadgeCheck,
   Baby,
   MessageCircle,
   UserPlus,
@@ -29,6 +30,8 @@ interface MobileChildDetailProps {
   onCheckIn: (checkIn: CheckIn) => void;
   onCheckOut: (checkIn: CheckIn) => void;
   onMarkArrived: (checkIn: CheckIn) => void;
+  /** Paid online and not redeemed yet: the booking, never a charge (SCRUM-730). */
+  onRedeemBooking: (paidOnlineChild: CheckIn) => void;
   onEdit: (checkIn: CheckIn) => void;
   onResend: (checkIn: CheckIn) => void;
   onSimulateConfirm: (checkIn: CheckIn) => void;
@@ -213,6 +216,7 @@ export function MobileChildDetail({
   onCheckIn,
   onCheckOut,
   onMarkArrived,
+  onRedeemBooking,
   onEdit,
   onResend,
   onSimulateConfirm,
@@ -228,12 +232,13 @@ export function MobileChildDetail({
 
   const allSameStatus = family.every((c) => c.status === family[0].status);
 
-  const anyRegistered = family.some((c) => c.status === 'registered' && !c.scheduledFor);
-  const anyScheduled = family.some((c) => c.status === 'registered' && !!c.scheduledFor);
+  const { toRedeem, booked, walkUp } = familyCheckInActions(family);
+  const anyRegistered = walkUp.length > 0;
+  const anyScheduled = booked.length > 0;
   const anyInPark = family.some((c) => c.status === 'in_park');
 
-  const registeredChild = family.find((c) => c.status === 'registered' && !c.scheduledFor) ?? rep;
-  const scheduledChild = family.find((c) => c.status === 'registered' && !!c.scheduledFor) ?? rep;
+  const registeredChild = walkUp[0] ?? rep;
+  const scheduledChild = booked[0] ?? rep;
   const inParkChild = family.find((c) => c.status === 'in_park') ?? rep;
 
   const allSameInPark = allSameStatus && rep.status === 'in_park';
@@ -371,6 +376,22 @@ export function MobileChildDetail({
             Pickups
           </Button>
         </div>
+
+        {toRedeem.length > 0 && (
+          <>
+            <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+              <BadgeCheck className="w-3.5 h-3.5" />
+              Booked &amp; paid · no payment needed
+            </div>
+            <Button
+              className="w-full h-16 text-lg gap-2 rounded-2xl"
+              onClick={() => onRedeemBooking(toRedeem[0])}
+            >
+              <LogIn className="w-5 h-5" />
+              Check In
+            </Button>
+          </>
+        )}
 
         {anyScheduled && (
           <Button

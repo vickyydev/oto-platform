@@ -25,8 +25,8 @@ import {
 } from '@/api/checkin';
 import { releaseApi } from '@/api/release';
 import { CheckInBookedModal, type BookedCheckInItem } from '@/components/dropoff/CheckInBookedModal';
-import { remainingMinutes, dueState } from '@/lib/dropoff';
-import { setDropOffHandoff } from '@/lib/dropoffHandoff';
+import { familyCheckInActions, remainingMinutes, dueState } from '@/lib/dropoff';
+import { setBookingRedeemHandoff, setDropOffHandoff } from '@/lib/dropoffHandoff';
 import { dispatchPlatformPrinting } from '@/lib/printRouting';
 import { useStation } from '@/station/StationContext';
 import { useBranch } from '@/branch/BranchContext';
@@ -619,8 +619,16 @@ export function MobileDropOffBoard() {
    */
   const handleMarkArrived = (c: CheckIn) => {
     const family = allByReg.get(c.registrationId) ?? [c];
-    const booked = family.filter((k) => k.status === 'registered' && !!k.scheduledFor);
+    const { booked } = familyCheckInActions(family);
     setCheckInBookedFor(booked.length > 0 ? booked : [c]);
+  };
+
+  // SCRUM-730 — paid online and not redeemed yet: no hand-over and no charge. The
+  // till opens the booking, and the child comes back here booked and paid.
+  const handleRedeemBooking = (c: CheckIn) => {
+    if (!c.paidOnline) return;
+    setBookingRedeemHandoff(c.paidOnline.bookingId);
+    navigate('/');
   };
 
   const handleConfirmCheckInBooked = async (items: BookedCheckInItem[]) => {
@@ -965,6 +973,7 @@ export function MobileDropOffBoard() {
           onCheckIn={handleCheckIn}
           onCheckOut={(c) => setCheckOutFor(c)}
           onMarkArrived={handleMarkArrived}
+          onRedeemBooking={handleRedeemBooking}
           onEdit={setEditFor}
           onResend={(c) => void handleResend(c)}
           onSimulateConfirm={(c) => void handleSimulateConfirm(c)}

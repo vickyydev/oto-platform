@@ -178,7 +178,7 @@ export function AddDropOffModal({
   };
 
   const attachGroup = (group: RegistrationGroup) => {
-    const fresh = group.children.filter((c) => !attached.has(c.id));
+    const fresh = group.children.filter((c) => !c.paidOnline && !attached.has(c.id));
     if (fresh.length === 0) return;
     onAttach(fresh);
   };
@@ -207,7 +207,10 @@ export function AddDropOffModal({
           <ScrollArea className="max-h-[60vh] -mx-2 px-2">
             <div className="space-y-3">
               {groups.map((group) => {
-                const allAttached = group.children.every((c) => attached.has(c.id));
+                // SCRUM-730 — a child paid for online stays listed, so a sibling can
+                // still join the family, and is never added to a sale.
+                const chargeable = group.children.filter((c) => !c.paidOnline);
+                const allAttached = chargeable.every((c) => attached.has(c.id));
                 return (
                   <Card key={group.registrationId} className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-3">
@@ -229,7 +232,7 @@ export function AddDropOffModal({
                         onClick={() => attachGroup(group)}
                         className="shrink-0"
                       >
-                        {allAttached ? 'Added' : 'Add to sale'}
+                        {chargeable.length === 0 ? 'Paid online' : allAttached ? 'Added' : 'Add to sale'}
                       </Button>
                     </div>
 
@@ -260,6 +263,9 @@ export function AddDropOffModal({
                             </span>
                             {isAttached && (
                               <span className="text-xs text-muted-foreground shrink-0">In sale</span>
+                            )}
+                            {c.paidOnline && (
+                              <span className="text-xs text-emerald-400 shrink-0">Paid online</span>
                             )}
                           </div>
                         );

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckIn, ContactChannel } from '@/types';
-import { remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
+import { familyCheckInActions, remainingMinutes, dueState, formatRemaining } from '@/lib/dropoff';
 import { deriveWaStatus, showWaActions } from '@/lib/waConnection';
 import { WaChip } from './WaChip';
 import {
@@ -30,6 +30,9 @@ interface FamilyCheckInCardProps {
   // Payment-free check-in for booked (already-paid) children — runs only the
   // in-park process, never the till. Receives the booked subset of the family.
   onCheckInBooked: (bookedChildren: CheckIn[]) => void;
+  // A child paid for online, whose booking is not redeemed yet: staff go to the
+  // booking, which files what the family paid, never to a charge (SCRUM-730).
+  onRedeemBooking: (paidOnlineChild: CheckIn) => void;
   onEdit: (checkIn: CheckIn) => void;
   onResend: (checkIn: CheckIn) => void;
   onSimulateConfirm: (checkIn: CheckIn) => void;
@@ -189,6 +192,7 @@ export function FamilyCheckInCard({
   onCheckIn,
   onCheckOut,
   onCheckInBooked,
+  onRedeemBooking,
   onEdit,
   onResend,
   onSimulateConfirm,
@@ -204,12 +208,13 @@ export function FamilyCheckInCard({
 
   const allSameStatus = family.every((c) => c.status === family[0].status);
 
-  const anyRegistered = family.some((c) => c.status === 'registered' && !c.scheduledFor);
-  const anyScheduled = family.some((c) => c.status === 'registered' && !!c.scheduledFor);
+  const { toRedeem, booked: scheduledChildren, walkUp } = familyCheckInActions(family);
+  const anyRegistered = walkUp.length > 0;
+  const anyScheduled = scheduledChildren.length > 0;
+  const anyToRedeem = toRedeem.length > 0;
   const anyInPark = family.some((c) => c.status === 'in_park');
 
-  const registeredChild = family.find((c) => c.status === 'registered' && !c.scheduledFor) ?? rep;
-  const scheduledChildren = family.filter((c) => c.status === 'registered' && !!c.scheduledFor);
+  const registeredChild = walkUp[0] ?? rep;
   const inParkChild = family.find((c) => c.status === 'in_park') ?? rep;
 
   return (
@@ -289,7 +294,7 @@ export function FamilyCheckInCard({
       )}
 
       {/* Booked & paid online — no payment is taken at check-in. */}
-      {anyScheduled && (
+      {(anyScheduled || anyToRedeem) && (
         <div className="flex items-center gap-1.5 self-start rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
           <BadgeCheck className="w-3.5 h-3.5" />
           Booked &amp; paid · no payment needed
@@ -298,6 +303,17 @@ export function FamilyCheckInCard({
 
       {/* Family-level action buttons */}
       <div className="flex items-center gap-2 flex-wrap">
+        {anyToRedeem && (
+          <Button
+            size="sm"
+            className="h-11 flex-1 min-w-[120px] gap-1.5"
+            onClick={() => onRedeemBooking(toRedeem[0])}
+          >
+            <LogIn className="w-4 h-4" />
+            Check in
+          </Button>
+        )}
+
         {anyScheduled && (
           <Button
             size="sm"

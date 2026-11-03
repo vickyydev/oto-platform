@@ -35,7 +35,7 @@ import {
 import { useBranch } from '@/branch/BranchContext';
 import { remainingMinutes, dueState } from '@/lib/dropoff';
 import { resolveRateToday } from '@/lib/pricingMode';
-import { setDropOffHandoff } from '@/lib/dropoffHandoff';
+import { setBookingRedeemHandoff, setDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useStation } from '@/station/StationContext';
 import { dispatchPlatformPrinting } from '@/lib/printRouting';
 import { toast } from '@/hooks/use-toast';
@@ -608,6 +608,14 @@ export default function DropOff() {
     navigate('/');
   };
 
+  // SCRUM-730 — paid online and not redeemed yet: the till opens the booking,
+  // and from there the child comes back to this board as booked and paid.
+  const handleRedeemBooking = (c: CheckIn) => {
+    if (!c.paidOnline) return;
+    setBookingRedeemHandoff(c.paidOnline.bookingId);
+    navigate('/');
+  };
+
   const [pickupsFor, setPickupsFor] = useState<CheckIn | null>(null);
 
   /**
@@ -1045,6 +1053,7 @@ export default function DropOff() {
                         onCheckIn={handleCheckIn}
                         onCheckOut={setCheckOutFor}
                         onCheckInBooked={setCheckInBookedFor}
+                        onRedeemBooking={handleRedeemBooking}
                         onEdit={setEditFor}
                         onResend={(c) => void handleResend(c)}
                         onSimulateConfirm={(c) => void handleSimulateConfirm(c)}

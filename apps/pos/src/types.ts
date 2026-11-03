@@ -1759,6 +1759,11 @@ export interface CheckIn {
   nannyStartTime?: string;
   status: CheckInStatus;
   scheduledFor?: string; // ISO, for the Schedule tab
+  /**
+   * SCRUM-730 — the online booking that paid for this child. `redeemed` once the
+   * booking's own sale carries them. Never a line to charge, either way.
+   */
+  paidOnline?: { bookingId: string; reference: string; redeemed: boolean };
   registeredAt: string;
   checkedInAt?: string; // set on Enter Park (drives the timer)
   checkedOutAt?: string; // set on Check Out

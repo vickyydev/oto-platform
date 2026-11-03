@@ -9,7 +9,7 @@ import type { DiscountComponentOption } from '@/components/shared/ManualDiscount
 import { useStation } from '@/station/StationContext';
 import { announceSalePrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
-import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
+import { takeBookingRedeemHandoff, takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import {
   computeLineTotal,
   computeLineBreakdown,
@@ -43,7 +43,7 @@ import { ApiError, isMissingRoute } from '@/api/client';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { membersApi } from '@/api/platform';
 import { lookupMember } from '@/api/members';
-import { type PlatformBooking, type RedeemOutcome } from '@/api/bookings';
+import { type PlatformBooking, type RedeemOutcome, type ScannedBooking } from '@/api/bookings';
 import { announceBookingRedemption, redeemBookingOnPlatform, redeemedOutcome } from '@/lib/bookingRedemption';
 import {
   buildCartPayload,
@@ -386,6 +386,8 @@ export default function MobileTill() {
 
   // ── Booking redemption flow ───────────────────────────────────────────────
   const [showRedeemModal, setShowRedeemModal] = useState(false);
+  // SCRUM-730 — the booking the board handed over, for a family who paid online.
+  const [handedBooking, setHandedBooking] = useState<ScannedBooking | null>(null);
   // One idempotency key per booking per open dialog: a retry after a dropped
   // answer replays the platform's stored redemption instead of being told the
   // booking was already redeemed by this very press.
@@ -562,6 +564,13 @@ export default function MobileTill() {
     if (!registrationId) return;
     void loadDropOffRegistration(registrationId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once on mount: a drop-off handoff is taken when the till opens, and loadDropOffRegistration is a new function every render
+  }, []);
+
+  useEffect(() => {
+    const bookingId = takeBookingRedeemHandoff();
+    if (!bookingId) return;
+    setHandedBooking({ bookingId });
+    setShowRedeemModal(true);
   }, []);
 
   // ── Handlers (same logic as Till.tsx, mobile-specific step transitions) ───
@@ -2479,9 +2488,11 @@ export default function MobileTill() {
         onOpenChange={(next) => {
           setShowRedeemModal(next);
           if (!next) redeemKeyRef.current = null;
+          if (!next) setHandedBooking(null);
         }}
         branchId={apiBranchIdForSlug(branch.id)}
         onConfirm={handleRedeemConfirm}
+        scannedBooking={handedBooking}
       />
 
       {/* Drop-off check-in proposal: shown after a booking with drop-off children is redeemed. */}

@@ -6,7 +6,7 @@ import { useStation } from '@/station/StationContext';
 import { announceSalePrinting, dispatchPlatformPrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
 import { announceBookingRedemption, redeemBookingOnPlatform, redeemedOutcome } from '@/lib/bookingRedemption';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
-import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
+import { takeBookingRedeemHandoff, takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentActionAllowed,
@@ -671,6 +671,13 @@ export default function Till() {
     if (!registrationId) return;
     void loadDropOffRegistration(registrationId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // SCRUM-730 — the board's "Check in" for a family who paid online: their
+  // booking's redeem dialog, with nothing to charge.
+  useEffect(() => {
+    const bookingId = takeBookingRedeemHandoff();
+    if (bookingId) openScannedBooking({ bookingId });
   }, []);
 
   /**
