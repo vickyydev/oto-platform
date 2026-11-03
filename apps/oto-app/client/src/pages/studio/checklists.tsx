@@ -1116,7 +1116,7 @@ export default function StudioChecklistsPage() {
                         cannot change while the original is meant to stay as it is. */}
                     {saveAsNew ? (
                       <p className="text-xs text-muted-foreground" data-testid="text-edit-media-copied">
-                        These copy across to the new checklist. Add or remove files on it after saving.
+                        Existing files copy across to the new checklist. Add or remove files on it after saving.
                       </p>
                     ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -1552,7 +1552,7 @@ export default function StudioChecklistsPage() {
                               <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-3 text-center bg-muted/30">
                                 {saveAsNew ? (
                                   <p className="text-xs text-muted-foreground">
-                                    These copy across to the new checklist. Add or remove files on it after saving.
+                                    Existing files copy across to the new checklist. Add or remove files on it after saving.
                                   </p>
                                 ) : (
                                 <div className="flex flex-col items-center gap-2">

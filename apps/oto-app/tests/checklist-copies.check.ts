@@ -538,6 +538,11 @@ try {
     assert.ok(itemsA.every((i) => !itemsB.some((j) => j.id === i.id)), "two copies share an item row");
     assert.equal((await itemMediaOf(itemsA[0].id)).length, 2);
     assert.equal((await itemMediaOf(itemsB[0].id)).length, 2);
+
+    const twice = `ZZ TEST Named twice ${run}`;
+    const repeated = await api("admin", "POST", "/api/checklists/templates", { copiedFromTemplateId: source.id, name: twice, branchIds: [robinson, robinson] });
+    assert.equal(repeated.status, 201);
+    assert.equal((await createdWithName(twice)).length, 1, "a branch named twice made two copies");
   });
 
   await check("save as new with no branch selected follows the create path: all branches for an admin, the person's own for a manager", async () => {

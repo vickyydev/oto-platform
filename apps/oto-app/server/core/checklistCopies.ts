@@ -238,11 +238,13 @@ export function checklistCopyRequest(source: any, body: any): any {
     referenceMediaUrls: pick("referenceMediaUrls"),
     assignedEmployeeIds: requestedChecklistAssignees(body) ?? source.assignedEmployeeIds ?? [],
     items: Array.isArray(body.items) ? body.items : source.items,
-    branchIds: body.branchIds !== undefined
-      ? body.branchIds
-      : body.branchId
-        ? [body.branchId]
-        : checklistTemplateBranches(source),
+    branchIds: Array.isArray(body.branchIds)
+      ? [...new Set(body.branchIds)]
+      : body.branchIds !== undefined
+        ? body.branchIds
+        : body.branchId
+          ? [body.branchId]
+          : checklistTemplateBranches(source),
   };
 }
 
