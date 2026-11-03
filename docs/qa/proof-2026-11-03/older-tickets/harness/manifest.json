@@ -1,0 +1,56 @@
+[
+  {
+    "file": "old-proof-rig.mjs.txt",
+    "sourceSha256": "1f9a43ac6cb083a5978952e2546063f2fb4d156a5aaa57e904c815fbf28cd3fa",
+    "storedSha256": "1f9a43ac6cb083a5978952e2546063f2fb4d156a5aaa57e904c815fbf28cd3fa",
+    "normalisation": "CRLF to LF only"
+  },
+  {
+    "file": "old-proof-live.mjs.txt",
+    "sourceSha256": "75b261c30766aa224f3df48b04199cad773a85d1a04e765d71cb7c0dc2fd7348",
+    "storedSha256": "75b261c30766aa224f3df48b04199cad773a85d1a04e765d71cb7c0dc2fd7348",
+    "normalisation": "CRLF to LF only"
+  },
+  {
+    "file": "old-wallet-expire.mjs.txt",
+    "sourceSha256": "2703aa4301e5ff58e02d38e32e2e8cb302bbb2c172e5926d484d336057685615",
+    "storedSha256": "2703aa4301e5ff58e02d38e32e2e8cb302bbb2c172e5926d484d336057685615",
+    "normalisation": "CRLF to LF only"
+  },
+  {
+    "file": "old-proof-audit-read.mjs.txt",
+    "sourceSha256": "dea8a6a1250c54517071214d771439abcec1e545f15b2777a8935c6f236ab972",
+    "storedSha256": "dea8a6a1250c54517071214d771439abcec1e545f15b2777a8935c6f236ab972",
+    "normalisation": "CRLF to LF only"
+  },
+  {
+    "file": "old-proof-step-retire-fleet.mjs.txt",
+    "sourceSha256": "505c5513f1fc4779e0f1564d5054a7564feaa869eadd32c460174ae371de3abe",
+    "storedSha256": "505c5513f1fc4779e0f1564d5054a7564feaa869eadd32c460174ae371de3abe",
+    "normalisation": "CRLF to LF only"
+  },
+  {
+    "file": "old-proof-step-retire-catalog.mjs.txt",
+    "sourceSha256": "4d693c98ae1030b3ee8a57ede17f8952c3dca12fcb7e7b04e62e7ec782d3dff8",
+    "storedSha256": "4d693c98ae1030b3ee8a57ede17f8952c3dca12fcb7e7b04e62e7ec782d3dff8",
+    "normalisation": "CRLF to LF only"
+  },
+  {
+    "file": "old-proof-cleanup-job.mjs.txt",
+    "sourceSha256": "0309cba07d719f45e686be4dff9de3f767b10d6e616df06a15ba582e42502e23",
+    "storedSha256": "0309cba07d719f45e686be4dff9de3f767b10d6e616df06a15ba582e42502e23",
+    "normalisation": "CRLF to LF only"
+  },
+  {
+    "file": "old-proof-step-retire-finish.mjs.txt",
+    "sourceSha256": "2adc2d0c24f2df61e4ad0381b9c746ab01d7abd51dd11cb492e1d8c02080615a",
+    "storedSha256": "2adc2d0c24f2df61e4ad0381b9c746ab01d7abd51dd11cb492e1d8c02080615a",
+    "normalisation": "CRLF to LF only"
+  },
+  {
+    "file": "old-proof-cleanup-read.mjs.txt",
+    "sourceSha256": "c76c2fb7e90b9bd2d6efee997a93e63a01c6c0882861d06f58304bddb534aa5a",
+    "storedSha256": "c76c2fb7e90b9bd2d6efee997a93e63a01c6c0882861d06f58304bddb534aa5a",
+    "normalisation": "CRLF to LF only"
+  }
+]

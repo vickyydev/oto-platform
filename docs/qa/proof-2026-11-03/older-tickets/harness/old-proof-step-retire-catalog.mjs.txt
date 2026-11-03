@@ -1,0 +1,8 @@
+export default async function(old) {
+ const f=old.receipt.fixtures;
+ await old.api('DELETE','/menu/categories/'+f.categoryId);
+ old.receipt.retirement.steps.push({what:'Category archived',id:f.categoryId});old.save();
+ await old.api('DELETE',`/branches/${f.walletBranch}/ticket-packages/${f.walletPackage}`);
+ old.receipt.retirement.steps.push({what:'Ticket package archived',id:f.walletPackage});old.save();
+ return {catalogArchived:true};
+}

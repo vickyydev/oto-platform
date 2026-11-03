@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+export default async function(old) {
+ const f=old.receipt.fixtures,r=old.receipt;
+ r.retirement ??= {startedAt:new Date().toISOString(),steps:[]};
+ for(const c of old.browser.contexts()) {
+  if(c===old.ctx)continue;
+  const response=await c.request.post(old.POS+'/api/auth/sign-out');
+  assert.ok([200,204].includes(response.status()));
+  assert.equal((await c.request.get(old.POS+'/api/me')).status(),401);
+  await c.close();r.retirement.steps.push({what:'Owned POS browser signed out',at:new Date().toISOString()});old.save();
+ }
+ for(const id of [f.stationId,f.walletStation]) {
+  await old.api('DELETE','/stations/'+id);
+  r.retirement.steps.push({what:'Station archived',id});old.save();
+ }
+ for(const d of f.devices) {
+  await old.api('DELETE','/devices/'+d.id);
+  r.retirement.steps.push({what:'Simulated device archived',id:d.id});old.save();
+ }
+ for(const id of [f.boxId,f.walletBox]) {
+  await old.api('PATCH','/boxes/'+id,{status:'disabled'});
+  await old.api('DELETE','/boxes/'+id);
+  r.retirement.steps.push({what:'Box disabled and archived; credentials cleared',id});old.save();
+ }
+ await old.api('DELETE',`/branches/${r.identity.branchId}/menu/products/${f.productId}`);
+ r.retirement.steps.push({what:'Product archived',id:f.productId});old.save();
+ await old.api('DELETE',`/branches/${r.identity.branchId}/menu/categories/${f.categoryId}`);
+ r.retirement.steps.push({what:'Category archived',id:f.categoryId});old.save();
+ await old.api('DELETE',`/branches/${f.walletBranch}/ticket-packages/${f.walletPackage}`);
+ r.retirement.steps.push({what:'Ticket package archived',id:f.walletPackage});old.save();
+ return {steps:r.retirement.steps};
+}

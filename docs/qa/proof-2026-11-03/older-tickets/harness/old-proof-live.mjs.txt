@@ -1,0 +1,15 @@
+import {createInterface} from 'node:readline';
+import {pathToFileURL} from 'node:url';
+import assert from 'node:assert/strict';
+import {rig} from './old-proof-rig.mjs';
+const old=await rig();
+console.log(JSON.stringify({ready:true,out:old.out,deployments:old.receipt.deployments,identity:old.receipt.identity}));
+const input=createInterface({input:process.stdin});
+for await(const file of input) {
+ if(file==='STOP'){await old.browser.close();input.close();break;}
+ try {
+  assert.match(file,/^C:\/oto-lanes\/old-proof-step-[a-z0-9-]+\.mjs$/);
+  const step=await import(pathToFileURL(file).href+'?at='+Date.now());
+  const result=await step.default(old);console.log(JSON.stringify({file,result}));
+ } catch(e) { console.log(JSON.stringify({file,error:e.name,message:e.message})); }
+}

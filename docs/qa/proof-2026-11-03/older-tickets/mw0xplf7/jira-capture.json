@@ -1,0 +1,181 @@
+[
+  {
+    "key": "SCRUM-50",
+    "before": "In Progress",
+    "commentId": "13259",
+    "images": [
+      "s50-discount-applied.png",
+      "s50-cash-confirmed.png"
+    ],
+    "uploaded": {
+      "status": 200,
+      "files": [
+        {
+          "id": "12367",
+          "name": "s50-cash-confirmed.png"
+        },
+        {
+          "id": "12366",
+          "name": "s50-discount-applied.png"
+        }
+      ]
+    },
+    "inlineImageVerified": true
+  },
+  {
+    "key": "SCRUM-47",
+    "before": "In Progress",
+    "commentId": "13260",
+    "images": [
+      "s50-discount-applied.png",
+      "s50-cash-confirmed.png"
+    ],
+    "uploaded": {
+      "status": 200,
+      "files": [
+        {
+          "id": "12368",
+          "name": "s50-discount-applied.png"
+        },
+        {
+          "id": "12369",
+          "name": "s50-cash-confirmed.png"
+        }
+      ]
+    },
+    "inlineImageVerified": true
+  },
+  {
+    "key": "SCRUM-57",
+    "before": "In Progress",
+    "commentId": "13261",
+    "images": [
+      "s57-printer-role-picker.png"
+    ],
+    "uploaded": {
+      "status": 200,
+      "files": [
+        {
+          "id": "12370",
+          "name": "s57-printer-role-picker.png"
+        }
+      ]
+    },
+    "inlineImageVerified": true
+  },
+  {
+    "key": "SCRUM-56",
+    "before": "In Progress",
+    "commentId": "13262",
+    "images": [
+      "s57-printer-role-picker.png"
+    ],
+    "uploaded": {
+      "status": 200,
+      "files": [
+        {
+          "id": "12371",
+          "name": "s57-printer-role-picker.png"
+        }
+      ]
+    },
+    "inlineImageVerified": true
+  },
+  {
+    "key": "SCRUM-91",
+    "before": "In Progress",
+    "commentId": "13263",
+    "images": [
+      "s91-wallet-expired.png",
+      "s91-wallet-reactivated.png"
+    ],
+    "uploaded": {
+      "status": 200,
+      "files": [
+        {
+          "id": "12372",
+          "name": "s91-wallet-expired.png"
+        },
+        {
+          "id": "12373",
+          "name": "s91-wallet-reactivated.png"
+        }
+      ]
+    },
+    "inlineImageVerified": true
+  },
+  {
+    "key": "SCRUM-88",
+    "before": "In Progress",
+    "commentId": "13264",
+    "images": [
+      "s91-wallet-expired.png",
+      "s91-wallet-reactivated.png"
+    ],
+    "uploaded": {
+      "status": 200,
+      "files": [
+        {
+          "id": "12374",
+          "name": "s91-wallet-expired.png"
+        },
+        {
+          "id": "12375",
+          "name": "s91-wallet-reactivated.png"
+        }
+      ]
+    },
+    "inlineImageVerified": true
+  },
+  {
+    "key": "SCRUM-77",
+    "before": "In Progress",
+    "commentId": "13265",
+    "images": [
+      "s77-pickup-added.png",
+      "s77-pickup-edited.png",
+      "s77-pickup-removed.png"
+    ],
+    "uploaded": {
+      "status": 200,
+      "files": [
+        {
+          "id": "12376",
+          "name": "s77-pickup-added.png"
+        },
+        {
+          "id": "12377",
+          "name": "s77-pickup-edited.png"
+        },
+        {
+          "id": "12378",
+          "name": "s77-pickup-removed.png"
+        }
+      ]
+    },
+    "inlineImageVerified": true
+  },
+  {
+    "key": "SCRUM-99",
+    "before": "In Progress",
+    "commentId": "13266",
+    "images": [
+      "s99-wallet-promo-rows.png",
+      "s99-discounts-comps-row.png"
+    ],
+    "uploaded": {
+      "status": 200,
+      "files": [
+        {
+          "id": "12379",
+          "name": "s99-wallet-promo-rows.png"
+        },
+        {
+          "id": "12380",
+          "name": "s99-discounts-comps-row.png"
+        }
+      ]
+    },
+    "inlineImageVerified": true
+  }
+]

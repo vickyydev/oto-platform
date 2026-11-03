@@ -1,0 +1,49 @@
+{
+  "jobId": "job-dbl20ivb9u1s738o5eng",
+  "source": "2e5ff3f1d2f1aa093e9edd7b003a16d0d9b5118e",
+  "startedAt": "2026-11-03T17:56:26.271Z",
+  "status": "succeeded",
+  "result": {
+    "event": "old_proof_cleanup",
+    "at": "2026-11-03T17:57:16.047Z",
+    "audit": {
+      "guardianActions": [
+        "guardian.create",
+        "guardian.update",
+        "guardian.revoke"
+      ],
+      "reactivationReasonMatches": true,
+      "actorMatches": true,
+      "retainedAuditIds": [
+        "01a1a26b-fd61-7203-994d-d4053a0d2ac1",
+        "01a1a273-765b-76f4-a9f2-572f857e6436",
+        "01a1a276-9e93-7a37-bbcd-9d92207db863",
+        "01a1a277-9ad0-7323-93b5-3c23ee2f61ad"
+      ]
+    },
+    "expiry": {
+      "branchId": "01a1a260-64f5-7fb7-b0a9-272c85215239",
+      "businessDate": "2026-11-02",
+      "ended": true,
+      "expiredWallets": 1,
+      "expiredSatang": 35000,
+      "closedAtZero": 0
+    },
+    "removedWalletKeys": 2,
+    "revokedBandIds": [
+      "01a1a265-aed5-7d31-9076-763f33e2deac"
+    ],
+    "removedSyntheticFamily": {
+      "registrationId": "928d1e45-1f6c-4e69-ae89-9ad7107d0646",
+      "checkinId": "00384e7d-fc18-46fe-aca9-0753e843e554",
+      "guardianId": "01a1a273-7331-7c3d-bc35-6860cc2d61e3",
+      "unpaid": true,
+      "pickupWasRevokedBeforeCleanup": true
+    },
+    "skippedJobId": "01a1a25f-8915-76d7-91ad-97529c7a559a",
+    "cancelledCommands": 1,
+    "revokedSessions": 0,
+    "removedLeases": 1,
+    "passed": true
+  }
+}

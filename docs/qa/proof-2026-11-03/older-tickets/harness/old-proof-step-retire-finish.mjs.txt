@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+export default async function(old) {
+ const result=JSON.parse(readFileSync(old.out+'/cleanup-job.json','utf8'));assert.equal(result.result.passed,true);
+ await old.api('PATCH','/branches/'+old.receipt.fixtures.walletBranch,{archived:true,confirmName:old.name+' wallet branch'});
+ old.receipt.retirement.steps.push({what:'Dedicated wallet branch archived',id:old.receipt.fixtures.walletBranch});old.save();
+ for(const origin of [old.CONSOLE,'https://oto-launcher-staging.onrender.com']) {
+  const response=await old.ctx.request.post(origin+'/api/auth/sign-out');assert.ok([200,204].includes(response.status()));
+  assert.equal((await old.ctx.request.get(origin+'/api/me')).status(),401);
+ }
+ old.receipt.retirement.steps.push({what:'Owned Console and launcher sessions signed out',at:new Date().toISOString()});
+ old.receipt.walletReactivated.reasonStorageVerification='Verified independently in wallet entry payload and wallet.reactivate audit event';
+ old.receipt.retirement.cleanupJob=result.jobId;old.save();
+ return {branchArchived:true,sessionsSignedOut:true,cleanupJob:result.jobId};
+}

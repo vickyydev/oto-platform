@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import {need} from 'file:///C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/scripts/agent/env.mjs';
+import {render} from 'file:///C:/oto-lanes/codex-first-print-20261103/scripts/agent/render.mjs';
+const runtime='C:/oto-lanes/codex-first-print-20261103';
+const root='C:/oto-lanes/codex-old-ticket-proofs-20261103';
+const {chromium,expect}=createRequire(runtime+'/apps/pos/package.json')('@playwright/test');
+const CONSOLE='https://oto-console-staging.onrender.com',POS='https://oto-pos-web-staging.onrender.com',LAUNCHER='https://oto-launcher-staging.onrender.com';
+export async function rig() {
+ const stamp=Date.now().toString(36),name='ZZ TEST older proof '+stamp;
+ const out=root+'/docs/qa/proof-2026-11-03/older-tickets/'+stamp;mkdirSync(out,{recursive:true});
+ const receipt={startedAt:new Date().toISOString(),name,deployments:[],checks:[],fixtures:{},screens:[],outcome:'incomplete'};
+ const save=()=>writeFileSync(out+'/receipt.json',JSON.stringify(receipt,null,2)+'\n');
+ async function live() {
+  const rows=[];
+  for(const id of ['srv-danh2ljtqb8s73bt9en0','srv-dbk7qu8n74is73bm894g','srv-danh2mf40ujc73bu80j0','srv-danng2p42hec73f38e3g']) {
+   const s=await render('GET',`/services/${id}`),d=(await render('GET',`/services/${id}/deploys?limit=1`))[0]?.deploy;
+   assert.equal(d?.status,'live','Do not capture during deployment: '+s.name);
+   rows.push({id,name:s.name,sha:d.commit.id,deployId:d.id,liveAt:d.finishedAt});
+  }
+  return rows;
+ }
+ receipt.deployments=await live();
+ receipt.ci=JSON.parse(execFileSync('gh',['run','list','--branch','main','--limit','15','--json','databaseId,headSha,status,conclusion'],{cwd:root,encoding:'utf8'})).filter(r=>receipt.deployments.some(d=>d.sha===r.headSha));
+ assert.ok(receipt.ci.length&&receipt.ci.every(r=>r.status==='completed'&&r.conclusion==='success'));save();
+ const browser=await chromium.launch({channel:'msedge'});
+ const ctx=await browser.newContext({viewport:{width:1500,height:1100}});ctx.setDefaultTimeout(20000);
+ const p=await ctx.newPage();
+ const sign=await ctx.request.post(LAUNCHER+'/api/auth/sign-in',{data:{phone:need('STAGING_ADMIN_PHONE'),password:need('STAGING_ADMIN_PASSWORD')}});assert.equal(sign.status(),200);
+ const h=await ctx.request.post(LAUNCHER+'/api/auth/handoff',{data:{app:'console'}});assert.equal(h.status(),200);
+ await p.goto((await h.json()).launchUrl);await p.waitForURL('**/overview');
+ const api=async(method,path,body)=>{
+  const r=await ctx.request.fetch(CONSOLE+'/api'+path,{method,data:body,headers:{...(body===undefined?{}:{'content-type':'application/json'}),...(method==='GET'?{}:{'Idempotency-Key':randomUUID()})}});
+  const data=await r.json().catch(()=>null);assert.equal(r.status(),200,`${method} ${path}: ${r.status()} ${data?.error?.code??''}`);return data;
+ };
+ const me=await api('GET','/me');receipt.identity={accountId:me.account?.id,branchId:me.operatorContext.branchId};save();
+ async function capture(page,file,keys) {
+  assert.deepEqual(await live(),receipt.deployments,'Deployment changed; recapture against new source');
+  const path=out+'/'+file;
+  await page.screenshot({path,fullPage:true,mask:[page.locator('input[type="password"]'),page.getByTestId('display-pairing-code')]});
+  receipt.screens.push({file,keys,at:new Date().toISOString(),url:page.url()});save();return path;
+ }
+ const check=(what,data={})=>{receipt.checks.push({what,...data,at:new Date().toISOString()});save();};
+ async function pos(stationId,stationName) {
+  const c=await browser.newContext({viewport:{width:1600,height:1050}});c.setDefaultTimeout(20000);const page=await c.newPage();
+  await page.goto(POS);await page.locator('input[inputmode="tel"],input[type="tel"]').first().fill(need('STAGING_ADMIN_PHONE').replace(/^\+?66/,'').replace(/^0/,''));
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(need('STAGING_ADMIN_PASSWORD'));
+  const pending=page.waitForResponse(r=>r.url().endsWith('/api/auth/sign-in')&&r.request().method()==='POST');await page.getByRole('button',{name:'Sign in',exact:true}).click();assert.equal((await pending).status(),200);
+  const picked=page.waitForResponse(r=>r.url().endsWith('/api/me/session/station')&&r.request().method()==='PUT');await page.getByRole('button',{name:new RegExp(stationName)}).click();assert.equal((await picked).status(),200);
+  await page.getByText('Membership Check',{exact:true}).waitFor();
+  const m=await c.request.get(POS+'/api/me');assert.equal((await m.json()).operatorContext.stationId,stationId);
+  return {ctx:c,p:page};
+ }
+ return {browser,ctx,p,api,me,receipt,save,check,capture,pos,live,out,name,stamp,expect,POS,CONSOLE};
+}
