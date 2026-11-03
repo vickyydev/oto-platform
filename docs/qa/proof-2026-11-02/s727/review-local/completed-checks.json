@@ -1,0 +1,62 @@
+{
+  "source": "0f400710d05b0c86fa8bae27301615b7ecd80613",
+  "docsCheckpoint": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+  "sameProductSource": true,
+  "apiAndWorkspaceFullGates": "running, not counted as completed",
+  "gates": [
+    {
+      "key": "types",
+      "sha": "0f400710d05b0c86fa8bae27301615b7ecd80613",
+      "start": "2026-11-03T14:09:21.571Z",
+      "end": "2026-11-03T14:10:59.167Z",
+      "command": "pnpm typecheck; pnpm lint; pnpm api-types:check",
+      "log": "C:/oto-lanes/s727-resume-v2-types.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "9684094fc276cf3b38d1f234fbe94d59242af4ecd3c5a766cd7f69e80c2f9315"
+    },
+    {
+      "key": "build",
+      "sha": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+      "start": "2026-11-03T14:10:58.070Z",
+      "end": "2026-11-03T14:11:47.917Z",
+      "command": "VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true pnpm build; pnpm --filter @oto/pos build:display; pnpm --filter @oto/box-agent build:runner",
+      "log": "C:/oto-lanes/s727-resume-v2-build.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "1a592b69c0325d07718bbdc111e937804b726d23694256989b850f0390616cb0"
+    },
+    {
+      "key": "smoke",
+      "sha": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+      "start": "2026-11-03T14:12:55.697Z",
+      "end": "2026-11-03T14:16:20.341Z",
+      "command": "VITE_BOX_BRIDGE_ZONE=localhost VITE_BOX_BRIDGE_ALLOW_LOOPBACK=true POS_E2E_BROWSER=msedge POS_E2E_BUILT=1 pnpm --filter @oto/pos e2e",
+      "log": "C:/oto-lanes/s727-resume-v2-smoke.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "b95b46f231cc7d73e16397e445e99efb8b8d51ef79f61ff34f0292f3693c1719"
+    },
+    {
+      "key": "browser",
+      "sha": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+      "start": "2026-11-03T14:22:02.506Z",
+      "end": "2026-11-03T14:24:57.668Z",
+      "command": "S727_REAUTH_PROBE=true pnpm --filter @oto/api exec tsx C:/oto-lanes/s727-review-local-run.mts",
+      "log": "C:/oto-lanes/s727-resume-v4-browser.log",
+      "exitCode": 0,
+      "signal": null,
+      "logSha256": "0705851f55e60932dd5fb59e664fa4a898646da230e2c44b05688146167420fd"
+    }
+  ],
+  "typecheck": {
+    "tasks": 16,
+    "diagnostics": 0,
+    "cache": "16 valid source-matched Turbo results"
+  },
+  "lint": {
+    "errors": 0,
+    "existingWarnings": 8
+  },
+  "shell": "both changed scripts pass bash -n and ShellCheck severity=error"
+}

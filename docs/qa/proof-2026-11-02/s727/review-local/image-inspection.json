@@ -1,0 +1,33 @@
+{
+  "inspectedAt": "2026-11-03T14:26:10Z",
+  "scope": "local rehearsal only, not staging",
+  "source": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+  "images": [
+    {
+      "file": "s727-configured-test-zone.png",
+      "opened": true,
+      "sha256": "a3b67aed925f320c4de5f91e10378f76c83fa930f97f464a135741be76ef38e0"
+    },
+    {
+      "file": "s727-fresh-sign-in-desktop.png",
+      "opened": true,
+      "sha256": "2b837b89961f6b567a05bc406a74e3d363e0cf74eb3d561f15317627a81ad1e5"
+    },
+    {
+      "file": "s727-fresh-sign-in-mobile.png",
+      "opened": true,
+      "sha256": "74b8f6b957e10e0c6a94166cb6b9302f8cb2647a8b293f102d2e76218387af19"
+    },
+    {
+      "file": "s727-ended-shift-refused.png",
+      "opened": true,
+      "sha256": "3d850cf5dcf65bcdafd435147fdf091fb273f9f16e5bd6a5a430dc3b2b869c22"
+    }
+  ],
+  "notes": [
+    "Test DNS child and dedicated ZZ TEST identity visible.",
+    "Offline notice is legible on desktop and mobile.",
+    "Ended-shift refusal is visible; password field is masked.",
+    "Existing Test harness banner belongs to SCRUM-728 and is not accepted as repaired here."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "unit": "SCRUM-727",
+  "mode": "local",
+  "source": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+  "version": "oto-box 0.1.0-20261103-5df58b98 built 2026-11-03T14:11:28.939Z",
+  "startedAt": "2026-11-03T14:17:08.345Z",
+  "checks": [],
+  "outcome": "incomplete",
+  "limitations": [
+    "Windows local agent and test-only localhost zone; no real box address",
+    "No physical Pi, private HTTPS, certificate, printer or power-cut acceptance",
+    "No sale, payment or SMS created"
+  ],
+  "local": {
+    "bridgeOrigin": "http://zz-test-s727.localhost:61295",
+    "home": "C:/oto-lanes/s727-agent-mw0ruqd3"
+  },
+  "staff": {
+    "accountId": "66f2d526-eae6-4b85-a9ca-d81fbc0292d0",
+    "employeeId": "b224a8f8-b9e2-4383-9805-4dbd2e20eeb5",
+    "name": "ZZ TEST SCRUM-727 mw0ruqd3 staff"
+  },
+  "failedStep": "create only a dedicated ZZ TEST counter and till",
+  "errorName": "AssertionError",
+  "location": "    at provision (file:///C:/oto-lanes/s727-proof-account.mjs:9:56)",
+  "safeError": "Assertion failed",
+  "finishedAt": "2026-11-03T14:17:11.653Z",
+  "fixtureRetained": true
+}

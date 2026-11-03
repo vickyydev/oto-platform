@@ -1,0 +1,109 @@
+{
+  "unit": "SCRUM-727",
+  "mode": "local",
+  "source": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+  "version": "oto-box 0.1.0-20261103-5df58b98 built 2026-11-03T14:11:28.939Z",
+  "startedAt": "2026-11-03T14:22:43.922Z",
+  "checks": [
+    {
+      "name": "Dedicated ZZ TEST staff account prepared without SMS; manager-end proof cannot alter another staff account",
+      "at": "2026-11-03T14:22:48.235Z",
+      "passed": true
+    },
+    {
+      "name": "API save refuses unrelated DNS names and every tested IP literal",
+      "at": "2026-11-03T14:22:48.817Z",
+      "passed": true
+    },
+    {
+      "name": "One configured policy and the existing public signing key reach the real agent",
+      "at": "2026-11-03T14:22:51.194Z",
+      "passed": true
+    },
+    {
+      "name": "Online unlock sends one token-and-password request to the validated host, with no retry",
+      "requests": 1,
+      "at": "2026-11-03T14:23:56.146Z",
+      "passed": true
+    },
+    {
+      "name": "A forged token with the correct password and account is refused",
+      "at": "2026-11-03T14:24:01.579Z",
+      "passed": true
+    },
+    {
+      "name": "During the outage a token alone is refused; the native token-and-password unlock works",
+      "at": "2026-11-03T14:24:01.881Z",
+      "passed": true
+    },
+    {
+      "name": "OD-6 password-only sign-in remains visibly marked after unlock on desktop and mobile",
+      "at": "2026-11-03T14:24:03.282Z",
+      "passed": true
+    },
+    {
+      "name": "A new online sign-in clears the prior offline sign-in notice",
+      "at": "2026-11-03T14:24:05.424Z",
+      "passed": true
+    },
+    {
+      "name": "The ended test shift is refused with its token and with the token omitted",
+      "at": "2026-11-03T14:24:53.224Z",
+      "passed": true
+    },
+    {
+      "name": "Test bridge cleared, exact ZZ TEST box and till archived, sessions signed out",
+      "at": "2026-11-03T14:24:53.565Z",
+      "passed": true
+    }
+  ],
+  "outcome": "passed",
+  "limitations": [
+    "Windows local agent and test-only localhost zone; no real box address",
+    "No physical Pi, private HTTPS, certificate, printer or power-cut acceptance",
+    "No sale, payment or SMS created"
+  ],
+  "local": {
+    "bridgeOrigin": "http://zz-test-s727.localhost:55289",
+    "home": "C:/oto-lanes/s727-agent-mw0s1xao"
+  },
+  "staff": {
+    "accountId": "3260e979-e297-41b2-89e6-4f4910813cd3",
+    "employeeId": "9d31093d-d420-4a08-99f7-ed830bf74d2b",
+    "name": "ZZ TEST SCRUM-727 mw0s1xao staff",
+    "provision": {
+      "source": "5df58b98f77ed070f5f9ff6764843e75ffc75e4f",
+      "local": true,
+      "result": {
+        "event": "s727_fixture_account",
+        "at": "2026-11-03T14:22:47.928Z",
+        "accountId": "3260e979-e297-41b2-89e6-4f4910813cd3",
+        "employeeId": "9d31093d-d420-4a08-99f7-ed830bf74d2b",
+        "status": "invited",
+        "roles": 0,
+        "sms": false,
+        "passed": true
+      }
+    },
+    "grantId": "01a1a1ca-8ab3-7c84-8527-d2f403689131",
+    "retiredAt": "2026-11-03T14:24:53.535Z"
+  },
+  "fixture": {
+    "name": "ZZ TEST SCRUM-727 mw0s1xao",
+    "boxId": "01a1a1ca-8bbe-7efa-8957-ada324ca6c73",
+    "branchId": "01a1a1ca-602c-7a5f-80a8-65025c27bb91",
+    "printerId": "01a1a1ca-8d58-7ec3-8fc3-6488c98191d6",
+    "stationId": "01a1a1ca-8d76-7db0-96e0-06d24414ddac",
+    "shiftId": "01a1a1cb-b6d6-76a4-8a62-e1cadc1a8e77",
+    "printerRetired": true
+  },
+  "signingKey": {
+    "kid": "ce90c178b9ae3b81",
+    "publicFingerprint": "ce90c178b9ae3b81833de2b02503e75978f14c026d8554020422d807d085a02e"
+  },
+  "tillSignedOutAt": "2026-11-03T14:24:53.289Z",
+  "adminSignedOutAt": "2026-11-03T14:24:53.565Z",
+  "cleanedAt": "2026-11-03T14:24:53.565Z",
+  "finishedAt": "2026-11-03T14:24:54.159Z",
+  "fixtureRetained": false
+}

@@ -1,0 +1,20 @@
+{
+  "event": "s727_database_proof",
+  "at": "2026-11-03T14:24:54.535Z",
+  "readOnly": true,
+  "kid": "ce90c178b9ae3b81",
+  "publicFingerprint": "ce90c178b9ae3b81833de2b02503e75978f14c026d8554020422d807d085a02e",
+  "publicKeyRows": 1,
+  "boxArchived": true,
+  "printerArchived": true,
+  "stationArchived": true,
+  "bridgeCleared": true,
+  "staffInactive": true,
+  "staffRoleGrants": 0,
+  "staffActiveSessions": 0,
+  "shiftRevoked": true,
+  "revokedReason": "admin",
+  "saleRows": 0,
+  "syncAnomalies": 0,
+  "passed": true
+}

@@ -1,0 +1,41 @@
+import { createServer } from 'node:net';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { databaseCheckProgram } from './s727-database-check-program.mjs';
+import { spawn, spawnSync } from 'node:child_process';
+import { generateKeyPairSync } from 'node:crypto';
+import { createRequire } from 'node:module';
+import { createTestContext, teardownAll, ADMIN } from './codex-box-unlock-review-backup-20261103/apps/api/test/helpers.ts';
+import { publishStaffTokenKey } from './codex-box-unlock-review-backup-20261103/apps/api/src/services/staff-token.ts';
+
+const root='C:/oto-lanes/codex-box-unlock-review-backup-20261103';
+const free=()=>new Promise<number>((resolve,reject)=>{const s=createServer();s.on('error',reject);s.listen(0,'127.0.0.1',()=>{const a=s.address();if(!a||typeof a==='string')throw Error('port');s.close(()=>resolve(a.port));});});
+const [apiPort,posPort,consolePort]=await Promise.all([free(),free(),free()]);
+const origin=(port:number)=>`http://127.0.0.1:${port}`;
+const key=generateKeyPairSync('ed25519').privateKey.export({type:'pkcs8',format:'pem'}).toString();
+const ctx=await createTestContext({env:{DEPLOY_ENV:'local',STAFF_TOKEN_PRIVATE_KEY:key,STAFF_OFFLINE_SIGN_IN:'true',BOX_BRIDGE_ZONE:'localhost',BOX_BRIDGE_ALLOW_LOOPBACK:'true',ALLOWED_ORIGINS:[posPort,consolePort].map(origin).join(','),COOKIE_SECURE:'false'}});
+await publishStaffTokenKey(ctx.db,ctx.app.env);
+const base=Object.fromEntries(['PATH','Path','SystemRoot','TEMP','TMP','LOCALAPPDATA','USERPROFILE'].filter(k=>process.env[k]).map(k=>[k,process.env[k]]));
+const children: ReturnType<typeof spawn>[]=[];
+const child=(args:string[],env:Record<string,string>,cwd=root)=>{const c=spawn(process.execPath,args,{cwd,env:{...base,...env},windowsHide:true,stdio:['ignore','pipe','pipe']});c.stdout?.on('data',()=>{});c.stderr?.on('data',()=>{});children.push(c);return c;};
+let status=1;
+try {
+ await ctx.app.listen({port:apiPort,host:'127.0.0.1'});
+ child([root+'/apps/pos/server/dist/index.js'],{PORT:String(posPort),API_UPSTREAM:origin(apiPort)},root+'/apps/pos');
+ const req=createRequire(root+'/apps/console/package.json');
+ const viteEntry=req.resolve('vite/package.json').replace(/package\.json$/,'bin/vite.js');
+ child([viteEntry,'preview','--config',root+'/apps/console/vite.config.ts'],{CONSOLE_PORT:String(consolePort),API_PORT:String(apiPort)},root+'/apps/console');
+ for(const port of [posPort,consolePort]){let ready=false;for(let i=0;i<80;i++){if(await fetch(origin(port)).then(r=>r.ok).catch(()=>false)){ready=true;break;}await new Promise(r=>setTimeout(r,500));}if(!ready)throw Error('local server not ready');}
+ console.log('Disposable API and built frontends ready; every application URL is local.');
+ const proof=spawn(process.execPath,['--disable-warning=ExperimentalWarning','C:/oto-lanes/s727-review-browser-proof.mjs'],{cwd:root,env:{...base,S727_MODE:'local',S727_TEST_DATABASE_URL:ctx.app.env.DATABASE_URL,S727_REAUTH_PROBE:process.env.S727_REAUTH_PROBE??'false',S727_OUT:'C:/oto-lanes/s727-review-local-rehearsal',S727_API:origin(apiPort),S727_POS:origin(posPort),S727_CONSOLE:origin(consolePort),STAGING_ADMIN_PHONE:ADMIN.phone,STAGING_ADMIN_PASSWORD:ADMIN.password},windowsHide:true,stdio:'inherit'});
+ status=await new Promise<number>(resolve=>proof.once('exit',c=>resolve(c??1)));
+ if(status===0){
+ const directory='C:/oto-lanes/s727-review-local-rehearsal/'+readdirSync('C:/oto-lanes/s727-review-local-rehearsal').sort().at(-1);
+ const path=directory+'/'+readdirSync(directory).find(f=>f.startsWith('browser-')&&f.endsWith('.json'));
+ const result=JSON.parse(readFileSync(path,'utf8'));
+ const readback=spawnSync(process.execPath,['-e',databaseCheckProgram(result)],{cwd:root+'/apps/api',env:{...base,DATABASE_URL:ctx.app.env.DATABASE_URL},windowsHide:true,encoding:'utf8'});
+ if(readback.status!==0){console.error('Local independent cleanup read failed');status=1;}else{const checked=JSON.parse(readback.stdout.trim());writeFileSync(directory+'/database-cleanup.json',JSON.stringify(checked,null,2));console.log('Independent database cleanup passed');}
+ }
+
+}catch(e){console.error('Local rehearsal stopped:',e instanceof Error?e.name:'unknown');}
+finally{for(const c of children){if(c.pid&&c.exitCode===null)spawnSync('taskkill',['/pid',String(c.pid),'/t','/f'],{stdio:'ignore',windowsHide:true});}await ctx.close();await teardownAll();}
+process.exit(status);

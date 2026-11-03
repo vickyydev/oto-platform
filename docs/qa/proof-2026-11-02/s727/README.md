@@ -1,5 +1,13 @@
 # SCRUM-727 release evidence
 
+## Current review candidate
+
+The independent-review fixes are backed up at `0f400710`; the complete gates are
+running. [New local review evidence](review-local/README.md) records the rebuilt
+real-agent/browser proof and independent fixture cleanup. The earlier green
+results below predate those fixes and do not establish current release readiness.
+
+
 Status: **In Progress; local checks only**. Source
 `2a714b783d703925ae9b715af9fbd4f426f01dea` was rebased over documentation only
 and backed up as `8e99e33e6561a04f8b5c6da5dabae805ba538bb6` on
