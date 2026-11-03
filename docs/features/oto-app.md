@@ -200,3 +200,29 @@ All seven items are delivered; their parent and child tickets are Deployed. Each
 Settings, Activity, Attention actions, Directory HR and the POS seam are complete for the named cases in [platform controls](../qa/oto-app-lift/round-7/platform-controls.md). Current Health/Failures evidence is indexed in [jobs recovery](../qa/oto-app-lift/round-8/jobs-recovery.md). The completed department action and its exact two-row cleanup are recorded in [organization evidence](../qa/oto-app-lift/org-hr-verification.md).
 
 SCRUM-191 and all twelve children are Deployed. The separate OPEN_ITEMS fix block begins with SCRUM-276; SCRUM-223 stays paused. Preserve all named module limits and the later unattributed Som observation.
+
+## Checklists across branches (SCRUM-659)
+
+**Owner's ruling, 3 November 2026. A deliberate change from the prototype's editor.** In the prototype, creating a checklist for two branches makes one independent template per branch, while editing one and adding a branch widens the same template into one shared checklist. Both stay. The edit screen now lets the person choose; nothing already stored is split or changed, and there is no migration.
+
+| In the edit screen | What happens |
+| --- | --- |
+| A normal edit | "Save as a new checklist" is unticked; saving is the same single update as before and leaves the branches alone. |
+| "Save as a new checklist" ticked | One independent checklist per selected branch, from the edited values, as creating does. The original is not written at all. |
+| A branch added | A required choice with nothing preselected, Save closed until answered: "Make a separate copy for this branch" or "Share one checklist across both". |
+| Separate copy | One independent template per added branch. The original keeps its branches and takes the rest of the edit. |
+| Share | What an edit always did: the same template, on more branches. |
+| A branch removed | As before, with or without a copy. |
+| Already shared | A note such as "This is shared with Robinson. Changes apply to both branches.", naming only branches the person may see and counting the rest. The box splits off a copy. |
+| On no branch | Stays one checklist for all branches, with a note saying so. Picking a branch narrows it, as before, with no question. |
+| Creating a checklist | Does not change. |
+
+**What a copy is.** It goes through the create path: the same checks and the one storage call (`server/core/checklistCopies.ts`). It carries items and their settings, schedule, recurrence, checker rounds and times, named employees, role and department assignment, the older department, location, allowed checker roles and reference media. It starts at version 1 with no runs: past runs stay with the original and a run in progress there is untouched. The recurring run creator makes one run per branch per period for it, from the day it was made.
+
+**Reference media.** A copy has its own `checklist_attachments` rows on the original's stored object. A file opens for anyone who can reach any checklist that names it, and the stored object is removed only with the last row naming it. While "Save as a new checklist" is ticked, media cannot be added or removed in the dialog, because media saves to the original the moment it changes.
+
+**The server's rules hold whatever the screen sends.** `POST /api/checklists/templates` takes an optional `copiedFromTemplateId`; `PATCH /api/checklists/templates/:id` takes an optional `branchCopyChoice` (`copy` or `share`). A caller naming neither behaves as before. `requireManager`, the create path's branch check and a park group check on every target branch all pass before anything is written. `GET /api/checklists/templates/:id` reads any of a template's branches, so a manager at the second branch of a shared checklist can open it and copy it to their own; a plain save by that manager stays refused, as before.
+
+**Who made a copy.** This route family writes no activity row: the trail is `created_by` on the copy and the request log, with a `checklist copied` line naming the original, the copies, the branches and the person. It has no idempotency key either: the Save button closes while a save is in flight and a double click sends one request.
+
+Checks: `tests/checklist-copies.check.ts` (the routes) and `tests/checklist-copies-ui.check.ts` (the real page, under jsdom, on the real routes).
