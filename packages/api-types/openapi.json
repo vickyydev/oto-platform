@@ -93305,6 +93305,12 @@
                     },
                     "mustChangePassword": {
                       "type": "boolean"
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   },
                   "required": [

@@ -122,6 +122,11 @@ export const BridgeStatusSchema = z.object({
 });
 export type BridgeStatus = z.infer<typeof BridgeStatusSchema>;
 
+/** Authenticated staff presence read; contains no display credential. */
+export const BridgeDisplaysSchema = z.object({ displays: z.array(z.object({
+  id: z.string(), name: z.string(), connected: z.boolean(),
+})) });
+
 /**
  * `POST unlock` — the till presents what it holds (OD-2).
  *
@@ -156,6 +161,8 @@ export const BridgeUnlockResponseSchema = z.object({
   cachedAt: z.string().nullable(),
   cacheAgeSeconds: z.number().int().nullable(),
   mustChangePassword: z.boolean(),
+  /** UI affordances from this authenticated box session; never a browser grant. */
+  permissions: z.array(z.string()).optional(),
 });
 export type BridgeUnlockResponse = z.infer<typeof BridgeUnlockResponseSchema>;
 

@@ -521,13 +521,21 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
     const paused = () => stopped || channel.signingOut || !current.current.active || publisher.current !== channel;
     /**
      * Whether any display is watching, from the platform while it answers.
-     * For a local bridge or the box lane (offline plan OD-10), the platform
+     * A local box owns its own presence list. For the virtual box lane, the platform
      * cannot say. The document is published to the box anyway: it is the box's document the
      * display follows, publishing to it is local and cheap, and the till never
      * waits on a display either way.
      */
     const watching = async (): Promise<ConnectedDisplay[] | 'unknown'> => {
-      if (hasBridgeOrigin() || currentLane() === 'box') return 'unknown';
+      if (hasBridgeOrigin()) {
+        try { return (await bridgeApi.displays(stationId)).displays.filter(display => display.connected); }
+        catch (failure) {
+          // Older bundles have no presence read; keep their existing publisher.
+          if (failure instanceof ApiError && failure.status === 404 && failure.code === 'NOT_FOUND') return 'unknown';
+          throw failure;
+        }
+      }
+      if (currentLane() === 'box') return 'unknown';
       try {
         const list = await api.get<{ displays: ConnectedDisplay[] }>(`${base}/displays`);
         return list.displays.filter(display => display.connected);

@@ -285,6 +285,7 @@ export function BridgeAddress({ box, canUpdate, onChanged }: { box: BoxRow; canU
     <Field label="Counter bridge address" hint="The HTTPS address tills use to reach this box without the internet. Use a dedicated DNS zone controlled by the park, never a shared hosting suffix. Leave empty until its network address is ready.">
       <TextInput value={value} onChange={(next) => { setValue(next); setSaved(false); }} disabled={!canUpdate || busy} placeholder="https://counter-1.example.com" maxLength={2048} />
     </Field>
+    {value.trim() && value.trim() !== (box.bridgeOrigin ?? '') && <p role="alert" className="text-sm text-amber-700 dark:text-amber-300">Saving this address moves the customer display to this box. A display still open on the web address will stop updating. Open and pair the display on the box, then pick the station again and unlock its till.</p>}
     {canUpdate && <Button variant="outline" size="sm" disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Save bridge address'}</Button>}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     {saved && <p role="status" className="text-xs text-muted-foreground">Saved. Pick the station again, then lock and unlock its till to connect the local display.</p>}
