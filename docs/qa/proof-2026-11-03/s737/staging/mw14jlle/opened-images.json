@@ -1,0 +1,31 @@
+{
+  "inspectedAt": "2026-11-03T20:15:31.092Z",
+  "images": [
+    {
+      "file": "receipt-simulated-output.png",
+      "openedAndInspected": true,
+      "sha256": "1a51cff6a24183881bbacedd31b938e1baf87ab8703a0d3d7bd13760f0d1bd1a"
+    },
+    {
+      "file": "kitchen-simulated-output.png",
+      "openedAndInspected": true,
+      "sha256": "ad23e8b42209faef101276281d6686280d577096e0a7c11d0b3c18d601d561f8"
+    },
+    {
+      "file": "s737-native-print-jobs.png",
+      "openedAndInspected": true,
+      "sha256": "932ae3c8fb9d9d48f14e88709b84d7e02fcfe2b0af2d074f71d3b33482233859"
+    },
+    {
+      "file": "s737-staging-proof.png",
+      "openedAndInspected": true,
+      "sha256": "b90536445602ddb6b9a4d254f6e0b11a25f1e6b550b2b30f39732896c18be761"
+    },
+    {
+      "file": "s742-staging-proof.png",
+      "openedAndInspected": true,
+      "sha256": "2692f70bd2d9983c0c36eb148d2689b70ef2333dfb769077874b686403dd8aa0"
+    }
+  ],
+  "notes": "Native records show both jobs printed. Simulator outputs show the one-baht receipt and kitchen ticket. Both cards are legible, label the test limits and name the live commits."
+}

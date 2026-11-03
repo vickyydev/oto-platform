@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+export default async function(proof){
+ const {r,out,save,live,credentials}=proof,clean=JSON.parse(readFileSync(out+'/cleanup-readback.json','utf8'));
+ assert.equal(clean.source,r.source);assert.equal(clean.result.passed,true);assert.ok(clean.result.cleanup);assert.ok(r.retirement.browserFinishedAt);
+ assert.ok(Date.parse(clean.result.at)>Date.parse(r.retirement.browserFinishedAt));
+ for(const value of Object.values(clean.result.cleanup.counts))assert.equal(value,0);
+ assert.equal(await credentials.read(),null);assert.deepEqual(await live(),r.deployments);
+ r.retirement.independentReadAt=clean.result.at;r.retirement.jobId=clean.jobId;r.retirement.verified=true;
+ r.outcome='passed: first cash sale printed once on both assigned simulators; exact cleanup independently verified';r.finishedAt=new Date().toISOString();save();
+ return {passed:true,cleanupVerified:true,source:r.source};
+}

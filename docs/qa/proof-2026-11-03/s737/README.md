@@ -1,5 +1,20 @@
 # SCRUM-737 first-sale printer configuration
 
+## Verified staging result
+
+Source and matching local agent: `773fd25f5436bf07f663af183761481b3197a3ef`. Main CI [41704476807](https://github.com/vickyydev/oto-platform/actions/runs/41704476807) passed all six jobs. API, new POS, old POS, Console, Launcher, Booth and OTO App were all live on this exact source throughout the proof. Deployment IDs and times are in [the receipt](staging/mw14jlle/receipt.json).
+
+The dedicated ZZ TEST SCRUM-737 mw14jlle till was created with both printers after the real local agent cached a configuration with no stations. Its first one-baht cash sale queued both assigned jobs. The command poll refreshed configuration once; both jobs printed in one attempt. The byte-stream simulators produced receipt and kitchen output, with one drawer kick. A second poll produced no duplicate output. Native Console showed both printed jobs. Physical printer hardware was not tested.
+
+Independent read-only job `job-dbl40jutlv9c73cqdid0` confirmed one finalised cash sale, one approved cash payment, both assigned jobs printed once, two succeeded print commands and one drawer command, and the two historical skips unchanged. The live API image preserved canonical identifiers while masking adjacent card values, malformed card fragments and denied fields; the vendored OTO App redactor matched byte for byte.
+
+Exact cleanup job `job-dbl41pbncjis73e225r0` confirmed the till, box, two devices and menu fixtures archived; the box disabled with no secret, claim or address; zero active own sessions, leases or pending commands/prints. Both browser sessions signed out. The cash sale, audit history and original historical skipped rows are retained. No setting, plan, service size or park device changed.
+
+Opened images: [native print records](staging/mw14jlle/s737-native-print-jobs.png), [first-sale card](staging/mw14jlle/s737-staging-proof.png), [live redaction card](staging/mw14jlle/s742-staging-proof.png), and both original simulator PNGs. The cards label their limits and name every live source. Inline Jira publication and Deployed readback follow this evidence commit.
+
+Staff feedback remains unchanged. Code review shows that the post-payment sale read produces “Some items not printed” if it already sees a skip. A later box-reported skip produces no new warning automatically; reopening History reads the final status. This notification timing was not exercised in the staging proof. No notification change is included. The independent intermittent Console request-mock issue remains open as SCRUM-743.
+
+
 ## Reproduction before product changes
 
 On 3 November 2026 at 23:22 Bangkok, product source `6fd968a3` failed
@@ -35,8 +50,8 @@ The seven-case review covers the original timing, a fresh-cache control,
 a changed receipt printer, HTTP and connection failures, deliberate removal
 after queuing, and a till intentionally created without printers. It reads
 simulator output and approved cash attempts and polls commands again to
-check that neither paper nor payment is duplicated. Full release gates and
-staging proof remain pending.
+check that neither paper nor payment is duplicated. Complete local gates,
+all six main CI jobs and the source-bound staging proof now pass.
 
 ## What staff see
 
@@ -44,13 +59,14 @@ staging proof remain pending.
 the till shows **Some items not printed**. If it sees queued jobs, it says
 they were sent and does not automatically warn when a later command skips
 them. Opening the sale in History reads the final skipped status. This is
-the code-observed behavior; a native staging capture is still required.
+the code-observed behavior; this proof did not exercise that notification timing.
 No new notification is part of this job.
 
 The two historical rows named on SCRUM-737 remain unchanged. No setting,
-Render service, plan, size or park device changes are planned. Source landing
-and staging proof wait for a committed, uncontested release-slot claim;
-SCRUM-730 currently holds the slot.
+Render service, plan, size or park device changed. The release and proof ran
+in the committed, uncontested 737/742 window after 728 released it.
+
+## Historical progress checkpoints
 
 **4 November 2026, 01:33 Bangkok, SCRUM-737/742 COMPLETE LOCAL AND BRANCH GATES PASS; REBASED OVER 728:** All three final local API shards pass on frozen e186b0ad: 444 files, 6,176 passes, zero failures, 401 existing skips and four TODOs. Full branch CI 41689125742 passes all six jobs. Whole workspace types, lint/contracts, POS and other package tests, builds, tools, 357 Console browser cases and native till journeys pass; the OTO App ratchet stays at 418 inherited errors across 54 files, with no increase. The original failures and corrected regression remain recorded. A separate release checkout is rebased onto 728 main source 00f414ba with the six own commits intact and every handover block retained; own product/test bytes match e186b0ad. Backup branch lane/codex-first-print-20261104-r4 is pushed. Since 728 changes the outage path, the merged release gates run before landing. Prepared real-agent staging proof, independent readback and exact retirement helpers are backed up in the report; none has run on staging. 728 still holds the source/API/proof/cleanup window. No slot claim, main source push, restart or setting change. 737/742 stay In Progress until their own main CI and exact live proof. The eight older proof tickets are Deployed; 734 remains held for 707 Deployed.**
 

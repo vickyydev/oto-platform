@@ -1,5 +1,18 @@
 # UUID masking release-check finding
 
+## Verified staging result
+
+Source: `773fd25f5436bf07f663af183761481b3197a3ef`. Main CI [41704476807](https://github.com/vickyydev/oto-platform/actions/runs/41704476807) passed all six jobs. API, new POS, old POS, Console, Launcher, Booth and OTO App were all live on this exact source throughout the proof. Deployment IDs and times are in [the receipt](../s737/staging/mw14jlle/receipt.json).
+
+Read-only job `job-dbl40jutlv9c73cqdid0` ran the original identifier through the deployed API image. Complete identifiers survived in allowed fields, arrays and text. Adjacent card values, malformed card fragments and denied fields remained masked. The vendored OTO App redactor matched the shared source byte for byte; that exact source was also live on the OTO App.
+
+The original failing telemetry run is retained. The corrected existing suite passed all 38 checks, and the original API night-job regression file passed unchanged. Full local gates and exact-SHA main CI then passed. The live controls passed again in the final read-only job `job-dbl41pbncjis73e225r0`.
+
+The masking checks wrote no application record or setting. The associated printer proof and its exact fixture cleanup are documented in [SCRUM-737](../s737/README.md). All seven live deployments remained unchanged afterwards; the API returned healthy and its 57 setting names were identical.
+
+The [opened live redaction card](../s737/staging/mw14jlle/s742-staging-proof.png) labels the checks and names every live source. It proves those explicit masking cases against the deployed source; it is not coverage of every screen or data shape. Inline Jira publication and Deployed readback follow this evidence commit.
+
+## Historical progress checkpoints
 **4 November 2026, SCRUM-742 REPRODUCED AND FIXED LOCALLY; FINAL RELEASE GATES REQUIRED:** The complete 737 battery exposed a real masking fault: numeric groups inside a canonical UUID became card-redaction text in ops_run.detail. Jira 742 records the exact failing identifier and plan. The existing telemetry suite reproduced it before the source edit (37 pass, one fail), then passed all 38 cases with a complete-UUID alternative in the grouped-card matcher. Denied credential/person fields, adjacent cards and malformed identifiers still mask; no guard or old test changed. The vendored OTO App copy is identical. This is a narrow data-reliability gate repair beside 737, with no setting or migration. API night-job review, final workspace/API/OTO App gates, exact live-source proof and opened evidence remain; 737/742 stay In Progress. 730 has released its window to 728; this lane takes no slot and changes no staging state.**
 
 The original complete API run is recorded in ../s737/local-gates/initial-api-summary.json. The false positive damaged identifier e88e3138-2708-4749-9142-3a13fca6c6cb into e88e[redacted:card]a13fca6c6cb. local-before.log preserves the focused reproduction before the source edit. local-after.log records all 38 telemetry checks passing. The unchanged s217b-r4b.test.ts must pass whole before source landing. Sensitive keys are processed before shape matching; complete UUID recognition does not exempt a neighbouring card or a malformed token.

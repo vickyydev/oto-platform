@@ -1,0 +1,201 @@
+{
+  "unit": "SCRUM-737",
+  "startedAt": "2026-11-03T20:12:23.955Z",
+  "source": "773fd25f5436bf07f663af183761481b3197a3ef",
+  "localAgentSource": "773fd25f5436bf07f663af183761481b3197a3ef",
+  "name": "ZZ TEST SCRUM-737 mw14jlle",
+  "fixtures": {
+    "devices": [
+      {
+        "deviceId": "01a1a30a-da38-766e-927c-8806843da0d1",
+        "role": "receipt",
+        "label": "ZZ TEST SCRUM-737 mw14jlle receipt"
+      },
+      {
+        "deviceId": "01a1a30a-dbe9-7669-9fd6-d0019a560a5a",
+        "role": "kitchen",
+        "label": "ZZ TEST SCRUM-737 mw14jlle kitchen"
+      }
+    ],
+    "boxId": "01a1a30a-d876-790c-92c0-b7246bf78dc3",
+    "categoryId": "01a1a30a-ddb9-7296-af79-200a62f1df58",
+    "productId": "01a1a30a-e0ec-7801-bcad-63e4fa918d01",
+    "stationId": "01a1a30a-e6b6-720e-b7ff-64452ba34749",
+    "stationName": "ZZ TEST SCRUM-737 mw14jlle till",
+    "saleId": "01a1a30a-ea88-7961-b036-f8963291e139"
+  },
+  "checks": [],
+  "screens": [
+    {
+      "file": "s737-native-print-jobs.png",
+      "at": "2026-11-03T20:13:15.802Z",
+      "url": "https://oto-console-staging.onrender.com/devices",
+      "kind": "native Console printing record"
+    },
+    {
+      "file": "s737-staging-proof.png",
+      "at": "2026-11-03T20:14:48.520Z",
+      "kind": "labelled staging and local-agent test-run card"
+    },
+    {
+      "file": "s742-staging-proof.png",
+      "at": "2026-11-03T20:14:48.729Z",
+      "kind": "labelled live-source redaction check card"
+    }
+  ],
+  "outcome": "passed: first cash sale printed once on both assigned simulators; exact cleanup independently verified",
+  "deployments": [
+    {
+      "name": "oto-api-staging",
+      "id": "srv-danh2ljtqb8s73bt9en0",
+      "sha": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3tlff3r2c73apsu90",
+      "liveAt": "2026-11-03T20:10:02.448799Z"
+    },
+    {
+      "name": "oto-pos-web-staging",
+      "id": "srv-dbk7qu8n74is73bm894g",
+      "sha": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3tlff3r2c73apsv80",
+      "liveAt": "2026-11-03T20:09:17.336393Z"
+    },
+    {
+      "name": "oto-pos-staging",
+      "id": "srv-danh2mf40ujc73bu80j0",
+      "sha": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3tlff3r2c73apsvc0",
+      "liveAt": "2026-11-03T20:07:40.471184Z"
+    },
+    {
+      "name": "oto-console-staging",
+      "id": "srv-danng2p42hec73f38e3g",
+      "sha": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3tlff3r2c73apsvfg",
+      "liveAt": "2026-11-03T20:07:38.1521Z"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "id": "srv-danli3ajnfac7391jrk0",
+      "sha": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3tlnf3r2c73apsvp0",
+      "liveAt": "2026-11-03T20:07:31.140149Z"
+    },
+    {
+      "name": "oto-booth-staging",
+      "id": "srv-dapkbobtqb8s73delilg",
+      "sha": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3tlff3r2c73apsvj0",
+      "liveAt": "2026-11-03T20:07:32.174485Z"
+    },
+    {
+      "name": "oto-app-staging",
+      "id": "srv-danppvjtqb8s73cnvua0",
+      "sha": "773fd25f5436bf07f663af183761481b3197a3ef",
+      "deployId": "dep-dbl3udp42hec73d3g5mg",
+      "liveAt": "2026-11-03T20:11:18.348148Z"
+    }
+  ],
+  "ci": {
+    "conclusion": "success",
+    "databaseId": 41704476807,
+    "headSha": "773fd25f5436bf07f663af183761481b3197a3ef",
+    "status": "completed"
+  },
+  "identity": {
+    "actorId": "01a0bbdc-8c64-7283-aa3b-2af7e79c525d",
+    "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"
+  },
+  "cachedBeforeCreate": {
+    "at": "2026-11-03T20:12:41.338Z",
+    "stations": 0,
+    "configReads": 1
+  },
+  "stationCreateAt": "2026-11-03T20:12:42.394Z",
+  "assignments": [
+    {
+      "deviceId": "01a1a30a-dbe9-7669-9fd6-d0019a560a5a",
+      "role": "kitchen"
+    },
+    {
+      "deviceId": "01a1a30a-da38-766e-927c-8806843da0d1",
+      "role": "receipt"
+    }
+  ],
+  "cashFinalisedAt": "2026-11-03T20:12:45.021Z",
+  "cloudJobs": [
+    {
+      "id": "01a1a30a-f0f0-7f1e-8f03-5fdf24c12225",
+      "kind": "receipt",
+      "status": "queued",
+      "deviceId": "01a1a30a-da38-766e-927c-8806843da0d1"
+    },
+    {
+      "id": "01a1a30a-f0fa-7dfd-be6b-8dcdeed954b2",
+      "kind": "kitchen_ticket",
+      "status": "queued",
+      "deviceId": "01a1a30a-dbe9-7669-9fd6-d0019a560a5a"
+    }
+  ],
+  "commandConfigReads": 1,
+  "jobs": [
+    {
+      "id": "01a1a30a-f0fa-7dfd-be6b-8dcdeed954b2",
+      "kind": "kitchen_ticket",
+      "status": "printed",
+      "deviceId": "01a1a30a-dbe9-7669-9fd6-d0019a560a5a",
+      "deviceLabel": "ZZ TEST SCRUM-737 mw14jlle kitchen",
+      "attempts": 1,
+      "errorCode": null,
+      "finishedAt": "2026-11-03T20:12:46.600Z"
+    },
+    {
+      "id": "01a1a30a-f0f0-7f1e-8f03-5fdf24c12225",
+      "kind": "receipt",
+      "status": "printed",
+      "deviceId": "01a1a30a-da38-766e-927c-8806843da0d1",
+      "deviceLabel": "ZZ TEST SCRUM-737 mw14jlle receipt",
+      "attempts": 1,
+      "errorCode": null,
+      "finishedAt": "2026-11-03T20:12:46.353Z"
+    }
+  ],
+  "outputs": [
+    {
+      "deviceId": "01a1a30a-da38-766e-927c-8806843da0d1",
+      "role": "receipt",
+      "file": "receipt-simulated-output.png",
+      "at": "2026-11-03T20:12:46.303Z",
+      "heightDots": 541,
+      "jobBytes": 39009,
+      "sha256": "1a51cff6a24183881bbacedd31b938e1baf87ab8703a0d3d7bd13760f0d1bd1a"
+    },
+    {
+      "deviceId": "01a1a30a-dbe9-7669-9fd6-d0019a560a5a",
+      "role": "kitchen",
+      "file": "kitchen-simulated-output.png",
+      "at": "2026-11-03T20:12:46.559Z",
+      "heightDots": 94,
+      "jobBytes": 6793,
+      "sha256": "ad23e8b42209faef101276281d6686280d577096e0a7c11d0b3c18d601d561f8"
+    }
+  ],
+  "noDuplicateAfterSecondPoll": true,
+  "drawerKicks": 1,
+  "completedAt": "2026-11-03T20:12:52.114Z",
+  "retirement": {
+    "startedAt": "2026-11-03T20:15:08.317Z",
+    "steps": [
+      "station archived",
+      "device archived: 01a1a30a-da38-766e-927c-8806843da0d1",
+      "device archived: 01a1a30a-dbe9-7669-9fd6-d0019a560a5a",
+      "box disabled and archived; secret and claim cleared",
+      "test menu archived",
+      "owned Console and launcher sessions signed out"
+    ],
+    "browserFinishedAt": "2026-11-03T20:15:15.487Z",
+    "independentReadAt": "2026-11-03T20:15:37.921Z",
+    "jobId": "job-dbl41pbncjis73e225r0",
+    "verified": true
+  },
+  "finishedAt": "2026-11-03T20:16:42.825Z"
+}

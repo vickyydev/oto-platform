@@ -1,0 +1,142 @@
+{
+  "jobId": "job-dbl41pbncjis73e225r0",
+  "source": "773fd25f5436bf07f663af183761481b3197a3ef",
+  "startedAt": "2026-11-03T20:15:32.175Z",
+  "status": "succeeded",
+  "result": {
+    "event": "s737_cleanup_read",
+    "at": "2026-11-03T20:15:37.921Z",
+    "readOnly": true,
+    "station": {
+      "id": "01a1a30a-e6b6-720e-b7ff-64452ba34749",
+      "name": "ZZ TEST SCRUM-737 mw14jlle till",
+      "box_id": "01a1a30a-d876-790c-92c0-b7246bf78dc3",
+      "archived_at": "2026-11-03T20:15:09.881Z"
+    },
+    "box": {
+      "id": "01a1a30a-d876-790c-92c0-b7246bf78dc3",
+      "name": "ZZ TEST SCRUM-737 mw14jlle box",
+      "status": "disabled",
+      "archived_at": "2026-11-03T20:15:11.659Z",
+      "no_secret": true,
+      "no_claim": true,
+      "no_address": true
+    },
+    "assignments": [
+      {
+        "device_id": "01a1a30a-dbe9-7669-9fd6-d0019a560a5a",
+        "role": "kitchen"
+      },
+      {
+        "device_id": "01a1a30a-da38-766e-927c-8806843da0d1",
+        "role": "receipt"
+      }
+    ],
+    "sales": [
+      {
+        "id": "01a1a30a-ea88-7961-b036-f8963291e139",
+        "status": "finalised",
+        "gross": 100,
+        "attempts": 1,
+        "cash": 1
+      }
+    ],
+    "printJobs": [
+      {
+        "id": "01a1a30a-f0fa-7dfd-be6b-8dcdeed954b2",
+        "kind": "kitchen_ticket",
+        "status": "printed",
+        "device_id": "01a1a30a-dbe9-7669-9fd6-d0019a560a5a",
+        "station_id": "01a1a30a-e6b6-720e-b7ff-64452ba34749",
+        "attempts": 1,
+        "error_code": null,
+        "queued_at": "2026-11-03T20:12:45.625Z",
+        "finished_at": "2026-11-03T20:12:46.600Z"
+      },
+      {
+        "id": "01a1a30a-f0f0-7f1e-8f03-5fdf24c12225",
+        "kind": "receipt",
+        "status": "printed",
+        "device_id": "01a1a30a-da38-766e-927c-8806843da0d1",
+        "station_id": "01a1a30a-e6b6-720e-b7ff-64452ba34749",
+        "attempts": 1,
+        "error_code": null,
+        "queued_at": "2026-11-03T20:12:45.624Z",
+        "finished_at": "2026-11-03T20:12:46.353Z"
+      }
+    ],
+    "historical737": [
+      {
+        "id": "01a19f07-fba6-703b-ba94-050051f4ae3d",
+        "status": "skipped",
+        "error_code": "NO_DEVICE_FOR_ROLE",
+        "attempts": 1,
+        "finished_at": "2026-11-03T01:31:07.125Z"
+      },
+      {
+        "id": "01a19f07-fbab-792c-a985-ed7a01cb35c6",
+        "status": "skipped",
+        "error_code": "NO_DEVICE_FOR_ROLE",
+        "attempts": 1,
+        "finished_at": "2026-11-03T01:31:07.171Z"
+      }
+    ],
+    "commands": [
+      {
+        "kind": "test_print",
+        "state": "succeeded",
+        "attempts": 1
+      },
+      {
+        "kind": "test_print",
+        "state": "succeeded",
+        "attempts": 1
+      },
+      {
+        "kind": "drawer_kick",
+        "state": "succeeded",
+        "attempts": 1
+      }
+    ],
+    "redaction742": {
+      "canonicalIdentifierPreserved": true,
+      "adjacentCardMasked": true,
+      "deniedFieldsMasked": true,
+      "malformedIdentifierCardFragmentsMasked": true,
+      "appCopyIdentical": true,
+      "sourceSha256": "9454d57dc04d0814cc9ab280cabbf9d118df39580e5d9bd196ea68097eadaa86"
+    },
+    "cleanup": {
+      "devices": [
+        {
+          "id": "01a1a30a-da38-766e-927c-8806843da0d1",
+          "label": "ZZ TEST SCRUM-737 mw14jlle receipt",
+          "archived": true
+        },
+        {
+          "id": "01a1a30a-dbe9-7669-9fd6-d0019a560a5a",
+          "label": "ZZ TEST SCRUM-737 mw14jlle kitchen",
+          "archived": true
+        }
+      ],
+      "product": {
+        "id": "01a1a30a-e0ec-7801-bcad-63e4fa918d01",
+        "name": "ZZ TEST SCRUM-737 mw14jlle item",
+        "active": false,
+        "archived": true
+      },
+      "category": {
+        "id": "01a1a30a-ddb9-7296-af79-200a62f1df58",
+        "archived": true
+      },
+      "counts": {
+        "active_sessions": 0,
+        "active_leases": 0,
+        "pending_prints": 0,
+        "pending_commands": 0
+      },
+      "agentCredentialsWereMemoryOnly": true
+    },
+    "passed": true
+  }
+}
