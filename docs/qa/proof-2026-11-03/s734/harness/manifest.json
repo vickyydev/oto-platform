@@ -5,7 +5,8 @@
       "file": "s734-staging-live.mjs.txt",
       "executedSha256": "215621babd067ed2db5e5c02c621d19f00b4b9c6b932045516881cac1de0198c",
       "archivedLfSha256": "215621babd067ed2db5e5c02c621d19f00b4b9c6b932045516881cac1de0198c",
-      "stagingRun": false
+      "stagingRun": false,
+      "purpose": "Original local rehearsal fixture source; staging not run"
     },
     {
       "file": "s734-step-clone.mjs.txt",
@@ -54,6 +55,15 @@
       "executedSha256": "065edfe224448bfa3e8ca16c3b2d80d971b0fdaec8282a6c2c24c491657f9ee0",
       "archivedLfSha256": "065edfe224448bfa3e8ca16c3b2d80d971b0fdaec8282a6c2c24c491657f9ee0",
       "stagingRun": false
+    },
+    {
+      "file": "s734-staging-live-current.mjs.txt",
+      "sourcePath": "C:/oto-lanes/s734-staging-live.mjs",
+      "sourceSha256": "56ad8414c8a2b61dd89f06ffd2132d0bf08c05970bf3157f70524100dda4ef06",
+      "archivedLfSha256": "56ad8414c8a2b61dd89f06ffd2132d0bf08c05970bf3157f70524100dda4ef06",
+      "stagingRun": false,
+      "purpose": "Current prepared staging entrypoint; failed handoff navigation omits credential-bearing URLs"
     }
-  ]
+  ],
+  "updatedAt": "2026-11-03T19:43:06.896Z"
 }
