@@ -51,6 +51,7 @@ export async function platformJobsOf(deps: HealthDeps, now = new Date()): Promis
 export function platformEnvironmentOf(env: Pick<Env, 'DEPLOY_ENV' | 'SMS_ADAPTER'>, now = new Date()): PlatformEnvironment {
   const onDeployment = env.DEPLOY_ENV !== 'local';
   const twilio = env.SMS_ADAPTER === 'twilio';
+  const releaseFeed = Boolean(process.env.RELEASE_FEED_RENDER_API_KEY?.trim());
   const variables: EnvVariable[] = [
     { name: 'DATABASE_URL', required: true, provider: null, purpose: 'The database this deployment reads and writes.' },
     { name: 'ALLOWED_ORIGINS', required: onDeployment, provider: null, purpose: 'Browser origins allowed to send a state-changing request.' },
@@ -71,6 +72,9 @@ export function platformEnvironmentOf(env: Pick<Env, 'DEPLOY_ENV' | 'SMS_ADAPTER
     { name: 'HANDOFF_APP_ORIGINS', required: false, provider: null, purpose: 'Where each app lives, so a token for the till cannot be spent on the console.' },
     { name: 'ALERT_CHANNELS', required: false, provider: 'alerts', purpose: 'Where an alert is delivered. Console until a channel is chosen.' },
     { name: 'SENTRY_DSN', required: false, provider: 'sentry', purpose: 'Error reporting. A no-op while unset.' },
+    { name: 'RELEASE_FEED_RENDER_API_KEY', required: false, provider: null, purpose: 'Reads deployments from Render for the Console release history. Empty means the feed is off and the history stays empty.' },
+    { name: 'RELEASE_FEED_SERVICES', required: releaseFeed, provider: null, purpose: 'Which Render services the release feed reads, as <app>=<service name>. Needed once its key is set.' },
+    { name: 'RELEASE_FEED_GITHUB_TOKEN', required: false, provider: null, purpose: 'Only lifts the GitHub anonymous rate limit when the release feed reads the checks of a commit.' },
   ].map(variable => ({ ...variable, present: Boolean(process.env[variable.name]?.trim()) }));
   return { generatedAt: now.toISOString(), variables };
 }

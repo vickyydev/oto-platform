@@ -45,6 +45,8 @@ import { withTx, type Tx } from './tx';
  *     deployment that happened does not make its build green, and a green
  *     build does not make a deployment. A later pass may fill a null in; it
  *     never changes a result already recorded.
+ *   - TIME is Render's, or null. A later pass may fill a null time in the same
+ *     way, and a different time from one already recorded is a conflict.
  *
  * IDENTITY. Render's deployment id, under `source = 'render'`, with a unique
  * index beneath it: however often a deployment is read, or from however many
@@ -184,14 +186,15 @@ export interface ObservedDeployment {
   finishedAt: Date | null;
 }
 
-export type ObservedOutcome = 'recorded' | 'replay' | 'ci_filled' | 'conflict' | 'unknown_app';
+export type ObservedOutcome = 'recorded' | 'replay' | 'ci_filled' | 'time_filled' | 'ci_and_time_filled' | 'conflict' | 'unknown_app';
 
-const same = (a: Date | null, b: Date | null) => (a?.getTime() ?? null) === (b?.getTime() ?? null);
+/** Two readings of one time disagree only when both know it: a time nobody supplied says nothing against one that was. */
+const timesAgree = (a: Date | null, b: Date | null) => a === null || b === null || a.getTime() === b.getTime();
 
 /**
  * One deployment, once. The first read writes the row and its audit row; a
- * repeat with the same facts writes nothing, except that a CI result still
- * unknown may be filled in, audited; a repeat with different facts writes
+ * repeat with the same facts writes nothing, except that a CI result or a time
+ * still unknown may be filled in, audited; a repeat with different facts writes
  * nothing and answers `conflict`.
  */
 export async function recordObservedDeployment(tx: Tx, ctx: { requestId?: string }, input: ObservedDeployment): Promise<ObservedOutcome> {
@@ -217,15 +220,28 @@ export async function recordObservedDeployment(tx: Tx, ctx: { requestId?: string
     .where(and(eq(deployEvent.source, RELEASE_FEED_SOURCE), eq(deployEvent.sourceEventId, input.sourceEventId))).for('update');
   if (!existing) throw new Error('a deploy event that conflicted is gone');
   const agrees = existing.app === input.app && existing.service === input.service && existing.status === input.status
-    && existing.commit === input.commit && same(existing.deployedAt, input.deployedAt) && same(existing.finishedAt, input.finishedAt);
+    && existing.commit === input.commit && timesAgree(existing.deployedAt, input.deployedAt) && timesAgree(existing.finishedAt, input.finishedAt);
   if (!agrees) return 'conflict';
-  if (existing.ciGreen !== null || input.ciGreen === null) return 'replay';
-  await tx.update(deployEvent).set({ ciGreen: input.ciGreen, updatedAt: new Date() }).where(eq(deployEvent.id, existing.id));
-  await audit.record(tx, {
-    actorAccountId: null, operatorId: null, action: 'deploy_event.ci_observed', entityType: 'deploy_event', entityId: existing.id,
-    requestId: ctx.requestId ?? null, targetApp: input.app, origin: 'job', before: { ciGreen: null }, after: { ciGreen: input.ciGreen },
-  });
-  return 'ci_filled';
+  const ciGreen = existing.ciGreen === null ? input.ciGreen : null;
+  const deployedAt = existing.deployedAt === null ? input.deployedAt : null;
+  const finishedAt = existing.finishedAt === null ? input.finishedAt : null;
+  const timeFilled = deployedAt !== null || finishedAt !== null;
+  if (ciGreen === null && !timeFilled) return 'replay';
+  await tx.update(deployEvent).set({
+    ...(ciGreen !== null ? { ciGreen } : {}), ...(deployedAt ? { deployedAt } : {}), ...(finishedAt ? { finishedAt } : {}), updatedAt: new Date(),
+  }).where(eq(deployEvent.id, existing.id));
+  const row = { actorAccountId: null, operatorId: null, entityType: 'deploy_event', entityId: existing.id, requestId: ctx.requestId ?? null, targetApp: input.app, origin: 'job' } as const;
+  if (ciGreen !== null) {
+    await audit.record(tx, { ...row, action: 'deploy_event.ci_observed', before: { ciGreen: null }, after: { ciGreen } });
+  }
+  if (timeFilled) {
+    await audit.record(tx, {
+      ...row, action: 'deploy_event.time_observed',
+      before: { ...(deployedAt ? { deployedAt: null } : {}), ...(finishedAt ? { finishedAt: null } : {}) },
+      after: { ...(deployedAt ? { deployedAt: deployedAt.toISOString() } : {}), ...(finishedAt ? { finishedAt: finishedAt.toISOString() } : {}) },
+    });
+  }
+  return ciGreen !== null && timeFilled ? 'ci_and_time_filled' : ciGreen !== null ? 'ci_filled' : 'time_filled';
 }
 
 // --- One pass ----------------------------------------------------------------
@@ -237,6 +253,7 @@ export interface ReleaseFeedSummary extends Record<string, unknown> {
   recorded: number;
   replayed: number;
   ciFilled: number;
+  timeFilled: number;
   conflicts: string[];
   unknownApps: number;
   stillGoing: number;
@@ -260,7 +277,7 @@ export async function observeDeployments(db: Db, deps: {
     ...(config.githubToken ? { authorization: `Bearer ${config.githubToken}` } : {}),
   };
   const summary: ReleaseFeedSummary = {
-    services: config.services.length, servicesFailed: [], deploymentsRead: 0, recorded: 0, replayed: 0, ciFilled: 0, conflicts: [],
+    services: config.services.length, servicesFailed: [], deploymentsRead: 0, recorded: 0, replayed: 0, ciFilled: 0, timeFilled: 0, conflicts: [],
     unknownApps: 0, stillGoing: 0, unknownStatuses: [], unreadableRows: 0, ciReads: 0, ciReadsFailed: 0,
   };
   const ciByCommit = new Map<string, boolean | null>();
@@ -334,6 +351,8 @@ export async function observeDeployments(db: Db, deps: {
       if (outcome === 'recorded') summary.recorded += 1;
       else if (outcome === 'replay') summary.replayed += 1;
       else if (outcome === 'ci_filled') summary.ciFilled += 1;
+      else if (outcome === 'time_filled') summary.timeFilled += 1;
+      else if (outcome === 'ci_and_time_filled') { summary.ciFilled += 1; summary.timeFilled += 1; }
       else if (outcome === 'unknown_app') summary.unknownApps += 1;
       else summary.conflicts.push(deploy.id);
     }

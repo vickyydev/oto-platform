@@ -246,6 +246,62 @@ describe('a fact nobody supplied stays unknown', () => {
     expect((await rowsOf(name))[0]!.ciGreen).toBe(false);
   });
 
+  it('fills in a time first read as unknown once Render supplies it, audited, as one more fact and not a conflict', async () => {
+    const outside = new Outside();
+    const name = service('timefill');
+    const id = `dep-${newId()}`;
+    const failedId = `dep-${newId()}`;
+    const config = configOf([{ app: 'pos', service: name }]);
+    outside.deploys.set(name, [{ id, status: 'live', commit: { id: commitOf(16) } }, { id: failedId, status: 'update_failed', commit: { id: commitOf(16) } }]);
+    expect(await pass(outside, config)).toMatchObject({ recorded: 2, timeFilled: 0 });
+    const before = await rowsOf(name);
+    expect(before.find(r => r.sourceEventId === id)).toMatchObject({ deployedAt: null, finishedAt: null, ciGreen: true });
+
+    // Still unknown: a repeat, and nothing written.
+    expect(await pass(outside, config)).toMatchObject({ recorded: 0, replayed: 2, timeFilled: 0, conflicts: [] });
+
+    const finishedAt = '2030-01-08T00:05:00.000Z';
+    outside.deploys.set(name, [{ id, status: 'deactivated', commit: { id: commitOf(16) }, finishedAt }, { id: failedId, status: 'update_failed', commit: { id: commitOf(16) }, finishedAt }]);
+    expect(await pass(outside, config)).toMatchObject({ recorded: 0, replayed: 0, timeFilled: 2, conflicts: [] });
+    const rows = await rowsOf(name);
+    const live = rows.find(r => r.sourceEventId === id)!;
+    const failed = rows.find(r => r.sourceEventId === failedId)!;
+    expect(live).toMatchObject({ id: before.find(r => r.sourceEventId === id)!.id, status: 'live', commit: commitOf(16), deployedAt: new Date(finishedAt), finishedAt: new Date(finishedAt) });
+    // One that did not go live still has no deployment time: only the time it ended.
+    expect(failed).toMatchObject({ status: 'update_failed', deployedAt: null, finishedAt: new Date(finishedAt) });
+    const audits = await auditsOf([live.id, failed.id]);
+    expect(audits.filter(a => a.entityId === live.id).find(a => a.action === 'deploy_event.time_observed')).toMatchObject({ origin: 'job', actorAccountId: null, targetApp: 'pos',
+      before: { deployedAt: null, finishedAt: null }, after: { deployedAt: finishedAt, finishedAt } });
+    expect(audits.filter(a => a.entityId === failed.id).find(a => a.action === 'deploy_event.time_observed')).toMatchObject({ before: { finishedAt: null }, after: { finishedAt } });
+
+    // Once known, a repeat writes nothing; a read with the time missing says nothing against it; a different time is a conflict and the record stands.
+    expect(await pass(outside, config)).toMatchObject({ replayed: 2, timeFilled: 0, conflicts: [] });
+    outside.deploys.set(name, [{ id, status: 'live', commit: { id: commitOf(16) }, finishedAt: null }]);
+    expect(await pass(outside, config)).toMatchObject({ replayed: 1, timeFilled: 0, conflicts: [] });
+    outside.deploys.set(name, [{ id, status: 'live', commit: { id: commitOf(16) }, finishedAt: '2030-01-08T09:00:00.000Z' }]);
+    expect(await pass(outside, config)).toMatchObject({ replayed: 0, timeFilled: 0, conflicts: [id] });
+    expect((await rowsOf(name)).find(r => r.sourceEventId === id)).toEqual(live);
+    expect(await auditsOf([live.id, failed.id])).toHaveLength(audits.length);
+  });
+
+  it('fills an unknown CI result and an unknown time together on one pass, with a row for each', async () => {
+    const outside = new Outside();
+    const name = service('bothfill');
+    const sha = commitOf(17);
+    const id = `dep-${newId()}`;
+    const config = configOf([{ app: 'pos', service: name }]);
+    outside.deploys.set(name, [{ id, status: 'live', commit: { id: sha } }]);
+    outside.checks.set(sha, 502);
+    expect(await pass(outside, config)).toMatchObject({ recorded: 1 });
+    const finishedAt = '2030-01-09T00:05:00.000Z';
+    outside.deploys.set(name, [{ id, status: 'live', commit: { id: sha }, finishedAt }]);
+    outside.checks.set(sha, { total_count: 1, check_runs: [{ status: 'completed', conclusion: 'success' }] });
+    expect(await pass(outside, config)).toMatchObject({ ciFilled: 1, timeFilled: 1, conflicts: [] });
+    const [row] = await rowsOf(name);
+    expect(row).toMatchObject({ ciGreen: true, deployedAt: new Date(finishedAt), finishedAt: new Date(finishedAt) });
+    expect((await auditsOf([row!.id])).map(a => a.action).sort()).toEqual(['deploy_event.ci_observed', 'deploy_event.record', 'deploy_event.time_observed']);
+  });
+
   it('stops asking GitHub for the pass once it refuses, and stays within its budget', async () => {
     const outside = new Outside();
     const name = service('refused');

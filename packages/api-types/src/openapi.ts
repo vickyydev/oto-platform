@@ -28561,7 +28561,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The nineteen native Integrations variable names, presence and requirement metadata. No values, endpoints or provider probes. */
+        /** @description The twenty-two native Integrations variable names, presence and requirement metadata. No values, endpoints or provider probes. */
         get: {
             parameters: {
                 query?: never;

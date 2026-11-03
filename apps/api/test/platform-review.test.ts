@@ -12,7 +12,7 @@ const PATHS = ['/platform/alerts', '/platform/jobs', '/platform/environment'];
 const VARIABLE_NAMES = ['DATABASE_URL', 'ALLOWED_ORIGINS', 'SMS_ADAPTER', 'TWILIO_ACCOUNT_SID', 'TWILIO_API_KEY_SID',
   'TWILIO_API_KEY_SECRET', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM', 'MINIO_ENDPOINT', 'MINIO_PORT', 'MINIO_USE_SSL',
   'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY', 'MINIO_BUCKET', 'MINIO_REGION', 'HANDOFF_SIGNING_KEY', 'HANDOFF_APP_ORIGINS',
-  'ALERT_CHANNELS', 'SENTRY_DSN'];
+  'ALERT_CHANNELS', 'SENTRY_DSN', 'RELEASE_FEED_RENDER_API_KEY', 'RELEASE_FEED_SERVICES', 'RELEASE_FEED_GITHUB_TOKEN'];
 const rawMarker = 'ZZ TEST 639 private operational payload';
 let ctx: TestContext;
 let cookie: string;
@@ -232,7 +232,25 @@ describe('SCRUM-639 persisted native job register, without starting a runner', (
 });
 
 describe('SCRUM-639 variables-only deployment metadata', () => {
-  it('R17 high: exposes exactly the nineteen native metadata names and no provider probe or raw fields', async () => {
+  it('says the release feed is half set up by name, never by value: a key with no service list needs the list', async () => {
+    const sentinel = `ZZ_TEST_PRIVATE_${newId()}`;
+    const feed = (rows: EnvVariable[]) => rows.filter(row => row.name.startsWith('RELEASE_FEED_')).map(row => [row.name, row.present, row.required]);
+    vi.stubEnv('RELEASE_FEED_RENDER_API_KEY', ''); vi.stubEnv('RELEASE_FEED_SERVICES', ''); vi.stubEnv('RELEASE_FEED_GITHUB_TOKEN', '');
+    try {
+      const off = await get('/platform/environment');
+      expect(feed(off.json().variables)).toEqual([['RELEASE_FEED_RENDER_API_KEY', false, false], ['RELEASE_FEED_SERVICES', false, false], ['RELEASE_FEED_GITHUB_TOKEN', false, false]]);
+      vi.stubEnv('RELEASE_FEED_RENDER_API_KEY', sentinel);
+      const half = await get('/platform/environment');
+      expect(feed(half.json().variables)).toEqual([['RELEASE_FEED_RENDER_API_KEY', true, false], ['RELEASE_FEED_SERVICES', false, true], ['RELEASE_FEED_GITHUB_TOKEN', false, false]]);
+      expect(half.body.includes(sentinel)).toBe(false);
+      // The Integrations page's own list says the same.
+      const integrations = await ctx.app.inject({ method: 'GET', url: '/ops/integrations', headers: { cookie } });
+      expect(integrations.statusCode, integrations.body).toBe(200);
+      expect(feed(integrations.json().variables)).toEqual(feed(half.json().variables));
+      expect(integrations.body.includes(sentinel)).toBe(false);
+    } finally { vi.unstubAllEnvs(); }
+  });
+  it('R17 high: exposes exactly the twenty-two native metadata names and no provider probe or raw fields', async () => {
     const network = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ZZ_TEST_PROVIDER_PROBE_REFUSED'));
     try {
       const response = await get('/platform/environment'); expect(response.statusCode).toBe(200);

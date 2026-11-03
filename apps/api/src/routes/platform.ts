@@ -69,7 +69,7 @@ export async function platformRoutes(app: App): Promise<void> {
   app.get('/platform/environment', {
     config: { permission: 'admin:health:read', target: { operator: true }, platformWide: true },
     schema: {
-      description: 'The nineteen native Integrations variable names, presence and requirement metadata. No values, endpoints or provider probes.',
+      description: 'The twenty-two native Integrations variable names, presence and requirement metadata. No values, endpoints or provider probes.',
       querystring: z.object({}).strict(), response: { 200: PlatformEnvironmentSchema },
     },
   }, async (req, reply) => {

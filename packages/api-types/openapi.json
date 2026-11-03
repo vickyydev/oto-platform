@@ -71844,7 +71844,7 @@
     },
     "/platform/environment": {
       "get": {
-        "description": "The nineteen native Integrations variable names, presence and requirement metadata. No values, endpoints or provider probes.",
+        "description": "The twenty-two native Integrations variable names, presence and requirement metadata. No values, endpoints or provider probes.",
         "responses": {
           "200": {
             "description": "Default Response",
