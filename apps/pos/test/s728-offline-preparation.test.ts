@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCatalogSnapshot } from '@/store/catalogStore';
 import { prepareCatalog } from '@/api/catalogBridge';
-import { forgetOfflinePreparation, prepareOfflineOperator, prepareOfflineStation, readOfflinePreparation } from '@/auth/offlinePreparation';
+import { forgetOfflinePreparation, forgetOfflineStation, prepareOfflineOperator, prepareOfflineStation, readOfflinePreparation } from '@/auth/offlinePreparation';
 import type { ApiStation } from '@/api/platform';
 
 vi.mock('@/api/catalogBridge', () => ({ prepareCatalog: vi.fn() }));
@@ -30,6 +30,18 @@ const prepare = () => {
 };
 
 describe('SCRUM-728: remembered context can only lead back to the password screen', () => {
+  it('HIGH: changing stations prepares the next one, but a signed-out person cannot prepare either', () => {
+    prepare();
+    forgetOfflineStation();
+    expect(readOfflinePreparation()).toBeNull();
+    const next = { ...station, id: '018f0000-0000-7000-8000-0000000057a5', name: 'ZZ TEST next station' };
+    prepareOfflineStation(next, 'zz-test');
+    expect(readOfflinePreparation()?.station.id).toBe(next.id);
+    forgetOfflinePreparation();
+    forgetOfflineStation();
+    prepareOfflineStation(station, 'zz-test');
+    expect(readOfflinePreparation()).toBeNull();
+  });
   it('keeps the selected station and public catalogue, with no credential or browser permission grant', () => {
     prepare(); const saved = readOfflinePreparation();
     expect(saved?.station.id).toBe(station.id);
