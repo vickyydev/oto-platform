@@ -2,6 +2,8 @@
 
 **4 November 2026, 04:30 Bangkok, SCRUM-735 LOCAL GATES GREEN; RELEASE ORDER HELD:** Search-only source 468b89f5533e4561755c9949c2d8e5671c932e24 is backed up on lane/codex-menu-code-20261104. The real adapter/MenuGrid regression failed five code cases before the fix and passes all seven after it; the complete POS suite passes 132 files / 1,778 tests, with whole POS typecheck, touched-file eslint and production build green. No runtime source from 735 is on main and no staging fixture exists. Native numeric-code search and exact cleanup remain unproven. Report: docs/qa/proof-2026-11-04/s735. 743's post-repair Console repeat/full acceptance is running on 82d16a2d; it lands first after main repair CI 41720268210 is green. 732 retains the source/API/proof slot. 735 waits for an explicit release; the scanner part remains an owner decision and no protected file changed. 738 may be prepared next because 732 is Testing with source on main, but lands only after 732 Deployed. 734 still waits for 707 Deployed.**
 
+**4 November 2026, 04:25 Bangkok, SCRUM-735 SEARCH CORRECTED; FULL LOCAL GATES RUNNING:**
+
 The API already supplies product.code. The correction keeps that optional text on the POS MenuItem and matches it alongside the existing name search. No price, stock, payment, seed, scanner or setting changes. Production changes are three small edits in types.ts, api/menu.ts and MenuGrid.tsx.
 
 Administrators can set the code through Console > Catalogue > Menu: Export, change the code column while retaining the product id, then Import and review/apply the preview. The ordinary item editor has no code field; none was added. The existing importer addresses a row by id before code, so a code change updates that row.
@@ -9,3 +11,5 @@ Administrators can set the code through Console > Catalogue > Menu: Export, chan
 The review drives the real adapter and MenuGrid input state. Before: five code-related failures and two passing existing-name/clear checks. After: seven passes covering numeric codes, leading zeroes, partial codes, whitespace, case, word codes, absent codes, name search and clearing. Whole POS suite: 1,778 passes. Typecheck, eslint and production build: exit zero. Raw log fingerprints and source are in local-gates.json; logs are whitespace/ANSI-normalized for storage.
 
 Staging acceptance remains pending: on a live exact-source build, create a ZZ TEST product with a numeric code, enter the number on F&B, inspect the native result, retire only this fixture and read cleanup. No cash sale or payment is required. The camera scanner part waits for the owner's build-or-remove ruling and is not part of this search fix.
+
+The review drives the real MenuGrid input callback and card list; it does not duplicate the search predicate. These are local component and adapter checks, not staging browser proof.
