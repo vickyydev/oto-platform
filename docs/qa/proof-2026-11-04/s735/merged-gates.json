@@ -1,0 +1,39 @@
+{
+  "at": "2026-11-03T22:46:57.556Z",
+  "source": "16869d1b7c6351de81f5f872714b5458ca2e06e8",
+  "logs": [
+    {
+      "file": "docs/qa/proof-2026-11-04/s735/merged-gates/pos.log",
+      "rawSha256": "c1811b57808b4bdedc318c62ca3fee5cad37b3048c46588ab2d28d2e90b4a22b",
+      "storedSha256": "7a244e4ffcc68f6f12cc5de70d9224e086ad5d2eb8f60abb4fc63a8112355625",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s735/merged-gates/types.log",
+      "rawSha256": "9d742a17e0f66e2bfd13741cc86f724f1d3072cad8fa8d20e1a4cb73c0ca07d5",
+      "storedSha256": "21203ff6ee77e4b63e81376fb87f3a56f47d9e6c7814a74ad972c7395a035192",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s735/merged-gates/lint.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s735/merged-gates/build.log",
+      "rawSha256": "e9cabc95deb63054acac6b846a88d2f05063ef3c83954ef5cbb33840f4e2cc91",
+      "storedSha256": "820f73cd08bec2d9a3342f5a22033418e884f8c4d1625d6e768314f0650bbdd7",
+      "exitCode": 0
+    }
+  ],
+  "posPassed": 1783,
+  "priorBranchCi": {
+    "source": "980f0ed3a0a2a713138144c30bcc20e38bfeef1a",
+    "run": 41729371635,
+    "conclusion": "success",
+    "jobs": 6
+  },
+  "harnessCorrection": "The first lint command named nonexistent src/types/menu.ts. The corrected command linted the actual changed src/types.ts and passed; no source change or assertion change.",
+  "staging": "not run"
+}

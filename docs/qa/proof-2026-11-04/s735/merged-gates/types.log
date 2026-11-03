@@ -1,0 +1,3 @@
+
+> @oto/pos@0.1.0 typecheck C:\oto-lanes\codex-menu-code-20261104\apps\pos
+> tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p server/tsconfig.json --noEmit

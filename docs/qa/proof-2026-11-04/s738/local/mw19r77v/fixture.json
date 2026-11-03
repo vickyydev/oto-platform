@@ -1,0 +1,24 @@
+{
+  "mode": "local",
+  "name": "ZZ TEST SCRUM-738 mw19r77v",
+  "branchId": "01a1a390-2400-70e8-b825-b3d115595c24",
+  "day": "2026-11-04",
+  "events": {
+    "pass": {
+      "id": "9c65af3f-af99-4cef-9ad8-036f7881ae2d",
+      "title": "ZZ TEST SCRUM-738 mw19r77v pass",
+      "type": "workshop"
+    },
+    "party": {
+      "id": "54327b6c-1c73-453c-bad4-95f964b1beb2",
+      "title": "ZZ TEST SCRUM-738 mw19r77v party",
+      "type": "birthday"
+    },
+    "mobile": {
+      "id": "6530b88e-84d6-4884-a1d4-0aab5845e468",
+      "title": "ZZ TEST SCRUM-738 mw19r77v mobile",
+      "type": "birthday"
+    }
+  },
+  "out": "C:/oto-lanes/codex-tender-display-20261104/docs/qa/proof-2026-11-04/s738/local/mw19r77v"
+}

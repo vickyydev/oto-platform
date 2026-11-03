@@ -1,0 +1,187 @@
+{
+  "mode": "local",
+  "browserRendering": "two independent Playwright bundled Chromium processes",
+  "browserVersion": "153.0.8010.12",
+  "startedAt": "2026-11-03T22:38:18.828Z",
+  "source": "8d584a79b6388e7d4c458450814f909fcadc8c5f",
+  "cases": [
+    {
+      "label": "till-pass",
+      "attemptId": "01a1a390-498f-7045-aff4-99d434572b80",
+      "saleId": "01a1a390-48e5-7110-9181-c26a0a59de78",
+      "pendingStage": "payment",
+      "restoredStage": "identify",
+      "sameLease": true,
+      "paidAt": "2026-11-03T22:38:26.874Z"
+    },
+    {
+      "label": "party-balance",
+      "attemptId": "01a1a390-567d-7634-b991-6d9aa8fc4cf2",
+      "saleId": null,
+      "pendingStage": "payment",
+      "restoredStage": "welcome",
+      "sameLease": true,
+      "paidAt": "2026-11-03T22:38:30.143Z"
+    },
+    {
+      "label": "dropoff-pass",
+      "attemptId": "01a1a390-637a-7968-b97e-146a8afc4907",
+      "saleId": "01a1a390-6300-73f7-b5fe-e49a55d40e48",
+      "pendingStage": "payment",
+      "restoredStage": "welcome",
+      "sameLease": true,
+      "paidAt": "2026-11-03T22:38:33.475Z"
+    },
+    {
+      "label": "mobile-party-balance",
+      "attemptId": "01a1a390-6ee5-7081-830b-75458712d767",
+      "saleId": null,
+      "pendingStage": "payment",
+      "restoredStage": "welcome",
+      "sameLease": true,
+      "paidAt": "2026-11-03T22:38:36.339Z"
+    }
+  ],
+  "screens": [
+    "till-pass-pending-display.png",
+    "till-pass-pending-staff.png",
+    "till-pass-restored-display.png",
+    "party-balance-pending-display.png",
+    "party-balance-pending-staff.png",
+    "party-balance-restored-display.png",
+    "dropoff-pass-pending-display.png",
+    "dropoff-pass-pending-staff.png",
+    "dropoff-pass-restored-display.png",
+    "mobile-party-balance-pending-display.png",
+    "mobile-party-balance-pending-staff.png",
+    "mobile-party-balance-restored-display.png",
+    "signed-out-staff.png",
+    "signed-out-display.png"
+  ],
+  "captures": [
+    {
+      "name": "till-pass-pending-display",
+      "at": "2026-11-03T22:38:25.130Z",
+      "dom": {
+        "text": "Scan to Pay",
+        "color": "rgb(248, 250, 252)",
+        "opacity": "1",
+        "parentOpacity": "1",
+        "visibility": "visible",
+        "rect": {
+          "x": 537.390625,
+          "y": 164,
+          "width": 205.203125,
+          "height": 40,
+          "top": 164,
+          "right": 742.59375,
+          "bottom": 204,
+          "left": 537.390625
+        },
+        "animations": [
+          {
+            "state": "running",
+            "currentTime": 283.3380000617356,
+            "iterations": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "party-balance-pending-display",
+      "at": "2026-11-03T22:38:28.512Z",
+      "dom": {
+        "text": "Scan to Pay",
+        "color": "rgb(248, 250, 252)",
+        "opacity": "1",
+        "parentOpacity": "1",
+        "visibility": "visible",
+        "rect": {
+          "x": 537.390625,
+          "y": 164,
+          "width": 205.203125,
+          "height": 40,
+          "top": 164,
+          "right": 742.59375,
+          "bottom": 204,
+          "left": 537.390625
+        },
+        "animations": [
+          {
+            "state": "running",
+            "currentTime": 450.00000002477327,
+            "iterations": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "dropoff-pass-pending-display",
+      "at": "2026-11-03T22:38:31.795Z",
+      "dom": {
+        "text": "Scan to Pay",
+        "color": "rgb(248, 250, 252)",
+        "opacity": "1",
+        "parentOpacity": "1",
+        "visibility": "visible",
+        "rect": {
+          "x": 537.390625,
+          "y": 164,
+          "width": 205.203125,
+          "height": 40,
+          "top": 164,
+          "right": 742.59375,
+          "bottom": 204,
+          "left": 537.390625
+        },
+        "animations": [
+          {
+            "state": "running",
+            "currentTime": 416.66600004155185,
+            "iterations": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "mobile-party-balance-pending-display",
+      "at": "2026-11-03T22:38:34.828Z",
+      "dom": {
+        "text": "Scan to Pay",
+        "color": "rgb(248, 250, 252)",
+        "opacity": "1",
+        "parentOpacity": "1",
+        "visibility": "visible",
+        "rect": {
+          "x": 537.390625,
+          "y": 164,
+          "width": 205.203125,
+          "height": 40,
+          "top": 164,
+          "right": 742.59375,
+          "bottom": 204,
+          "left": 537.390625
+        },
+        "animations": [
+          {
+            "state": "running",
+            "currentTime": 549.9820000866436,
+            "iterations": null
+          }
+        ]
+      }
+    }
+  ],
+  "fixture": {
+    "stationId": "01a1a390-3acc-7d99-bfd5-a6b69d4b9cab",
+    "displayId": "01a1a390-3d7a-736f-9e56-ee1c8acfa9fd"
+  },
+  "outcome": "four native tender journeys, restoration and native sign-out passed",
+  "signOut": {
+    "at": "2026-11-03T22:38:37.845Z",
+    "sessionEnded": true,
+    "nativeButton": true,
+    "sameLeaseSubmitted": true
+  },
+  "finishedAt": "2026-11-03T22:38:38.506Z"
+}

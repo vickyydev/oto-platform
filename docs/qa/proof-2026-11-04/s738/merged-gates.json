@@ -1,0 +1,112 @@
+{
+  "at": "2026-11-03T22:46:57.534Z",
+  "source": "8d584a79b6388e7d4c458450814f909fcadc8c5f",
+  "base": "dde3887aa3162d6b6c006c4135ad2ef20e163b6c",
+  "logs": [
+    {
+      "file": "docs/qa/proof-2026-11-04/s738/merged-gates/api-full-1.log",
+      "rawSha256": "3f0b46e4861b5e6ca256bfd9b503e598c6a7cb5679a23b7c0c4ac6a6ce4f476f",
+      "storedSha256": "1d7a2223301f433caceabb119509d0ebc4977976675a3a9f88483e5028510d8d",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s738/merged-gates/api-full-2.log",
+      "rawSha256": "825f4f91525bfe07ad61255d7c943d8ac0f128c72aed041bd727d99253c8d41f",
+      "storedSha256": "489384b83cc127ffd5607617e293c0eed0fa59d802390ae1a285c2515fba6f70",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s738/merged-gates/api-full-3.log",
+      "rawSha256": "9cc33c3eb39dc71bf00e6acc5fab952b2a2543dcb97326e687fcdc8dbb0a230a",
+      "storedSha256": "15873cba24e0fff4e290f7fd1fb23cd4afa441439827401525df842588f06ad7",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s738/merged-gates/pos.log",
+      "rawSha256": "35430e009219331bdf0f5fe0b23f944be1263b945511b757a21790b69c7e6ab8",
+      "storedSha256": "c1fbf8fd4000b1e72ba47ff234e946496445549022f771cfb57a75adcf538b62",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s738/merged-gates/types.log",
+      "rawSha256": "090f2b59d8bf7da91472435e51d3de1953f6a2895dc68a6a0cd5c7182aecab0d",
+      "storedSha256": "9d38420bc3beaf9bddc58036443f5f2041204ed4e8c3d9c70b33ca8c564f82bf",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s738/merged-gates/lint.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s738/merged-gates/build.log",
+      "rawSha256": "b4479149604b6fce182728c140531217ff6dd0ec5ab4755b781435e2a530951f",
+      "storedSha256": "5d791fc3754e4eb77956975930d5dbaa753a5cb6fbc9da0fd472c4ad2b467d8d",
+      "exitCode": 0
+    },
+    {
+      "file": "docs/qa/proof-2026-11-04/s738/merged-gates/api-new.log",
+      "rawSha256": "e6eefad1fbdb44d8b092e1a62dbeb27c01a2c7d632a7da7bd019e6586eadb3f6",
+      "storedSha256": "39c61fe4bd3050ad34e6fe92c428ab085b60b8526704935ac203850e7d04e55a",
+      "exitCode": 0
+    }
+  ],
+  "api": {
+    "wholeBatterySource": "40dfe61052e6802ad1e5145752d24a172c8c8ba7",
+    "collectedFiles": 447,
+    "passedFiles": 439,
+    "skippedFiles": 8,
+    "passed": 6222,
+    "skipped": 401,
+    "todo": 4,
+    "additionalFile": "s739-qr-review.test.ts",
+    "additionalPassed": 5,
+    "apiRuntimeSharedBoxBytesUnchanged": true
+  },
+  "posPassed": 1792,
+  "native": {
+    "run": "mw19r77v",
+    "cases": 4,
+    "readback": {
+      "at": "2026-11-03T22:38:38.888Z",
+      "counts": {
+        "sales": 2,
+        "party_payments": 2,
+        "remaining_lease": null
+      },
+      "smsSent": 0
+    },
+    "cleanup": {
+      "at": "2026-11-03T22:38:40.495Z",
+      "dropped": true
+    },
+    "openedImages": [
+      {
+        "file": "docs/qa/proof-2026-11-04/s738/local/mw19r77v/till-pass-pending-display.png",
+        "sha256": "42e7a105775d040f450f27eec2103f04f6963af76ec2296a80c94225674a39d7"
+      },
+      {
+        "file": "docs/qa/proof-2026-11-04/s738/local/mw19r77v/party-balance-pending-display.png",
+        "sha256": "4f63ddeb512f154a37a7554a540b6656c1b9e4263c1b7afb54f1f90e5757e2d7"
+      },
+      {
+        "file": "docs/qa/proof-2026-11-04/s738/local/mw19r77v/dropoff-pass-pending-display.png",
+        "sha256": "c14dc0de14570819df0b3aaa2a77a04530b9b8cd8038b678c3ded9170288c17a"
+      },
+      {
+        "file": "docs/qa/proof-2026-11-04/s738/local/mw19r77v/mobile-party-balance-pending-display.png",
+        "sha256": "58bd04df09cc40329d206cdf289f63a2e1dedf02db01eb3ab6ea651a91214666"
+      },
+      {
+        "file": "docs/qa/proof-2026-11-04/s738/local/mw19r77v/till-pass-restored-display.png",
+        "sha256": "a69bc01103c6d4677096b4eb563156278d459c9894905c9f5d2f14b09585f114"
+      },
+      {
+        "file": "docs/qa/proof-2026-11-04/s738/local/mw19r77v/signed-out-staff.png",
+        "sha256": "45fe700951a98927c77d848866df30174719dd74f7f2d926cf96c048cfb6904c"
+      }
+    ]
+  },
+  "staging": "not run"
+}
